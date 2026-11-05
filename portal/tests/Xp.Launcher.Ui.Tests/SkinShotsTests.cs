@@ -158,6 +158,67 @@ public sealed class SkinShotsTests : IDisposable
         w.Close();
     }
 
+    /// <summary>«Общение» in three columns: a channel with its feed, a private dialogue and a narrow window (docs/portal/VOICE_IRC.md).</summary>
+    [AvaloniaFact]
+    public void Chat_section()
+    {
+        if (_shots is null) return;
+        File.WriteAllText(Path.Combine(_root, "settings", "device.json"),
+            "{\"token\":\"tok-v\",\"account\":\"Капитан\",\"name\":\"x\",\"linkedAt\":\"2026-10-03T00:00:00Z\"}");
+        using var site = new ChatSite();
+        new Settings { GameDir = Game, RepoUrl = "http://127.0.0.1:9/", PortalUrl = site.Url, Language = "ru" }.Save();
+        var w = new MainWindow([]) { WindowState = WindowState.Normal, Width = 1280, Height = 800 };
+        w.Show();
+        Pump(() => F<object?>(w, "_updater") is not null, "the updater");
+        var page = F<VoicePage>(w, "_voicePage");
+        Click(F<Dictionary<string, Button>>(w, "_nav")["voice"]);
+        var feed = F<StackPanel>(page, "_feed");
+        Pump(() => feed.Children.Count == 3, "the feed");
+        Idle(600);
+        Shot(w, "10-chat-channel");
+
+        // a few more lines, a command answered here, an action
+        var input = F<TextBox>(page, "_input");
+        input.Text = "Всем привет, кто на связи?";
+        Click(F<Button>(page, "_send"));
+        Pump(() => feed.Children.Count == 4, "my line");
+        input.Text = "/who";
+        Click(F<Button>(page, "_send"));
+        Pump(() => feed.Children.Count == 5, "the list of people");
+        Shot(w, "11-chat-channel-me");
+
+        // the voice settings under the feed
+        Click(F<Button>(page, "_settingsButton"));
+        Shot(w, "12-chat-channel-sound");
+        Click(F<Button>(page, "_settingsButton"));
+
+        var dialogues = F<StackPanel>(page, "_dialogueList");
+        Pump(() => dialogues.Children.Count == 2, "the dialogues");
+        Click((Control)dialogues.Children[0]);
+        Pump(() => feed.Children.Count == 2, "the dialogue");
+        Shot(w, "13-chat-dialogue");
+
+        Click(F<Button>(page, "_lobbyButton"));
+        Idle(800);
+        Shot(w, "14-chat-lobby");
+        Click((Control)F<StackPanel>(page, "_channelList").Children[0]);
+        Pump(() => feed.Children.Count >= 3, "the channel again");
+        w.Close();
+
+        // the narrow window: the people are a page of their own
+        var narrow = new MainWindow([]) { WindowState = WindowState.Normal, Width = 900, Height = 800 };
+        narrow.Show();
+        Pump(() => F<object?>(narrow, "_updater") is not null, "the updater");
+        var np = F<VoicePage>(narrow, "_voicePage");
+        Click(F<Dictionary<string, Button>>(narrow, "_nav")["voice"]);
+        Pump(() => F<StackPanel>(np, "_feed").Children.Count == 3, "the narrow feed");
+        Idle(600);
+        Shot(narrow, "15-chat-narrow");
+        Click(F<Button>(np, "_peopleButton"));
+        Shot(narrow, "16-chat-narrow-people");
+        narrow.Close();
+    }
+
     [AvaloniaFact]
     public void Setup_wizard()
     {

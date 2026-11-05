@@ -184,6 +184,9 @@ public sealed class MainWindow : Window
         _account = new AccountPanel(_settings);
         _voicePage = new VoicePage(_settings, _account, () => _builds, () => Navigate("settings"));
         _voicePage.RoomChanged += RoomChanged;
+        // a private message or a mention reaches a running game as a plate in its corner (ChatNotice); no game, no file
+        _voicePage.GameFolder = () => _paths;
+        _voicePage.GameRunning = GameIsRunning;
         _voicePage.Messages.UnreadChanged += () => { ShowChatBadge(); CountReports(); };
         _setupPage = new SetupPage(_settings, () => _repo) { Lazy = () => LazyPacks.For(_http, _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl) };
         _setupPage.Finished += (dir, play) => OnSetupFinished(dir, play);
@@ -278,6 +281,8 @@ public sealed class MainWindow : Window
             _cts?.Cancel();
             _watchTimer.Stop();
             _statsTimer.Stop();
+            // the plate's file is ours and says nothing once we are gone
+            if (_paths is not null) ChatNotice.Clear(_paths);
             _notifier?.Dispose();
             if (WindowState == WindowState.Normal)
             {
@@ -723,6 +728,13 @@ public sealed class MainWindow : Window
             try { _settings.Save(); } catch (IOException) { }
         };
         game.Children.Add(notify);
+        var chatAll = new CheckBox { Content = L.T("settings.chatNoticeAll"), IsChecked = _settings.ChatNoticeAll, FontSize = 13 };
+        chatAll.IsCheckedChanged += (_, _) =>
+        {
+            _settings.ChatNoticeAll = chatAll.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(chatAll);
         var closeToTray = new CheckBox { Content = L.T("settings.closeToTray"), IsChecked = _settings.CloseToTray, FontSize = 13 };
         closeToTray.IsCheckedChanged += (_, _) =>
         {
@@ -1270,7 +1282,7 @@ public sealed class MainWindow : Window
                 notices.Add((L.T("notice.ticketNews", fresh[0].Draft.DisplayNumber ?? "", ReportsPage.MarkText(TicketAttention.MarkOf(fresh[0].Draft, _settings.SeenTickets))), L.T("notice.open"), () => Navigate("reports")));
             else if (fresh.Count > 1) notices.Add((L.T("notice.ticketsNews", fresh.Count), L.T("notice.open"), () => Navigate("reports")));
             if (_voicePage.Messages.Unread > 0)
-                notices.Add((L.T("notice.messages", _voicePage.Messages.Unread), L.T("notice.open"), () => { Navigate("voice"); _voicePage.ShowTab(true); }));
+                notices.Add((L.T("notice.messages", _voicePage.Messages.Unread), L.T("notice.open"), () => { Navigate("voice"); _voicePage.OpenUnread(); }));
             if (queued > 0) notices.Add((L.T("notice.queued", queued), L.T("notice.send"), () => { Navigate("reports"); _reportsPage.SendQueued(); }));
         }
 

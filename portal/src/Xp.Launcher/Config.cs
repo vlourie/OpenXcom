@@ -39,6 +39,8 @@ public sealed class Settings
     public bool TrayWhilePlaying { get; set; } = true;
     /// <summary>A Windows notification when a release comes out while the launcher runs (open or in the tray).</summary>
     public bool NotifyUpdates { get; set; } = true;
+    /// <summary>The plate in a running game for every new line of the channels one is in; off: only private messages and mentions of the nick.</summary>
+    public bool ChatNoticeAll { get; set; }
     /// <summary>The cross of the window hides the launcher to the tray; a real exit is "Close the launcher" in the tray menu.</summary>
     public bool CloseToTray { get; set; } = true;
     /// <summary>The one-time hint "the launcher is in the tray" after the first cross.</summary>

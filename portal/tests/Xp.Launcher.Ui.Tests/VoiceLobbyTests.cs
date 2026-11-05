@@ -114,6 +114,12 @@ public sealed class VoiceLobbyTests : IDisposable
                 else if (method == "GET" && path == "/api/v1/voice/rooms")
                     (status, body) = (200, $"{{\"owned\":[{Room("cabin", "Моя каюта", Me, mine: true)}],\"invited\":[]}}");
                 else if (method == "GET" && path == "/api/v1/voice/lobby") (status, body) = (200, Lobby());
+                // the text channels: one open channel, so the page has a voice bar to show; the lobby is behind its own button
+                else if (method == "GET" && path == "/api/v1/voice/channels")
+                    (status, body) = (200, $"{{\"channels\":[{{\"room\":\"ch-general\",\"title\":\"#общий\",\"topic\":null,\"isPublic\":true,\"mine\":false,\"owner\":{Me},\"state\":\"ok\",\"joined\":true,\"here\":1,\"unread\":0,\"mentions\":0,\"lastId\":0}}],\"rooms\":[]}}");
+                else if (method == "GET" && path == "/api/v1/voice/rooms/ch-general/messages")
+                    (status, body) = (200, "{\"room\":\"ch-general\",\"title\":\"#общий\",\"topic\":null,\"isPublic\":true,\"canModerate\":false,\"canTalk\":true,\"last\":0,\"lines\":[],\"removed\":[],\"attendees\":[]}");
+                else if (method == "GET" && path == "/api/v1/messages") (status, body) = (200, "{\"unread\":0,\"dialogues\":[]}");
                 else if (method == "POST" && path.EndsWith("/requests")) (status, body) = (200, "{\"result\":\"sent\"}");
                 else if (method == "POST" && path == "/api/v1/friends/requests") (status, body) = (200, "{\"result\":\"sent\"}");
                 else if (method == "POST" && path == $"/api/v1/voice/rooms/cabin/requests/{Knocker}/accept") _letIn = true;
@@ -192,23 +198,28 @@ public sealed class VoiceLobbyTests : IDisposable
         Assert.Equal("Общение", L.T("nav.voice"));
         Click(nav);
         var page = F<VoicePage>(w, "_voicePage");
-        var side = F<Border>(page, "_side");
-        Pump(() => side.IsVisible && F<StackPanel>(page, "_catalog").Children.Count == 2, "the lobby");
 
-        // the sound settings wait behind their button
+        // the sound settings wait behind their button in the voice bar under the feed of a channel
         var sound = F<Border>(page, "_soundPanel");
+        Pump(() => F<Border>(page, "_voiceBar").IsVisible, "the voice bar of the first channel");
         Assert.False(sound.IsVisible);
-        Assert.Equal(L.T("voice.online", 2), F<TextBlock>(page, "_onlineTitle").Text);
-        Assert.True(F<Border>(page, "_requestsBox").IsVisible);
-        Assert.Equal(L.T("voice.openAdmin"), Btn(F<StackPanel>(page, "_owned"), "voice.openAdmin").Content);
-        Shot(w, "voice-1-lobby");
-
         Click(F<Button>(page, "_settingsButton"));
         Assert.True(sound.IsVisible);
         Assert.Equal(L.T("voice.settingsHide"), F<Button>(page, "_settingsButton").Content);
         Shot(w, "voice-2-settings");
         Click(F<Button>(page, "_settingsButton"));
         Assert.False(sound.IsVisible);
+
+        // the lobby: rooms, knocks and people, one button in the left column
+        Click(F<Button>(page, "_lobbyButton"));
+        var side = F<Border>(page, "_side");
+        Pump(() => side.IsVisible && F<StackPanel>(page, "_catalog").Children.Count == 2, "the lobby");
+        Assert.True(F<ScrollViewer>(page, "_lobbyScroll").IsVisible);
+        Assert.False(F<Border>(page, "_voiceBar").IsVisible);
+        Assert.Equal(L.T("voice.online", 2), F<TextBlock>(page, "_onlineTitle").Text);
+        Assert.True(F<Border>(page, "_requestsBox").IsVisible);
+        Assert.Equal(L.T("voice.openAdmin"), Btn(F<StackPanel>(page, "_owned"), "voice.openAdmin").Content);
+        Shot(w, "voice-1-lobby");
 
         // a knock at an open room of a stranger
         Click(Btn(F<StackPanel>(page, "_catalog"), "voice.ask"));
