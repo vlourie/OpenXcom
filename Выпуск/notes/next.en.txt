@@ -3,3 +3,4 @@
 - Launcher, in-game plate: besides private messages and mentions there is a checkbox in "Settings" - "Show the in-game plate for every message of the channels too" (off by default). An old conversation never raises the plate, only new lines while the game runs.
 - Launcher, top line on the home page: the launcher update comes first and stays, the other notices change one by one every 5 seconds.
 - Base, research: with the "Approximate research term" option the term no longer hides under the order arrows in the lab: the count column moved left, progress sits at the right edge, a long name wraps to a new line. Without the option the screen is unchanged.
+- Setup from the site: its file properties now carry a link to the official site, and the file no longer calls itself a library, xp-bootstrap.dll (the same for the launcher). This does not change how the setup works.
