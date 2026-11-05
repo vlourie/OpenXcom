@@ -80,8 +80,39 @@ JOBS = {
         neg=("bright green, saturated lime green, plastic toy, glossy plastic, sausages, two rockets only, small "
              "bundle, open tube ends, hollow pipe ends, flared nozzle, bell-shaped tail, exhaust cone, cut off at the "
              "edge, single rocket, wooden crate, text"), note=""),
+    # заметка Vitali на странице 05.11; одна основа, кадры 38 и 40 - зеркала 37 и 39 (в классике почти они, 44 точки)
+    "chairs2": dict(
+        members=[("U_WALL_G", 37), ("U_WALL_G", 39)], seeds=[5381, 5382, 5383, 5384], ref=None, at=[(0, 0), (40, 0)],
+        what=("one futuristic spaceship swivel chair in warm golden-tan lacquered metal, shown twice side by side as "
+              "the same object from two sides, every part is the same in both pictures: a round dark-bronze base disc "
+              "with a ring of small round rivets along its rim; a thick round seat disc with a raised rim and a darker "
+              "recessed round centre in the seat; and a tall sleek backrest of sci-fi design that is wide at the bottom "
+              "and steadily narrows upward to a narrow top, with one rectangular hole cut through its lower part, just "
+              "above the seat, the hole looks very dark inside. LEFT picture: seen from the front, the tapering backrest "
+              "stands BEHIND the seat on the upper left, the round seat with its dark centre lies in front of it, lower "
+              "and to the right. RIGHT picture: seen from behind at an angle, the tapering backrest stands in the "
+              "FOREGROUND on the left, nearest to the viewer, the rectangular hole low on it, and it hides the left part "
+              "of the seat; the round seat shows behind the backrest, to its right"),
+        neg=("flat board, plain rectangular slab backrest, wide top, backrest of even width, wooden chair, upholstered "
+             "armchair, ornate, baroque, wings, armrests, wheels, legs, glowing lights, dots, lamps, text"), note=""),
 }
-ORDER = ["chair39", "chair37", "barrel24", "rockets"]
+JOBS["rockets3"] = dict(
+    # заметка Vitali на странице 05.11: 4 крылатые ракеты на стенде. На карте кадр 11 стоит за кадром 10 на (16, -8),
+    # вместе это один длинный предмет: носы на 10, хвосты на 11; порядок members - порядок рисования, 10 поверх
+    members=[("XB2BR", 11), ("XB2BR", 10)], seeds=[5131, 5132, 5133, 5134], ref=None, at=[(16, 0), (0, 8)],
+    what=("a launcher stand carrying exactly FOUR identical long cruise missiles, two missiles on top and two missiles "
+          "below, all four parallel, running in straight lines from the lower left to the upper right. Each cruise "
+          "missile has a long slim cylindrical body of painted metal, deep dark bottle-green with near-black green "
+          "shadows and a narrow pale-green glossy highlight along the top; the front end at the lower left is a round "
+          "smooth closed dome nose; the rear end at the upper right has small swept-back pointed tail fins sticking "
+          "out like blades. The missiles are clamped to a sturdy orange-gold metal launcher stand: one thick Y-shaped "
+          "upright bracket just behind the noses, a round orange clamp ring on each missile near the nose, and two "
+          "thick straight orange-gold rail beams running along under the missiles to a rear bracket. The object fills "
+          "the whole outline of the input"),
+    neg=("three rockets, five rockets, six rockets, sausages, logs, pipes, ropes, thin wires, thin gold strings, straps, "
+         "lashing, tied bundle, bright green, saturated lime green, plastic toy, open tube ends, hollow pipe ends, "
+         "flared nozzle, exhaust flame, single missile, wooden crate, text"), note="")
+ORDER = ["chair39", "chair37", "barrel24", "rockets", "chairs2", "rockets3"]
 
 
 def classic_k1(s, f):
@@ -94,7 +125,7 @@ def comp_of(job):
     J = JOBS[job]
     at = J.get("at") or [(0, 0)] * len(J["members"])
     wd = max(a[0] for a in at) + 32
-    full = Image.new("RGBA", (wd, 40), (0, 0, 0, 0))
+    full = Image.new("RGBA", (wd, max(a[1] for a in at) + 40), (0, 0, 0, 0))
     for (s, f), a in zip(J["members"], at):
         full.alpha_composite(classic_k1(s, f), a)
     return full, at
