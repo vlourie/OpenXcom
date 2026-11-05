@@ -112,7 +112,25 @@ JOBS["rockets3"] = dict(
     neg=("three rockets, five rockets, six rockets, sausages, logs, pipes, ropes, thin wires, thin gold strings, straps, "
          "lashing, tied bundle, bright green, saturated lime green, plastic toy, open tube ends, hollow pipe ends, "
          "flared nozzle, exhaust flame, single missile, wooden crate, text"), note="")
-ORDER = ["chair39", "chair37", "barrel24", "rockets", "chairs2", "rockets3"]
+JOBS["rockets4"] = dict(
+    # заметка Vitali на странице 06.11: оперение больше и длиннее, тело ракеты больше, держатели шире, как у оригинала
+    members=[("XB2BR", 11), ("XB2BR", 10)], seeds=[5141, 5142, 5143, 5144], ref=None, at=[(16, 0), (0, 8)],
+    what=("a launcher stand carrying exactly FOUR identical big fat cruise missiles, two missiles on top and two missiles "
+          "below, all four parallel, packed tightly side by side, running in straight lines from the lower left to the "
+          "upper right; the thick bodies almost touch each other and fill the whole outline of the input, as massive as "
+          "the input, almost no gaps between them. Each cruise missile has a very thick cylindrical body of painted "
+          "metal, deep dark bottle-green with near-black green shadows and a broad pale-green glossy highlight along the "
+          "top; the front end at the lower left is a big round smooth closed dome nose; the rear end at the upper right "
+          "has big long swept-back pointed tail fins, each fin long and wide like a large blade, a clearly large part "
+          "of the missile, sticking far out exactly as the long pointed green shapes in the input. The missiles are held "
+          "by a sturdy orange-gold launcher stand with wide heavy parts: one very wide massive Y-shaped upright bracket "
+          "just behind the noses, a wide orange clamp band around each missile near the nose, and two broad thick "
+          "orange-gold beams along under the missiles to a wide rear bracket"),
+    neg=("thin missiles, slim bodies, narrow bodies, pencil, small tail fins, tiny fins, short fins, thin brackets, narrow "
+         "beams, thin rails, wide gaps between missiles, see-through gaps, three rockets, five rockets, six rockets, "
+         "sausages, logs, pipes, ropes, thin wires, straps, lashing, bright green, saturated lime green, plastic toy, "
+         "open tube ends, hollow pipe ends, flared nozzle, exhaust flame, single missile, wooden crate, text"), note="")
+ORDER = ["chair39", "chair37", "barrel24", "rockets", "chairs2", "rockets3", "rockets4"]
 
 
 def classic_k1(s, f):
