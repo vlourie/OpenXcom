@@ -1,4 +1,5 @@
 ﻿- HD interface, dolls: new bodies, faces and hair for the Lokk'Naar (16 looks). On the battle panel the face is in HD for all of them, whatever armor they wear. On the soldier's sheet HD is for now only without armor and in Synthmetal; in other armor the doll stays as it was until layers are drawn for it.
 - HD interface, dolls: on the soldier's sheet the Juggernaut and DOOM 2 in all colours are now in HD.
+- HD interface, dolls: on the soldier's sheet the Ganger, Rags, Heavy Suit and, on light skin, Castaway are now in HD.
 - HD interface: the inventory screen's keys match the modern battle panel: plates in the panel colour and new pictograms (option "inventory keys like the battle panel"). On the Ship's brass panel the numbers in the hand slots have no dark tab and use the font of the soldier's stats.
 - Nuclear zone: green puddles on the ground are puddles again, as in the original; they had turned into a pale slab with a letter A and stones.
