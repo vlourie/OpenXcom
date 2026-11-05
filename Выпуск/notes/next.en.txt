@@ -1,0 +1,1 @@
+﻿- HD interface, dolls: new bodies, faces and hair for the Lokk'Naar (16 looks). On the battle panel the face is in HD for all of them, whatever armor they wear. On the soldier's sheet HD is for now only without armor; in other armor the doll stays as it was until layers are drawn for it.
