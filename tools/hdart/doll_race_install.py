@@ -9,6 +9,7 @@ r"""Принятые слои куклы расы - в мод hd: тела, го
 
     py -3.13 tools/hdart/doll_race_install.py --race fhuman --approval "Vitali 05.11: ..."
     py -3.13 tools/hdart/doll_race_install.py --race fhuman --approval "Vitali 05.11: ..." --yes
+UBERGAL рисовался раньше и лежит в другой папке (art/doll/pipe_pilot/layers), остальные расы - как fhuman.
 """
 import argparse
 import os
@@ -31,6 +32,10 @@ def main():
     ap.add_argument("--yes", action="store_true", help="записать в манифест и поставить в игру и в репозиторий")
     a = ap.parse_args()
     src = os.path.join("art", "doll", "pipe_pilot", a.race.lower(), "heads", "layers")
+    generator = "doll_race_heads.py"
+    if a.race.lower() == "ubergal":
+        src = os.path.join("art", "doll", "pipe_pilot", "layers")
+        generator = "doll_pipe_pilot.py"
     files = sorted(f for f in os.listdir(src) if f.endswith(".png"))
     images = {k.lower() for k in db.sprite_files()}
     alien = [f for f in files if f[:-4] not in images]
@@ -46,7 +51,7 @@ def main():
     if not a.yes or not changed:
         return 0
     for rel in changed:
-        bp.stage(man, rel, os.path.join(src, rel[3:]), generator="doll_race_heads.py", generator_version="2026-11-05",
+        bp.stage(man, rel, os.path.join(src, rel[3:]), generator=generator, generator_version="2026-11-05",
                  source_path=src.replace(os.sep, "/"), approved=True, approval=a.approval, family="doll_" + a.race.lower())
     bp.save(man, why="куклы %s: %d слоёв" % (a.race, len(changed)))
     print("game:", bp.install(man, "game", only=changed))
