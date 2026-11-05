@@ -51,6 +51,8 @@ RESEED = {"F14": 3, "M19": 3, "F10": 2, "F1": 3}
 GLYPHS = ", text, letters, writing, glyphs, runes, symbols, circuit pattern, printed pattern on the skin"
 VARIANTS = {}                                       # ещё сиды на выбор; основой становится сид из RESEED
 GREY_CHROMA, GREY_L = 8, 38                         # подложка и ореол в сыром кадре
+SHEET_BOX = (50, 44, 110, 148)                      # рамка тел FHUMAN с полем, на листах
+SHEET_TORSO = (54, 66, 106, 112)
 
 
 def setup():
@@ -151,8 +153,8 @@ def worker(jobs):
 def finish(jobs, dry):
     FONT = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 22)
     k = dp.K
-    box = (50 * k, 44 * k, 110 * k, 148 * k)            # рамка тел FHUMAN с полем
-    torso = (54 * k, 66 * k, 106 * k, 112 * k)
+    box = tuple(v * k for v in SHEET_BOX)
+    torso = tuple(v * k for v in SHEET_TORSO)
     shifts = {}
     tiles, tors = [], []
     for j in jobs:
