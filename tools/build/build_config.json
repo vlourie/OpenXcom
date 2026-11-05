@@ -19,7 +19,7 @@
     "Piratez": ["metadata.yml", "Ruleset", "Language", "Resources", "Ruleset/zz_award_pages_en.rul"],
     "XPZ RU-patch": ["metadata.yml", "Language/ru.yml"],
     "hd_core": ["metadata.yml", "hd/UI/FontBig.ttf", "hd/UI/FontSmall.ttf", "hd/UI/FontFallback.ttf", "hd/UI/fonts", "FONTS-LICENSE.txt", "ROBOTO-LICENSE.txt", "FONTS-SOURCES.txt"],
-    "hd": ["metadata.yml", "hd/UI", "hd/TERRAIN"],
+    "hd": ["metadata.yml", "hd/UI", "hd/TERRAIN", "Ruleset/hd_doll_layers.rul", "Resources/Doll/empty_320x200.png"],
     "intro_voice": ["metadata.yml", "Ruleset", "SOUND"],
     "hd_test_steps": ["metadata.yml", "Ruleset/hd_test_steps.rul", "Resources/Sounds/steps"],
     "hd_voices_ru": ["metadata.yml", "Ruleset/hd_voices_ru.rul", "Resources/Sounds/voices"],
