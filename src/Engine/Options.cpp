@@ -626,6 +626,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPediaRange", &oxceHdPediaRange, true, "STR_HD_PEDIA_RANGE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUpdateNotice", &oxceHdUpdateNotice, true, "STR_HD_UPDATE_NOTICE", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdChatNotice", &oxceHdChatNotice, true, "STR_HD_CHAT_NOTICE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftFit", &oxceHdCraftFit, false, "STR_HD_CRAFT_FIT", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWoundedRed", &oxceHdWoundedRed, false, "STR_HD_WOUNDED_RED", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftMission", &oxceHdCraftMission, false, "STR_HD_CRAFT_MISSION", "STR_HD_INTERFACE"));

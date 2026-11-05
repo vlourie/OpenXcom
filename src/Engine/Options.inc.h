@@ -288,6 +288,8 @@ OPT bool oxceHdPanelHide;
 OPT bool oxceHdPathStretch;
 // HD interface: the plate "a new update is available" in the top left corner while the launcher has written launcher/update.txt (Engine/HdUpdateNotice.h)
 OPT bool oxceHdUpdateNotice;
+// HD interface: the plate "a new message" in the top right corner while the launcher has written launcher/chat.txt (Engine/HdChatNotice.h)
+OPT bool oxceHdChatNotice;
 // HD interface, craft crew screen (CraftSoldiersState): the rows of the soldiers who no longer fit the craft are grey instead of the "not enough space" window, and between the shorter sort box and OK stands a plate "seats used/seats in all"; off = as it was (default)
 OPT bool oxceHdCraftFit;
 // HD interface, craft crew screen (CraftSoldiersState): the name and the "WOUNDED>days" text of a wounded soldier are red; off = as it was (default); picture only
