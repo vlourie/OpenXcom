@@ -8,15 +8,23 @@ r"""Выбранные сиды armor_over -> chosen, край вещи плот
 
     E:\OpenXCom\tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\doll_armor_seal.py
 """
+import argparse
 import glob
+import json
 import os
 import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
 
 import cv2
 import numpy as np
 from PIL import Image
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import doll_b2_render as db
+
+ROOT = os.path.dirname(os.path.dirname(HERE))
 PILOT = os.path.join(ROOT, "art", "doll", "pipe_pilot")
 LAYERS = os.path.join(PILOT, "armor_over", "layers")
 CHOSEN = os.path.join(PILOT, "armor_over", "chosen")
@@ -62,8 +70,50 @@ def seal(rgba, zone):
     return px
 
 
+def black_block(px, name):
+    """Чёрный блок классики остаётся чёрным: модель пишет на нём надписи (R-737). Края блока не трогает."""
+    i = db.load_indices(db.sprite_files()[name.upper()])
+    rgb = db.to_rgba(i, db.game_palette())[..., :3]
+    z = np.kron((i != 0) & (rgb.sum(axis=2) <= 12), np.ones((db.K, db.K), np.uint8))
+    z = cv2.erode(z.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))) > 0
+    a = cv2.GaussianBlur(z.astype(np.float32), (0, 0), 1.5)[..., None]
+    px = px.copy()
+    px[..., :3] = np.clip(px[..., :3] * (1 - a), 0, 255).astype(np.uint8)
+    return px
+
+
+def batch(hold, sources, out):
+    """Пачка armor_batch -> out: край вещей запечатан, волосы как есть, вещи из hold не ставятся (ждут страницу).
+    sources - папки слоёв по старшинству: выбранный на странице сид перекрывает пачку."""
+    zone = body_edge()
+    os.makedirs(out, exist_ok=True)
+    seen, done = set(), 0
+    for src in sources:
+        for fn in sorted(os.listdir(src)):
+            name = fn[:-4]
+            if not fn.endswith(".png") or name in seen or name in hold:
+                continue
+            seen.add(name)
+            px = np.asarray(Image.open(os.path.join(src, fn)).convert("RGBA"))
+            short = name.split("__")[2]
+            if short.startswith("headscarf_"):
+                px = black_block(px, name)
+            if int(name.split("__")[1]) > 2 and not short.startswith("hair_"):
+                px = seal(px, zone)
+            Image.fromarray(px, "RGBA").save(os.path.join(out, fn))
+            done += 1
+    print("chosen: %s, слоёв %d, ждут страницу %d" % (out, done, len(hold)), flush=True)
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--batch", help="JSON {\"hold\": [...], \"sources\": [...], \"out\": папка}: пачка armor_batch")
+    ns = ap.parse_args()
+    if ns.batch:
+        d = json.load(open(ns.batch, encoding="utf-8-sig"))
+        batch(set(d["hold"]), d["sources"], d.get("out", os.path.join(PILOT, "armor_batch", "chosen")))
+        return
     zone = body_edge()
     os.makedirs(CHOSEN, exist_ok=True)
     for name, seed in PICK.items():
