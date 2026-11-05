@@ -161,6 +161,8 @@ public static class PortalCli
     {
         await sp.GetRequiredService<PortalDb>().Database.MigrateAsync();
         await EnsureRolesAsync(sp);
+        var channels = await Voice.ChannelSeed.EnsureAsync(sp);
+        if (channels > 0) Console.WriteLine($"public channels added: {channels}");
         Console.WriteLine("database is up to date");
         return 0;
     }

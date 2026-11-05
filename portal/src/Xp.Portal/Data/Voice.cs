@@ -55,6 +55,10 @@ public sealed class VoiceRoom
     /// <summary>Who closed it; a room closed by someone other than its owner is staff's decision and only staff reopen it.</summary>
     public Guid? ClosedById { get; set; }
     public string? ClosedReason { get; set; }
+    /// <summary>A channel anybody with an account may come into without asking (VOICE_IRC.md); the rest are private rooms.</summary>
+    public bool IsPublic { get; set; }
+    /// <summary>The line above the feed. Set by the owner, or by staff in a public channel.</summary>
+    public string? Topic { get; set; }
 }
 
 public enum RoomInviteStatus { Active, Declined, Revoked }
@@ -143,6 +147,48 @@ public sealed class VoiceEventTicket
     public Guid TicketId { get; set; }
 }
 
+public static class ChatKinds
+{
+    public const string Text = "text";
+    /// <summary>"/me ..." - shown as "* nick text".</summary>
+    public const string Action = "action";
+    /// <summary>Joins, parts, topic changes, kicks: the first word of the body is the event, the rest its argument.</summary>
+    public const string System = "system";
+}
+
+/// <summary>
+/// One line of a room's text feed (VOICE_IRC.md section 4). <see cref="Id"/> only grows, so it is also the cursor a
+/// client asks "after". A removed line keeps its row (who removed it and when) until the retention sweep.
+/// </summary>
+public sealed class RoomMessage
+{
+    public long Id { get; set; }
+    public Guid RoomId { get; set; }
+    public Guid AuthorId { get; set; }
+    public string Kind { get; set; } = ChatKinds.Text;
+    public string Body { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? DeletedAt { get; set; }
+    public Guid? DeletedById { get; set; }
+}
+
+/// <summary>Where one person stands in one room's feed: what they have read, when they were last looking, whether they are in the channel.</summary>
+public sealed class RoomChannelState
+{
+    public Guid RoomId { get; set; }
+    public Guid UserId { get; set; }
+    public long LastReadId { get; set; }
+    public DateTimeOffset SeenAt { get; set; } = DateTimeOffset.UtcNow;
+    public bool Joined { get; set; }
+}
+
+/// <summary>A line a complaint rests on: it stays while the ticket is open and a year after it closes (the same rule as <see cref="VoiceEventTicket"/>).</summary>
+public sealed class RoomMessageTicket
+{
+    public long MessageId { get; set; }
+    public Guid TicketId { get; set; }
+}
+
 public enum VoiceJobKind { Remove, SetPublish, CloseRoom }
 
 /// <summary>
@@ -186,6 +232,9 @@ public static class VoiceEventKinds
     public const string AccountUnban = "account_unban";
     public const string Unfriend = "unfriend";
     public const string Block = "block";
+    /// <summary>A moderator changed the topic of a channel, or took somebody's line out of the feed.</summary>
+    public const string Topic = "topic";
+    public const string LineDelete = "line_delete";
     /// <summary>Comings and goings: the short-lived part of the log.</summary>
     public static readonly string[] Presence = [Join, Leave];
 }
@@ -215,4 +264,20 @@ public static class VoiceLimits
     public static readonly TimeSpan ComplaintKeep = TimeSpan.FromDays(365);
     /// <summary>How far back a complaint reaches into the log of its room and person.</summary>
     public static readonly TimeSpan ComplaintLookback = TimeSpan.FromDays(30);
+
+    // ---- the text feed (VOICE_IRC.md section 4)
+    public const int TopicMax = 300;
+    public const int LineMax = 1000;
+    public const int LinesPerMinute = 20;
+    /// <summary>Lines one answer carries at most, and the default when the client names no limit.</summary>
+    public const int HistoryMax = 200;
+    public const int HistoryDefault = 100;
+    public static readonly TimeSpan LineKeep = TimeSpan.FromDays(30);
+    /// <summary>Somebody who looked at a channel within this long is "here"; a page asks every few seconds.</summary>
+    public static readonly TimeSpan HereWindow = TimeSpan.FromSeconds(90);
+    /// <summary>A line removed this recently is named in the answer, so a client showing it can drop it.</summary>
+    public static readonly TimeSpan RemovedNotice = TimeSpan.FromMinutes(3);
+    /// <summary>A complaint carries a copy of the newest lines of the room, up to this many characters.</summary>
+    public const int ComplaintLines = 40;
+    public const int ComplaintLineChars = 8_000;
 }

@@ -120,7 +120,7 @@ public sealed class VoiceWorker(IServiceScopeFactory scopes, IVoiceServer server
     }
 
     /// <summary>
-    /// Retention (VOICE_CHAT.md section 8): comings and goings 30 days, actions a year; a record a
+    /// Retention (VOICE_CHAT.md section 8): chat lines and channel states 30 days (VOICE_IRC.md); comings and goings 30 days, actions a year; a record a
     /// complaint rests on stays while the ticket is open and a year after it closes. Finished
     /// commands and old answered friend requests go too.
     /// </summary>
@@ -136,6 +136,15 @@ public sealed class VoiceWorker(IServiceScopeFactory scopes, IVoiceServer server
             .Where(l => db.Tickets.Any(t => t.Id == l.TicketId && closed.Contains(t.Status))
                 && !db.TicketHistory.Any(h => h.TicketId == l.TicketId && h.Action == "status" && h.At > complaintFrom))
             .ExecuteDeleteAsync(ct);
+        // the same rule for the lines of the feed a complaint rests on
+        var releasedLines = await db.RoomMessageTickets
+            .Where(l => db.Tickets.Any(t => t.Id == l.TicketId && closed.Contains(t.Status))
+                && !db.TicketHistory.Any(h => h.TicketId == l.TicketId && h.Action == "status" && h.At > complaintFrom))
+            .ExecuteDeleteAsync(ct);
+        var heldLines = db.RoomMessageTickets.Select(l => l.MessageId);
+        var linesFrom = now - VoiceLimits.LineKeep;
+        var lines = await db.RoomMessages.Where(m => m.CreatedAt < linesFrom && !heldLines.Contains(m.Id)).ExecuteDeleteAsync(ct);
+        var states = await db.RoomChannelStates.Where(s => s.SeenAt < linesFrom).ExecuteDeleteAsync(ct);
         var held = db.VoiceEventTickets.Select(l => l.EventId);
         var presenceFrom = now - VoiceLimits.PresenceKeep;
         var actionFrom = now - VoiceLimits.ActionKeep;
@@ -145,8 +154,8 @@ public sealed class VoiceWorker(IServiceScopeFactory scopes, IVoiceServer server
         var jobsFrom = now - TimeSpan.FromDays(30);
         var jobs = await db.VoiceJobs.Where(j => j.State != JobState.Pending && j.CreatedAt < jobsFrom).ExecuteDeleteAsync(ct);
         var requests = await db.FriendRequests.Where(r => r.Status != FriendRequestStatus.Pending && r.AnsweredAt < jobsFrom).ExecuteDeleteAsync(ct);
-        if (released + presence + actions + jobs + requests > 0)
-            log.LogInformation("Voice log pruned: {Presence} presence, {Actions} actions, {Released} complaint links, {Jobs} jobs, {Requests} requests",
-                presence, actions, released, jobs, requests);
+        if (released + releasedLines + presence + actions + jobs + requests + lines + states > 0)
+            log.LogInformation("Voice log pruned: {Presence} presence, {Actions} actions, {Released} complaint links, {Jobs} jobs, {Requests} requests, {Lines} chat lines, {States} channel states",
+                presence, actions, released + releasedLines, jobs, requests, lines, states);
     }
 }

@@ -44,6 +44,9 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<VoiceEvent> VoiceEvents => Set<VoiceEvent>();
     public DbSet<VoiceEventTicket> VoiceEventTickets => Set<VoiceEventTicket>();
     public DbSet<VoiceJob> VoiceJobs => Set<VoiceJob>();
+    public DbSet<RoomMessage> RoomMessages => Set<RoomMessage>();
+    public DbSet<RoomChannelState> RoomChannelStates => Set<RoomChannelState>();
+    public DbSet<RoomMessageTicket> RoomMessageTickets => Set<RoomMessageTicket>();
     public DbSet<PrivateMessage> PrivateMessages => Set<PrivateMessage>();
     public DbSet<MessageSetting> MessageSettings => Set<MessageSetting>();
 
@@ -229,6 +232,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(r => r.PublicId).HasMaxLength(VoiceLimits.PublicIdLength);
             e.Property(r => r.Title).HasMaxLength(VoiceLimits.TitleMax);
             e.Property(r => r.ClosedReason).HasMaxLength(VoiceLimits.ReasonMax);
+            e.Property(r => r.Topic).HasMaxLength(VoiceLimits.TopicMax);
             e.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
             e.HasOne(r => r.Owner).WithMany().HasForeignKey(r => r.OwnerId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<PortalUser>().WithMany().HasForeignKey(r => r.ClosedById).OnDelete(DeleteBehavior.SetNull);
@@ -294,6 +298,34 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.HasKey(x => new { x.EventId, x.TicketId });
             e.HasIndex(x => x.TicketId);
             e.HasOne<VoiceEvent>().WithMany().HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Ticket>().WithMany().HasForeignKey(x => x.TicketId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<RoomMessage>(e =>
+        {
+            // a feed is read by room from a cursor; the sweep and the per-person limit ask by time
+            e.HasIndex(m => new { m.RoomId, m.Id });
+            e.HasIndex(m => new { m.AuthorId, m.CreatedAt });
+            e.HasIndex(m => m.CreatedAt);
+            e.HasIndex(m => new { m.RoomId, m.DeletedAt }).HasFilter("\"DeletedAt\" IS NOT NULL");
+            e.Property(m => m.Kind).HasMaxLength(16);
+            e.Property(m => m.Body).HasMaxLength(VoiceLimits.LineMax);
+            e.HasOne<VoiceRoom>().WithMany().HasForeignKey(m => m.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(m => m.AuthorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(m => m.DeletedById).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<RoomChannelState>(e =>
+        {
+            e.HasKey(x => new { x.RoomId, x.UserId });
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.SeenAt);
+            e.HasOne<VoiceRoom>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<RoomMessageTicket>(e =>
+        {
+            e.HasKey(x => new { x.MessageId, x.TicketId });
+            e.HasIndex(x => x.TicketId);
+            e.HasOne<RoomMessage>().WithMany().HasForeignKey(x => x.MessageId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Ticket>().WithMany().HasForeignKey(x => x.TicketId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<VoiceJob>(e =>

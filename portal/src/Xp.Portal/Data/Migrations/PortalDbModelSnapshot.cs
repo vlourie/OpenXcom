@@ -1023,6 +1023,32 @@ namespace Xp.Portal.Data.Migrations
                     b.ToTable("RoomBans");
                 });
 
+            modelBuilder.Entity("Xp.Portal.Data.RoomChannelState", b =>
+                {
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Joined")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("LastReadId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("SeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("RoomId", "UserId");
+
+                    b.HasIndex("SeenAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RoomChannelStates");
+                });
+
             modelBuilder.Entity("Xp.Portal.Data.RoomInvite", b =>
                 {
                     b.Property<Guid>("RoomId")
@@ -1075,6 +1101,70 @@ namespace Xp.Portal.Data.Migrations
                     b.HasIndex("UserId", "Status");
 
                     b.ToTable("RoomJoinRequests");
+                });
+
+            modelBuilder.Entity("Xp.Portal.Data.RoomMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("DeletedById");
+
+                    b.HasIndex("AuthorId", "CreatedAt");
+
+                    b.HasIndex("RoomId", "DeletedAt")
+                        .HasFilter("\"DeletedAt\" IS NOT NULL");
+
+                    b.HasIndex("RoomId", "Id");
+
+                    b.ToTable("RoomMessages");
+                });
+
+            modelBuilder.Entity("Xp.Portal.Data.RoomMessageTicket", b =>
+                {
+                    b.Property<long>("MessageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("TicketId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("MessageId", "TicketId");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("RoomMessageTickets");
                 });
 
             modelBuilder.Entity("Xp.Portal.Data.RoomSpeakingRestriction", b =>
@@ -1648,6 +1738,9 @@ namespace Xp.Portal.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
 
@@ -1665,6 +1758,10 @@ namespace Xp.Portal.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.HasKey("Id");
 
@@ -2028,6 +2125,21 @@ namespace Xp.Portal.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Xp.Portal.Data.RoomChannelState", b =>
+                {
+                    b.HasOne("Xp.Portal.Data.VoiceRoom", null)
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Xp.Portal.Data.PortalUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Xp.Portal.Data.RoomInvite", b =>
                 {
                     b.HasOne("Xp.Portal.Data.VoiceRoom", null)
@@ -2054,6 +2166,41 @@ namespace Xp.Portal.Data.Migrations
                     b.HasOne("Xp.Portal.Data.PortalUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xp.Portal.Data.RoomMessage", b =>
+                {
+                    b.HasOne("Xp.Portal.Data.PortalUser", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Xp.Portal.Data.PortalUser", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Xp.Portal.Data.VoiceRoom", null)
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xp.Portal.Data.RoomMessageTicket", b =>
+                {
+                    b.HasOne("Xp.Portal.Data.RoomMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Xp.Portal.Data.Ticket", null)
+                        .WithMany()
+                        .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

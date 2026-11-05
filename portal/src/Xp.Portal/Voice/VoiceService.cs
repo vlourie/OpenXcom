@@ -2,10 +2,12 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Xp.Portal.Auth;
 using Xp.Portal.Data;
 using Xp.Portal.Devices;
+using Xp.Portal.Messages;
 using Xp.Portal.Site;
 using Xp.Portal.Tickets;
 
@@ -28,7 +30,7 @@ public sealed record FriendsView(IReadOnlyList<FriendView> Friends, int FriendsT
     IReadOnlyList<RequestView> Outgoing, IReadOnlyList<PersonView> Blocked);
 /// <summary>A room as one person sees it. State is that person's standing: ok, room_closed, account_banned, banned, invite_revoked, not_friends.</summary>
 public sealed record RoomSummary(string PublicId, string Title, PersonView Owner, bool Mine, string Status, string State, bool InviteDeclined,
-    int Capacity, DateTimeOffset CreatedAt);
+    int Capacity, DateTimeOffset CreatedAt, bool IsPublic = false, string? Topic = null);
 public sealed record MemberView(PersonView Person, string Invite, bool Banned, bool Restricted, bool Friend);
 public sealed record RoomView(RoomSummary Room, IReadOnlyList<MemberView>? Members, bool ClosedByStaff, string? ClosedReason);
 public sealed record LiveView(PersonView Person, bool CanPublish, DateTimeOffset? JoinedAt);
@@ -49,8 +51,9 @@ public sealed record PassView(string Url, string Token, string Room, string Room
 /// length of their transaction, so two clicks at once cannot leave two pending requests or a ban
 /// that the next pass does not see.
 /// </summary>
-public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer server, IOptions<LiveKitOptions> options,
-    IOptions<PortalOptions> portal, LiveKitTokens tokens, TicketService tickets, Text text, ILogger<VoiceService> log)
+public sealed partial class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer server, IOptions<LiveKitOptions> options,
+    IOptions<PortalOptions> portal, LiveKitTokens tokens, TicketService tickets, Text text, MessageService messages, IMemoryCache cache,
+    ILogger<VoiceService> log)
 {
     readonly List<VoiceJob> _fresh = [];
 
@@ -280,7 +283,7 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
     static RoomSummary Summary(VoiceRoom r, IReadOnlyDictionary<Guid, string> names, Guid me, (RoomAccess Access, bool CanPublish) a, RoomInvite? invite) =>
         new(r.PublicId, r.Title, new PersonView(r.OwnerId, names.GetValueOrDefault(r.OwnerId, "")), r.OwnerId == me,
             r.Status == VoiceRoomStatus.Open ? "open" : "closed", StateCode(a.Access), invite?.Status == RoomInviteStatus.Declined,
-            r.Capacity, r.CreatedAt);
+            r.Capacity, r.CreatedAt, r.IsPublic, r.Topic);
 
     public static string StateCode(RoomAccess a) => a switch
     {
@@ -298,7 +301,8 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         title = (title ?? "").Trim();
         if (title.Length is 0 or > VoiceLimits.TitleMax || title.Any(char.IsControl)) throw Fail("title_invalid");
         await using var tx = await LockAsync("owner", me, null, ct);
-        if (await db.VoiceRooms.CountAsync(r => r.OwnerId == me, ct) >= VoiceLimits.RoomsPerOwner) throw Fail("limit_rooms", 409);
+        // the public channels are the site's, not the owner's: they are not counted against the limit
+        if (await db.VoiceRooms.CountAsync(r => r.OwnerId == me && !r.IsPublic, ct) >= VoiceLimits.RoomsPerOwner) throw Fail("limit_rooms", 409);
         var room = new VoiceRoom
         {
             PublicId = await FreePublicIdAsync(ct),
@@ -471,14 +475,16 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
     /// </summary>
     async Task RemoveMemberAsync(Guid me, string? publicId, Guid user, string? reason, string kind, bool ban, CancellationToken ct)
     {
-        var room = await OwnedAsync(me, publicId, ct);
+        var room = await ModeratedAsync(me, publicId, ct);
         if (user == me) throw Fail("owner_target");
         reason = Reason(reason);
+        // nobody but the owner puts a hand on staff, and nobody removes the owner
+        if (room.IsPublic && (user == room.OwnerId || await IsStaffAsync(user, ct))) throw Fail("owner_target");
         await using var tx = await LockAsync("room", room.Id, null, ct);
         var now = clock.GetUtcNow();
         var invite = await db.RoomInvites.FirstOrDefaultAsync(i => i.RoomId == room.Id && i.UserId == user, ct);
         var banned = await db.RoomBans.AnyAsync(b => b.RoomId == room.Id && b.UserId == user, ct);
-        if (invite is null && !banned)
+        if (invite is null && !banned && !room.IsPublic)
         {
             // never invited: nothing to revoke, but a ban of a stranger is still a ban the owner may want
             if (!ban || !await db.Users.AnyAsync(u => u.Id == user, ct)) throw Fail("user_not_found", 404);
@@ -493,6 +499,12 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         if (ban && !banned) db.RoomBans.Add(new RoomBan { RoomId = room.Id, UserId = user, ById = me, CreatedAt = now });
         db.VoiceEvents.Add(new VoiceEvent { RoomId = room.Id, UserId = user, ActorId = me, Kind = kind, Reason = reason, At = now });
         Enqueue(VoiceJobKind.Remove, room.Id, user);
+        if (kind is VoiceEventKinds.Kick or VoiceEventKinds.Ban)
+        {
+            // out of the text channel as well, with a line in the feed for everyone who is there
+            await db.RoomChannelStates.Where(x => x.RoomId == room.Id && x.UserId == user).ExecuteUpdateAsync(s => s.SetProperty(x => x.Joined, false), ct);
+            await AddSystemAsync(room.Id, me, kind, (await PersonAsync(user, ct)).Name, now, ct);
+        }
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         await RunFreshAsync(ct);
@@ -500,10 +512,15 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
 
     public async Task UnbanAsync(Guid me, string? publicId, Guid user, CancellationToken ct)
     {
-        var room = await OwnedAsync(me, publicId, ct);
+        var room = await ModeratedAsync(me, publicId, ct);
         await using var tx = await LockAsync("room", room.Id, null, ct);
         var n = await db.RoomBans.Where(b => b.RoomId == room.Id && b.UserId == user).ExecuteDeleteAsync(ct);
-        if (n > 0) db.VoiceEvents.Add(new VoiceEvent { RoomId = room.Id, UserId = user, ActorId = me, Kind = VoiceEventKinds.Unban, At = clock.GetUtcNow() });
+        if (n > 0)
+        {
+            var now = clock.GetUtcNow();
+            db.VoiceEvents.Add(new VoiceEvent { RoomId = room.Id, UserId = user, ActorId = me, Kind = VoiceEventKinds.Unban, At = now });
+            await AddSystemAsync(room.Id, me, VoiceEventKinds.Unban, (await PersonAsync(user, ct)).Name, now, ct);
+        }
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
@@ -514,12 +531,16 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
     /// </summary>
     public async Task SetSpeakingAsync(Guid me, string? publicId, Guid user, bool allowed, string? reason, CancellationToken ct)
     {
-        var room = await OwnedAsync(me, publicId, ct);
+        var room = await ModeratedAsync(me, publicId, ct);
         if (user == me) throw Fail("owner_target");
         reason = Reason(reason);
+        if (room.IsPublic && (user == room.OwnerId || await IsStaffAsync(user, ct))) throw Fail("owner_target");
         await using var tx = await LockAsync("room", room.Id, null, ct);
-        if (!await db.RoomInvites.AnyAsync(i => i.RoomId == room.Id && i.UserId == user, ct)) throw Fail("user_not_found", 404);
+        // a private room's people are its invited; a public channel's are anybody with an account
+        if (!await (room.IsPublic ? db.Users.AnyAsync(u => u.Id == user, ct) : db.RoomInvites.AnyAsync(i => i.RoomId == room.Id && i.UserId == user, ct)))
+            throw Fail("user_not_found", 404);
         var now = clock.GetUtcNow();
+        await AddSystemAsync(room.Id, me, allowed ? VoiceEventKinds.Unmute : VoiceEventKinds.Mute, (await PersonAsync(user, ct)).Name, now, ct);
         var row = await db.RoomSpeakingRestrictions.FirstOrDefaultAsync(x => x.RoomId == room.Id && x.UserId == user, ct);
         if (row is null) db.RoomSpeakingRestrictions.Add(row = new RoomSpeakingRestriction { RoomId = room.Id, UserId = user });
         row.Restricted = !allowed;
@@ -581,7 +602,7 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
     public async Task<IReadOnlyList<CatalogRoom>> CatalogAsync(Guid me, CancellationToken ct)
     {
         var rooms = await db.VoiceRooms.AsNoTracking()
-            .Where(r => r.Status == VoiceRoomStatus.Open && r.OwnerId != me)
+            .Where(r => r.Status == VoiceRoomStatus.Open && r.OwnerId != me && !r.IsPublic)
             .Where(r => !db.RoomInvites.Any(i => i.RoomId == r.Id && i.UserId == me))
             .Where(r => !db.UserBlocks.Any(x => (x.BlockerId == me && x.BlockedId == r.OwnerId) || (x.BlockerId == r.OwnerId && x.BlockedId == me)))
             .OrderByDescending(r => r.CreatedAt).Take(VoiceLimits.CatalogMax).ToListAsync(ct);
@@ -691,6 +712,15 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
     public async Task<(RoomAccess Access, bool CanPublish)> AccessAsync(Guid me, VoiceRoom? room, CancellationToken ct)
     {
         if (room is null) return (RoomAccess.NoAccess, false);
+        if (room.IsPublic)
+        {
+            // a public channel is open to any account: only a closed channel, a voice ban of the account or a ban in the channel keep a person out
+            if (room.Status == VoiceRoomStatus.Closed) return (RoomAccess.RoomClosed, false);
+            if (await db.VoiceAccountBans.AnyAsync(b => b.UserId == me && b.LiftedAt == null, ct)) return (RoomAccess.AccountBanned, false);
+            if (await db.RoomBans.AnyAsync(b => b.RoomId == room.Id && b.UserId == me, ct)) return (RoomAccess.Banned, false);
+            var muted = await db.RoomSpeakingRestrictions.AnyAsync(x => x.RoomId == room.Id && x.UserId == me && x.Restricted, ct);
+            return (RoomAccess.Ok, !muted);
+        }
         var owner = room.OwnerId == me;
         var invite = owner ? null : await db.RoomInvites.AsNoTracking().FirstOrDefaultAsync(i => i.RoomId == room.Id && i.UserId == me, ct);
         // never invited (or since forgotten with the room): the same as no such room
@@ -832,7 +862,7 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         db.VoiceAccountBans.Add(new VoiceAccountBan { UserId = user, ById = actor, Reason = reason!, CreatedAt = now });
         db.VoiceEvents.Add(new VoiceEvent { UserId = user, ActorId = actor, Kind = VoiceEventKinds.AccountBan, Reason = reason, At = now });
         // out of every room they could be in: their own and every one they were invited to
-        var rooms = await db.VoiceRooms.Where(r => r.OwnerId == user).Select(r => r.Id)
+        var rooms = await db.VoiceRooms.Where(r => r.OwnerId == user || r.IsPublic).Select(r => r.Id)
             .Union(db.RoomInvites.Where(i => i.UserId == user).Select(i => i.RoomId)).ToListAsync(ct);
         foreach (var r in rooms) Enqueue(VoiceJobKind.Remove, r, user);
         await db.SaveChangesAsync(ct);
@@ -863,7 +893,8 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         var room = await RoomAsync(publicId, ct) ?? throw NoAccess();
         async Task<bool> Belongs(Guid who) => room.OwnerId == who
             || await db.RoomInvites.AnyAsync(i => i.RoomId == room.Id && i.UserId == who, ct)
-            || await db.RoomBans.AnyAsync(b => b.RoomId == room.Id && b.UserId == who, ct);
+            || await db.RoomBans.AnyAsync(b => b.RoomId == room.Id && b.UserId == who, ct)
+            || (room.IsPublic && await KnownInChannelAsync(room, who, ct));
         if (!await Belongs(me)) throw NoAccess();
         if (about == me || !await Belongs(about)) throw Fail("user_not_found", 404);
         body = (body ?? "").Trim();
@@ -874,12 +905,20 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         var title = text.Format("voice.complaint.title", who.Name, room.Title);
         var description = $"{body}\n\n---\n{text["voice.complaint.room"]}: {room.Title} ({room.PublicId})\n"
             + $"{text["voice.complaint.about"]}: {who.Name} ({who.Id})\n{text["voice.complaint.from"]}: {reporter.Name} ({reporter.Id})";
+        // the text is the one thing staff cannot look up afterwards: a copy of the newest lines goes with the complaint, and those lines are kept for it
+        var heldLines = new List<long>();
+        var copy = await CopyOfFeedAsync(room, about, heldLines, ct);
+        if (copy.Length > 0) description += $"\n\n{text["voice.complaint.lines"]}\n{copy}";
         var created = await tickets.CreateAsync(new NewTicket(Categories.Voice, title.Length > Limits.TitleMax ? title[..Limits.TitleMax] : title, description,
             Source: TicketSource.Voice, Language: Text.Lang), me, null, null, ct);
         var since = clock.GetUtcNow() - VoiceLimits.ComplaintLookback;
         var events = await db.VoiceEvents.Where(e => e.RoomId == room.Id && (e.UserId == about || e.ActorId == about) && e.At >= since)
             .Select(e => e.Id).ToListAsync(ct);
         foreach (var id in events) db.VoiceEventTickets.Add(new VoiceEventTicket { EventId = id, TicketId = created.Ticket.Id });
+        // everything the person wrote there within the same 30 days, and the lines copied above
+        var theirs = await db.RoomMessages.Where(m => m.RoomId == room.Id && m.AuthorId == about && m.CreatedAt >= since)
+            .OrderByDescending(m => m.Id).Take(500).Select(m => m.Id).ToListAsync(ct);
+        foreach (var id in theirs.Concat(heldLines).Distinct()) db.RoomMessageTickets.Add(new RoomMessageTicket { MessageId = id, TicketId = created.Ticket.Id });
         await db.SaveChangesAsync(ct);
         return created.Ticket;
     }

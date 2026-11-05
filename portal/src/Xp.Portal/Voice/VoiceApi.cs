@@ -14,6 +14,8 @@ public sealed record CreateRoomBody([property: Required, StringLength(VoiceLimit
 public sealed record ReasonBody([property: StringLength(VoiceLimits.ReasonMax)] string? Reason);
 public sealed record InviteBody(Guid User);
 public sealed record SpeakingBody(bool Allowed, [property: StringLength(VoiceLimits.ReasonMax)] string? Reason);
+/// <summary>A line or a command typed into the input box; the server tells which.</summary>
+public sealed record SayBody([property: Required, StringLength(VoiceLimits.LineMax)] string Text);
 public sealed record ComplaintBody(Guid User, [property: Required, StringLength(2000)] string Text);
 public sealed record ComplaintResult(long Number, string DisplayNumber);
 
@@ -52,6 +54,10 @@ public static class VoiceApi
         api.MapGet("/voice/lobby", (HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
             Answer(h, db, c, false, me => v.LobbyAsync(me, ct), ct)).RequireRateLimiting("api-read").Produces<LobbyView>().Auth();
 
+        // public channels and my rooms with what is new in each, in one answer (VOICE_IRC.md section 4)
+        api.MapGet("/voice/channels", (HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Answer(h, db, c, false, me => v.ChannelsAsync(me, ct), ct)).RequireRateLimiting("api-read").Produces<ChannelsView>().Auth();
+
         var rooms = api.MapGroup("/voice/rooms");
         rooms.MapGet("", RoomsAsync).RequireRateLimiting("api-read").Produces<RoomsResponse>().Auth();
         rooms.MapPost("", CreateRoomAsync).RequireRateLimiting("voice-write").Produces<RoomSummary>(StatusCodes.Status201Created).Write();
@@ -89,6 +95,17 @@ public static class VoiceApi
             Run(h, db, c, true, me => v.AcceptEntryAsync(me, room, user, ct), ct)).RequireRateLimiting("voice-write").Write(204);
         rooms.MapPost("/{room}/requests/{user:guid}/decline", (string room, Guid user, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
             Run(h, db, c, true, me => v.DeclineEntryAsync(me, room, user, ct), ct)).RequireRateLimiting("voice-write").Write(204);
+        // the text feed: read after a cursor, write a line or a command, take a line out, come in and go out
+        rooms.MapGet("/{room}/messages", (string room, long? after, int? limit, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Answer(h, db, c, false, me => v.MessagesAsync(me, room, after, limit, ct), ct)).RequireRateLimiting("api-read").Produces<MessagesView>().Auth();
+        rooms.MapPost("/{room}/messages", (string room, SayBody b, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Answer(h, db, c, true, me => v.PostAsync(me, room, b.Text, ct), ct)).RequireRateLimiting("voice-write").Produces<PostResult>().Write();
+        rooms.MapDelete("/{room}/messages/{id:long}", (string room, long id, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.DeleteLineAsync(me, room, id, ct), ct)).RequireRateLimiting("voice-write").Write(204);
+        rooms.MapPost("/{room}/join", (string room, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.JoinAsync(me, room, ct), ct)).RequireRateLimiting("voice-write").Write(204);
+        rooms.MapPost("/{room}/part", (string room, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.PartAsync(me, room, ct), ct)).RequireRateLimiting("voice-write").Write(204);
         rooms.MapPost("/{room}/complaints", ComplainAsync).RequireRateLimiting("tickets-create").Produces<ComplaintResult>(StatusCodes.Status201Created).Write();
 
         // the media server's side: signed with the API secret, not a person
