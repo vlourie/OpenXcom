@@ -5,6 +5,8 @@ M4-7 красная; M в имени - тоже женская фигура). С
 Основа рисуется на самой светлой коже F4, остальные кожи - кривой светлота -> цвет (doll_race_assemble). Выход art/doll/pipe_pilot/loknar/.
 
   py -3 tools/gpuq.py add --name doll_loknar_base -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py bodies
+  py -3 tools/gpuq.py add --name doll_loknar_feet -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py feet
+  E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py fixbase
   E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py assemble
   py -3 tools/gpuq.py add --name doll_loknar_heads -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py heads --looks F4,F0,M0,M4
   --dry-run - без модели: входы кадров и зоны на листах.
@@ -12,6 +14,7 @@ M4-7 красная; M в имени - тоже женская фигура). С
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -22,7 +25,7 @@ if HERE not in sys.path:
 import doll_pipe_pilot as P                         # до numpy: пилот ставит окружение модели
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 import build_pack as bp
 import doll_b2_render as db
 import doll_ctl_pilot as cp
@@ -30,6 +33,7 @@ import doll_photo_pilot as dp
 import doll_race_bodies as rb
 import doll_race_heads as rh
 import photo_base as pb
+import vx_control as vc
 import wall_section as ws
 
 RACE = "LOKNAR"
@@ -66,7 +70,21 @@ NEGATIVE_RACE = (", round human ears, natural human skin colour, tanned skin, te
                  "chibi, baby face, childlike proportions, sphere, ball, dome, button")
 # #1129: наклейки-шары; сид 1 (#1131): стринги широкими трусами; сид 2 (#1133): блик кольцом вокруг наклейки, читается как глаз
 PASTIES = "small flat matte black pasties lying flush on the skin over the nipples"
+PASTY_AT, PASTY_R = ((68.5, 87.5), (76.5, 88.5)), 1.7    # вершины груди: блики классики, на строку ниже - по складке груди основы; база 320x200
+PASTY_ZONE = (82, 94, 62, 84)                       # строки и столбцы, где искать наклейки модели
+GROIN_SHADOW, GROIN_DEPTH = (77.5, 113.0, 2.2, 4.0), 0.6    # просвет между бёдер у классики: столбец 77, строки 107-114
 REDRAW, VARIANTS = 3, []
+FEET_AT = {"L": (44, 122, "right"), "R": (69, 122, "left")}    # левый верхний угол кадра 32x32, с какой стороны картинки большой палец
+FEET_FROM = 136                                     # кадр ступни рисует отсюда вниз: выше голень основы
+FEET_SEEDS, FEET_SEED, FEET_STRENGTH = [0, 1], 0, 0.85
+FEET_GREY, FEET_CHROMA = (12, 25), 0.3              # цветность и светлота подложки кадра; доля цветности кадра, что остаётся
+FEET_TEXT = ("Close-up of one bare foot of {who} with {skin} skin, part of a hand-painted paper-doll portrait for an X-COM-style "
+             "strategy game, soft light from the upper left, on a flat grey panel. The foot stands flat, seen from the front, toes "
+             "towards the viewer at the bottom of the picture, the same size and in the same place as in the input. It has exactly "
+             "five clearly separated toes with rounded tips and dark creases between them, the big toe on the {big} of the "
+             "picture, small neat toenails in the same colour as the skin. A slim feminine foot with a visible ankle and instep. "
+             "Smooth skin with soft satin highlights. Painted game art, not a photo. No ground, no shadow, no text.")
+GLOSSLESS_FEET = ", paw, hoof, mitten, sock, shoe, sandal, claws, talons, webbed toes, merged toes, white nails, painted nails, extra toes"
 # у классики этих кож много тёмной тени и яркие блики: по медиане тело выходит темнее, чем видит глаз, и темнее лица (лист #1134)
 LIFT = {"F0": 5, "M0": 8, "M4": 6}
 BODY_FROM_ROW = 74                                  # выше кадр тела не рисует
@@ -159,12 +177,27 @@ def setup_bodies():
     assert "natural bust" in P.BODY and PASTIES in P.BODY and "detailed face" not in P.BODY
 
 
+def pasties_on(canvas8):
+    """Наклейки тёмными кругами на входе кадра, как стринги в P.thong_on: без них модель кладёт левую на край груди и торчит за контур."""
+    s = 4                                           # край без лесенки
+    m = Image.new("L", (canvas8.size[0] * s, canvas8.size[1] * s), 0)
+    d = ImageDraw.Draw(m)
+    for x, y in PASTY_AT:
+        r = PASTY_R * dp.Z * s
+        cx, cy = (x - dp.CROP[0]) * dp.Z * s, (y - dp.CROP[1]) * dp.Z * s
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=255)
+    out = canvas8.copy()
+    out.paste((16, 16, 18, 255), (0, 0), m.resize(canvas8.size, Image.LANCZOS))
+    return out
+
+
 def body_job(i, look, s=None):
     """Только от шеи вниз: голову кладёт кадр головы, а здесь она выходила детской."""
     j = rb.job(i, look, s)
     below = j["sil"].copy()
     below[:BODY_FROM_ROW] = False
     j["mask"] = P.mask8(below)
+    j["init"] = pasties_on(j["init"])
     return j
 
 
@@ -220,6 +253,174 @@ def bodies(ns):
     if not ns.dry_run:
         run_stage("bodies", [], jobs, os.path.join(OUT, "raw"))
     rb.finish(jobs, ns.dry_run)
+    if not ns.dry_run:
+        shutil.copy2(os.path.join(OUT, "bases", BASE.lower() + ".png"), os.path.join(OUT, "bases", "f4_body.png"))    # дальше fixbase
+
+
+def feet_jobs(seeds=None):
+    """Ступень отдельным кадром: в кадре всего тела она 40-50 точек, и модель рисует лапу, сколько пальцев ни проси."""
+    rb.RACE, rb.OUT = RACE, OUT
+    common()
+    base = Image.open(os.path.join(OUT, "bases", "f4_body.png")).convert("RGBA")
+    names = [n for n in rb.names_of(BASE) if n in P.FILES]
+    cl = dp.classic(P.FILES, P.PAL, names)
+    sil = dp.layer_mask(P.FILES, names[0])
+    w, h, z = P.RUN["item"]["w"], P.RUN["item"]["h"], P.RUN["item"]["zoom"]
+    pz = {"skin": SKIN[BASE], "face": "a calm look", "neck": "", "hair": "", "head": ""}
+    out = []
+    for side, (x, y, big) in FEET_AT.items():
+        box = (x, y, x + w, y + h)
+        b4 = tuple(v * dp.K for v in box)
+        m = sil.copy()
+        m[:FEET_FROM] = False
+        m4 = ws.sil4(m)[b4[1]:b4[3], b4[0]:b4[2]] > 0.5
+        start = Image.new("RGBA", base.size, dp.PANEL + (255,))
+        start.alpha_composite(base)
+        for s in seeds if seeds is not None else FEET_SEEDS:
+            out.append({"tag": "feet_%s_s%d" % (side, s), "side": side, "kind": "item", "box": box, "b4": b4, "seed": P.RUN["seed"] + 700 + s,
+                        "prompt": FEET_TEXT.format(who=WHO, skin=SKIN[BASE], big=big), "negative": P.negative_for(pz) + GLOSSLESS_FEET,
+                        "init": start.crop(b4).resize((w * z, h * z), Image.LANCZOS),
+                        "mask": Image.fromarray(m4.astype(np.uint8) * 255).resize((w * z, h * z), Image.NEAREST),
+                        "control": vc.control_map(cl.crop(box), z, "gray")})
+    return out
+
+
+def feet_worker(jobs):
+    raw = os.path.join(OUT, "raw")
+    painter = None
+    for j in jobs:
+        done = os.path.join(raw, j["tag"] + "_out.png")
+        if os.path.exists(done):
+            continue
+        if painter is None:
+            painter = P.Painter([x["prompt"] for x in jobs] + [x["negative"] for x in jobs])
+            print("модель загружена за %d с" % painter.load_s, flush=True)
+        try:
+            rgb, _s0 = painter.paint(j["init"], j["mask"], j["control"], j["prompt"], j["seed"], FEET_STRENGTH, P.RUN["item"]["control"], j["negative"])
+        except Exception as e:                      # память карты: новый процесс продолжит
+            print("кадр %s упал: %s" % (j["tag"], str(e)[:300]), flush=True)
+            sys.exit(75)
+        Image.fromarray(rgb).save(done)
+        print("  %s готов" % j["tag"], flush=True)
+
+
+def feet(ns):
+    jobs = feet_jobs()
+    if ns.worker:
+        feet_worker(jobs)
+        return
+    run_stage("feet", [], jobs, os.path.join(OUT, "raw"))
+    feet_sheet(jobs)
+
+
+def feet_sheet(jobs):
+    tiles = [Image.open(os.path.join(OUT, "raw", j["tag"] + "_out.png")).convert("RGB").resize((320, 320), Image.LANCZOS) for j in jobs]
+    sheet = Image.new("RGB", (320 * len(tiles), 320))
+    for i, t in enumerate(tiles):
+        sheet.paste(t, (i * 320, 0))
+    sheet.save(os.path.join(OUT, "feet.png"))
+
+
+def strip_pasties(rgb, alpha):
+    """Наклейки модели -> кожа. Модель кладёт левую на край груди и раздувает, если нарисовать её на входе (#1137), поэтому свои рисуются поверх."""
+    k = dp.K
+    lab = bp._rgb_to_lab(rgb / 255.0)
+    dark = np.zeros(alpha.shape, np.uint8)
+    y0, y1, x0, x1 = (v * k for v in PASTY_ZONE)
+    dark[y0:y1, x0:x1] = lab[y0:y1, x0:x1, 0] <= 30
+    dark = cv2.morphologyEx(dark, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))     # контур тела тоньше, левая наклейка у края узкая
+    n, lb, st, _c = cv2.connectedComponentsWithStats(dark, connectivity=8)
+    round_ = np.zeros(alpha.shape, np.uint8)
+    for i in range(1, n):
+        bw, bh, area = st[i, cv2.CC_STAT_WIDTH], st[i, cv2.CC_STAT_HEIGHT], st[i, cv2.CC_STAT_AREA]
+        if max(bw, bh) <= 1.6 * min(bw, bh) and area >= 0.5 * bw * bh:     # складка под грудью - дуга, её не трогать: левая наклейка срезана краем, заполнение 0.55
+            round_[lb == i] = 1
+    hole = cv2.dilate(round_, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))) > 0
+    known = (alpha > 0.9) & ~hole
+    fill, c = P._blur_in(rgb, known, 3.0)
+    for s in (8.0, 20.0):
+        f2, c2 = P._blur_in(rgb, known, s)
+        a = np.clip(c / 0.2, 0, 1)[..., None]
+        fill, c = fill * a + f2 * (1 - a), np.maximum(c, c2)
+    d = cv2.distanceTransform((alpha > 0.5).astype(np.uint8), cv2.DIST_L2, 5)
+    fill = fill * (0.7 + 0.3 * np.clip(d / 10, 0, 1))[..., None]      # у края тело темнеет, как везде: иначе плоское пятно до контура; глубже - бурая тень на красной коже
+    w = cv2.GaussianBlur(hole.astype(np.float32), (0, 0), 2.0)[..., None]
+    w = np.maximum(w, hole[..., None].astype(np.float32))
+    return rgb * (1 - w) + fill * w, int(hole.sum())
+
+
+def draw_pasties(rgb):
+    """Плоские матовые наклейки: круг со сглаженным краем, верх чуть светлее."""
+    k, s = dp.K, 4
+    out = rgb.copy()
+    for x, y in PASTY_AT:
+        cx, cy, r = x * k, y * k, PASTY_R * k
+        x0, y0, x1, y1 = int(cx - r - 3), int(cy - r - 3), int(cx + r + 4), int(cy + r + 4)
+        yy, xx = np.mgrid[y0:y1:1.0 / s, x0:x1:1.0 / s]
+        inside = np.hypot((xx + 0.125 - cx), (yy + 0.125 - cy)) <= r
+        cov = cv2.resize(inside.astype(np.float32), (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)[..., None]
+        tone = np.clip(1 - (np.arange(y0, y1) - (cy - r)) / (2 * r), 0, 1)[:, None, None]
+        col = np.array((16, 16, 19), np.float32) + tone * 12
+        out[y0:y1, x0:x1] = out[y0:y1, x0:x1] * (1 - cov) + col * cov
+    return out
+
+
+def groin_shadow(rgb):
+    """Между бёдер под стрингами у классики тёмное, модель кладёт туда светлый штрих."""
+    k = dp.K
+    h, w = rgb.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    cx, cy, rx, ry = GROIN_SHADOW
+    t = np.clip(1 - np.hypot((xx - cx * k) / (rx * k), (yy - cy * k) / (ry * k)), 0, 1)
+    t = np.clip(t * 2.2, 0, 1) ** 1.2
+    return rgb * (1 - GROIN_DEPTH * t)[..., None]
+
+
+def paste_foot(rgb, alpha, j):
+    """Кадр ступни на основу: тон по щиколотке, шов мягкий, альфа - силуэт классики минус подложка кадра (R-620)."""
+    k = dp.K
+    x0, y0, x1, y1 = j["b4"]
+    fr8 = np.asarray(Image.open(os.path.join(OUT, "raw", j["tag"] + "_out.png")).convert("RGB"), np.float32)
+    fr = cv2.resize(fr8, (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)
+    sil4 = alpha[y0:y1, x0:x1]
+    band = np.zeros(sil4.shape, bool)
+    band[(FEET_FROM + 1) * k - y0:(FEET_FROM + 4) * k - y0] = True
+    band &= sil4 > 0.9
+    lab_f, lab_b = bp._rgb_to_lab(fr / 255.0), bp._rgb_to_lab(rgb[y0:y1, x0:x1] / 255.0)
+    grey = (np.hypot(lab_f[..., 1], lab_f[..., 2]) < FEET_GREY[0]) & (lab_f[..., 0] > FEET_GREY[1])     # подложка - по цвету кадра, до сдвига тона
+    target = np.median(lab_b[band], axis=0)
+    lab_n = lab_f + (target - np.median(lab_f[band], axis=0))
+    lab_n[..., 1:] = target[1:] + (lab_n[..., 1:] - target[1:]) * FEET_CHROMA      # розовые кончики и голубой подъём: кожа одна
+    fr = bp._lab_to_rgb(lab_n) * 255.0
+    ramp = np.clip((np.arange(y0, y1) - (FEET_FROM + 1) * k) / (4.0 * k), 0, 1)[:, None]
+    outside = sil4 <= 0.5
+    _n, lb = cv2.connectedComponents((grey | outside).astype(np.uint8), connectivity=4)
+    touch = np.unique(lb[outside])
+    cut = np.isin(lb, touch[touch > 0]) & ~outside
+    keep = cv2.morphologyEx((~cut & ~outside).astype(np.uint8), cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+    fig = np.clip((cv2.GaussianBlur(keep.astype(np.float32), (0, 0), 0.8) - 0.35) / 0.3, 0, 1)
+    out, a = rgb.copy(), alpha.copy()
+    t = ramp[..., None]
+    out[y0:y1, x0:x1] = rgb[y0:y1, x0:x1] * (1 - t) + fr * t
+    a[y0:y1, x0:x1] = alpha[y0:y1, x0:x1] * (1 - ramp) + sil4 * fig * ramp
+    return out, a
+
+
+def fixbase():
+    """f4_body.png (как нарисовала модель) -> f4.png: свои наклейки, тень в паху, ступни с пальцами. Без видеокарты."""
+    im =np.asarray(Image.open(os.path.join(OUT, "bases", "f4_body.png")).convert("RGBA"), np.float32)
+    rgb, alpha = im[..., :3].copy(), im[..., 3] / 255.0
+    rgb, n = strip_pasties(rgb, alpha)
+    print("под наклейками модели точек:", n)
+    rgb = groin_shadow(rgb)                         # наклейки - после перекраски (assemble): кривая кожи делает их край зубчатым
+    jobs = {(j["side"], j["tag"]): j for j in feet_jobs([FEET_SEED])}
+    for (_side, tag), j in jobs.items():
+        if os.path.exists(os.path.join(OUT, "raw", tag + "_out.png")):
+            rgb, alpha = paste_foot(rgb, alpha, j)
+        else:
+            print("кадра нет, ступня прежняя:", tag)
+    out = np.dstack([rgb, alpha * 255])
+    Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGBA").save(os.path.join(OUT, "bases", BASE.lower() + ".png"))
 
 
 def assemble():
@@ -238,6 +439,11 @@ def assemble():
         json.dump({BASE: LOOKS}, f)
     sys.argv = sys.argv[:1]
     ra.main()
+    for look in LOOKS:
+        fn = os.path.join(OUT, "assembled", look.lower() + ".png")
+        im = np.asarray(Image.open(fn).convert("RGBA"), np.float32).copy()
+        im[..., :3] = draw_pasties(im[..., :3])
+        Image.fromarray(np.clip(im + 0.5, 0, 255).astype(np.uint8), "RGBA").save(fn)
 
 
 def heads(ns):
@@ -266,13 +472,17 @@ def heads(ns):
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("stage", choices=("bodies", "assemble", "heads"))
+    ap.add_argument("stage", choices=("bodies", "feet", "fixbase", "assemble", "heads"))
     ap.add_argument("--looks", default="")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--worker", action="store_true", help="(служебное) рисовать недостающие кадры подряд")
     ns = ap.parse_args()
     if ns.stage == "bodies":
         bodies(ns)
+    elif ns.stage == "feet":
+        feet(ns)
+    elif ns.stage == "fixbase":
+        fixbase()
     elif ns.stage == "assemble":
         assemble()
     else:
