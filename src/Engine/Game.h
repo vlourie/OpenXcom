@@ -33,6 +33,7 @@ class Mod;
 class ModInfo;
 class FpsCounter;
 class HdUpdateNotice;
+class HdChatNotice;
 class Action;
 class GeoscapeState;
 
@@ -55,6 +56,7 @@ private:
 	bool _quit, _init, _update;
 	FpsCounter *_fpsCounter;
 	HdUpdateNotice *_updateNotice;
+	HdChatNotice *_chatNotice;
 	bool _mouseActive;
 	unsigned int _timeOfLastFrame;
 	int _timeUntilNextFrame;
@@ -83,6 +85,8 @@ public:
 	FpsCounter *getFpsCounter() const { return _fpsCounter; }
 	/// Gets the plate "a new update is available" (Engine/HdUpdateNotice.h).
 	HdUpdateNotice *getUpdateNotice() const { return _updateNotice; }
+	/// Gets the plate "a new message" (Engine/HdChatNotice.h).
+	HdChatNotice *getChatNotice() const { return _chatNotice; }
 	/// Resets the state stack to a new state.
 	void setState(State *state);
 	/// Pushes a new state into the state stack.

@@ -200,6 +200,7 @@ set ( engine_src
   Engine/HdTurn.cpp
   Engine/HdTurnGroups.cpp
   Engine/HdUpdateNotice.cpp
+  Engine/HdChatNotice.cpp
   Engine/HdScreenThemes.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp

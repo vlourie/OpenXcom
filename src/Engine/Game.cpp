@@ -48,6 +48,7 @@
 #include "../Interface/Cursor.h"
 #include "../Interface/FpsCounter.h"
 #include "HdUpdateNotice.h"
+#include "HdChatNotice.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -121,6 +122,7 @@ Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0
 	// Create fps counter
 	_fpsCounter = new FpsCounter(15, 5, 0, 0);
 	_updateNotice = new HdUpdateNotice(this);
+	_chatNotice = new HdChatNotice(this);
 
 	// the themes by screen (XP-000484): hd_screen_themes.yml next to options.cfg, read here and on leaving the options window
 	HdScreenThemes::instance().load();
@@ -153,6 +155,7 @@ Game::~Game()
 	delete _screen;
 	delete _fpsCounter;
 	delete _updateNotice;
+	delete _chatNotice;
 
 	Mix_CloseAudio();
 
@@ -419,6 +422,7 @@ void Game::run()
 			hdThinkMs = SDL_GetTicks() - hdThinkStart;
 			_fpsCounter->think();
 			_updateNotice->think();
+			_chatNotice->think();
 			// the HD GPU output keeps the limiter under vsync: a driver set to drop vsync would spin the loop unbounded
 			if (Options::FPS > 0 && !(Screen::useOpenGL() && Options::vSyncForOpenGL))
 			{
@@ -704,6 +708,7 @@ void Game::run()
 				}
 				_fpsCounter->blit(_screen->getSurface());
 				_updateNotice->blit(_screen->getSurface());
+				_chatNotice->blit(_screen->getSurface());
 				_cursor->blit(_screen->getSurface());
 				const Uint32 hdFlipStart = SDL_GetTicks();
 				hdLogDraw1 = std::chrono::steady_clock::now();
