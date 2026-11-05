@@ -34,14 +34,32 @@ foreach ($proj in 'src\Xp.Launcher', 'src\Xp.Bootstrapper') {
     dotnet publish (Join-Path $PSScriptRoot $proj) -c Release -r win-x64 -o $Out @extra
     if ($LASTEXITCODE -ne 0) { throw "сборка $proj упала" }
 }
+# компилятор пишет в свойства исходное имя сборки: exe называет себя xp-bootstrap.dll (так его показывает VirusTotal).
+# Строка той же длины меняется на месте; в UTF-16 это имя есть только в свойствах файла (InternalName и OriginalFilename)
+function Set-ExeNameInVersionInfo([string] $Path) {
+    $latin = [Text.Encoding]::GetEncoding(28591)
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    $text = $latin.GetString($bytes)
+    $name = [IO.Path]::GetFileNameWithoutExtension($Path)
+    $dll = $latin.GetString([Text.Encoding]::Unicode.GetBytes("$name.dll"))
+    $new = [Text.Encoding]::Unicode.GetBytes("$name.exe")
+    $at = @(); $i = 0
+    while (($i = $text.IndexOf($dll, $i, [StringComparison]::Ordinal)) -ge 0) { $at += $i; $i += $dll.Length }
+    if ($at.Count -eq 0) { return }   # уже исправлен прошлым запуском, а dotnet publish файл не менял
+    if ($at.Count -ne 2) { throw "$name.dll в $Path встречается $($at.Count) раз, ожидалось 2: свойства файла устроены иначе" }
+    foreach ($p in $at) { [Array]::Copy($new, 0, $bytes, $p, $new.Length) }
+    [IO.File]::WriteAllBytes($Path, $bytes)
+}
 # свойства файла видит игрок (Свойства - Подробно): название, компания и версия установщика = версии лаунчера
 $lv = (Get-Item -LiteralPath (Join-Path $Out 'XPiratezLauncher.exe')).VersionInfo
 foreach ($exe in 'XPiratezLauncher.exe', 'xp-bootstrap.exe') {
+    Set-ExeNameInVersionInfo (Join-Path $Out $exe)
     $vi = (Get-Item -LiteralPath (Join-Path $Out $exe)).VersionInfo
-    "{0}: {1} | {2} | {3}" -f $exe, $vi.FileDescription, $vi.CompanyName, $vi.FileVersion
-    if ($vi.FileDescription -notlike 'X-Piratez HD*' -or $vi.CompanyName -ne 'X-Piratez HD' -or $vi.FileVersion -ne $lv.FileVersion) {
-        throw "у $exe чужие свойства файла: описание '$($vi.FileDescription)', компания '$($vi.CompanyName)', версия $($vi.FileVersion) (лаунчер $($lv.FileVersion))"
+    "{0}: {1} | {2} | {3} | {4}" -f $exe, $vi.FileDescription, $vi.CompanyName, $vi.FileVersion, $vi.OriginalFilename
+    if ($vi.FileDescription -notlike 'X-Piratez HD*' -or $vi.CompanyName -ne 'X-Piratez HD' -or $vi.FileVersion -ne $lv.FileVersion -or $vi.OriginalFilename -ne $exe) {
+        throw "у $exe чужие свойства файла: описание '$($vi.FileDescription)', компания '$($vi.CompanyName)', версия $($vi.FileVersion) (лаунчер $($lv.FileVersion)), имя $($vi.OriginalFilename)"
     }
 }
+if ((Get-Item -LiteralPath (Join-Path $Out 'xp-bootstrap.exe')).VersionInfo.Comments -notlike '*https://*') { throw 'в свойствах установщика нет ссылки на сайт' }
 Get-ChildItem $Out -File | Where-Object { $_.Extension -in '.exe', '.dll' } |
     Format-Table Name, @{ n = 'MB'; e = { [math]::Round($_.Length / 1MB, 1) } } -AutoSize

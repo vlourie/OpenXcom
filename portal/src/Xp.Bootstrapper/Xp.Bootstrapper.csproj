@@ -9,6 +9,8 @@
          read from the launcher's project so the version is raised in one place -->
     <Version>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\Xp.Launcher\Xp.Launcher.csproj')), '&lt;Version&gt;([^&lt;]+)&lt;/Version&gt;').Groups[1].Value)</Version>
     <AssemblyTitle>X-Piratez HD Setup</AssemblyTitle>
+    <!-- Comments in Properties > Details and on VirusTotal: whose file this is and where it comes from -->
+    <Description>X-Piratez HD launcher setup. Official site: https://x-piratez.mywire.org:8443/</Description>
     <PublishAot>true</PublishAot>
     <OptimizationPreference>Size</OptimizationPreference>
     <InvariantGlobalization>true</InvariantGlobalization>
