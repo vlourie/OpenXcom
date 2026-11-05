@@ -45,7 +45,7 @@ namespace BaseSwitch
 
 /**
  * Base name line under the title of a base screen, with the previous/next base buttons
- * (also the left/right keys): the same screen of the neighbouring base without going back
+ * (also the left/right keys and the previous/next unit keys): the same screen of the neighbouring base without going back
  * to the basescape. Switching is off until the opener calls allowBaseSwitch() - forced
  * screens (after a battle, prison or stores overflow, "cannot re-equip") never switch.
  */
@@ -122,9 +122,11 @@ protected:
 		_btnPrevBase->setText("<");
 		_btnPrevBase->onMouseClick((ActionHandler)&BaseSwitchMixin::btnPrevBaseClick);
 		_btnPrevBase->onKeyboardPress((ActionHandler)&BaseSwitchMixin::btnPrevBaseClick, Options::keyGeoLeft);
+		_btnPrevBase->onKeyboardPress((ActionHandler)&BaseSwitchMixin::btnPrevBaseClick, Options::keyBattlePrevUnit);
 		_btnNextBase->setText(">");
 		_btnNextBase->onMouseClick((ActionHandler)&BaseSwitchMixin::btnNextBaseClick);
 		_btnNextBase->onKeyboardPress((ActionHandler)&BaseSwitchMixin::btnNextBaseClick, Options::keyGeoRight);
+		_btnNextBase->onKeyboardPress((ActionHandler)&BaseSwitchMixin::btnNextBaseClick, Options::keyBattleNextUnit);
 		updateBaseSwitch();
 	}
 	/// Shows the arrows only while there is a base to switch to and nothing holds the screen.

@@ -4,3 +4,4 @@
 - The hyena rider no longer walks backwards: as before, the hyena turns before stepping back and pays TU for it. Vehicles keep their reverse gear.
 - Sand near the crashed plane (desert and snow, and the "Sands" terrain): the crater is a pit again instead of a frame with pipes, and the flat tile is flat again, with no pipes and no patch among its neighbours.
 - Battle map floors: tile edges are now straight instead of stepped, on all flat floors, including the green tiles by the car and the sand. Grass with tufts has only its lower edge straightened.
+- Base: on screens with the "<" and ">" arrows, bases can now also be switched with the "Previous unit" and "Next unit" keys, the same way these keys page through soldiers. The left and right arrow keys work as before.
