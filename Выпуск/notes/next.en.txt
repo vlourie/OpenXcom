@@ -8,3 +8,4 @@
 - Jungle: the grass patch with stones has no more black holes and outline; its twin frame now has HD too.
 - Swamp and lava: shorelines no longer have a bright jagged crown; the edge is soft and the land colour matches the original. The green lava set is unchanged for now.
 - The egg on the floor now looks like an egg: a pointed end, a thin outline, a highlight and a soft shadow.
+- Jungle and catacombs: stairs and their sides have a straight edge with no staircase pattern; the red flower and the vines are redrawn, and the flower in the Styx set is no longer cut off; the leafy bush now matches the approved jungle bush.
