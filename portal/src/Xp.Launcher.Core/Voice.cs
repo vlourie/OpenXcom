@@ -254,8 +254,10 @@ public static class VoiceLink
         return IsRoomId(id) ? id.ToLowerInvariant() : null;
     }
 
-    /// <summary>Looks like a room's public id: letters and digits only, nothing a path or a query is made of.</summary>
-    public static bool IsRoomId(string? id) => id is { Length: > 0 and <= 32 } && id.All(char.IsAsciiLetterOrDigit);
+    /// <summary>Looks like a room's public id: letters and digits (and a hyphen inside, as "ch-general" of the public channels),
+    /// nothing a path or a query is made of.</summary>
+    public static bool IsRoomId(string? id) =>
+        id is { Length: > 0 and <= 32 } && id.All(c => char.IsAsciiLetterOrDigit(c) || c == '-') && id[0] != '-' && id[^1] != '-';
 
     /// <summary>The first link among the command line arguments (the browser passes it as the only one).</summary>
     public static string? Find(IEnumerable<string> args) => args.Select(Parse).FirstOrDefault(id => id is not null);
