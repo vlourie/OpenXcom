@@ -22,7 +22,9 @@ public static class Categories
     public const string Voice = "voice";
     /// <summary>Order of the form's list. Crash tickets (stage 4) arrive as "code".</summary>
     public static readonly string[] Open = [Code, Graphics, Balance, Translation, General];
-    public static readonly string[] All = [.. Open, Voice];
+    /// <summary>Applications to join the team, filed from /team only. Not in <see cref="Open"/>: it is not a thing to report.</summary>
+    public const string Team = "team";
+    public static readonly string[] All = [.. Open, Voice, Team];
     public static bool IsValid(string? c) => c is not null && All.Contains(c);
 }
 

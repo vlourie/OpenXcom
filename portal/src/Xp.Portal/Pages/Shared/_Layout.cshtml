@@ -83,6 +83,8 @@
             <a href="/voice" class="@(friends ? "on" : On("/voice"))">@T["nav.voice"]</a>
         }
         <a href="/tickets/new" class="@On("/tickets")">@T["nav.report"]</a>
+        <a href="/team" class="@On("/team")">@T["nav.team"]</a>
+        <a href="https://github.com/vlourie/OpenXcom" target="_blank" rel="noopener" title="@T["git.title"]">@T["nav.git"]</a>
         <a href="/support" class="love @On("/support")">@T["nav.support"]</a>
     </nav>
 </header>
@@ -93,7 +95,7 @@
     }
     @RenderBody()
 </main>
-<footer>@T["site.footer"]<br>@T["site.credit"]</footer>
+<footer>@T["site.footer"]<br>@T["site.credit"]<br><a href="https://github.com/vlourie/OpenXcom" target="_blank" rel="noopener">@T["footer.git"]</a></footer>
 <script src="~/js/nav.js" asp-append-version="true" defer></script>
 </body>
 </html>

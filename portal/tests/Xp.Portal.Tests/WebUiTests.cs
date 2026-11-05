@@ -171,6 +171,77 @@ public sealed partial class WebUiTests(PortalFactory f) : IClassFixture<PortalFa
     }
 
     [Fact]
+    public async Task Team_page_has_the_git_links_and_four_roles_in_both_languages()
+    {
+        foreach (var (qs, role) in new[] { ("", "Художники"), ("?culture=en&ui-culture=en", "Artists") })
+        {
+            var html = await f.CreateClient().GetStringAsync("/team" + qs);
+            Assert.Contains(role, html);
+            Assert.Equal(4, Regex.Matches(html, "<option value=\"(artists|programmers|translators|testers)\"").Count);
+        }
+        var home = await f.CreateClient().GetStringAsync("/");
+        Assert.Contains("href=\"/team\"", home);
+        // the tab strip and the footer both carry the repository link, opened in a new tab without opener
+        var team = await f.CreateClient().GetStringAsync("/team");
+        Assert.Equal(2, Regex.Matches(team, "<a href=\"https://github.com/vlourie/OpenXcom\" target=\"_blank\" rel=\"noopener\"").Count);
+    }
+
+    [Fact]
+    public async Task Team_application_is_a_private_team_ticket()
+    {
+        var c = Browser();
+        var contact = "secret-contact-" + Guid.NewGuid().ToString("N")[..8];
+        var r = await PostForm(c, "/team", new()
+        {
+            ["Form.Key"] = Guid.NewGuid().ToString("N"), ["Form.Role"] = "testers", ["Form.Name"] = "Тест",
+            ["Form.Contact"] = contact, ["Form.About"] = "умею проверять", ["Form.Links"] = "https://example.com/work",
+        });
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        var link = r.Headers.Location!.OriginalString;
+        Assert.Matches(@"^/t/\d+\?k=[A-Za-z0-9_-]{22}$", link);
+        var number = long.Parse(link[3..link.IndexOf('?')]);
+        var t = await f.DbAsync(db => db.Tickets.SingleAsync(x => x.Number == number));
+        Assert.Equal(Categories.Team, t.Category);
+        Assert.Contains(contact, t.Description);
+        Assert.Contains("Тестировщики", t.Description);
+        Assert.Null(t.GuestEmail);   // the contact is text for the staff, not a mail address the site would write to
+
+        // the author by the link, and staff of the category; nobody else, and no public list shows it
+        Assert.Contains(contact, await c.GetStringAsync(link));
+        Assert.Equal(HttpStatusCode.NotFound, (await Browser().GetAsync($"/t/{number}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await (await SignInAsync(await MakeUserAsync(Roles.User, false))).GetAsync($"/t/{number}")).StatusCode);
+        var coder = await SignInAsync(await MakeUserAsync(Roles.Admin, true, "tickets.code"));
+        Assert.Equal(HttpStatusCode.NotFound, (await coder.GetAsync($"/admin/tickets/{number}")).StatusCode);
+        Assert.DoesNotContain(contact, await coder.GetStringAsync("/admin?Status=all"));
+        var team = await SignInAsync(await MakeUserAsync(Roles.Admin, true, "tickets.team"));
+        Assert.Contains(contact, await team.GetStringAsync($"/admin/tickets/{number}"));
+        foreach (var url in new[] { "/", "/forum", "/tickets/new", "/team" })
+            Assert.DoesNotContain(contact, await Browser().GetStringAsync(url));
+    }
+
+    [Fact]
+    public async Task Team_form_refuses_bad_input_and_the_generic_form_cannot_file_a_team_ticket()
+    {
+        var before = await f.DbAsync(db => db.Tickets.CountAsync());
+        var c = Browser();
+        var ok = new Dictionary<string, string> { ["Form.Role"] = "artists", ["Form.Name"] = "n", ["Form.Contact"] = "c", ["Form.About"] = "a" };
+        foreach (var (field, value, message) in new[]
+        {
+            ("Form.Role", "ceo", "Выберите роль из списка."), ("Form.Name", "  ", "Напишите, как к вам обращаться."),
+            ("Form.Contact", "", "Укажите контакт для ответа."), ("Form.About", new string('x', 2001), "Рассказ о себе длиннее 2000 знаков."),
+            ("Form.Links", "javascript:alert(1)", "Ссылка на работы должна начинаться с http:// или https://."),
+        })
+        {
+            var r = await PostForm(c, "/team", new Dictionary<string, string>(ok) { [field] = value });
+            Assert.Equal(HttpStatusCode.OK, r.StatusCode);   // the form again, with the reason, and no ticket
+            Assert.Contains(message, await r.Content.ReadAsStringAsync());
+        }
+        var r2 = await PostForm(c, "/tickets/new", new() { ["Form.Category"] = "team", ["Form.Title"] = "x", ["Form.Description"] = "d" });
+        Assert.Equal(HttpStatusCode.OK, r2.StatusCode);
+        Assert.Equal(before, await f.DbAsync(db => db.Tickets.CountAsync()));
+    }
+
+    [Fact]
     public async Task Post_without_antiforgery_is_refused()
     {
         var c = Browser();

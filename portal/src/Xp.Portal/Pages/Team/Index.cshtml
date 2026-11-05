@@ -1,0 +1,55 @@
+@page "/team"
+@model Xp.Portal.Pages.Team.TeamApplyModel
+@{
+    ViewData["Title"] = T["team.title"];
+}
+<h1>@T["team.title"]</h1>
+<p class="lead">@T["team.lead"]</p>
+
+<div class="row">
+    @foreach (var r in TeamApplyModel.Roles)
+    {
+        <section class="panel">
+            <h2 class="title">@T["team.role." + r]</h2>
+            <p>@T["team.role." + r + ".text"]</p>
+        </section>
+    }
+</div>
+
+<h2>@T["team.form.title"]</h2>
+@if (!Model.SignedIn)
+{
+    <p class="hint">@T["new.guest.hint"]</p>
+}
+<partial name="_Errors" model="Model.Errors" />
+<form method="post" class="panel">
+    <input type="hidden" asp-for="Form.Key" />
+    <label asp-for="Form.Role">@T["team.field.role"]</label>
+    <select asp-for="Form.Role">
+        @foreach (var r in TeamApplyModel.Roles)
+        {
+            <option value="@r">@T["team.role." + r]</option>
+        }
+    </select>
+
+    <label asp-for="Form.Name">@T["team.field.name"]</label>
+    <input type="text" asp-for="Form.Name" maxlength="@TeamApplyModel.NameMax" required />
+
+    <label asp-for="Form.Contact">@T["team.field.contact"]</label>
+    <input type="text" asp-for="Form.Contact" maxlength="@TeamApplyModel.ContactMax" required />
+    <p class="hint">@T["team.contact.hint"]</p>
+
+    <label asp-for="Form.About">@T["team.field.about"]</label>
+    <textarea asp-for="Form.About" maxlength="@TeamApplyModel.AboutMax" required></textarea>
+    <p class="hint">@T.Format("team.about.hint", TeamApplyModel.AboutMax)</p>
+
+    <label asp-for="Form.Links">@T["team.field.links"]</label>
+    <input type="text" asp-for="Form.Links" maxlength="@TeamApplyModel.LinksMax" inputmode="url" />
+
+    <div class="hp" aria-hidden="true">
+        <label asp-for="Form.Website">Website</label>
+        <input type="text" asp-for="Form.Website" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <button type="submit">@T["team.submit"]</button>
+</form>

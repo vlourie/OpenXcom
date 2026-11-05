@@ -48,6 +48,8 @@ public sealed class NewTicketModel(TicketService tickets, AttachmentService file
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!string.IsNullOrEmpty(Form.Website)) return Redirect("/");   // a bot: tell it nothing
+        // team applications have their own form (/team); a hand-made POST must not file one here
+        if (!Categories.Open.Contains(Form.Category)) { Errors.Add("category_invalid"); return Page(); }
         var uploads = Request.Form.Files.Where(f => f.Length > 0).ToList();
         if (uploads.Count > MaxFiles) Errors.Add("too_many_files");
         foreach (var f in uploads)
