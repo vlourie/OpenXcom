@@ -69,6 +69,7 @@
 #include "../Engine/HdItems.h"
 #include "../Engine/HdUiArt.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdBattleHud.h"
 #include "../Engine/HdScreens.h"
 
 namespace OpenXcom
@@ -424,6 +425,16 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	for (BattlescapeButton *btn : { _btnOk, _btnPrev, _btnNext, _btnUnload, _btnGround, _btnLinks, _btnCreateTemplate, _btnApplyTemplate })
 	{
 		btn->setHdTheme(true);
+	}
+	// HD interface, modern battle panel (XP-000506): the same keys as on the panel, with their plates and cut signs (picture only)
+	if (Options::oxceHdInventoryKeys)
+	{
+		_btnOk->setHdIcon(HdBattleHud::ICON_INV_OK);
+		_btnPrev->setHdIcon(HdBattleHud::ICON_INV_PREV);
+		_btnNext->setHdIcon(HdBattleHud::ICON_INV_NEXT);
+		_btnUnload->setHdIcon(HdBattleHud::ICON_INV_UNLOAD);
+		_btnGround->setHdIcon(Options::oxceHdScrollSplit ? HdBattleHud::ICON_INV_SCROLL_BOTH : HdBattleHud::ICON_INV_SCROLL);
+		_btnLinks->setHdIcon(HdBattleHud::ICON_INV_MENU);
 	}
 	add(_selAmmo);
 	add(_inv);
@@ -2948,6 +2959,11 @@ void InventoryState::txtArmorTooltipOut(Action *action)
 
 void InventoryState::updateTemplateButtons(bool isVisible)
 {
+	// HD interface, XP-000506: the signs follow the pictures below; a cleared key has no plate
+	const bool saved = !_curInventoryTemplate.empty();
+	const bool keys = isVisible && Options::oxceHdInventoryKeys;
+	_btnCreateTemplate->setHdIcon(!keys ? HdBattleHud::ICON_NONE : saved ? HdBattleHud::ICON_INV_COPY_FULL : HdBattleHud::ICON_INV_COPY);
+	_btnApplyTemplate->setHdIcon(!keys ? HdBattleHud::ICON_NONE : saved ? HdBattleHud::ICON_INV_PASTE : HdBattleHud::ICON_INV_CLEAR);
 	if (isVisible)
 	{
 		if (_curInventoryTemplate.empty())

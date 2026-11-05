@@ -703,6 +703,57 @@ Pic makeIcon(HdBattleHud::Icon icon, bool cast = false, bool drawn = false)
 		p.rect(2.9f, 13.0f, 7.1f, 19.6f, 2.1f).cut(true).rect(4.1f, 14.2f, 5.9f, 18.4f, 0.9f).cut(false);
 		p.line(4.2f, 17.9f, 5.8f, 14.7f, 0.8f);
 		break;
+	case HdBattleHud::ICON_INV_OK:
+		// 35 x 22
+		p.arc(12.2f, 11.0f, 3.4f, 1.8f);
+		p.line(20.0f, 6.6f, 20.0f, 15.4f, 1.9f).line(26.2f, 6.6f, 20.8f, 11.2f, 1.9f).line(21.2f, 10.6f, 26.4f, 15.4f, 1.9f);
+		break;
+	case HdBattleHud::ICON_INV_PREV:
+		// 23 x 22
+		p.poly({ 14.6f, 5.5f, 14.6f, 16.5f, 7.0f, 11.0f });
+		break;
+	case HdBattleHud::ICON_INV_NEXT:
+		p.poly({ 8.4f, 5.5f, 8.4f, 16.5f, 16.0f, 11.0f });
+		break;
+	case HdBattleHud::ICON_INV_MENU:
+		p.rect(5.9f, 6.9f, 17.1f, 8.7f, 0.8f).rect(5.9f, 10.1f, 17.1f, 11.9f, 0.8f).rect(5.9f, 13.3f, 17.1f, 15.1f, 0.8f);
+		break;
+	case HdBattleHud::ICON_INV_UNLOAD:
+		// 32 x 25: a gun, an arrow down from it, the clip
+		p.rect(5.6f, 4.9f, 20.5f, 7.3f, 0.4f).poly({ 20.0f, 4.9f, 26.0f, 4.9f, 26.6f, 9.0f, 23.4f, 9.0f, 22.0f, 7.3f, 20.0f, 7.3f });
+		p.line(16.4f, 7.2f, 15.6f, 9.8f, 1.8f);
+		p.poly({ 12.4f, 11.2f, 19.6f, 11.2f, 16.0f, 15.0f });
+		p.rect(13.4f, 16.2f, 18.6f, 21.0f, 0.6f);
+		break;
+	case HdBattleHud::ICON_INV_SCROLL:
+		// 32 x 15
+		p.line(9.0f, 7.5f, 18.5f, 7.5f, 1.7f).poly({ 18.0f, 3.5f, 24.0f, 7.5f, 18.0f, 11.5f });
+		break;
+	case HdBattleHud::ICON_INV_SCROLL_BOTH:
+		// oxceHdScrollSplit: the left half scrolls back, the right half on
+		p.poly({ 13.6f, 3.5f, 13.6f, 11.5f, 7.6f, 7.5f }).poly({ 18.4f, 3.5f, 18.4f, 11.5f, 24.4f, 7.5f }).line(16.0f, 3.0f, 16.0f, 12.0f, 0.7f);
+		break;
+	case HdBattleHud::ICON_INV_COPY:
+	case HdBattleHud::ICON_INV_COPY_FULL:
+	{
+		// 32 x 22: two sheets, the front one filled once there is a layout saved
+		p.rect(10.0f, 3.8f, 18.8f, 14.8f, 0.7f).cut(true).rect(11.5f, 5.3f, 17.3f, 13.3f, 0.3f).rect(12.4f, 6.2f, 23.2f, 19.0f, 0.9f).cut(false);
+		p.rect(13.6f, 7.4f, 22.0f, 18.0f, 0.7f);
+		if (icon == HdBattleHud::ICON_INV_COPY) p.cut(true).rect(15.1f, 8.9f, 20.5f, 16.5f, 0.3f).cut(false);
+		break;
+	}
+	case HdBattleHud::ICON_INV_PASTE:
+		// a clipboard with a written sheet
+		p.rect(10.4f, 5.0f, 21.6f, 19.0f, 0.9f).cut(true).rect(12.6f, 4.4f, 19.4f, 7.4f, 0.5f);
+		p.rect(12.6f, 9.6f, 19.4f, 10.8f, 0.2f).rect(12.6f, 12.3f, 19.4f, 13.5f, 0.2f).rect(12.6f, 15.0f, 19.4f, 16.2f, 0.2f).cut(false);
+		p.rect(13.6f, 3.2f, 18.4f, 6.4f, 0.5f);
+		break;
+	case HdBattleHud::ICON_INV_CLEAR:
+		// nothing saved, the key clears the unit: the empty clipboard, struck
+		p.rect(10.4f, 5.0f, 21.6f, 19.0f, 0.9f).cut(true).rect(12.6f, 4.4f, 19.4f, 7.4f, 0.5f).rect(11.9f, 7.9f, 20.1f, 17.5f, 0.3f).cut(false);
+		p.rect(13.6f, 3.2f, 18.4f, 6.4f, 0.5f);
+		p.line(13.6f, 9.6f, 18.4f, 15.8f, 1.4f).line(18.4f, 9.6f, 13.6f, 15.8f, 1.4f);
+		break;
 	default:
 		break;
 	}
@@ -1519,9 +1570,67 @@ std::vector<Uint32> resampled(const HdFrame &f, int W, int H)
 /// socket's shade - darker, the rim's shadow over its upper and left edges, its lower right edge catching the light
 /// as the dish of a pressed vector cap does. lit = the key is on: the engraving glows warm (a reserve key's in its
 /// colour), as if a lamp burned behind the plate.
+std::vector<Uint32> resampledFramed(const HdFrame &f, int W, int H, float bandL, float bandR, float bandT, float bandB,
+	float tx, float ty);
+
+/// A painted face with its sign taken off (XP-000506): the middle of the plate filled from the strips left and right
+/// of it, mirrored, so the metal's grain and light go on. The sign of "options" stays inside this box in all the themes.
+HdFrame blankFace(const HdFrame &f)
+{
+	HdFrame out = f;
+	const int W = f.width, H = f.height;
+	const int xl = W * 30 / 100, xr = W * 70 / 100, yt = H * 14 / 100, yb = H * 88 / 100;
+	const float feather = (float)std::max(1, W / 40);
+	for (int y = yt; y < yb; ++y)
+	{
+		for (int x = xl; x < xr; ++x)
+		{
+			const float t = (x - xl + 0.5f) / (float)(xr - xl);
+			const int lx = std::max(0, xl - (x - xl) / 2), rx = std::min(W - 1, xr + (xr - 1 - x) / 2);
+			const Uint32 metal = HdUi::mixed(f.pixels[(size_t)y * W + lx], f.pixels[(size_t)y * W + rx], t * t * (3.0f - 2.0f * t));
+			const int edge = std::min(std::min(x - xl, xr - 1 - x), std::min(y - yt, yb - 1 - y));
+			out.pixels[(size_t)y * W + x] = HdUi::mixed(f.pixels[(size_t)y * W + x], metal, std::min(edge / feather, 1.0f));
+		}
+	}
+	return out;
+}
+
+/// The plate of an inventory key on a painted panel (XP-000506), inside its gap (gi): the theme's painted plate, its frame
+/// and rivets at the panel keys' size whatever the key's shape, with the sign cut into it by code as dark (or bone in
+/// iron) enamel under a lit lower lip, as the painted signs have it.
+std::vector<Uint32> signedPlate(HdBattleHud::Icon icon, const HdFrame &face, int w, int h, int k, float shrink, int gi, int iw, int ih)
+{
+	// a panel key's face is painted about 8 source pixels a base pixel
+	const float band = 36.0f, target = 4.5f * k;
+	std::vector<Uint32> img = resampledFramed(blankFace(face), iw, ih, band, band, band, band, target, target);
+	const Raster &sharp = raster(icon, w, h, k, shrink, true);
+	const std::vector<float> cut = softCover(sharp, std::max(1, (int)std::lround(0.2f * k)));
+	const std::vector<float> deep = softCover(sharp, std::max(1, (int)std::lround(0.7f * k)));
+	const int W = w * k, H = h * k, lo = std::max(1, (int)std::lround(0.4f * k));
+	const Uint32 enamel = keyLook().paleSign ? 0xFFE6D6A8u : 0xFF0C0806u;
+	for (int y = 0; y < ih; ++y)
+	{
+		for (int x = 0; x < iw; ++x)
+		{
+			const int X = x + gi, Y = y + gi;
+			if (X >= W || Y >= H) continue;
+			const size_t i = (size_t)Y * W + X;
+			const float in = cut[i];
+			const float above = cut[(size_t)std::max(Y - lo, 0) * W + std::max(X - lo, 0)];
+			Uint32 col = img[(size_t)y * iw + x];
+			col = HdUi::scaled(col, 1.0f - 0.55f * deep[i]);
+			col = HdUi::mixed(col, 0xFFFFFFFFu, 0.4f * std::max(above - in, 0.0f));
+			img[(size_t)y * iw + x] = HdUi::mixed(col, enamel, in) | 0xFF000000u;
+		}
+	}
+	return img;
+}
+
 const std::vector<Uint32> *paintedCap(HdBattleHud::Icon icon, int w, int h, int k, int step, bool lit, Uint32 tint)
 {
-	const HdFrame *face = paintedFace(icon);
+	// the inventory's keys have no faces of their own: the plate of "options" with their sign
+	const bool inventoryKey = icon >= HdBattleHud::ICON_INV_OK && icon < HdBattleHud::ICON_COUNT;
+	const HdFrame *face = paintedFace(inventoryKey ? (int)HdBattleHud::ICON_OPTIONS : (int)icon);
 	if (!face) return nullptr;
 	const Uint64 key = (2ull << 60) | ((Uint64)(tint & 0xFFFFFF) << 32) | ((Uint64)lit << 31) | ((Uint64)step << 27)
 		| ((Uint64)(icon & 0x7F) << 20) | ((Uint64)(w & 0x3FF) << 10) | (Uint64)(h & 0x3FF);
@@ -1529,7 +1638,7 @@ const std::vector<Uint32> *paintedCap(HdBattleHud::Icon icon, int w, int h, int 
 	const CapGeom c = capGeom(w, h, k, tint != 0);
 	const int W = w * k, H = h * k;
 	const int gi = (int)std::lround(c.g), iw = std::max(W - 2 * gi, 1), ih = std::max(H - 2 * gi, 1);
-	const std::vector<Uint32> inner = resampled(*face, iw, ih);
+	const std::vector<Uint32> inner = inventoryKey ? signedPlate(icon, *face, w, h, k, c.shrink, gi, iw, ih) : resampled(*face, iw, ih);
 	const float t = (float)step / (float)(CAP_STEPS - 1);
 	const Uint32 own = tint ? vivid(tint) : 0;
 	const KeyLook &look = keyLook();
@@ -2358,6 +2467,9 @@ bool HdBattleHud::grooved(const Surface *bar)
 bool HdBattleHud::counter(const Surface *number, Uint32 &plate, Uint32 &edge)
 {
 	if (!on() || !keyLook().gravure || std::find(counters.begin(), counters.end(), number) == counters.end()) return false;
+	// the ship's brass panel (4): the frame is thin and the floor dark since XP-000458, the digit needs no tab and takes
+	// the font of the soldier's stats (XP-000505)
+	if (Options::oxceHdBattleHudColor == 4) return false;
 	// the painted well's frame and leather are light and busy under a thin digit: a dark enamel tab in the
 	// keys' metal
 	plate = 0xF0140C06u;

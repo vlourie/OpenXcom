@@ -51,6 +51,9 @@ public:
 		ICON_OPTIONS, ICON_END_TURN, ICON_ABORT,
 		ICON_RESERVE_NONE, ICON_RESERVE_SNAP, ICON_RESERVE_AIMED, ICON_RESERVE_AUTO, ICON_RESERVE_KNEEL,
 		ICON_ZERO_TUS,
+		// the inventory's keys (XP-000506), each drawn for its button's size there; no painted face: cut into the theme's plate
+		ICON_INV_OK, ICON_INV_PREV, ICON_INV_NEXT, ICON_INV_MENU, ICON_INV_UNLOAD, ICON_INV_SCROLL, ICON_INV_SCROLL_BOTH,
+		ICON_INV_COPY, ICON_INV_COPY_FULL, ICON_INV_PASTE, ICON_INV_CLEAR,
 		ICON_COUNT
 	};
 	/// Is the panel drawn the modern way (the HD skin is on and so is the option)?

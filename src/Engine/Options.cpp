@@ -605,6 +605,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWinKeySat", &oxceHdWinKeySat, 25));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWinKeyVal", &oxceHdWinKeyVal, 49));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHud", &oxceHdBattleHud, true, "STR_HD_BATTLE_HUD", "STR_HD_BATTLE_UI"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdInventoryKeys", &oxceHdInventoryKeys, true, "STR_HD_INVENTORY_KEYS", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHudColor", &oxceHdBattleHudColor, 0, "STR_HD_BATTLE_HUD_COLOR", "STR_HD_BATTLE_UI"));
 	// the player's own colours of that panel (the window "Own colour"): not rows of the list, no description
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomKeyHue", &oxceHdCustomKeyHue, 256));

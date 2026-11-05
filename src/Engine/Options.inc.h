@@ -205,6 +205,8 @@ OPT int oxceHdWinKeySat;
 OPT int oxceHdWinKeyVal;
 // HD interface, modern skin: the battle's button panel drawn as tiles with vector pictograms (HdBattleHud); off = the mod's picture, smoothed
 OPT bool oxceHdBattleHud;
+// HD interface, modern battle panel (XP-000506): the inventory's keys drawn like the panel's; off = the pieces of the screen's picture
+OPT bool oxceHdInventoryKeys;
 /// HD interface: 0 the game's own font, smoothed (classic colours, widths and lines); 1 TrueType (hd/UI/Font*.ttf).
 OPT int oxceHdUiFont;
 /// HD interface: the globe's own scale, apart from the windows around it: 0 as the geoscape, N = one globe pixel is N display pixels.

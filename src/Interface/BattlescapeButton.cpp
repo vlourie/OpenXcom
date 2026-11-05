@@ -19,6 +19,7 @@
 #include "BattlescapeButton.h"
 #include "../Engine/HdBattleHud.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/Options.h"
 #include "../Engine/Action.h"
 
 namespace OpenXcom
@@ -229,7 +230,8 @@ void BattlescapeButton::blit(SDL_Surface *surface)
 {
 	// HD interface, modern skin: the battle panel draws the button as a tile with its pictogram, in
 	// place of the copied piece of the panel's picture; the classic layer gets the pixels as ever
-	const bool hud = _hdIcon && HdUi::isScreen(surface) && HdBattleHud::on();
+	// (a window's key too, XP-000506, unless its window has a colour of its own: then it stays recast in that colour, below)
+	const bool hud = _hdIcon && HdUi::isScreen(surface) && HdBattleHud::on() && (!_hdTheme || !HdUi::windowTheme() || Options::oxceHdWindowThemeColor <= 0);
 	// a button of a window's picture in the metal of the theme: the picture's pixels are drawn recast (below), not as they are
 	const bool themed = !hud && _hdTheme && HdUi::isScreen(surface) && HdUi::windowTheme();
 	Surface *shown = _inverted ? _altSurface : this;
@@ -259,7 +261,7 @@ void BattlescapeButton::blit(SDL_Surface *surface)
 		}
 		const bool held = isButtonPressed(SDL_BUTTON_LEFT) || (isButtonPressed(SDL_BUTTON_RIGHT) && isButtonHandled(SDL_BUTTON_RIGHT));
 		HdBattleHud::drawButton(this, getX(), getY(), getWidth(), getHeight(), (HdBattleHud::Icon)_hdIcon,
-			_inverted || _hdLit, held, _color, HdUi::paletteOf(this), hotkey);
+			_inverted || _hdLit, held, _hdTheme ? (Uint8)0 : _color, HdUi::paletteOf(this), hotkey);
 	}
 }
 

@@ -482,6 +482,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 	{
 		const bool *b = info.asBool();
 		if (b == &Options::oxceHdBattleHud || b == &Options::oxceHdWindowTheme) return !skin;
+		if (b == &Options::oxceHdInventoryKeys) return !skin || !Options::oxceHdBattleHud;
 		if (b == &Options::oxceHdRadarBeam) return Options::oxceHdRadar != 3;
 	}
 	return false;
