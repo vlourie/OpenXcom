@@ -37,6 +37,9 @@ def main():
     if a.race.lower() == "ubergal":
         src = os.path.join("art", "doll", "pipe_pilot", "layers")
         generator = "doll_pipe_pilot.py"
+    if a.race.lower() == "armor_solo":              # брони одним слоем: выбранные сиды Vitali
+        src = os.path.join("art", "doll", "pipe_pilot", "armor_solo", "chosen")
+        generator = "doll_armor_solo.py"
     files = sorted(f for f in os.listdir(src) if f.endswith(".png"))
     images = {k.lower() for k in set(db.sprite_files()) | dl.layer_names()}
     alien = [f for f in files if f[:-4] not in images]
