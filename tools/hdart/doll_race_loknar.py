@@ -96,6 +96,7 @@ SUIT_WEDGE_MIN = 100                                # чёрное пятно б
 SUIT_STRENGTH = 0.7                                 # 0.85: фигура уже силуэта и надутая игрушка (#1147)
 SUIT_PANEL = (14, 14, 18, 255)                      # подложка кадра: то, что модель оставит внутри силуэта, читается контуром, а не серой каймой (R-089)
 SUIT_RIM = (22, 8, 10, 136)                         # кайма: цветность меньше, светлота больше, от края не дальше (k=4), выше строки сапог (там блики тоже серые)
+SUIT_CLEAN = False                                  # Vitali 05.11: слой на слой как есть; True - зелёное и кайму убирает код
 SUIT_TEXT = ("{style} {who}, wearing a skin-tight one-piece muscle suit of wet-looking dark blue-steel synthetic polymer with sharp "
              "silvery-blue specular highlights: sculpted bulging muscles on the arms, broad shoulders and thick thighs, fibrous muscle "
              "strands running along them, filling the outline of the input completely. "
@@ -534,10 +535,11 @@ def armor_layer(rgb8):
     whole, wedge = suit_masks()
     names = ["%s__2__%s_NUDE" % (RACE, BASE), SUIT]
     f4, d0, d1 = P.tone_lock(P.full4(rgb8), names, whole & ~wedge)
-    lab = bp._rgb_to_lab(f4 / 255.0)
-    lab[..., 1] = np.maximum(lab[..., 1], 0.0)      # зелёных цветов в костюме нет, модель кладёт их в блики
-    f4 = bp._lab_to_rgb(lab) * 255.0
-    f4 = suit_rim(f4, lab, whole)
+    if SUIT_CLEAN:
+        lab = bp._rgb_to_lab(f4 / 255.0)
+        lab[..., 1] = np.maximum(lab[..., 1], 0.0)  # зелёных цветов в костюме нет, модель кладёт их в блики
+        f4 = bp._lab_to_rgb(lab) * 255.0
+        f4 = suit_rim(f4, lab, whole)
     layer = np.asarray(P.layer_from(f4, whole), np.float32).copy()
     w = ws.sil4(wedge)[..., None]
     col = np.median(db.to_rgba(db.load_indices(P.FILES[SUIT]), P.PAL)[wedge][:, :3], axis=0)
