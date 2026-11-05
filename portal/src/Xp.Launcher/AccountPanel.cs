@@ -43,10 +43,10 @@ public sealed class AccountPanel : StackPanel
         _store = new DeviceStore(Path.Combine(Settings.Dir, "device.json"));
         Spacing = 10;
 
-        _link = Skin.Btn(L.T("account.link"), "primary");
+        _link = Skin.Btn(L.T("account.link"));
         _link.HorizontalAlignment = HorizontalAlignment.Stretch;
         _link.Click += async (_, _) => await StartAsync();
-        _open = Skin.Btn(L.T("account.open"), "primary");
+        _open = Skin.Btn(L.T("account.open"));
         _open.HorizontalAlignment = HorizontalAlignment.Stretch;
         _open.IsVisible = false;
         _open.Click += (_, _) => OpenSite();

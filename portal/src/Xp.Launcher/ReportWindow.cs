@@ -55,8 +55,7 @@ public sealed class ReportWindow : Window
         _send.Padding = new Thickness(22, 0);
         _draft = Button("report.draft", SaveDraft);
         _cancel = Button("report.cancel", async () => await CancelAsync());
-        _cancel.Classes.Add("nav");
-        _cancel.BorderThickness = new Thickness(0);
+        _cancel.Classes.Add("quiet");
 
         var d = report.Draft;
         if (d.Status == ReportStatus.Sent) { ShowSent(); }
@@ -115,8 +114,6 @@ public sealed class ReportWindow : Window
     static Border Bar(Control child, bool top) => new()
     {
         Background = Skin.B(Skin.Rail),
-        BorderBrush = Skin.B(Skin.Track),
-        BorderThickness = top ? new Thickness(0, 0, 0, 2) : new Thickness(0, 2, 0, 0),
         Padding = new Thickness(24, 14),
         Child = child,
     };
@@ -134,7 +131,7 @@ public sealed class ReportWindow : Window
         var paused = new TextBlock { Text = L.T("report.paused"), FontSize = 13, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap, MaxWidth = 460, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right };
         DockPanel.SetDock(paused, Dock.Right);
         head.Children.Add(paused);
-        head.Children.Add(new TextBlock { Text = L.T("report.title"), FontFamily = Skin.Medium, FontWeight = FontWeight.Bold, FontSize = 24, Foreground = Skin.B(Skin.Accent), VerticalAlignment = VerticalAlignment.Center });
+        head.Children.Add(new TextBlock { Text = L.T("report.title"), FontFamily = Skin.Medium, FontWeight = FontWeight.Bold, FontSize = 24, Foreground = Skin.B(Skin.Text), VerticalAlignment = VerticalAlignment.Center });
 
         // left: the screenshot large, what to attach, technical data folded
         var left = new StackPanel { Spacing = 12 };
@@ -366,7 +363,7 @@ public sealed class ReportWindow : Window
         buttons.Children.Add(close);
         panel.Children.Add(buttons);
 
-        var head = new TextBlock { Text = L.T("report.title"), FontFamily = Skin.Medium, FontWeight = FontWeight.Bold, FontSize = 24, Foreground = Skin.B(Skin.Accent) };
+        var head = new TextBlock { Text = L.T("report.title"), FontFamily = Skin.Medium, FontWeight = FontWeight.Bold, FontSize = 24, Foreground = Skin.B(Skin.Text) };
         var root = new DockPanel();
         var top = Bar(head, top: true);
         DockPanel.SetDock(top, Dock.Top);

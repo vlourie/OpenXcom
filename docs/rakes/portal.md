@@ -404,3 +404,12 @@
 Правило:  на станцию: cd /d <папка> && powershell -File ...; строку отдавать в одинарных кавычках Git Bash и с полным именем файла, без переменных; после station.ps1 releases смотреть channels/stable.json, а не конец вывода
 Защита:   нет
 Наступал: 1   Последний: 2026-11-04
+
+## R-642  Кнопка лаунчера на клавиатурном фокусе рисует квадратное белое кольцо Fluent поверх своего скруглённого
+Статус:   активны
+Файлы:    portal/src/Xp.Launcher/Skin.cs
+Симптом:  При Tab на кнопке со скруглением 8 появлялась угловая рамка FocusAdorner, кольцо в Look (BorderBrush на :focus-visible) не было видно
+Причина:  Fluent ставит Button.FocusAdorner шаблоном-квадратом; стиль на presenter его не отключает. Заметно только на кадре с Focus(NavigationMethod.Tab), в обычном просмотре страниц нет
+Правило:  Для своего кольца фокуса снимать адорнер: Setter(Control.FocusAdornerProperty, (ITemplate<Control>?)null) на Button, а кольцо задавать BorderBrush presenter на :focus-visible. OfType<Button> не касается CheckBox/RadioButton (точное совпадение типа)
+Защита:   Кадры tests/Xp.Launcher.Ui.Tests/SkinShotsTests.cs (07e/07f: фокус на тихой и опасной кнопке)
+Наступал: 1   Последний: 2026-11-05

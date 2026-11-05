@@ -28,16 +28,16 @@ public sealed class MainWindow : Window
     // rail
     readonly Dictionary<string, Button> _nav = new();
     readonly Dictionary<string, Control> _pages = new();
-    readonly Border _reportsBadge = new() { Background = Skin.B(Skin.Accent), CornerRadius = new CornerRadius(2), Padding = new Thickness(6, 1), IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
-    readonly TextBlock _reportsCount = new() { Foreground = Skin.B(Skin.OnAccent), FontSize = 12, FontFamily = Skin.Medium };
+    readonly TextBlock _reportsCount = new();
+    readonly Border _reportsBadge;
     // unread private messages, on the "Chat" button (the site's count, asked together with the tickets)
-    readonly Border _chatBadge = new() { Background = Skin.B(Skin.Accent), CornerRadius = new CornerRadius(2), Padding = new Thickness(6, 1), IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
-    readonly TextBlock _chatCount = new() { Foreground = Skin.B(Skin.OnAccent), FontSize = 12, FontFamily = Skin.Medium };
+    readonly TextBlock _chatCount = new();
+    readonly Border _chatBadge;
 
     // home
-    readonly Border _notice = new() { Background = Skin.B(Skin.WarnFill), BorderBrush = Skin.B(Skin.WarnFrame), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2), Padding = new Thickness(14, 8), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
+    readonly Border _notice = new() { Background = Skin.B(Skin.WarnFill), CornerRadius = Skin.Radius, Padding = new Thickness(14, 8), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
     // the strip over the picture while the launcher is not linked: a running line and one button
-    readonly Border _linkStrip = new() { Background = Skin.B(Skin.Fill), BorderBrush = Skin.B(Skin.FrameInner), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2), Padding = new Thickness(14, 6), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
+    readonly Border _linkStrip = new() { Background = Skin.B(Skin.Fill), CornerRadius = Skin.Radius, Padding = new Thickness(14, 6), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
     readonly TextBlock _linkRun = new() { FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(Skin.Accent), RenderTransform = new TranslateTransform() };
     readonly Border _linkLane = new() { ClipToBounds = true, Height = 22, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
     readonly TextBlock _linkSay = new() { FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
@@ -47,7 +47,7 @@ public sealed class MainWindow : Window
     readonly TextBlock _version = new() { FontSize = 14, Foreground = Skin.B(Skin.Muted) };
     readonly Button _main = new() { Height = 64, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, FontFamily = Skin.Medium, FontSize = 22 };
     readonly TextBlock _mainText = new();
-    readonly ProgressBar _progress = new() { Minimum = 0, Maximum = 1000, Height = 4, MinHeight = 4, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(2), IsVisible = false, CornerRadius = new CornerRadius(0) };
+    readonly ProgressBar _progress = new() { Minimum = 0, Maximum = 1000, Height = 4, MinHeight = 4, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(12, 0, 12, 7), IsVisible = false, CornerRadius = Skin.BarRadius };
     readonly WrapPanel _sub = new() { Orientation = Orientation.Horizontal, MinHeight = 20 };
     readonly TextBlock _current = new() { FontSize = 11, Foreground = Skin.B(Skin.Dim), TextTrimming = TextTrimming.CharacterEllipsis };
     readonly Border _whatsNew;
@@ -60,7 +60,7 @@ public sealed class MainWindow : Window
     readonly TextBlock _languageNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), IsVisible = false, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _installed = new() { FontSize = 13, Foreground = Skin.B(Skin.Text2), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _launcherLine = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
-    readonly ProgressBar _workBar = new() { Minimum = 0, Maximum = 1000, Height = 4, MinHeight = 4, IsVisible = false, CornerRadius = new CornerRadius(0) };
+    readonly ProgressBar _workBar = new() { Minimum = 0, Maximum = 1000, Height = 4, MinHeight = 4, IsVisible = false, CornerRadius = Skin.BarRadius };
     readonly WrapPanel _workLine = new() { Orientation = Orientation.Horizontal, IsVisible = false };
     readonly TextBlock _rollbackNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.Muted), LineHeight = 16 };
@@ -132,6 +132,8 @@ public sealed class MainWindow : Window
         // открываемся во весь экран
         WindowState = WindowState.Maximized;
 
+        _reportsBadge = Skin.Badge(_reportsCount);
+        _chatBadge = Skin.Badge(_chatCount);
         _check = Skin.Btn(L.T("checkUpdates"), "ghost");
         _check.Click += async (_, _) => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
         // «Играть» обновляет и запускает; эта кнопка только обновляет - игру запускать не обязательно
@@ -294,16 +296,13 @@ public sealed class MainWindow : Window
         var top = new StackPanel { Spacing = 2 };
         top.Children.Add(logo);
         top.Children.Add(NavButton("home", "nav.home", Skin.IconHome, null));
-        _reportsBadge.Child = _reportsCount;
         top.Children.Add(NavButton("reports", "nav.reports", Skin.IconReports, _reportsBadge));
         top.Children.Add(NavButton("news", "nav.news", Skin.IconNews, null));
-        _chatBadge.Child = _chatCount;
         top.Children.Add(NavButton("voice", "nav.voice", Skin.IconVoice, _chatBadge));
         top.Children.Add(NavButton("support", "nav.support", Skin.IconHeart, null));
         top.Children.Add(NavButton("settings", "nav.settings", Skin.IconSettings, null));
 
         var site = NavLike(L.T("nav.site") + "  ↗", Skin.IconGlobe, null);
-        site.Foreground = Skin.B(Skin.Accent);
         var portal = _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl;
         site.IsEnabled = portal.StartsWith("http", StringComparison.OrdinalIgnoreCase);
         site.Click += (_, _) => ReportWindow.OpenUrl(portal);
@@ -320,7 +319,7 @@ public sealed class MainWindow : Window
         DockPanel.SetDock(bottom, Dock.Bottom);
         dock.Children.Add(bottom);
         dock.Children.Add(top);
-        return new Border { Background = Skin.B(Skin.Rail), BorderBrush = Skin.B(Skin.Track), BorderThickness = new Thickness(0, 0, 1, 0), Child = dock };
+        return new Border { Background = Skin.B(Skin.Rail), Child = dock };
     }
 
     Button NavButton(string page, string key, string icon, Control? badge)
@@ -333,7 +332,7 @@ public sealed class MainWindow : Window
 
     static Button NavLike(string text, string icon, Control? badge)
     {
-        var b = new Button { Height = 44, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Center, Padding = new Thickness(12, 0), FontSize = 15, BorderThickness = new Thickness(0) };
+        var b = new Button { Height = 44, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Center, Padding = new Thickness(10, 0), FontSize = 15 };
         b.Classes.Add("nav");
         var row = new DockPanel();
         var ic = Skin.Icon(icon, b);
@@ -353,7 +352,6 @@ public sealed class MainWindow : Window
         {
             bool on = name == page;
             b.Classes.Set("on", on);
-            b.BorderThickness = new Thickness(on ? 3 : 0, 0, 0, 0);
         }
         if (page == "reports") _reportsPage.Shown();
         if (page == "support") _supportPage.Shown();        if (page == "news") _newsPage.Shown(_newsRoadmap);
@@ -536,23 +534,20 @@ public sealed class MainWindow : Window
         // the card art: indigo duotone like the pictures in the game's windows; the gradient shows while it loads or if it is missing
         hero.Children.Add(new Border
         {
-            CornerRadius = new CornerRadius(3),
+            CornerRadius = Skin.Radius,
             Background = new LinearGradientBrush
             {
                 StartPoint = new RelativePoint(0.2, 0, RelativeUnit.Relative),
                 EndPoint = new RelativePoint(0.8, 1, RelativeUnit.Relative),
-                GradientStops = { new GradientStop(Color.Parse("#181868"), 0), new GradientStop(Color.Parse("#180810"), 1) },
+                GradientStops = { new GradientStop(Skin.HeroTop, 0), new GradientStop(Skin.HeroBottom, 1) },
             },
         });
         if (HeroArt() is { } art)
-            hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), ClipToBounds = true, Background = new ImageBrush(art) { Stretch = Stretch.UniformToFill } });
-        hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Glow(0.7, 0.3, "#8C185888") });
-        hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Glow(0.2, 0.8, "#CC181868") });
-        hero.Children.Add(new Border
-        {
-            BorderBrush = Skin.B(Skin.FrameOuter), BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(3),
-            Child = new Border { BorderBrush = Skin.B(Skin.FrameInner), BorderThickness = new Thickness(2), Padding = new Thickness(28), Child = content },
-        });
+            hero.Children.Add(new Border { CornerRadius = Skin.Radius, ClipToBounds = true, Background = new ImageBrush(art) { Stretch = Stretch.UniformToFill } });
+        hero.Children.Add(new Border { CornerRadius = Skin.Radius, Background = Glow(0.7, 0.3, Skin.HeroGlowA) });
+        hero.Children.Add(new Border { CornerRadius = Skin.Radius, Background = Glow(0.2, 0.8, Skin.HeroGlowB) });
+        // no frame: the card is the picture itself, the content stands on its lower left
+        hero.Children.Add(new Border { Padding = new Thickness(28), Child = content });
 
         var body = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         body.Children.Add(hero);
@@ -577,9 +572,10 @@ public sealed class MainWindow : Window
     Control LinkStrip()
     {
         var icon = new Border { Width = 18, Height = 18, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, Child = new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse(Skin.IconGlobe), Stroke = Skin.B(Skin.Accent), StrokeThickness = 2, Stretch = Stretch.Uniform } };
-        var go = Skin.Btn(L.T("link.go"), "primary", 32);
+        // the home page's one main button is "Play": the strip's buttons are ordinary ones
+        var go = Skin.Btn(L.T("link.go"), null, 32);
         go.Click += async (_, _) => await _account.StartAsync();
-        var open = Skin.Btn(L.T("account.open"), "primary", 32);
+        var open = Skin.Btn(L.T("account.open"), null, 32);
         open.Click += (_, _) => _account.OpenSite();
         var cancel = Skin.Btn(L.T("account.cancel"), "ghost", 32);
         cancel.Click += (_, _) => _account.CancelLink();
@@ -786,7 +782,7 @@ public sealed class MainWindow : Window
         log.Children.Add(logHead);
         log.Children.Add(new Border
         {
-            Background = Skin.B(Skin.Rail), CornerRadius = new CornerRadius(2), Padding = new Thickness(10), Height = 150,
+            Background = Skin.B(Skin.Field), CornerRadius = Skin.Radius, Padding = new Thickness(10), Height = 150,
             Child = new ScrollViewer { Content = _log },
         });
 
@@ -1013,7 +1009,7 @@ public sealed class MainWindow : Window
         {
             if (_build.Items[i] is not ComboBoxItem { Content: string title }) continue;
             bool chosen = i == _build.SelectedIndex;
-            var row = Skin.Btn(chosen ? "✓  " + title : title, chosen ? "primary" : null);
+            var row = Skin.Btn(chosen ? "✓  " + title : title, chosen ? "chip on" : null);
             row.HorizontalAlignment = HorizontalAlignment.Stretch;
             row.HorizontalContentAlignment = HorizontalAlignment.Left;
             row.IsEnabled = _build.IsEnabled;

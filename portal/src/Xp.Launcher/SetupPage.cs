@@ -118,7 +118,7 @@ public sealed class SetupPage : UserControl
                 },
             },
         };
-        var root = new Grid { Background = new SolidColorBrush(Skin.Bg), ClipToBounds = true };
+        var root = new Grid { Background = Skin.B(Skin.Bg), ClipToBounds = true };
         root.Children.Add(_backdrop);
         root.Children.Add(shade);
         root.Children.Add(page);
@@ -323,7 +323,7 @@ public sealed class SetupPage : UserControl
         var buttons = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
         if (_ufoFound.Count == 0)
         {
-            var steam = Skin.Btn(L.T("setup.ufoSteam"), "primary");
+            var steam = Skin.Btn(L.T("setup.ufoSteam"));
             steam.Click += (_, _) => OpenSteam();
             var gog = Skin.Btn(L.T("setup.ufoGog"));
             gog.Click += (_, _) => ReportWindow.OpenUrl(UfoData.GogUrl);

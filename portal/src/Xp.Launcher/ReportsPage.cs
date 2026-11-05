@@ -94,7 +94,7 @@ public sealed class ReportsPage : UserControl
         {
             ReportStatus.Sent => StatusTag(d.TicketStatus),
             ReportStatus.Queued => (L.T("reports.state.queued"), Skin.WarnFill, Skin.WarnText),
-            _ => (L.T("reports.state.draft"), Color.Parse("#1A1828"), Skin.Muted),
+            _ => (L.T("reports.state.draft"), Skin.Button, Skin.Text2),
         };
 
         var mark = TicketAttention.MarkOf(d, _settings.SeenTickets);
@@ -103,18 +103,10 @@ public sealed class ReportsPage : UserControl
             meta.Children.Add(new TextBlock { Text = "●", FontSize = 14, Foreground = Skin.B(Skin.Accent), VerticalAlignment = VerticalAlignment.Center });
         if (d.DisplayNumber is { } num) meta.Children.Add(new TextBlock { Text = num, FontFamily = Skin.Medium, FontSize = 13, VerticalAlignment = VerticalAlignment.Center });
         meta.Children.Add(new TextBlock { Text = $"{d.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm} · {L.T("report.kind." + d.Kind)}", FontSize = 13, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center });
-        meta.Children.Add(new Border
-        {
-            Background = Skin.B(tagBg), CornerRadius = new CornerRadius(2), Padding = new Thickness(8, 2),
-            Child = new TextBlock { Text = tag, FontSize = 12, FontFamily = Skin.Medium, Foreground = Skin.B(tagFg) },
-        });
+        meta.Children.Add(Skin.Tag(tag, tagBg, tagFg));
         // what is new since the player looked: a filled label, so it is seen from across the list
         if (mark != TicketMark.None)
-            meta.Children.Add(new Border
-            {
-                Background = Skin.B(Skin.Accent), CornerRadius = new CornerRadius(2), Padding = new Thickness(8, 2),
-                Child = new TextBlock { Text = MarkText(mark), FontSize = 12, FontFamily = Skin.Medium, Foreground = Skin.B(Skin.OnAccent) },
-            });
+            meta.Children.Add(Skin.Tag(MarkText(mark), Skin.Accent, Skin.OnAccent));
 
         var text = new StackPanel { Spacing = 6 };
         text.Children.Add(meta);
@@ -130,14 +122,14 @@ public sealed class ReportsPage : UserControl
         {
             // opening the ticket is looking at it; "needs info" stays lit anyway until the player answers
             if (d.TicketUrl is { } url && url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                buttons.Children.Add(Small("reports.onSite", mark != TicketMark.None ? "primary" : null, () => { MarkRead(d); ReportWindow.OpenUrl(url); }));
+                buttons.Children.Add(Small("reports.onSite", null, () => { MarkRead(d); ReportWindow.OpenUrl(url); }));
             if (mark is not (TicketMark.None or TicketMark.NeedsInfo))
                 buttons.Children.Add(Small("reports.markRead", null, () => MarkRead(d)));
         }
         else
         {
             if (d.Status == ReportStatus.Queued)
-                buttons.Children.Add(Small("reports.send", "primary", async () => await SendOneAsync(r)));
+                buttons.Children.Add(Small("reports.send", null, async () => await SendOneAsync(r)));
             buttons.Children.Add(Small("reports.openForm", null, async () =>
             {
                 if (TopLevel.GetTopLevel(this) is not Window owner) return;
@@ -162,7 +154,8 @@ public sealed class ReportsPage : UserControl
         row.Children.Add(buttons);
         row.Children.Add(text);
         var panel = Skin.Panel(row, new Thickness(16, 12));
-        if (mark != TicketMark.None) panel.BorderBrush = Skin.B(Skin.Accent);
+        // news is lit by the row's own fill and the accent label, not by a frame
+        if (mark != TicketMark.None) panel.Background = Skin.B(Skin.Selected);
         return panel;
     }
 
@@ -192,9 +185,9 @@ public sealed class ReportsPage : UserControl
         var text = status is null ? L.T("reports.state.sent", "").TrimEnd(',', ' ') : L.T("ticket.status." + status);
         return status switch
         {
-            "NeedsInfo" => (text, Color.Parse("#1E3008"), Skin.AccentHover),
-            "Closed" or "Duplicate" or "Rejected" or "Gone" => (text, Color.Parse("#1A1828"), Skin.Muted),
-            _ => (text, Color.Parse("#082420"), Skin.Teal),
+            "NeedsInfo" => (text, Skin.AccentTint, Skin.AccentHover),
+            "Closed" or "Duplicate" or "Rejected" or "Gone" => (text, Skin.Button, Skin.Text2),
+            _ => (text, Skin.TealTint, Skin.Teal),
         };
     }
 

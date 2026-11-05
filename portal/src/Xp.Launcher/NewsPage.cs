@@ -41,9 +41,9 @@ public sealed class NewsPage : UserControl
         _channel = channel;
         _cache = cache;
         _latest = latest;
-        _historyTab = Skin.Btn(L.T("news.history"));
+        _historyTab = Skin.Btn(L.T("news.history"), "tab");
         _historyTab.Click += (_, _) => Show(roadmap: false);
-        _roadmapTab = Skin.Btn(L.T("news.roadmap"));
+        _roadmapTab = Skin.Btn(L.T("news.roadmap"), "tab");
         _roadmapTab.Click += (_, _) => Show(roadmap: true);
         _reload = Skin.Btn(L.T("news.reload"), "ghost");
         _reload.Click += async (_, _) => await LoadAsync(force: true);
@@ -89,8 +89,8 @@ public sealed class NewsPage : UserControl
 
     void Mark()
     {
-        _historyTab.Classes.Set("primary", !_roadmap);
-        _roadmapTab.Classes.Set("primary", _roadmap);
+        _historyTab.Classes.Set("on", !_roadmap);
+        _roadmapTab.Classes.Set("on", _roadmap);
     }
 
     async Task LoadAsync(bool force)

@@ -89,7 +89,6 @@ public sealed class SupportPage : UserControl
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Padding = new Thickness(20, 18),
-            BorderThickness = new Thickness(2),
             IsEnabled = ok,
         };
         b.Classes.Add("card");
