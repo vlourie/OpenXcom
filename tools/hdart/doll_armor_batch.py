@@ -6,14 +6,18 @@ r"""Пачка броней UBERGAL разом: план кадров, воло�
 слоёв. Вещь рисуется один раз: первый кадр, где она есть, остальным брони - уже готовая (Vitali 05.11 «общее один раз»).
 Цвета одного силуэта - один рисунок, тон от своей классики; LIGHT/DARK различаются кожей, у них свой кадр (R-725).
 Серии по внешностям (BIKINI_F0.. - 120 разных вещей) в план не входят.
+Вещь шире рамки на WIDE_MIN точек получает свой широкий кадр (R-738). --redo перерисовывает названные кадры в redo/s<сид>,
+готовые слои не трогает: выбор между сидами - на странице, правило 13.
 
     E:\OpenXCom\tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\doll_armor_batch.py --dry-run
     py -3.13 tools\gpuq.py add --name doll_batch -- E:\OpenXCom\tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\doll_armor_batch.py
+    py -3.13 tools\gpuq.py add --name doll_redo -- E:\OpenXCom\tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\doll_armor_batch.py --redo 6,15 --seeds 0,1
 """
 import argparse
 import collections
 import glob
 import json
+import math
 import os
 import re
 import subprocess
@@ -31,6 +35,8 @@ PLAN = os.path.join(OUT, "plan.json")
 TEXTS = os.path.join(OUT, "texts.json")
 SEED = 0
 SERIES_MIN = 5                                      # от стольких вещей с суффиксом внешности - серия, не личная вещь
+WIDE_MIN = 40                                       # от стольких точек вещи вне рамки - свой широкий кадр, R-738
+WIDE_PIXELS = 740000                                # широкий кадр не дороже обычного 640x1024 больше чем на 13%
 
 
 def is_look(x):
@@ -118,18 +124,42 @@ def cut_hair(plan):
     print("волосы: вырезано %d из %d" % (done, len(plan["hair"])), flush=True)
 
 
-def source(n, batch):
+def source(n, dirs):
     from PIL import Image
     import doll_photo_pilot as dp
-    for d in (UI, batch):
+    for d in dirs:
         p = os.path.join(d, n.lower() + ".png")
         if os.path.exists(p):
             return Image.open(p).convert("RGBA")
     return dp.b2_layer(n)[0]
 
 
-def draw_all(plan, texts):
-    """Кадры подряд: следующий кадр видит уже готовые вещи прошлых. Память карты - выход 75, новый процесс продолжит."""
+def frame_crop(fr, files, crop, zoom):
+    """Рамка кадра и увеличение: обычные, а у вещи шире рамки - рамка по вещи, увеличение меньше при том же числе точек."""
+    import numpy as np
+    x0, y0, x1, y1 = crop
+    u = np.zeros((db.H, db.W), bool)
+    for n in fr["paint"]:
+        u |= db.load_indices(files[n]) != 0
+    out = u.copy()
+    out[y0:y1, x0:x1] = False
+    if out.sum() < WIDE_MIN:
+        return crop, zoom
+    ys, xs = np.nonzero(u)
+    x0, y0 = max(0, min(x0, (int(xs.min()) - 4) // 8 * 8)), max(0, min(y0, (int(ys.min()) - 4) // 8 * 8))
+    x1, y1 = min(db.W, max(x1, -(-(int(xs.max()) + 5) // 8) * 8)), min(db.H, max(y1, -(-(int(ys.max()) + 5) // 8) * 8))
+    for z in (7, 6, 5, 4):                              # стороны входа кратны 32, иначе трансформер падает
+        step = 32 // math.gcd(z, 32)
+        w, h = -(-(x1 - x0) // step) * step, -(-(y1 - y0) // step) * step
+        if w * h * z * z <= WIDE_PIXELS and w <= db.W and h <= db.H:
+            x0, y0 = min(x0, db.W - w), min(y0, db.H - h)
+            return (x0, y0, x0 + w, y0 + h), z
+    raise SystemExit("кадр %d не влезает в модель" % fr["id"])
+
+
+def draw_all(plan, texts, only=None, seed=SEED, keep=None):
+    """Кадры подряд: следующий кадр видит уже готовые вещи прошлых. Память карты - выход 75, новый процесс продолжит.
+    only - номера кадров для перерисовки: своя папка redo/s<сид>, рисуемые вещи на входе из B2, а не прошлым рисунком."""
     import doll_armor_solo as S
     import doll_pipe_pilot as P
     import doll_photo_pilot as dp
@@ -138,15 +168,23 @@ def draw_all(plan, texts):
     from PIL import Image
     S.common()
     raw, batch = os.path.join(OUT, "raw"), os.path.join(OUT, "layers")
+    dirs = (UI, batch)
+    frames = plan["frames"]
+    if only is not None:
+        raw, batch = os.path.join(OUT, "redo", "s%d" % seed, "raw"), os.path.join(OUT, "redo", "s%d" % seed, "layers")
+        dirs = (batch, os.path.join(OUT, "layers"), UI)
+        frames = [x for x in frames if x["id"] in only]
     os.makedirs(raw, exist_ok=True)
     os.makedirs(batch, exist_ok=True)
-    painter = None
-    x0, y0, x1, y1 = (v * dp.K for v in dp.CROP)
+    keep = {} if keep is None else keep                 # модель одна на все сиды перерисовки
+    base_crop, base_zoom = dp.CROP, dp.Z
     negative = S.NEGATIVE + ", extra limbs, nude, bare breasts"
-    left = [x for x in plan["frames"] if not os.path.exists(os.path.join(raw, "f%03d_out.png" % x["id"]))]
-    for fr in plan["frames"]:
+    left = [x for x in frames if not os.path.exists(os.path.join(raw, "f%03d_out.png" % x["id"]))]
+    for fr in frames:
         tag = "f%03d" % fr["id"]
         done = os.path.join(raw, tag + "_out.png")
+        dp.CROP, dp.Z = frame_crop(fr, P.FILES, base_crop, base_zoom)
+        x0, y0, x1, y1 = (v * dp.K for v in dp.CROP)
         names = fr["stack"]
         paint = set(fr["paint"])
 
@@ -175,18 +213,18 @@ def draw_all(plan, texts):
             um = visible(names, paint)
             canvas = Image.new("RGBA", (db.W * dp.K, db.H * dp.K), S.PANEL)
             for n in names:
-                canvas.alpha_composite(source(n, batch))
+                canvas.alpha_composite(source(n, () if only is not None and n in paint else dirs))
             if not um.any():                                # всё закрыто верхними вещами: рисовать нечего
                 Image.fromarray(P.to8(canvas)).save(done)
             else:
-                if painter is None:
-                    painter = P.Painter([P.ARMOR.format(style=S.STYLE, what=texts[str(x["id"])]) for x in left] + [negative])
-                    print("модель загружена за %d с" % painter.load_s, flush=True)
+                if "painter" not in keep:
+                    keep["painter"] = P.Painter([P.ARMOR.format(style=S.STYLE, what=texts[str(x["id"])]) for x in left] + [negative])
+                    print("модель загружена за %d с" % keep["painter"].load_s, flush=True)
                 ctl = vc.control_map(dp.classic(P.FILES, P.PAL, names).crop(dp.CROP), dp.Z, "gray")
                 prompt = P.ARMOR.format(style=S.STYLE, what=texts[str(fr["id"])])
                 try:
-                    rgb, _s0 = painter.paint(P.to8(canvas), P.mask8(um, P.RUN["armor"]["grow8"]), ctl, prompt,
-                                             P.RUN["seed"] + 500 + SEED + fr["id"], S.STRENGTH, P.RUN["item"]["control"], negative)
+                    rgb, _s0 = keep["painter"].paint(P.to8(canvas), P.mask8(um, P.RUN["armor"]["grow8"]), ctl, prompt,
+                                                     P.RUN["seed"] + 500 + seed + fr["id"], S.STRENGTH, P.RUN["item"]["control"], negative)
                 except Exception as e:
                     print("кадр %s упал: %s" % (tag, str(e)[:300]), flush=True)
                     sys.exit(75)
@@ -221,6 +259,7 @@ def draw_all(plan, texts):
                 im.save(os.path.join(batch, n.lower() + ".png"))
             print("%s %s: %d вещей, dE %.1f -> %.1f" % (tag, fr["armor"], len(todo), d0, d1), flush=True)
         print("кадр %d из %d готов" % (fr["id"] + 1, len(plan["frames"])), flush=True)
+    dp.CROP, dp.Z = base_crop, base_zoom
 
 
 def main():
@@ -230,6 +269,8 @@ def main():
     ap.add_argument("--real", help="JSON {броня: кукол на сейвах} для порядка кадров")
     ap.add_argument("--hair", action="store_true", help="только вырезать волосы, без карты")
     ap.add_argument("--worker", action="store_true", help="(служебное) рисовать недостающие кадры подряд")
+    ap.add_argument("--redo", help="номера кадров через запятую: перерисовать в redo/s<сид>")
+    ap.add_argument("--seeds", default="0", help="сиды перерисовки через запятую")
     ns = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     if ns.dry_run:
@@ -251,11 +292,18 @@ def main():
     if lost:
         raise SystemExit("нет описаний кадров: %s" % lost[:20])
     if ns.worker:
-        draw_all(plan, texts)
+        if ns.redo:
+            keep = {}
+            for s in ns.seeds.split(","):
+                draw_all(plan, texts, {int(x) for x in ns.redo.split(",")}, int(s), keep)
+        else:
+            draw_all(plan, texts)
         return
-    cut_hair(plan)
+    if not ns.redo:
+        cut_hair(plan)
+    extra = ["--redo", ns.redo, "--seeds", ns.seeds] if ns.redo else []
     for attempt in range(8):
-        r = subprocess.run([sys.executable, os.path.abspath(__file__), "--worker"])
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), "--worker"] + extra)
         print("рабочий процесс вышел с кодом %s (попытка %d)" % (r.returncode, attempt + 1), flush=True)
         if r.returncode == 0:
             return
