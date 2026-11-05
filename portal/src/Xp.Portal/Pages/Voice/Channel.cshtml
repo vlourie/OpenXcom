@@ -1,0 +1,8 @@
+@page "/voice/rooms/{room}"
+@model Xp.Portal.Pages.Voice.ChannelModel
+@{
+    ViewData["Title"] = Model.Summary?.Room.Title ?? T["voice.state.no_access"];
+    ViewData["Wide"] = true;
+}
+<partial name="_Channel" model="Model" />
+<script src="~/js/channel.js" asp-append-version="true" defer></script>

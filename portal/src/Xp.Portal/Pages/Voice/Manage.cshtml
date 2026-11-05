@@ -1,5 +1,5 @@
-@page "/voice/rooms/{room}"
-@model Xp.Portal.Pages.Voice.RoomModel
+@page "/voice/rooms/{room}/manage"
+@model Xp.Portal.Pages.Voice.ManageModel
 @{
     var v = Model.View;
     ViewData["Title"] = v?.Room.Title ?? T["voice.state.no_access"];
@@ -15,7 +15,7 @@ else
     var r = v.Room;
     <h1>@r.Title</h1>
     <partial name="_Errors" model="Model.Errors" />
-    <p class="hint">@T.Format("voice.room.owner", r.Owner.Name) · <a href="/voice">@T["voice.title"]</a></p>
+    <p class="hint">@T.Format("voice.room.owner", r.Owner.Name) · <a href="@Model.ChannelLink">@T["chan.back"]</a> · <a href="/voice">@T["voice.title"]</a></p>
 
     @if (r.State != "ok")
     {
@@ -57,7 +57,7 @@ else
                     }
                 </p>
             }
-            @if (!r.Mine)
+            @if (!r.Mine && !r.IsPublic)
             {
                 <form method="post" asp-page-handler="Decline" class="inline">
                     <button type="submit" class="link">@T["voice.decline"]</button>

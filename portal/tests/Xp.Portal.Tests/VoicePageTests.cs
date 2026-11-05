@@ -26,6 +26,8 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
     [GeneratedRegex("<main[^>]*>(.*)</main>", RegexOptions.Singleline)]
     private static partial Regex MainRx();
 
+    static string WithoutTokens(string html) => AntiforgeryRx().Replace(html, "name=\"__RequestVerificationToken\" type=\"hidden\" value=\"\"");
+
     static async Task<HttpResponseMessage> PostForm(HttpClient c, string url, Dictionary<string, string> fields, string? tokenFrom = null)
     {
         var html = await c.GetStringAsync(tokenFrom ?? url);
@@ -101,26 +103,33 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
         var back = r.Headers.Location!.OriginalString;
         Assert.StartsWith("/voice/rooms/", back);
         var code = back["/voice/rooms/".Length..];
-        Assert.Contains(guest.Name, await Read(await owner.Browser.GetAsync(back)));
-        r = await PostForm(owner.Browser, $"{back}?handler=Invite", new() { ["user"] = guest.Id.ToString() }, tokenFrom: back);
+        // invites live on the management page of the room, which the room page links to
+        var manage = back + "/manage";
+        Assert.Contains(manage, await Read(await owner.Browser.GetAsync(back)));
+        Assert.Contains(guest.Name, await Read(await owner.Browser.GetAsync(manage)));
+        r = await PostForm(owner.Browser, $"{manage}?handler=Invite", new() { ["user"] = guest.Id.ToString() }, tokenFrom: manage);
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
-        Assert.Equal(back, r.Headers.Location!.OriginalString);
+        Assert.Equal(manage, r.Headers.Location!.OriginalString);
 
-        // the guest finds it on /voice and is sent to the launcher, which asks the site for the pass itself
+        // the guest finds it among his rooms on /voice; the room page sends to the launcher, which asks the site for the pass itself
         var list = await Read(await guest.Browser.GetAsync("/voice"));
         Assert.Contains(title, list);
-        Assert.Contains($"xpiratez://voice/{code}", list);
+        Assert.Contains(back, list);
         var roomId = await f.DbAsync(db => db.VoiceRooms.Where(x => x.PublicId == code).Select(x => x.Id).SingleAsync());
         f.Voice.Inside(roomId, new LivePeer(owner.Id.ToString(), owner.Name, true, null));
         var page = await guest.Browser.GetAsync(back);
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
         var html = await Read(page);
         Assert.Contains($"xpiratez://voice/{code}", html);
-        Assert.Contains("Сейчас в комнате", html);
-        Assert.Contains(owner.Name, html);
+        var managed = await Read(await guest.Browser.GetAsync(manage));
+        Assert.Contains("Сейчас в комнате", managed);
+        Assert.Contains(owner.Name, managed);
         // the guest sees no owner's controls
-        Assert.DoesNotContain("handler=Invite", html);
-        Assert.DoesNotContain("handler=Ban", html);
+        foreach (var seen in new[] { html, managed })
+        {
+            Assert.DoesNotContain("handler=Invite", seen);
+            Assert.DoesNotContain("handler=Ban", seen);
+        }
     }
 
     [Fact]
@@ -140,7 +149,8 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
         Assert.Contains("Нет доступа", a);
         Assert.DoesNotContain(title, a);
         Assert.DoesNotContain(owner.Name, a);
-        Assert.Equal(MainRx().Match(b).Groups[1].Value, MainRx().Match(a).Groups[1].Value);
+        // the same page word for word; only the antiforgery token of the sidebar form differs on every look
+        Assert.Equal(WithoutTokens(MainRx().Match(b).Groups[1].Value), WithoutTokens(MainRx().Match(a).Groups[1].Value));
 
         // a change is refused with the same answer and changes nothing
         foreach (var (handler, fields) in new (string, Dictionary<string, string>)[]
@@ -150,10 +160,22 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
             ("Delete", new() { ["sure"] = "true" }),
         })
         {
+            var r = await PostForm(stranger.Browser, $"/voice/rooms/{code}/manage?handler={handler}", fields, tokenFrom: "/voice");
+            Assert.Equal(HttpStatusCode.NotFound, r.StatusCode);
+            Assert.DoesNotContain(title, await Read(r));
+        }
+        // the page of the room refuses a line and a removal in the same words
+        foreach (var (handler, fields) in new (string, Dictionary<string, string>)[]
+        {
+            ("Say", new() { ["line"] = "привет" }),
+            ("Delete", new() { ["id"] = "1" }),
+        })
+        {
             var r = await PostForm(stranger.Browser, $"/voice/rooms/{code}?handler={handler}", fields, tokenFrom: "/voice");
             Assert.Equal(HttpStatusCode.NotFound, r.StatusCode);
             Assert.DoesNotContain(title, await Read(r));
         }
+        Assert.False(await f.DbAsync(db => db.RoomMessages.AnyAsync(m => m.RoomId == roomId)));
         var room = await f.DbAsync(db => db.VoiceRooms.SingleAsync(x => x.Id == roomId));
         Assert.Equal(VoiceRoomStatus.Open, room.Status);
         Assert.False(await f.DbAsync(db => db.RoomInvites.AnyAsync(i => i.RoomId == roomId)));
@@ -165,7 +187,7 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
         var owner = await PersonAsync("Хозяин");
         var other = await PersonAsync("Незнакомец");
         var (code, roomId) = await RoomAsync(owner.Id, "Своя");
-        var url = $"/voice/rooms/{code}";
+        var url = $"/voice/rooms/{code}/manage";
 
         var r = await PostForm(owner.Browser, $"{url}?handler=Invite", new() { ["user"] = other.Id.ToString() }, tokenFrom: url);
         Assert.Equal(HttpStatusCode.OK, r.StatusCode);
@@ -195,7 +217,7 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
         await FriendsAsync(owner.Id, guest.Id);
         var (code, roomId) = await RoomAsync(owner.Id, "Шумная");
         await V(v => v.InviteAsync(owner.Id, code, guest.Id, default));
-        var url = $"/voice/rooms/{code}";
+        var url = $"/voice/rooms/{code}/manage";
 
         var r = await PostForm(owner.Browser, $"{url}?handler=Speaking", new() { ["user"] = guest.Id.ToString(), ["allowed"] = "false", ["reason"] = "шумит" }, tokenFrom: url);
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
@@ -207,6 +229,7 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
 
         // the guest's page tells why, and the owner can take it back
         Assert.Contains("Вы заблокированы", await Read(await guest.Browser.GetAsync(url)));
+        Assert.Contains("Вы заблокированы", await Read(await guest.Browser.GetAsync($"/voice/rooms/{code}")));
         r = await PostForm(owner.Browser, $"{url}?handler=Unban", new() { ["user"] = guest.Id.ToString() }, tokenFrom: url);
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
         var log = await f.DbAsync(db => db.VoiceEvents.Where(e => e.RoomId == roomId && e.UserId == guest.Id).Select(e => e.Kind + ":" + (e.Reason ?? "")).ToListAsync());
@@ -231,7 +254,7 @@ public sealed partial class VoicePageTests(VoiceFactory f) : IClassFixture<Voice
     public async Task Voice_pages_need_a_signed_in_person_and_staff_powers_need_the_superadmin()
     {
         var anon = Browser();
-        foreach (var p in new[] { "/voice", "/me/friends", "/voice/rooms/anything" })
+        foreach (var p in new[] { "/voice", "/me/friends", "/voice/rooms/anything", "/voice/rooms/anything/manage" })
             Assert.StartsWith("/account/login", (await anon.GetAsync(p)).Headers.Location!.PathAndQuery());
         var user = await PersonAsync("Игрок");
         Assert.StartsWith("/account/denied", (await user.Browser.GetAsync("/admin/super/voice")).Headers.Location!.PathAndQuery());

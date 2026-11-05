@@ -576,7 +576,76 @@ dialog.lightbox .close { position: fixed; top: 10px; right: 14px; min-width: 0; 
 .pm-compose textarea { min-height: 84px; }
 .unread-count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; text-align: center; font-size: 12px; font-weight: 700; background: var(--sand); color: var(--void); }
 
+/* ---------- the channel page: an IRC client in three columns (docs/portal/VOICE_IRC.md) ------------ */
+
+/* channels and dialogues on the left, the feed in the middle, who is here on the right; on a phone the
+ * three become tabs, switched by three radio inputs and no script (see the narrow-screen block) */
+.chan { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) minmax(130px, 200px); gap: 14px; align-items: start; }
+.chan-radio { position: absolute; left: -9999px; }
+.chan-tabs { display: none; }
+.chan-list, .chan-who { min-width: 0; padding: 10px 12px; background: var(--win-face); box-shadow: inset 0 0 0 1px var(--win-ring-4); font-size: 14px; }
+.chan-main { min-width: 0; }
+.chan-list h2, .chan-who h2 { margin: 14px 0 6px; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-faint); }
+.chan-list h2:first-child, .chan-who h2:first-child { margin-top: 0; }
+.chan-nav { margin: 0; padding: 0; list-style: none; }
+.chan-nav a { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; padding: 3px 6px; color: var(--ink-dim); text-decoration: none; overflow-wrap: anywhere; }
+.chan-nav a:hover { color: var(--accent); }
+.chan-nav li.on a { color: var(--ink); background: var(--ui-9); }
+.chan-nav .name { font-weight: 600; }
+.unread-count.mention { background: var(--accent); }
+.chan-new { margin: 8px 0; }
+.chan-new summary { cursor: pointer; color: var(--ink-faint); font-size: 13px; }
+.chan-new input { margin-bottom: 6px; }
+.chan-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 14px 0 0; font-size: 13px; }
+.chan-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.chan-head h1 { margin: 0; font-size: 22px; overflow-wrap: anywhere; }
+.chan-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.chan-actions .button { margin-top: 0; }
+.chan-topic { margin: 8px 0; padding: 6px 10px; background: var(--ui-5); box-shadow: inset 0 0 0 1px var(--ui-4); color: var(--ink-dim); overflow-wrap: anywhere; }
+.chan-lines {
+    height: min(60vh, 560px);
+    min-height: 240px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    background: var(--void);
+    box-shadow: inset 0 0 0 1px var(--ui-9);
+    font: 14px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+.chan-lines .line { padding: 1px 0; overflow-wrap: anywhere; }
+.chan-lines .line time { margin-right: 8px; color: var(--ink-faint); }
+.chan-lines .nick { color: var(--accent); }
+.chan-lines .line.mine .nick { color: var(--sand); }
+.chan-lines .line.sys, .chan-lines .line.sys time { color: var(--ink-faint); }
+.chan-lines .line.notice { white-space: pre-line; }
+.chan-lines .line.mention { background: var(--ui-9); }
+.chan-lines .body a { color: var(--accent); }
+.chan-lines button.del { margin: 0 0 0 8px; padding: 0 4px; min-width: 0; color: var(--ink-faint); background: none; box-shadow: none; font-size: 14px; }
+.chan-lines button.del:hover { color: var(--sand); background: none; }
+@media (hover: hover) {
+    .chan-lines button.del { opacity: 0; }
+    .chan-lines .line:hover button.del, .chan-lines button.del:focus { opacity: 1; }
+}
+.chan-say { display: flex; gap: 8px; margin-top: 8px; }
+.chan-say input { flex: 1 1 auto; min-width: 0; margin: 0; }
+.chan-say button { margin-top: 0; }
+.chan-people { margin: 0; padding: 0; list-style: none; }
+.chan-people li { padding: 2px 0; overflow-wrap: anywhere; }
+.chan-people .mark { display: inline-block; min-width: 1.6em; color: var(--sand); font-weight: 700; font-family: ui-monospace, Consolas, monospace; }
+.chan-people .nick { color: var(--accent); }
+
 /* ---------- narrow screens --------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+    .chan { display: block; }
+    .chan-tabs { display: flex; margin-bottom: 10px; }
+    .chan-tabs label { flex: 1 1 0; padding: 9px 4px; text-align: center; cursor: pointer; color: var(--ink-dim); box-shadow: inset 0 0 0 1px var(--ui-9); }
+    .chan-list, .chan-main, .chan-who { display: none; }
+    #tab-list:checked ~ .chan-list, #tab-feed:checked ~ .chan-main, #tab-who:checked ~ .chan-who { display: block; }
+    #tab-list:checked ~ .chan-tabs label[for="tab-list"],
+    #tab-feed:checked ~ .chan-tabs label[for="tab-feed"],
+    #tab-who:checked ~ .chan-tabs label[for="tab-who"] { color: var(--void); background: var(--ui-12); }
+    .chan-lines { height: 55vh; }
+}
 
 @media (max-width: 720px) {
     .hero { grid-template-columns: 1fr; }

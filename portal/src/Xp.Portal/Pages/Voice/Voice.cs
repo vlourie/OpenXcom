@@ -23,7 +23,7 @@ public abstract class VoicePage : PageModel
     protected Guid Me => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     /// <summary>The text key of a refusal: voice.err.&lt;code&gt; in Strings.</summary>
-    public static string ErrorKey(string code) => "voice.err." + code;
+    public static string ErrorKey(string code) => code.StartsWith("msg_", StringComparison.Ordinal) ? "msg.err." + code[4..] : "voice.err." + code;
 
     /// <summary>Runs a change; on success shows <paramref name="flash"/> on the page it goes back to, on refusal stays with the reason.</summary>
     protected async Task<IActionResult> ChangeAsync(Func<Task> act, string flash, Func<Task> reload, string back)
@@ -112,50 +112,14 @@ public sealed class FriendsModel(VoiceService voice, IOptions<PortalOptions> por
         ChangeAsync(() => voice.UnblockAsync(Me, user, ct), "friends.flash.unblocked", () => LoadAsync(ct), "/me/friends");
 }
 
-/// <summary>My rooms and the rooms I am invited to; a new room is made here.</summary>
-[EnableRateLimiting("voice-write")]
-public sealed class RoomsModel(VoiceService voice) : VoicePage
-{
-    public IReadOnlyList<RoomSummary> Owned { get; private set; } = [];
-    public IReadOnlyList<RoomSummary> Invited { get; private set; } = [];
-    public int Incoming { get; private set; }
-
-    async Task LoadAsync(CancellationToken ct)
-    {
-        (Owned, Invited) = await voice.RoomsAsync(Me, ct);
-        Incoming = (await voice.FriendsAsync(Me, 1, 1, ct)).Incoming.Count;
-    }
-
-    public async Task OnGetAsync(CancellationToken ct) => await LoadAsync(ct);
-
-    public async Task<IActionResult> OnPostCreateAsync(string? title, CancellationToken ct)
-    {
-        try
-        {
-            var room = await voice.CreateRoomAsync(Me, title, ct);
-            TempData["flash"] = "voice.flash.created";
-            return LocalRedirect($"/voice/rooms/{room.PublicId}");
-        }
-        catch (VoiceException e)
-        {
-            Errors.Add(ErrorKey(e.Code));
-            await LoadAsync(ct);
-            return Page();
-        }
-    }
-
-    public Task<IActionResult> OnPostDeclineAsync(string? room, CancellationToken ct) =>
-        ChangeAsync(() => voice.DeclineInviteAsync(Me, room, ct), "voice.flash.declined", () => LoadAsync(ct), "/voice");
-}
-
 /// <summary>
-/// One room. An outsider and a room that does not exist get the same 404 page. The owner sees the
+/// The management of one room - it was the room page before the channel page (VOICE_IRC.md) took that address. An outsider and a room that does not exist get the same 404 page. The owner sees the
 /// members and every action on them; a guest sees where they stand, the button that opens the
 /// launcher, and the complaint form. Who is inside right now is asked of the media server briefly:
 /// a server that does not answer does not hold the page.
 /// </summary>
 [EnableRateLimiting("voice-write")]
-public sealed class RoomModel(VoiceService voice, IOptions<PortalOptions> portal) : VoicePage
+public sealed class ManageModel(VoiceService voice, IOptions<PortalOptions> portal) : VoicePage
 {
     static readonly TimeSpan LiveWait = TimeSpan.FromSeconds(3);
 
@@ -169,6 +133,7 @@ public sealed class RoomModel(VoiceService voice, IOptions<PortalOptions> portal
     public List<PersonView> Reportable { get; private set; } = new();
     public string Link => $"{portal.Value.PublicUrl.TrimEnd('/')}/voice/rooms/{Room}";
     public string LauncherLink => $"xpiratez://voice/{Room}";
+    public string ChannelLink => $"/voice/rooms/{Uri.EscapeDataString(Room)}";
     public Guid MeId => Me;
 
     async Task LoadAsync(CancellationToken ct)
@@ -196,6 +161,11 @@ public sealed class RoomModel(VoiceService voice, IOptions<PortalOptions> portal
             Invitable = friends.Friends.Where(x => !active.Contains(x.Id)).ToList();
             Reportable = members.Select(m => m.Person).ToList();
         }
+        else if (View.Room.IsPublic)
+        {
+            // a public channel belongs to the site: whom to complain about is whoever wrote there
+            if (View.Room.State == "ok") Reportable = (await voice.ChannelPeopleAsync(Me, Room, ct)).ToList();
+        }
         else
         {
             Reportable = Live.Select(l => l.Person).Prepend(View.Room.Owner)
@@ -209,7 +179,7 @@ public sealed class RoomModel(VoiceService voice, IOptions<PortalOptions> portal
         return Page();
     }
 
-    string Back => $"/voice/rooms/{Uri.EscapeDataString(Room)}";
+    string Back => $"/voice/rooms/{Uri.EscapeDataString(Room)}/manage";
 
     Task<IActionResult> Do(Func<Task> act, string flash, CancellationToken ct) =>
         ChangeAsync(act, flash, () => LoadAsync(ct), Back);
