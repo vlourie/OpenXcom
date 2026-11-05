@@ -224,7 +224,8 @@ void addPending(const std::string &name, const std::string &path, int width, int
 	p.palette = std::move(palette);
 }
 
-void composeLayers(const Surface *composite, const std::vector<std::pair<const Surface*, std::string>> &layers)
+/// composeLayers and composeLayerPart: `part` says that the composite is a window of the layers.
+static void composeArt(const Surface *composite, const std::vector<std::pair<const Surface*, std::string>> &layers, bool part, const Surface *backdrop, int cropX, int cropY)
 {
 	if (!composite || layers.empty() || (pending.empty() && dollArts == 0) || !Options::oxceHdPictures)
 	{
@@ -249,9 +250,29 @@ void composeLayers(const Surface *composite, const std::vector<std::pair<const S
 	for (const auto &layer : layers)
 	{
 		const Surface *surface = layer.first;
-		if (!surface || surface->getWidth() > bw || surface->getHeight() > bh)
+		if (!surface || (!part && (surface->getWidth() > bw || surface->getHeight() > bh)))
 		{
 			return;
+		}
+		if (part)
+		{
+			// a layer that does not show in the window needs no picture, and its file is not read for it
+			const Uint8 *own = (const Uint8*)surface->getBuffer();
+			const int ownPitch = surface->getPitch();
+			const int x0 = std::max(cropX, 0), x1 = std::min(cropX + bw, surface->getWidth());
+			const int y1 = std::min(cropY + bh, surface->getHeight());
+			bool shows = false;
+			for (int y = std::max(cropY, 0); y < y1 && !shows; ++y)
+			{
+				for (int x = x0; x < x1 && !shows; ++x)
+				{
+					shows = own[(size_t)y * ownPitch + x] != 0;
+				}
+			}
+			if (!shows)
+			{
+				continue;
+			}
 		}
 		const Art *art = find(surface);
 		if (!art)
@@ -286,6 +307,10 @@ void composeLayers(const Surface *composite, const std::vector<std::pair<const S
 		}
 		parts.push_back(art);
 	}
+	if (parts.empty())
+	{
+		return;
+	}
 	std::unique_ptr<Art> art(new Art());
 	art->name = "doll " + layers.back().second;
 	art->scale = scale;
@@ -303,6 +328,27 @@ void composeLayers(const Surface *composite, const std::vector<std::pair<const S
 	if (palette)
 	{
 		art->palette = *palette;
+	}
+	art->cropX = cropX;
+	art->cropY = cropY;
+	if (backdrop)
+	{
+		// in the colours the picture is tinted from: the reference palette, or the shown one without it
+		const SDL_Color *colors = palette ? palette->data() : composite->getPalette();
+		const Uint8 *own = (const Uint8*)backdrop->getBuffer();
+		const int ownW = std::min(backdrop->getWidth(), bw), ownH = std::min(backdrop->getHeight(), bh);
+		art->backdrop.assign((size_t)bw * bh, 0u);
+		for (int y = 0; colors && y < ownH; ++y)
+		{
+			for (int x = 0; x < ownW; ++x)
+			{
+				const Uint8 index = own[(size_t)y * backdrop->getPitch() + x];
+				if (index)
+				{
+					art->backdrop[(size_t)y * bw + x] = 0xFF000000u | ((Uint32)colors[index].r << 16) | ((Uint32)colors[index].g << 8) | colors[index].b;
+				}
+			}
+		}
 	}
 	art->layers = std::move(parts);
 	art->doll = true;
@@ -332,6 +378,16 @@ void composeLayers(const Surface *composite, const std::vector<std::pair<const S
 	sizes.insert(sizeKey(bw, bh));
 	arts.push_back(std::move(art));
 	++dollArts;
+}
+
+void composeLayers(const Surface *composite, const std::vector<std::pair<const Surface*, std::string>> &layers)
+{
+	composeArt(composite, layers, false, nullptr, 0, 0);
+}
+
+void composeLayerPart(const Surface *composite, const Surface *backdrop, const std::vector<std::pair<const Surface*, std::string>> &layers, int cropX, int cropY)
+{
+	composeArt(composite, layers, true, backdrop, cropX, cropY);
 }
 
 namespace
@@ -467,8 +523,19 @@ bool composeFrame(const Art *art)
 	out.height = H;
 	out.pixels.assign((size_t)W * H, 0u);
 	out.generated = false;
+	if (!art->backdrop.empty())
+	{
+		for (int y = 0; y < H; ++y)
+		{
+			for (int x = 0; x < W; ++x)
+			{
+				out.pixels[(size_t)y * W + x] = art->backdrop[(size_t)(y / s) * art->baseWidth + x / s];
+			}
+		}
+	}
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(H / 64, pool.threads() * 2));
+	const int ox = art->cropX * s, oy = art->cropY * s;
 	for (const Art *layer : art->layers)
 	{
 		HdFrame f;
@@ -478,12 +545,12 @@ bool composeFrame(const Art *art)
 		{
 			return false;
 		}
-		const int lw = std::min(f.width, W), lh = std::min(f.height, H);
+		const int lw = std::min(f.width - ox, W), lh = std::min(f.height - oy, H);
 		pool.run(jobs, [&](int job)
 		{
 			for (int y = (int)((long long)lh * job / jobs), last = (int)((long long)lh * (job + 1) / jobs); y < last; ++y)
 			{
-				const Uint32 *src = &f.pixels[(size_t)y * f.width];
+				const Uint32 *src = &f.pixels[(size_t)(y + oy) * f.width + ox];
 				Uint32 *dst = &out.pixels[(size_t)y * W];
 				for (int x = 0; x < lw; ++x)
 				{

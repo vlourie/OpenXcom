@@ -63,6 +63,7 @@
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdWorkers.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdUiArt.h"
 #include "../Engine/HdBattleHud.h"
 #include "../Engine/HdKillCam.h"
 #include "../Engine/HdGentle.h"
@@ -2449,6 +2450,7 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 			}
 			if (customArmor->hasLayersDefinition())
 			{
+				std::vector<std::pair<const Surface*, std::string>> hdLayers;
 				for (const auto& layer : soldier->getArmorLayers(customArmor))
 				{
 					Surface* surf = _game->getMod()->getSurface(layer, true);
@@ -2460,7 +2462,9 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 					crop.getCrop()->h = 23;
 
 					crop.blit(_rank);
+					hdLayers.emplace_back(surf, layer);
 				}
+				HdUiArt::composeLayerPart(_rank, customBg, hdLayers, soldier->getRules()->getAvatarOffsetX(), soldier->getRules()->getAvatarOffsetY());
 			}
 			else
 			{
