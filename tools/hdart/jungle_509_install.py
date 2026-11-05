@@ -20,6 +20,7 @@ PARTS = (
     ("p509_flower_build", os.path.join(ART, "hb509", "flower", FLOWER_B), "XP-000509, красный цветок, зерно 5093 (Vitali, страница 05.11: вариант B)"),
     ("p509_liana_build", os.path.join(ART, "hb509", "liana", LIANA_B), "XP-000509, лианы, зерно 5174 (Vitali, страница 05.11: вариант B)"),
     ("p510_bush4", os.path.join(ART, "hb509", "bush4"), "XP-000510, куст: HD JUNGLE:4, цвет своего набора (Vitali, страница 05.11: ставить)"),
+    ("b3b_build", os.path.join(ART, "hb510_bush3", "A"), "XP-000510, куст со стволом: силуэт и цвет классики, лист JUNGLE:4 (Vitali, страница 05.11: вариант A)"),
 )
 SKIP_SETS = {"SIETCH_DARK"}     # край уже прямой, свой одобренный HD
 
