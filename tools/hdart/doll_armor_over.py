@@ -3,7 +3,7 @@
 r"""Брони из нескольких вещей поверх готовых тел UBERGAL: тело и голова не перерисовываются, кадр общий на броню, разрез по слоям.
 
 Отдача по настоящим сейвам 05.11: GANGER_OUTFIT 3 слоя - 50 кукол, PIR_CASTAWAY 2 - 31, RAGS 2 - 31, TAC_FULL 2 - 26.
-CASTAWAY LIGHT и DARK одного силуэта, разница 706 точек из 1752 - кожа под чулками (мерка 05.11): рисунок один, цвет от своей классики.
+CASTAWAY LIGHT и DARK одного силуэта, разница 706 точек из 1752 - кожа под чулками (мерка 05.11): у каждого свой кадр на теле этого цвета (R-725).
 Сначала показать простым наложением: ничего не прикрывать и не дорисовывать (Vitali 05.11, R-713). В мод не ставит.
 
     py -3.13 tools\gpuq.py add --name doll_over -- E:\OpenXCom\tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\doll_armor_over.py
@@ -30,8 +30,13 @@ OUT = os.path.join(db.ROOT, "art", "doll", "pipe_pilot", "armor_over")
 BODIES = os.path.join(db.ROOT, "art", "doll", "pipe_pilot", "layers")
 SEEDS = [0, 1]
 NEGATIVE = S.NEGATIVE + ", extra limbs, nude, bare breasts"
-# looks: первая - под кадр (самая частая у настоящих бойцов), обе - на лист; second - замена вещи для второй внешности.
+# looks: первая - под кадр (самая частая у настоящих бойцов), все - на лист.
 # Что на классике - глазами x6, 05.11
+CASTAWAY = (
+    "%s in shipwreck clothes: a torn dirty off-white short-sleeved shirt hanging open with ragged frayed edges and grey stains; a "
+    "black leather belt low on the hips with a grey metal clasp in the middle over dirty pale cloth briefs; fine black fishnet "
+    "stockings over the skin, torn at different heights; one worn black leather ankle boot on one leg, the other foot "
+    "bare under the fishnet") % P.WHO
 ARMORS = {
     "ganger": {"looks": ["M28", "M22"], "head": True, "gear": ["UBERGAL__3__BRA_LARGE_BLACK_LACE", "UBERGAL__6__FINGERLESS_GLOVES",
                                                                "UBERGAL__7__GANGER_MAIN", "UBERGAL__8__GANGER_JACKET"], "what": (
@@ -39,12 +44,7 @@ ARMORS = {
         "open edge, a round steel rivet badge on the chest and on the sleeve; a dark sheer mesh bra under the jacket; black leather "
         "shorts with a wide belt, a small square steel buckle and round steel studs; tall black leather boots above the knee with "
         "round steel studs on the knee and shin, straps round the ankle and worn grey toe caps") % P.WHO, "negative": ""},
-    "castaway": {"looks": ["M5", "M22"], "head": True, "gear": ["UBERGAL__4__CASTAWAY_OUTFIT_LIGHT"],
-                 "second": {"UBERGAL__4__CASTAWAY_OUTFIT_LIGHT": "UBERGAL__4__CASTAWAY_OUTFIT_DARK"}, "what": (
-        "%s in shipwreck clothes: a torn dirty off-white short-sleeved shirt hanging open with ragged frayed edges and grey stains; a "
-        "black leather belt low on the hips with a grey metal clasp in the middle over dirty pale cloth briefs; fine black fishnet "
-        "stockings over the skin, torn at different heights; one worn black leather ankle boot on one leg, the other foot "
-        "bare under the fishnet") % P.WHO, "negative": ", clean new shirt"},
+    "castaway": {"looks": ["M5"], "head": True, "gear": ["UBERGAL__4__CASTAWAY_OUTFIT_LIGHT"], "what": CASTAWAY, "negative": ", clean new shirt"},
     "rags": {"looks": ["M59", "F20"], "head": True, "gear": ["UBERGAL__1__RAGS_BACK", "UBERGAL__9__RAGS"], "what": (
         "%s wearing a long tattered black cloak of rotten cloth and thick ropy strands of dark brown seaweed hanging from the "
         "shoulders down to the floor, a very dark violet lining inside, one black cloth sleeve, and thick dark coiling tentacles "
@@ -54,6 +54,8 @@ ARMORS = {
         "segmented glossy bright green armour plates on the chest, stomach, round shoulders, forearms, hips, thighs and ribbed "
         "shins, green plated boots and gloves. A closed rounded green helmet with small side bumps, a narrow dark visor with two "
         "small pale lenses, a ribbed green breathing mask over the mouth and a black padded hood round the helmet"), "negative": ", face, skin, hair"},
+    "castaway_dark": {"looks": ["M22", "M59"], "head": True, "gear": ["UBERGAL__4__CASTAWAY_OUTFIT_DARK"], "what": CASTAWAY.replace(
+        "over the skin", "over dark brown skin"), "negative": ", clean new shirt, pale skin, orange skin"},
 }
 
 
@@ -69,7 +71,7 @@ def stack(a, i):
     """Слои куклы снизу вверх для внешности номер i - так же их кладёт движок (индекс слота в имени)."""
     look = a["looks"][i]
     names = ["UBERGAL__2__%s_NUDE" % look] + (["UBERGAL__10__HEAD_%s" % look] if a["head"] else [])
-    names += [a.get("second", {}).get(n, n) if i else n for n in a["gear"]]
+    names += a["gear"]
     return sorted(names, key=lambda n: int(n.split("__")[1]))
 
 
