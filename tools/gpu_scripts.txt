@@ -99,6 +99,7 @@ doll_paint_pilot.py
 doll_ctl_pilot.py
 doll_face_pilot.py
 doll_face_ctl.py
+doll_pipe_pilot.py
 obj3d_gen.py
 gen_screens.py
 gen_ufo_pedia.py
