@@ -122,6 +122,8 @@ RESEED.update({"F9": 1, "M36": 1, "M33": 1, "F40": 2, "M12": 1, "M40": 1, "M24":
 RESEED.update({"F35": 3, "M36": 2, "M5": 3})   # шишки и бледные пятна на ступнях (#1109)
 # тела без единой вещи (сверено разницей слоёв): разница с ними - вещи классики; ключ - полурампа кожи
 CLEAN_BODY = {12: "F5", 20: "M42"}
+FACE_TORSO = (66, 100, 60, 98)                          # face_to_body: строки и столбцы груди, откуда цвет
+FACE_LIMIT = (30.0, 45.0)                               # и насколько цвет может быть далёк от щёк: лицо, шея
 
 
 # --- паспорт внешности: с классики в палитре игры, без карты --------------------------------------------------------
@@ -618,6 +620,7 @@ def skin_match(rgb4_full, look, region, sample=None, near=None):
     cov = ws.sil4(cov1 if sample is None else cov1 & sample) > 0.5
     cov = cv2.erode(cov.astype(np.uint8), np.ones((3, 3), np.uint8), iterations=2) > 0
     names = ["%s__%d__%s_NUDE" % (dp.RACE, dp.BODY, look), "%s__%d__HEAD_%s" % (dp.RACE, dp.HEAD, look)]
+    names = [n for n in names if n in FILES]            # у LOKNAR голова в слое тела, слоя головы нет
     cl = np.asarray(dp.classic(FILES, PAL, names).resize((db.W * dp.K, db.H * dp.K), Image.NEAREST).convert("RGB"),
                     np.float32)
     lab = bp._rgb_to_lab(rgb4_full / 255.0)
@@ -646,14 +649,14 @@ def face_to_body(fh, f4):
     k = dp.K
     x0, y0, x1, y1 = FACE_BOX
     lab = bp._rgb_to_lab(fh / 255.0)
-    torso = bp._rgb_to_lab(f4[66 * k:100 * k, 60 * k:98 * k] / 255.0).reshape(-1, 3)
+    torso = bp._rgb_to_lab(f4[FACE_TORSO[0] * k:FACE_TORSO[1] * k, FACE_TORSO[2] * k:FACE_TORSO[3] * k] / 255.0).reshape(-1, 3)
     torso = torso[(torso[..., 0] > 22) & (np.hypot(torso[..., 1], torso[..., 2]) > 10)]
     bins = [b for b in range(22, 100, 4) if (np.abs(torso[..., 0] - b) < 4).sum() > 50]
     curve = np.array([np.median(torso[np.abs(torso[..., 0] - b) < 4], 0) for b in bins])
     ref = np.median(lab[(y0 + 4) * k:y1 * k, x0 * k:(x1 + 1) * k].reshape(-1, 3), 0)
     dist = np.hypot(lab[..., 1] - ref[1], lab[..., 2] - ref[2])
-    limit = np.full(dist.shape, 30.0, np.float32)
-    limit[y1 * k:] = 45.0                               # на шее нет косметики, а оливковая тень дальше от щёк, чем губы
+    limit = np.full(dist.shape, FACE_LIMIT[0], np.float32)
+    limit[y1 * k:] = FACE_LIMIT[1]                      # на шее нет косметики, а оливковая тень дальше от щёк, чем губы
     w = np.clip((limit - dist) / 12, 0, 1) * np.clip((np.hypot(lab[..., 1], lab[..., 2]) - 6) / 8, 0, 1) * (lab[..., 0] > 22)
     box = np.zeros(w.shape, np.float32)
     box[(y0 - 1) * k:(y1 + 5) * k, (x0 - 1) * k:(x1 + 3) * k] = 1

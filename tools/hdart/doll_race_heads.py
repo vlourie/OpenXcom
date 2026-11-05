@@ -38,6 +38,8 @@ BODY, HEAD, HAIR = 2, 10, 13
 FACE_BOX = (77, 56, 84, 66)                         # проверено на 6 внешностях крупно, 05.11
 NECK_ROW = 69                                       # выше - цвет и альфа кадра головы, ниже - тело как собрано
 PAGE = 8                                            # внешностей на лист
+SHEET_CLOSE = (56, 38, 104, 90)
+SHEET_FULL = (50, 38, 110, 148)
 
 
 def names_of(look):
@@ -270,7 +272,7 @@ def compose(j, rgb):
         a[..., :3][inside] = fh[inside]
         return Image.fromarray(np.clip(a + 0.5, 0, 255).astype(np.uint8), "RGBA")
 
-    return body, part(hn), (part(rn) if rn in P.FILES else None), {"skin": sd, "hair_dE": [d0, d1]}
+    return body, (part(hn) if hn in P.FILES else None), (part(rn) if rn in P.FILES else None), {"skin": sd, "hair_dE": [d0, d1]}
 
 
 def finish(jobs, dry):
@@ -287,8 +289,8 @@ def finish(jobs, dry):
 def finish_page(jobs, dry, page):
     FONT = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 18)
     k = dp.K
-    close = (56 * k, 38 * k, 104 * k, 90 * k)
-    full = (50 * k, 38 * k, 110 * k, 148 * k)
+    close = tuple(v * k for v in SHEET_CLOSE)
+    full = tuple(v * k for v in SHEET_FULL)
     Z = 2
     cw, ch = (close[2] - close[0]) * Z, (close[3] - close[1]) * Z
     fw, fh_ = (full[2] - full[0]) * ch // (full[3] - full[1]), ch

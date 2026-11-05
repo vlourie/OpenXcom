@@ -32,6 +32,11 @@ BY_EYE = {"F47": "M2"}  # кубики в классике, перепись и 
 ROW = 69                # шея классики
 HEAD_ROW = 66           # выше - черновая голова основы, её в теле нет
 TORSO = (72, 108)
+CROTCH = (88, 102, 66, 95)  # строки и столбцы: трусы и волосы в паху, там стринги
+GROUPS = "fhuman_groups.json"
+SHEET_BOX = (50, 44, 110, 148)
+WIDE_SKIN = False       # не кожа - только тёмное и бесцветное: цветная основа, её глубокая тень и белые блики перекрашиваются
+LIFT = {}               # внешность -> прибавка к светлоте: у контрастной классики медиана темнее того, что видит глаз
 MARK_DIST, MARK_MIN = 18, 5
 MOVE_GAIN = 30          # на другую основу - если своего меньше хотя бы на столько пикселей
 DITHER = 1.0            # размытие классики против дизеринга, пиксели k=1
@@ -84,7 +89,7 @@ def soft_of(n):
         lab = soft_lab(PAL[idx] / 255.0, idx > 0)
         m = cv2.erode((idx > 0).astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
         m[:ROW] = False
-        m[88:102, 66:95] = False                        # трусы и волосы в паху: там стринги
+        m[CROTCH[0]:CROTCH[1], CROTCH[2]:CROTCH[3]] = False
         SOFT[n] = (lab, m, curve_of(lab, m), np.percentile(lab[..., 0][m], (25, 50, 75)))
     return SOFT[n]
 
@@ -105,6 +110,8 @@ def base_layer(n):
         L, chroma = lab[..., 0], np.hypot(lab[..., 1], lab[..., 2])
         # чёрные наклейки и стринги - не кожа
         w = np.clip((L - 16) / 10, 0, 1) * np.clip((chroma - 5) / 6, 0, 1) * (im[..., 3] / 255.0)
+        if WIDE_SKIN:
+            w = (1 - np.clip((30 - L) / 10, 0, 1) * np.clip((11 - chroma) / 6, 0, 1)) * (im[..., 3] / 255.0)
         w[skin_islands(w)] = 0
         small = cv2.resize(np.dstack([im[..., :3] / 255.0, w]), (db.W, db.H), interpolation=cv2.INTER_AREA)
         a = small[..., 3] > 0.9
@@ -127,7 +134,7 @@ def own_mask(base, look):
             best[x // 256], t[x // 256] = n, x % 256
     own = (np.linalg.norm(LAB[t[a]] - LAB[b], axis=-1) > MARK_DIST) & (b > 0)
     own[:ROW] = False
-    own[88:102, 66:95] = False
+    own[CROTCH[0]:CROTCH[1], CROTCH[2]:CROTCH[3]] = False
     return own
 
 
@@ -202,7 +209,7 @@ def assemble(base, look):
         L = q[1] + (lab[..., 0] - q_b[1]) * s + dL
         # блики и наклейки сдвигают медиану основы: без поправки всё выходит на 5 темнее, бледное - оливковым
         m = soft_of(look)[1] & (cv2.resize(w, (db.W, db.H), interpolation=cv2.INTER_AREA) > 0.9)
-        L = np.clip(L + np.clip(q[1] - np.median(cv2.resize(L.astype(np.float32), (db.W, db.H), interpolation=cv2.INTER_AREA)[m]), -12, 12), 6, 97)
+        L = np.clip(L + np.clip(q[1] - np.median(cv2.resize(L.astype(np.float32), (db.W, db.H), interpolation=cv2.INTER_AREA)[m]), -12, 12) + LIFT.get(look, 0), 6, 97)
         ca0, cb0 = on_curve(lab[..., 0], cur_b)
         ca, cb = on_curve(L, cur)
         # остаток цвета основы - в долю цветности цели: на тёмной коже те же ±6 выводят слабую линию основы в штрих
@@ -228,7 +235,7 @@ def head_over(look):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
-    groups = json.load(open(os.path.join(ROOT, "fhuman_groups.json"), encoding="utf-8-sig"))
+    groups = json.load(open(os.path.join(ROOT, GROUPS), encoding="utf-8-sig"))
     os.makedirs(os.path.join(OUT, "assembled"), exist_ok=True)
     only = sys.argv[1].split(",") if len(sys.argv) > 1 else None
     todo, moved = [], []
@@ -241,7 +248,7 @@ def main():
                 todo.append((base, n))
     print("другая основа:", len(moved), moved, flush=True)
     todo.sort(key=lambda x: (x[0], x[1][0], int(x[1][1:])))
-    box = (50 * K, 44 * K, 110 * K, 148 * K)
+    box = tuple(v * K for v in SHEET_BOX)
     w, h = (box[2] - box[0]) // 2, (box[3] - box[1]) // 2
     FONT = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 15)
     per, page = 8, 24
