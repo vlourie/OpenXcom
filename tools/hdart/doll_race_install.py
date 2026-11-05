@@ -22,6 +22,7 @@ os.chdir(ROOT)
 
 import build_hd_pack as bp                           # noqa: E402
 import doll_b2_render as db                          # noqa: E402
+import doll_layers_rul as dl                         # noqa: E402
 
 
 def main():
@@ -37,7 +38,7 @@ def main():
         src = os.path.join("art", "doll", "pipe_pilot", "layers")
         generator = "doll_pipe_pilot.py"
     files = sorted(f for f in os.listdir(src) if f.endswith(".png"))
-    images = {k.lower() for k in db.sprite_files()}
+    images = {k.lower() for k in set(db.sprite_files()) | dl.layer_names()}
     alien = [f for f in files if f[:-4] not in images]
     if alien:
         raise SystemExit("нет образа в рулсетах: %d, например %s" % (len(alien), alien[:5]))
