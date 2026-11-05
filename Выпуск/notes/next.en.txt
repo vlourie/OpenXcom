@@ -12,3 +12,4 @@
 - Jungle and catacombs: stairs and their sides have a straight edge with no staircase pattern; the red flower and the vines are redrawn, and the flower in the Styx set is no longer cut off; the leafy bush now matches the approved jungle bush, and the bush with a trunk is redrawn to the original's shape.
 - Forest and jungle: the dead tree is no longer broken by a strip of grass; the trunk is solid, with roots and a straight edge.
 - The barrel from the original is a metal drum again rather than a wooden cask: a straight cylinder with ribs, in every set where it appears.
+- Falling trees no longer sound like a collapsing house: they have their own sound. Buildings keep the old one.

@@ -1410,6 +1410,19 @@ int rumble(const Mod *mod)
 	const Unit *gargoyle = mod->getUnit("STR_STYGIAN_GARGOYLE");
 	return gargoyle && !gargoyle->getDeathSounds().empty() ? gargoyle->getDeathSounds().front() : Mod::NO_SOUND;
 }
+
+bool isTreePart(const MapData *md);
+
+/// The sound of what fell: a fall of tree parts only takes tree_fall.wav of the HD mod (its unit STR_HD_TREE_FALL holds
+/// the index, like the gargoyle), anything else the rumble; without that unit, the rumble too.
+int fallSound(const Mod *mod, const std::vector<Fallen> &fallen)
+{
+	const Unit *tree = mod->getUnit("STR_HD_TREE_FALL");
+	if (tree && !tree->getDeathSounds().empty() && !fallen.empty()
+		&& std::all_of(fallen.begin(), fallen.end(), [](const Fallen &f) { return isTreePart(f.what); }))
+		return tree->getDeathSounds().front();
+	return rumble(mod);
+}
 /// A big collapse raises dust on this many landing cells at most, the first ones.
 const size_t MAX_DUST = 24;
 
@@ -1418,7 +1431,7 @@ const size_t MAX_DUST = 24;
 /// and raises dust there (HdFx - pictures only: no smoke, no random numbers, nothing of the battle changes).
 void showFall(BattlescapeGame *battle, const std::vector<Fallen> &fallen, Position center)
 {
-	battle->playSound(rumble(battle->getMod()), center);
+	battle->playSound(fallSound(battle->getMod(), fallen), center);
 	SavedBattleGame *save = battle->getSave();
 	struct Landing
 	{
@@ -1658,6 +1671,31 @@ bool isTrunk(const MapData *md)
 		}
 	trunkSeen[md] = trunk;
 	return trunk;
+}
+
+/// Is this record a part of a tree column of the table, of any kind (the crown may be a floor)? Asked only when
+/// something falls.
+bool isTreePart(const MapData *md)
+{
+	static std::unordered_set<std::string> parts;
+	if (parts.empty())
+		for (int bi = 0; bi < CollapsePilotData::blockCount(); ++bi)
+		{
+			const CollapseBlock &b = CollapsePilotData::blocks()[bi];
+			const int *t = b.treeCols;
+			for (int c = 0; t && c < b.nTreeCols; ++c)
+			{
+				const int len = *t++;
+				for (int z = 0; z < len; ++z)
+					parts.insert(upperName(b.sets[b.parts[t[z]].set]) + ":" + std::to_string(b.parts[t[z]].mcd));
+				t += len;
+			}
+		}
+	MapDataSet *set = md->getDataset();
+	for (size_t i = 0; set && i < set->getSize(); ++i)
+		if (set->getObject(i) == md)
+			return parts.count(upperName(set->getName()) + ":" + std::to_string(i)) > 0;
+	return false;
 }
 
 }
