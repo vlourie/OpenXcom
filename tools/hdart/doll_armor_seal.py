@@ -75,8 +75,8 @@ def black_block(px, name):
     i = db.load_indices(db.sprite_files()[name.upper()])
     rgb = db.to_rgba(i, db.game_palette())[..., :3]
     z = np.kron((i != 0) & (rgb.sum(axis=2) <= 12), np.ones((db.K, db.K), np.uint8))
-    z = cv2.erode(z.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))) > 0
-    a = cv2.GaussianBlur(z.astype(np.float32), (0, 0), 1.5)[..., None]
+    z = cv2.erode(z.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))) > 0
+    a = cv2.GaussianBlur(z.astype(np.float32), (0, 0), 1.0)[..., None]
     px = px.copy()
     px[..., :3] = np.clip(px[..., :3] * (1 - a), 0, 255).astype(np.uint8)
     return px
