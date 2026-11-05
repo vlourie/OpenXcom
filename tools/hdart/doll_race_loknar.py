@@ -73,6 +73,7 @@ NEGATIVE_RACE = (", round human ears, natural human skin colour, tanned skin, te
 PASTIES = "small flat matte black pasties lying flush on the skin over the nipples"
 PASTY_AT, PASTY_R = ((68.5, 87.5), (76.5, 88.5)), 1.7    # вершины груди: блики классики, на строку ниже - по складке груди основы; база 320x200
 PASTY_ZONE = (82, 94, 62, 84)                       # строки и столбцы, где искать наклейки модели
+PASTY_LAYER = RACE + "__3__PASTIES"                 # слот 3 пустой у всех голых броней
 GROIN_SHADOW, GROIN_DEPTH = (77.5, 113.0, 2.2, 4.0), 0.6    # просвет между бёдер у классики: столбец 77, строки 107-114
 REDRAW, VARIANTS = 3, []
 FEET_AT = {"L": (44, 122, "right"), "R": (69, 122, "left")}    # левый верхний угол кадра 32x32, с какой стороны картинки большой палец
@@ -368,20 +369,21 @@ def strip_pasties(rgb, alpha):
     return rgb * (1 - w) + fill * w, int(hole.sum())
 
 
-def draw_pasties(rgb):
-    """Плоские матовые наклейки: круг со сглаженным краем, верх чуть светлее."""
+def pasties_layer():
+    """Кружки отдельным слоем: тело без них, слой только у голых броней (Vitali 05.11). Круг со сглаженным краем, верх чуть светлее."""
     k, s = dp.K, 4
-    out = rgb.copy()
+    out = np.zeros((db.H * k, db.W * k, 4), np.float32)
     for x, y in PASTY_AT:
         cx, cy, r = x * k, y * k, PASTY_R * k
         x0, y0, x1, y1 = int(cx - r - 3), int(cy - r - 3), int(cx + r + 4), int(cy + r + 4)
         yy, xx = np.mgrid[y0:y1:1.0 / s, x0:x1:1.0 / s]
         inside = np.hypot((xx + 0.125 - cx), (yy + 0.125 - cy)) <= r
-        cov = cv2.resize(inside.astype(np.float32), (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)[..., None]
+        cov = cv2.resize(inside.astype(np.float32), (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)
         tone = np.clip(1 - (np.arange(y0, y1) - (cy - r)) / (2 * r), 0, 1)[:, None, None]
-        col = np.array((16, 16, 19), np.float32) + tone * 12
-        out[y0:y1, x0:x1] = out[y0:y1, x0:x1] * (1 - cov) + col * cov
-    return out
+        out[y0:y1, x0:x1, :3] = np.array((16, 16, 19), np.float32) + tone * 12
+        out[y0:y1, x0:x1, 3] = cov * 255
+    os.makedirs(os.path.join(OUT, "pasties"), exist_ok=True)
+    Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGBA").save(os.path.join(OUT, "pasties", PASTY_LAYER.lower() + ".png"))
 
 
 def groin_shadow(rgb):
@@ -458,11 +460,7 @@ def assemble():
         json.dump({BASE: LOOKS}, f)
     sys.argv = sys.argv[:1]
     ra.main()
-    for look in LOOKS:
-        fn = os.path.join(OUT, "assembled", look.lower() + ".png")
-        im = np.asarray(Image.open(fn).convert("RGBA"), np.float32).copy()
-        im[..., :3] = draw_pasties(im[..., :3])
-        Image.fromarray(np.clip(im + 0.5, 0, 255).astype(np.uint8), "RGBA").save(fn)
+    pasties_layer()
 
 
 def heads(ns):
