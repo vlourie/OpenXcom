@@ -100,6 +100,8 @@ doll_ctl_pilot.py
 doll_face_pilot.py
 doll_face_ctl.py
 doll_pipe_pilot.py
+doll_race_bodies.py
+doll_race_heads.py
 obj3d_gen.py
 gen_screens.py
 gen_ufo_pedia.py
