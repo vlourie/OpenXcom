@@ -6,3 +6,4 @@
 - Launcher, top line on the home page: the launcher update comes first and stays, the other notices change one by one every 5 seconds.
 - Base, research: with the "Approximate research term" option the term no longer hides under the order arrows in the lab: the count column moved left, progress sits at the right edge, a long name wraps to a new line. Without the option the screen is unchanged.
 - Setup from the site: its file properties now carry a link to the official site, and the file no longer calls itself a library, xp-bootstrap.dll (the same for the launcher). This does not change how the setup works.
+- Battle (HD): with the "Blood colour by creature" option the Waspite's blood is now gold (was black) and the Cyclops' turquoise (was blue), a player's suggestion.
