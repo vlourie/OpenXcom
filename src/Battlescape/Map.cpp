@@ -3003,6 +3003,8 @@ const Map::HdAoShape &Map::hdAoShape(const MapData *part)
 	// a low part covering the whole cell (tall grass, top layer 1) is a carpet, not a wall: it shades no neighbour (XP-000439)
 	shape.valid = shape.count > 0 && top >= 1 && !(shape.count >= FLOOR_AO_HIDDEN && top <= 1);
 	shape.weight = std::min(1.0f, (top + 1) / 6.0f);
+	// a raised part a unit walks on (a hill, a ramp) is ground, not a wall: a dark line at its foot reads as a drawn border (XP-000502)
+	shape.ground = part->getTerrainLevel() < 0 && part->getTUCost(MT_WALK) < 255;
 	return shape;
 }
 
@@ -3535,12 +3537,17 @@ const HdFrame *Map::hdFloorAo(Tile *tile, const Position &pos)
 
 	const HdAoShape *shapes[HD_AO_PARTS];
 	bool any = false;
+	const HdAoShape *ownObject = nullptr;
 	for (int i = 0; i < HD_AO_PARTS; ++i)
 	{
-		shapes[i] = parts[i] && hdAoShape(parts[i]).valid ? &hdAoShape(parts[i]) : nullptr;
+		const HdAoShape *shape = parts[i] && hdAoShape(parts[i]).valid ? &hdAoShape(parts[i]) : nullptr;
+		if (i == (1 * 3 + 1) * 3 + 2)
+		{
+			ownObject = shape; // ground too: a floor under a hill is not seen
+		}
+		shapes[i] = shape && !shape->ground ? shape : nullptr;
 		any = any || shapes[i];
 	}
-	const HdAoShape *ownObject = shapes[(1 * 3 + 1) * 3 + 2];
 	if (!any || (ownObject && ownObject->count >= FLOOR_AO_HIDDEN))
 	{
 		return nullptr;

@@ -7,3 +7,4 @@
 - Base, research: with the "Approximate research term" option the term no longer hides under the order arrows in the lab: the count column moved left, progress sits at the right edge, a long name wraps to a new line. Without the option the screen is unchanged.
 - Setup from the site: its file properties now carry a link to the official site, and the file no longer calls itself a library, xp-bootstrap.dll (the same for the launcher). This does not change how the setup works.
 - Battle (HD): with the "Blood colour by creature" option the Waspite's blood is now gold (was black) and the Cyclops' turquoise (was blue), a player's suggestion.
+- Battle (HD): the "HD corner shade" option no longer draws a dark line at the foot of hills and ramps as if they were walls. Walls and objects still shade the floor. Without the option the frame is unchanged.

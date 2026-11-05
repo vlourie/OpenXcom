@@ -303,7 +303,7 @@ private:
 	/// HD_STEP_PATTERNS looks (0 the plain print, the others turned, shifted, a bit larger or smaller and worn in places).
 	const HdFrame &hdStepFrame(int dx, int dy, int variant, int kind, int rgb, int tier, int pattern);
 	/// HD render: the shade of the corners on the floor (option oxceHdFloorAo), see Map::hdFloorAo.
-	struct HdAoShape { Uint16 rows[16]; float weight; int count; bool valid; };
+	struct HdAoShape { Uint16 rows[16]; float weight; int count; bool valid; bool ground; };
 	static const int HD_AO_PARTS = 27;
 	struct HdAoCell { const MapData *parts[HD_AO_PARTS]; const HdFrame *frame; bool built; };
 	const HdFrame *hdFloorAo(Tile *tile, const Position &pos);
