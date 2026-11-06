@@ -67,6 +67,8 @@ public static class TicketApi
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey, [FromHeader(Name = "X-Correlation-Id")] string? correlationId,
         Microsoft.Extensions.Options.IOptions<PortalOptions> portal, CancellationToken ct)
     {
+        // an offered mod comes with its archive and its author, or not at all
+        if (req.Category == Categories.LuaMod) return Problem("category_invalid", "unknown category", 400);
         var source = req.Source?.ToLowerInvariant() switch { "f8" => TicketSource.F8, "crash" => TicketSource.Crash, _ => TicketSource.Web };
         var n = new NewTicket(req.Category, req.Title, req.Description, req.Steps, req.Expected, req.Actual,
             req.GameVersion, req.ModVersion, req.LauncherVersion, req.Email, req.ConsentToFiles, source, req.Context, req.Language);

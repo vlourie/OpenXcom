@@ -273,6 +273,7 @@ public static class PortalApp
         app.MapHealthChecks("/ready", new() { Predicate = c => c.Tags.Contains("ready") });
         app.MapOpenApi("/openapi/{documentName}.json");
         TicketApi.Map(app);
+        LuaModApi.Map(app);
         BotApi.Map(app);
         DeviceApi.Map(app);
         ReviewApi.Map(app);

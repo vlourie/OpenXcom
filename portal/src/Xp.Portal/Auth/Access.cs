@@ -24,7 +24,9 @@ public static class Categories
     public static readonly string[] Open = [Code, Graphics, Balance, Translation, General];
     /// <summary>Applications to join the team, filed from /team only. Not in <see cref="Open"/>: it is not a thing to report.</summary>
     public const string Team = "team";
-    public static readonly string[] All = [.. Open, Voice, Team];
+    /// <summary>Lua mods offered from the launcher, with the archive: only /api/v1/lua-mods files them (docs/portal/LUA_MODS.md §8.1).</summary>
+    public const string LuaMod = "luamod";
+    public static readonly string[] All = [.. Open, Voice, Team, LuaMod];
     public static bool IsValid(string? c) => c is not null && All.Contains(c);
 }
 

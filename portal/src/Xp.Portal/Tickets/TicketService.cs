@@ -101,6 +101,14 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
         return new CreatedTicket(t, token, false);
     }
 
+    /// <summary>A ticket came with this Idempotency-Key already: a retry, not a new one.</summary>
+    public async Task<bool> KnowsKeyAsync(string idempotencyKey, CancellationToken ct)
+    {
+        if (idempotencyKey.Length is < 8 or > 128) return false;
+        var hash = Sha(idempotencyKey);
+        return await db.Tickets.AnyAsync(t => t.IdempotencyKey == hash, ct);
+    }
+
     CreatedTicket Replay(Ticket existing, string fingerprint)
     {
         if (existing.IdempotencyFingerprint != fingerprint)

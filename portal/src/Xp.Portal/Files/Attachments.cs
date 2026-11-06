@@ -224,17 +224,21 @@ public sealed class ObjectStore(IOptions<AttachmentOptions> options)
     }
 }
 
+/// <summary>An archive with rules of its own instead of <see cref="ZipCheck"/>: a mod holds what a ticket's zip may not.</summary>
+/// <param name="Check">the code of what is wrong with the stored archive, or null</param>
+public sealed record ArchiveRule(long MaxBytes, Func<Stream, string?> Check);
+
 public sealed class AttachmentService(PortalDb db, ObjectStore store, IOptions<AttachmentOptions> options, TimeProvider clock)
 {
     /// <summary>
     /// Streams one file into storage: the body is never held in memory, the size is counted as it
     /// arrives and the upload is cut off at the limit, the head is checked against the extension.
     /// </summary>
-    public async Task<TicketAttachment> AddAsync(Ticket t, string fileName, Stream body, CancellationToken ct)
+    public async Task<TicketAttachment> AddAsync(Ticket t, string fileName, Stream body, CancellationToken ct, ArchiveRule? archive = null)
     {
         var o = options.Value;
         var kind = FileRules.KindOf(fileName) ?? throw new TicketException("file_type_not_allowed", "this file type is not allowed");
-        var limit = kind == FileKind.Zip ? o.MaxZipBytes : o.MaxFileBytes;
+        var limit = kind == FileKind.Zip ? archive?.MaxBytes ?? o.MaxZipBytes : o.MaxFileBytes;
         var existing = await db.TicketAttachments.Where(a => a.TicketId == t.Id).GroupBy(_ => 1)
             .Select(g => new { N = g.Count(), Bytes = g.Sum(a => a.Size) }).FirstOrDefaultAsync(ct);
         if ((existing?.N ?? 0) >= o.MaxFilesPerTicket) throw new TicketException("too_many_files", "too many files on this ticket");
@@ -266,7 +270,8 @@ public sealed class AttachmentService(PortalDb db, ObjectStore store, IOptions<A
             if (kind == FileKind.Zip)
             {
                 await using var stored = store.OpenRead(key);
-                if (await ZipCheck.CheckAsync(stored, o, ct) is { } inside) throw new TicketException(inside, "the archive holds something that may not be attached");
+                var inside = archive is not null ? archive.Check(stored) : await ZipCheck.CheckAsync(stored, o, ct);
+                if (inside is not null) throw new TicketException(inside, "the archive holds something that may not be attached");
             }
         }
         catch
