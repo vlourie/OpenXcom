@@ -154,6 +154,32 @@ int main()
 	h("table.insert with __len", "table.insert(setmetatable({}, {__len=function() return 1000000000000000 end}), 1, 1)", LIMIT_HIT);
 	h("table.concat via __index", "table.concat(setmetatable({}, {__index=function() return '' end}), '', 1, 1000000000000000)", LIMIT_HIT);
 	h("sparse border table.remove", "local t={} for i=0,50 do t[1<<i]=1 end table.remove(t, 1)", CLEAN);
+	// линейная работа за одну инструкцию: строка на 8 МБ, готовая ещё из main.lua
+#define BIG "local a=string.rep('x',2000000) a=a..a a=a..a local b=string.rep('x',2000000) b=b..b b=b..b local t={[a]=1} "
+	run("plain find in a loop", BIG "game.on('tick', function() while true do a:find('y',1,true) end end)", LIMIT_HIT);
+	run("upper in a loop", BIG "game.on('tick', function() while true do local s=a:upper() end end)", LIMIT_HIT);
+	run("sub in a loop", BIG "game.on('tick', function() while true do local s=a:sub(2) end end)", LIMIT_HIT);
+	run("format in a loop", BIG "game.on('tick', function() while true do local s=string.format('%s',a) end end)", LIMIT_HIT);
+	run("== in a loop", BIG "game.on('tick', function() while true do local e=a==b end end)", LIMIT_HIT);
+	run("< in a loop", BIG "game.on('tick', function() while true do local e=a<b end end)", LIMIT_HIT);
+	run("rawequal in a loop", BIG "game.on('tick', function() while true do rawequal(a,b) end end)", LIMIT_HIT);
+	run("long key in a loop", BIG "game.on('tick', function() while true do local e=t[b] end end)", LIMIT_HIT);
+	run("utf8.len in a loop", BIG "game.on('tick', function() while true do utf8.len(a) end end)", LIMIT_HIT);
+	run("utf8.offset in a loop", BIG "game.on('tick', function() while true do utf8.offset(a,-1) end end)", LIMIT_HIT);
+	run("tonumber in a loop", "local a=string.rep('1',2000000) a=a..a a=a..a game.on('tick', function() while true do tonumber(a) end end)", LIMIT_HIT);
+	run("base tonumber in a loop", "local a=string.rep('1',2000000) a=a..a a=a..a game.on('tick', function() while true do tonumber(a,2) end end)", LIMIT_HIT);
+	run("game.log in a loop", BIG "game.on('tick', function() while true do game.log(a) end end)", LIMIT_HIT);
+	run("pack format in a loop", "local f=string.rep('b',2000000) f=f..f f=f..f game.on('tick', function() while true do pcall(string.packsize,f) end end)", LIMIT_HIT);
+	run("almost fitting pattern", "local a=string.rep('x',1000000) a=a..a a=a..a a=a..a local p=string.rep('x',100000)..'y' game.on('tick', function() a:find(p,1,true) end)", LIMIT_HIT);
+	h("a long numeral is not a number", "assert(tonumber(string.rep('1',2000))==nil and tonumber(string.rep('1',20))~=nil)", CLEAN);
+	run("%b over a long string", "local a=string.rep('(',2000000) game.on('tick', function() a:find('%b()') end)", LIMIT_HIT);
+	run("long set in a pattern", "local s='['..string.rep('a',1000000)..'b]' local a=string.rep('c',1000000) game.on('tick', function() a:find(s) end)", LIMIT_HIT);
+	run("long set, greedy", "local s='['..string.rep('a',1000000)..'c]*d' local a=string.rep('c',1000000) game.on('tick', function() a:find(s) end)", LIMIT_HIT);
+	run("__index chain in a loop", "local t={} for i=1,1900 do t=setmetatable({}, {__index=t}) end game.on('tick', function() while true do local e=t.x end end)", LIMIT_HIT);
+	run("table.sort of a million", "local t={} for i=1,1000000 do t[i]=-i end game.on('tick', function() table.sort(t) end)", LIMIT_HIT);
+	h("table.sort of a thousand", "local t={} for i=1,1000 do t[i]=-i end table.sort(t) assert(t[1]==-1000)", CLEAN);
+	run("small strings stay free", "game.on('tick', function() for i=1,100000 do local s=('abc'..i):upper() assert(s~='') end end)", CLEAN);
+#undef BIG
 
 	// память и стек
 	h("memory bomb", "local s='x' while true do s=s..s end", ERROR_IN_HANDLER);

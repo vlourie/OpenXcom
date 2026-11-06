@@ -107,8 +107,15 @@ def main():
     check("файлов мода в выпуске нет", not [f for f in m2["files"] if f["path"].startswith("user/mods/cm-own_cat/")])
     check("компонента больше нет", not [c for c in m2["components"] if c["mod"] == "own_cat"])
 
+    # лаунчер помнит отзыв по папке и версии: тот же номер он второй раз не выключил бы
+    r = catalog("add", WORK / "check/clean", "--ticket", "XP-TEST")
+    check("отозванный номер не одобрить снова", r.returncode == 1 and "отозван" in r.stderr and not (CAT / "cm-own_cat").exists(), r.stdout.strip() + r.stderr.strip())
+
     # мод из папки cm-<id> в бою, как его поставит выпуск: лаунчер включил Lua и сам мод, режима мододела нет
-    catalog("add", WORK / "check/clean", "--ticket", "XP-TEST")
+    meta = WORK / "check/clean/metadata.yml"
+    meta.write_text(meta.read_text(encoding="utf-8-sig").replace("version: 1.0", "version: 1.1"), encoding="utf-8", newline="\n")
+    r = catalog("add", WORK / "check/clean", "--ticket", "XP-TEST")
+    check("новый номер снимает отзыв", r.returncode == 0 and json.loads((CAT / "revoked.json").read_text(encoding="utf-8")) == [], r.stdout.strip() + r.stderr.strip())
     clean = CAT / "cm-own_cat"
     for label, game, master, save_needed in (("Пиратки", PIRATES, "", True), ("UFO", UFO, "xcom1", False)):
         os.environ["OXCE_HIDDEN_DATA"] = str(game)
@@ -131,7 +138,7 @@ def main():
             import re
             save = out / "with.sav"
             text = lua_mod_check.SAVE.read_text(encoding="utf-8")
-            save.write_text(re.sub(r"(?:  - 'lua_\w+ ver: [^']*'\n)+", "  - 'own_cat ver: 1.0'\n", text, count=1), encoding="utf-8", newline="\n")
+            save.write_text(re.sub(r"(?:  - 'lua_\w+ ver: [^']*'\n)+", "  - 'own_cat ver: 1.1'\n", text, count=1), encoding="utf-8", newline="\n")
         try:
             bench.battle(name, mods, "own_cat", save, master)
             if not save_needed:

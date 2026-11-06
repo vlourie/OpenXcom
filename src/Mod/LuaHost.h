@@ -30,11 +30,16 @@ namespace OpenXcom
 
 class BattleItem;
 class BattleUnit;
+class Country;
+class Craft;
 class LuaSandbox;
 class Mod;
 class RuleSkill;
+class RuleSoldierBonus;
 class SavedBattleGame;
+class SavedGame;
 class Soldier;
+class Ufo;
 
 /**
  * The Lua of the active mods: one sandbox per mod, in load order. Exists only with the option
@@ -50,21 +55,29 @@ public:
 	enum Event
 	{
 		CREATE_UNIT, NEW_TURN_UNIT, HIT_UNIT, DAMAGE_UNIT, DAMAGE_SPECIAL_UNIT, HEAL_UNIT, SKILL_USE_UNIT,
-		RETURN_FROM_MISSION_UNIT, CREATE_ITEM, NEW_TURN_ITEM, EVENT_COUNT
+		RETURN_FROM_MISSION_UNIT, CREATE_ITEM, NEW_TURN_ITEM, AWARD_EXPERIENCE, TRY_PSI_ATTACK_ITEM, TRY_PSI_ATTACK_UNIT,
+		TRY_MELEE_ATTACK_ITEM, TRY_MELEE_ATTACK_UNIT, SELECT_MOVE_SOUND_UNIT, NEW_MONTH_COUNTRY, DETECT_UFO_FROM_BASE,
+		DETECT_UFO_FROM_CRAFT, APPLY_SOLDIER_BONUSES, EVENT_COUNT
 	};
 
 	/// One argument of a handler; a null pointer reaches Lua as nil.
 	struct Arg
 	{
-		enum Kind { UNIT, ITEM, BATTLE, SKILL, SOLDIER, INT } kind;
+		enum Kind { UNIT, ITEM, BATTLE, SKILL, SOLDIER, GEOSCAPE, COUNTRY, UFO, CRAFT, BONUS, INT } kind;
 		void *object;
 		int value;
 
-		Arg(BattleUnit *o) : kind(UNIT), object(o), value(0) { }
-		Arg(BattleItem *o) : kind(ITEM), object(o), value(0) { }
+		// const: the handlers that only read, the setters refuse there
+		Arg(const BattleUnit *o) : kind(UNIT), object(const_cast<BattleUnit*>(o)), value(0) { }
+		Arg(const BattleItem *o) : kind(ITEM), object(const_cast<BattleItem*>(o)), value(0) { }
 		Arg(SavedBattleGame *o) : kind(BATTLE), object(o), value(0) { }
 		Arg(const RuleSkill *o) : kind(SKILL), object(const_cast<RuleSkill*>(o)), value(0) { }
 		Arg(Soldier *o) : kind(SOLDIER), object(o), value(0) { }
+		Arg(const SavedGame *o) : kind(GEOSCAPE), object(const_cast<SavedGame*>(o)), value(0) { }
+		Arg(const Country *o) : kind(COUNTRY), object(const_cast<Country*>(o)), value(0) { }
+		Arg(const Ufo *o) : kind(UFO), object(const_cast<Ufo*>(o)), value(0) { }
+		Arg(const Craft *o) : kind(CRAFT), object(const_cast<Craft*>(o)), value(0) { }
+		Arg(const RuleSoldierBonus *o) : kind(BONUS), object(const_cast<RuleSoldierBonus*>(o)), value(0) { }
 		Arg(int v) : kind(INT), object(nullptr), value(v) { }
 	};
 

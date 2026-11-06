@@ -307,6 +307,7 @@ static IdxT partition (lua_State *L, IdxT lo, IdxT up) {
   for (;;) {
     /* next loop: repeat ++i while a[i] < P */
     while ((void)lua_geti(L, 1, ++i), sort_comp(L, -1, -2)) {
+      oxce_c_tick(L);  /* OXCE */
       if (l_unlikely(i == up - 1))  /* a[i] < P  but a[up - 1] == P  ?? */
         luaL_error(L, "invalid order function for sorting");
       lua_pop(L, 1);  /* remove a[i] */
@@ -314,6 +315,7 @@ static IdxT partition (lua_State *L, IdxT lo, IdxT up) {
     /* after the loop, a[i] >= P and a[lo .. i - 1] < P */
     /* next loop: repeat --j while P < a[j] */
     while ((void)lua_geti(L, 1, --j), sort_comp(L, -3, -1)) {
+      oxce_c_tick(L);  /* OXCE */
       if (l_unlikely(j < i))  /* j < i  but  a[j] > P ?? */
         luaL_error(L, "invalid order function for sorting");
       lua_pop(L, 1);  /* remove a[j] */
@@ -350,6 +352,7 @@ static IdxT choosePivot (IdxT lo, IdxT up, unsigned int rnd) {
 static void auxsort (lua_State *L, IdxT lo, IdxT up,
                                    unsigned int rnd) {
   while (lo < up) {  /* loop for tail recursion */
+    oxce_c_tick(L);  /* OXCE */
     IdxT p;  /* Pivot index */
     IdxT n;  /* to be used later */
     /* sort elements 'lo', 'p', and 'up' */

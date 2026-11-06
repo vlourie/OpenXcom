@@ -90,6 +90,8 @@ private:
 
 	void backupOriginalDestination();
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<Ufo> &getScriptValuesRaw() const { return _scriptValues; }
 	/// Creates a UFO of the specified type.
 	Ufo(const RuleUfo *rules, int uniqueId, int hunterKillerPercentage = 0, int huntMode = 0, int huntBehavior = 0);
 	/// Cleans up the UFO.

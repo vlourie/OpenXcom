@@ -180,6 +180,9 @@ private:
 
 	static SaveInfo getSaveInfo(const std::string &file, Language *lang);
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<SavedGame> &getScriptValuesRaw() const { return _scriptValues; }
+	void luaSetTag(ScriptTag<SavedGame> tag, int val) { _scriptValues.set(tag, val); }
 	static const std::string AUTOSAVE_GEOSCAPE, AUTOSAVE_BATTLESCAPE, QUICKSAVE;
 	/// Creates a new saved game.
 	SavedGame();

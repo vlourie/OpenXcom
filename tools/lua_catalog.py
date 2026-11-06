@@ -95,6 +95,9 @@ def cmd_add(a):
     if mod in ours():
         die(f"'{mod}': так называется мод выпуска")
     cat = load()
+    # лаунчер помнит отзыв по папке и версии: тот же номер второй раз он не выключит
+    if any(r["mod"] == mod and r["version"] == meta.get("version", "") for r in cat["revoked"]):
+        die(f"'{mod}' {meta.get('version', '')} отозван: снова одобрить можно только с новым номером версии")
     folder = HOME / (PREFIX + mod)
     shutil.rmtree(folder, ignore_errors=True)
     for rel, src in files.items():
@@ -175,6 +178,7 @@ def cmd_min_launcher(a):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="Каталог одобренных Lua-модов")
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("add"); s.add_argument("clean", type=Path); s.add_argument("--ticket", required=True); s.set_defaults(fn=cmd_add)

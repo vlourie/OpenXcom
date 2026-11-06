@@ -92,8 +92,12 @@ public:
 	void cTick(lua_State *L);
 	/// Counts work the instruction counter does not see, in C loop steps.
 	void charge(lua_State *L, unsigned long long ticks);
+	/// Counts work in bytes where the patched Lua has no state at hand: the next tick or the count hook sees it.
+	static void chargeBytes(size_t bytes);
 
 private:
+	/// Lua runs in the main thread only, one sandbox at a time.
+	static LuaSandbox *_running;
 	static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
 	static void countHook(lua_State *L, struct lua_Debug *ar);
 	static int openLibs(lua_State *L);

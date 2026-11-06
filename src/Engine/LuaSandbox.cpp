@@ -29,13 +29,22 @@ void oxce_lua_c_tick(lua_State *L)
 	OpenXcom::LuaSandbox::from(L)->cTick(L);
 }
 
+void oxce_lua_c_bytes(size_t bytes)
+{
+	OpenXcom::LuaSandbox::chargeBytes(bytes);
+}
+
 namespace OpenXcom
 {
+
+LuaSandbox *LuaSandbox::_running = nullptr;
 
 namespace
 {
 
 const int HOOK_EVERY = 1000;
+/// What a C loop step is worth in copied or compared bytes, by measure (tools/lua_sandbox_test.cpp).
+const size_t BYTES_PER_TICK = 64;
 const char *const HANDLERS_KEY = "oxce.handlers";
 /// What a pcall costs, in C loop steps by measure (tools/lua_sandbox_test.cpp): an error unwinds with a C++ exception.
 const unsigned long long PCALL_TICKS = 50, PCALL_ERROR_TICKS = 5000;
@@ -87,6 +96,20 @@ void *LuaSandbox::alloc(void *ud, void *ptr, size_t osize, size_t nsize)
 	{
 		return nullptr; // Lua collects garbage and tries once more, then it is a memory error
 	}
+	if (nsize > old)
+	{
+		// the copy behind a new string: one instruction to the counter, an error here is the only way to stop it in time
+		self->_ticks += (nsize - old) / BYTES_PER_TICK;
+		if (self->_ticks > self->_limits.cTicks)
+		{
+			if (!self->_limitHit)
+			{
+				self->_limitHit = true;
+				++self->_totalLimits;
+			}
+			return nullptr;
+		}
+	}
 	void *result = realloc(ptr, nsize);
 	if (result)
 	{
@@ -101,6 +124,18 @@ void LuaSandbox::countHook(lua_State *L, lua_Debug *)
 	if (++self->_steps > self->_maxSteps)
 	{
 		self->hitLimit(L, "instruction limit");
+	}
+	if (self->_ticks > self->_limits.cTicks)
+	{
+		self->hitLimit(L, "C loop limit");
+	}
+}
+
+void LuaSandbox::chargeBytes(size_t bytes)
+{
+	if (_running)
+	{
+		_running->_ticks += bytes / BYTES_PER_TICK;
 	}
 }
 
@@ -244,6 +279,7 @@ int LuaSandbox::gameLog(lua_State *L)
 	{
 		size_t len = 0;
 		const char *s = luaL_tolstring(L, i, &len);
+		from(L)->charge(L, len / BYTES_PER_TICK);
 		if (i > 1)
 		{
 			text += ' ';
@@ -383,6 +419,10 @@ LuaSandbox::LuaSandbox(const Limits &limits, const std::set<std::string> &events
 
 LuaSandbox::~LuaSandbox()
 {
+	if (_running == this)
+	{
+		_running = nullptr;
+	}
 	if (_L)
 	{
 		lua_close(_L);
@@ -391,6 +431,7 @@ LuaSandbox::~LuaSandbox()
 
 void LuaSandbox::begin(unsigned long long instructions)
 {
+	_running = this;
 	_steps = 0;
 	_maxSteps = instructions / HOOK_EVERY;
 	_ticks = 0;

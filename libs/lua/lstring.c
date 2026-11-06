@@ -34,6 +34,7 @@
 int luaS_eqlngstr (TString *a, TString *b) {
   size_t len = a->u.lnglen;
   lua_assert(a->tt == LUA_VLNGSTR && b->tt == LUA_VLNGSTR);
+  oxce_c_bytes(len);  /* OXCE */
   return (a == b) ||  /* same instance or... */
     ((len == b->u.lnglen) &&  /* equal length and ... */
      (memcmp(getlngstr(a), getlngstr(b), len) == 0));  /* equal contents */

@@ -145,6 +145,9 @@ private:
 	/// Run newTurnUnit and newTurnItem scripts
 	void newTurnUpdateScripts();
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<SavedBattleGame> &getScriptValuesRaw() const { return _scriptValues; }
+	void luaSetTag(ScriptTag<SavedBattleGame> tag, int val) { _scriptValues.set(tag, val); }
 	/// Creates a new battle save, based on the current generic save.
 	SavedBattleGame(Mod *rule, Language *lang, bool isPreview = false);
 	/// Cleans up the saved game.

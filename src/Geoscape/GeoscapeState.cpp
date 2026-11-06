@@ -2172,7 +2172,7 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 
 	for (auto* craft : *activeCrafts)
 	{
-		detected = maskBitOr(detected, craft->detect(ufo, save, alreadyTracked));
+		detected = maskBitOr(detected, craft->detect(ufo, save, alreadyTracked, _game->getMod()->getLuaHost()));
 	}
 
 	if (!alreadyTracked)

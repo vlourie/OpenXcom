@@ -467,10 +467,20 @@ public:
 		Set2 setArmor, addArmor, setFatalwounds, addFatalwounds;
 		Get getStunMax, isStunned, isKilled, getFaction, getOriginalFaction;
 		Get1 getArmor, getArmorMax, getFatalwounds;
+		Set setMovementType, setSpawnUnitInstantRespawn, setSpawnUnitFaction, setTurnsSinceSpotted, setTurnsLeftSpottedForSnipers, setTurnsSinceStunned;
+		Set2 setArmorMax;
+		Get1 getFatalwoundsMax;
+		void (*setSpawnUnit)(BattleUnit*, const Unit*);
 	};
 	static const LuaApi &luaApi();
 	/// Lua: the same change of a tag as the script setTag.
 	void luaSetTag(ScriptTag<BattleUnit> tag, int val) { _scriptValues.set(tag, val); }
+	/// Lua: the same change as the script's Stats.setX: the current value of a resource follows its maximum.
+	void luaSetStat(UnitStats::Ptr stat, int value);
+	/// Lua: the move costs the script sets, in the order base, fly, normal, climb.
+	ArmorMoveCost &luaMoveCost(int kind) { return kind == 0 ? _moveCostBase : kind == 1 ? _moveCostBaseFly : kind == 2 ? _moveCostBaseNormal : _moveCostBaseClimb; }
+	/// Lua: a special weapon by number, null past the last one.
+	BattleItem *luaSpecialItem(int i) const { return i < SPEC_WEAPON_MAX ? _specWeapon[i] : nullptr; }
 
 	/// Get the list of items in the inventory.
 	std::vector<BattleItem*> *getInventory();

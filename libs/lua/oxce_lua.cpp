@@ -35,6 +35,10 @@
 // C loops the VM count hook never sees: defined in src/Engine/LuaSandbox.cpp
 void oxce_lua_c_tick(lua_State *L);
 #define oxce_c_tick(L) oxce_lua_c_tick(L)
+// work in proportion to bytes: added up now, the limit is checked at the next tick or by the VM hook
+void oxce_lua_c_bytes(size_t bytes);
+#define oxce_c_bytes(n) oxce_lua_c_bytes((size_t)(n))
+#define oxce_c_work(L, n) (oxce_c_bytes(n), oxce_c_tick(L))
 
 #include "lzio.c"
 #include "lctype.c"

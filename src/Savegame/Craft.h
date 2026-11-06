@@ -45,6 +45,7 @@ class ScriptParserBase;
 class ScriptGlobal;
 
 enum UfoDetection : int;
+class LuaHost;
 enum CraftPlacementErrors : int
 {
 	CPE_None = 0,
@@ -113,6 +114,8 @@ private:
 	using MovingTarget::save;
 
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<Craft> &getScriptValuesRaw() const { return _scriptValues; }
 	/// Creates a craft of the specified type.
 	Craft(const RuleCraft *rules, Base *base, int id = 0);
 	/// Cleans up the craft.
@@ -252,7 +255,7 @@ public:
 	/// Returns the crew to their base (using transfers).
 	void evacuateCrew(const Mod *mod);
 	/// Checks if a target is detected by the craft's radar.
-	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const;
+	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked, LuaHost *lua) const;
 	/// Handles craft logic.
 	bool think();
 	/// Is the craft about to take off?

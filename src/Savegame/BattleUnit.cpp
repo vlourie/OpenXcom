@@ -1782,7 +1782,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		damage = args.getFirst();
 		bodypart = (UnitBodyPart)args.getSecond();
 		side = (UnitSide)args.getThird();
-		if (bodypart >= BODYPART_MAX)
+		if (bodypart < 0 || bodypart >= BODYPART_MAX)
 		{
 			bodypart = {};
 		}
@@ -7005,8 +7005,27 @@ const BattleUnit::LuaApi &BattleUnit::luaApi()
 		&getArmorValueScript,
 		&getArmorValueMaxScript,
 		&getFatalWoundScript,
+		&setMovmentTypeScript,
+		&setSpawnUnitInstantRespawnScript,
+		&setSpawnUnitFactionScript,
+		&setBaseStatRangeArrayScript<&BattleUnit::_turnsSinceSpotted, FACTION_HOSTILE, 0, 255>,
+		&setBaseStatRangeArrayScript<&BattleUnit::_turnsLeftSpottedForSnipers, FACTION_HOSTILE, 0, 255>,
+		&setBaseStatRangeScript<&BattleUnit::_turnsSinceStunned, 0, 255>,
+		&setArmorValueMaxScript,
+		&getFatalWoundMaxScript,
+		&setSpawnUnitScript,
 	};
 	return api;
+}
+
+void BattleUnit::luaSetStat(UnitStats::Ptr stat, int value)
+{
+	_stats.*stat = value;
+	int *current = stat == &UnitStats::tu ? &_tu : stat == &UnitStats::stamina ? &_energy : stat == &UnitStats::health ? &_health : stat == &UnitStats::mana ? &_mana : nullptr;
+	if (current && *current > value)
+	{
+		*current = value;
+	}
 }
 
 /**

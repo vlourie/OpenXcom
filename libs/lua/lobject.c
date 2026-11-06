@@ -308,6 +308,12 @@ static const char *l_str2int (const char *s, lua_Integer *result) {
 size_t luaO_str2num (const char *s, TValue *o) {
   lua_Integer i; lua_Number n;
   const char *e;
+  {  /* OXCE: strtod over a string of digits as long as memory allows; no numeral is this long */
+    size_t len = strlen(s);
+    oxce_c_bytes(len);
+    if (len > 1024)
+      return 0;
+  }
   if ((e = l_str2int(s, &i)) != NULL) {  /* try as an integer */
     setivalue(o, i);
   }
