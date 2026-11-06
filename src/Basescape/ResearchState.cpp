@@ -261,8 +261,16 @@ void ResearchState::init()
 
 	if (Options::oxceResearchScrollSpeed > 0 || Options::oxceResearchScrollSpeedWithCtrl > 0)
 	{
-		// 175 +/- 20
-		_lstResearch->setNoScrollArea(_txtAllocated->getX() - 5, _txtAllocated->getX() + 35);
+		if (Options::oxceHdResearchEta)
+		{
+			// the moved count column, from its left edge up to the order arrows (XP-000520)
+			_lstResearch->setNoScrollArea(_txtScientists->getX() - 2, _txtScientists->getX() + _txtScientists->getWidth() - 1);
+		}
+		else
+		{
+			// 175 +/- 20
+			_lstResearch->setNoScrollArea(_txtAllocated->getX() - 5, _txtAllocated->getX() + 35);
+		}
 	}
 	else
 	{
