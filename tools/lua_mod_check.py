@@ -549,7 +549,9 @@ def run_stage(exe, game, clean, out, rep, turns):
     bench = Bench(exe, out)
     mods = out / "mods"
     mods.mkdir(exist_ok=True)
-    pirates = master in ("piratez", "*") and (game / "user" / "mods" / "Piratez").exists() or (game / "user" / "mods" / "piratez").exists()
+    # стенд читает данные отсюда, а не из своей папки: в песочнице рядом с ним Пираток нет
+    os.environ["OXCE_HIDDEN_DATA"] = str(game)
+    pirates = master in ("piratez", "*") and (game / "user" / "mods" / "Piratez").exists()
     if pirates:
         for d in (game / "user" / "mods").iterdir():
             if d.is_dir():
@@ -562,15 +564,14 @@ def run_stage(exe, game, clean, out, rep, turns):
         save_mod, save_plain = out / "with.sav", out / "without.sav"
         save_mod.write_text(re.sub(r"(?:  - 'lua_\w+ ver: [^']*'\n)+", f"  - '{mod_id} ver: {rep.mod.get('version', '')}'\n", text, count=1), encoding="utf-8", newline="\n")
         save_plain.write_text(re.sub(r"(?:  - 'lua_\w+ ver: [^']*'\n)+", "", text, count=1), encoding="utf-8", newline="\n")
-    elif master == "xcom1":
-        os.environ["OXCE_HIDDEN_DATA"] = str(game)
-    else:
+    elif master != "xcom1":
         rep.unfinished.append(f"запуск: для master '{master}' нет готового боя, проверить руками")
         return {}
 
     times = {}
     for label, mid, save in (("without", "", save_plain), ("with", mod_id, save_plain and out / "with.sav")):
         name = f"lmc{label}"
+        unlink_all(bench.folder(name))  # соединение mods прошлой проверки ведёт в её удалённую папку, стенд не запустится
         try:
             bench.battle(name, mods, mid, save, "" if pirates else "xcom1")
             if not pirates:
@@ -599,6 +600,7 @@ def run_stage(exe, game, clean, out, rep, turns):
                 if not re.search(rf"\[lua\] {re.escape(mod_id)}:", log) and not count:
                     rep.signal("run", "lua_silent", "мод за бой ничего не написал в журнал: сработал ли он, видно только по коду")
             bench.call("stop", "--name", name, timeout=60)
+            unlink_all(bench.folder(name))
     if "with" in times and "without" in times:
         a, b = sum(times["with"]), sum(times["without"])
         if b > 0 and a > b * 1.5 and a - b > 10:
