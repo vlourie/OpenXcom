@@ -3,3 +3,4 @@
 - For mod authors: Lua mods see much more: unit stats and equipment, map tiles, item and armor rules, the date, countries, UFOs and craft. New handlers: the chance of psi and melee attacks, experience, the sound of a step, the end of a month for a country, UFO detection. The launcher's guide and recipes are updated.
 - Globe: the T'Lieh Brig and Heavy Brig now fly wide end first, with the narrow tail behind.
 - Lua mods: in a campaign battle a mod now starts with clean variables, as the guide promises; new mod errors are no longer lost when the log is full; a wrong body part from a mod becomes the head and does not corrupt the game's memory.
+- Battle: with corner shading on, the dead tree and other thin objects on a plate no longer stand in a dark diamond the size of the whole tile.
