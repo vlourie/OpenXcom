@@ -28,17 +28,23 @@
 namespace OpenXcom
 {
 
+class Armor;
 class BattleItem;
 class BattleUnit;
 class Country;
 class Craft;
 class LuaSandbox;
 class Mod;
+class RuleCraft;
+class RuleItem;
 class RuleSkill;
 class RuleSoldierBonus;
+class RuleUfo;
 class SavedBattleGame;
 class SavedGame;
 class Soldier;
+class StatsForNerdsState;
+class Tile;
 class Ufo;
 
 /**
@@ -57,13 +63,23 @@ public:
 		CREATE_UNIT, NEW_TURN_UNIT, HIT_UNIT, DAMAGE_UNIT, DAMAGE_SPECIAL_UNIT, HEAL_UNIT, SKILL_USE_UNIT,
 		RETURN_FROM_MISSION_UNIT, CREATE_ITEM, NEW_TURN_ITEM, AWARD_EXPERIENCE, TRY_PSI_ATTACK_ITEM, TRY_PSI_ATTACK_UNIT,
 		TRY_MELEE_ATTACK_ITEM, TRY_MELEE_ATTACK_UNIT, SELECT_MOVE_SOUND_UNIT, NEW_MONTH_COUNTRY, DETECT_UFO_FROM_BASE,
-		DETECT_UFO_FROM_CRAFT, APPLY_SOLDIER_BONUSES, EVENT_COUNT
+		DETECT_UFO_FROM_CRAFT, APPLY_SOLDIER_BONUSES,
+		HIT_UNIT_AMMO, DAMAGE_UNIT_AMMO, DAMAGE_SPECIAL_UNIT_AMMO,
+		REACTION_UNIT_ACTION, REACTION_UNIT_REACTION, REACTION_WEAPON_ACTION, VISIBILITY_UNIT, AI_CALCULATE_TARGET_WEIGHT,
+		SELL_COST_ITEM, BUY_COST_ITEM,
+		STATS_FOR_NERDS_ITEM, STATS_FOR_NERDS_ARMOR, STATS_FOR_NERDS_CRAFT, STATS_FOR_NERDS_UFO,
+		PSI_DEFENCE_BONUS, MELEE_DODGE_BONUS,
+		TIME_RECOVERY_BONUS, ENERGY_RECOVERY_BONUS, MORALE_RECOVERY_BONUS, HEALTH_RECOVERY_BONUS, MANA_RECOVERY_BONUS, STUN_RECOVERY_BONUS,
+		TIME_SOLDIER_RECOVERY_BONUS, ENERGY_SOLDIER_RECOVERY_BONUS, MORALE_SOLDIER_RECOVERY_BONUS, HEALTH_SOLDIER_RECOVERY_BONUS,
+		MANA_SOLDIER_RECOVERY_BONUS, STUN_SOLDIER_RECOVERY_BONUS,
+		DAMAGE_BONUS_BONUS, MELEE_BONUS_BONUS, ACCURACY_MULTIPLIER_BONUS, MELEE_MULTIPLIER_BONUS, THROW_MULTIPLIER_BONUS, CLOSE_QUARTERS_MULTIPLIER_BONUS,
+		EVENT_COUNT
 	};
 
 	/// One argument of a handler; a null pointer reaches Lua as nil.
 	struct Arg
 	{
-		enum Kind { UNIT, ITEM, BATTLE, SKILL, SOLDIER, GEOSCAPE, COUNTRY, UFO, CRAFT, BONUS, INT } kind;
+		enum Kind { UNIT, ITEM, BATTLE, SKILL, SOLDIER, GEOSCAPE, COUNTRY, UFO, CRAFT, BONUS, TILE, RULE_ITEM, RULE_ARMOR, RULE_UFO, RULE_CRAFT, NERDS, INT } kind;
 		void *object;
 		int value;
 
@@ -78,12 +94,23 @@ public:
 		Arg(const Ufo *o) : kind(UFO), object(const_cast<Ufo*>(o)), value(0) { }
 		Arg(const Craft *o) : kind(CRAFT), object(const_cast<Craft*>(o)), value(0) { }
 		Arg(const RuleSoldierBonus *o) : kind(BONUS), object(const_cast<RuleSoldierBonus*>(o)), value(0) { }
+		Arg(const Tile *o) : kind(TILE), object(const_cast<Tile*>(o)), value(0) { }
+		Arg(const RuleItem *o) : kind(RULE_ITEM), object(const_cast<RuleItem*>(o)), value(0) { }
+		Arg(const Armor *o) : kind(RULE_ARMOR), object(const_cast<Armor*>(o)), value(0) { }
+		Arg(const RuleUfo *o) : kind(RULE_UFO), object(const_cast<RuleUfo*>(o)), value(0) { }
+		Arg(const RuleCraft *o) : kind(RULE_CRAFT), object(const_cast<RuleCraft*>(o)), value(0) { }
+		Arg(StatsForNerdsState *o) : kind(NERDS), object(o), value(0) { }
 		Arg(int v) : kind(INT), object(nullptr), value(v) { }
 	};
 
 	/// Loads the Lua of the active mods; null when there is nothing to run.
 	static LuaHost *create(Mod *mod);
 	~LuaHost();
+
+	/// For the rules, which hold no pointer to the game: null without Lua, the only cost of the calls they make.
+	static LuaHost *active() { return _active; }
+	/// The event of a bonus script by the name of its parser, -1 when Lua has no such event.
+	static int bonusEvent(const std::string &scriptName);
 
 	/// Calls the handlers of an event without output values.
 	void fire(Event event, std::initializer_list<Arg> args) { fireOutputs(event, args, nullptr); }
@@ -106,8 +133,13 @@ public:
 
 	/// Reads every mod's main.lua again: Lua variables are gone, a switched off mod is back. What happened, in a line.
 	std::string reload();
-	/// A mod handles hitUnit, damageUnit or damageSpecialUnit: the AI's forecast of a shot does not know the result.
-	bool hasDamageHandlers() const { return _handled[HIT_UNIT] || _handled[DAMAGE_UNIT] || _handled[DAMAGE_SPECIAL_UNIT]; }
+	/// A mod handles the damage or the power of a shot: the AI's forecast of it does not know the result.
+	bool hasDamageHandlers() const
+	{
+		return _handled[HIT_UNIT] || _handled[DAMAGE_UNIT] || _handled[DAMAGE_SPECIAL_UNIT]
+			|| _handled[HIT_UNIT_AMMO] || _handled[DAMAGE_UNIT_AMMO] || _handled[DAMAGE_SPECIAL_UNIT_AMMO]
+			|| _handled[DAMAGE_BONUS_BONUS] || _handled[MELEE_BONUS_BONUS];
+	}
 
 private:
 	struct Entry
@@ -121,6 +153,8 @@ private:
 	void fireOutputs(Event event, std::initializer_list<Arg> args, int *out);
 	void noteError(size_t entry, const std::string &event, const std::string &text);
 	void writeJournal(const std::string &id, const std::string &event, const std::string &text);
+
+	static LuaHost *_active;
 
 	Mod *_mod = nullptr;
 	std::vector<Entry> _entries;

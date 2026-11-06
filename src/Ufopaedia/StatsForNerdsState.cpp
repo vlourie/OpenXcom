@@ -35,6 +35,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/ExtraSounds.h"
 #include "../Mod/ExtraSprites.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/RuleCommendations.h"
@@ -2290,6 +2291,10 @@ void StatsForNerdsState::initItemList()
 	}
 
 	ModScript::scriptCallback<ModScript::StatsForNerdsItem>(itemRule, itemRule, this, _game->getSavedGame());
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::STATS_FOR_NERDS_ITEM, { itemRule, this, _game->getSavedGame() });
+	}
 
 	if (_showDebug)
 	{
@@ -2875,6 +2880,10 @@ void StatsForNerdsState::initArmorList()
 	addRuleNamed(ss, armorRule->getRequiredBonus(), "requiresBonus");
 
 	ModScript::scriptCallback<ModScript::StatsForNerdsArmor>(armorRule, armorRule, this, _game->getSavedGame());
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::STATS_FOR_NERDS_ARMOR, { armorRule, this, _game->getSavedGame() });
+	}
 
 	if (_showDebug)
 	{
@@ -3534,6 +3543,10 @@ void StatsForNerdsState::initCraftList()
 	}
 
 	ModScript::scriptCallback<ModScript::StatsForNerdsCraft>(craftRule, craftRule, this, _game->getSavedGame());
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::STATS_FOR_NERDS_CRAFT, { craftRule, this, _game->getSavedGame() });
+	}
 
 	if (_showDebug)
 	{
@@ -3796,6 +3809,10 @@ void StatsForNerdsState::initUfoList()
 	}
 
 	ModScript::scriptCallback<ModScript::StatsForNerdsUfo>(ufoRule, ufoRule, this, _game->getSavedGame());
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::STATS_FOR_NERDS_UFO, { ufoRule, this, _game->getSavedGame() });
+	}
 
 	if (_showDebug)
 	{

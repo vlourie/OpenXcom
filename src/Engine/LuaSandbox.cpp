@@ -249,6 +249,10 @@ int LuaSandbox::random(lua_State *L)
 		// main.lua runs at every load of a save and at Ctrl+F5: it would move the game's random numbers
 		return luaL_error(L, "math.random is not available while main.lua loads, call it in a handler");
 	}
+	if (self->_noRandom)
+	{
+		return luaL_error(L, "no random numbers in this handler: it is called from lists, tooltips and the frame, and would move the game's generator");
+	}
 	lua_Integer low = 1, high = 0;
 	switch (lua_gettop(L))
 	{
@@ -578,6 +582,8 @@ void LuaSandbox::fire(const char *event, PushFn push, void *data, AfterFn after)
 		return;
 	}
 	_inFire = true;
+	// a formula reached from another mod's handler: that one goes on counting after this
+	LuaSandbox *const outer = _running;
 	begin(_limits.instructions);
 	_fireEvent = event;
 	_firePush = push;
@@ -592,6 +598,7 @@ void LuaSandbox::fire(const char *event, PushFn push, void *data, AfterFn after)
 	}
 	++_generation; // every handle given out here is dead now
 	_inFire = false;
+	_running = outer;
 	if (_anyError)
 	{
 		if (++_errorsInRow >= _limits.maxErrors)

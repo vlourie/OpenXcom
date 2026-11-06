@@ -6315,11 +6315,18 @@ AIAttackWeight AIModule::getTargetAttackWeight(BattleUnit* target) const
 		weight = target->getAITargetWeightAsNeutral(_save->getMod());
 	}
 
+	int defaultWeight = weight;
 	weight = (AIAttackWeight)ModScript::scriptFunc2<ModScript::AiCalculateTargetWeight>(
 		_unit->getArmor(),
 		weight, weight,
 		_unit, target, _save
 	);
+
+	if (auto *lua = _save->getMod()->getLuaHost())
+	{
+		auto out = std::tie(weight, defaultWeight);
+		lua->fire(LuaHost::AI_CALCULATE_TARGET_WEIGHT, out, { _unit, target, _save });
+	}
 
 	return weight;
 }

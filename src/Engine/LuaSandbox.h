@@ -63,6 +63,8 @@ public:
 	LuaSandbox &operator=(const LuaSandbox&) = delete;
 
 	void setErrorFn(ErrorFn fn) { _onError = std::move(fn); }
+	/// The next fire() may not use math.random: its handlers are called a number of times that is not the game's.
+	bool setNoRandom(bool noRandom) { const bool was = _noRandom; _noRandom = noRandom; return was; }
 	/// Registers the game's types and whatever else the host needs. False if it failed.
 	bool setup(SetupFn fn, void *data);
 	/// Compiles (text only) and runs the mod's code. game.on() works only here.
@@ -131,7 +133,7 @@ private:
 	SetupFn _setupFn = nullptr;
 	void *_setupData = nullptr;
 	int _errorsInRow = 0, _totalErrors = 0, _totalLimits = 0, _logLeft = 1000;
-	bool _limitHit = false, _loading = false, _inFire = false, _disabled = false, _anyError = false;
+	bool _limitHit = false, _loading = false, _inFire = false, _disabled = false, _anyError = false, _noRandom = false;
 };
 
 }

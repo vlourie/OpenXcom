@@ -1776,6 +1776,10 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 
 		if (auto *lua = save->getMod()->getLuaHost())
 		{
+			if (attack.damage_item)
+			{
+				lua->fire(LuaHost::HIT_UNIT_AMMO, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, orgDamage, type->ResistType, attack.type });
+			}
 			lua->fire(LuaHost::HIT_UNIT, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, orgDamage, type->ResistType, attack.type });
 		}
 
@@ -1910,6 +1914,10 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 
 		if (auto *lua = save->getMod()->getLuaHost())
 		{
+			if (attack.damage_item)
+			{
+				lua->fire(LuaHost::DAMAGE_UNIT_AMMO, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, damage, orgDamage, bodypart, side, type->ResistType, attack.type });
+			}
 			lua->fire(LuaHost::DAMAGE_UNIT, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, damage, orgDamage, bodypart, side, type->ResistType, attack.type });
 		}
 
@@ -2059,6 +2067,10 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 
 		if (auto *lua = save->getMod()->getLuaHost())
 		{
+			if (attack.damage_item)
+			{
+				lua->fire(LuaHost::DAMAGE_SPECIAL_UNIT_AMMO, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, damage, orgDamage, bodypart, side, type->ResistType, attack.type });
+			}
 			lua->fire(LuaHost::DAMAGE_SPECIAL_UNIT, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, damage, orgDamage, bodypart, side, type->ResistType, attack.type });
 		}
 

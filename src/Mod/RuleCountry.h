@@ -52,6 +52,7 @@ private:
 public:
 	/// Name of class used in script.
 	static constexpr const char* ScriptName = "RuleCountry";
+	const ScriptValues<RuleCountry>& getScriptValuesRaw() const { return _scriptValues; }
 	/// Register all useful function used by script.
 	static void ScriptRegister(ScriptParserBase* parser);
 
