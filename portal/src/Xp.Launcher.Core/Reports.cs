@@ -36,12 +36,19 @@ public sealed class GameContext
     /// <summary>The game as it was at F8, written by the engine into the report folder; empty in ironman or with no game loaded.</summary>
     public string Save { get; set; } = "";
     public string GameDir { get; set; } = "";
+    /// <summary>user/lua_errors.log, named by the engine; the file is there only after a Lua error.</summary>
+    public string LuaLog { get; set; } = "";
 }
 
 public sealed class ModRef
 {
     public string Id { get; set; } = "";
     public string Version { get; set; } = "";
+    /// <summary>The engine was running this mod's Lua at F8 (LUA_MODS §7). No catalog yet: every such mod is the author's own.</summary>
+    public bool Lua { get; set; }
+
+    /// <summary>Id, version and the mark: all that a report ever says of a mod.</summary>
+    public string Line => (string.IsNullOrEmpty(Version) ? Id : $"{Id} {Version}") + (Lua ? " [lua local]" : "");
 }
 
 public enum ReportStatus { Draft, Queued, Sent }
@@ -59,6 +66,7 @@ public sealed class ReportDraft
     public string Actual { get; set; } = "";
     public bool AttachShot { get; set; } = true;
     public bool AttachLog { get; set; }
+    public bool AttachLuaLog { get; set; }
     /// <summary>Full path of the save the player chose to attach, or null.</summary>
     public string? SavePath { get; set; }
     public ReportStatus Status { get; set; } = ReportStatus.Draft;
@@ -229,11 +237,17 @@ public sealed class Report
         var list = new List<PlannedFile>();
         if (Draft.AttachShot && File.Exists(ShotPath)) list.Add(new PlannedFile("shot.png", ShotPath, new FileInfo(ShotPath).Length, "shot"));
         if (Draft.AttachLog && LogPath is { } log) list.Add(new PlannedFile("openxcom.log", log, new FileInfo(log).Length, "log"));
+        if (Draft.AttachLuaLog && LuaLogPath is { } lua) list.Add(new PlannedFile("lua_errors.log", lua, new FileInfo(lua).Length, "log"));
         if (Draft.SavePath is { } save && File.Exists(save)) list.Add(new PlannedFile(System.IO.Path.GetFileName(save), save, new FileInfo(save).Length, "save"));
         return list;
     }
 
     public string? LogPath => !string.IsNullOrEmpty(Context?.Log) && File.Exists(Context.Log) ? Context.Log : null;
+
+    public string? LuaLogPath => !string.IsNullOrEmpty(Context?.LuaLog) && File.Exists(Context.LuaLog) ? Context.LuaLog : null;
+
+    /// <summary>The mods whose Lua ran, as the ticket names them: the form shows this before anything is sent.</summary>
+    public IReadOnlyList<string> LuaMods() => Context is { } c ? [.. c.Mods.Where(m => m.Lua).Select(m => m.Line)] : [];
 
     /// <summary>The technical block of the ticket: versions and settings, no paths and no names.</summary>
     public string ContextText(string launcherVersion)
@@ -244,7 +258,7 @@ public sealed class Report
         {
             sb.Append("engine: ").AppendLine(c.Engine);
             sb.Append("master: ").AppendLine(c.Master);
-            sb.Append("mods: ").AppendLine(string.Join(", ", c.Mods.Select(m => string.IsNullOrEmpty(m.Version) ? m.Id : $"{m.Id} {m.Version}")));
+            sb.Append("mods: ").AppendLine(string.Join(", ", c.Mods.Select(m => m.Line)));
             sb.Append("os: ").AppendLine(c.Os);
             sb.Append("language: ").AppendLine(c.Language);
             sb.Append("screen: ").Append(c.State).AppendLine(c.Battle ? " (battle)" : "");

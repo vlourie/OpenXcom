@@ -598,6 +598,74 @@ public sealed class BuildsWindowTests : IDisposable
         w.Close();
     }
 
+    /// <summary>A button of the panel by its text: the rows are rebuilt on every Fill.</summary>
+    static Button ByText(Control panel, string text) =>
+        panel.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == text || (b.Content as TextBlock)?.Text == text);
+
+    [AvaloniaFact]
+    public void An_author_makes_a_lua_mod_in_the_settings_by_clicks_alone()
+    {
+        var opened = new List<string>();
+        ReportWindow.OpenUrlOverride = opened.Add;
+        try
+        {
+            var w = Open();
+            Call(w, "Navigate", "settings");
+            var panel = F<Control>(w, "_modding");
+            var mode = F<CheckBox>(panel, "_mode");
+            var body = F<StackPanel>(panel, "_body");
+            Assert.False(mode.IsChecked);   // off for everyone by default
+            Assert.False(body.IsVisible);
+            Shot(w, "modding-off");
+
+            // "no" to the only warning: nothing changes
+            Click(mode);
+            var warn = Dialog(w, "modding-warn");
+            Click(ByText((Control)warn.Content!, "Нет"));
+            Pump(() => w.OwnedWindows.Count == 0, "the warning to close");
+            Assert.False(mode.IsChecked);
+            Assert.False(File.Exists(Path.Combine(Game, "launcher", "modding.txt")));
+
+            Click(mode);
+            warn = Dialog(w, "modding-warn2");
+            Click(ByText((Control)warn.Content!, "Да"));
+            Pump(() => body.IsVisible, "the mode to turn on");
+            Shot(w, "modding-empty");
+
+            // the name, and all the rest is the launcher's: the folder, the three files, on in the current build
+            Click(F<Button>(panel, "_create"));
+            Answer(Dialog(w, "modding-name"), "Мой мод");
+            var dir = Path.Combine(Game, "user", "mods", "moy_mod");
+            Pump(() => File.Exists(Path.Combine(dir, "README.txt")) && F<StackPanel>(panel, "_list").Children.Count == 1, "the mod");
+            Assert.True(File.Exists(Path.Combine(dir, "metadata.yml")));
+            Assert.True(File.Exists(Path.Combine(dir, "lua", "main.lua")));
+            Assert.Contains(opened, u => Path.GetFullPath(u) == Path.GetFullPath(dir));
+            var build = F<ComboBox>(w, "_build").IsEnabled;
+            Assert.True(build);
+            var store = new Xp.Launcher.Core.BuildStore(new Xp.Launcher.Core.GamePaths(Game));
+            var current = store.Load().Current!;
+            string cfg() => File.ReadAllText(store.OptionsFile(current)).Replace("\r", "");
+            Assert.Contains("- active: true\n    id: moy_mod", cfg());
+            var row = (Control)F<StackPanel>(panel, "_list").Children[0];
+            Assert.Contains(row.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text!.Contains("Lua · локальный · не проверен"));
+            panel.BringIntoView();
+            Shot(w, "modding-one-mod");
+
+            Click(ByText(row, "Выключить"));
+            Assert.Contains("- active: false\n    id: moy_mod", cfg());
+            row = (Control)F<StackPanel>(panel, "_list").Children[0];
+            Assert.Contains(row.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text!.Contains("выключен"));
+
+            Click(ByText(row, "Удалить"));
+            var confirm = Dialog(w, "modding-delete");
+            Click(ByText((Control)confirm.Content!, "Да"));
+            Pump(() => !Directory.Exists(dir), "the folder to go");
+            Pump(() => F<StackPanel>(panel, "_list").Children.Count == 1 && !F<StackPanel>(panel, "_list").GetLogicalDescendants().OfType<Button>().Any(), "the empty list");
+            w.Close();
+        }
+        finally { ReportWindow.OpenUrlOverride = null; }
+    }
+
     static void Set(object o, string name, object? value) =>
         o.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(o, value);
 

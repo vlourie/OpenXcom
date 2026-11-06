@@ -127,7 +127,7 @@ public static class HdCoreMigration
     /// launcher still kept stays its own, instead of reading on the next "Play" as the player's change and being
     /// left unordered from then on. A list the player had already made theirs is not recorded and stays theirs.
     /// </summary>
-    static void FollowProfile(GamePaths paths, string key, string before, string after)
+    internal static void FollowProfile(GamePaths paths, string key, string before, string after)
     {
         var state = new ProfileState(paths);
         var written = state.LoadMods();

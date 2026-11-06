@@ -10,8 +10,9 @@ namespace Xp.Launcher.Core;
 /// <summary>A mod of the player's own in user/mods: its compatibility with our build was never checked.</summary>
 /// <param name="OtherMaster">the master it is made for, when that is not the game's; the engine will not switch it on</param>
 /// <param name="WrongEngine">the engine it asks for, when that is not ours</param>
+/// <param name="Lua">it carries Lua (<see cref="LuaMods.IsLua"/>)</param>
 public sealed record OwnMod(string Id, string Name, string Version, string Folder, bool IsMaster, bool Active,
-    string? OtherMaster, string? WrongEngine);
+    string? OtherMaster, string? WrongEngine, bool Lua = false);
 
 public sealed record SetupRow(ComponentInfo Component, bool Checked, bool Locked, string? Needs, string? WrongEngine)
 {
@@ -255,12 +256,7 @@ public static class Setup
     public static List<OwnMod> OwnMods(string gameDir, ReleaseManifest m, string? master, string? cfgPath = null)
     {
         var ours = new HashSet<string>(m.Components.Select(c => c.Mod).Where(id => id.Length > 0), StringComparer.Ordinal);
-        var shipped = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var f in m.Files)
-        {
-            var seg = f.Path.Split('/');
-            if (seg.Length > 3 && Same(seg[0], "user") && Same(seg[1], "mods")) shipped.Add(seg[2]);
-        }
+        var shipped = ShippedFolders(m);
         cfgPath ??= Path.Combine(gameDir, "user", "options.cfg");
         var cfg = OptionsCfg.Parse(File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "");
         var result = new List<OwnMod>();
@@ -278,10 +274,26 @@ public static class Setup
             // the engine's rule (ModInfo::canActivate): a master mod, a mod for any master, or one for this very master
             var otherMaster = !md.IsMaster && !md.AnyMaster && master is not null && md.Master != master ? md.Master : null;
             result.Add(new OwnMod(md.Id, md.Name, md.Version, folder, md.IsMaster,
-                cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, EngineMismatch(m, md.Engine)));
+                cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, EngineMismatch(m, md.Engine), LuaMods.IsLua(dir, md)));
         }
         return result;
     }
+
+    /// <summary>The folders under user/mods the release has files in, installed here or not.</summary>
+    static HashSet<string> ShippedFolders(ReleaseManifest m)
+    {
+        var shipped = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var f in m.Files)
+        {
+            var seg = f.Path.Split('/');
+            if (seg.Length > 3 && Same(seg[0], "user") && Same(seg[1], "mods")) shipped.Add(seg[2]);
+        }
+        return shipped;
+    }
+
+    /// <summary>What a new local mod must not be called: picking that component later would write over its folder.</summary>
+    public static IEnumerable<string> ReservedModNames(ReleaseManifest m) =>
+        ShippedFolders(m).Concat(m.Components.Select(c => c.Mod).Where(id => id.Length > 0));
 
     /// <summary>requiredExtendedEngine: "" any, "Extended" any OXCE (ours is one), "OXCE-HD" only our line.</summary>
     static string? EngineMismatch(ReleaseManifest m, ComponentInfo c) => EngineMismatch(m, c.Engine);

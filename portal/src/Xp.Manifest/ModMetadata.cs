@@ -19,6 +19,8 @@ public sealed class ModMetadata
     /// <summary>"" any engine, "Extended" OXCE, "OXCE-HD" ours only.</summary>
     public string Engine { get; set; } = "";
     public bool AutoEnable { get; set; }
+    /// <summary>The Lua API version the mod asks for; 0 - none, the engine runs no Lua of it.</summary>
+    public int LuaApi { get; set; }
 
     public static ModMetadata Parse(string text, string folder)
     {
@@ -39,6 +41,7 @@ public sealed class ModMetadata
         if (kv.TryGetValue("version", out var ver)) m.Version = ver;
         m.IsMaster = kv.TryGetValue("isMaster", out var im) && IsTrue(im);
         m.AutoEnable = kv.TryGetValue("autoEnable", out var ae) && IsTrue(ae);
+        if (kv.TryGetValue("luaApi", out var lua) && int.TryParse(lua, out var api)) m.LuaApi = api;
         if (kv.ContainsKey("requiredExtendedVersion")) m.Engine = "Extended";
         if (kv.TryGetValue("requiredExtendedEngine", out var eng)) m.Engine = eng;
         m.Master = m.IsMaster ? "" : "xcom1";

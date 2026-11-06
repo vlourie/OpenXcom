@@ -79,7 +79,7 @@ public sealed class ReportTests : IDisposable
     }
 
     /// <summary>What the game leaves on F8: shot.png and context.json, paths with forward slashes.</summary>
-    Report NewReport(string? log = null, string? snapshot = null)
+    Report NewReport(string? log = null, string? snapshot = null, string extraMods = "", string luaLog = "")
     {
         var id = Guid.NewGuid().ToString();
         var dir = Path.Combine(Reports, id);
@@ -101,7 +101,8 @@ public sealed class ReportTests : IDisposable
               "createdAt": "2026-09-23T01:02:03Z",
               "engine": "Extended 8.7.1 (vlourie + MuRuCoN)",
               "master": "piratez",
-              "mods": [{"id": "Piratez", "version": "0.99N"}, {"id": "hd", "version": ""}],
+              "mods": [{"id": "Piratez", "version": "0.99N"}, {"id": "hd", "version": ""}{{extraMods}}],
+              "luaLog": "{{fwd(luaLog)}}",
               "os": "Windows 10.0.26200",
               "language": "ru",
               "state": "GeoscapeState",
@@ -208,6 +209,64 @@ public sealed class ReportTests : IDisposable
         var again = Report.Open(r.Dir);
         Assert.Equal(ReportStatus.Sent, again.Draft.Status);
         Assert.Equal(["shot.png", "openxcom.log", "battle.sav"], again.Draft.Uploaded);
+    }
+
+    [Fact]
+    public async Task Of_a_local_lua_mod_only_the_mods_line_leaves_the_machine()
+    {
+        const string code = "SECRET_MOD_CODE_MARKER";
+        var modDir = Path.Combine(_root, "game", "user", "mods", "my_mod");
+        Directory.CreateDirectory(Path.Combine(modDir, "lua"));
+        File.WriteAllText(Path.Combine(modDir, "lua", "main.lua"), "-- " + code);
+        File.WriteAllText(Path.Combine(modDir, "metadata.yml"), "id: my_mod\nname: " + code + "\nluaApi: 1\n");
+        var luaLog = Path.Combine(_root, "game", "user", "lua_errors.log");
+        Directory.CreateDirectory(Path.GetDirectoryName(luaLog)!);
+        File.WriteAllText(luaLog, $"my_mod newTurnUnit: {_root.Replace('\\', '/')}/game/user/mods/my_mod main.lua:3: boom\n");
+
+        var r = NewReport(extraMods: """, {"id": "my_mod", "version": "0.1", "lua": true}""", luaLog: luaLog);
+        Assert.Contains("mods: Piratez 0.99N, hd, my_mod 0.1 [lua local]", r.ContextText("0.2.0"));
+        Assert.Equal(["my_mod 0.1 [lua local]"], r.LuaMods());
+
+        // the journal is there, the box is not ticked: it stays
+        r.Draft.AttachLog = true;
+        Assert.DoesNotContain(r.PlannedFiles(), p => p.Name == "lua_errors.log");
+        await Sender().SendAsync(r, CancellationToken.None);
+
+        Assert.Equal(["shot.png", "openxcom.log"], _portal.Files.Select(x => x.Name));
+        var ticket = _portal.Created.Single().GetRawText();
+        Assert.Contains("my_mod 0.1 [lua local]", ticket);
+        Assert.DoesNotContain(code, ticket);
+        Assert.DoesNotContain("main.lua", ticket);
+        Assert.All(_portal.LastBodies.Values, body => Assert.DoesNotContain(code, Encoding.UTF8.GetString(body)));
+    }
+
+    [Fact]
+    public async Task The_lua_error_log_goes_only_with_its_own_box_and_cleaned()
+    {
+        var luaLog = Path.Combine(_root, "game", "user", "lua_errors.log");
+        Directory.CreateDirectory(Path.GetDirectoryName(luaLog)!);
+        File.WriteAllText(luaLog, $"my_mod hitUnit: {_root.Replace('\\', '/')}/game/user/x main.lua:3: boom\n");
+        var r = NewReport(extraMods: """, {"id": "my_mod", "version": "0.1", "lua": true}""", luaLog: luaLog);
+        r.Draft.AttachLuaLog = true;
+        await Sender().SendAsync(r, CancellationToken.None);
+
+        var sent = Encoding.UTF8.GetString(_portal.LastBodies["lua_errors.log"]);
+        Assert.Contains("main.lua:3: boom", sent);
+        Assert.Contains("<game>/user", sent);
+        Assert.DoesNotContain(_root.Replace('\\', '/'), sent);
+        Assert.True(_portal.Created.Single().GetProperty("consentToFiles").GetBoolean());
+    }
+
+    [Fact]
+    public void A_report_of_an_older_game_or_without_lua_says_nothing_of_it()
+    {
+        var r = NewReport();
+        Assert.Empty(r.LuaMods());
+        Assert.Null(r.LuaLogPath);
+        Assert.DoesNotContain("lua", r.ContextText("0.2.0"));
+        // a journal named by the engine and not there: no box
+        var gone = NewReport(luaLog: Path.Combine(_root, "game", "user", "lua_errors.log"));
+        Assert.Null(gone.LuaLogPath);
     }
 
     [Fact]

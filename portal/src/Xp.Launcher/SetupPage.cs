@@ -436,6 +436,7 @@ public sealed class SetupPage : UserControl
             text.Children.Add(new TextBlock { Text = name, FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(bad ? Skin.Dim : Skin.Text) });
             var why = o.OtherMaster is { } om ? L.T("setup.ownOtherMaster", om)
                     : o.WrongEngine is { } e ? L.T("setup.wrongEngine", e)
+                    : o.Lua ? L.T("modding.label")
                     : L.T("setup.ownUntested");
             var state = o.IsMaster ? L.T("setup.kind.master") : L.T(o.Active ? "setup.ownOn" : "setup.ownOff");
             var line = string.Join("  ·  ", new[] { state, "user/mods/" + o.Folder, why });

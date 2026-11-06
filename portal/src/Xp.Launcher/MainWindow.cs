@@ -75,6 +75,7 @@ public sealed class MainWindow : Window
     readonly Button _buildNew, _buildCopy, _buildRename, _buildDelete;
     // every build in Settings, the chosen one lit: the buttons below act on it, so it has to be in sight
     readonly StackPanel _buildList = new() { Spacing = 6, Margin = new Thickness(0, 0, 0, 8) };
+    ModdingPanel? _modding;
     bool _fillingBuilds;
 
     readonly SetupPage _setupPage;
@@ -363,6 +364,7 @@ public sealed class MainWindow : Window
             b.Classes.Set("on", on);
         }
         if (page == "reports") _reportsPage.Shown();
+        if (page == "settings") _modding?.Fill();
         if (page == "support") _supportPage.Shown();        if (page == "news") _newsPage.Shown(_newsRoadmap);
         _newsRoadmap = false;
         if (page == "voice") _voicePage.Shown();
@@ -805,7 +807,7 @@ public sealed class MainWindow : Window
             Child = new ScrollViewer { Content = _log },
         });
 
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,14,*"), RowDefinitions = new RowDefinitions("Auto,14,Auto,14,Auto") };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,14,*"), RowDefinitions = new RowDefinitions("Auto,14,Auto,14,Auto,14,Auto") };
         void Put(Control c, int row, int col) { Grid.SetRow(c, row); Grid.SetColumn(c, col); grid.Children.Add(c); }
         // the account first: the strip on the home page sends the player here, and it has to be in sight on arrival
         var account = Skin.Panel(_account);
@@ -815,6 +817,11 @@ public sealed class MainWindow : Window
         Put(Skin.Panel(updates), 2, 2);
         Put(Skin.Panel(broken), 4, 0);
         Put(Skin.Panel(log), 4, 2);
+        _modding = new ModdingPanel(this, () => _paths, () => _builds, CurrentBuild, () => _updater, () => _latest?.Manifest,
+            text => Fail(L.T("err.generic", text)), text => _fileLog?.Info(text));
+        var modding = Skin.Panel(_modding);
+        Grid.SetColumnSpan(modding, 3);
+        Put(modding, 6, 0);
 
         var page = new StackPanel { Spacing = 14, Margin = new Thickness(28, 24, 28, 28) };
         page.Children.Add(Skin.H1(L.T("nav.settings")));
@@ -1036,6 +1043,7 @@ public sealed class MainWindow : Window
             row.Click += (_, _) => { if (_build.SelectedIndex != index) _build.SelectedIndex = index; };
             _buildList.Children.Add(row);
         }
+        _modding?.Fill();   // on and off are the build's
         UpdateCredit();
     }
 
@@ -1624,6 +1632,12 @@ public sealed class MainWindow : Window
             {
                 _fileLog?.Error("profile not applied: " + e.Message);   // the game still starts, as the player left it
             }
+            // Lua runs only with the modding mode of this installation (LUA_MODS §5.2): the option goes with every start of every build
+            try
+            {
+                if (LuaMods.ApplyOption(_updater.Paths, _builds!.OptionsFile(build))) _fileLog?.Info($"{build.Cfg}options.cfg: {LuaMods.Option} follows the modding mode");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("lua option not written: " + e.Message); }
             // before the start: once the game runs, nothing of the builds is written
             try { _builds!.MarkPlayed(build.Id); }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("builds.json: " + e.Message); }
@@ -1745,6 +1759,7 @@ public sealed class MainWindow : Window
         _build.IsEnabled = buildsOn;
         foreach (var b in new[] { _buildNew, _buildCopy, _buildRename, _buildDelete }) b.IsEnabled = buildsOn;
         foreach (var r in _buildList.Children) r.IsEnabled = buildsOn;
+        _modding?.SetWritable(buildsOn);
         _selfUpdate.IsVisible = _launcherUpdate is not null;
         _selfUpdate.IsEnabled = idle;
         if (_launcherUpdate is not null) _selfUpdate.Content = L.T("self.install") + " " + _launcherUpdate.Release.Version;

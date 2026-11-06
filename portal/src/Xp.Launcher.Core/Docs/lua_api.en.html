@@ -1,0 +1,136 @@
+﻿<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lua API for OXCE-HD mods, version 1</title><style>
+:root{color-scheme:light dark;--bg:#fbfaf7;--fg:#22211e;--dim:#6c6a62;--line:#dcd9d0;--code:#efece4}
+@media (prefers-color-scheme:dark){:root{--bg:#1d1c1a;--fg:#e8e6df;--dim:#a3a095;--line:#3b3934;--code:#2b2a26}}
+*{box-sizing:border-box}body{margin:0 auto;max-width:980px;padding:28px 16px 60px;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,"Segoe UI",sans-serif}
+h1{font-size:26px;margin:0 0 12px}h2{font-size:19px;margin:32px 0 10px;border-bottom:1px solid var(--line);padding-bottom:4px}h3{font-size:15px;margin:20px 0 6px}
+code,pre{font-family:Consolas,monospace;font-size:13px;background:var(--code);border-radius:3px}code{padding:1px 4px}pre{padding:10px;overflow-x:auto}pre code{padding:0;background:none}
+table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:auto}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}th{color:var(--dim);font-weight:600}
+.ro{color:var(--dim)}
+</style></head><body>
+<h1>Lua API for OXCE-HD mods, version 1</h1><p>A mod is written in <code>lua/main.lua</code> in its folder, <code>metadata.yml</code> says <code>luaApi: 1</code>. Only the game runs Lua, the launcher never executes a mod's code. The border of the API: Lua can do what the Y-script can do and nothing beyond it. The names of the handlers and of the output values are those of the Y-script.</p>
+<h2>Getting started</h2><ol><li>In the launcher: Settings, "Modding mode", "Create mod". A folder with a working example appears.</li><li>Start the game and begin a battle. Lines from <code>game.log</code> and <code>print</code> go to <code>user/openxcom.log</code>.</li><li>Change <code>main.lua</code> and press <b>Ctrl+F5</b> in battle: the code of all mods is read again, the result is on the screen. The usual quick save F5 works as before.</li></ol>
+<h2>Handlers</h2><p>To subscribe: <code>game.on("name", function)</code>. Arguments come in the order of the Y-script's input, the last one is the table <code>out</code> of output values, if there are any. Values in <code>out</code> are taken as whole numbers and only all at once: one bad value is an error, the others are not applied. On one handler the Y-script runs first, then Lua in the mods' load order.</p>
+<table><tr><th>Handler</th><th>When</th><th>out</th></tr>
+<tr id="event.createUnit"><td><code>createUnit(unit, battle, turn)</code></td><td>a unit appears in the battle</td><td>-</td></tr>
+<tr id="event.newTurnUnit"><td><code>newTurnUnit(unit, battle, turn, side)</code></td><td>the start of a side&#x27;s turn, for each unit; side is whose turn it is, FACTION_*</td><td>-</td></tr>
+<tr id="event.hitUnit"><td><code>hitUnit(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)</code></td><td>a hit, before the armor</td><td><code>power</code>, <code>part</code>, <code>side</code></td></tr>
+<tr id="event.damageUnit"><td><code>damageUnit(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>the damage is worked out, after the armor</td><td><code>to_health</code>, <code>to_armor</code>, <code>to_stun</code>, <code>to_time</code>, <code>to_energy</code>, <code>to_morale</code>, <code>to_wound</code>, <code>to_transform</code>, <code>to_mana</code></td></tr>
+<tr id="event.damageSpecialUnit"><td><code>damageSpecialUnit(unit, damaging_item, weapon_item, attacker, battle, skill, health_damage, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>the damage is done, the special effects</td><td><code>transform</code> <span class="ro">(read only)</span>, <code>transform_chance</code>, <code>self_destruct</code> <span class="ro">(read only)</span>, <code>self_destruct_chance</code>, <code>morale_loss</code>, <code>fire</code>, <code>attacker_turns_since_spotted</code>, <code>attacker_turns_left_spotted_for_snipers</code></td></tr>
+<tr id="event.healUnit"><td><code>healUnit(actor, item, battle, target, battle_action, out)</code></td><td>a medikit is used</td><td><code>medikit_action_type</code>, <code>body_part</code>, <code>wound_recovery</code>, <code>health_recovery</code>, <code>energy_recovery</code>, <code>stun_recovery</code>, <code>mana_recovery</code>, <code>morale_recovery</code>, <code>painkiller_recovery</code></td></tr>
+<tr id="event.skillUseUnit"><td><code>skillUseUnit(actor, item, battle, skill, battle_action, have_tu, out)</code></td><td>a skill is used</td><td><code>continue_action</code>, <code>spend_tu</code></td></tr>
+<tr id="event.returnFromMissionUnit"><td><code>returnFromMissionUnit(unit, battle, soldier, out)</code></td><td>the end of a mission, for each soldier; the battle screen is gone</td><td><code>recovery_time</code>, <code>mana_loss</code> <span class="ro">(read only)</span>, <code>health_loss</code> <span class="ro">(read only)</span>, <code>final_mana_loss</code>, <code>final_health_loss</code></td></tr>
+<tr id="event.createItem"><td><code>createItem(item, unit, battle, turn)</code></td><td>an item appears in the battle; unit may be nil</td><td>-</td></tr>
+<tr id="event.newTurnItem"><td><code>newTurnItem(item, battle, turn, side)</code></td><td>the start of a side&#x27;s turn, for each item</td><td>-</td></tr>
+</table>
+<h2>Objects</h2>
+<h3>Unit: <code>unit</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="unit.getId"><td><code>unit:getId()</code></td><td>the unit&#x27;s number in the battle</td></tr>
+<tr id="unit.getType"><td><code>unit:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+<tr id="unit.getRank"><td><code>unit:getRank()</code></td><td>the rank, a whole number</td></tr>
+<tr id="unit.getFaction"><td><code>unit:getFaction()</code></td><td>the side now, FACTION_*</td></tr>
+<tr id="unit.getOriginalFaction"><td><code>unit:getOriginalFaction()</code></td><td>the side before mind control, FACTION_*</td></tr>
+<tr id="unit.isKilled"><td><code>unit:isKilled()</code></td><td>killed</td></tr>
+<tr id="unit.isStunned"><td><code>unit:isStunned()</code></td><td>stunned</td></tr>
+<tr id="unit.isKneeled"><td><code>unit:isKneeled()</code></td><td>kneeling</td></tr>
+<tr id="unit.isFloating"><td><code>unit:isFloating()</code></td><td>flying</td></tr>
+<tr id="unit.getDirection"><td><code>unit:getDirection()</code></td><td>the direction, 0 to 7</td></tr>
+<tr id="unit.getPosition"><td><code>unit:getPosition()</code></td><td>three values: x, y, z</td></tr>
+<tr id="unit.getTimeUnits"><td><code>unit:getTimeUnits()</code></td><td>time units now</td></tr>
+<tr id="unit.getTimeUnitsMax"><td><code>unit:getTimeUnitsMax()</code></td><td>time units, the maximum</td></tr>
+<tr id="unit.setTimeUnits"><td><code>unit:setTimeUnits(value)</code></td><td>set time units</td></tr>
+<tr id="unit.addTimeUnits"><td><code>unit:addTimeUnits(value)</code></td><td>add time units</td></tr>
+<tr id="unit.getHealth"><td><code>unit:getHealth()</code></td><td>health now</td></tr>
+<tr id="unit.getHealthMax"><td><code>unit:getHealthMax()</code></td><td>health, the maximum</td></tr>
+<tr id="unit.setHealth"><td><code>unit:setHealth(value)</code></td><td>set health</td></tr>
+<tr id="unit.addHealth"><td><code>unit:addHealth(value)</code></td><td>add health</td></tr>
+<tr id="unit.setHealthWithOverkill"><td><code>unit:setHealthWithOverkill(value)</code></td><td>set health, allowing it to go below zero</td></tr>
+<tr id="unit.addHealthWithOverkill"><td><code>unit:addHealthWithOverkill(value)</code></td><td>add health, allowing it to go below zero</td></tr>
+<tr id="unit.getOverKillDamage"><td><code>unit:getOverKillDamage()</code></td><td>how far health went below zero</td></tr>
+<tr id="unit.getMana"><td><code>unit:getMana()</code></td><td>mana now</td></tr>
+<tr id="unit.getManaMax"><td><code>unit:getManaMax()</code></td><td>mana, the maximum</td></tr>
+<tr id="unit.setMana"><td><code>unit:setMana(value)</code></td><td>set mana</td></tr>
+<tr id="unit.addMana"><td><code>unit:addMana(value)</code></td><td>add mana</td></tr>
+<tr id="unit.getEnergy"><td><code>unit:getEnergy()</code></td><td>energy now</td></tr>
+<tr id="unit.getEnergyMax"><td><code>unit:getEnergyMax()</code></td><td>energy, the maximum</td></tr>
+<tr id="unit.setEnergy"><td><code>unit:setEnergy(value)</code></td><td>set energy</td></tr>
+<tr id="unit.addEnergy"><td><code>unit:addEnergy(value)</code></td><td>add energy</td></tr>
+<tr id="unit.getStun"><td><code>unit:getStun()</code></td><td>stun now</td></tr>
+<tr id="unit.getStunMax"><td><code>unit:getStunMax()</code></td><td>stun, the maximum</td></tr>
+<tr id="unit.setStun"><td><code>unit:setStun(value)</code></td><td>set stun</td></tr>
+<tr id="unit.addStun"><td><code>unit:addStun(value)</code></td><td>add stun</td></tr>
+<tr id="unit.getMorale"><td><code>unit:getMorale()</code></td><td>morale</td></tr>
+<tr id="unit.setMorale"><td><code>unit:setMorale(value)</code></td><td>set morale</td></tr>
+<tr id="unit.addMorale"><td><code>unit:addMorale(value)</code></td><td>add morale</td></tr>
+<tr id="unit.getFire"><td><code>unit:getFire()</code></td><td>how many turns it still burns</td></tr>
+<tr id="unit.setFire"><td><code>unit:setFire(value)</code></td><td>set how many turns it burns</td></tr>
+<tr id="unit.getArmor"><td><code>unit:getArmor(side)</code></td><td>the armor of side SIDE_* now</td></tr>
+<tr id="unit.getArmorMax"><td><code>unit:getArmorMax(side)</code></td><td>the armor of side SIDE_*, the maximum</td></tr>
+<tr id="unit.setArmor"><td><code>unit:setArmor(side, value)</code></td><td>set the armor of a side</td></tr>
+<tr id="unit.addArmor"><td><code>unit:addArmor(side, value)</code></td><td>add to the armor of a side</td></tr>
+<tr id="unit.getFatalwoundsTotal"><td><code>unit:getFatalwoundsTotal()</code></td><td>wounds on the whole body</td></tr>
+<tr id="unit.getFatalwounds"><td><code>unit:getFatalwounds(part)</code></td><td>wounds on body part BODYPART_*</td></tr>
+<tr id="unit.setFatalwounds"><td><code>unit:setFatalwounds(part, value)</code></td><td>set the wounds on a body part</td></tr>
+<tr id="unit.addFatalwounds"><td><code>unit:addFatalwounds(part, value)</code></td><td>add wounds on a body part</td></tr>
+<tr id="unit.getRightHandWeapon"><td><code>unit:getRightHandWeapon()</code></td><td>the item in the right hand, or nil</td></tr>
+<tr id="unit.getLeftHandWeapon"><td><code>unit:getLeftHandWeapon()</code></td><td>the item in the left hand, or nil</td></tr>
+<tr id="unit.getRuleArmor"><td><code>unit:getRuleArmor()</code></td><td>the armor rules, or nil</td></tr>
+<tr id="unit.getTag"><td><code>unit:getTag(name)</code></td><td>the value of a BattleUnit tag</td></tr>
+<tr id="unit.setTag"><td><code>unit:setTag(name, value)</code></td><td>write a BattleUnit tag</td></tr>
+</table>
+<h3>Item: <code>item</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="item.getId"><td><code>item:getId()</code></td><td>the item&#x27;s number in the battle</td></tr>
+<tr id="item.getRuleItem"><td><code>item:getRuleItem()</code></td><td>the item rules, or nil</td></tr>
+<tr id="item.getOwner"><td><code>item:getOwner()</code></td><td>the owner, a unit, or nil</td></tr>
+<tr id="item.isAmmo"><td><code>item:isAmmo()</code></td><td>this is ammunition</td></tr>
+<tr id="item.getAmmoQuantity"><td><code>item:getAmmoQuantity()</code></td><td>rounds now</td></tr>
+<tr id="item.getAmmoQuantityMax"><td><code>item:getAmmoQuantityMax()</code></td><td>rounds in a clip by the rules</td></tr>
+<tr id="item.setAmmoQuantity"><td><code>item:setAmmoQuantity(value)</code></td><td>set the rounds</td></tr>
+<tr id="item.getFuseTimer"><td><code>item:getFuseTimer()</code></td><td>the fuse timer</td></tr>
+<tr id="item.setFuseTimer"><td><code>item:setFuseTimer(value)</code></td><td>set the fuse timer</td></tr>
+<tr id="item.isFuseEnabled"><td><code>item:isFuseEnabled()</code></td><td>the fuse is armed</td></tr>
+<tr id="item.getHealQuantity"><td><code>item:getHealQuantity()</code></td><td>heal charges</td></tr>
+<tr id="item.setHealQuantity"><td><code>item:setHealQuantity(value)</code></td><td>set the heal charges</td></tr>
+<tr id="item.getPainKillerQuantity"><td><code>item:getPainKillerQuantity()</code></td><td>painkiller charges</td></tr>
+<tr id="item.setPainKillerQuantity"><td><code>item:setPainKillerQuantity(value)</code></td><td>set the painkiller charges</td></tr>
+<tr id="item.getStimulantQuantity"><td><code>item:getStimulantQuantity()</code></td><td>stimulant charges</td></tr>
+<tr id="item.setStimulantQuantity"><td><code>item:setStimulantQuantity(value)</code></td><td>set the stimulant charges</td></tr>
+<tr id="item.getTag"><td><code>item:getTag(name)</code></td><td>the value of a BattleItem tag</td></tr>
+<tr id="item.setTag"><td><code>item:setTag(name, value)</code></td><td>write a BattleItem tag</td></tr>
+</table>
+<h3>Battle: <code>battle</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="battle.getTurn"><td><code>battle:getTurn()</code></td><td>the turn number</td></tr>
+<tr id="battle.getSize"><td><code>battle:getSize()</code></td><td>the map size, three values: x, y, z</td></tr>
+<tr id="battle.flashMessage"><td><code>battle:flashMessage(text, a, b, c)</code></td><td>a message on the battle screen: a string id or plain text, up to three whole numbers for {0} {1} {2}. Does nothing in returnFromMissionUnit</td></tr>
+</table>
+<h3>Soldier: <code>soldier</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="soldier.getId"><td><code>soldier:getId()</code></td><td>the soldier&#x27;s number</td></tr>
+<tr id="soldier.getRank"><td><code>soldier:getRank()</code></td><td>the rank, a whole number</td></tr>
+</table>
+<h3>Armor rules: <code>ruleArmor</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="ruleArmor.getType"><td><code>ruleArmor:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+</table>
+<h3>Item rules: <code>ruleItem</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="ruleItem.getType"><td><code>ruleItem:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+</table>
+<h3>Skill: <code>skill</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="skill.getType"><td><code>skill:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+</table>
+<h2>The game table</h2><p><code>game.on(name, function)</code> subscribes a function to a handler. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log.</p>
+<h2>Constants</h2>
+<p>body parts: part: <code>game.BODYPART_HEAD</code> <code>game.BODYPART_TORSO</code> <code>game.BODYPART_RIGHTARM</code> <code>game.BODYPART_LEFTARM</code> <code>game.BODYPART_RIGHTLEG</code> <code>game.BODYPART_LEFTLEG</code></p>
+<p>sides of a unit: side in the damage handlers and in armor: <code>game.SIDE_FRONT</code> <code>game.SIDE_LEFT</code> <code>game.SIDE_RIGHT</code> <code>game.SIDE_REAR</code> <code>game.SIDE_UNDER</code></p>
+<p>sides of the battle: <code>game.FACTION_PLAYER</code> <code>game.FACTION_HOSTILE</code> <code>game.FACTION_NEUTRAL</code></p>
+<p>actions: battle_action: <code>game.BA_NONE</code> <code>game.BA_TURN</code> <code>game.BA_WALK</code> <code>game.BA_KNEEL</code> <code>game.BA_PRIME</code> <code>game.BA_UNPRIME</code> <code>game.BA_THROW</code> <code>game.BA_AUTOSHOT</code> <code>game.BA_SNAPSHOT</code> <code>game.BA_AIMEDSHOT</code> <code>game.BA_HIT</code> <code>game.BA_USE</code> <code>game.BA_LAUNCH</code> <code>game.BA_MINDCONTROL</code> <code>game.BA_PANIC</code> <code>game.BA_RETHINK</code> <code>game.BA_CQB</code></p>
+<p>damage types: damaging_type: <code>game.DT_NONE</code> <code>game.DT_AP</code> <code>game.DT_IN</code> <code>game.DT_HE</code> <code>game.DT_LASER</code> <code>game.DT_PLASMA</code> <code>game.DT_STUN</code> <code>game.DT_MELEE</code> <code>game.DT_ACID</code> <code>game.DT_SMOKE</code> <code>game.DT_10</code> <code>game.DT_11</code> <code>game.DT_12</code> <code>game.DT_13</code> <code>game.DT_14</code> <code>game.DT_15</code> <code>game.DT_16</code> <code>game.DT_17</code> <code>game.DT_18</code> <code>game.DT_19</code></p>
+<h2>Tags: memory between saves</h2><p>Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset:<pre>extended:
+  tags:
+    BattleUnit:
+      MY_REGEN: int
+    BattleItem:
+      MY_CHARGE: int</pre>In the code the name has no prefix: <code>unit:getTag("MY_REGEN")</code>. Reading or writing an unknown tag is an error: a typo shows at once. A tag of the same name in two mods is shared by them. A value lives while the mod is installed: a save without the mod loads and plays, but a new save made without the mod loses the values.</p>
+<h2>What Lua itself has</h2><p>Base functions: <code>assert</code> <code>error</code> <code>getmetatable</code> <code>ipairs</code> <code>next</code> <code>pairs</code> <code>pcall</code> <code>print</code> <code>rawequal</code> <code>rawget</code> <code>rawlen</code> <code>rawset</code> <code>select</code> <code>setmetatable</code> <code>tonumber</code> <code>tostring</code> <code>type</code> <code>xpcall</code>. Libraries <code>string</code> (no <code>dump</code>), <code>table</code>, <code>math</code> (no <code>randomseed</code>), <code>utf8</code>. There is no <code>io os debug package require load dofile loadfile coroutine collectgarbage</code>, bytecode is not loaded. <code>math.random</code> goes through the game's generator; while <code>main.lua</code> loads it is an error: loading must not shift the battle's seed. There are no clocks and no time.</p>
+<h2>Limits</h2><ul><li>Memory: 32 MB per mod.</li><li>One handler call: 2 000 000 instructions, 5 000 000 ticks of C functions (string patterns, <code>string.rep</code>, <code>table.*</code>). <code>main.lua</code> gets ten times the instructions while it loads.</li><li>5 errors in a row switch the mod off until Ctrl+F5 or a new load. The game neither crashes nor hangs.</li><li>A <code>flashMessage</code>: up to 200 bytes of text.</li></ul>
+<h2>Errors</h2><p>An error or a limit reached: the output values stay as they were before the call, <code>user/lua_errors.log</code> gets the mod, file, line, handler and text. The screen shows a mod's first error of the load and its switching off, not every error. The log starts anew at each start of the game.</p>
+<h2>Good to know</h2><ul><li>An object lives only inside the handler that received it. One kept in a variable gives a Lua error, the game does not crash.</li><li>The order of <code>pairs</code> is stable only for string keys. Table keys and <code>tostring(table)</code> depend on addresses: the same mod gives two players different results.</li><li><code>health_recovery</code> of <code>healUnit</code> works only on a body part with a wound, as in the Y-script.</li><li>A <code>hitUnit</code>, <code>damageUnit</code> or <code>damageSpecialUnit</code> handler takes the AI's exact forecast of a shot away: it treats the result as unknown and may shoot at an invulnerable target.</li><li>API version 1 has no sprites, visibility, reactions or AI: these are frequent calls and drawing.</li><li>A local mod can change game mechanics and break a save. A separate build in the launcher is better for experiments.</li><li>A bug report carries only the mod's id, version and the mark <code>[lua local]</code>, not its code or files. The error log goes with it only if you tick it in the form yourself.</li></ul>
+</body></html>

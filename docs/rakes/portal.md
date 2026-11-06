@@ -476,3 +476,12 @@
 Правило:  Перед сборкой архива сайта: git log --diff-filter=DR --name-status <прошлый архив>..HEAD -- portal docs/portal; удалённые файлы назвать Vitali командой Remove-Item вместе с инструкцией. Лишние файлы станции сверять со списком архива
 Защита:   нет - кандидат: pack.ps1 печатает и кладёт в README список удалённых
 Наступал: 1   Последний: 2026-11-05
+
+## R-764  Встроенный ресурс lua_api.ru.html ушёл в сателлитную сборку: MSBuild принял .ru. за культуру
+Статус:   активны
+Файлы:    portal/src/Xp.Launcher.Core/Xp.Launcher.Core.csproj
+Симптом:  Сборка проходит, в рантайме GetManifestResourceStream возвращает null: no resource lua_api.ru.html
+Причина:  EmbeddedResource с именем вида name.ru.ext MSBuild считает ресурсом культуры ru и кладёт в ru/*.resources.dll, а LogicalName этого не отменяет
+Правило:  Ресурс с кодом языка в середине имени объявлять с WithCulture=false или называть без точки перед кодом
+Защита:   тест LuaModsTests.The_documentation_names_all_of_the_engines_api_in_both_languages читает страницы через WriteDocs
+Наступал: 1   Последний: 2026-11-06

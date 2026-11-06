@@ -11,4 +11,9 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Xp.Launcher.Core.Tests" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- made by tools/lua_api_doc.py from the engine's tables -->
+    <!-- WithCulture: otherwise ".ru." sends the page into a satellite assembly and the launcher has no such resource -->
+    <EmbeddedResource Include="Docs\lua_api.*.html" LogicalName="%(Filename)%(Extension)" WithCulture="false" />
+  </ItemGroup>
 </Project>

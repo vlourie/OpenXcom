@@ -1,0 +1,136 @@
+﻿<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lua API для модов OXCE-HD, версия 1</title><style>
+:root{color-scheme:light dark;--bg:#fbfaf7;--fg:#22211e;--dim:#6c6a62;--line:#dcd9d0;--code:#efece4}
+@media (prefers-color-scheme:dark){:root{--bg:#1d1c1a;--fg:#e8e6df;--dim:#a3a095;--line:#3b3934;--code:#2b2a26}}
+*{box-sizing:border-box}body{margin:0 auto;max-width:980px;padding:28px 16px 60px;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,"Segoe UI",sans-serif}
+h1{font-size:26px;margin:0 0 12px}h2{font-size:19px;margin:32px 0 10px;border-bottom:1px solid var(--line);padding-bottom:4px}h3{font-size:15px;margin:20px 0 6px}
+code,pre{font-family:Consolas,monospace;font-size:13px;background:var(--code);border-radius:3px}code{padding:1px 4px}pre{padding:10px;overflow-x:auto}pre code{padding:0;background:none}
+table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:auto}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}th{color:var(--dim);font-weight:600}
+.ro{color:var(--dim)}
+</style></head><body>
+<h1>Lua API для модов OXCE-HD, версия 1</h1><p>Мод пишется в файле <code>lua/main.lua</code> своей папки, в <code>metadata.yml</code> стоит <code>luaApi: 1</code>. Lua запускает только игра, лаунчер код мода не исполняет. Граница API: Lua может то, что уже может Y-script, и ничего сверх. Имена обработчиков и выходных значений те же, что у Y-script.</p>
+<h2>С чего начать</h2><ol><li>В лаунчере: Настройки, «Режим мододела», «Создать мод». Появится папка с рабочим примером.</li><li>Запустите игру и начните бой. Строки <code>game.log</code> и <code>print</code> идут в <code>user/openxcom.log</code>.</li><li>Поправьте <code>main.lua</code> и нажмите <b>Ctrl+F5</b> в бою: код всех модов перечитается, итог на экране. Обычное быстрое сохранение F5 работает как раньше.</li></ol>
+<h2>Обработчики</h2><p>Подписка: <code>game.on("имя", функция)</code>. Аргументы идут в порядке входа Y-script, последним — таблица <code>out</code> с выходными значениями, если они есть. Значения в <code>out</code> принимаются целыми и только все разом: одно плохое значение — ошибка, остальные не применяются. На одном обработчике сначала работает Y-script, затем Lua в порядке загрузки модов.</p>
+<table><tr><th>Обработчик</th><th>Когда</th><th>out</th></tr>
+<tr id="event.createUnit"><td><code>createUnit(unit, battle, turn)</code></td><td>юнит появился в бою</td><td>-</td></tr>
+<tr id="event.newTurnUnit"><td><code>newTurnUnit(unit, battle, turn, side)</code></td><td>начало хода стороны, для каждого юнита; side - чей ход, FACTION_*</td><td>-</td></tr>
+<tr id="event.hitUnit"><td><code>hitUnit(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)</code></td><td>попадание, до брони</td><td><code>power</code>, <code>part</code>, <code>side</code></td></tr>
+<tr id="event.damageUnit"><td><code>damageUnit(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>расчёт урона, после брони</td><td><code>to_health</code>, <code>to_armor</code>, <code>to_stun</code>, <code>to_time</code>, <code>to_energy</code>, <code>to_morale</code>, <code>to_wound</code>, <code>to_transform</code>, <code>to_mana</code></td></tr>
+<tr id="event.damageSpecialUnit"><td><code>damageSpecialUnit(unit, damaging_item, weapon_item, attacker, battle, skill, health_damage, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>урон нанесён, особые последствия</td><td><code>transform</code> <span class="ro">(только чтение)</span>, <code>transform_chance</code>, <code>self_destruct</code> <span class="ro">(только чтение)</span>, <code>self_destruct_chance</code>, <code>morale_loss</code>, <code>fire</code>, <code>attacker_turns_since_spotted</code>, <code>attacker_turns_left_spotted_for_snipers</code></td></tr>
+<tr id="event.healUnit"><td><code>healUnit(actor, item, battle, target, battle_action, out)</code></td><td>применение аптечки</td><td><code>medikit_action_type</code>, <code>body_part</code>, <code>wound_recovery</code>, <code>health_recovery</code>, <code>energy_recovery</code>, <code>stun_recovery</code>, <code>mana_recovery</code>, <code>morale_recovery</code>, <code>painkiller_recovery</code></td></tr>
+<tr id="event.skillUseUnit"><td><code>skillUseUnit(actor, item, battle, skill, battle_action, have_tu, out)</code></td><td>применение навыка</td><td><code>continue_action</code>, <code>spend_tu</code></td></tr>
+<tr id="event.returnFromMissionUnit"><td><code>returnFromMissionUnit(unit, battle, soldier, out)</code></td><td>конец миссии, для каждого солдата; экрана боя уже нет</td><td><code>recovery_time</code>, <code>mana_loss</code> <span class="ro">(только чтение)</span>, <code>health_loss</code> <span class="ro">(только чтение)</span>, <code>final_mana_loss</code>, <code>final_health_loss</code></td></tr>
+<tr id="event.createItem"><td><code>createItem(item, unit, battle, turn)</code></td><td>предмет появился в бою; unit может быть nil</td><td>-</td></tr>
+<tr id="event.newTurnItem"><td><code>newTurnItem(item, battle, turn, side)</code></td><td>начало хода стороны, для каждого предмета</td><td>-</td></tr>
+</table>
+<h2>Объекты</h2>
+<h3>Юнит: <code>unit</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="unit.getId"><td><code>unit:getId()</code></td><td>номер юнита в бою</td></tr>
+<tr id="unit.getType"><td><code>unit:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="unit.getRank"><td><code>unit:getRank()</code></td><td>звание, целое</td></tr>
+<tr id="unit.getFaction"><td><code>unit:getFaction()</code></td><td>сторона сейчас, FACTION_*</td></tr>
+<tr id="unit.getOriginalFaction"><td><code>unit:getOriginalFaction()</code></td><td>сторона до контроля разума, FACTION_*</td></tr>
+<tr id="unit.isKilled"><td><code>unit:isKilled()</code></td><td>убит</td></tr>
+<tr id="unit.isStunned"><td><code>unit:isStunned()</code></td><td>оглушён</td></tr>
+<tr id="unit.isKneeled"><td><code>unit:isKneeled()</code></td><td>на колене</td></tr>
+<tr id="unit.isFloating"><td><code>unit:isFloating()</code></td><td>летит</td></tr>
+<tr id="unit.getDirection"><td><code>unit:getDirection()</code></td><td>направление, от 0 до 7</td></tr>
+<tr id="unit.getPosition"><td><code>unit:getPosition()</code></td><td>три значения: x, y, z</td></tr>
+<tr id="unit.getTimeUnits"><td><code>unit:getTimeUnits()</code></td><td>ОВ сейчас</td></tr>
+<tr id="unit.getTimeUnitsMax"><td><code>unit:getTimeUnitsMax()</code></td><td>ОВ, максимум</td></tr>
+<tr id="unit.setTimeUnits"><td><code>unit:setTimeUnits(value)</code></td><td>задать ОВ</td></tr>
+<tr id="unit.addTimeUnits"><td><code>unit:addTimeUnits(value)</code></td><td>прибавить ОВ</td></tr>
+<tr id="unit.getHealth"><td><code>unit:getHealth()</code></td><td>здоровье сейчас</td></tr>
+<tr id="unit.getHealthMax"><td><code>unit:getHealthMax()</code></td><td>здоровье, максимум</td></tr>
+<tr id="unit.setHealth"><td><code>unit:setHealth(value)</code></td><td>задать здоровье</td></tr>
+<tr id="unit.addHealth"><td><code>unit:addHealth(value)</code></td><td>прибавить здоровье</td></tr>
+<tr id="unit.setHealthWithOverkill"><td><code>unit:setHealthWithOverkill(value)</code></td><td>задать здоровье, разрешая уйти ниже нуля</td></tr>
+<tr id="unit.addHealthWithOverkill"><td><code>unit:addHealthWithOverkill(value)</code></td><td>прибавить здоровье, разрешая уйти ниже нуля</td></tr>
+<tr id="unit.getOverKillDamage"><td><code>unit:getOverKillDamage()</code></td><td>на сколько здоровье ушло ниже нуля</td></tr>
+<tr id="unit.getMana"><td><code>unit:getMana()</code></td><td>мана сейчас</td></tr>
+<tr id="unit.getManaMax"><td><code>unit:getManaMax()</code></td><td>мана, максимум</td></tr>
+<tr id="unit.setMana"><td><code>unit:setMana(value)</code></td><td>задать ману</td></tr>
+<tr id="unit.addMana"><td><code>unit:addMana(value)</code></td><td>прибавить ману</td></tr>
+<tr id="unit.getEnergy"><td><code>unit:getEnergy()</code></td><td>энергия сейчас</td></tr>
+<tr id="unit.getEnergyMax"><td><code>unit:getEnergyMax()</code></td><td>энергия, максимум</td></tr>
+<tr id="unit.setEnergy"><td><code>unit:setEnergy(value)</code></td><td>задать энергию</td></tr>
+<tr id="unit.addEnergy"><td><code>unit:addEnergy(value)</code></td><td>прибавить энергию</td></tr>
+<tr id="unit.getStun"><td><code>unit:getStun()</code></td><td>оглушение сейчас</td></tr>
+<tr id="unit.getStunMax"><td><code>unit:getStunMax()</code></td><td>оглушение, максимум</td></tr>
+<tr id="unit.setStun"><td><code>unit:setStun(value)</code></td><td>задать оглушение</td></tr>
+<tr id="unit.addStun"><td><code>unit:addStun(value)</code></td><td>прибавить оглушение</td></tr>
+<tr id="unit.getMorale"><td><code>unit:getMorale()</code></td><td>боевой дух</td></tr>
+<tr id="unit.setMorale"><td><code>unit:setMorale(value)</code></td><td>задать боевой дух</td></tr>
+<tr id="unit.addMorale"><td><code>unit:addMorale(value)</code></td><td>прибавить боевой дух</td></tr>
+<tr id="unit.getFire"><td><code>unit:getFire()</code></td><td>сколько ходов ещё горит</td></tr>
+<tr id="unit.setFire"><td><code>unit:setFire(value)</code></td><td>задать, сколько ходов горит</td></tr>
+<tr id="unit.getArmor"><td><code>unit:getArmor(side)</code></td><td>броня стороны SIDE_* сейчас</td></tr>
+<tr id="unit.getArmorMax"><td><code>unit:getArmorMax(side)</code></td><td>броня стороны SIDE_*, максимум</td></tr>
+<tr id="unit.setArmor"><td><code>unit:setArmor(side, value)</code></td><td>задать броню стороны</td></tr>
+<tr id="unit.addArmor"><td><code>unit:addArmor(side, value)</code></td><td>прибавить броню стороны</td></tr>
+<tr id="unit.getFatalwoundsTotal"><td><code>unit:getFatalwoundsTotal()</code></td><td>раны на всём теле</td></tr>
+<tr id="unit.getFatalwounds"><td><code>unit:getFatalwounds(part)</code></td><td>раны на части тела BODYPART_*</td></tr>
+<tr id="unit.setFatalwounds"><td><code>unit:setFatalwounds(part, value)</code></td><td>задать раны на части тела</td></tr>
+<tr id="unit.addFatalwounds"><td><code>unit:addFatalwounds(part, value)</code></td><td>прибавить раны на части тела</td></tr>
+<tr id="unit.getRightHandWeapon"><td><code>unit:getRightHandWeapon()</code></td><td>предмет в правой руке или nil</td></tr>
+<tr id="unit.getLeftHandWeapon"><td><code>unit:getLeftHandWeapon()</code></td><td>предмет в левой руке или nil</td></tr>
+<tr id="unit.getRuleArmor"><td><code>unit:getRuleArmor()</code></td><td>правила брони или nil</td></tr>
+<tr id="unit.getTag"><td><code>unit:getTag(name)</code></td><td>значение тега BattleUnit</td></tr>
+<tr id="unit.setTag"><td><code>unit:setTag(name, value)</code></td><td>записать тег BattleUnit</td></tr>
+</table>
+<h3>Предмет: <code>item</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="item.getId"><td><code>item:getId()</code></td><td>номер предмета в бою</td></tr>
+<tr id="item.getRuleItem"><td><code>item:getRuleItem()</code></td><td>правила предмета или nil</td></tr>
+<tr id="item.getOwner"><td><code>item:getOwner()</code></td><td>владелец, юнит или nil</td></tr>
+<tr id="item.isAmmo"><td><code>item:isAmmo()</code></td><td>это боеприпас</td></tr>
+<tr id="item.getAmmoQuantity"><td><code>item:getAmmoQuantity()</code></td><td>патронов сейчас</td></tr>
+<tr id="item.getAmmoQuantityMax"><td><code>item:getAmmoQuantityMax()</code></td><td>патронов в обойме по правилам</td></tr>
+<tr id="item.setAmmoQuantity"><td><code>item:setAmmoQuantity(value)</code></td><td>задать патроны</td></tr>
+<tr id="item.getFuseTimer"><td><code>item:getFuseTimer()</code></td><td>таймер взрывателя</td></tr>
+<tr id="item.setFuseTimer"><td><code>item:setFuseTimer(value)</code></td><td>задать таймер взрывателя</td></tr>
+<tr id="item.isFuseEnabled"><td><code>item:isFuseEnabled()</code></td><td>взрыватель взведён</td></tr>
+<tr id="item.getHealQuantity"><td><code>item:getHealQuantity()</code></td><td>заряды лечения</td></tr>
+<tr id="item.setHealQuantity"><td><code>item:setHealQuantity(value)</code></td><td>задать заряды лечения</td></tr>
+<tr id="item.getPainKillerQuantity"><td><code>item:getPainKillerQuantity()</code></td><td>заряды обезболивающего</td></tr>
+<tr id="item.setPainKillerQuantity"><td><code>item:setPainKillerQuantity(value)</code></td><td>задать заряды обезболивающего</td></tr>
+<tr id="item.getStimulantQuantity"><td><code>item:getStimulantQuantity()</code></td><td>заряды стимулятора</td></tr>
+<tr id="item.setStimulantQuantity"><td><code>item:setStimulantQuantity(value)</code></td><td>задать заряды стимулятора</td></tr>
+<tr id="item.getTag"><td><code>item:getTag(name)</code></td><td>значение тега BattleItem</td></tr>
+<tr id="item.setTag"><td><code>item:setTag(name, value)</code></td><td>записать тег BattleItem</td></tr>
+</table>
+<h3>Бой: <code>battle</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="battle.getTurn"><td><code>battle:getTurn()</code></td><td>номер хода</td></tr>
+<tr id="battle.getSize"><td><code>battle:getSize()</code></td><td>размер карты, три значения: x, y, z</td></tr>
+<tr id="battle.flashMessage"><td><code>battle:flashMessage(text, a, b, c)</code></td><td>сообщение на экране боя: строка из рулсета или текст, до трёх целых для {0} {1} {2}. В returnFromMissionUnit ничего не делает</td></tr>
+</table>
+<h3>Солдат: <code>soldier</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="soldier.getId"><td><code>soldier:getId()</code></td><td>номер солдата</td></tr>
+<tr id="soldier.getRank"><td><code>soldier:getRank()</code></td><td>звание, целое</td></tr>
+</table>
+<h3>Правила брони: <code>ruleArmor</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleArmor.getType"><td><code>ruleArmor:getType()</code></td><td>тип из рулсета, строка</td></tr>
+</table>
+<h3>Правила предмета: <code>ruleItem</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleItem.getType"><td><code>ruleItem:getType()</code></td><td>тип из рулсета, строка</td></tr>
+</table>
+<h3>Навык: <code>skill</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="skill.getType"><td><code>skill:getType()</code></td><td>тип из рулсета, строка</td></tr>
+</table>
+<h2>Таблица game</h2><p><code>game.on(имя, функция)</code> подписывает функцию на обработчик. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры.</p>
+<h2>Константы</h2>
+<p>части тела: part: <code>game.BODYPART_HEAD</code> <code>game.BODYPART_TORSO</code> <code>game.BODYPART_RIGHTARM</code> <code>game.BODYPART_LEFTARM</code> <code>game.BODYPART_RIGHTLEG</code> <code>game.BODYPART_LEFTLEG</code></p>
+<p>стороны юнита: side в обработчиках урона и в броне: <code>game.SIDE_FRONT</code> <code>game.SIDE_LEFT</code> <code>game.SIDE_RIGHT</code> <code>game.SIDE_REAR</code> <code>game.SIDE_UNDER</code></p>
+<p>стороны боя: <code>game.FACTION_PLAYER</code> <code>game.FACTION_HOSTILE</code> <code>game.FACTION_NEUTRAL</code></p>
+<p>действия: battle_action: <code>game.BA_NONE</code> <code>game.BA_TURN</code> <code>game.BA_WALK</code> <code>game.BA_KNEEL</code> <code>game.BA_PRIME</code> <code>game.BA_UNPRIME</code> <code>game.BA_THROW</code> <code>game.BA_AUTOSHOT</code> <code>game.BA_SNAPSHOT</code> <code>game.BA_AIMEDSHOT</code> <code>game.BA_HIT</code> <code>game.BA_USE</code> <code>game.BA_LAUNCH</code> <code>game.BA_MINDCONTROL</code> <code>game.BA_PANIC</code> <code>game.BA_RETHINK</code> <code>game.BA_CQB</code></p>
+<p>типы урона: damaging_type: <code>game.DT_NONE</code> <code>game.DT_AP</code> <code>game.DT_IN</code> <code>game.DT_HE</code> <code>game.DT_LASER</code> <code>game.DT_PLASMA</code> <code>game.DT_STUN</code> <code>game.DT_MELEE</code> <code>game.DT_ACID</code> <code>game.DT_SMOKE</code> <code>game.DT_10</code> <code>game.DT_11</code> <code>game.DT_12</code> <code>game.DT_13</code> <code>game.DT_14</code> <code>game.DT_15</code> <code>game.DT_16</code> <code>game.DT_17</code> <code>game.DT_18</code> <code>game.DT_19</code></p>
+<h2>Теги: память между сохранениями</h2><p>Переменные Lua обнуляются при загрузке сейва, в новом бою и по Ctrl+F5. Долгая память — только теги. Тег объявляется в рулсете мода:<pre>extended:
+  tags:
+    BattleUnit:
+      MY_REGEN: int
+    BattleItem:
+      MY_CHARGE: int</pre>В коде имя без приставки: <code>unit:getTag("MY_REGEN")</code>. Чтение и запись незнакомого тега — ошибка: опечатка видна сразу. Тег с одним именем в двух модах — один на двоих. Значение живёт, пока мод стоит: сейв без мода грузится и играется, но новое сохранение без мода значения теряет.</p>
+<h2>Что есть в самой Lua</h2><p>Базовые функции: <code>assert</code> <code>error</code> <code>getmetatable</code> <code>ipairs</code> <code>next</code> <code>pairs</code> <code>pcall</code> <code>print</code> <code>rawequal</code> <code>rawget</code> <code>rawlen</code> <code>rawset</code> <code>select</code> <code>setmetatable</code> <code>tonumber</code> <code>tostring</code> <code>type</code> <code>xpcall</code>. Библиотеки <code>string</code> (без <code>dump</code>), <code>table</code>, <code>math</code> (без <code>randomseed</code>), <code>utf8</code>. Нет <code>io os debug package require load dofile loadfile coroutine collectgarbage</code>, байткод не загружается. <code>math.random</code> идёт через генератор игры; пока грузится <code>main.lua</code>, он даёт ошибку: загрузка не должна сдвигать сид боя. Часов и времени нет.</p>
+<h2>Лимиты</h2><ul><li>Память: 32 МБ на мод.</li><li>Один вызов обработчика: 2 000 000 инструкций, 5 000 000 тактов функций на C (шаблоны строк, <code>string.rep</code>, <code>table.*</code>). <code>main.lua</code> при загрузке получает в 10 раз больше инструкций.</li><li>5 ошибок подряд выключают мод до Ctrl+F5 или новой загрузки. Игра не падает и не зависает.</li><li>Сообщение <code>flashMessage</code>: до 200 байт текста.</li></ul>
+<h2>Ошибки</h2><p>Ошибка или превышение лимита: выходные значения остаются как до вызова, в <code>user/lua_errors.log</code> пишутся мод, файл, строка, обработчик и текст. На экране показывается первая ошибка мода за загрузку и его отключение, а не каждая ошибка. Журнал начинается заново при каждой загрузке игры.</p>
+<h2>Что важно знать</h2><ul><li>Объект живёт только внутри обработчика, который его получил. Сохранённый в переменной даёт ошибку Lua, игра не падает.</li><li>Порядок <code>pairs</code> постоянен только у строковых ключей. Ключи-таблицы и <code>tostring(таблица)</code> зависят от адресов: у двух игроков тот же мод даст разный итог.</li><li><code>health_recovery</code> у <code>healUnit</code> действует только на часть тела с раной, как и у Y-script.</li><li>Обработчик <code>hitUnit</code>, <code>damageUnit</code> или <code>damageSpecialUnit</code> лишает ИИ точного прогноза выстрела: он считает результат неизвестным и может стрелять по неуязвимой цели.</li><li>В API версии 1 нет спрайтов, видимости, реакций и ИИ: это частые вызовы и рисование.</li><li>Локальный мод может менять механику и сломать сейв. Для опытов лучше отдельная сборка в лаунчере.</li><li>В отчёт об ошибке уходят только id мода, версия и отметка <code>[lua local]</code>, код и файлы мода не уходят. Журнал ошибок прикладывается, только если вы сами отметите его в форме.</li></ul>
+</body></html>

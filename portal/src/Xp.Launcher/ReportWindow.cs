@@ -25,6 +25,7 @@ public sealed class ReportWindow : Window
     readonly TextBox _actual = Multi(52);
     readonly CheckBox _shot = new() { FontSize = 13 };
     readonly CheckBox _log = new() { FontSize = 13 };
+    readonly CheckBox _luaLog = new() { FontSize = 13 };
     readonly CheckBox _save = new() { FontSize = 13 };
     readonly ComboBox _saves = new() { HorizontalAlignment = HorizontalAlignment.Stretch, FontSize = 13, Margin = new Thickness(28, 0, 0, 0) };
     readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
@@ -156,6 +157,12 @@ public sealed class ReportWindow : Window
             _log.Content = L.T("report.attachLog", Path.GetFileName(log), L.Size(new FileInfo(log).Length));
             files.Children.Add(_log);
         }
+        if (_report.LuaLogPath is { } luaLog)
+        {
+            _luaLog.Content = L.T("report.attachLuaLog", L.Size(new FileInfo(luaLog).Length));
+            files.Children.Add(_luaLog);
+        }
+        if (_report.LuaMods() is { Count: > 0 } luaMods) files.Children.Add(Skin.Note(L.T("report.luaMods", string.Join(", ", luaMods)), 12, Skin.WarnText));
         var saves = _report.RecentSaves();
         if (saves.Count > 0)
         {
@@ -225,6 +232,7 @@ public sealed class ReportWindow : Window
         _actual.Text = d.Actual;
         _shot.IsChecked = d.AttachShot;
         _log.IsChecked = d.AttachLog;
+        _luaLog.IsChecked = d.AttachLuaLog;
         if (d.SavePath is { } save)
         {
             _save.IsChecked = true;
@@ -247,6 +255,7 @@ public sealed class ReportWindow : Window
         }
         d.AttachShot = _shot.IsChecked == true;
         d.AttachLog = _log.IsChecked == true && _report.LogPath is not null;
+        d.AttachLuaLog = _luaLog.IsChecked == true && _report.LuaLogPath is not null;
         d.SavePath = _save.IsChecked == true ? (_saves.SelectedItem as ComboBoxItem)?.Tag as string : null;
     }
 
