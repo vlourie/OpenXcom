@@ -818,7 +818,7 @@ public sealed class MainWindow : Window
         Put(Skin.Panel(broken), 4, 0);
         Put(Skin.Panel(log), 4, 2);
         _modding = new ModdingPanel(this, () => _paths, () => _builds, CurrentBuild, () => _updater, () => _latest?.Manifest,
-            text => Fail(L.T("err.generic", text)), text => _fileLog?.Info(text));
+            text => Fail(L.T("err.generic", text)), text => _fileLog?.Info(text), _account, _settings, GameExe);
         var modding = Skin.Panel(_modding);
         Grid.SetColumnSpan(modding, 3);
         Put(modding, 6, 0);
@@ -1608,12 +1608,20 @@ public sealed class MainWindow : Window
         Quit();
     }
 
+    /// <summary>The exe "Play" starts, under the game folder, or null.</summary>
+    string? LaunchFile()
+    {
+        if (_updater is null) return null;
+        return new[] { _updater.LoadState().InstalledLaunch, "openxcom_hd.exe", "OpenXcomEx.exe" }
+            .FirstOrDefault(e => e.Length > 0 && File.Exists(Path.Combine(_updater.Paths.GameDir, e)));
+    }
+
+    string? GameExe() => LaunchFile() is { } exe ? Path.Combine(_updater!.Paths.GameDir, exe) : null;
+
     void Play()
     {
         if (_updater is null || GameIsRunning()) return;
-        var state = _updater.LoadState();
-        var exe = new[] { state.InstalledLaunch, "openxcom_hd.exe", "OpenXcomEx.exe" }
-            .FirstOrDefault(e => e.Length > 0 && File.Exists(Path.Combine(_updater.Paths.GameDir, e)));
+        var exe = LaunchFile();
         if (exe is null) { Fail(L.T("err.noLaunch")); Refresh(); return; }
         // the build's own options.cfg, given to the game with -cfg (MULTIMOD §3); without one the game cannot be told where its settings are
         if (CurrentBuild() is not { } build) { Fail(L.T("err.generic", "builds")); Refresh(); return; }

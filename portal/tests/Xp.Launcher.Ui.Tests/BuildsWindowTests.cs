@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -664,6 +665,152 @@ public sealed class BuildsWindowTests : IDisposable
             w.Close();
         }
         finally { ReportWindow.OpenUrlOverride = null; }
+    }
+
+    /// <summary>The site as far as a submission goes: remembers what came, says the mod is in the queue.</summary>
+    sealed class FakeLuaSite : IDisposable
+    {
+        readonly HttpListener _http = new();
+        public string Url { get; }
+        public string? Body;
+        public string? Token;
+
+        public FakeLuaSite()
+        {
+            var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+            probe.Start();
+            int port = ((IPEndPoint)probe.LocalEndpoint).Port;
+            probe.Stop();
+            Url = $"http://localhost:{port}/";
+            _http.Prefixes.Add(Url);
+            _http.Start();
+            _ = LoopAsync();
+        }
+
+        async Task LoopAsync()
+        {
+            while (_http.IsListening)
+            {
+                HttpListenerContext c;
+                try { c = await _http.GetContextAsync(); }
+                catch (Exception e) when (e is HttpListenerException or ObjectDisposedException) { return; }
+                var json = "{}";
+                c.Response.StatusCode = 404;
+                if (c.Request.Url!.AbsolutePath == "/api/v1/lua-mods")
+                {
+                    c.Response.StatusCode = 200;
+                    if (c.Request.HttpMethod == "POST")
+                    {
+                        using var r = new StreamReader(c.Request.InputStream, System.Text.Encoding.Latin1);
+                        Body = await r.ReadToEndAsync();
+                        Token = c.Request.Headers["X-Device-Token"];
+                        c.Response.StatusCode = 201;
+                        json = "{\"number\":7,\"displayNumber\":\"XP-000007\",\"status\":\"queue\"}";
+                    }
+                    else json = Body is null ? "[]" : "[{\"number\":7,\"displayNumber\":\"XP-000007\",\"mod\":\"moy_mod\",\"version\":\"0.1\",\"status\":\"queue\",\"reason\":null,\"createdAt\":\"2026-11-06T10:00:00+00:00\",\"updatedAt\":\"2026-11-06T10:00:00+00:00\"}]";
+                }
+                c.Response.ContentType = "application/json";
+                var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                await c.Response.OutputStream.WriteAsync(bytes);
+                c.Response.Close();
+            }
+        }
+
+        public void Dispose() => _http.Close();
+    }
+
+    void WriteLuaMod()
+    {
+        Write("launcher/modding.txt", "on\n");
+        Write("user/mods/moy_mod/metadata.yml", "id: moy_mod\nname: \"Мой мод\"\nversion: 0.1\nmaster: \"piratez\"\nluaApi: 1\n");
+        Write("user/mods/moy_mod/lua/main.lua", "game.log(\"hello\")\n");
+    }
+
+    Control ModRow(MainWindow w)
+    {
+        Call(w, "Navigate", "settings");
+        var panel = F<Control>(w, "_modding");
+        Pump(() => F<StackPanel>(panel, "_list").Children.Count == 1, "the mod's row");
+        panel.BringIntoView();
+        return (Control)F<StackPanel>(panel, "_list").Children[0];
+    }
+
+    [AvaloniaFact]
+    public void A_mod_goes_to_the_site_only_with_the_authors_word()
+    {
+        WriteLuaMod();
+        using var site = new FakeLuaSite();
+        new Settings { GameDir = Game, RepoUrl = "http://127.0.0.1:9/", Language = "ru", PortalUrl = site.Url }.Save();
+        new Xp.Launcher.Core.DeviceStore(Path.Combine(Settings.Dir, "device.json")).Save(new Xp.Launcher.Core.DeviceAccount { Token = "device-key", Account = "Автор", Name = "тест" });
+        var w = Open();
+        var row = ModRow(w);
+        Shot(w, "submit-row");
+
+        Click(ByText(row, "Предложить"));
+        var d = Dialog(w, "submit-dialog");
+        var all = ((Control)d.Content!).GetLogicalDescendants().ToList();
+        var boxes = all.OfType<TextBox>().ToList();
+        // every file on the screen; the exe of this test is an old game: the engine is not asked, and the author is told
+        Assert.Contains("lua/main.lua", boxes[0].Text);
+        Assert.Contains("metadata.yml", boxes[0].Text);
+        Assert.Contains(all.OfType<TextBlock>(), t => t.Text!.Contains("обновите"));
+        var send = ByText((Control)d.Content!, "Отправить заявку");
+        Assert.False(send.IsEnabled);
+        boxes[1].Text = "Пишет строку в журнал";
+        boxes[2].Text = "MIT";
+        Settle();
+        Assert.False(send.IsEnabled);   // the word about the rights is the author's, nothing stands in for it
+        Assert.Null(site.Body);
+        all.OfType<CheckBox>().Single().IsChecked = true;
+        Settle();
+        Assert.True(send.IsEnabled);
+        Shot(d, "submit-ready");
+        Click(send);
+
+        Pump(() => site.Body is not null && w.OwnedWindows.Count > 0, "the archive to arrive");
+        Assert.Equal("device-key", site.Token);
+        Assert.Contains("\"id\":\"moy_mod\"", site.Body);
+        Assert.Contains("\"rightsConfirmed\":true", site.Body);
+        Assert.Contains("lua/main.lua", site.Body);    // the archive's directory is plain text
+        var sent = Dialog(w, "submit-sent");
+        Click(ByText((Control)sent.Content!, "Продолжить"));
+        Pump(() => F<StackPanel>(F<Control>(w, "_modding"), "_list").GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text!.Contains("XP-000007") && t.Text.Contains("в очереди")), "the status in the row");
+        Shot(w, "submit-status");
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void A_mod_with_an_exe_cannot_be_sent()
+    {
+        WriteLuaMod();
+        Write("user/mods/moy_mod/helper.exe", "MZ");
+        using var site = new FakeLuaSite();
+        new Settings { GameDir = Game, RepoUrl = "http://127.0.0.1:9/", Language = "ru", PortalUrl = site.Url }.Save();
+        new Xp.Launcher.Core.DeviceStore(Path.Combine(Settings.Dir, "device.json")).Save(new Xp.Launcher.Core.DeviceAccount { Token = "device-key", Account = "Автор", Name = "тест" });
+        var w = Open();
+        Click(ByText(ModRow(w), "Предложить"));
+        var d = Dialog(w, "submit-refused");
+        var all = ((Control)d.Content!).GetLogicalDescendants().ToList();
+        Assert.Contains(all.OfType<TextBlock>(), t => t.Text!.Contains("helper.exe") && t.Text.Contains("исполняемые"));
+        Assert.False(all.OfType<Button>().Single(b => b.Content is string s && s == "Отправить заявку").IsVisible);
+        Assert.Empty(all.OfType<CheckBox>());
+        Click(ByText((Control)d.Content!, "Отмена"));
+        Pump(() => w.OwnedWindows.Count == 0, "the dialog to close");
+        Assert.Null(site.Body);
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void Without_a_linked_account_it_asks_for_the_link_first()
+    {
+        WriteLuaMod();
+        var w = Open();
+        Click(ByText(ModRow(w), "Предложить"));
+        var d = Dialog(w, "submit-link-first");
+        Assert.Contains(((Control)d.Content!).GetLogicalDescendants().OfType<TextBlock>(), t => t.Text!.Contains("Привязать"));
+        Click(ByText((Control)d.Content!, "Нет"));
+        Pump(() => w.OwnedWindows.Count == 0, "the dialog to close");
+        w.Close();
     }
 
     static void Set(object o, string name, object? value) =>

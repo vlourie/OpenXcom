@@ -15,5 +15,6 @@
     <!-- made by tools/lua_api_doc.py from the engine's tables -->
     <!-- WithCulture: otherwise ".ru." sends the page into a satellite assembly and the launcher has no such resource -->
     <EmbeddedResource Include="Docs\lua_api.*.html" LogicalName="%(Filename)%(Extension)" WithCulture="false" />
+    <EmbeddedResource Include="Docs\lua_api.names.txt" LogicalName="lua_api.names.txt" WithCulture="false" />
   </ItemGroup>
 </Project>

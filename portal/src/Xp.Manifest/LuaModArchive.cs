@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text.RegularExpressions;
 
 namespace Xp.Manifest;
 
@@ -9,8 +10,14 @@ public sealed record LuaArchiveProblem(string Code, string? File = null);
 /// What an archive of a Lua mod may hold (docs/portal/LUA_MODS.md §8.2, step 1): the launcher says it before sending, the site
 /// before storing. tools/lua_mod_check.py has the same list in the isolated check, which is the one that decides.
 /// </summary>
-public static class LuaModArchive
+public static partial class LuaModArchive
 {
+    [GeneratedRegex("^[a-z0-9][a-z0-9_-]{0,39}$")]
+    private static partial Regex IdRx();
+
+    /// <summary>The id of a mod for the catalog: the folder cm-&lt;id&gt; is made of it.</summary>
+    public static bool IsModId(string? id) => id is not null && IdRx().IsMatch(id);
+
     public const long MaxArchive = 50L * 1024 * 1024;
     public const long MaxUnpacked = 200L * 1024 * 1024;
     public const long MaxFile = 50L * 1024 * 1024;

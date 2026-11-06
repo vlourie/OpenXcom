@@ -237,7 +237,7 @@ public static class LuaMods
         ? $$"""
             {{name}}
 
-            Это ваш локальный Lua-мод. Он работает только в вашей игре, лаунчер его никуда не отправляет.
+            Это ваш локальный Lua-мод. Он работает только в вашей игре. Лаунчер отправит его, только если нажать «Предложить».
 
             Что здесь лежит
               metadata.yml   имя, версия, для какой игры мод; luaApi - версия API
@@ -263,7 +263,7 @@ public static class LuaMods
         : $$"""
             {{name}}
 
-            This is your local Lua mod. It works in your game only; the launcher sends it nowhere.
+            This is your local Lua mod. It works in your game only. The launcher sends it only if you press "Submit".
 
             What is here
               metadata.yml   name, version, the game the mod is for; luaApi is the API version

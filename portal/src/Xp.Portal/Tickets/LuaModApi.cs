@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
@@ -28,15 +27,12 @@ public sealed record LuaModRow(long Number, string DisplayNumber, string Mod, st
 /// the queue, the quarantine, the messages to the author and the team's automation are the ticket's. The author is whoever the device
 /// token belongs to, so there is no guest here. The site only reads the archive's directory; nothing in it is ever unpacked or run here.
 /// </summary>
-public static partial class LuaModApi
+public static class LuaModApi
 {
     /// <summary>Waiting on us at once, per author: the queue is for people, a flood of versions is not worth the reading.</summary>
     public const int MaxOpen = 5;
     const int MetaMax = 64 * 1024;
     const string IdPrefix = "luaMod: ";
-
-    [GeneratedRegex("^[a-z0-9][a-z0-9_-]{0,39}$")]
-    private static partial Regex IdRx();
 
     public static void Map(IEndpointRouteBuilder app)
     {
@@ -106,7 +102,7 @@ public static partial class LuaModApi
         if (meta is null) return TicketApi.Problem("meta_required", "no description in the request", 400);
         if (!gotFile) return TicketApi.Problem("file_required", "no archive in the request", 400);
 
-        if (meta.Id is not { } id || !IdRx().IsMatch(id)) return TicketApi.Problem("mod_id_invalid", "the mod id is not valid", 400);
+        if (meta.Id is not { } id || !LuaModArchive.IsModId(id)) return TicketApi.Problem("mod_id_invalid", "the mod id is not valid", 400);
         var version = (meta.Version ?? "").Trim();
         if (version.Length is 0 or > 64) return TicketApi.Problem("mod_version_invalid", "the mod version is not valid", 400);
         var license = (meta.License ?? "").Trim();
