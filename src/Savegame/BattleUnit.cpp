@@ -36,6 +36,7 @@
 #include "../Battlescape/TileEngine.h"
 #include "../Battlescape/ExplosionBState.h"
 #include "../Mod/Mod.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Unit.h"
 #include "../Mod/RuleEnviroEffects.h"
@@ -1773,6 +1774,11 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 
 		work.execute(this->getArmor()->getScript<ModScript::HitUnit>(), args);
 
+		if (auto *lua = save->getMod()->getLuaHost())
+		{
+			lua->fire(LuaHost::HIT_UNIT, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, orgDamage, type->ResistType, attack.type });
+		}
+
 		damage = args.getFirst();
 		bodypart = (UnitBodyPart)args.getSecond();
 		side = (UnitSide)args.getThird();
@@ -1901,6 +1907,11 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		}
 
 		work.execute(this->getArmor()->getScript<ModScript::DamageUnit>(), args);
+
+		if (auto *lua = save->getMod()->getLuaHost())
+		{
+			lua->fire(LuaHost::DAMAGE_UNIT, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, damage, orgDamage, bodypart, side, type->ResistType, attack.type });
+		}
 
 		if (!_armor->getPainImmune() || type->IgnorePainImmunity)
 		{
@@ -2045,6 +2056,11 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		}
 
 		work.execute(this->getArmor()->getScript<ModScript::DamageSpecialUnit>(), args);
+
+		if (auto *lua = save->getMod()->getLuaHost())
+		{
+			lua->fire(LuaHost::DAMAGE_SPECIAL_UNIT, args.data, { this, attack.damage_item, attack.weapon_item, attack.attacker, save, attack.skill_rules, damage, orgDamage, bodypart, side, type->ResistType, attack.type });
+		}
 
 
 		// update state
@@ -4346,6 +4362,11 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 		arg.data = ref;
 
 		work.execute(getArmor()->getScript<ModScript::ReturnFromMissionUnit>(), arg);
+
+		if (auto *lua = battle->getMod()->getLuaHost())
+		{
+			lua->fire(LuaHost::RETURN_FROM_MISSION_UNIT, arg.data, { this, battle, s });
+		}
 
 		ref = arg.data;
 	}
@@ -6953,6 +6974,40 @@ std::string debugDisplayScript(const BattleUnit* bu)
 }
 
 } // namespace
+
+const BattleUnit::LuaApi &BattleUnit::luaApi()
+{
+	static const LuaApi api = {
+		&setBaseStatScript<&BattleUnit::_tu, &UnitStats::tu>,
+		&addBaseStatScript<&BattleUnit::_tu, &UnitStats::tu>,
+		&setBaseStatScript<&BattleUnit::_health, &UnitStats::health>,
+		&addBaseStatScript<&BattleUnit::_health, &UnitStats::health>,
+		&setBaseStatScript<&BattleUnit::_health, &UnitStats::health, UnitStats::OverkillMultipler>,
+		&addBaseStatScript<&BattleUnit::_health, &UnitStats::health, UnitStats::OverkillMultipler>,
+		&setBaseStatScript<&BattleUnit::_mana, &UnitStats::mana>,
+		&addBaseStatScript<&BattleUnit::_mana, &UnitStats::mana>,
+		&setBaseStatScript<&BattleUnit::_energy, &UnitStats::stamina>,
+		&addBaseStatScript<&BattleUnit::_energy, &UnitStats::stamina>,
+		&setStunScript<&BattleUnit::_stunlevel>,
+		&addStunScript<&BattleUnit::_stunlevel>,
+		&setBaseStatRangeScript<&BattleUnit::_morale, 0, 100>,
+		&addBaseStatRangeScript<&BattleUnit::_morale, 0, 100>,
+		&setFireScript,
+		&setArmorValueScript,
+		&addArmorValueScript,
+		&setFatalWoundScript,
+		&addFatalWoundScript,
+		&getStunMaxScript,
+		&isStunnedScript,
+		&isKilledScript,
+		&getFactionScript,
+		&getOriginalFactionScript,
+		&getArmorValueScript,
+		&getArmorValueMaxScript,
+		&getFatalWoundScript,
+	};
+	return api;
+}
 
 /**
  * Register BattleUnit in script parser.

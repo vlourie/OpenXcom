@@ -39,6 +39,7 @@
 namespace OpenXcom
 {
 
+class LuaHost;
 class Surface;
 class SurfaceSet;
 class Font;
@@ -262,6 +263,7 @@ private:
 	RuleGlobe *_globe;
 	RuleConverter *_converter;
 	ModScriptGlobal *_scriptGlobal;
+	LuaHost *_luaHost = nullptr;
 
 	int _maxViewDistance, _maxDarknessToSeeUnits;
 	int _maxStaticLightDistance, _maxDynamicLightDistance, _enhancedLighting;
@@ -1222,6 +1224,8 @@ public:
 	RuleMissionScript *getAdhocScript(const std::string &name, bool error = false) const;
 	/// Get global script data.
 	ScriptGlobal *getScriptGlobal() const;
+	/// The Lua of the active mods, null when there is none.
+	LuaHost *getLuaHost() const { return _luaHost; }
 	RuleResearch *getFinalResearch() const;
 	RuleBaseFacility *getDestroyedFacility() const;
 	const std::map<int, std::string> *getMissionRatings() const;

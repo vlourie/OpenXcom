@@ -161,7 +161,7 @@ ModInfo::ModInfo(const std::string &path) :
 	_id(_name), _master("xcom1"),
 	_versionDisplay("1.0"),
 	_version(defaultModVersion),
-	_isMaster(false), _reservedSpace(1),
+	_isMaster(false), _reservedSpace(1), _luaApi(0),
 	_engineOk(false)
 {
 	// empty
@@ -214,6 +214,7 @@ void ModInfo::load(const YAML::YamlNodeReader& reader)
 	reader.tryRead("author", _author);
 	reader.tryRead("isMaster", _isMaster);
 	reader.tryRead("reservedSpace", _reservedSpace);
+	reader.tryRead("luaApi", _luaApi);
 
 	if (reader.tryRead("requiredExtendedVersion", _requiredExtendedVersion))
 		_requiredExtendedEngine = "Extended"; // for backward compatibility
@@ -278,6 +279,7 @@ const std::string &ModInfo::getRequiredExtendedEngine()  const { return _require
 const std::string &ModInfo::getRequiredExtendedVersion() const { return _requiredExtendedVersion; }
 const std::string &ModInfo::getResourceConfigFile()      const { return _resourceConfigFile;      }
 int                ModInfo::getReservedSpace()           const { return _reservedSpace;           }
+int                ModInfo::getLuaApi()                  const { return _luaApi;                  }
 
 /**
  * Is parent mod is in required version?

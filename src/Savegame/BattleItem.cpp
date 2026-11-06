@@ -1496,6 +1496,12 @@ void commonBattleItemAnimations(ScriptParserBase* parser)
 
 } // namespace
 
+const BattleItem::LuaApi &BattleItem::luaApi()
+{
+	static const LuaApi api = { &setFuseTimerScript, &setAmmoQuantityScript, &setHealQuantityScript, &setPainKillerQuantityScript, &setStimulantQuantityScript };
+	return api;
+}
+
 /**
  * Register BattleItem in script parser.
  * @param parser Script parser.

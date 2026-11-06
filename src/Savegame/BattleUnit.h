@@ -454,6 +454,23 @@ public:
 	int getDisplayShieldCapacity() const;
 	/// Gets the script tag values (read-only).
 	const ScriptValues<BattleUnit> &getScriptValuesRaw() const { return _scriptValues; }
+	/// Lua: the same change of health as the script addHealth.
+	/// The Y-script's own setters and getters, for LuaHost: Lua can do what a script can and in the same way.
+	struct LuaApi
+	{
+		using Set = void (*)(BattleUnit*, int);
+		using Set2 = void (*)(BattleUnit*, int, int);
+		using Get = void (*)(const BattleUnit*, int&);
+		using Get1 = void (*)(const BattleUnit*, int&, int);
+		Set setTimeUnits, addTimeUnits, setHealth, addHealth, setHealthWithOverkill, addHealthWithOverkill;
+		Set setMana, addMana, setEnergy, addEnergy, setStun, addStun, setMorale, addMorale, setFire;
+		Set2 setArmor, addArmor, setFatalwounds, addFatalwounds;
+		Get getStunMax, isStunned, isKilled, getFaction, getOriginalFaction;
+		Get1 getArmor, getArmorMax, getFatalwounds;
+	};
+	static const LuaApi &luaApi();
+	/// Lua: the same change of a tag as the script setTag.
+	void luaSetTag(ScriptTag<BattleUnit> tag, int val) { _scriptValues.set(tag, val); }
 
 	/// Get the list of items in the inventory.
 	std::vector<BattleItem*> *getInventory();

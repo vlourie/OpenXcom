@@ -92,6 +92,14 @@ public:
 
 	/// Gets the raw script-defined tag values (for reading mod-specific tags like shield charge).
 	const ScriptValues<BattleItem> &getScriptValuesRaw() const { return _scriptValues; }
+	/// The Y-script's own setters, for LuaHost.
+	struct LuaApi
+	{
+		using Set = void (*)(BattleItem*, int);
+		Set setFuseTimer, setAmmoQuantity, setHealQuantity, setPainKillerQuantity, setStimulantQuantity;
+	};
+	static const LuaApi &luaApi();
+	void luaSetTag(ScriptTag<BattleItem> tag, int val) { _scriptValues.set(tag, val); }
 
 	/// Gets the turn until explosion
 	int getFuseTimer() const;

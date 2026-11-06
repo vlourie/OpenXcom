@@ -77,6 +77,7 @@
 #include "RuleWeaponSet.h"
 #include "RuleUfo.h"
 #include "RuleTerrain.h"
+#include "LuaHost.h"
 #include "MapScript.h"
 #include "RuleSoldier.h"
 #include "RuleSkill.h"
@@ -621,6 +622,7 @@ Mod::~Mod()
 	delete _muteSound;
 	delete _globe;
 	delete _converter;
+	delete _luaHost;
 	delete _scriptGlobal;
 	for (auto& pair : _fonts)
 	{
@@ -3184,6 +3186,7 @@ void Mod::loadAll()
 	sortLists();
 	modResources();
 	loadHdUiArt();
+	_luaHost = LuaHost::create(this);
 }
 
 /**

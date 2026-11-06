@@ -15,3 +15,4 @@
 - Falling trees no longer sound like a collapsing house: they have their own sound. Buildings keep the old one.
 - Ship and base chairs are redrawn: a round riveted base, a round seat with a dark centre, a backrest that tapers upward with a rectangular cut-out. The same look in every set, 73 frames.
 - The missile rack is redrawn closer to the original: four cruise missiles with large tail fins on a wide stand.
+- For mod authors: the engine can now run local Lua mods (battle and items). Off by default, the game without them does not change; the modding mode in the launcher and the documentation come later.

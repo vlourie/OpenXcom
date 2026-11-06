@@ -380,6 +380,7 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceListVFSContents", &oxceListVFSContents, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnablePaletteFlickerFix", &oxceEnablePaletteFlickerFix, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceRecommendedOptionsWereSet", &oxceRecommendedOptionsWereSet, false));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLuaMods", &oxceLuaMods, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "password", &password, "secret"));
 
 	// OXCE hidden but moddable

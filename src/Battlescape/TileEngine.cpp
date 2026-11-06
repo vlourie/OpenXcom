@@ -39,6 +39,7 @@
 #include "../Mod/MapDataSet.h"
 #include "../Mod/Unit.h"
 #include "../Mod/Mod.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleSkill.h"
 #include "Pathfinding.h"
@@ -5431,6 +5432,11 @@ bool TileEngine::medikitUse(BattleAction *action, BattleUnit *target, BattleMedi
 
 	work.execute(target->getArmor()->getScript<ModScript::HealUnit>(), args);
 
+	if (auto *lua = _save->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::HEAL_UNIT, args.data, { action->actor, action->weapon, _save, target, action->type });
+	}
+
 	int medikitAction = std::get<medikitActionKey>(args.data);
 	bodyPart = (UnitBodyPart)std::get<bodyPartKey>(args.data);
 	int healthRecovery = std::get<healthRecoveryKey>(args.data);
@@ -5529,6 +5535,11 @@ bool TileEngine::skillUse(BattleAction *action, const RuleSkill *skill)
 	ModScript::SkillUseUnit::Worker work { actor, action->weapon, _save, skill, action->type, hasTu };
 
 	work.execute(skill->getScript<ModScript::SkillUseUnit>(), args);
+
+	if (auto *lua = _save->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::SKILL_USE_UNIT, args.data, { actor, action->weapon, _save, skill, action->type, (int)hasTu });
+	}
 
 	continueAction = args.getFirst();
 	spendTu = args.getSecond();

@@ -34,6 +34,7 @@
 #include "../Engine/Game.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleDamageType.h"
 #include "../fmath.h"
@@ -6770,6 +6771,12 @@ int AIModule::zeroEffectVerdictB2(SavedBattleGame *save, BattleUnit *attacker, B
 		return done(AIZ_UNKNOWN, "self_destruct");
 	}
 
+	// a Lua handler can change the damage and the forecast cannot know how: never call such a shot useless
+	if (save->getMod()->getLuaHost() && save->getMod()->getLuaHost()->hasDamageHandlers())
+	{
+		return done(AIZ_UNKNOWN, "lua_script");
+	}
+
 	// scripts: the armour's and the ammo's own must be absent, the globals exactly the audited Piratez set (or none)
 	const int evHit = ai2aEvents(armor->getScript<ModScript::HitUnit>());
 	const int evDmg = ai2aEvents(armor->getScript<ModScript::DamageUnit>());
@@ -7053,6 +7060,12 @@ int AIModule::zeroEffectVerdictHonest(SavedBattleGame *save, BattleUnit *attacke
 	if (target->getSpecialAbility() == SPECAB_EXPLODEONDEATH || target->getSpecialAbility() == SPECAB_BURN_AND_EXPLODE)
 	{
 		return done(AIZ_UNKNOWN, "self_destruct_type");
+	}
+
+	// a Lua handler can change the damage and the forecast cannot know how: never call such a shot useless
+	if (save->getMod()->getLuaHost() && save->getMod()->getLuaHost()->hasDamageHandlers())
+	{
+		return done(AIZ_UNKNOWN, "lua_script");
 	}
 
 	// scripts: the armour's and the ammo's own must be absent, the globals exactly the audited Piratez set (or none)

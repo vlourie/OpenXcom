@@ -78,6 +78,7 @@
 #include "../Menu/LoadGameState.h"
 #include "../Menu/SaveGameState.h"
 #include "../Mod/Mod.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/Armor.h"
@@ -3446,6 +3447,12 @@ inline void BattlescapeState::handle(Action *action)
 					{
 						saveAIMap();
 					}
+				}
+				// Lua mods: reload from disk, and with no Lua in the game this stays a quick save
+				if (key == SDLK_F5 && _game->isCtrlPressed() && _game->getMod()->getLuaHost())
+				{
+					warningRaw(_game->getMod()->getLuaHost()->reload());
+					return;
 				}
 				// quick save and quick load
 				if (!_game->getSavedGame()->isIronman() && !Options::oxceNoBattleSaves && !_save->isPreview())

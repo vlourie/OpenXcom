@@ -206,6 +206,7 @@ set ( engine_src
   Engine/Language.cpp
   Engine/LanguagePlurality.cpp
   Engine/LocalizedText.cpp
+  Engine/LuaSandbox.cpp
   Engine/ModInfo.cpp
   Engine/Music.cpp
   Engine/OpenGL.cpp
@@ -368,6 +369,7 @@ set ( mod_src
   Mod/ExtraSounds.cpp
   Mod/ExtraSprites.cpp
   Mod/ExtraStrings.cpp
+  Mod/LuaHost.cpp
   Mod/MapBlock.cpp
   Mod/MapData.cpp
   Mod/MapDataSet.cpp
@@ -524,6 +526,7 @@ set ( cxx_src
 
 set ( c_src
   ../libs/miniz/miniz.c
+  ../libs/lua/oxce_lua.cpp
 )
 set_property ( SOURCE ${c_src} APPEND PROPERTY COMPILE_DEFINITIONS MINIZ_NO_STDIO )
 
