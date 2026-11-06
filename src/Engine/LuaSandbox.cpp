@@ -482,6 +482,23 @@ bool LuaSandbox::load(const std::string &chunkName, const std::string &code)
 	return !_disabled;
 }
 
+std::string LuaSandbox::compileOnly(const std::string &chunkName, const std::string &code)
+{
+	lua_State *L = luaL_newstate();
+	if (!L)
+	{
+		return "cannot create a Lua state";
+	}
+	std::string error;
+	if (luaL_loadbufferx(L, code.data(), code.size(), ("@" + chunkName).c_str(), "t") != LUA_OK)
+	{
+		const char *text = lua_tostring(L, -1);
+		error = text ? text : "unknown error";
+	}
+	lua_close(L);
+	return error;
+}
+
 int LuaSandbox::fireProtected(lua_State *L)
 {
 	auto *self = from(L);
