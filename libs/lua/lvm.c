@@ -291,6 +291,7 @@ void luaV_finishget (lua_State *L, const TValue *t, TValue *key, StkId val,
   int loop;  /* counter to avoid infinite loops */
   const TValue *tm;  /* metamethod */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
+    oxce_c_tick(L);  /* OXCE: a chain of __index is one instruction */
     if (slot == NULL) {  /* 't' is not a table? */
       lua_assert(!ttistable(t));
       tm = luaT_gettmbyobj(L, t, TM_INDEX);
@@ -334,6 +335,7 @@ void luaV_finishset (lua_State *L, const TValue *t, TValue *key,
   int loop;  /* counter to avoid infinite loops */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;  /* '__newindex' metamethod */
+    oxce_c_tick(L);  /* OXCE */
     if (slot != NULL) {  /* is 't' a table? */
       Table *h = hvalue(t);  /* save 't' table */
       lua_assert(isempty(slot));  /* slot must be empty */
@@ -388,6 +390,7 @@ static int l_strcmp (const TString *ts1, const TString *ts2) {
   size_t rl1 = tsslen(ts1);  /* real length */
   const char *s2 = getstr(ts2);
   size_t rl2 = tsslen(ts2);
+  oxce_c_bytes(rl1 < rl2 ? rl1 : rl2);  /* OXCE */
   for (;;) {  /* for each segment */
     int temp = strcoll(s1, s2);
     if (temp != 0)  /* not equal? */
@@ -531,6 +534,7 @@ l_sinline int LEnum (const TValue *l, const TValue *r) {
 */
 static int lessthanothers (lua_State *L, const TValue *l, const TValue *r) {
   lua_assert(!ttisnumber(l) || !ttisnumber(r));
+  oxce_c_tick(L);  /* OXCE: see the bytes l_strcmp counted at once */
   if (ttisstring(l) && ttisstring(r))  /* both are strings? */
     return l_strcmp(tsvalue(l), tsvalue(r)) < 0;
   else
@@ -553,6 +557,7 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
 */
 static int lessequalothers (lua_State *L, const TValue *l, const TValue *r) {
   lua_assert(!ttisnumber(l) || !ttisnumber(r));
+  oxce_c_tick(L);  /* OXCE */
   if (ttisstring(l) && ttisstring(r))  /* both are strings? */
     return l_strcmp(tsvalue(l), tsvalue(r)) <= 0;
   else

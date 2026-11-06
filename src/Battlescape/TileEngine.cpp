@@ -3194,6 +3194,11 @@ bool TileEngine::awardExperience(BattleActionAttack attack, BattleUnit *target, 
 		expMultiply, expType,
 		unit, target, weapon, attack.type
 	);
+	if (auto *lua = _save->getMod()->getLuaHost())
+	{
+		auto outputs = std::tie(expMultiply, expType);
+		lua->fire(LuaHost::AWARD_EXPERIENCE, outputs, { unit, target, weapon, (int)attack.type });
+	}
 
 	for (int i = expMultiply / 100; i > 0; --i)
 	{
@@ -5163,6 +5168,12 @@ int TileEngine::psiAttackCalculate(BattleActionAttack::ReadOnly attack, const Ba
 		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type, &rng, (int)dis, (int)weapon->getRules()->getPsiAccuracyRangeReduction(dis),
 		_save
 	);
+	auto *lua = _save->getMod()->getLuaHost();
+	if (lua)
+	{
+		auto outputs = std::tie(psiAttackResult);
+		lua->fire(LuaHost::TRY_PSI_ATTACK_ITEM, outputs, { weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, (int)type, (int)dis, (int)weapon->getRules()->getPsiAccuracyRangeReduction(dis), _save });
+	}
 
 	psiAttackResult =  ModScript::scriptFunc1<ModScript::TryPsiAttackUnit>(
 		victim->getArmor(),
@@ -5170,6 +5181,11 @@ int TileEngine::psiAttackCalculate(BattleActionAttack::ReadOnly attack, const Ba
 		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type,
 		_save
 	);
+	if (lua)
+	{
+		auto outputs = std::tie(psiAttackResult);
+		lua->fire(LuaHost::TRY_PSI_ATTACK_UNIT, outputs, { weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, (int)type, _save });
+	}
 
 	return psiAttackResult;
 }
@@ -5330,6 +5346,12 @@ int TileEngine::meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const 
 		weapon, attacker, victim, isSameFaction, attack.skill_rules, attackStrength, defenseStrength, type, &rng, arc, defenseStrengthPenalty,
 		_save
 	);
+	auto *lua = _save->getMod()->getLuaHost();
+	if (lua)
+	{
+		auto outputs = std::tie(meleeAttackResult);
+		lua->fire(LuaHost::TRY_MELEE_ATTACK_ITEM, outputs, { weapon, attacker, victim, isSameFaction, attack.skill_rules, attackStrength, defenseStrength, (int)type, arc, defenseStrengthPenalty, _save });
+	}
 
 	meleeAttackResult =  ModScript::scriptFunc1<ModScript::TryMeleeAttackUnit>(
 		victim->getArmor(),
@@ -5337,6 +5359,11 @@ int TileEngine::meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const 
 		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type,
 		_save
 	);
+	if (lua)
+	{
+		auto outputs = std::tie(meleeAttackResult);
+		lua->fire(LuaHost::TRY_MELEE_ATTACK_UNIT, outputs, { weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, (int)type, _save });
+	}
 
 
 	return meleeAttackResult;

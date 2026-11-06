@@ -51,6 +51,7 @@
 #include "../Mod/RuleCraft.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/Mod.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/MapData.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Unit.h"
@@ -771,6 +772,15 @@ void BattlescapeGenerator::nextStage()
 void BattlescapeGenerator::run()
 {
 	bool isPreview = _save->isPreview();
+
+	// a new battle of a running campaign: Lua variables start over here too, not only at the load of a save
+	if (!isPreview)
+	{
+		if (auto *lua = _game->getMod()->getLuaHost())
+		{
+			lua->reload();
+		}
+	}
 
 	// HD render: a new battle picks up the HD scale option (its terrain loads at that scale)
 	_game->getMod()->refreshHdScale();

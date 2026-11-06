@@ -247,7 +247,9 @@ public sealed class LuaModsTests : IDisposable
         if (repo is null) return;   // off the repository there is no engine to compare with
         var host = File.ReadAllText(Path.Combine(repo, "src", "Mod", "LuaHost.cpp"));
         var ids = new List<string>();
-        foreach (var (table, type) in new[] { ("UNIT", "unit"), ("ITEM", "item"), ("BATTLE", "battle"), ("SOLDIER", "soldier"), ("RULE_ARMOR", "ruleArmor"), ("RULE_ITEM", "ruleItem"), ("SKILL", "skill") })
+        foreach (var (table, type) in new[] { ("UNIT", "unit"), ("ITEM", "item"), ("BATTLE", "battle"), ("SOLDIER", "soldier"), ("RULE_ARMOR", "ruleArmor"), ("RULE_ITEM", "ruleItem"), ("SKILL", "skill"),
+            ("RULE_DAMAGE", "ruleDamage"), ("RULE_UNIT", "ruleUnit"), ("RULE_SOLDIER", "ruleSoldier"), ("RULE_BONUS", "ruleSoldierBonus"), ("RULE_COUNTRY", "ruleCountry"),
+            ("RULE_UFO", "ruleUfo"), ("RULE_CRAFT", "ruleCraft"), ("TILE", "tile"), ("GEOSCAPE", "geoscape"), ("COUNTRY", "country"), ("UFO", "ufo"), ("CRAFT", "craft") })
         {
             var body = Regex.Match(host, $@"const luaL_Reg {table}_METHODS\[\] = \{{(.*?)\n?\}};", RegexOptions.Singleline);
             Assert.True(body.Success, table);
@@ -255,7 +257,7 @@ public sealed class LuaModsTests : IDisposable
         }
         var events = Regex.Match(host, @"const EventInfo EVENTS\[.*?\] = \{(.*?)\n\};", RegexOptions.Singleline);
         ids.AddRange(Regex.Matches(events.Groups[1].Value, @"^\s*\{ ""(\w+)"",", RegexOptions.Multiline).Select(m => $"event.{m.Groups[1].Value}"));
-        Assert.Equal(88, ids.Count);
+        Assert.Equal(335, ids.Count);
 
         var page = LuaMods.WriteDocs(Paths, "ru");
         Assert.EndsWith("lua_api.ru.html", page);

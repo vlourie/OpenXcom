@@ -203,6 +203,25 @@ public sealed class LuaModApiTests(PortalFactory f) : IClassFixture<PortalFactor
     }
 
     [Fact]
+    public async Task A_mod_waiting_for_its_author_is_not_closed_because_the_author_would_read_approved()
+    {
+        var (http, _) = await LauncherAsync();
+        var made = (await (await http.PostAsync("/api/v1/lua-mods", Form(GoodMod(), Meta()))).Content.ReadFromJsonAsync<LuaModSubmitted>())!;
+        await f.ScopedAsync(async sp =>
+        {
+            var db = sp.GetRequiredService<PortalDb>();
+            var svc = sp.GetRequiredService<TicketService>();
+            var t = await db.Tickets.FirstAsync(x => x.Number == made.Number);
+            t.Status = TicketStatus.NeedsInfo;
+            await db.SaveChangesAsync();
+            Assert.Equal("status_move_invalid", (await Assert.ThrowsAsync<TicketException>(() => svc.ChangeStatusAsync(t, TicketStatus.Closed, Guid.Empty, default))).Code);
+            await svc.ChangeStatusAsync(t, TicketStatus.Rejected, Guid.Empty, default);
+            Assert.Equal(TicketStatus.Rejected, t.Status);
+            return 0;
+        });
+    }
+
+    [Fact]
     public void The_archive_rules_are_the_same_as_the_check_that_decides()
     {
         // tools/lua_mod_check.py is what decides, in isolation; here the same list is only said earlier

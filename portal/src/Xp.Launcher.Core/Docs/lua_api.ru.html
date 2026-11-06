@@ -8,17 +8,20 @@ code,pre{font-family:Consolas,monospace;font-size:13px;background:var(--code);bo
 table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:auto}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}th{color:var(--dim);font-weight:600}
 .ro{color:var(--dim)}
 </style></head><body>
-<h1>Lua API для модов OXCE-HD, версия 1</h1><p>Мод пишется в файле <code>lua/main.lua</code> своей папки, в <code>metadata.yml</code> стоит <code>luaApi: 1</code>. Lua запускает только игра, лаунчер код мода не исполняет. API покрывает часть возможностей Y-script и не выходит за них. Страница описывает его полностью: чего здесь нет, того из Lua сделать нельзя. Имена обработчиков и выходных значений те же, что у Y-script.</p>
+<h1>Lua API для модов OXCE-HD, версия 1</h1><p>Мод пишется в файле <code>lua/main.lua</code> своей папки, в <code>metadata.yml</code> стоит <code>luaApi: 1</code>. Lua запускает только игра, лаунчер код мода не исполняет. API покрывает большую часть возможностей Y-script и не выходит за них. Страница описывает его полностью: чего здесь нет, того из Lua сделать нельзя. Имена обработчиков и выходных значений те же, что у Y-script.</p>
 <h2>Где это работает</h2><p>Только в нашей сборке OXCE-HD. Обычный OXCE не знает ключ <code>luaApi</code> и запустит мод без Lua: рулсеты мода будут работать, а код нет. Если мод нужен и там, пишите его на Y-script.</p>
 <h2>С чего начать</h2><ol><li>В лаунчере: Настройки, «Режим мододела», «Создать мод». Появится папка с рабочим примером.</li><li>Запустите игру и начните бой. Строки <code>game.log</code> и <code>print</code> идут в <code>user/openxcom.log</code>.</li><li>Поправьте <code>main.lua</code> и нажмите <b>Ctrl+F5</b> в бою: код всех модов перечитается, итог на экране. Обычное быстрое сохранение F5 работает как раньше.</li></ol>
 <h2>Что мод может менять</h2><table><tr><th>Что</th><th>Из Lua</th></tr>
-<tr><td>Юнит в бою</td><td>очки времени, здоровье, мана, энергия, оглушение, боевой дух, горение, броня сторон, раны</td></tr>
+<tr><td>Юнит в бою</td><td>очки времени, здоровье, мана, энергия, оглушение, боевой дух, горение, броня сторон, раны, характеристики и стоимость хода на этот бой, превращение при гибели, способ передвижения, раскрытие снайперам</td></tr>
 <tr><td>Попадание и урон</td><td>сила, часть тела, сторона, что сколько снимает, шанс превращения и взрыва, поджог, раскрытие атакующего</td></tr>
 <tr><td>Аптечка и навык</td><td>сколько лечит аптечка, идёт ли действие навыка дальше, списывать ли за него очки времени</td></tr>
-<tr><td>Предмет в бою</td><td>патроны, таймер взрывателя, заряды аптечки</td></tr>
+<tr><td>Предмет в бою</td><td>патроны, таймер и взведение взрывателя, заряды аптечки, стоимость переноса</td></tr>
+<tr><td>Бой</td><td>сообщения, скрытие юнита, открытие клеток игроку, уровень снаряжения врага, списки юнитов и предметов</td></tr>
+<tr><td>Солдат</td><td>постоянные характеристики, раны, недостающие здоровье и мана</td></tr>
+<tr><td>Расчёты движка</td><td>шанс пси-атаки и удара, сколько опыта за попадание, звук шага, замечено ли НЛО, итог месяца для страны</td></tr>
 <tr><td>Конец миссии</td><td>срок лечения, сколько здоровья и маны солдат недобирает на базе</td></tr>
-<tr><td>Служебное</td><td>теги юнита и предмета, сообщение на экране, журнал</td></tr>
-</table><div><b>Из Lua нельзя:</b><ul><li>геоскейп, база, наука, производство, деньги, страны, НЛО, характеристики солдата вне боя;</li><li>создавать и двигать юнитов и предметы, менять карту. Списка всех юнитов нет: юнита или предмет можно получить только в обработчике;</li><li>спрайты, звук, свои экраны, видимость, реакции, решения ИИ, шанс пси- и ближней атаки, опыт, цены.</li></ul><b>Рядом с кодом работает обычный OXCE.</b> Папка <code>Ruleset/</code> мода с файлами <code>.rul</code> подключается как у любого мода: там меняются числа предметов, брони и юнитов, исследования и всё остальное, что умеют рулсеты, в том числе Y-script. Нужна новая возможность в Lua — напишите нам тикет с описанием, что мод должен делать.</div>
+<tr><td>Служебное</td><td>теги юнита, предмета, боя, солдата и геоскейпа, журнал</td></tr>
+</table><div><b>Из Lua нельзя:</b><ul><li>базы, наука, производство, деньги: геоскейп можно читать, а менять только теги, итог месяца для страны и обнаружение НЛО;</li><li>создавать и двигать юнитов и предметы, менять карту;</li><li>спрайты, перекраску, свои экраны, расчёт видимости и реакций, решения ИИ, цены. Эти обработчики Y-script в Lua не вынесены, для них есть Y-script.</li></ul><b>Рядом с кодом работает обычный OXCE.</b> Папка <code>Ruleset/</code> мода с файлами <code>.rul</code> подключается как у любого мода: там меняются числа предметов, брони и юнитов, исследования и всё остальное, что умеют рулсеты, в том числе Y-script. Нужна новая возможность в Lua — напишите нам тикет с описанием, что мод должен делать.</div>
 <h2>Рецепты</h2><p>Каждый рецепт — целый файл <code>lua/main.lua</code>. Все проверены в настоящем бою. В одном файле может быть сколько угодно подписок, в том числе на один обработчик: они идут в порядке записи.</p>
 <h3>Регенерация</h3><p>Каждый живой юнит в начале своего хода получает 1 здоровья. <code>newTurnUnit</code> приходит на ход каждой стороны, поэтому <code>side</code> сравнивается со стороной юнита.</p>
 <pre><code>game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
@@ -92,7 +95,53 @@ end)
   out.recovery_time = out.recovery_time // 2
 end)
 </code></pre>
-<h2>Обработчики</h2><p>Подписка: <code>game.on("имя", функция)</code>. Аргументы идут в порядке входа Y-script, последним — таблица <code>out</code> с выходными значениями, если они есть. Значения в <code>out</code> принимаются целыми и только все разом: одно плохое значение — ошибка, остальные не применяются. На одном обработчике сначала работает Y-script, затем Lua в порядке загрузки модов.</p>
+<h3>Офицер поднимает дух</h3><p>Пока в отряде стоит на ногах сержант или старше, каждый свой ход боевой дух +5. Список юнитов берётся раз в ход, а не на каждого юнита: он стоит тактов.</p>
+<pre><code>local seen_turn, officer
+game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
+  if side ~= game.FACTION_PLAYER or unit:getFaction() ~= side then
+    return
+  end
+  if seen_turn ~= turn then
+    seen_turn = turn
+    officer = false
+    for _, u in ipairs(battle:getUnits(side)) do
+      if u:getRankUnified() &gt;= game.UNIT_RANK_SERGEANT and not u:isStunned() then
+        officer = true
+      end
+    end
+  end
+  if officer then
+    unit:setMorale(unit:getMorale() + 5)
+  end
+end)
+</code></pre>
+<h3>Закалка в бою</h3><p>Каждый свой ход храбрость юнита +1. <code>addStat</code> у юнита действует только на этот бой, постоянно менять характеристику можно у <code>soldier</code>.</p>
+<pre><code>game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
+  if side == unit:getFaction() then
+    unit:addStat(&quot;bravery&quot;, 1)
+  end
+end)
+</code></pre>
+<h3>Опыт вдвое</h3><p>Имя <code>experience_multipler</code> с опечаткой пришло из Y-script. Здесь только <code>out</code>: этот обработчик только читает.</p>
+<pre><code>game.on(&quot;awardExperience&quot;, function(attacker, unit, weapon, battle_action, out)
+  out.experience_multipler = out.experience_multipler * 2
+end)
+</code></pre>
+<h3>Удар в спину</h3><p>Шанс удара сбоку и сзади +20. ИИ считает так же и свои прогнозы: без <code>math.random</code>, без журнала на каждый вызов.</p>
+<pre><code>game.on(&quot;tryMeleeAttackItem&quot;, function(item, attacker, victim, is_same_faction, skill, attack_strength, defense_strength, battle_action, arc_to_attacker, defense_strength_penalty, battle, out)
+  if arc_to_attacker &gt;= 2 then
+    out.melee_attack_success = out.melee_attack_success + 20
+  end
+end)
+</code></pre>
+<h3>Страна ценит победы</h3><p>Если игрок набрал за месяц больше очков, чем враг, страна не снижает финансирование.</p>
+<pre><code>game.on(&quot;newMonthCountry&quot;, function(country, geoscape_game, totalXcomScore, totalAlienScore, out)
+  if totalXcomScore &gt; totalAlienScore and out.fundingChange &lt; 0 then
+    out.fundingChange = 0
+  end
+end)
+</code></pre>
+<h2>Обработчики</h2><p>Подписка: <code>game.on("имя", функция)</code>. Аргументы идут в порядке входа Y-script, последним — таблица <code>out</code> с выходными значениями, если они есть. Значения в <code>out</code> принимаются целыми и только все разом: одно плохое значение — ошибка, остальные не применяются. Обработчики с пометкой «только читает» меняют только <code>out</code>: как и в Y-script, объекты там неизменяемые, и вызов <code>set...</code> или <code>add...</code> в них — ошибка. На одном обработчике сначала работает Y-script, затем Lua в порядке загрузки модов.</p>
 <table><tr><th>Обработчик</th><th>Когда</th><th>out</th></tr>
 <tr id="event.createUnit"><td><code>createUnit(unit, battle, turn)</code></td><td>юнит появился в бою</td><td>-</td></tr>
 <tr id="event.newTurnUnit"><td><code>newTurnUnit(unit, battle, turn, side)</code></td><td>начало хода стороны, для каждого юнита; side - чей ход, FACTION_*</td><td>-</td></tr>
@@ -104,6 +153,16 @@ end)
 <tr id="event.returnFromMissionUnit"><td><code>returnFromMissionUnit(unit, battle, soldier, out)</code></td><td>конец миссии, для каждого солдата; экрана боя уже нет</td><td><code>recovery_time</code>, <code>mana_loss</code> <span class="ro">(только чтение)</span>, <code>health_loss</code> <span class="ro">(только чтение)</span>, <code>final_mana_loss</code>, <code>final_health_loss</code></td></tr>
 <tr id="event.createItem"><td><code>createItem(item, unit, battle, turn)</code></td><td>предмет появился в бою; unit может быть nil</td><td>-</td></tr>
 <tr id="event.newTurnItem"><td><code>newTurnItem(item, battle, turn, side)</code></td><td>начало хода стороны, для каждого предмета</td><td>-</td></tr>
+<tr id="event.awardExperience"><td><code>awardExperience(attacker, unit, weapon, battle_action, out)</code> <span class="ro">(только читает)</span></td><td>начисление опыта за попадание</td><td><code>experience_multipler</code>, <code>experience_type</code> <span class="ro">(только чтение)</span></td></tr>
+<tr id="event.tryPsiAttackItem"><td><code>tryPsiAttackItem(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, distance, distance_strength_reduction, battle, out)</code> <span class="ro">(только читает)</span></td><td>расчёт пси-атаки, правило оружия. ИИ считает так же и свои прогнозы: вызов ещё не значит попытку</td><td><code>psi_attack_success</code></td></tr>
+<tr id="event.tryPsiAttackUnit"><td><code>tryPsiAttackUnit(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, battle, out)</code> <span class="ro">(только читает)</span></td><td>расчёт пси-атаки, правило цели. Вызов ещё не значит попытку</td><td><code>psi_attack_success</code></td></tr>
+<tr id="event.tryMeleeAttackItem"><td><code>tryMeleeAttackItem(item, attacker, victim, is_same_faction, skill, attack_strength, defense_strength, battle_action, arc_to_attacker, defense_strength_penalty, battle, out)</code> <span class="ro">(только читает)</span></td><td>расчёт удара, правило оружия. Вызов ещё не значит попытку</td><td><code>melee_attack_success</code></td></tr>
+<tr id="event.tryMeleeAttackUnit"><td><code>tryMeleeAttackUnit(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, battle, out)</code> <span class="ro">(только читает)</span></td><td>расчёт удара, правило цели. Вызов ещё не значит попытку</td><td><code>melee_attack_success</code></td></tr>
+<tr id="event.selectMoveSoundUnit"><td><code>selectMoveSoundUnit(unit, walking_phase, unit_sound_index, tile_sound_index, base_tile_sound_index, base_tile_sound_offset, base_fly_sound_index, move, out)</code> <span class="ro">(только читает)</span></td><td>шаг юнита: какой звук играть</td><td><code>sound_index</code></td></tr>
+<tr id="event.newMonthCountry"><td><code>newMonthCountry(country, geoscape_game, totalXcomScore, totalAlienScore, out)</code> <span class="ro">(только читает)</span></td><td>конец месяца, для каждой страны</td><td><code>fundingChange</code>, <code>satisfaction</code>, <code>formPact</code>, <code>cancelPact</code></td></tr>
+<tr id="event.detectUfoFromBase"><td><code>detectUfoFromBase(ufo, geoscape_game, distance, already_tracked, radar_total_strength, radar_max_distance, hyperwave_total_strength, hyperwave_max_distance, out)</code> <span class="ro">(только читает)</span></td><td>база пробует заметить НЛО</td><td><code>detection_type</code>, <code>detection_chance</code></td></tr>
+<tr id="event.detectUfoFromCraft"><td><code>detectUfoFromCraft(ufo, geoscape_game, craft, distance, already_tracked, radar_total_strength, radar_max_distance, out)</code> <span class="ro">(только читает)</span></td><td>корабль пробует заметить НЛО</td><td><code>detection_type</code>, <code>detection_chance</code></td></tr>
+<tr id="event.applySoldierBonuses"><td><code>applySoldierBonuses(unit, battle, bonus)</code></td><td>солдат входит в бой, для каждого его бонуса</td><td>-</td></tr>
 </table>
 <h3>Аргументы</h3><p>Обработчики получают их в порядке из таблицы выше. Значения, которые могут быть nil, проверяйте перед вызовом метода, иначе будет ошибка.</p><ul>
 <li><code>unit</code>: юнит, с которым это произошло</li>
@@ -125,6 +184,34 @@ end)
 <li><code>target</code>: кого лечат</li>
 <li><code>have_tu</code>: 1, если очков времени на действие хватает, иначе 0</li>
 <li><code>soldier</code>: солдат игрока</li>
+<li><code>weapon</code>: чем действовали</li>
+<li><code>victim</code>: цель</li>
+<li><code>is_same_faction</code>: 1, если цель на той же стороне</li>
+<li><code>attack_strength</code>: сила атаки</li>
+<li><code>defense_strength</code>: сила защиты</li>
+<li><code>distance</code>: расстояние: в <code>tryPsiAttackItem</code> в вокселях, в <code>detectUfo*</code> в морских милях</li>
+<li><code>distance_strength_reduction</code>: на сколько расстояние снижает силу</li>
+<li><code>arc_to_attacker</code>: с какой стороны атакуют: 0 спереди, 4 сзади</li>
+<li><code>defense_strength_penalty</code>: штраф защиты за атаку сбоку и сзади</li>
+<li><code>walking_phase</code>: фаза шага</li>
+<li><code>unit_sound_index</code>: звук юнита из рулсета</li>
+<li><code>tile_sound_index</code>: звук клетки</li>
+<li><code>base_tile_sound_index</code>: начало звуков шагов в наборе</li>
+<li><code>base_tile_sound_offset</code>: смещение звука клетки</li>
+<li><code>base_fly_sound_index</code>: звук полёта</li>
+<li><code>move</code>: как идёт, <code>BAM_*</code></li>
+<li><code>country</code>: страна</li>
+<li><code>geoscape_game</code>: геоскейп</li>
+<li><code>totalXcomScore</code>: очки игрока за месяц</li>
+<li><code>totalAlienScore</code>: очки врага за месяц</li>
+<li><code>ufo</code>: НЛО</li>
+<li><code>craft</code>: корабль</li>
+<li><code>already_tracked</code>: 1, если уже отслеживается</li>
+<li><code>radar_total_strength</code>: общая сила радаров</li>
+<li><code>radar_max_distance</code>: дальность радаров</li>
+<li><code>hyperwave_total_strength</code>: общая сила гипердетекторов</li>
+<li><code>hyperwave_max_distance</code>: дальность гипердетекторов</li>
+<li><code>bonus</code>: бонус солдата</li>
 </ul><h3>Что значит каждое значение out</h3><table><tr><th>Обработчик</th><th>out</th><th>Что делает</th></tr>
 <tr><td><code>hitUnit</code></td><td><code>power</code></td><td>сила попадания; ноль и меньше: урона нет и <code>damageUnit</code> не придёт</td></tr>
 <tr><td><code>hitUnit</code></td><td><code>part</code></td><td>куда попали, <code>BODYPART_*</code>; неверное значение становится головой</td></tr>
@@ -162,6 +249,21 @@ end)
 <tr><td><code>returnFromMissionUnit</code></td><td><code>health_loss</code> <span class="ro">(только чтение)</span></td><td>сколько здоровья не хватало в конце боя</td></tr>
 <tr><td><code>returnFromMissionUnit</code></td><td><code>final_mana_loss</code></td><td>сколько маны не хватает на базе</td></tr>
 <tr><td><code>returnFromMissionUnit</code></td><td><code>final_health_loss</code></td><td>сколько здоровья не хватает на базе</td></tr>
+<tr><td><code>awardExperience</code></td><td><code>experience_multipler</code></td><td>сколько опыта в процентах: 100 одно начисление, 250 два и шанс 50% на третье; 0 ничего</td></tr>
+<tr><td><code>awardExperience</code></td><td><code>experience_type</code> <span class="ro">(только чтение)</span></td><td>вид опыта, номер</td></tr>
+<tr><td><code>tryPsiAttackItem</code></td><td><code>psi_attack_success</code></td><td>запас успеха, больше нуля: атака прошла. Идёт дальше в <code>tryPsiAttackUnit</code></td></tr>
+<tr><td><code>tryPsiAttackUnit</code></td><td><code>psi_attack_success</code></td><td>запас успеха, больше нуля: атака прошла</td></tr>
+<tr><td><code>tryMeleeAttackItem</code></td><td><code>melee_attack_success</code></td><td>запас успеха: сила атаки минус случайное число минус защита. Больше нуля: удар прошёл, поэтому +1 здесь это примерно +1% шанса. Идёт дальше в <code>tryMeleeAttackUnit</code></td></tr>
+<tr><td><code>tryMeleeAttackUnit</code></td><td><code>melee_attack_success</code></td><td>запас успеха, больше нуля: удар прошёл</td></tr>
+<tr><td><code>selectMoveSoundUnit</code></td><td><code>sound_index</code></td><td>какой звук играть; меньше нуля: без звука</td></tr>
+<tr><td><code>newMonthCountry</code></td><td><code>fundingChange</code></td><td>на сколько меняется финансирование</td></tr>
+<tr><td><code>newMonthCountry</code></td><td><code>satisfaction</code></td><td>настроение, <code>SATISFACTION_*</code>; другое значение: ошибка</td></tr>
+<tr><td><code>newMonthCountry</code></td><td><code>formPact</code></td><td>1: заключить пакт</td></tr>
+<tr><td><code>newMonthCountry</code></td><td><code>cancelPact</code></td><td>1: разорвать пакт</td></tr>
+<tr><td><code>detectUfoFromBase</code></td><td><code>detection_type</code></td><td>как заметит, <code>DETECTION_*</code>; другое значение: ошибка</td></tr>
+<tr><td><code>detectUfoFromBase</code></td><td><code>detection_chance</code></td><td>шанс в процентах</td></tr>
+<tr><td><code>detectUfoFromCraft</code></td><td><code>detection_type</code></td><td>как заметит, <code>DETECTION_*</code>; другое значение: ошибка</td></tr>
+<tr><td><code>detectUfoFromCraft</code></td><td><code>detection_chance</code></td><td>шанс в процентах</td></tr>
 </table>
 <h2>Объекты</h2>
 <h3>Юнит: <code>unit</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
@@ -217,6 +319,74 @@ end)
 <tr id="unit.getRuleArmor"><td><code>unit:getRuleArmor()</code></td><td>правила брони или nil</td></tr>
 <tr id="unit.getTag"><td><code>unit:getTag(name)</code></td><td>значение тега BattleUnit</td></tr>
 <tr id="unit.setTag"><td><code>unit:setTag(name, value)</code></td><td>записать тег BattleUnit</td></tr>
+<tr id="unit.getRankUnified"><td><code>unit:getRankUnified()</code></td><td>звание, одинаковая для всех сторон шкала UNIT_RANK_*</td></tr>
+<tr id="unit.getGender"><td><code>unit:getGender()</code></td><td>пол, GENDER_*</td></tr>
+<tr id="unit.getLook"><td><code>unit:getLook()</code></td><td>внешность солдата, LOOK_*; не солдат: 0</td></tr>
+<tr id="unit.getLookVariant"><td><code>unit:getLookVariant()</code></td><td>вариант внешности солдата; не солдат: 0</td></tr>
+<tr id="unit.isStanding"><td><code>unit:isStanding()</code></td><td>стоит и ничего не делает</td></tr>
+<tr id="unit.isWalking"><td><code>unit:isWalking()</code></td><td>идёт</td></tr>
+<tr id="unit.isFlying"><td><code>unit:isFlying()</code></td><td>летит сейчас, в движении</td></tr>
+<tr id="unit.isCollapsing"><td><code>unit:isCollapsing()</code></td><td>падает</td></tr>
+<tr id="unit.isAiming"><td><code>unit:isAiming()</code></td><td>целится</td></tr>
+<tr id="unit.isFearable"><td><code>unit:isFearable()</code></td><td>боится</td></tr>
+<tr id="unit.isWoundable"><td><code>unit:isWoundable()</code></td><td>может получать раны</td></tr>
+<tr id="unit.getReactionScore"><td><code>unit:getReactionScore()</code></td><td>очки реакции, целая часть</td></tr>
+<tr id="unit.getIntelligence"><td><code>unit:getIntelligence()</code></td><td>интеллект</td></tr>
+<tr id="unit.getAggression"><td><code>unit:getAggression()</code></td><td>агрессия</td></tr>
+<tr id="unit.getTurretDirection"><td><code>unit:getTurretDirection()</code></td><td>направление башни</td></tr>
+<tr id="unit.getWalkingPhase"><td><code>unit:getWalkingPhase()</code></td><td>фаза ходьбы</td></tr>
+<tr id="unit.disableIndicators"><td><code>unit:disableIndicators()</code></td><td>скрыть индикаторы юнита</td></tr>
+<tr id="unit.isVisible"><td><code>unit:isVisible()</code></td><td>виден игроку</td></tr>
+<tr id="unit.makeVisible"><td><code>unit:makeVisible()</code></td><td>сделать видимым игроку</td></tr>
+<tr id="unit.getMaxViewDistanceAtDark"><td><code>unit:getMaxViewDistanceAtDark(other)</code></td><td>дальность зрения в темноте по юниту other</td></tr>
+<tr id="unit.getMaxViewDistanceAtDay"><td><code>unit:getMaxViewDistanceAtDay(other)</code></td><td>дальность зрения днём по юниту other</td></tr>
+<tr id="unit.getMaxViewDistance"><td><code>unit:getMaxViewDistance(base, nerf, buff)</code></td><td>дальность зрения с данным обзором, маскировкой и антимаскировкой</td></tr>
+<tr id="unit.getPsiVision"><td><code>unit:getPsiVision()</code></td><td>пси-зрение</td></tr>
+<tr id="unit.getHeatVision"><td><code>unit:getHeatVision()</code></td><td>зрение сквозь дым</td></tr>
+<tr id="unit.getVisibilityThroughFire"><td><code>unit:getVisibilityThroughFire()</code></td><td>зрение сквозь огонь</td></tr>
+<tr id="unit.setSpawnUnit"><td><code>unit:setSpawnUnit(type)</code></td><td>в кого превратится при гибели: тип из рулсета или nil. Незнакомый тип: ошибка</td></tr>
+<tr id="unit.getSpawnUnit"><td><code>unit:getSpawnUnit()</code></td><td>правила юнита, в которого превратится, или nil</td></tr>
+<tr id="unit.setSpawnUnitInstantRespawn"><td><code>unit:setSpawnUnitInstantRespawn(value)</code></td><td>1: превращение сразу, 0: при гибели</td></tr>
+<tr id="unit.getSpawnUnitInstantRespawn"><td><code>unit:getSpawnUnitInstantRespawn()</code></td><td>превращение сразу</td></tr>
+<tr id="unit.setSpawnUnitFaction"><td><code>unit:setSpawnUnitFaction(value)</code></td><td>сторона после превращения</td></tr>
+<tr id="unit.getSpawnUnitFaction"><td><code>unit:getSpawnUnitFaction()</code></td><td>сторона после превращения</td></tr>
+<tr id="unit.getPreviousOwner"><td><code>unit:getPreviousOwner()</code></td><td>кто последним был носителем, юнит или nil</td></tr>
+<tr id="unit.getMoraleMax"><td><code>unit:getMoraleMax()</code></td><td>боевой дух, максимум</td></tr>
+<tr id="unit.setArmorMax"><td><code>unit:setArmorMax(side, value)</code></td><td>задать максимум брони стороны; сторона за границей: ничего</td></tr>
+<tr id="unit.getFatalwoundsMax"><td><code>unit:getFatalwoundsMax(part)</code></td><td>сколько ран может быть на части тела; за таблицей частей 0</td></tr>
+<tr id="unit.getMovementType"><td><code>unit:getMovementType()</code></td><td>способ передвижения сейчас, MT_*</td></tr>
+<tr id="unit.getOriginalMovementType"><td><code>unit:getOriginalMovementType()</code></td><td>способ передвижения от брони, MT_*</td></tr>
+<tr id="unit.setMovementType"><td><code>unit:setMovementType(value)</code></td><td>задать способ передвижения, MT_*</td></tr>
+<tr id="unit.getVisibleUnitsCount"><td><code>unit:getVisibleUnitsCount()</code></td><td>сколько юнитов видит</td></tr>
+<tr id="unit.getRuleUnit"><td><code>unit:getRuleUnit()</code></td><td>правила юнита или nil</td></tr>
+<tr id="unit.getRuleSoldier"><td><code>unit:getRuleSoldier()</code></td><td>правила солдата или nil</td></tr>
+<tr id="unit.getGeoscapeSoldier"><td><code>unit:getGeoscapeSoldier()</code></td><td>солдат игрока или nil</td></tr>
+<tr id="unit.reduceByBravery"><td><code>unit:reduceByBravery(value)</code></td><td>значение, уменьшенное храбростью юнита</td></tr>
+<tr id="unit.reduceByResistance"><td><code>unit:reduceByResistance(value, type)</code></td><td>значение, уменьшенное сопротивлением брони типу урона DT_*</td></tr>
+<tr id="unit.getTurnsSinceSpotted"><td><code>unit:getTurnsSinceSpotted()</code></td><td>сколько ходов назад его заметили враги</td></tr>
+<tr id="unit.setTurnsSinceSpotted"><td><code>unit:setTurnsSinceSpotted(value)</code></td><td>задать, от 0 до 255</td></tr>
+<tr id="unit.getTurnsSinceSpottedByFaction"><td><code>unit:getTurnsSinceSpottedByFaction(faction)</code></td><td>то же для стороны FACTION_*</td></tr>
+<tr id="unit.setTurnsSinceSpottedByFaction"><td><code>unit:setTurnsSinceSpottedByFaction(faction, value)</code></td><td>задать для стороны FACTION_*</td></tr>
+<tr id="unit.getTurnsLeftSpottedForSnipers"><td><code>unit:getTurnsLeftSpottedForSnipers()</code></td><td>сколько ходов снайперы врага ещё его видят</td></tr>
+<tr id="unit.setTurnsLeftSpottedForSnipers"><td><code>unit:setTurnsLeftSpottedForSnipers(value)</code></td><td>задать, от 0 до 255</td></tr>
+<tr id="unit.getTurnsLeftSpottedForSnipersByFaction"><td><code>unit:getTurnsLeftSpottedForSnipersByFaction(faction)</code></td><td>то же для стороны FACTION_*</td></tr>
+<tr id="unit.setTurnsLeftSpottedForSnipersByFaction"><td><code>unit:setTurnsLeftSpottedForSnipersByFaction(faction, value)</code></td><td>задать для стороны FACTION_*</td></tr>
+<tr id="unit.getDisplayShieldHp"><td><code>unit:getDisplayShieldHp()</code></td><td>щит на индикаторе</td></tr>
+<tr id="unit.setDisplayShieldHp"><td><code>unit:setDisplayShieldHp(value)</code></td><td>задать щит на индикаторе; это только показ</td></tr>
+<tr id="unit.getDisplayShieldCapacity"><td><code>unit:getDisplayShieldCapacity()</code></td><td>ёмкость щита на индикаторе</td></tr>
+<tr id="unit.setDisplayShieldCapacity"><td><code>unit:setDisplayShieldCapacity(value)</code></td><td>задать ёмкость щита на индикаторе; это только показ</td></tr>
+<tr id="unit.getTurnsSinceStunned"><td><code>unit:getTurnsSinceStunned()</code></td><td>сколько ходов назад его оглушили</td></tr>
+<tr id="unit.setTurnsSinceStunned"><td><code>unit:setTurnsSinceStunned(value)</code></td><td>задать, от 0 до 255</td></tr>
+<tr id="unit.getTileShade"><td><code>unit:getTileShade()</code></td><td>темнота клетки под юнитом, 0 если её нет</td></tr>
+<tr id="unit.getStat"><td><code>unit:getStat(name)</code></td><td>характеристика на этот бой, имена: timeUnits, stamina, health, manaPool, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee</td></tr>
+<tr id="unit.setStat"><td><code>unit:setStat(name, value)</code></td><td>задать характеристику на этот бой, от 1 до 8000; текущие ОВ, здоровье, энергия и мана не больше нового максимума</td></tr>
+<tr id="unit.addStat"><td><code>unit:addStat(name, value)</code></td><td>прибавить к характеристике на этот бой</td></tr>
+<tr id="unit.getExp"><td><code>unit:getExp(name)</code></td><td>опыт за этот бой, те же имена без timeUnits, stamina, health, manaPool</td></tr>
+<tr id="unit.getMoveCost"><td><code>unit:getMoveCost(kind)</code></td><td>надбавка к стоимости хода, kind: base, fly, normal, climb; два значения: проценты ОВ и энергии</td></tr>
+<tr id="unit.setMoveCost"><td><code>unit:setMoveCost(kind, time, energy)</code></td><td>задать надбавку к стоимости хода на этот бой</td></tr>
+<tr id="unit.getInventoryItems"><td><code>unit:getInventoryItems(slot)</code></td><td>таблица предметов юнита; slot необязателен, это тип слота из рулсета</td></tr>
+<tr id="unit.getInventoryItem"><td><code>unit:getInventoryItem(type, slot)</code></td><td>первый предмет типа type или nil; slot необязателен. Тип не из рулсета: ошибка</td></tr>
+<tr id="unit.getSpecialItems"><td><code>unit:getSpecialItems()</code></td><td>таблица особых предметов юнита: встроенное оружие</td></tr>
 </table>
 <h3>Предмет: <code>item</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="item.getId"><td><code>item:getId()</code></td><td>номер предмета в бою</td></tr>
@@ -237,40 +407,245 @@ end)
 <tr id="item.setStimulantQuantity"><td><code>item:setStimulantQuantity(value)</code></td><td>задать заряды стимулятора</td></tr>
 <tr id="item.getTag"><td><code>item:getTag(name)</code></td><td>значение тега BattleItem</td></tr>
 <tr id="item.setTag"><td><code>item:setTag(name, value)</code></td><td>записать тег BattleItem</td></tr>
+<tr id="item.getBattleUnit"><td><code>item:getBattleUnit()</code></td><td>юнит на предмете-теле или nil</td></tr>
+<tr id="item.getAmmoItem"><td><code>item:getAmmoItem()</code></td><td>боеприпас в первом гнезде или nil</td></tr>
+<tr id="item.getAmmoForSlot"><td><code>item:getAmmoForSlot(slot)</code></td><td>боеприпас в гнезде от 0 до 3 или nil; другой номер: ошибка</td></tr>
+<tr id="item.getAmmoForAction"><td><code>item:getAmmoForAction(action)</code></td><td>чем будет стрелять это действие BA_*, или nil</td></tr>
+<tr id="item.getSlot"><td><code>item:getSlot()</code></td><td>тип слота из рулсета, строка, или nil</td></tr>
+<tr id="item.getPreviousOwner"><td><code>item:getPreviousOwner()</code></td><td>прежний владелец, юнит или nil</td></tr>
+<tr id="item.getGlow"><td><code>item:getGlow()</code></td><td>светится</td></tr>
+<tr id="item.getTotalWeight"><td><code>item:getTotalWeight()</code></td><td>вес с боеприпасами</td></tr>
+<tr id="item.isSpecialWeapon"><td><code>item:isSpecialWeapon()</code></td><td>встроенное оружие</td></tr>
+<tr id="item.getFuseTimerDefault"><td><code>item:getFuseTimerDefault()</code></td><td>таймер взрывателя по правилам</td></tr>
+<tr id="item.setFuseEnabled"><td><code>item:setFuseEnabled(value)</code></td><td>взвести или снять взрыватель, true или false</td></tr>
+<tr id="item.getActionCost"><td><code>item:getActionCost(unit, action)</code></td><td>сколько ОВ стоит юниту действие BA_* этим предметом</td></tr>
+<tr id="item.getMoveToCost"><td><code>item:getMoveToCost(slot)</code></td><td>сколько ОВ стоит перенести в слот; предмет не в слоте: 0</td></tr>
+<tr id="item.getInventoryMoveCost"><td><code>item:getInventoryMoveCost()</code></td><td>надбавка к стоимости переноса, проценты</td></tr>
+<tr id="item.setInventoryMoveCost"><td><code>item:setInventoryMoveCost(value)</code></td><td>задать надбавку к стоимости переноса</td></tr>
 </table>
 <h3>Бой: <code>battle</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="battle.getTurn"><td><code>battle:getTurn()</code></td><td>номер хода</td></tr>
 <tr id="battle.getSize"><td><code>battle:getSize()</code></td><td>размер карты, три значения: x, y, z</td></tr>
 <tr id="battle.flashMessage"><td><code>battle:flashMessage(text, a, b, c)</code></td><td>сообщение на экране боя: строка из рулсета или текст, до трёх целых для {0} {1} {2}. В returnFromMissionUnit ничего не делает</td></tr>
+<tr id="battle.flashLongMessage"><td><code>battle:flashLongMessage(text, a, b, c)</code></td><td>то же, держится на экране дольше</td></tr>
+<tr id="battle.getTile"><td><code>battle:getTile(x, y, z)</code></td><td>клетка карты; за границей nil</td></tr>
+<tr id="battle.getUnits"><td><code>battle:getUnits(faction)</code></td><td>таблица живых юнитов боя, без оставшихся вне карты; faction необязателен, FACTION_*</td></tr>
+<tr id="battle.getItems"><td><code>battle:getItems()</code></td><td>таблица предметов боя. В большом бою их тысячи: это дорого, см. лимиты</td></tr>
+<tr id="battle.getSelectedUnit"><td><code>battle:getSelectedUnit()</code></td><td>выбранный юнит или nil</td></tr>
+<tr id="battle.getTurnSide"><td><code>battle:getTurnSide()</code></td><td>чей сейчас ход, FACTION_*</td></tr>
+<tr id="battle.randomRange"><td><code>battle:randomRange(low, high)</code></td><td>случайное целое от low до high через генератор игры</td></tr>
+<tr id="battle.randomChance"><td><code>battle:randomChance(percent)</code></td><td>true с этим шансом через генератор игры</td></tr>
+<tr id="battle.difficultyLevel"><td><code>battle:difficultyLevel()</code></td><td>сложность, DIFF_*</td></tr>
+<tr id="battle.getAlienItemLevel"><td><code>battle:getAlienItemLevel()</code></td><td>уровень снаряжения врага</td></tr>
+<tr id="battle.setAlienItemLevel"><td><code>battle:setAlienItemLevel(value)</code></td><td>задать уровень снаряжения врага</td></tr>
+<tr id="battle.getReinforcementsItemLevel"><td><code>battle:getReinforcementsItemLevel()</code></td><td>уровень снаряжения подкреплений</td></tr>
+<tr id="battle.setReinforcementsItemLevel"><td><code>battle:setReinforcementsItemLevel(value)</code></td><td>задать уровень снаряжения подкреплений</td></tr>
+<tr id="battle.getDepth"><td><code>battle:getDepth()</code></td><td>глубина подводной миссии</td></tr>
+<tr id="battle.getGlobalShade"><td><code>battle:getGlobalShade()</code></td><td>общая темнота карты</td></tr>
+<tr id="battle.getGeoscapeGame"><td><code>battle:getGeoscapeGame()</code></td><td>геоскейп</td></tr>
+<tr id="battle.tryConcealUnit"><td><code>battle:tryConcealUnit(unit)</code></td><td>попробовать скрыть юнита от врага; итог true или false</td></tr>
+<tr id="battle.getTag"><td><code>battle:getTag(name)</code></td><td>значение тега BattleGame</td></tr>
+<tr id="battle.setTag"><td><code>battle:setTag(name, value)</code></td><td>записать тег BattleGame</td></tr>
 </table>
 <h3>Солдат: <code>soldier</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="soldier.getId"><td><code>soldier:getId()</code></td><td>номер солдата</td></tr>
 <tr id="soldier.getRank"><td><code>soldier:getRank()</code></td><td>звание, целое</td></tr>
+<tr id="soldier.getGender"><td><code>soldier:getGender()</code></td><td>пол, GENDER_*</td></tr>
+<tr id="soldier.getLook"><td><code>soldier:getLook()</code></td><td>внешность, LOOK_*</td></tr>
+<tr id="soldier.getLookVariant"><td><code>soldier:getLookVariant()</code></td><td>вариант внешности</td></tr>
+<tr id="soldier.getRuleSoldier"><td><code>soldier:getRuleSoldier()</code></td><td>правила солдата</td></tr>
+<tr id="soldier.getWoundRecovery"><td><code>soldier:getWoundRecovery()</code></td><td>сколько дней ещё лечит раны</td></tr>
+<tr id="soldier.setWoundRecovery"><td><code>soldier:setWoundRecovery(value)</code></td><td>задать дни лечения ран</td></tr>
+<tr id="soldier.getManaMissing"><td><code>soldier:getManaMissing()</code></td><td>сколько маны не хватает</td></tr>
+<tr id="soldier.setManaMissing"><td><code>soldier:setManaMissing(value)</code></td><td>задать, сколько маны не хватает</td></tr>
+<tr id="soldier.getHealthMissing"><td><code>soldier:getHealthMissing()</code></td><td>сколько здоровья не хватает</td></tr>
+<tr id="soldier.setHealthMissing"><td><code>soldier:setHealthMissing(value)</code></td><td>задать, сколько здоровья не хватает</td></tr>
+<tr id="soldier.getStat"><td><code>soldier:getStat(name)</code></td><td>постоянная характеристика, имена как у юнита</td></tr>
+<tr id="soldier.setStat"><td><code>soldier:setStat(name, value)</code></td><td>задать постоянную характеристику, от 1 до 8000; остаётся после боя</td></tr>
+<tr id="soldier.addStat"><td><code>soldier:addStat(name, value)</code></td><td>прибавить к постоянной характеристике</td></tr>
+<tr id="soldier.getTag"><td><code>soldier:getTag(name)</code></td><td>значение тега GeoscapeSoldier</td></tr>
+<tr id="soldier.setTag"><td><code>soldier:setTag(name, value)</code></td><td>записать тег GeoscapeSoldier</td></tr>
 </table>
 <h3>Правила брони: <code>ruleArmor</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="ruleArmor.getType"><td><code>ruleArmor:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="ruleArmor.getStat"><td><code>ruleArmor:getStat(name)</code></td><td>прибавка брони к характеристике, имена как у юнита</td></tr>
+<tr id="ruleArmor.getCorpseGeoscape"><td><code>ruleArmor:getCorpseGeoscape()</code></td><td>правила предмета-тела на геоскейпе или nil</td></tr>
+<tr id="ruleArmor.getCorpseBattlescape"><td><code>ruleArmor:getCorpseBattlescape()</code></td><td>таблица правил предметов-тел в бою</td></tr>
+<tr id="ruleArmor.getRequiredResearch"><td><code>ruleArmor:getRequiredResearch()</code></td><td>нужное исследование, строка, или nil</td></tr>
+<tr id="ruleArmor.getDrawingRoutine"><td><code>ruleArmor:getDrawingRoutine()</code></td><td>номер способа рисования</td></tr>
+<tr id="ruleArmor.getDrawBubbles"><td><code>ruleArmor:getDrawBubbles()</code></td><td>рисует пузыри под водой</td></tr>
+<tr id="ruleArmor.getDeathFrames"><td><code>ruleArmor:getDeathFrames()</code></td><td>кадров смерти</td></tr>
+<tr id="ruleArmor.getConstantAnimation"><td><code>ruleArmor:getConstantAnimation()</code></td><td>анимация идёт постоянно</td></tr>
+<tr id="ruleArmor.getVisibilityAtDark"><td><code>ruleArmor:getVisibilityAtDark()</code></td><td>обзор в темноте</td></tr>
+<tr id="ruleArmor.getVisibilityAtDay"><td><code>ruleArmor:getVisibilityAtDay()</code></td><td>обзор днём</td></tr>
+<tr id="ruleArmor.getCamouflageAtDark"><td><code>ruleArmor:getCamouflageAtDark()</code></td><td>маскировка в темноте</td></tr>
+<tr id="ruleArmor.getCamouflageAtDay"><td><code>ruleArmor:getCamouflageAtDay()</code></td><td>маскировка днём</td></tr>
+<tr id="ruleArmor.getAntiCamouflageAtDark"><td><code>ruleArmor:getAntiCamouflageAtDark()</code></td><td>антимаскировка в темноте</td></tr>
+<tr id="ruleArmor.getAntiCamouflageAtDay"><td><code>ruleArmor:getAntiCamouflageAtDay()</code></td><td>антимаскировка днём</td></tr>
+<tr id="ruleArmor.getHeatVision"><td><code>ruleArmor:getHeatVision()</code></td><td>зрение сквозь дым</td></tr>
+<tr id="ruleArmor.getVisibilityThroughFire"><td><code>ruleArmor:getVisibilityThroughFire()</code></td><td>зрение сквозь огонь</td></tr>
+<tr id="ruleArmor.getPersonalLight"><td><code>ruleArmor:getPersonalLight()</code></td><td>свой свет у стороны игрока</td></tr>
+<tr id="ruleArmor.getPersonalLightHostile"><td><code>ruleArmor:getPersonalLightHostile()</code></td><td>свой свет у врага</td></tr>
+<tr id="ruleArmor.getPersonalLightNeutral"><td><code>ruleArmor:getPersonalLightNeutral()</code></td><td>свой свет у нейтралов</td></tr>
+<tr id="ruleArmor.getSize"><td><code>ruleArmor:getSize()</code></td><td>размер юнита в клетках</td></tr>
+<tr id="ruleArmor.getArmor"><td><code>ruleArmor:getArmor(side)</code></td><td>броня стороны SIDE_*</td></tr>
+<tr id="ruleArmor.getMoveCost"><td><code>ruleArmor:getMoveCost(kind)</code></td><td>надбавка к стоимости хода, как у юнита</td></tr>
+<tr id="ruleArmor.getTag"><td><code>ruleArmor:getTag(name)</code></td><td>значение тега RuleArmor</td></tr>
 </table>
 <h3>Правила предмета: <code>ruleItem</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="ruleItem.getType"><td><code>ruleItem:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="ruleItem.getAccuracyAimed"><td><code>ruleItem:getAccuracyAimed()</code></td><td>точность прицельного выстрела</td></tr>
+<tr id="ruleItem.getAccuracyAuto"><td><code>ruleItem:getAccuracyAuto()</code></td><td>точность очереди</td></tr>
+<tr id="ruleItem.getAccuracyMelee"><td><code>ruleItem:getAccuracyMelee()</code></td><td>точность удара</td></tr>
+<tr id="ruleItem.getAccuracyMind"><td><code>ruleItem:getAccuracyMind()</code></td><td>точность контроля разума</td></tr>
+<tr id="ruleItem.getAccuracyPanic"><td><code>ruleItem:getAccuracyPanic()</code></td><td>точность паники</td></tr>
+<tr id="ruleItem.getAccuracySnap"><td><code>ruleItem:getAccuracySnap()</code></td><td>точность быстрого выстрела</td></tr>
+<tr id="ruleItem.getAccuracyThrow"><td><code>ruleItem:getAccuracyThrow()</code></td><td>точность броска</td></tr>
+<tr id="ruleItem.getAccuracyUse"><td><code>ruleItem:getAccuracyUse()</code></td><td>точность применения</td></tr>
+<tr id="ruleItem.getPower"><td><code>ruleItem:getPower()</code></td><td>сила</td></tr>
+<tr id="ruleItem.getDamageType"><td><code>ruleItem:getDamageType()</code></td><td>правила типа урона или nil</td></tr>
+<tr id="ruleItem.getMeleePower"><td><code>ruleItem:getMeleePower()</code></td><td>сила удара</td></tr>
+<tr id="ruleItem.getMeleeDamageType"><td><code>ruleItem:getMeleeDamageType()</code></td><td>правила типа урона удара или nil</td></tr>
+<tr id="ruleItem.getArmorValue"><td><code>ruleItem:getArmorValue()</code></td><td>прочность предмета</td></tr>
+<tr id="ruleItem.getWeight"><td><code>ruleItem:getWeight()</code></td><td>вес</td></tr>
+<tr id="ruleItem.getBattleType"><td><code>ruleItem:getBattleType()</code></td><td>вид предмета, BT_*</td></tr>
+<tr id="ruleItem.getWaypoints"><td><code>ruleItem:getWaypoints()</code></td><td>точек маршрута у ракеты</td></tr>
+<tr id="ruleItem.isWaterOnly"><td><code>ruleItem:isWaterOnly()</code></td><td>только под водой</td></tr>
+<tr id="ruleItem.isTwoHanded"><td><code>ruleItem:isTwoHanded()</code></td><td>двуручный</td></tr>
+<tr id="ruleItem.isBlockingBothHands"><td><code>ruleItem:isBlockingBothHands()</code></td><td>занимает обе руки</td></tr>
+<tr id="ruleItem.isSingleTarget"><td><code>ruleItem:isSingleTarget()</code></td><td>без радиуса взрыва</td></tr>
+<tr id="ruleItem.hasCategory"><td><code>ruleItem:hasCategory(name)</code></td><td>есть категория name</td></tr>
+<tr id="ruleItem.getTag"><td><code>ruleItem:getTag(name)</code></td><td>значение тега RuleItem</td></tr>
 </table>
 <h3>Навык: <code>skill</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="skill.getType"><td><code>skill:getType()</code></td><td>тип из рулсета, строка</td></tr>
+</table>
+<h3>Клетка карты: <code>tile</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="tile.getPosition"><td><code>tile:getPosition()</code></td><td>три значения: x, y, z</td></tr>
+<tr id="tile.getFire"><td><code>tile:getFire()</code></td><td>сколько ходов горит</td></tr>
+<tr id="tile.getSmoke"><td><code>tile:getSmoke()</code></td><td>плотность дыма</td></tr>
+<tr id="tile.getShade"><td><code>tile:getShade()</code></td><td>темнота</td></tr>
+<tr id="tile.isDiscovered"><td><code>tile:isDiscovered()</code></td><td>что открыто игроку, сумма: 1 пол, 2 западная стена, 4 северная стена</td></tr>
+<tr id="tile.makeDiscovered"><td><code>tile:makeDiscovered(parts)</code></td><td>открыть игроку, та же сумма</td></tr>
+<tr id="tile.getUnit"><td><code>tile:getUnit()</code></td><td>юнит на клетке или nil</td></tr>
+<tr id="tile.getDistanceTile"><td><code>tile:getDistanceTile(other)</code></td><td>расстояние до клетки other в клетках</td></tr>
+<tr id="tile.getDistanceVoxel"><td><code>tile:getDistanceVoxel(other)</code></td><td>расстояние до клетки other в вокселях</td></tr>
+<tr id="tile.getFloorSpecialTileType"><td><code>tile:getFloorSpecialTileType()</code></td><td>особый тип пола, STT_* или другое число из рулсета</td></tr>
+<tr id="tile.getObjectSpecialTileType"><td><code>tile:getObjectSpecialTileType()</code></td><td>особый тип объекта, STT_* или другое число из рулсета</td></tr>
+</table>
+<h3>Геоскейп: <code>geoscape</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="geoscape.getTime"><td><code>geoscape:getTime()</code></td><td>таблица по Гринвичу: second, minute, hour, day, month, year, secondsPastMidnight, daysPastEpoch</td></tr>
+<tr id="geoscape.difficultyLevel"><td><code>geoscape:difficultyLevel()</code></td><td>сложность, DIFF_*</td></tr>
+<tr id="geoscape.getMonthsPassed"><td><code>geoscape:getMonthsPassed()</code></td><td>сколько месяцев идёт игра</td></tr>
+<tr id="geoscape.getDaysPassed"><td><code>geoscape:getDaysPassed()</code></td><td>сколько дней идёт игра</td></tr>
+<tr id="geoscape.getCountries"><td><code>geoscape:getCountries()</code></td><td>таблица стран</td></tr>
+<tr id="geoscape.isResearched"><td><code>geoscape:isResearched(name)</code></td><td>исследовано name. Незнакомое имя: ошибка</td></tr>
+<tr id="geoscape.getTag"><td><code>geoscape:getTag(name)</code></td><td>значение тега GeoscapeGame</td></tr>
+<tr id="geoscape.setTag"><td><code>geoscape:setTag(name, value)</code></td><td>записать тег GeoscapeGame</td></tr>
+</table>
+<h3>Страна: <code>country</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="country.getRuleCountry"><td><code>country:getRuleCountry()</code></td><td>правила страны</td></tr>
+<tr id="country.getPact"><td><code>country:getPact()</code></td><td>заключила пакт</td></tr>
+<tr id="country.getCurrentFunding"><td><code>country:getCurrentFunding()</code></td><td>финансирование этого месяца</td></tr>
+<tr id="country.getCurrentActivityAlien"><td><code>country:getCurrentActivityAlien()</code></td><td>активность врага за этот месяц</td></tr>
+<tr id="country.getCurrentActivityXcom"><td><code>country:getCurrentActivityXcom()</code></td><td>активность игрока за этот месяц</td></tr>
+<tr id="country.getTag"><td><code>country:getTag(name)</code></td><td>значение тега Country</td></tr>
+</table>
+<h3>НЛО: <code>ufo</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ufo.getId"><td><code>ufo:getId()</code></td><td>номер НЛО</td></tr>
+<tr id="ufo.getAltitude"><td><code>ufo:getAltitude()</code></td><td>высота, целое</td></tr>
+<tr id="ufo.getStatus"><td><code>ufo:getStatus()</code></td><td>состояние, UFO_*</td></tr>
+<tr id="ufo.getVisibility"><td><code>ufo:getVisibility()</code></td><td>заметность для радаров</td></tr>
+<tr id="ufo.getDamage"><td><code>ufo:getDamage()</code></td><td>урон</td></tr>
+<tr id="ufo.getDamageMax"><td><code>ufo:getDamageMax()</code></td><td>прочность</td></tr>
+<tr id="ufo.getDamagePercentage"><td><code>ufo:getDamagePercentage()</code></td><td>урон в процентах</td></tr>
+<tr id="ufo.getShield"><td><code>ufo:getShield()</code></td><td>щит</td></tr>
+<tr id="ufo.getShieldMax"><td><code>ufo:getShieldMax()</code></td><td>ёмкость щита</td></tr>
+<tr id="ufo.getShieldPercentage"><td><code>ufo:getShieldPercentage()</code></td><td>щит в процентах</td></tr>
+<tr id="ufo.isHunterKiller"><td><code>ufo:isHunterKiller()</code></td><td>охотник</td></tr>
+<tr id="ufo.isHunting"><td><code>ufo:isHunting()</code></td><td>сейчас охотится</td></tr>
+<tr id="ufo.isEscorting"><td><code>ufo:isEscorting()</code></td><td>сейчас сопровождает</td></tr>
+<tr id="ufo.getHuntBehavior"><td><code>ufo:getHuntBehavior()</code></td><td>поведение на охоте</td></tr>
+<tr id="ufo.getHuntMode"><td><code>ufo:getHuntMode()</code></td><td>режим охоты</td></tr>
+<tr id="ufo.getDetected"><td><code>ufo:getDetected()</code></td><td>обнаружено</td></tr>
+<tr id="ufo.getHyperDetected"><td><code>ufo:getHyperDetected()</code></td><td>обнаружено гипердетектором</td></tr>
+<tr id="ufo.getRuleUfo"><td><code>ufo:getRuleUfo()</code></td><td>правила НЛО</td></tr>
+<tr id="ufo.getStat"><td><code>ufo:getStat(name)</code></td><td>характеристика, имена: fuelMax, damageMax, speedMax, accel, radarRange, radarChance, sightRange, hitBonus, avoidBonus, avoidBonus2, powerBonus, armor, shieldCapacity, shieldRecharge, shieldRechargeInGeoscape, shieldBleedThrough, maxUnits, maxVehiclesAndLargeSoldiers, maxItems</td></tr>
+<tr id="ufo.getTag"><td><code>ufo:getTag(name)</code></td><td>значение тега Ufo</td></tr>
+</table>
+<h3>Корабль: <code>craft</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="craft.getId"><td><code>craft:getId()</code></td><td>номер корабля</td></tr>
+<tr id="craft.getDamage"><td><code>craft:getDamage()</code></td><td>урон</td></tr>
+<tr id="craft.getDamageMax"><td><code>craft:getDamageMax()</code></td><td>прочность</td></tr>
+<tr id="craft.getDamagePercentage"><td><code>craft:getDamagePercentage()</code></td><td>урон в процентах</td></tr>
+<tr id="craft.getShield"><td><code>craft:getShield()</code></td><td>щит</td></tr>
+<tr id="craft.getShieldMax"><td><code>craft:getShieldMax()</code></td><td>ёмкость щита</td></tr>
+<tr id="craft.getShieldPercentage"><td><code>craft:getShieldPercentage()</code></td><td>щит в процентах</td></tr>
+<tr id="craft.getRuleCraft"><td><code>craft:getRuleCraft()</code></td><td>правила корабля</td></tr>
+<tr id="craft.getStat"><td><code>craft:getStat(name)</code></td><td>характеристика, имена как у НЛО</td></tr>
+<tr id="craft.getTag"><td><code>craft:getTag(name)</code></td><td>значение тега Craft</td></tr>
+</table>
+<h3>Правила типа урона: <code>ruleDamage</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleDamage.isDirect"><td><code>ruleDamage:isDirect()</code></td><td>прямой урон, без взрыва</td></tr>
+<tr id="ruleDamage.isAreaOfEffect"><td><code>ruleDamage:isAreaOfEffect()</code></td><td>урон по площади</td></tr>
+<tr id="ruleDamage.getResistType"><td><code>ruleDamage:getResistType()</code></td><td>против какого сопротивления, DT_*</td></tr>
+<tr id="ruleDamage.getRandomType"><td><code>ruleDamage:getRandomType()</code></td><td>способ разброса, номер</td></tr>
+<tr id="ruleDamage.getArmorEffectiveness"><td><code>ruleDamage:getArmorEffectiveness()</code></td><td>действие брони, проценты</td></tr>
+<tr id="ruleDamage.getDamageTo"><td><code>ruleDamage:getDamageTo(kind, value)</code></td><td>сколько из силы value идёт на kind: armorPre, armor, energy, health, item, mana, morale, stun, tile, time, wound</td></tr>
+<tr id="ruleDamage.getRandomDamage"><td><code>ruleDamage:getRandomDamage(value)</code></td><td>случайный урон от силы value через генератор игры</td></tr>
+</table>
+<h3>Правила юнита: <code>ruleUnit</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleUnit.getType"><td><code>ruleUnit:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="ruleUnit.getSpawnUnit"><td><code>ruleUnit:getSpawnUnit()</code></td><td>в кого превращается, правила юнита или nil</td></tr>
+<tr id="ruleUnit.getCivilianRecoveryItemType"><td><code>ruleUnit:getCivilianRecoveryItemType()</code></td><td>предмет за спасение гражданского или nil</td></tr>
+<tr id="ruleUnit.getLiveAlienGeoscape"><td><code>ruleUnit:getLiveAlienGeoscape()</code></td><td>предмет за живого пленного или nil</td></tr>
+</table>
+<h3>Правила солдата: <code>ruleSoldier</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleSoldier.getType"><td><code>ruleSoldier:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="ruleSoldier.getTag"><td><code>ruleSoldier:getTag(name)</code></td><td>значение тега RuleSoldier</td></tr>
+</table>
+<h3>Правила бонуса солдата: <code>ruleSoldierBonus</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleSoldierBonus.getType"><td><code>ruleSoldierBonus:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="ruleSoldierBonus.getTag"><td><code>ruleSoldierBonus:getTag(name)</code></td><td>значение тега RuleSoldierBonus</td></tr>
+</table>
+<h3>Правила страны: <code>ruleCountry</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleCountry.getType"><td><code>ruleCountry:getType()</code></td><td>тип из рулсета, строка</td></tr>
+</table>
+<h3>Правила НЛО: <code>ruleUfo</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleUfo.getType"><td><code>ruleUfo:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="ruleUfo.getTag"><td><code>ruleUfo:getTag(name)</code></td><td>значение тега RuleUfo</td></tr>
+</table>
+<h3>Правила корабля: <code>ruleCraft</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="ruleCraft.getType"><td><code>ruleCraft:getType()</code></td><td>тип из рулсета, строка</td></tr>
+<tr id="ruleCraft.getTag"><td><code>ruleCraft:getTag(name)</code></td><td>значение тега RuleCraft</td></tr>
 </table>
 <h2>Таблица game</h2><p><code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры.</p>
 <h2>Константы</h2>
 <p>части тела: part: <code>game.BODYPART_HEAD</code> <code>game.BODYPART_TORSO</code> <code>game.BODYPART_RIGHTARM</code> <code>game.BODYPART_LEFTARM</code> <code>game.BODYPART_RIGHTLEG</code> <code>game.BODYPART_LEFTLEG</code></p>
 <p>стороны юнита: side в обработчиках урона и в броне: <code>game.SIDE_FRONT</code> <code>game.SIDE_LEFT</code> <code>game.SIDE_RIGHT</code> <code>game.SIDE_REAR</code> <code>game.SIDE_UNDER</code></p>
 <p>стороны боя: <code>game.FACTION_PLAYER</code> <code>game.FACTION_HOSTILE</code> <code>game.FACTION_NEUTRAL</code></p>
-<p>действия: battle_action: <code>game.BA_NONE</code> <code>game.BA_TURN</code> <code>game.BA_WALK</code> <code>game.BA_KNEEL</code> <code>game.BA_PRIME</code> <code>game.BA_UNPRIME</code> <code>game.BA_THROW</code> <code>game.BA_AUTOSHOT</code> <code>game.BA_SNAPSHOT</code> <code>game.BA_AIMEDSHOT</code> <code>game.BA_HIT</code> <code>game.BA_USE</code> <code>game.BA_LAUNCH</code> <code>game.BA_MINDCONTROL</code> <code>game.BA_PANIC</code> <code>game.BA_RETHINK</code> <code>game.BA_CQB</code></p>
+<p>действия: battle_action: <code>game.BA_NONE</code> <code>game.BA_TURN</code> <code>game.BA_WALK</code> <code>game.BA_KNEEL</code> <code>game.BA_PRIME</code> <code>game.BA_UNPRIME</code> <code>game.BA_THROW</code> <code>game.BA_AUTOSHOT</code> <code>game.BA_SNAPSHOT</code> <code>game.BA_AIMEDSHOT</code> <code>game.BA_HIT</code> <code>game.BA_USE</code> <code>game.BA_LAUNCH</code> <code>game.BA_MINDCONTROL</code> <code>game.BA_PANIC</code> <code>game.BA_RETHINK</code> <code>game.BA_CQB</code> <code>game.BA_TRIGGER_TIMED_GRENADE</code> <code>game.BA_TRIGGER_PROXY_GRENADE</code> <code>game.BA_SELF_DESTRUCT</code></p>
 <p>типы урона: damaging_type: <code>game.DT_NONE</code> <code>game.DT_AP</code> <code>game.DT_IN</code> <code>game.DT_HE</code> <code>game.DT_LASER</code> <code>game.DT_PLASMA</code> <code>game.DT_STUN</code> <code>game.DT_MELEE</code> <code>game.DT_ACID</code> <code>game.DT_SMOKE</code> <code>game.DT_10</code> <code>game.DT_11</code> <code>game.DT_12</code> <code>game.DT_13</code> <code>game.DT_14</code> <code>game.DT_15</code> <code>game.DT_16</code> <code>game.DT_17</code> <code>game.DT_18</code> <code>game.DT_19</code></p>
+<p>звания: getRankUnified: <code>game.UNIT_RANK_ROOKIE</code> <code>game.UNIT_RANK_SQUADDIE</code> <code>game.UNIT_RANK_SERGEANT</code> <code>game.UNIT_RANK_CAPTAIN</code> <code>game.UNIT_RANK_COLONEL</code> <code>game.UNIT_RANK_COMMANDER</code></p>
+<p>пол: <code>game.GENDER_MALE</code> <code>game.GENDER_FEMALE</code></p>
+<p>внешность: <code>game.LOOK_BLONDE</code> <code>game.LOOK_BROWNHAIR</code> <code>game.LOOK_ORIENTAL</code> <code>game.LOOK_AFRICAN</code></p>
+<p>способ передвижения: <code>game.MT_WALK</code> <code>game.MT_FLY</code> <code>game.MT_SLIDE</code></p>
+<p>особые клетки: <code>game.STT_TILE</code> <code>game.STT_START_POINT</code> <code>game.STT_END_POINT</code></p>
+<p>сложность: <code>game.DIFF_BEGINNER</code> <code>game.DIFF_EXPERIENCED</code> <code>game.DIFF_VETERAN</code> <code>game.DIFF_GENIUS</code> <code>game.DIFF_SUPERHUMAN</code></p>
+<p>вид предмета: getBattleType: <code>game.BT_NONE</code> <code>game.BT_FIREARM</code> <code>game.BT_AMMO</code> <code>game.BT_MELEE</code> <code>game.BT_GRENADE</code> <code>game.BT_PROXIMITYGRENADE</code> <code>game.BT_MEDIKIT</code> <code>game.BT_SCANNER</code> <code>game.BT_MINDPROBE</code> <code>game.BT_PSIAMP</code> <code>game.BT_FLARE</code> <code>game.BT_CORPSE</code></p>
+<p>как идёт юнит: move: <code>game.BAM_NORMAL</code> <code>game.BAM_RUN</code> <code>game.BAM_STRAFE</code> <code>game.BAM_SNEAK</code></p>
+<p>действия аптечки: medikit_action_type: <code>game.BMA_HEAL</code> <code>game.BMA_STIMULANT</code> <code>game.BMA_PAINKILLER</code></p>
+<p>настроение страны: satisfaction: <code>game.SATISFACTION_ALIENPACT</code> <code>game.SATISFACTION_UNHAPPY</code> <code>game.SATISFACTION_SATISFIED</code> <code>game.SATISFACTION_HAPPY</code></p>
+<p>состояние НЛО: getStatus: <code>game.UFO_FLYING</code> <code>game.UFO_LANDED</code> <code>game.UFO_CRASHED</code> <code>game.UFO_DESTROYED</code> <code>game.UFO_IGNORE_ME</code></p>
+<p>обнаружение НЛО: detection_type: <code>game.DETECTION_NONE</code> <code>game.DETECTION_RADAR</code> <code>game.DETECTION_HYPERWAVE</code></p>
 <h2>Теги: память между сохранениями</h2><p>Переменные Lua обнуляются при загрузке сейва, в новом бою и по Ctrl+F5. Долгая память — только теги. Тег объявляется в рулсете мода, например в файле <code>Ruleset/my_mod.rul</code>:<pre>extended:
   tags:
     BattleUnit:
       MY_REGEN: int
     BattleItem:
-      MY_CHARGE: int</pre>В коде имя без приставки: <code>unit:getTag("MY_REGEN")</code>. Чтение и запись незнакомого тега — ошибка: опечатка видна сразу. Тег с одним именем в двух модах — один на двоих. Значение живёт, пока мод стоит: сейв без мода грузится и играется, но новое сохранение без мода значения теряет.</p>
+      MY_CHARGE: int</pre>Разделы по объектам: BattleUnit, BattleItem, BattleGame, GeoscapeGame, GeoscapeSoldier, Country, Ufo, Craft, RuleArmor, RuleItem, RuleSoldier, RuleSoldierBonus, RuleUfo, RuleCraft. Имя тега одно на всю игру: то же имя во втором разделе движок отбросит с ошибкой в своём журнале. В коде имя без приставки: <code>unit:getTag("MY_REGEN")</code>. Чтение и запись незнакомого тега — ошибка: опечатка видна сразу. Тег с одним именем в двух модах — один на двоих. Значение живёт, пока мод стоит: сейв без мода грузится и играется, но новое сохранение без мода значения теряет.</p>
 <h2>Что есть в самой Lua</h2><p>Базовые функции: <code>assert</code> <code>error</code> <code>getmetatable</code> <code>ipairs</code> <code>next</code> <code>pairs</code> <code>pcall</code> <code>print</code> <code>rawequal</code> <code>rawget</code> <code>rawlen</code> <code>rawset</code> <code>select</code> <code>setmetatable</code> <code>tonumber</code> <code>tostring</code> <code>type</code> <code>xpcall</code>. Библиотеки <code>string</code> (без <code>dump</code>), <code>table</code>, <code>math</code> (без <code>randomseed</code>), <code>utf8</code>. Нет <code>io os debug package require load dofile loadfile coroutine collectgarbage</code>, байткод не загружается. <code>math.random</code> идёт через генератор игры; пока грузится <code>main.lua</code>, он даёт ошибку: загрузка не должна сдвигать сид боя. Часов и времени нет.</p>
 <h2>Лимиты</h2><ul><li>Память: 32 МБ на мод.</li><li>Один вызов обработчика: 2 000 000 инструкций, 5 000 000 тактов функций на C (шаблоны строк, <code>string.rep</code>, <code>table.*</code>). <code>main.lua</code> при загрузке получает в 10 раз больше инструкций.</li><li>5 ошибок подряд выключают мод до Ctrl+F5 или новой загрузки. Игра не падает и не зависает.</li><li>Сообщение <code>flashMessage</code>: до 200 байт текста.</li></ul>
 <h2>Ошибки</h2><p>Ошибка или превышение лимита: выходные значения остаются как до вызова, в <code>user/lua_errors.log</code> пишутся мод, файл, строка, обработчик и текст. На экране показывается первая ошибка мода за загрузку и его отключение, а не каждая ошибка. Журнал начинается заново при каждой загрузке игры.</p>
-<h2>Что важно знать</h2><ul><li>Объект живёт только внутри обработчика, который его получил. Сохранённый в переменной даёт ошибку Lua, игра не падает.</li><li>Порядок <code>pairs</code> постоянен только у строковых ключей. Ключи-таблицы и <code>tostring(таблица)</code> зависят от адресов: у двух игроков тот же мод даст разный итог.</li><li><code>health_recovery</code> у <code>healUnit</code> действует только на часть тела с раной, как и у Y-script.</li><li>Обработчик <code>hitUnit</code>, <code>damageUnit</code> или <code>damageSpecialUnit</code> лишает ИИ точного прогноза выстрела: он считает результат неизвестным и может стрелять по неуязвимой цели.</li><li>Методы <code>set...</code> и <code>add...</code> сами держат значение в границах: здоровье и очки времени не выше максимума, боевой дух от 0 до 100. Поэтому прибавка очков времени в начале хода обычно ничего не даёт: они уже полные.</li><li><code>damageSpecialUnit</code> приходит и при нулевом уроне, <code>damageUnit</code> только при силе попадания больше нуля.</li><li>Локальный мод может менять механику и сломать сейв. Для опытов лучше отдельная сборка в лаунчере.</li><li>В отчёт об ошибке уходят только id мода, версия и отметка <code>[lua local]</code>, код и файлы мода не уходят. Журнал ошибок прикладывается, только если вы сами отметите его в форме.</li></ul>
+<h2>Что важно знать</h2><ul><li>Объект живёт только внутри обработчика, который его получил. Сохранённый в переменной даёт ошибку Lua, игра не падает.</li><li>Порядок <code>pairs</code> постоянен только у строковых ключей. Ключи-таблицы и <code>tostring(таблица)</code> зависят от адресов: у двух игроков тот же мод даст разный итог.</li><li><code>health_recovery</code> у <code>healUnit</code> действует только на часть тела с раной, как и у Y-script.</li><li>Обработчик <code>hitUnit</code>, <code>damageUnit</code> или <code>damageSpecialUnit</code> лишает ИИ точного прогноза выстрела: он считает результат неизвестным и может стрелять по неуязвимой цели.</li><li>Методы <code>set...</code> и <code>add...</code> сами держат значение в границах: здоровье и очки времени не выше максимума, боевой дух от 0 до 100. Поэтому прибавка очков времени в начале хода обычно ничего не даёт: они уже полные.</li><li><code>damageSpecialUnit</code> приходит и при нулевом уроне, <code>damageUnit</code> только при силе попадания больше нуля.</li><li><code>getUnits</code>, <code>getItems</code> и другие списки делают новую таблицу при каждом вызове и платят за каждый элемент. Лимит памяти или тактов даёт ошибку <code>not enough memory</code> или про лимит: вызывайте их редко, а не на каждый предмет каждого хода.</li><li><code>tryPsiAttack*</code> и <code>tryMeleeAttack*</code> приходят и при прогнозах ИИ, поэтому там нет места побочным эффектам. <code>math.random</code>, <code>randomRange</code> и <code>randomChance</code> там сдвигают общий генератор, у двух игроков бой разойдётся.</li><li>Ошибка мода вне боя пишется в журнал сразу, а на экране появится в ближайшем бою.</li><li>Локальный мод может менять механику и сломать сейв. Для опытов лучше отдельная сборка в лаунчере.</li><li>В отчёт об ошибке уходят только id мода, версия и отметка <code>[lua local]</code>, код и файлы мода не уходят. Журнал ошибок прикладывается, только если вы сами отметите его в форме.</li></ul>
 </body></html>

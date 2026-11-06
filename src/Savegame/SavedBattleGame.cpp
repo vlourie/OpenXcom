@@ -2067,6 +2067,10 @@ void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
 		for (const auto* bonus : *solder->getBonuses(nullptr))
 		{
 			ModScript::scriptCallback<ModScript::ApplySoldierBonuses>(bonus, unit, this, bonus);
+			if (auto *lua = _rule->getLuaHost())
+			{
+				lua->fire(LuaHost::APPLY_SOLDIER_BONUSES, { unit, this, bonus });
+			}
 		}
 	}
 }

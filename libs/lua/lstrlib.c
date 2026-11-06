@@ -447,6 +447,7 @@ static int match_class (int c, int cl) {
 
 static int matchbracketclass (int c, const char *p, const char *ec) {
   int sig = 1;
+  oxce_c_bytes(ec - p);  /* OXCE: a set can be as long as the pattern */
   if (*(p+1) == '^') {
     sig = 0;
     p++;  /* skip the '^' */
@@ -494,6 +495,7 @@ static const char *matchbalance (MatchState *ms, const char *s,
     int e = *(p+1);
     int cont = 1;
     while (++s < ms->src_end) {
+      oxce_c_tick(ms->L);  /* OXCE: %b scans the rest of the string */
       if (*s == e) {
         if (--cont == 0) return s+1;
       }
@@ -507,8 +509,10 @@ static const char *matchbalance (MatchState *ms, const char *s,
 static const char *max_expand (MatchState *ms, const char *s,
                                  const char *p, const char *ep) {
   ptrdiff_t i = 0;  /* counts maximum expand for item */
-  while (singlematch(ms, s + i, p, ep))
+  while (singlematch(ms, s + i, p, ep)) {
+    oxce_c_tick(ms->L);  /* OXCE */
     i++;
+  }
   /* keeps trying to match with the maximum repetitions */
   while (i>=0) {
     const char *res = match(ms, (s+i), ep+1);
@@ -672,8 +676,8 @@ static const char *match (MatchState *ms, const char *s, const char *p) {
 
 
 
-static const char *lmemfind (const char *s1, size_t l1,
-                               const char *s2, size_t l2) {
+static const char *lmemfind (lua_State *L, const char *s1, size_t l1,
+                               const char *s2, size_t l2) {  /* OXCE: L */
   if (l2 == 0) return s1;  /* empty strings are everywhere */
   else if (l2 > l1) return NULL;  /* avoids a negative 'l1' */
   else {
@@ -681,6 +685,7 @@ static const char *lmemfind (const char *s1, size_t l1,
     l2--;  /* 1st char will be checked by 'memchr' */
     l1 = l1-l2;  /* 's2' cannot be found after that */
     while (l1 > 0 && (init = (const char *)memchr(s1, *s2, l1)) != NULL) {
+      oxce_c_work(L, l2);  /* OXCE: a long pattern that almost fits, again and again */
       init++;   /* 1st char is already checked */
       if (memcmp(init, s2+1, l2) == 0)
         return init-1;
@@ -780,10 +785,13 @@ static int str_find_aux (lua_State *L, int find) {
     luaL_pushfail(L);  /* cannot find anything */
     return 1;
   }
+  oxce_c_work(L, lp);  /* OXCE: the look for special characters */
   /* explicit request or no special characters? */
   if (find && (lua_toboolean(L, 4) || nospecials(p, lp))) {
     /* do a plain search */
-    const char *s2 = lmemfind(s + init, ls - init, p, lp);
+    const char *s2;
+    oxce_c_work(L, ls - init);  /* OXCE */
+    s2 = lmemfind(L, s + init, ls - init, p, lp);
     if (s2) {
       lua_pushinteger(L, (s2 - s) + 1);
       lua_pushinteger(L, (s2 - s) + lp);
@@ -1605,6 +1613,7 @@ static int str_pack (lua_State *L) {
   const char *fmt = luaL_checkstring(L, 1);  /* format string */
   int arg = 1;  /* current argument to pack */
   size_t totalsize = 0;  /* accumulate total size of result */
+  oxce_c_work(L, strlen(fmt) * 8);  /* OXCE: a slow loop per byte */
   initheader(L, &h);
   lua_pushnil(L);  /* mark to separate arguments from string buffer */
   luaL_buffinit(L, &b);
@@ -1702,6 +1711,7 @@ static int str_packsize (lua_State *L) {
   Header h;
   const char *fmt = luaL_checkstring(L, 1);  /* format string */
   size_t totalsize = 0;  /* accumulate total size of result */
+  oxce_c_work(L, strlen(fmt) * 8);  /* OXCE */
   initheader(L, &h);
   while (*fmt != '\0') {
     int size, ntoalign;
@@ -1760,6 +1770,7 @@ static int str_unpack (lua_State *L) {
   size_t pos = posrelatI(luaL_optinteger(L, 3, 1), ld) - 1;
   int n = 0;  /* number of results */
   luaL_argcheck(L, pos <= ld, 3, "initial position out of string");
+  oxce_c_work(L, strlen(fmt) * 8);  /* OXCE */
   initheader(L, &h);
   while (*fmt != '\0') {
     int size, ntoalign;

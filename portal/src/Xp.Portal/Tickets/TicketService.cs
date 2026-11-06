@@ -166,6 +166,9 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
         if (to == t.Status) return;
         if (to == TicketStatus.Duplicate) throw new TicketException("use_duplicate", "mark duplicates with the duplicate action");
         if (!Moves[t.Status].Contains(to)) throw new TicketException("status_move_invalid", $"{t.Status} cannot become {to}");
+        // the author reads Closed as approved (LuaModApi.AuthorStatus): a mod nobody decided on is rejected, with the reason
+        if (t.Category == Categories.LuaMod && t.Status == TicketStatus.NeedsInfo && to == TicketStatus.Closed)
+            throw new TicketException("status_move_invalid", "a Lua mod waiting for its author is rejected, not closed");
         await HistoryAsync(t, actor, "status", t.Status.ToString(), to.ToString(), ct);
         t.Status = to;
         if (to != TicketStatus.Duplicate) t.DuplicateOfId = null;

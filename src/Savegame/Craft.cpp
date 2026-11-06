@@ -26,6 +26,7 @@
 #include "../Mod/RuleCraft.h"
 #include "CraftWeapon.h"
 #include "../Mod/RuleCraftWeapon.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "SavedGame.h"
 #include "ItemContainer.h"
@@ -1175,7 +1176,7 @@ void Craft::checkup()
  * @param target Pointer to target to compare.
  * @return True if it's detected, False otherwise.
  */
-UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const
+UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked, LuaHost *lua) const
 {
 	int distance = XcomDistance(getDistance(target));
 
@@ -1208,6 +1209,10 @@ UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alread
 	ModScript::DetectUfoFromCraft::Worker work { target, save, this, distance, alreadyTracked, _stats.radarChance, _stats.radarRange, };
 
 	work.execute(target->getRules()->getScript<ModScript::DetectUfoFromCraft>(), args);
+	if (lua)
+	{
+		lua->fire(LuaHost::DETECT_UFO_FROM_CRAFT, args.data, { target, save, this, distance, alreadyTracked, _stats.radarChance, _stats.radarRange });
+	}
 
 	return RNG::percent(args.getSecond()) ? (UfoDetection)args.getFirst() : DETECTION_NONE;
 }

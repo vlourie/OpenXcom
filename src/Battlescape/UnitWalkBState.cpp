@@ -32,6 +32,7 @@
 #include "../Engine/HdGentle.h"
 #include "../Engine/Logger.h"
 #include "../Mod/Armor.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "UnitFallBState.h"
 #include "ExplosionBState.h"
@@ -652,6 +653,11 @@ void UnitWalkBState::playMovementSound()
 		sound,
 		_unit, _unit->getWalkingPhase(), unitSound, tileSound, Mod::WALK_OFFSET, tileSoundOffset, Mod::FLYING_SOUND, _action.getMoveType()
 	);
+	if (auto *lua = _parent->getMod()->getLuaHost())
+	{
+		auto outputs = std::tie(sound);
+		lua->fire(LuaHost::SELECT_MOVE_SOUND_UNIT, outputs, { _unit, _unit->getWalkingPhase(), unitSound, tileSound, (int)Mod::WALK_OFFSET, tileSoundOffset, (int)Mod::FLYING_SOUND, (int)_action.getMoveType() });
+	}
 	if (sound >= 0)
 	{
 		_parent->getMod()->getSoundByDepth(_parent->getDepth(), sound)->play(-1, _parent->getMap()->getSoundAngle(_unit->getPosition()));

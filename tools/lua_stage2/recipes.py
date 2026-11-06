@@ -1,6 +1,6 @@
 # Рецепты справки в настоящем бою, всё невидимо. Код берётся из tools/lua_api_doc.py как есть, зонды стоят до него и после него
 # в том же main.lua: подписки одного мода идут по порядку записи, чужой мод между ними не вклинится, поэтому моды не мешают друг другу.
-# Запуск: py -3.13 recipes.py pirates|ufo|clean
+# Запуск: py -3.13 recipes.py pirates|geo|ufo|clean
 import os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
@@ -50,6 +50,16 @@ PROBES = {
                 'game.on("healUnit", function(actor, item, battle, target, battle_action, out)\n  say("medikit", before, out.health_recovery)\nend)\n'),
     "recovery": ('game.on("returnFromMissionUnit", function(unit, battle, soldier, out)\n  out.recovery_time = out.recovery_time + 9\n  before = out.recovery_time\nend)\n',
                  'game.on("returnFromMissionUnit", function(unit, battle, soldier, out)\n  say("recovery", before, out.recovery_time)\nend)\n'),
+    "officer": ('game.on("newTurnUnit", function(unit)\n  before = unit:getMorale()\n  if before > 90 then\n    unit:setMorale(50)\n    before = 50\n  end\nend)\n',
+                'game.on("newTurnUnit", function(unit, battle, turn, side)\n  if side == game.FACTION_PLAYER and unit:getFaction() == side then say("officer", before, unit:getMorale()) end\nend)\n'),
+    "veteran": ('game.on("newTurnUnit", function(unit)\n  before = unit:getStat("bravery")\nend)\n',
+                'game.on("newTurnUnit", function(unit, battle, turn, side)\n  if side == unit:getFaction() then say("veteran", before, unit:getStat("bravery")) end\nend)\n'),
+    "experience": ('game.on("awardExperience", function(attacker, unit, weapon, battle_action, out)\n  before = out.experience_multipler\nend)\n',
+                   'game.on("awardExperience", function(attacker, unit, weapon, battle_action, out)\n  say("experience", before, out.experience_multipler)\nend)\n'),
+    "backstab": ('game.on("tryMeleeAttackItem", function(item, attacker, victim, is_same_faction, skill, attack_strength, defense_strength, battle_action, arc_to_attacker, defense_strength_penalty, battle, out)\n  before = out.melee_attack_success\nend)\n',
+                 'game.on("tryMeleeAttackItem", function(item, attacker, victim, is_same_faction, skill, attack_strength, defense_strength, battle_action, arc_to_attacker, defense_strength_penalty, battle, out)\n  say("backstab", arc_to_attacker, before, out.melee_attack_success)\nend)\n'),
+    "month": ('game.on("newMonthCountry", function(country, geoscape_game, totalXcomScore, totalAlienScore, out)\n  out.fundingChange = -5\nend)\n',
+              'game.on("newMonthCountry", function(country, geoscape_game, totalXcomScore, totalAlienScore, out)\n  say("month", totalXcomScore, totalAlienScore, out.fundingChange)\nend)\n'),
 }
 # Типы оружия боя заранее неизвестны: путь «тип найден» проверяем на любом оружии, остальной код рецепта тот же.
 PATCH = {"weapon": ("local BONUS = { STR_PISTOL = 5, STR_RIFLE = 10 }", "local BONUS = setmetatable({}, { __index = function() return 5 end })")}
@@ -137,7 +147,7 @@ def pirates():
     for d in REAL.iterdir():
         if d.is_dir() and not (mods / d.name).exists():
             subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
-    ids = ["regen", "headshot", "weapon", "shock", "rage", "recharge", "recovery"]
+    ids = ["regen", "headshot", "weapon", "shock", "rage", "recharge", "recovery", "officer", "veteran", "experience", "backstab"]
     names = [make(mods, rid, "piratez") for rid in ids]
     text = SAVE.read_text(encoding="utf-8")
     text = re.sub(r"(?:  - 'lua_\w+ ver: [^']*'\n)+", "".join(f"  - '{n} ver: 0.1'\n" for n in names), text, count=1)
@@ -149,7 +159,7 @@ def pirates():
     # настоящий выстрел ИИ приходит не сразу: ждём его, но не дольше 16 ходов
     for t in range(16):
         end_turn(name)
-        if t >= 3 and any(x[0] == "has" for x in rows(name, "weapon")):
+        if t >= 3 and any(x[0] == "has" for x in rows(name, "weapon")) and rows(name, "experience") and rows(name, "backstab"):
             break
     print("ходов", t + 1, flush=True)
     run(name, "key 97; wait 1500; state; key 13; wait 15000; state", 120)
@@ -160,11 +170,43 @@ def pirates():
     verify(name, "weapon", lambda x: int(x[2]) == int(x[1]) + (5 if x[0] == "has" else 0), "прибавка только при оружии", lambda x: x[0] == "has")
     verify(name, "shock", lambda x: int(x[2]) == int(x[1]) + (int(x[0]) if int(x[0]) > 0 else 0), "очки времени снимаются вслед за здоровьем", lambda x: int(x[0]) > 0)
     verify(name, "rage_tag", lambda x: int(x[2]) == int(x[1]) + (1 if int(x[0]) > 0 else 0), "тег копит ранения", lambda x: int(x[0]) > 0)
-    verify(name, "rage_turn", lambda x: x[0].endswith("/true") is False or (int(x[1]) == 60 and int(x[2]) == 0), "боевой дух +5 на единицу ярости, тег обнулён")
+    verify(name, "rage_turn", lambda x: x[0].endswith("/true") is False or (int(x[1]) == 50 + 5 * int(x[0].split("/")[1]) and int(x[2]) == 0), "боевой дух +5 на единицу ярости, тег обнулён")
     verify(name, "recharge", lambda x: int(x[1]) == int(x[0]) + 1, "магазин +1")
     verify(name, "recovery", lambda x: int(x[1]) == int(x[0]) // 2, "срок лечения вдвое")
+    verify(name, "officer", lambda x: int(x[1]) == int(x[0]) + 5, "боевой дух +5 при живом офицере")
+    verify(name, "veteran", lambda x: int(x[1]) == int(x[0]) + 1, "храбрость +1 на этот бой")
+    verify(name, "experience", lambda x: int(x[1]) == int(x[0]) * 2, "опыт вдвое", lambda x: int(x[0]) > 0)
+    verify(name, "backstab", lambda x: int(x[2]) == int(x[1]) + (20 if int(x[0]) >= 2 else 0), "шанс +20 сбоку и сзади", lambda x: int(x[0]) >= 2)
     text = errors(name)
     check("журнал ошибок Lua пуст", not text, text[:500])
+    call("stop", "--name", name, timeout=60)
+
+
+def geo():
+    """Рецепт геоскейпа: кампания за минуты до конца месяца, часы ускорены клавишей, как у игрока."""
+    mods = HERE / "mods_pirates"
+    mods.mkdir(exist_ok=True)
+    for d in REAL.iterdir():
+        if d.is_dir() and not (mods / d.name).exists():
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
+    mod = make(mods, "month", "piratez")
+    text = (REAL.parent / "piratez/NoCodexCatZ.sav").read_text(encoding="utf-8")
+    text = re.sub(r"\ntime: \{second: \d+,minute: \d+,hour: \d+,weekday: \d+,day: \d+,month: 3,year: (\d+)\}",
+                  lambda m: f"\ntime: {{second: 10,minute: 0,hour: 18,weekday: 2,day: 31,month: 3,year: {m.group(1)}}}", text, count=1)
+    save = HERE / "rcp_geo.sav"
+    save.write_text(text, encoding="utf-8", newline="\n")
+    name = "rcpg"
+    a = ["start", "--name", name, "--exe", EXE, "--save", str(save), "--mods-dir", str(mods), "--mods", mod + "=true", "--timeout", "400", "--set", "oxceLuaMods=true"]
+    print(name, call(*a).strip().splitlines()[-1][:120], flush=True)
+    t0 = time.time()
+    while time.time() - t0 < 240 and not rows(name, "month"):
+        if state(name)[0] == "GeoscapeState":
+            run(name, "key 53; wait 1500", 30)
+        else:
+            run(name, "key 13; wait 500; key 27; wait 500", 30)
+    verify(name, "month", lambda x: int(x[2]) == (0 if int(x[0]) > int(x[1]) else -5), "финансирование не снижается, если очков больше")
+    text = errors(name)
+    check("геоскейп: журнал ошибок Lua пуст", not text, text[:500])
     call("stop", "--name", name, timeout=60)
 
 

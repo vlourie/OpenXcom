@@ -93,6 +93,9 @@ private:
 	std::vector<const RuleSoldierBonus*> _bonusCache;
 	ScriptValues<Soldier> _scriptValues;
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<Soldier> &getScriptValuesRaw() const { return _scriptValues; }
+	void luaSetTag(ScriptTag<Soldier> tag, int val) { _scriptValues.set(tag, val); }
 	/// Creates a new soldier.
 	Soldier(RuleSoldier *rules, Armor *armor, int nationality, int id = 0);
 	/// Cleans up the soldier.
