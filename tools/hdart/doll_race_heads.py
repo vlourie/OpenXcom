@@ -351,7 +351,7 @@ def main():
         for attempt in range(3):
             if all(os.path.exists(os.path.join(HEADS, "raw", j["tag"] + "_out.png")) for j in frames(jobs)):
                 break
-            r = subprocess.run([sys.executable, os.path.abspath(__file__), "--worker"] + (["--looks", ns.looks] if ns.looks else []))
+            r = subprocess.run([sys.executable, os.path.abspath(sys.argv[0]), "--worker"] + (["--looks", ns.looks] if ns.looks else []))
             print("рабочий процесс вышел с кодом %s (попытка %d)" % (r.returncode, attempt + 1), flush=True)
         missing = [j["tag"] for j in frames(jobs) if not os.path.exists(os.path.join(HEADS, "raw", j["tag"] + "_out.png"))]
         if missing:

@@ -1,0 +1,807 @@
+﻿{
+"F0": {
+"hair": "bright golden-yellow hair swept up and outward into two pointed wing-like tufts",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"F1": {
+"hair": "short spiky rust-red hair",
+"head": "a small blue-grey mark at the mouth",
+"makeup": "natural",
+"neck": ""
+},
+"F2": {
+"hair": "short black hair swept to one side",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"F3": {
+"hair": "short messy spiky dark brown hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"F4": {
+"hair": "short dark grey-black hair swept back",
+"head": "a short dark beard and moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F5": {
+"hair": "messy dark brown hair",
+"head": "grey stubble on the jaw",
+"makeup": "natural",
+"neck": "",
+"neg": "dot on the forehead, bindi"
+},
+"F6": {
+"hair": "close-fitting crimson-red hair or head covering reaching down to the ears",
+"head": "a short crimson-red beard",
+"makeup": "natural",
+"neck": ""
+},
+"F7": {
+"hair": "long wild curly dark brown hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"F8": {
+"hair": "short spiky dark blond-brown hair with lighter yellow-tan tips",
+"head": "a short dark beard",
+"makeup": "natural",
+"neck": ""
+},
+"F9": {
+"hair": "shoulder-length messy dark brown-black hair",
+"head": "a full dark beard and moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F10": {
+"hair": "wild spiky crimson-pink hair",
+"head": "white and red face paint",
+"makeup": "white face paint with red patches around the eyes",
+"neck": ""
+},
+"F11": {
+"hair": "short flat dark grey-black hair",
+"head": "a dark moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F12": {
+"hair": "bushy curly bright green hair",
+"head": "short dark stubble beard",
+"makeup": "natural",
+"neck": ""
+},
+"F13": {
+"hair": "short spiky light tan-blond hair",
+"head": "narrow black sunglasses covering the eyes and a small purple mark on the forehead",
+"makeup": "natural",
+"neck": ""
+},
+"F14": {
+"hair": "tall spiky teal-blue hair",
+"head": "small narrow eyes and two dark vertical stripes of face paint running down through the eyes onto the cheeks",
+"makeup": "two dark vertical stripes through the eyes, natural lips",
+"neck": ""
+},
+"F15": {
+"hair": "dark blue-violet hair falling to jaw length, covering one side of the head",
+"head": "the left half of his face painted solid white from the forehead to the chin, the other half natural skin",
+"makeup": "white paint on the left half of the face only",
+"neck": ""
+},
+"F16": {
+"hair": "medium-length wavy blond hair with a thick fringe low over the forehead",
+"head": "the face set low on the head, the eyes at the middle of the head",
+"makeup": "natural",
+"neck": ""
+},
+"F17": {
+"hair": "short orange-red flat-top hair with vertical grooves",
+"head": "a thin dark moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F18": {
+"hair": "voluminous curly black hair",
+"head": "a red-orange headband across the forehead",
+"makeup": "natural",
+"neck": ""
+},
+"F19": {
+"hair": "medium-length teal-blue hair swept over one side of the face",
+"head": "one glowing red cybernetic eye implant with a dark scar running through it, the other eye natural",
+"makeup": "natural",
+"neck": ""
+},
+"F20": {
+"hair": "short spiky dark red hair",
+"head": "red eyes",
+"makeup": "dark red shading around the eyes",
+"neck": ""
+},
+"F21": {
+"hair": "shoulder-length crimson-magenta hair",
+"head": "grey stubble on the jaw, the chin and the upper lip, and faint dark vertical marks on the cheeks",
+"makeup": "faint dark marks on the cheeks",
+"neck": ""
+},
+"F22": {
+"hair": "spiky upright grey-mauve hair",
+"head": "small narrow green eyes",
+"makeup": "natural",
+"neck": ""
+},
+"F23": {
+"hair": "short spiky swept-back green hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"F24": {
+"hair": "orange-brown hair parted in two parts by the headband: a short tuft above the band and short hair below it",
+"head": "a blue-grey headband across the forehead, tied at the sides",
+"makeup": "natural",
+"neck": ""
+},
+"F25": {
+"hair": "long grey hair falling to the neck",
+"head": "a dark moustache",
+"makeup": "natural",
+"neck": "",
+"skin": "tan"
+},
+"F26": {
+"hair": "wild spiky purple hair",
+"head": "clown face paint",
+"makeup": "white clown face paint with a red nose, red mouth and dark eye shading",
+"neck": ""
+},
+"F27": {
+"hair": "long straggly dark purple hair falling over parts of the face",
+"head": "a red mark over one eye",
+"makeup": "pale face with a red mark over one eye",
+"neck": ""
+},
+"F28": {
+"hair": "short blond-brown hair swept up with vertical streaks",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"F29": {
+"hair": "tousled medium-length dark brown-purple hair",
+"head": "small narrow eyes, a small nose and a small mouth",
+"makeup": "natural",
+"neck": "",
+"skin": "light brown"
+},
+"F30": {
+"hair": "spiky dark green hair",
+"head": "a dark blue-grey moustache and short beard",
+"makeup": "natural",
+"neck": ""
+},
+"F31": {
+"hair": "wavy medium-length purple-blue hair swept to one side",
+"head": "small narrow eyes",
+"makeup": "natural",
+"neck": ""
+},
+"F32": {
+"hair": "long straight grey-black hair brushed back to the shoulders",
+"head": "a thick dark moustache, the cheeks and the chin clean-shaven",
+"makeup": "natural",
+"neck": "",
+"neg": "beard, stubble, goatee"
+},
+"F33": {
+"hair": "wavy shoulder-length golden-orange hair with darker edges",
+"head": "a short dark-blond beard and moustache",
+"makeup": "natural",
+"neck": "a small dark red cloth at the base of the neck",
+"skin": "tan"
+},
+"F34": {
+"hair": "tall spiky teal-blue hair",
+"head": "skull face paint",
+"makeup": "white skull-like face paint with black eye sockets, nose and teeth lines",
+"neck": ""
+},
+"F35": {
+"hair": "short cropped blond hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"F36": {
+"hair": "yellow-blond hair swept up with tufts at the sides",
+"head": "a yellow-blond beard and moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F37": {
+"hair": "medium-length shaggy black hair",
+"head": "a short black beard and moustache",
+"makeup": "natural",
+"neck": "",
+"neg": "blue colour on the face, cyan marks, teal marks"
+},
+"F38": {
+"hair": "long dark blue-black hair with a cyan highlight on top",
+"head": "a red band or red paint across the forehead and a dark beard",
+"makeup": "red band of paint across the forehead",
+"neck": ""
+},
+"F39": {
+"hair": "medium-length grey hair swept back",
+"head": "a grey beard and moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F40": {
+"hair": "short spiky rust-red hair",
+"head": "a broad square face, small narrow eyes and a stern look",
+"makeup": "natural",
+"neck": ""
+},
+"F41": {
+"hair": "a full head of thick short curly grey hair covering the whole top of the head",
+"head": "a lined weathered face and a stern look",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular older adult man, 55 years old",
+"neg": "bald spot, bald crown, receding hairline, bare forehead top"
+},
+"F42": {
+"hair": "long straight black hair parted at the center, reaching the shoulders",
+"head": "a long narrow elongated face, green eyes and a thin dark moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F43": {
+"hair": "voluminous shoulder-length black hair with a blue sheen",
+"head": "a thin dark moustache",
+"makeup": "natural",
+"neck": "",
+"skin": "tan"
+},
+"F44": {
+"hair": "long wavy tawny golden-brown hair framing the face",
+"head": "a lined weathered face, a tawny moustache and a short tawny beard, an orange mark across the forehead",
+"makeup": "orange mark across the forehead",
+"neck": "a pendant necklace with a green gem on a dark cord",
+"who": "a fit muscular older adult man, 55 years old"
+},
+"F45": {
+"hair": "shaggy dark brown-red hair with one thin green streak in the hair above the forehead",
+"head": "a dark beard and a green mark on the forehead",
+"makeup": "a green mark on the forehead",
+"neck": "",
+"neg": "green paint on the forehead"
+},
+"F46": {
+"hair": "thick black hair",
+"head": "a full black beard and small dark eyes in the shadow under thick brows",
+"makeup": "natural",
+"neck": "",
+"neg": "earrings, piercing, rings, jewellery on the face"
+},
+"F47": {
+"hair": "short wavy black hair with a dark blue sheen",
+"head": "",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular adult East Asian man, 30 years old"
+},
+"F48": {
+"hair": "dark grey-black hair with grey-white streaks swept back",
+"head": "a small grey-white goatee and glowing orange eyes",
+"makeup": "natural",
+"neck": "a pendant with a silver medallion on a cord"
+},
+"F49": {
+"hair": "wild shaggy dark reddish-brown hair",
+"head": "glowing orange eyes and reddish-brown fur covering the face",
+"makeup": "natural",
+"neck": ""
+},
+"F50": {
+"hair": "long white-grey hair swept back",
+"head": "black sunglasses, a white beard and a white moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F51": {
+"hair": "medium-length black hair slicked back with sideburns",
+"head": "a black moustache and goatee and a small light earring",
+"makeup": "natural",
+"neck": ""
+},
+"F52": {
+"hair": "voluminous black hair swept up and back",
+"head": "a Mongolian face with high cheekbones and narrow eyes, a black chin beard",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular adult East Asian man, 30 years old"
+},
+"F53": {
+"hair": "light brown hair swept over one side of the head",
+"head": "a calm stern look",
+"makeup": "natural",
+"neck": "",
+"skin": "golden tan",
+"neg": "green skin"
+},
+"F54": {
+"hair": "shoulder-length dark brown hair with lighter streaks",
+"head": "a grey moustache and a short dark beard",
+"makeup": "natural",
+"neck": "a dark beaded necklace"
+},
+"F55": {
+"hair": "long straight black hair",
+"head": "the black-and-white stage face paint of a heavy metal rock musician: the whole face painted white with large black shapes around the eyes and the mouth",
+"makeup": "white face paint with black shapes around the eyes and the mouth",
+"neck": "",
+"skin": "white-painted"
+},
+"F56": {
+"hair": "medium-length grey-white hair",
+"head": "a grey-white beard and moustache, small narrow eyes",
+"makeup": "natural",
+"neck": ""
+},
+"F57": {
+"hair": "long wild dark grey-black hair",
+"head": "dark grey stubble",
+"makeup": "natural",
+"neck": ""
+},
+"F58": {
+"hair": "long black hair swept over one side",
+"head": "a white patch over one side of the face with a red eye",
+"makeup": "white patch over one side of the face with a red eye",
+"neck": ""
+},
+"F59": {
+"hair": "short spiky black hair",
+"head": "a small closed mouth with no smile",
+"makeup": "dark smudged shading around the eyes and pale blue-grey lips",
+"neck": ""
+},
+"F60": {
+"hair": "long wavy bright orange hair",
+"head": "blue eyes",
+"makeup": "natural",
+"neck": ""
+},
+"F61": {
+"hair": "thick curly dark brown-black hair",
+"head": "a full dark beard",
+"makeup": "natural",
+"neck": ""
+},
+"F62": {
+"hair": "medium-length wavy copper-red hair",
+"head": "a reddish moustache",
+"makeup": "natural",
+"neck": ""
+},
+"F63": {
+"hair": "short spiky dark brown hair",
+"head": "a short full dark beard and moustache, small narrow eyes",
+"makeup": "natural",
+"neck": ""
+},
+"M0": {
+"hair": "bald, no hair",
+"head": "black sunglasses",
+"makeup": "natural",
+"neck": "",
+"neg": "collar, plate under the chin, dark band on the neck"
+},
+"M1": {
+"hair": "short dull brown flat-top hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M2": {
+"hair": "dark navy-purple hair of medium length with a fringe swept across the forehead",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M3": {
+"hair": "short black hair combed back",
+"head": "a full thick black beard and moustache",
+"makeup": "natural",
+"neck": ""
+},
+"M4": {
+"hair": "short black curly hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M5": {
+"hair": "dark green short mohawk with shaved sides",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M6": {
+"hair": "short grey-white hair under a headband",
+"head": "thin dark glasses, a red headband across the forehead and stubble on the chin and the jaw",
+"makeup": "natural",
+"neck": "a red scarf or collar under the chin"
+},
+"M7": {
+"hair": "bald, no hair",
+"head": "",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular adult Mexican man, 30 years old",
+"skin": "light tan"
+},
+"M8": {
+"hair": "short dark brown flat-top hair",
+"head": "dark stubble on the jaw",
+"makeup": "natural",
+"neck": ""
+},
+"M9": {
+"hair": "bald, no hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M10": {
+"hair": "short blond hair",
+"head": "a black visor band or sunglasses across the eyes",
+"makeup": "natural",
+"neck": ""
+},
+"M11": {
+"hair": "short very dark brown, almost black hair",
+"head": "black sunglasses over the eyes",
+"makeup": "natural",
+"neck": "",
+"neg": "visor, panel, screen, display on the forehead, device on the head"
+},
+"M12": {
+"hair": "short grey hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M13": {
+"hair": "short white hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M14": {
+"hair": "short dark charcoal-grey hair",
+"head": "small narrow eyes",
+"makeup": "natural",
+"neck": ""
+},
+"M15": {
+"hair": "short dark navy-blue flat-top hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M16": {
+"hair": "black hair combed apart to both sides above the mask",
+"head": "a white full-face mask covering the whole face, with red X-shaped marks and orange eye holes",
+"makeup": "natural",
+"neck": "black leather straps around the neck"
+},
+"M17": {
+"hair": "short brown hair",
+"head": "narrow dark red tinted glasses",
+"makeup": "natural",
+"neck": ""
+},
+"M18": {
+"hair": "short dark brown hair",
+"head": "a short dark beard along the jaw",
+"makeup": "natural",
+"neck": ""
+},
+"M19": {
+"hair": "dark navy-blue hair of medium length swept back",
+"head": "",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular adult East Asian man, 30 years old"
+},
+"M20": {
+"hair": "short light ash-blond hair",
+"head": "a short dark brown beard and moustache",
+"makeup": "natural",
+"neck": ""
+},
+"M21": {
+"hair": "black hair of medium length",
+"head": "a full short dark brown stubble beard",
+"makeup": "natural",
+"neck": ""
+},
+"M22": {
+"hair": "short blond golden hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M23": {
+"hair": "short dark grey hair",
+"head": "a moustache and a small goatee",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular adult European man, 30 years old",
+"skin": "tan"
+},
+"M24": {
+"hair": "short dark grey-black hair swept to the side",
+"head": "small narrow eyes",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular adult European man, 30 years old",
+"skin": "tan"
+},
+"M25": {
+"hair": "bald, no hair",
+"head": "narrow dark sunglasses and a stern closed mouth",
+"makeup": "natural",
+"neck": ""
+},
+"M26": {
+"hair": "short brown hair",
+"head": "light stubble",
+"makeup": "natural",
+"neck": ""
+},
+"M27": {
+"hair": "short crimson dark red hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M28": {
+"hair": "short purple hair",
+"head": "a dark blue headband high across the forehead with nothing painted on it, small eyes below the band at the normal height, a full black beard",
+"makeup": "natural",
+"neck": ""
+},
+"M29": {
+"hair": "short dark grey hair",
+"head": "",
+"makeup": "natural",
+"neck": "a dark choker collar with a metal ring hanging at the front",
+"who": "a fit muscular adult European man, 30 years old",
+"skin": "tan"
+},
+"M30": {
+"hair": "short grey-brown hair",
+"head": "a moustache and a short dark beard",
+"makeup": "natural",
+"neck": ""
+},
+"M31": {
+"hair": "thin short ginger-red hair lying close to the scalp",
+"head": "a short ginger-tan beard and moustache",
+"makeup": "natural",
+"neck": "",
+"who": "a fit muscular adult East Asian man, 30 years old"
+},
+"M32": {
+"hair": "short brown hair",
+"head": "a full dark brown beard on smooth natural cheeks",
+"makeup": "natural",
+"neck": "",
+"neg": "mesh, grid pattern on the cheeks"
+},
+"M33": {
+"hair": "short dark brown hair swept up at the front",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M34": {
+"hair": "black hair with a navy tint, medium length, swept back",
+"head": "small narrow eyes",
+"makeup": "natural",
+"neck": ""
+},
+"M35": {
+"hair": "very short black hair",
+"head": "a moustache and a small goatee",
+"makeup": "natural",
+"neck": "",
+"skin": "brown"
+},
+"M36": {
+"hair": "short red-orange hair",
+"head": "a small white cross-shaped scar on the forehead",
+"makeup": "natural",
+"neck": ""
+},
+"M37": {
+"hair": "bald, no hair",
+"head": "a grey patch or cloth over the mouth and chin",
+"makeup": "natural",
+"neck": ""
+},
+"M38": {
+"hair": "short black flat-top hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M39": {
+"hair": "bald, no hair",
+"head": "a dark moustache",
+"makeup": "natural",
+"neck": "",
+"skin": "tan",
+"neg": "collar, plate under the chin, dark band on the neck"
+},
+"M40": {
+"hair": "black shaggy hair of medium length with sideburns",
+"head": "a black goatee and short beard, a small black square tattoo on the chest",
+"makeup": "natural",
+"neck": "",
+"neg": "eye on the chest, eyeball, nipple ring"
+},
+"M41": {
+"hair": "bald, no hair",
+"head": "a full grey-brown beard",
+"makeup": "natural",
+"neck": ""
+},
+"M42": {
+"hair": "shaggy black hair",
+"head": "a dark grey goatee",
+"makeup": "natural",
+"neck": "",
+"skin": "tan"
+},
+"M43": {
+"hair": "bald, no hair",
+"head": "a thin dark moustache",
+"makeup": "natural",
+"neck": ""
+},
+"M44": {
+"hair": "bald on top with short grey-white hair at the sides",
+"head": "black sunglasses and a short dark goatee",
+"makeup": "natural",
+"neck": ""
+},
+"M45": {
+"hair": "bald, no hair",
+"head": "a thick black handlebar moustache",
+"makeup": "natural",
+"neck": ""
+},
+"M46": {
+"hair": "bald, no hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M47": {
+"hair": "black hair of medium length swept back",
+"head": "thin dark-rimmed glasses",
+"makeup": "natural",
+"neck": ""
+},
+"M48": {
+"hair": "bald, no hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M49": {
+"hair": "short orange hair",
+"head": "dark sunglasses and a green earpiece on the side of the head",
+"makeup": "natural",
+"neck": ""
+},
+"M50": {
+"hair": "short black curly hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M51": {
+"hair": "bald, no hair",
+"head": "pale grey tinted glasses and a dark brown goatee",
+"makeup": "natural",
+"neck": ""
+},
+"M52": {
+"hair": "short grey hair with a reddish tint",
+"head": "a short red-orange beard",
+"makeup": "natural",
+"neck": ""
+},
+"M53": {
+"hair": "very short light grey-pink buzz-cut hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M54": {
+"hair": "short black hair",
+"head": "teal-tinted sunglasses",
+"makeup": "natural",
+"neck": ""
+},
+"M55": {
+"hair": "bald, no hair",
+"head": "black sunglasses and a full black beard and moustache",
+"makeup": "natural",
+"neck": "",
+"neg": "yellow skin"
+},
+"M56": {
+"hair": "short grey hair",
+"head": "a dark moustache",
+"makeup": "natural",
+"neck": ""
+},
+"M57": {
+"hair": "short black hair, receding at the temples",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M58": {
+"hair": "spiky blond hair",
+"head": "black sunglasses",
+"makeup": "natural",
+"neck": ""
+},
+"M59": {
+"hair": "black hair swept back",
+"head": "a full dark grey beard",
+"makeup": "natural",
+"neck": ""
+},
+"M60": {
+"hair": "short dark brown hair",
+"head": "",
+"makeup": "natural",
+"neck": ""
+},
+"M61": {
+"hair": "bald, no hair",
+"head": "short grey stubble on the chin",
+"makeup": "natural",
+"neck": ""
+},
+"M62": {
+"hair": "short black hair",
+"head": "small narrow eyes",
+"makeup": "natural",
+"neck": ""
+},
+"M63": {
+"hair": "bald, no hair",
+"head": "a long dark grey beard, a bald head and a small gold earring in one ear",
+"makeup": "natural",
+"neck": "",
+"skin": "brown"
+}
+}

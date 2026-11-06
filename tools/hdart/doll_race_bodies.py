@@ -205,7 +205,7 @@ def main():
         for attempt in range(3):
             if all(os.path.exists(os.path.join(OUT, "raw", j["tag"] + "_out.png")) for j in jobs):
                 break
-            r = subprocess.run([sys.executable, os.path.abspath(__file__), "--worker"])
+            r = subprocess.run([sys.executable, os.path.abspath(sys.argv[0]), "--worker"])  # argv: другая раса запускает своим скриптом
             print("рабочий процесс вышел с кодом %s (попытка %d)" % (r.returncode, attempt + 1), flush=True)
         missing = [j["tag"] for j in jobs if not os.path.exists(os.path.join(OUT, "raw", j["tag"] + "_out.png"))]
         if missing:
