@@ -19,9 +19,13 @@ table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:
 <tr><td>The battle</td><td>messages, concealing a unit, discovering tiles for the player, the enemy&#x27;s item level, lists of units and items</td></tr>
 <tr><td>A soldier</td><td>permanent stats, wounds, missing health and mana</td></tr>
 <tr><td>The engine&#x27;s calculations</td><td>the chance of psi and melee attacks, how much experience a hit gives, the sound of a step, whether a UFO is detected, the end of a month for a country</td></tr>
+<tr><td>Reactions and visibility</td><td>the reaction chance, whether a unit sees a target, camouflage, a target&#x27;s weight for the AI</td></tr>
+<tr><td>Formulas from the ruleset</td><td>a weapon&#x27;s power and accuracy, psi defence, dodge, recovery per turn</td></tr>
+<tr><td>The shop and the reference</td><td>purchase and sale prices, your own rows on the nerds&#x27; page</td></tr>
+<tr><td>Other rules</td><td>find the rules of an item, armor, unit, skill, research or inventory slot by name</td></tr>
 <tr><td>The end of a mission</td><td>the recovery time, how much health and mana a soldier lacks at the base</td></tr>
 <tr><td>Service</td><td>tags of units, items, the battle, soldiers and the geoscape, the log</td></tr>
-</table><div><b>From Lua you cannot:</b><ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month and UFO detection can be changed;</li><li>create or move units and items, change the map;</li><li>touch sprites, recolouring, your own screens, the calculation of visibility and reactions, AI decisions, prices. Those Y-script handlers are not in Lua, the Y-script is there for them.</li></ul><b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. If you need something new in Lua, send us a ticket saying what the mod should do.</div>
+</table><div><b>From Lua you cannot:</b><ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li><li>create or move units and items, change the map;</li><li>touch sprites and recolouring: those Y-script handlers come from the drawing threads on every frame, the Y-script is there for them;</li><li>make your own screens or choose the AI's actions, except a target's weight.</li></ul><b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. If you need something new in Lua, send us a ticket saying what the mod should do.</div>
 <h2>Recipes</h2><p>Each recipe is a whole <code>lua/main.lua</code> file. All are checked in a real battle. One file can hold any number of subscriptions, several on one handler too: they run in the order they are written.</p>
 <h3>Regeneration</h3><p>Each living unit gets 1 health at the start of its own turn. <code>newTurnUnit</code> comes on the turn of each side, so <code>side</code> is compared with the unit's side.</p>
 <pre><code>game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
@@ -141,10 +145,58 @@ end)
   end
 end)
 </code></pre>
+<h3>A price in the shop</h3><p>Everything sells a quarter dearer. The handler comes for each row of the shop: there can be no random numbers in it, and heavy work is not needed.</p>
+<pre><code>game.on(&quot;sellCostItem&quot;, function(item_rule, geoscape_game, difficulty_coefficient, out)
+  out.cost_current = out.cost_current * 125 // 100
+end)
+</code></pre>
+<h3>A reaction chance of your own</h3><p>A reaction to a target from behind is twice as likely. The chance is worked out before each reaction shot and goes on to <code>reactionUnitReaction</code>.</p>
+<pre><code>game.on(&quot;reactionUnitReaction&quot;, function(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)
+  if arc_to_action_unit &gt;= 3 then
+    out.reaction_chance = out.reaction_chance * 2
+  end
+end)
+</code></pre>
+<h3>Camouflage</h3><p>A unit in armor with the tag <code>MY_CAMO</code> is not seen beyond 10 tiles. The handler comes for each pair of units at each step: only simple work, no log.</p>
+<pre><code>extended:
+  tags:
+    RuleArmor:
+      MY_CAMO: int
+armors:
+  - type: STR_NONE_UC
+    tags:
+      MY_CAMO: 1
+</code></pre>
+<pre><code>game.on(&quot;visibilityUnit&quot;, function(observer_unit, target_unit, target_tile, distance, distance_max, distance_target_max, smoke_density, fire_density, smoke_density_near_observer, fire_density_near_observer, out)
+  if target_unit and target_unit:getRuleArmor():getTag(&quot;MY_CAMO&quot;) == 1 and distance &gt; 10 * 16 then
+    out.current_visibility = 0
+  end
+end)
+</code></pre>
+<h3>The wounded get tired</h3><p>A unit at half health gets 10 time units less per turn. <code>out.bonus</code> comes with the ruleset's calculation, the power and accuracy of a weapon, psi defence and dodge work the same way.</p>
+<pre><code>game.on(&quot;timeRecoveryBonusStats&quot;, function(unit, external_bonuses, weapon, ammo, battle_action, skill, out)
+  if unit:getHealth() * 2 &lt; unit:getHealthMax() then
+    out.bonus = out.bonus - 10
+  end
+end)
+</code></pre>
+<h3>A row on the nerds&#x27; page</h3><p>A row of your own on an item's page. The player only reads it, it does not affect the battle.</p>
+<pre><code>game.on(&quot;statsForNerdsItem&quot;, function(item_rule, nerds, geoscape_game)
+  if item_rule:isTwoHanded() then
+    nerds:addTextRow(&quot;My mod&quot;, &quot;two-handed: slower reactions&quot;)
+  end
+end)
+</code></pre>
+<h3>Looking up another mod&#x27;s rule</h3><p>A mod checks whether another mod is installed: without such a rule <code>getRuleItem</code> returns nil, there is no error.</p>
+<pre><code>local other = game.getRules():getRuleItem(&quot;STR_ALIEN_ALLOYS&quot;)
+if other then
+  game.log(&quot;found: &quot; .. other:getType())
+end
+</code></pre>
 <h2>Handlers</h2><p>To subscribe: <code>game.on("name", function)</code>. Arguments come in the order of the Y-script's input, the last one is the table <code>out</code> of output values, if there are any. Values in <code>out</code> are taken as whole numbers and only all at once: one bad value is an error, the others are not applied. Handlers marked "only reads" change only <code>out</code>: as in the Y-script, the objects there cannot be changed, and calling <code>set...</code> or <code>add...</code> in them is an error. On one handler the Y-script runs first, then Lua in the mods' load order.</p>
 <table><tr><th>Handler</th><th>When</th><th>out</th></tr>
 <tr id="event.createUnit"><td><code>createUnit(unit, battle, turn)</code></td><td>a unit appears in the battle</td><td>-</td></tr>
-<tr id="event.newTurnUnit"><td><code>newTurnUnit(unit, battle, turn, side)</code></td><td>the start of a side&#x27;s turn, for each unit; side is whose turn it is, FACTION_*</td><td>-</td></tr>
+<tr id="event.newTurnUnit"><td><code>newTurnUnit(unit, battle, turn, side)</code></td><td>the start of a side's turn, for each unit; side is whose turn it is, FACTION_*</td><td>-</td></tr>
 <tr id="event.hitUnit"><td><code>hitUnit(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)</code></td><td>a hit, before the armor</td><td><code>power</code>, <code>part</code>, <code>side</code></td></tr>
 <tr id="event.damageUnit"><td><code>damageUnit(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>the damage is worked out, after the armor</td><td><code>to_health</code>, <code>to_armor</code>, <code>to_stun</code>, <code>to_time</code>, <code>to_energy</code>, <code>to_morale</code>, <code>to_wound</code>, <code>to_transform</code>, <code>to_mana</code></td></tr>
 <tr id="event.damageSpecialUnit"><td><code>damageSpecialUnit(unit, damaging_item, weapon_item, attacker, battle, skill, health_damage, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>the damage is done, the special effects</td><td><code>transform</code> <span class="ro">(read only)</span>, <code>transform_chance</code>, <code>self_destruct</code> <span class="ro">(read only)</span>, <code>self_destruct_chance</code>, <code>morale_loss</code>, <code>fire</code>, <code>attacker_turns_since_spotted</code>, <code>attacker_turns_left_spotted_for_snipers</code></td></tr>
@@ -152,17 +204,51 @@ end)
 <tr id="event.skillUseUnit"><td><code>skillUseUnit(actor, item, battle, skill, battle_action, have_tu, out)</code></td><td>a skill is used</td><td><code>continue_action</code>, <code>spend_tu</code></td></tr>
 <tr id="event.returnFromMissionUnit"><td><code>returnFromMissionUnit(unit, battle, soldier, out)</code></td><td>the end of a mission, for each soldier; the battle screen is gone</td><td><code>recovery_time</code>, <code>mana_loss</code> <span class="ro">(read only)</span>, <code>health_loss</code> <span class="ro">(read only)</span>, <code>final_mana_loss</code>, <code>final_health_loss</code></td></tr>
 <tr id="event.createItem"><td><code>createItem(item, unit, battle, turn)</code></td><td>an item appears in the battle; unit may be nil</td><td>-</td></tr>
-<tr id="event.newTurnItem"><td><code>newTurnItem(item, battle, turn, side)</code></td><td>the start of a side&#x27;s turn, for each item</td><td>-</td></tr>
+<tr id="event.newTurnItem"><td><code>newTurnItem(item, battle, turn, side)</code></td><td>the start of a side's turn, for each item</td><td>-</td></tr>
 <tr id="event.awardExperience"><td><code>awardExperience(attacker, unit, weapon, battle_action, out)</code> <span class="ro">(only reads)</span></td><td>experience is awarded for a hit</td><td><code>experience_multipler</code>, <code>experience_type</code> <span class="ro">(read only)</span></td></tr>
-<tr id="event.tryPsiAttackItem"><td><code>tryPsiAttackItem(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, distance, distance_strength_reduction, battle, out)</code> <span class="ro">(only reads)</span></td><td>a psi attack is worked out, the weapon&#x27;s rule. The AI&#x27;s forecasts work it out too: a call does not mean an attempt</td><td><code>psi_attack_success</code></td></tr>
-<tr id="event.tryPsiAttackUnit"><td><code>tryPsiAttackUnit(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, battle, out)</code> <span class="ro">(only reads)</span></td><td>a psi attack is worked out, the target&#x27;s rule. A call does not mean an attempt</td><td><code>psi_attack_success</code></td></tr>
-<tr id="event.tryMeleeAttackItem"><td><code>tryMeleeAttackItem(item, attacker, victim, is_same_faction, skill, attack_strength, defense_strength, battle_action, arc_to_attacker, defense_strength_penalty, battle, out)</code> <span class="ro">(only reads)</span></td><td>a melee attack is worked out, the weapon&#x27;s rule. A call does not mean an attempt</td><td><code>melee_attack_success</code></td></tr>
-<tr id="event.tryMeleeAttackUnit"><td><code>tryMeleeAttackUnit(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, battle, out)</code> <span class="ro">(only reads)</span></td><td>a melee attack is worked out, the target&#x27;s rule. A call does not mean an attempt</td><td><code>melee_attack_success</code></td></tr>
+<tr id="event.tryPsiAttackItem"><td><code>tryPsiAttackItem(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, distance, distance_strength_reduction, battle, out)</code> <span class="ro">(only reads)</span></td><td>a psi attack is worked out, the weapon's rule. The AI's forecasts work it out too: a call does not mean an attempt</td><td><code>psi_attack_success</code></td></tr>
+<tr id="event.tryPsiAttackUnit"><td><code>tryPsiAttackUnit(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, battle, out)</code> <span class="ro">(only reads)</span></td><td>a psi attack is worked out, the target's rule. A call does not mean an attempt</td><td><code>psi_attack_success</code></td></tr>
+<tr id="event.tryMeleeAttackItem"><td><code>tryMeleeAttackItem(item, attacker, victim, is_same_faction, skill, attack_strength, defense_strength, battle_action, arc_to_attacker, defense_strength_penalty, battle, out)</code> <span class="ro">(only reads)</span></td><td>a melee attack is worked out, the weapon's rule. A call does not mean an attempt</td><td><code>melee_attack_success</code></td></tr>
+<tr id="event.tryMeleeAttackUnit"><td><code>tryMeleeAttackUnit(item, attacker, victim, skill, attack_strength, defense_strength, battle_action, battle, out)</code> <span class="ro">(only reads)</span></td><td>a melee attack is worked out, the target's rule. A call does not mean an attempt</td><td><code>melee_attack_success</code></td></tr>
 <tr id="event.selectMoveSoundUnit"><td><code>selectMoveSoundUnit(unit, walking_phase, unit_sound_index, tile_sound_index, base_tile_sound_index, base_tile_sound_offset, base_fly_sound_index, move, out)</code> <span class="ro">(only reads)</span></td><td>a step of a unit: which sound to play</td><td><code>sound_index</code></td></tr>
 <tr id="event.newMonthCountry"><td><code>newMonthCountry(country, geoscape_game, totalXcomScore, totalAlienScore, out)</code> <span class="ro">(only reads)</span></td><td>the end of a month, for each country</td><td><code>fundingChange</code>, <code>satisfaction</code>, <code>formPact</code>, <code>cancelPact</code></td></tr>
 <tr id="event.detectUfoFromBase"><td><code>detectUfoFromBase(ufo, geoscape_game, distance, already_tracked, radar_total_strength, radar_max_distance, hyperwave_total_strength, hyperwave_max_distance, out)</code> <span class="ro">(only reads)</span></td><td>a base tries to detect a UFO</td><td><code>detection_type</code>, <code>detection_chance</code></td></tr>
 <tr id="event.detectUfoFromCraft"><td><code>detectUfoFromCraft(ufo, geoscape_game, craft, distance, already_tracked, radar_total_strength, radar_max_distance, out)</code> <span class="ro">(only reads)</span></td><td>a craft tries to detect a UFO</td><td><code>detection_type</code>, <code>detection_chance</code></td></tr>
 <tr id="event.applySoldierBonuses"><td><code>applySoldierBonuses(unit, battle, bonus)</code></td><td>a soldier enters a battle, for each of their bonuses</td><td>-</td></tr>
+<tr id="event.hitUnitAmmo"><td><code>hitUnitAmmo(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)</code></td><td>a hit, before the armor, for the round: comes before <code>hitUnit</code> and only if there is a round</td><td><code>power</code>, <code>part</code>, <code>side</code></td></tr>
+<tr id="event.damageUnitAmmo"><td><code>damageUnitAmmo(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>the damage is worked out for the round, before <code>damageUnit</code></td><td><code>to_health</code>, <code>to_armor</code>, <code>to_stun</code>, <code>to_time</code>, <code>to_energy</code>, <code>to_morale</code>, <code>to_wound</code>, <code>to_transform</code>, <code>to_mana</code></td></tr>
+<tr id="event.damageSpecialUnitAmmo"><td><code>damageSpecialUnitAmmo(unit, damaging_item, weapon_item, attacker, battle, skill, health_damage, orig_power, part, side, damaging_type, battle_action, out)</code></td><td>the special effects for the round, before <code>damageSpecialUnit</code></td><td><code>transform</code> <span class="ro">(read only)</span>, <code>transform_chance</code>, <code>self_destruct</code> <span class="ro">(read only)</span>, <code>self_destruct_chance</code>, <code>morale_loss</code>, <code>fire</code>, <code>attacker_turns_since_spotted</code>, <code>attacker_turns_left_spotted_for_snipers</code></td></tr>
+<tr id="event.reactionUnitAction"><td><code>reactionUnitAction(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)</code> <span class="ro">(only reads)</span></td><td>the reaction chance, the acting unit's rule</td><td><code>reaction_chance</code>, <code>distance</code> <span class="ro">(read only)</span></td></tr>
+<tr id="event.reactionUnitReaction"><td><code>reactionUnitReaction(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)</code> <span class="ro">(only reads)</span></td><td>the reaction chance, the reacting unit's rule</td><td><code>reaction_chance</code>, <code>distance</code> <span class="ro">(read only)</span></td></tr>
+<tr id="event.reactionWeaponAction"><td><code>reactionWeaponAction(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)</code> <span class="ro">(only reads)</span></td><td>the reaction chance, the rule of the acting unit's weapon; comes first, only if there is a weapon</td><td><code>reaction_chance</code>, <code>distance</code> <span class="ro">(read only)</span></td></tr>
+<tr id="event.visibilityUnit"><td><code>visibilityUnit(observer_unit, target_unit, target_tile, distance, distance_max, distance_target_max, smoke_density, fire_density, smoke_density_near_observer, fire_density_near_observer, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>whether a unit sees a target or a tile; comes very often</td><td><code>current_visibility</code>, <code>default_visibility</code> <span class="ro">(read only)</span></td></tr>
+<tr id="event.aiCalculateTargetWeight"><td><code>aiCalculateTargetWeight(ai_unit, target_unit, battle_game, out)</code> <span class="ro">(only reads)</span></td><td>the weight of a target for the AI</td><td><code>current_target_weight</code>, <code>default_target_weight</code> <span class="ro">(read only)</span></td></tr>
+<tr id="event.sellCostItem"><td><code>sellCostItem(item_rule, geoscape_game, difficulty_coefficient, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the sale price of an item; comes for each row of the shop too</td><td><code>cost_current</code>, <code>cost_base</code> <span class="ro">(read only)</span></td></tr>
+<tr id="event.buyCostItem"><td><code>buyCostItem(item_rule, geoscape_game, difficulty_coefficient, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the purchase price of an item; comes for each row of the shop too</td><td><code>cost_current</code>, <code>cost_base</code> <span class="ro">(read only)</span></td></tr>
+<tr id="event.statsForNerdsItem"><td><code>statsForNerdsItem(item_rule, nerds, geoscape_game)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the nerds' page of an item opens or refreshes: add your rows</td><td>-</td></tr>
+<tr id="event.statsForNerdsArmor"><td><code>statsForNerdsArmor(armor_rule, nerds, geoscape_game)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the same for an armor</td><td>-</td></tr>
+<tr id="event.statsForNerdsCraft"><td><code>statsForNerdsCraft(craft_rule, nerds, geoscape_game)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the same for a craft</td><td>-</td></tr>
+<tr id="event.statsForNerdsUfo"><td><code>statsForNerdsUfo(ufo_rule, nerds, geoscape_game)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the same for a UFO</td><td>-</td></tr>
+<tr id="event.psiDefenceBonusStats"><td><code>psiDefenceBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the armor's psi defence</td><td><code>bonus</code></td></tr>
+<tr id="event.meleeDodgeBonusStats"><td><code>meleeDodgeBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the armor's melee dodge</td><td><code>bonus</code></td></tr>
+<tr id="event.timeRecoveryBonusStats"><td><code>timeRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>how many time units the armor returns per turn</td><td><code>bonus</code></td></tr>
+<tr id="event.energyRecoveryBonusStats"><td><code>energyRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>how much energy the armor returns</td><td><code>bonus</code></td></tr>
+<tr id="event.moraleRecoveryBonusStats"><td><code>moraleRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>how much morale the armor returns</td><td><code>bonus</code></td></tr>
+<tr id="event.healthRecoveryBonusStats"><td><code>healthRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>how much health the armor returns</td><td><code>bonus</code></td></tr>
+<tr id="event.manaRecoveryBonusStats"><td><code>manaRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>how much mana the armor returns</td><td><code>bonus</code></td></tr>
+<tr id="event.stunRecoveryBonusStats"><td><code>stunRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>how much stun the armor removes</td><td><code>bonus</code></td></tr>
+<tr id="event.timeSoldierRecoveryBonusStats"><td><code>timeSoldierRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>time units from a soldier's bonus</td><td><code>bonus</code></td></tr>
+<tr id="event.energySoldierRecoveryBonusStats"><td><code>energySoldierRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>energy from a soldier's bonus</td><td><code>bonus</code></td></tr>
+<tr id="event.moraleSoldierRecoveryBonusStats"><td><code>moraleSoldierRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>morale from a soldier's bonus</td><td><code>bonus</code></td></tr>
+<tr id="event.healthSoldierRecoveryBonusStats"><td><code>healthSoldierRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>health from a soldier's bonus</td><td><code>bonus</code></td></tr>
+<tr id="event.manaSoldierRecoveryBonusStats"><td><code>manaSoldierRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>mana from a soldier's bonus</td><td><code>bonus</code></td></tr>
+<tr id="event.stunSoldierRecoveryBonusStats"><td><code>stunSoldierRecoveryBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>stun from a soldier's bonus</td><td><code>bonus</code></td></tr>
+<tr id="event.damageBonusBonusStats"><td><code>damageBonusBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the item's power with the bonus from the stats</td><td><code>bonus</code></td></tr>
+<tr id="event.meleeBonusBonusStats"><td><code>meleeBonusBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>the item's melee power with the bonus</td><td><code>bonus</code></td></tr>
+<tr id="event.accuracyMultiplierBonusStats"><td><code>accuracyMultiplierBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>shooting accuracy from the stats</td><td><code>bonus</code></td></tr>
+<tr id="event.meleeMultiplierBonusStats"><td><code>meleeMultiplierBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>melee accuracy from the stats</td><td><code>bonus</code></td></tr>
+<tr id="event.throwMultiplierBonusStats"><td><code>throwMultiplierBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>throwing accuracy from the stats</td><td><code>bonus</code></td></tr>
+<tr id="event.closeQuartersMultiplierBonusStats"><td><code>closeQuartersMultiplierBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(only reads)</span> <span class="ro">(no random numbers)</span></td><td>close quarters accuracy from the stats</td><td><code>bonus</code></td></tr>
 </table>
 <h3>Arguments</h3><p>Handlers get them in the order of the table above. Check values that may be nil before calling a method on them, otherwise it is an error.</p><ul>
 <li><code>unit</code>: the unit it happened to</li>
@@ -212,6 +298,32 @@ end)
 <li><code>hyperwave_total_strength</code>: the total strength of the hyperwave decoders</li>
 <li><code>hyperwave_max_distance</code>: the range of the hyperwave decoders</li>
 <li><code>bonus</code>: the soldier's bonus</li>
+<li><code>external_bonuses</code>: the engine's addition, <code>out.bonus</code> starts from it</li>
+<li><code>ammo</code>: the round or nil; nil in handlers with no shot</li>
+<li><code>action_unit</code>: who acts</li>
+<li><code>reaction_unit</code>: who reacts</li>
+<li><code>reaction_weapon</code>: what it reacts with, may be nil</li>
+<li><code>reaction_battle_action</code>: by which action it reacts, <code>BA_*</code></li>
+<li><code>reaction_count</code>: the count of this unit's reactions</li>
+<li><code>action_target</code>: the action's target, a tile; may be nil</li>
+<li><code>arc_to_action_unit</code>: where the acting unit is: 0 the front, 4 the rear</li>
+<li><code>battle_game</code>: the battle</li>
+<li><code>observer_unit</code>: who looks</li>
+<li><code>target_unit</code>: the target; nil in <code>visibilityUnit</code> if a tile is checked</li>
+<li><code>target_tile</code>: the target's tile</li>
+<li><code>distance_max</code>: the greatest view distance for the target, in voxels</li>
+<li><code>distance_target_max</code>: the greatest view distance for the target, in tiles</li>
+<li><code>smoke_density</code>: the smoke on the way</li>
+<li><code>fire_density</code>: the fire on the way</li>
+<li><code>smoke_density_near_observer</code>: the smoke near the observer</li>
+<li><code>fire_density_near_observer</code>: the fire near the observer</li>
+<li><code>ai_unit</code>: the AI's unit</li>
+<li><code>item_rule</code>: the item rules</li>
+<li><code>armor_rule</code>: the armor rules</li>
+<li><code>craft_rule</code>: the craft rules</li>
+<li><code>ufo_rule</code>: the UFO rules</li>
+<li><code>difficulty_coefficient</code>: this game's price multiplier, in percent</li>
+<li><code>nerds</code>: the nerds' page, rows are added to it</li>
 </ul><h3>What each out value means</h3><table><tr><th>Handler</th><th>out</th><th>What it does</th></tr>
 <tr><td><code>hitUnit</code></td><td><code>power</code></td><td>the power of the hit; zero or less: no damage, and <code>damageUnit</code> does not come</td></tr>
 <tr><td><code>hitUnit</code></td><td><code>part</code></td><td>where it hit, <code>BODYPART_*</code>; a wrong value becomes the head</td></tr>
@@ -264,6 +376,60 @@ end)
 <tr><td><code>detectUfoFromBase</code></td><td><code>detection_chance</code></td><td>the chance in percent</td></tr>
 <tr><td><code>detectUfoFromCraft</code></td><td><code>detection_type</code></td><td>how it detects, <code>DETECTION_*</code>; another value is an error</td></tr>
 <tr><td><code>detectUfoFromCraft</code></td><td><code>detection_chance</code></td><td>the chance in percent</td></tr>
+<tr><td><code>hitUnitAmmo</code></td><td><code>power</code></td><td>the power of the hit; zero or less: no damage, and <code>damageUnit</code> does not come</td></tr>
+<tr><td><code>hitUnitAmmo</code></td><td><code>part</code></td><td>where it hit, <code>BODYPART_*</code>; a wrong value becomes the head</td></tr>
+<tr><td><code>hitUnitAmmo</code></td><td><code>side</code></td><td>from which side, <code>SIDE_*</code>, a wrong value becomes the front. For damage from the environment the engine sets the side and the part itself</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_health</code></td><td>how much health to take</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_armor</code></td><td>how much armor of this side to take</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_stun</code></td><td>how much stun to add; does nothing to a unit immune to pain, unless the damage type ignores that</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_time</code></td><td>how many time units to take</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_energy</code></td><td>how much energy to take</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_morale</code></td><td>how much morale to take, the unit's bravery reduces it</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_wound</code></td><td>how many wounds to add on this body part; as much morale is taken</td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_transform</code></td><td>the chance of transformation in percent, it goes on to <code>transform_chance</code></td></tr>
+<tr><td><code>damageUnitAmmo</code></td><td><code>to_mana</code></td><td>how much mana to take</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>transform</code> <span class="ro">(read only)</span></td><td>1 if this damage can transform</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>transform_chance</code></td><td>the chance of transformation in percent</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>self_destruct</code> <span class="ro">(read only)</span></td><td>1 if the unit explodes when it dies</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>self_destruct_chance</code></td><td>the chance of the explosion in percent; 100 if this hit takes it out</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>morale_loss</code></td><td>how much morale to take</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>fire</code></td><td>how many turns the unit will burn, the final value</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>attacker_turns_since_spotted</code></td><td>for the target's side: 0 means the attacker is revealed, 255 means not spotted</td></tr>
+<tr><td><code>damageSpecialUnitAmmo</code></td><td><code>attacker_turns_left_spotted_for_snipers</code></td><td>for how many turns the snipers of the target's side still see the attacker</td></tr>
+<tr><td><code>reactionUnitAction</code></td><td><code>reaction_chance</code></td><td>the reaction chance in percent</td></tr>
+<tr><td><code>reactionUnitAction</code></td><td><code>distance</code> <span class="ro">(read only)</span></td><td>the distance to the acting unit, in voxels</td></tr>
+<tr><td><code>reactionUnitReaction</code></td><td><code>reaction_chance</code></td><td>the reaction chance in percent</td></tr>
+<tr><td><code>reactionUnitReaction</code></td><td><code>distance</code> <span class="ro">(read only)</span></td><td>the distance to the acting unit, in voxels</td></tr>
+<tr><td><code>reactionWeaponAction</code></td><td><code>reaction_chance</code></td><td>the reaction chance in percent</td></tr>
+<tr><td><code>reactionWeaponAction</code></td><td><code>distance</code> <span class="ro">(read only)</span></td><td>the distance to the acting unit, in voxels</td></tr>
+<tr><td><code>visibilityUnit</code></td><td><code>current_visibility</code></td><td>above zero the target is seen. It is a margin of visibility, not a chance</td></tr>
+<tr><td><code>visibilityUnit</code></td><td><code>default_visibility</code> <span class="ro">(read only)</span></td><td>the margin of visibility without scripts</td></tr>
+<tr><td><code>aiCalculateTargetWeight</code></td><td><code>current_target_weight</code></td><td>the target's weight: the higher, the more readily the AI picks it</td></tr>
+<tr><td><code>aiCalculateTargetWeight</code></td><td><code>default_target_weight</code> <span class="ro">(read only)</span></td><td>the weight from the ruleset</td></tr>
+<tr><td><code>sellCostItem</code></td><td><code>cost_current</code></td><td>the sale price with adjustments</td></tr>
+<tr><td><code>sellCostItem</code></td><td><code>cost_base</code> <span class="ro">(read only)</span></td><td>the sale price from the ruleset</td></tr>
+<tr><td><code>buyCostItem</code></td><td><code>cost_current</code></td><td>the purchase price with adjustments</td></tr>
+<tr><td><code>buyCostItem</code></td><td><code>cost_base</code> <span class="ro">(read only)</span></td><td>the purchase price from the ruleset</td></tr>
+<tr><td><code>psiDefenceBonusStats</code></td><td><code>bonus</code></td><td>the final psi defence</td></tr>
+<tr><td><code>meleeDodgeBonusStats</code></td><td><code>bonus</code></td><td>the final dodge</td></tr>
+<tr><td><code>timeRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the final amount of time units per turn</td></tr>
+<tr><td><code>energyRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the final amount of energy per turn</td></tr>
+<tr><td><code>moraleRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the final amount of morale per turn</td></tr>
+<tr><td><code>healthRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the final amount of health per turn</td></tr>
+<tr><td><code>manaRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the final amount of mana per turn</td></tr>
+<tr><td><code>stunRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the final amount of stun per turn</td></tr>
+<tr><td><code>timeSoldierRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the amount of time units the bonus gives</td></tr>
+<tr><td><code>energySoldierRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the amount of energy the bonus gives</td></tr>
+<tr><td><code>moraleSoldierRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the amount of morale the bonus gives</td></tr>
+<tr><td><code>healthSoldierRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the amount of health the bonus gives</td></tr>
+<tr><td><code>manaSoldierRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the amount of mana the bonus gives</td></tr>
+<tr><td><code>stunSoldierRecoveryBonusStats</code></td><td><code>bonus</code></td><td>the amount of stun the bonus gives</td></tr>
+<tr><td><code>damageBonusBonusStats</code></td><td><code>bonus</code></td><td>the item's final power</td></tr>
+<tr><td><code>meleeBonusBonusStats</code></td><td><code>bonus</code></td><td>the final melee power</td></tr>
+<tr><td><code>accuracyMultiplierBonusStats</code></td><td><code>bonus</code></td><td>the final accuracy</td></tr>
+<tr><td><code>meleeMultiplierBonusStats</code></td><td><code>bonus</code></td><td>the final accuracy</td></tr>
+<tr><td><code>throwMultiplierBonusStats</code></td><td><code>bonus</code></td><td>the final accuracy</td></tr>
+<tr><td><code>closeQuartersMultiplierBonusStats</code></td><td><code>bonus</code></td><td>the final accuracy</td></tr>
 </table>
 <h2>Objects</h2>
 <h3>Unit: <code>unit</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
@@ -540,6 +706,9 @@ end)
 <tr id="geoscape.getDaysPassed"><td><code>geoscape:getDaysPassed()</code></td><td>how many days the game has run</td></tr>
 <tr id="geoscape.getCountries"><td><code>geoscape:getCountries()</code></td><td>a table of the countries</td></tr>
 <tr id="geoscape.isResearched"><td><code>geoscape:isResearched(name)</code></td><td>name is researched. An unknown name is an error</td></tr>
+<tr id="geoscape.randomRange"><td><code>geoscape:randomRange(low, high)</code></td><td>a random whole number from low to high through the game&#x27;s generator</td></tr>
+<tr id="geoscape.randomRangeSymmetric"><td><code>geoscape:randomRangeSymmetric(max)</code></td><td>a random whole number from -max to max through the game&#x27;s generator</td></tr>
+<tr id="geoscape.randomChance"><td><code>geoscape:randomChance(percent)</code></td><td>true with this chance through the game&#x27;s generator</td></tr>
 <tr id="geoscape.getTag"><td><code>geoscape:getTag(name)</code></td><td>the value of a GeoscapeGame tag</td></tr>
 <tr id="geoscape.setTag"><td><code>geoscape:setTag(name, value)</code></td><td>write a GeoscapeGame tag</td></tr>
 </table>
@@ -610,16 +779,63 @@ end)
 </table>
 <h3>Country rules: <code>ruleCountry</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
 <tr id="ruleCountry.getType"><td><code>ruleCountry:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+<tr id="ruleCountry.getFundingCap"><td><code>ruleCountry:getFundingCap()</code></td><td>the funding cap</td></tr>
+<tr id="ruleCountry.getTag"><td><code>ruleCountry:getTag(name)</code></td><td>the value of a RuleCountry tag</td></tr>
 </table>
 <h3>UFO rules: <code>ruleUfo</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
 <tr id="ruleUfo.getType"><td><code>ruleUfo:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+<tr id="ruleUfo.getRadius"><td><code>ruleUfo:getRadius()</code></td><td>the radius, the size on the battle map</td></tr>
+<tr id="ruleUfo.getWeaponRange"><td><code>ruleUfo:getWeaponRange()</code></td><td>the weapon range</td></tr>
+<tr id="ruleUfo.getWeaponPower"><td><code>ruleUfo:getWeaponPower()</code></td><td>the weapon power</td></tr>
+<tr id="ruleUfo.getWeaponReload"><td><code>ruleUfo:getWeaponReload()</code></td><td>the weapon reload</td></tr>
 <tr id="ruleUfo.getTag"><td><code>ruleUfo:getTag(name)</code></td><td>the value of a RuleUfo tag</td></tr>
 </table>
 <h3>Craft rules: <code>ruleCraft</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
 <tr id="ruleCraft.getType"><td><code>ruleCraft:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+<tr id="ruleCraft.getWeaponsMax"><td><code>ruleCraft:getWeaponsMax()</code></td><td>how many weapons</td></tr>
+<tr id="ruleCraft.getSoldiersMax"><td><code>ruleCraft:getSoldiersMax()</code></td><td>how many soldier places</td></tr>
+<tr id="ruleCraft.getVehiclesMax"><td><code>ruleCraft:getVehiclesMax()</code></td><td>how many places for vehicles and large soldiers</td></tr>
+<tr id="ruleCraft.getPilotsMax"><td><code>ruleCraft:getPilotsMax()</code></td><td>how many pilots it needs</td></tr>
 <tr id="ruleCraft.getTag"><td><code>ruleCraft:getTag(name)</code></td><td>the value of a RuleCraft tag</td></tr>
 </table>
-<h2>The game table</h2><p><code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log.</p>
+<h3>Research rules: <code>ruleResearch</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="ruleResearch.getType"><td><code>ruleResearch:getType()</code></td><td>the type from the ruleset, a string</td></tr>
+<tr id="ruleResearch.getCost"><td><code>ruleResearch:getCost()</code></td><td>the cost in scientist days</td></tr>
+<tr id="ruleResearch.getPoints"><td><code>ruleResearch:getPoints()</code></td><td>the score for the research</td></tr>
+<tr id="ruleResearch.getLookup"><td><code>ruleResearch:getLookup()</code></td><td>what opens along with it, the research rules or nil</td></tr>
+<tr id="ruleResearch.getNeededItem"><td><code>ruleResearch:getNeededItem()</code></td><td>the item it needs, the item rules or nil</td></tr>
+<tr id="ruleResearch.getTag"><td><code>ruleResearch:getTag(name)</code></td><td>the value of a RuleResearch tag</td></tr>
+</table>
+<h3>Inventory slot rules: <code>ruleInventory</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="ruleInventory.getId"><td><code>ruleInventory:getId()</code></td><td>the slot&#x27;s name from the ruleset, a string</td></tr>
+<tr id="ruleInventory.getType"><td><code>ruleInventory:getType()</code></td><td>the kind of slot: game.INV_SLOT, game.INV_HAND, game.INV_GROUND</td></tr>
+<tr id="ruleInventory.isRightHand"><td><code>ruleInventory:isRightHand()</code></td><td>the right hand</td></tr>
+<tr id="ruleInventory.isLeftHand"><td><code>ruleInventory:isLeftHand()</code></td><td>the left hand</td></tr>
+<tr id="ruleInventory.getMoveToCost"><td><code>ruleInventory:getMoveToCost(other)</code></td><td>how many time units moving to slot other costs</td></tr>
+</table>
+<h3>All the game's rules: <code>rules</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="rules.getRuleUnit"><td><code>rules:getRuleUnit(type)</code></td><td>the rules of a unit of this type, or nil if there is none</td></tr>
+<tr id="rules.getRuleItem"><td><code>rules:getRuleItem(type)</code></td><td>the rules of an item, or nil</td></tr>
+<tr id="rules.getRuleArmor"><td><code>rules:getRuleArmor(type)</code></td><td>the rules of an armor, or nil</td></tr>
+<tr id="rules.getRuleSkill"><td><code>rules:getRuleSkill(type)</code></td><td>the rules of a skill, or nil</td></tr>
+<tr id="rules.getRuleResearch"><td><code>rules:getRuleResearch(type)</code></td><td>the rules of a research, or nil</td></tr>
+<tr id="rules.getRuleSoldier"><td><code>rules:getRuleSoldier(type)</code></td><td>the rules of a soldier, or nil</td></tr>
+<tr id="rules.getRuleInventory"><td><code>rules:getRuleInventory(id)</code></td><td>the rules of an inventory slot, or nil</td></tr>
+<tr id="rules.getRuleInventoryRightHand"><td><code>rules:getRuleInventoryRightHand()</code></td><td>the right hand, or nil</td></tr>
+<tr id="rules.getRuleInventoryLeftHand"><td><code>rules:getRuleInventoryLeftHand()</code></td><td>the left hand, or nil</td></tr>
+<tr id="rules.getRuleInventoryBackpack"><td><code>rules:getRuleInventoryBackpack()</code></td><td>the backpack, or nil</td></tr>
+<tr id="rules.getRuleInventoryBelt"><td><code>rules:getRuleInventoryBelt()</code></td><td>the belt, or nil</td></tr>
+<tr id="rules.getRuleInventoryGround"><td><code>rules:getRuleInventoryGround()</code></td><td>the ground, or nil</td></tr>
+<tr id="rules.getMaxDarknessToSeeUnits"><td><code>rules:getMaxDarknessToSeeUnits()</code></td><td>up to what darkness units are seen</td></tr>
+<tr id="rules.getMaxViewDistance"><td><code>rules:getMaxViewDistance()</code></td><td>the greatest view distance in tiles</td></tr>
+<tr id="rules.getSmokeReduction"><td><code>rules:getSmokeReduction(smoke)</code></td><td>how many voxels of range smoke of this density takes</td></tr>
+</table>
+<h3>The stats for nerds page: <code>statsForNerds</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="statsForNerds.addIntRow"><td><code>statsForNerds:addIntRow(name, value)</code></td><td>a row with a number</td></tr>
+<tr id="statsForNerds.addTextRow"><td><code>statsForNerds:addTextRow(name, text)</code></td><td>a row with text</td></tr>
+<tr id="statsForNerds.addTextFormatRow"><td><code>statsForNerds:addTextFormatRow(name, format, a[, b])</code></td><td>a row from a template: {0} and {1} are replaced by the numbers a and b</td></tr>
+</table>
+<h2>The game table</h2><p><code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above.</p>
 <h2>Constants</h2>
 <p>body parts: part: <code>game.BODYPART_HEAD</code> <code>game.BODYPART_TORSO</code> <code>game.BODYPART_RIGHTARM</code> <code>game.BODYPART_LEFTARM</code> <code>game.BODYPART_RIGHTLEG</code> <code>game.BODYPART_LEFTLEG</code></p>
 <p>sides of a unit: side in the damage handlers and in armor: <code>game.SIDE_FRONT</code> <code>game.SIDE_LEFT</code> <code>game.SIDE_RIGHT</code> <code>game.SIDE_REAR</code> <code>game.SIDE_UNDER</code></p>
@@ -634,6 +850,7 @@ end)
 <p>difficulty: <code>game.DIFF_BEGINNER</code> <code>game.DIFF_EXPERIENCED</code> <code>game.DIFF_VETERAN</code> <code>game.DIFF_GENIUS</code> <code>game.DIFF_SUPERHUMAN</code></p>
 <p>item kinds: getBattleType: <code>game.BT_NONE</code> <code>game.BT_FIREARM</code> <code>game.BT_AMMO</code> <code>game.BT_MELEE</code> <code>game.BT_GRENADE</code> <code>game.BT_PROXIMITYGRENADE</code> <code>game.BT_MEDIKIT</code> <code>game.BT_SCANNER</code> <code>game.BT_MINDPROBE</code> <code>game.BT_PSIAMP</code> <code>game.BT_FLARE</code> <code>game.BT_CORPSE</code></p>
 <p>how a unit moves: move: <code>game.BAM_NORMAL</code> <code>game.BAM_RUN</code> <code>game.BAM_STRAFE</code> <code>game.BAM_SNEAK</code></p>
+<p>slot kinds: ruleInventory:getType: <code>game.INV_SLOT</code> <code>game.INV_HAND</code> <code>game.INV_GROUND</code></p>
 <p>medikit actions: medikit_action_type: <code>game.BMA_HEAL</code> <code>game.BMA_STIMULANT</code> <code>game.BMA_PAINKILLER</code></p>
 <p>a country&#x27;s mood: satisfaction: <code>game.SATISFACTION_ALIENPACT</code> <code>game.SATISFACTION_UNHAPPY</code> <code>game.SATISFACTION_SATISFIED</code> <code>game.SATISFACTION_HAPPY</code></p>
 <p>UFO status: getStatus: <code>game.UFO_FLYING</code> <code>game.UFO_LANDED</code> <code>game.UFO_CRASHED</code> <code>game.UFO_DESTROYED</code> <code>game.UFO_IGNORE_ME</code></p>
@@ -643,9 +860,9 @@ end)
     BattleUnit:
       MY_REGEN: int
     BattleItem:
-      MY_CHARGE: int</pre>The sections go by object: BattleUnit, BattleItem, BattleGame, GeoscapeGame, GeoscapeSoldier, Country, Ufo, Craft, RuleArmor, RuleItem, RuleSoldier, RuleSoldierBonus, RuleUfo, RuleCraft. A tag name is one for the whole game: the same name in a second section is dropped by the engine with an error in its log. In the code the name has no prefix: <code>unit:getTag("MY_REGEN")</code>. Reading or writing an unknown tag is an error: a typo shows at once. A tag of the same name in two mods is shared by them. A value lives while the mod is installed: a save without the mod loads and plays, but a new save made without the mod loses the values.</p>
+      MY_CHARGE: int</pre>The sections go by object: BattleUnit, BattleItem, BattleGame, GeoscapeGame, GeoscapeSoldier, Country, Ufo, Craft, RuleArmor, RuleItem, RuleSoldier, RuleSoldierBonus, RuleUfo, RuleCraft, RuleCountry, RuleResearch. A tag name is one for the whole game: the same name in a second section is dropped by the engine with an error in its log. In the code the name has no prefix: <code>unit:getTag("MY_REGEN")</code>. Reading or writing an unknown tag is an error: a typo shows at once. A tag of the same name in two mods is shared by them. A value lives while the mod is installed: a save without the mod loads and plays, but a new save made without the mod loses the values.</p>
 <h2>What Lua itself has</h2><p>Base functions: <code>assert</code> <code>error</code> <code>getmetatable</code> <code>ipairs</code> <code>next</code> <code>pairs</code> <code>pcall</code> <code>print</code> <code>rawequal</code> <code>rawget</code> <code>rawlen</code> <code>rawset</code> <code>select</code> <code>setmetatable</code> <code>tonumber</code> <code>tostring</code> <code>type</code> <code>xpcall</code>. Libraries <code>string</code> (no <code>dump</code>), <code>table</code>, <code>math</code> (no <code>randomseed</code>), <code>utf8</code>. There is no <code>io os debug package require load dofile loadfile coroutine collectgarbage</code>, bytecode is not loaded. <code>math.random</code> goes through the game's generator; while <code>main.lua</code> loads it is an error: loading must not shift the battle's seed. There are no clocks and no time.</p>
 <h2>Limits</h2><ul><li>Memory: 32 MB per mod.</li><li>One handler call: 2 000 000 instructions, 5 000 000 ticks of C functions (string patterns, <code>string.rep</code>, <code>table.*</code>). <code>main.lua</code> gets ten times the instructions while it loads.</li><li>5 errors in a row switch the mod off until Ctrl+F5 or a new load. The game neither crashes nor hangs.</li><li>A <code>flashMessage</code>: up to 200 bytes of text.</li></ul>
 <h2>Errors</h2><p>An error or a limit reached: the output values stay as they were before the call, <code>user/lua_errors.log</code> gets the mod, file, line, handler and text. The screen shows a mod's first error of the load and its switching off, not every error. The log starts anew at each start of the game.</p>
-<h2>Good to know</h2><ul><li>An object lives only inside the handler that received it. One kept in a variable gives a Lua error, the game does not crash.</li><li>The order of <code>pairs</code> is stable only for string keys. Table keys and <code>tostring(table)</code> depend on addresses: the same mod gives two players different results.</li><li><code>health_recovery</code> of <code>healUnit</code> works only on a body part with a wound, as in the Y-script.</li><li>A <code>hitUnit</code>, <code>damageUnit</code> or <code>damageSpecialUnit</code> handler takes the AI's exact forecast of a shot away: it treats the result as unknown and may shoot at an invulnerable target.</li><li><code>set...</code> and <code>add...</code> methods keep the value within its limits themselves: health and time units no higher than the maximum, morale from 0 to 100. So adding time units at the start of a turn usually does nothing: they are already full.</li><li><code>damageSpecialUnit</code> comes at zero damage too, <code>damageUnit</code> only when the power of the hit is above zero.</li><li><code>getUnits</code>, <code>getItems</code> and other lists make a new table on every call and pay for each element. The memory or tick limit gives an error <code>not enough memory</code> or about the limit: call them rarely, not for every item of every turn.</li><li><code>tryPsiAttack*</code> and <code>tryMeleeAttack*</code> come during the AI's forecasts too, so they are no place for side effects. <code>math.random</code>, <code>randomRange</code> and <code>randomChance</code> shift the common generator there, and two players' battles will diverge.</li><li>A mod's error outside a battle goes to the log at once and shows on the screen in the next battle.</li><li>A local mod can change game mechanics and break a save. A separate build in the launcher is better for experiments.</li><li>A bug report carries only the mod's id, version and the mark <code>[lua local]</code>, not its code or files. The error log goes with it only if you tick it in the form yourself.</li></ul>
+<h2>Good to know</h2><ul><li>An object lives only inside the handler that received it. One kept in a variable gives a Lua error, the game does not crash.</li><li>The order of <code>pairs</code> is stable only for string keys. Table keys and <code>tostring(table)</code> depend on addresses: the same mod gives two players different results.</li><li><code>health_recovery</code> of <code>healUnit</code> works only on a body part with a wound, as in the Y-script.</li><li>A <code>hitUnit</code>, <code>damageUnit</code>, <code>damageSpecialUnit</code>, their <code>...Ammo</code>, <code>damageBonusBonusStats</code> or <code>meleeBonusBonusStats</code> handler takes the AI's exact forecast of a shot away: it treats the result as unknown and may shoot at an invulnerable target.</li><li>Handlers marked "no random numbers" come from lists, tooltips and forecasts, and how many times is not up to the game: a random number there would shift the common generator, so <code>math.random</code>, <code>randomRange</code> and <code>randomChance</code> in them are an error. Nothing but <code>out</code> can be changed there either.</li><li><code>visibilityUnit</code>, the bonuses and the prices come very often: for each pair of units at each step, for each row of the shop. Heavy code or a log line on every call slows the game, and working out lists will hit the limit.</li><li>Where the engine works the same formulas out in background threads, Lua is not called: the value of the Y-script stays. The outcome of an action is worked out in the main thread and takes Lua into account.</li><li><code>set...</code> and <code>add...</code> methods keep the value within its limits themselves: health and time units no higher than the maximum, morale from 0 to 100. So adding time units at the start of a turn usually does nothing: they are already full.</li><li><code>damageSpecialUnit</code> comes at zero damage too, <code>damageUnit</code> only when the power of the hit is above zero.</li><li><code>getUnits</code>, <code>getItems</code> and other lists make a new table on every call and pay for each element. The memory or tick limit gives an error <code>not enough memory</code> or about the limit: call them rarely, not for every item of every turn.</li><li><code>tryPsiAttack*</code> and <code>tryMeleeAttack*</code> come during the AI's forecasts too, so they are no place for side effects. <code>math.random</code>, <code>randomRange</code> and <code>randomChance</code> shift the common generator there, and two players' battles will diverge.</li><li>A mod's error outside a battle goes to the log at once and shows on the screen in the next battle.</li><li>A local mod can change game mechanics and break a save. A separate build in the launcher is better for experiments.</li><li>A bug report carries only the mod's id, version and the mark <code>[lua local]</code>, not its code or files. The error log goes with it only if you tick it in the form yourself.</li></ul>
 </body></html>

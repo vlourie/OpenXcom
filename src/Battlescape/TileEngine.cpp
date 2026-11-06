@@ -1932,6 +1932,11 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
 		ModScript::VisibilityUnit::Worker worker{ currentUnit, tileUnit, tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
+		if (auto *lua = _save->getMod()->getLuaHost())
+		{
+			auto out = std::tie(std::get<0>(arg.data), visibilityQuality);
+			lua->fire(LuaHost::VISIBILITY_UNIT, out, { currentUnit, tileUnit, tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit });
+		}
 		unitSeen = 0 < arg.getFirst();
 	}
 	return unitSeen;
@@ -2110,6 +2115,11 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile, bool drawing)
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
 		ModScript::VisibilityUnit::Worker worker{ currentUnit, /*targetUnit*/ nullptr, tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
+		if (auto *lua = _save->getMod()->getLuaHost())
+		{
+			auto out = std::tie(std::get<0>(arg.data), visibilityQuality);
+			lua->fire(LuaHost::VISIBILITY_UNIT, out, { currentUnit, static_cast<const BattleUnit*>(nullptr), tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit });
+		}
 		seen = 0 < arg.getFirst();
 	}
 	return seen;
@@ -2958,6 +2968,16 @@ bool TileEngine::tryReaction(ReactionScore *reaction, BattleUnit *target, const 
 			worker.execute(target->getArmor()->getScript<ModScript::ReactionUnitAction>(), arg);
 
 			worker.execute(unit->getArmor()->getScript<ModScript::ReactionUnitReaction>(), arg);
+
+			if (auto *lua = _save->getMod()->getLuaHost())
+			{
+				if (originalAction.weapon)
+				{
+					lua->fire(LuaHost::REACTION_WEAPON_ACTION, arg.data, { target, unit, action.weapon, action.type, reaction->count, originalAction.weapon, originalAction.skillRules, originalAction.type, origTarg, moveType, arc, _save });
+				}
+				lua->fire(LuaHost::REACTION_UNIT_ACTION, arg.data, { target, unit, action.weapon, action.type, reaction->count, originalAction.weapon, originalAction.skillRules, originalAction.type, origTarg, moveType, arc, _save });
+				lua->fire(LuaHost::REACTION_UNIT_REACTION, arg.data, { target, unit, action.weapon, action.type, reaction->count, originalAction.weapon, originalAction.skillRules, originalAction.type, origTarg, moveType, arc, _save });
+			}
 
 			if (RNG::percent(arg.getFirst()))
 			{

@@ -19,6 +19,7 @@
 #include <assert.h>
 #include "Unit.h"
 #include "RuleStatBonus.h"
+#include "LuaHost.h"
 #include "RuleSkill.h"
 #include "../Engine/ScriptBind.h"
 #include "../Savegame/BattleUnit.h"
@@ -307,6 +308,7 @@ RuleStatBonus::RuleStatBonus()
  */
 void RuleStatBonus::load(const std::string& parentName, const YAML::YamlNodeReader& reader, const ModScript::BonusStatsCommon& parser)
 {
+	_luaEvent = LuaHost::bonusEvent(parser.getName());
 	if (reader)
 	{
 		if (const auto& stats = reader[ryml::to_csubstr(parser.getPropertyNodeName())])
@@ -566,6 +568,14 @@ int RuleStatBonus::getBonus(BattleActionAttack::ReadOnly attack, int externalBon
 	ModScript::BonusStatsCommon::Worker work{ attack.attacker, externalBonuses, attack.weapon_item, attack.damage_item, attack.type, attack.skill_rules };
 	work.execute(_container, arg);
 
+	if (auto *lua = LuaHost::active())
+	{
+		if (_luaEvent >= 0)
+		{
+			lua->fire(static_cast<LuaHost::Event>(_luaEvent), arg.data, { attack.attacker, externalBonuses, attack.weapon_item, attack.damage_item, attack.type, attack.skill_rules });
+		}
+	}
+
 	return arg.getFirst();
 }
 
@@ -579,6 +589,14 @@ int RuleStatBonus::getBonus(const BattleUnit* unit, int externalBonuses) const
 	ModScript::BonusStatsCommon::Output arg{ externalBonuses };
 	ModScript::BonusStatsCommon::Worker work{ unit, externalBonuses, nullptr, nullptr, BA_NONE, nullptr };
 	work.execute(_container, arg);
+
+	if (auto *lua = LuaHost::active())
+	{
+		if (_luaEvent >= 0)
+		{
+			lua->fire(static_cast<LuaHost::Event>(_luaEvent), arg.data, { unit, externalBonuses, static_cast<const BattleItem*>(nullptr), static_cast<const BattleItem*>(nullptr), BA_NONE, static_cast<const RuleSkill*>(nullptr) });
+		}
+	}
 
 	return arg.getFirst();
 }

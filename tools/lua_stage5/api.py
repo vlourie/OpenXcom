@@ -1,7 +1,7 @@
 # API после самопроверки 06.11 в настоящей игре, всё невидимо: каждый метод вызывается хотя бы раз, отрицательные случаи, редкие обработчики.
 # Список методов берётся из tools/lua_api_doc.py, поэтому новый метод без строки здесь сразу виден как «не вызван».
 # Запуск: py -3.13 tools/lua_stage5/api.py [battle|geo|cost]; без аргумента все три
-import os, re, sys, time
+import os, re, shutil, sys, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -12,12 +12,12 @@ import defects
 from defects import DAMAGE, GAME, HERE, check, failed, lines, run_stand, stand
 
 TAG_SECTIONS = ["BattleUnit", "BattleItem", "BattleGame", "GeoscapeGame", "GeoscapeSoldier", "Country", "Ufo", "Craft",
-                "RuleArmor", "RuleItem", "RuleSoldier", "RuleSoldierBonus", "RuleUfo", "RuleCraft"]
+                "RuleArmor", "RuleItem", "RuleSoldier", "RuleSoldierBonus", "RuleUfo", "RuleCraft", "RuleCountry", "RuleResearch"]
 # имя тега одно на всю игру: одинаковое в двух разделах движок отбрасывает
 RUL = "extended:\n  tags:\n" + "".join(f"    {s}:\n      S5_{s}: int\n" for s in TAG_SECTIONS)
 TAG_OF = {"unit": "BattleUnit", "item": "BattleItem", "battle": "BattleGame", "geoscape": "GeoscapeGame", "soldier": "GeoscapeSoldier", "country": "Country",
           "ufo": "Ufo", "craft": "Craft", "ruleArmor": "RuleArmor", "ruleItem": "RuleItem", "ruleSoldier": "RuleSoldier", "ruleSoldierBonus": "RuleSoldierBonus",
-          "ruleUfo": "RuleUfo", "ruleCraft": "RuleCraft"}
+          "ruleUfo": "RuleUfo", "ruleCraft": "RuleCraft", "ruleCountry": "RuleCountry", "ruleResearch": "RuleResearch"}
 
 # Аргументы, которых не вывести из имени. self - сам объект, u - любой юнит боя.
 SAMPLE = {
@@ -61,6 +61,13 @@ SAMPLE = {
     ("geoscape", "isResearched"): "RESEARCH",
     ("ufo", "getStat"): '"radarRange"',
     ("craft", "getStat"): '"radarRange"',
+    ("geoscape", "randomRangeSymmetric"): "2",
+    ("ruleInventory", "getMoveToCost"): "self",
+    ("rules", "getRuleInventory"): '"STR_RIGHT_HAND"',
+    ("rules", "getSmokeReduction"): "10",
+    ("statsForNerds", "addIntRow"): '"S5INT", 7',
+    ("statsForNerds", "addTextRow"): '"S5TEXT", "S5"',
+    ("statsForNerds", "addTextFormatRow"): '"S5FMT", "{0}/{1}", 1, 2',
 }
 
 
@@ -107,6 +114,8 @@ def probe_fn(kind):
 
 
 HEAD = '''
+local atLoad = game.getRules():getRuleItem("STR_ALIEN_ALLOYS")
+game.log("S5VAL", "rule_at_load", atLoad and atLoad:getType() or "nil")
 local probes, done = {}, {}
 local BATTLE
 local function ANY_ITEM() return BATTLE:getItems()[1]:getRuleItem():getType() end
@@ -140,6 +149,10 @@ game.on("newTurnUnit", function(unit, battle, turn, side)
   local tile = battle:getTile(x, y, z)
   if tile then probes.tile(tile, unit) end
   probes.ruleArmor(unit:getRuleArmor(), unit)
+  local rulesAll = game.getRules()
+  probes.rules(rulesAll, unit)
+  probes.ruleResearch(rulesAll:getRuleResearch("STR_ALIEN_ALLOYS"), unit)
+  probes.ruleInventory(rulesAll:getRuleInventoryRightHand(), unit)
   local geo = battle:getGeoscapeGame()
   probes.geoscape(geo, unit, "STR_ALIEN_ALLOYS")
   local country = geo:getCountries()[1]
@@ -165,6 +178,11 @@ game.on("newTurnUnit", function(unit, battle, turn, side)
     good("tile_outside", tostring(battle:getTile(-1, 0, 0)) .. tostring(battle:getTile(100000, 0, 0)) .. tostring(battle:getTile(0, 0, 100000)))
     good("unit_on_tile", tile and tile:getUnit() and tile:getUnit():getId() == unit:getId())
     good("time_year", geo:getTime().year)
+    good("rule_found", rulesAll:getRuleItem("STR_ALIEN_ALLOYS"):getType())
+    good("rule_missing", tostring(rulesAll:getRuleItem("STR_NO_SUCH_ITEM")))
+    good("inventory_hand", rulesAll:getRuleInventoryRightHand():getType() == game.INV_HAND and rulesAll:getRuleInventoryRightHand():isRightHand())
+    good("inventory_cost", rulesAll:getRuleInventoryRightHand():getMoveToCost(rulesAll:getRuleInventoryLeftHand()))
+    bad("чужой тип вместо ячейки", function() return rulesAll:getRuleInventoryRightHand():getMoveToCost(unit) end)
     -- запись и чтение
     local h = unit:getStat("health")
     unit:setStat("health", h + 3)
@@ -344,6 +362,182 @@ end)
 '''
 
 
+BONUS_NAMES = [name for name in lua_api_doc.EVENTS if name.endswith("BonusStats")]
+HOT = '''
+local seen = {}
+local function once(name)
+  if seen[name] then return false end
+  seen[name] = true
+  game.log("S5SEEN", name)
+  return true
+end
+-- обработчик без случайных чисел: запись, math.random и случайные методы
+local function frozen(name, unit)
+  if unit then bad("запись в обработчике только для чтения: " .. name, function() unit:addHealth(0) end) end
+  bad("случайное число в обработчике: " .. name, function() return math.random(1, 2) end)
+end
+local BONUS = { %s }
+for _, name in ipairs(BONUS) do
+  game.on(name, function(unit, external_bonuses, weapon, ammo, battle_action, skill, out)
+    if once(name) then
+      frozen(name, unit)
+      good("bonus_" .. name, out.bonus)
+    end
+  end)
+end
+
+-- восстановление: у одного юнита очки времени обнулены, бонус велит вернуть 3
+local TU_UNIT
+game.on("timeRecoveryBonusStats", function(unit, external_bonuses, weapon, ammo, battle_action, skill, out)
+  if unit and unit:getId() == TU_UNIT then out.bonus = 3 end
+end)
+
+-- сила оружия: через раз ноль, hitUnit обязан увидеть его в orig_power
+local zero = false
+game.on("damageBonusBonusStats", function(unit, external_bonuses, weapon, ammo, battle_action, skill, out)
+  zero = not zero
+  if zero then out.bonus = 0 end
+end)
+
+-- патрон идёт перед юнитом, цепочка одна
+local beforeHit, beforeDamage, beforeSpecial
+game.on("hitUnitAmmo", function(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)
+  once("hitUnitAmmo")
+  beforeHit = out.power
+  out.power = out.power + 5
+end)
+game.on("hitUnit", function(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)
+  if damaging_item and beforeHit then
+    good("ammo_hit_chain", out.power - beforeHit)
+    beforeHit = nil
+  end
+  if weapon_item and damaging_item and battle_action ~= game.BA_HIT then
+    game.log("S5POWER", zero and "zero" or "full", orig_power)
+  end
+end)
+game.on("damageUnitAmmo", function(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)
+  once("damageUnitAmmo")
+  beforeDamage = out.to_time
+  out.to_time = out.to_time + 3
+end)
+game.on("damageUnit", function(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)
+  if damaging_item and beforeDamage then
+    good("ammo_damage_chain", out.to_time - beforeDamage)
+    beforeDamage = nil
+  end
+end)
+game.on("damageSpecialUnitAmmo", function(unit, damaging_item, weapon_item, attacker, battle, skill, health_damage, orig_power, part, side, damaging_type, battle_action, out)
+  once("damageSpecialUnitAmmo")
+  beforeSpecial = out.morale_loss
+  out.morale_loss = out.morale_loss + 2
+end)
+game.on("damageSpecialUnit", function(unit, damaging_item, weapon_item, attacker, battle, skill, health_damage, orig_power, part, side, damaging_type, battle_action, out)
+  if damaging_item and beforeSpecial then
+    good("ammo_special_chain", out.morale_loss - beforeSpecial)
+    beforeSpecial = nil
+  end
+end)
+
+-- реакция: оружие, действующий, реагирующий идут по порядку
+local chance
+game.on("reactionWeaponAction", function(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)
+  once("reactionWeaponAction")
+  good("reaction_weapon_distance", out.distance)
+end)
+game.on("reactionUnitAction", function(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)
+  if once("reactionUnitAction") then
+    bad("запись в обработчике только для чтения: reactionUnitAction", function() action_unit:addHealth(0) end)
+    good("reaction_arc", arc_to_action_unit)
+    good("reaction_side", action_unit:getFaction() ~= reaction_unit:getFaction())
+  end
+  out.reaction_chance = 37
+end)
+game.on("reactionUnitReaction", function(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)
+  once("reactionUnitReaction")
+  good("reaction_chain", out.reaction_chance)
+  out.reaction_chance = 100
+end)
+
+-- видимость: с хода BLIND никто никого не видит
+local BLIND, blind, shown = 8, false, 0
+game.on("visibilityUnit", function(observer_unit, target_unit, target_tile, distance, distance_max, distance_target_max, smoke_density, fire_density, smoke_density_near_observer, fire_density_near_observer, out)
+  if once("visibilityUnit") then
+    frozen("visibilityUnit", observer_unit)
+    good("visibility_default", out.default_visibility)
+  end
+  if target_unit and shown == 0 then
+    shown = 1
+    good("visibility_target", target_unit:getId() ~= observer_unit:getId())
+  end
+  if blind then out.current_visibility = 0 end
+end)
+game.on("aiCalculateTargetWeight", function(ai_unit, target_unit, battle_game, out)
+  if once("aiCalculateTargetWeight") then
+    bad("запись в обработчике только для чтения: aiCalculateTargetWeight", function() ai_unit:addHealth(0) end)
+    good("ai_weight", out.default_target_weight)
+  end
+  out.current_target_weight = out.current_target_weight + 1
+end)
+game.on("newTurnUnit", function(unit, battle, turn, side)
+  if side ~= unit:getFaction() then return end
+  if turn >= BLIND then
+    if not blind then game.log("S5VIS", "turn", turn, "before") end
+    blind = true
+  end
+  if unit:isKilled() or unit:isStunned() then return end
+  game.log("S5VIS", blind and "blind" or "open", unit:getVisibleUnitsCount())
+  if side == game.FACTION_PLAYER then
+    if TU_UNIT == nil then
+      TU_UNIT = unit:getId()
+      unit:setTimeUnits(0)
+      good("tu_set", unit:getTimeUnits())
+    elseif unit:getId() == TU_UNIT and not done.tu then
+      done.tu = true
+      good("tu_recovery", unit:getTimeUnits())
+    end
+  end
+end)
+''' % ", ".join(f'"{n}"' for n in BONUS_NAMES)
+
+SCREENS = '''
+local seen = {}
+local function once(name)
+  if seen[name] then return false end
+  seen[name] = true
+  game.log("S5SEEN", name)
+  return true
+end
+local function frozen(name, geo)
+  bad("запись в обработчике только для чтения: " .. name, function() geo:setTag("S5_GeoscapeGame", 1) end)
+  bad("случайное число в обработчике: " .. name, function() return math.random(1, 2) end)
+  bad("randomRange в обработчике: " .. name, function() return geo:randomRange(1, 2) end)
+  bad("randomRangeSymmetric в обработчике: " .. name, function() return geo:randomRangeSymmetric(2) end)
+  bad("randomChance в обработчике: " .. name, function() return geo:randomChance(50) end)
+end
+game.on("buyCostItem", function(item_rule, geoscape_game, difficulty_coefficient, out)
+  if once("buyCostItem") then
+    frozen("buyCostItem", geoscape_game)
+    good("buy_coefficient", difficulty_coefficient)
+  end
+  out.cost_current = 7777
+end)
+game.on("sellCostItem", function(item_rule, geoscape_game, difficulty_coefficient, out)
+  if once("sellCostItem") then
+    frozen("sellCostItem", geoscape_game)
+    good("sell_coefficient", difficulty_coefficient)
+  end
+  out.cost_current = 8888
+end)
+for _, name in ipairs({ "statsForNerdsItem", "statsForNerdsArmor", "statsForNerdsCraft", "statsForNerdsUfo" }) do
+  game.on(name, function(rule, nerds, geoscape_game)
+    if once(name) then frozen(name, geoscape_game) end
+    probes.statsForNerds(nerds)
+    nerds:addTextRow("S5 row", name)
+  end)
+end
+'''
+
+
 def mod_code(kinds, tail):
     return HEAD + "".join(probe_fn(k) for k in kinds) + tail
 
@@ -400,7 +594,7 @@ def report_bads(bench, name):
 def battle():
     # страны есть только в кампании: они в случае geo
     kinds = ["unit", "battle", "tile", "ruleArmor", "geoscape", "country", "ruleCountry", "soldier", "ruleSoldier", "ruleUnit",
-             "item", "ruleItem", "ruleDamage", "ruleSoldierBonus"]
+             "item", "ruleItem", "ruleDamage", "ruleSoldierBonus", "rules", "ruleResearch", "ruleInventory"]
     checked = [k for k in kinds if k not in ("ruleSoldierBonus", "country", "ruleCountry")]
     bench, mods, out = stand("api", mod_code(kinds, BATTLE))
     add_tags(mods)
@@ -429,6 +623,10 @@ def battle():
     check("шанс удара идёт от оружия к цели", v.get("melee_chain") == "77", v.get("melee_chain", ""))
     check("пси-атака идёт от оружия к цели", v.get("psi_chain") == "77", v.get("psi_chain", ""))
     check("стоимость хода пишется", v.get("move_cost") == "7/9", v.get("move_cost", ""))
+    check("правило находится по имени", v.get("rule_found") == "STR_ALIEN_ALLOYS", v.get("rule_found", ""))
+    check("незнакомое правило: nil", v.get("rule_missing") == "nil", v.get("rule_missing", ""))
+    check("правая рука: вид руки", v.get("inventory_hand") == "true", v.get("inventory_hand", ""))
+    check("перенос между руками стоит ОВ", int(v.get("inventory_cost", -1)) >= 0, v.get("inventory_cost", ""))
     check("теги боя, геоскейпа, юнита", (v.get("tag_unit"), v.get("tag_battle"), v.get("tag_geo")) == ("41", "42", "43"))
     report_bads(bench, name)
     for ev in sorted(wanted):
@@ -489,6 +687,114 @@ def geo():
     check("выход месяца меняет финансирование", int(right) > 0 and wrong == "0", v.get("funding_after", ""))
     check("неверный detection_type: две ошибки в журнале", text.count("detection_type") == 2, str(text.count("detection_type")))
     check("неверный satisfaction: две ошибки в журнале", text.count("satisfaction") == 2, str(text.count("satisfaction")))
+    check("игра жива", bench.state(name)[0] != "none", bench.state(name)[0])
+    bench.call("stop", "--name", name, timeout=60)
+
+
+def hot():
+    """Обработчики, которые идут часто: бонусы, реакция, видимость, вес цели, и патрон перед юнитом."""
+    bench, mods, out = stand("hot", mod_code([], HOT))
+    add_tags(mods)
+    name = "s5hot"
+    run_stand(bench, name, mods, defects.battle_save(out))
+    wanted = {"hitUnitAmmo", "damageUnitAmmo", "damageSpecialUnitAmmo", "reactionUnitAction", "reactionUnitReaction", "visibilityUnit",
+              "timeRecoveryBonusStats", "energyRecoveryBonusStats", "moraleRecoveryBonusStats", "healthRecoveryBonusStats", "manaRecoveryBonusStats", "stunRecoveryBonusStats",
+              "accuracyMultiplierBonusStats", "damageBonusBonusStats"}
+    have = set()
+    for t in range(int(os.environ.get("S5_TURNS", "20"))):
+        print("ход", t + 1, "секунд", round(bench.end_turn(name), 1), flush=True)
+        have = {l.split("S5SEEN", 1)[1].strip() for l in lines(bench, name, "S5SEEN")}
+        if wanted <= have and t >= 9:
+            break
+    print("видели", sorted(have), flush=True)
+    for ev in sorted(wanted):
+        check("вызван " + ev, ev in have)
+    all_events = {n for n in lua_api_doc.EVENTS if n.endswith("BonusStats")} | {"reactionWeaponAction", "aiCalculateTargetWeight"}
+    for ev in sorted(all_events - wanted - have):
+        print("НЕ ВЫЗВАН ЗА ЭТОТ БОЙ " + ev, flush=True)
+    v = values(bench, name)
+    print(v, flush=True)
+    check("правила читаются и пока грузится main.lua", v.get("rule_at_load") == "STR_ALIEN_ALLOYS", v.get("rule_at_load", ""))
+    check("патрон перед юнитом: hitUnit", v.get("ammo_hit_chain") == "5", v.get("ammo_hit_chain", ""))
+    check("патрон перед юнитом: damageUnit", v.get("ammo_damage_chain") == "3", v.get("ammo_damage_chain", ""))
+    check("патрон перед юнитом: damageSpecialUnit", v.get("ammo_special_chain") == "2", v.get("ammo_special_chain", ""))
+    check("шанс реакции идёт по цепочке", v.get("reaction_chain") == "37", v.get("reaction_chain", ""))
+    check("реагирует чужая сторона", v.get("reaction_side") == "true", v.get("reaction_side", ""))
+    check("бонус восстановления меняет игру: вместо полного запаса почти ничего", v.get("tu_set") == "0" and 3 <= int(v.get("tu_recovery", -1)) < 10, f"{v.get('tu_set')} {v.get('tu_recovery')}, обычно {v.get('bonus_timeRecoveryBonusStats')}")
+    power = [l.split("S5POWER", 1)[1].split() for l in lines(bench, name, "S5POWER")]
+    zero = [int(p[1]) for p in power if p[0] == "zero"]
+    full = [int(p[1]) for p in power if p[0] == "full"]
+    print("сила: при нуле", zero[:20], "без него", full[:20], flush=True)
+    # ноль движок поднимает до единицы
+    check("бонус силы меняет игру", bool(zero) and max(zero) <= 1 and max(full, default=0) > 1, f"{len(zero)} {len(full)}")
+    vis = [l.split("S5VIS", 1)[1].split() for l in lines(bench, name, "S5VIS")]
+    opened = [int(x[1]) for x in vis if x[0] == "open"]
+    blinded = [int(x[1]) for x in vis if x[0] == "blind"]
+    # первая строка слепого хода могла посчитаться до нового обзора: смотрим со второго хода слепоты
+    tail_blind = blinded[len(blinded) // 2:]
+    print("видит: обычный ход сумма", sum(opened), "слепой", sum(blinded), "вторая половина", sum(tail_blind), flush=True)
+    check("видимость меняет игру", sum(opened) > 0 and bool(tail_blind) and sum(tail_blind) == 0, f"{sum(opened)} {sum(tail_blind)} {len(tail_blind)}")
+    report_bads(bench, name)
+    check("игра жива", bench.state(name)[0] in ("BattlescapeState", "NextTurnState"), bench.state(name)[0])
+    errors = bench.folder(name) / "lua_errors.log"
+    text = errors.read_text(encoding="utf-8", errors="replace") if errors.exists() else ""
+    check("журнал ошибок мода пуст", not text, text[:400])
+    bench.call("stop", "--name", name, timeout=60)
+
+
+def screens():
+    """Цены и страницы для нердов на настоящих экранах: нажатия в координатах базы 480x270."""
+    bench, mods, out = stand("screens", mod_code(["statsForNerds"], SCREENS))
+    add_tags(mods)
+    save = out / "screens.sav"
+    shutil.copyfile(GAME / "user/piratez/NoCodexCatZ.sav", save)
+    name = "s5scr"
+    run_stand(bench, name, mods, save)
+    t0 = time.time()
+    while time.time() - t0 < 60:
+        top = bench.state(name)[0]
+        if top == "GeoscapeState" and time.time() - t0 > 8:
+            break
+        if top != "GeoscapeState":
+            bench.run(name, "key 13; wait 800", 30)
+        time.sleep(0.5)
+    def go(cmds, want):
+        res = bench.run(name, cmds, 120)
+        top = bench.state(name)[0]
+        check("экран " + want, top == want, top + " " + res[-200:])
+    # вверху списков люди, цены предметов в конце
+    go(f"key 98; wait 2500; click 335,202; wait 2500; rclick 385,196; wait 800; shot {out / 'buy.png'}", "PurchaseState")
+    go(f"key 27; wait 1500; click 335,215; wait 2500; rclick 385,196; wait 800; shot {out / 'sell.png'}", "SellState")
+    go("key 27; wait 1500; click 335,202; wait 2000; rclick 385,196; wait 800; mclick 140,159; wait 2500", "ArticleStateItem")
+    go(f"key 117; wait 2500; rclick 385,196; wait 800; shot {out / 'nerds_item.png'}", "StatsForNerdsState")
+    go("key 27; wait 800; key 27; wait 800; key 27; wait 800; key 27; wait 1500; key 117; wait 2500", "UfopaediaStartState")
+    # разделы педии Пираток: корабли, чужие корабли; броня ниже людей в списке второго раздела
+    go("click 240,58; wait 1800; click 240,117; wait 1800", "ArticleStateCraft")
+    go(f"key 117; wait 1800; rclick 385,196; wait 800; shot {out / 'nerds_craft.png'}", "StatsForNerdsState")
+    go("key 27; wait 800; key 27; wait 800; key 27; wait 1000; click 240,175; wait 1800; click 240,100; wait 1800", "ArticleStateUfo")
+    go(f"key 117; wait 1800; rclick 385,196; wait 800; shot {out / 'nerds_ufo.png'}", "StatsForNerdsState")
+    go("key 27; wait 800; key 27; wait 800; key 27; wait 1000; click 240,71; wait 1800; rclick 354,194; wait 1000", "UfopaediaSelectState")
+    for y in range(69, 200, 8):
+        bench.run(name, f"click 240,{y}; wait 1200", 30)
+        top = bench.state(name)[0]
+        if top == "ArticleStateArmor":
+            break
+        if top != "UfopaediaSelectState":
+            bench.run(name, "key 27; wait 800", 30)
+    check("экран ArticleStateArmor", top == "ArticleStateArmor", top)
+    go(f"key 117; wait 1800; rclick 385,196; wait 800; shot {out / 'nerds_armor.png'}", "StatsForNerdsState")
+    have = {l.split("S5SEEN", 1)[1].strip() for l in lines(bench, name, "S5SEEN")}
+    print("видели", sorted(have), flush=True)
+    for ev in ("buyCostItem", "sellCostItem", "statsForNerdsItem", "statsForNerdsCraft", "statsForNerdsUfo", "statsForNerdsArmor"):
+        check("вызван " + ev, ev in have)
+    report_methods(bench, name, ["statsForNerds"])
+    report_bads(bench, name)
+    v = values(bench, name)
+    print(v, flush=True)
+    check("коэффициент цены приходит", int(v.get("buy_coefficient", 0)) > 0 and int(v.get("sell_coefficient", 0)) > 0, str(v))
+    errors = bench.folder(name) / "lua_errors.log"
+    text = errors.read_text(encoding="utf-8", errors="replace") if errors.exists() else ""
+    check("журнал ошибок мода пуст", not text, text[:400])
     check("игра жива", bench.state(name)[0] != "none", bench.state(name)[0])
     bench.call("stop", "--name", name, timeout=60)
 
@@ -554,7 +860,7 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     os.environ["OXCE_HIDDEN_DATA"] = str(GAME)
     os.environ["PATH"] = "C:/msys64/mingw64/bin;" + os.environ["PATH"]
-    cases = {"battle": battle, "geo": geo, "bonus": bonus, "cost": cost}
+    cases = {"battle": battle, "hot": hot, "screens": screens, "geo": geo, "bonus": bonus, "cost": cost}
     for key in sys.argv[1:] or cases:
         cases[key]()
     print("ИТОГ:", "всё прошло" if not failed else f"провалов {len(failed)}: {failed}")

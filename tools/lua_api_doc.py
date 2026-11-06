@@ -41,6 +41,10 @@ TYPES = {
     "RULE_COUNTRY": ("ruleCountry", "Правила страны", "Country rules"),
     "RULE_UFO": ("ruleUfo", "Правила НЛО", "UFO rules"),
     "RULE_CRAFT": ("ruleCraft", "Правила корабля", "Craft rules"),
+    "RULE_RESEARCH": ("ruleResearch", "Правила исследования", "Research rules"),
+    "RULE_INVENTORY": ("ruleInventory", "Правила ячейки инвентаря", "Inventory slot rules"),
+    "RULES": ("rules", "Все правила игры", "All the game's rules"),
+    "NERDS": ("statsForNerds", "Страница для нердов", "The stats for nerds page"),
 }
 
 # имена характеристик для getStat, setStat, addStat, getExp
@@ -325,6 +329,9 @@ METHODS = {
         "getDaysPassed": ("", "сколько дней идёт игра", "how many days the game has run"),
         "getCountries": ("", "таблица стран", "a table of the countries"),
         "isResearched": ("name", "исследовано name. Незнакомое имя: ошибка", "name is researched. An unknown name is an error"),
+        "randomRange": ("low, high", "случайное целое от low до high через генератор игры", "a random whole number from low to high through the game's generator"),
+        "randomRangeSymmetric": ("max", "случайное целое от -max до max через генератор игры", "a random whole number from -max to max through the game's generator"),
+        "randomChance": ("percent", "true с этим шансом через генератор игры", "true with this chance through the game's generator"),
         "getTag": ("name", "значение тега GeoscapeGame", "the value of a GeoscapeGame tag"),
         "setTag": ("name, value", "записать тег GeoscapeGame", "write a GeoscapeGame tag"),
     },
@@ -393,18 +400,69 @@ METHODS = {
         "getType": ("", "тип из рулсета, строка", "the type from the ruleset, a string"),
         "getTag": ("name", "значение тега RuleSoldierBonus", "the value of a RuleSoldierBonus tag"),
     },
-    "ruleCountry": {"getType": ("", "тип из рулсета, строка", "the type from the ruleset, a string")},
+    "ruleCountry": {
+        "getType": ("", "тип из рулсета, строка", "the type from the ruleset, a string"),
+        "getFundingCap": ("", "предел финансирования", "the funding cap"),
+        "getTag": ("name", "значение тега RuleCountry", "the value of a RuleCountry tag"),
+    },
     "ruleUfo": {
         "getType": ("", "тип из рулсета, строка", "the type from the ruleset, a string"),
+        "getRadius": ("", "радиус, размер на карте боя", "the radius, the size on the battle map"),
+        "getWeaponRange": ("", "дальность оружия", "the weapon range"),
+        "getWeaponPower": ("", "сила оружия", "the weapon power"),
+        "getWeaponReload": ("", "перезарядка оружия", "the weapon reload"),
         "getTag": ("name", "значение тега RuleUfo", "the value of a RuleUfo tag"),
     },
     "ruleCraft": {
         "getType": ("", "тип из рулсета, строка", "the type from the ruleset, a string"),
+        "getWeaponsMax": ("", "сколько оружия", "how many weapons"),
+        "getSoldiersMax": ("", "сколько мест для солдат", "how many soldier places"),
+        "getVehiclesMax": ("", "сколько мест для техники и крупных солдат", "how many places for vehicles and large soldiers"),
+        "getPilotsMax": ("", "сколько нужно пилотов", "how many pilots it needs"),
         "getTag": ("name", "значение тега RuleCraft", "the value of a RuleCraft tag"),
+    },
+    "ruleResearch": {
+        "getType": ("", "тип из рулсета, строка", "the type from the ruleset, a string"),
+        "getCost": ("", "стоимость в днях учёных", "the cost in scientist days"),
+        "getPoints": ("", "очки за исследование", "the score for the research"),
+        "getLookup": ("", "что открывается вместе с ним, правила исследования или nil", "what opens along with it, the research rules or nil"),
+        "getNeededItem": ("", "нужный предмет, правила предмета или nil", "the item it needs, the item rules or nil"),
+        "getTag": ("name", "значение тега RuleResearch", "the value of a RuleResearch tag"),
+    },
+    "ruleInventory": {
+        "getId": ("", "имя ячейки из рулсета, строка", "the slot's name from the ruleset, a string"),
+        "getType": ("", "вид ячейки: game.INV_SLOT, game.INV_HAND, game.INV_GROUND", "the kind of slot: game.INV_SLOT, game.INV_HAND, game.INV_GROUND"),
+        "isRightHand": ("", "правая рука", "the right hand"),
+        "isLeftHand": ("", "левая рука", "the left hand"),
+        "getMoveToCost": ("other", "сколько очков времени стоит перенос в ячейку other", "how many time units moving to slot other costs"),
+    },
+    "rules": {
+        "getRuleUnit": ("type", "правила юнита этого типа или nil, если такого нет", "the rules of a unit of this type, or nil if there is none"),
+        "getRuleItem": ("type", "правила предмета или nil", "the rules of an item, or nil"),
+        "getRuleArmor": ("type", "правила брони или nil", "the rules of an armor, or nil"),
+        "getRuleSkill": ("type", "правила навыка или nil", "the rules of a skill, or nil"),
+        "getRuleResearch": ("type", "правила исследования или nil", "the rules of a research, or nil"),
+        "getRuleSoldier": ("type", "правила солдата или nil", "the rules of a soldier, or nil"),
+        "getRuleInventory": ("id", "правила ячейки инвентаря или nil", "the rules of an inventory slot, or nil"),
+        "getRuleInventoryRightHand": ("", "правая рука или nil", "the right hand, or nil"),
+        "getRuleInventoryLeftHand": ("", "левая рука или nil", "the left hand, or nil"),
+        "getRuleInventoryBackpack": ("", "рюкзак или nil", "the backpack, or nil"),
+        "getRuleInventoryBelt": ("", "пояс или nil", "the belt, or nil"),
+        "getRuleInventoryGround": ("", "земля или nil", "the ground, or nil"),
+        "getMaxDarknessToSeeUnits": ("", "до какой темноты видно юнитов", "up to what darkness units are seen"),
+        "getMaxViewDistance": ("", "наибольшая дальность зрения в клетках", "the greatest view distance in tiles"),
+        "getSmokeReduction": ("smoke", "сколько вокселей дальности отнимает дым такой плотности", "how many voxels of range smoke of this density takes"),
+    },
+    "statsForNerds": {
+        "addIntRow": ("name, value", "строка с числом", "a row with a number"),
+        "addTextRow": ("name, text", "строка с текстом", "a row with text"),
+        "addTextFormatRow": ("name, format, a[, b]", "строка из шаблона: {0} и {1} заменяются числами a и b", "a row from a template: {0} and {1} are replaced by the numbers a and b"),
     },
 }
 
 HIT = "unit, damaging_item, weapon_item, attacker, battle, skill"
+BONUS = "unit, external_bonuses, weapon, ammo, battle_action, skill"
+REACTION = "action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game"
 # обработчик: (имя в enum, аргументы до out, когда, when)
 EVENTS = {
     "createUnit": ("CREATE_UNIT", "unit, battle, turn", "юнит появился в бою", "a unit appears in the battle"),
@@ -438,6 +496,40 @@ EVENTS = {
     "detectUfoFromCraft": ("DETECT_UFO_FROM_CRAFT", "ufo, geoscape_game, craft, distance, already_tracked, radar_total_strength, radar_max_distance",
                            "корабль пробует заметить НЛО", "a craft tries to detect a UFO"),
     "applySoldierBonuses": ("APPLY_SOLDIER_BONUSES", "unit, battle, bonus", "солдат входит в бой, для каждого его бонуса", "a soldier enters a battle, for each of their bonuses"),
+    "hitUnitAmmo": ("HIT_UNIT_AMMO", HIT + ", orig_power, damaging_type, battle_action", "попадание, до брони, для патрона: идёт перед <code>hitUnit</code> и только если есть чем стреляли", "a hit, before the armor, for the round: comes before <code>hitUnit</code> and only if there is a round"),
+    "damageUnitAmmo": ("DAMAGE_UNIT_AMMO", HIT + ", currPower, orig_power, part, side, damaging_type, battle_action", "расчёт урона для патрона, перед <code>damageUnit</code>", "the damage is worked out for the round, before <code>damageUnit</code>"),
+    "damageSpecialUnitAmmo": ("DAMAGE_SPECIAL_UNIT_AMMO", HIT + ", health_damage, orig_power, part, side, damaging_type, battle_action", "особые последствия для патрона, перед <code>damageSpecialUnit</code>", "the special effects for the round, before <code>damageSpecialUnit</code>"),
+    "reactionWeaponAction": ("REACTION_WEAPON_ACTION", REACTION, "шанс реакции, правило оружия действующего; идёт первым, только если оружие есть", "the reaction chance, the rule of the acting unit's weapon; comes first, only if there is a weapon"),
+    "reactionUnitAction": ("REACTION_UNIT_ACTION", REACTION, "шанс реакции, правило действующего", "the reaction chance, the acting unit's rule"),
+    "reactionUnitReaction": ("REACTION_UNIT_REACTION", REACTION, "шанс реакции, правило реагирующего", "the reaction chance, the reacting unit's rule"),
+    "visibilityUnit": ("VISIBILITY_UNIT", "observer_unit, target_unit, target_tile, distance, distance_max, distance_target_max, smoke_density, fire_density, smoke_density_near_observer, fire_density_near_observer", "видит ли юнит цель или клетку; идёт очень часто", "whether a unit sees a target or a tile; comes very often"),
+    "aiCalculateTargetWeight": ("AI_CALCULATE_TARGET_WEIGHT", "ai_unit, target_unit, battle_game", "вес цели для ИИ", "the weight of a target for the AI"),
+    "sellCostItem": ("SELL_COST_ITEM", "item_rule, geoscape_game, difficulty_coefficient", "цена продажи предмета; приходит и при каждой строке магазина", "the sale price of an item; comes for each row of the shop too"),
+    "buyCostItem": ("BUY_COST_ITEM", "item_rule, geoscape_game, difficulty_coefficient", "цена покупки предмета; приходит и при каждой строке магазина", "the purchase price of an item; comes for each row of the shop too"),
+    "statsForNerdsItem": ("STATS_FOR_NERDS_ITEM", "item_rule, nerds, geoscape_game", "страница для нердов о предмете открыта или обновлена: дописать свои строки", "the nerds' page of an item opens or refreshes: add your rows"),
+    "statsForNerdsArmor": ("STATS_FOR_NERDS_ARMOR", "armor_rule, nerds, geoscape_game", "то же о броне", "the same for an armor"),
+    "statsForNerdsCraft": ("STATS_FOR_NERDS_CRAFT", "craft_rule, nerds, geoscape_game", "то же о корабле", "the same for a craft"),
+    "statsForNerdsUfo": ("STATS_FOR_NERDS_UFO", "ufo_rule, nerds, geoscape_game", "то же о НЛО", "the same for a UFO"),
+    "psiDefenceBonusStats": ("PSI_DEFENCE_BONUS", BONUS, "защита брони от пси", "the armor's psi defence"),
+    "meleeDodgeBonusStats": ("MELEE_DODGE_BONUS", BONUS, "уклонение брони от удара", "the armor's melee dodge"),
+    "timeRecoveryBonusStats": ("TIME_RECOVERY_BONUS", BONUS, "сколько очков времени возвращает броня за ход", "how many time units the armor returns per turn"),
+    "energyRecoveryBonusStats": ("ENERGY_RECOVERY_BONUS", BONUS, "сколько энергии возвращает броня", "how much energy the armor returns"),
+    "moraleRecoveryBonusStats": ("MORALE_RECOVERY_BONUS", BONUS, "сколько боевого духа возвращает броня", "how much morale the armor returns"),
+    "healthRecoveryBonusStats": ("HEALTH_RECOVERY_BONUS", BONUS, "сколько здоровья возвращает броня", "how much health the armor returns"),
+    "manaRecoveryBonusStats": ("MANA_RECOVERY_BONUS", BONUS, "сколько маны возвращает броня", "how much mana the armor returns"),
+    "stunRecoveryBonusStats": ("STUN_RECOVERY_BONUS", BONUS, "сколько оглушения снимает броня", "how much stun the armor removes"),
+    "timeSoldierRecoveryBonusStats": ("TIME_SOLDIER_RECOVERY_BONUS", BONUS, "очки времени от бонуса солдата", "time units from a soldier's bonus"),
+    "energySoldierRecoveryBonusStats": ("ENERGY_SOLDIER_RECOVERY_BONUS", BONUS, "энергия от бонуса солдата", "energy from a soldier's bonus"),
+    "moraleSoldierRecoveryBonusStats": ("MORALE_SOLDIER_RECOVERY_BONUS", BONUS, "боевой дух от бонуса солдата", "morale from a soldier's bonus"),
+    "healthSoldierRecoveryBonusStats": ("HEALTH_SOLDIER_RECOVERY_BONUS", BONUS, "здоровье от бонуса солдата", "health from a soldier's bonus"),
+    "manaSoldierRecoveryBonusStats": ("MANA_SOLDIER_RECOVERY_BONUS", BONUS, "мана от бонуса солдата", "mana from a soldier's bonus"),
+    "stunSoldierRecoveryBonusStats": ("STUN_SOLDIER_RECOVERY_BONUS", BONUS, "оглушение от бонуса солдата", "stun from a soldier's bonus"),
+    "damageBonusBonusStats": ("DAMAGE_BONUS_BONUS", BONUS, "сила предмета с бонусом от характеристик", "the item's power with the bonus from the stats"),
+    "meleeBonusBonusStats": ("MELEE_BONUS_BONUS", BONUS, "сила удара предмета с бонусом", "the item's melee power with the bonus"),
+    "accuracyMultiplierBonusStats": ("ACCURACY_MULTIPLIER_BONUS", BONUS, "точность стрельбы от характеристик", "shooting accuracy from the stats"),
+    "meleeMultiplierBonusStats": ("MELEE_MULTIPLIER_BONUS", BONUS, "точность удара от характеристик", "melee accuracy from the stats"),
+    "throwMultiplierBonusStats": ("THROW_MULTIPLIER_BONUS", BONUS, "точность броска от характеристик", "throwing accuracy from the stats"),
+    "closeQuartersMultiplierBonusStats": ("CLOSE_QUARTERS_MULTIPLIER_BONUS", BONUS, "точность в упор от характеристик", "close quarters accuracy from the stats"),
 }
 
 # аргумент обработчика: (по-русски, по-английски)
@@ -489,6 +581,37 @@ ARG_WORDS = {
     "hyperwave_total_strength": ("общая сила гипердетекторов", "the total strength of the hyperwave decoders"),
     "hyperwave_max_distance": ("дальность гипердетекторов", "the range of the hyperwave decoders"),
     "bonus": ("бонус солдата", "the soldier's bonus"),
+    "external_bonuses": ("добавка от движка, с неё начинается <code>out.bonus</code>", "the engine's addition, <code>out.bonus</code> starts from it"),
+    "ammo": ("патрон или nil; в обработчиках без выстрела nil", "the round or nil; nil in handlers with no shot"),
+    "action_unit": ("кто действует", "who acts"),
+    "reaction_unit": ("кто реагирует", "who reacts"),
+    "reaction_weapon": ("чем реагирует, может быть nil", "what it reacts with, may be nil"),
+    "reaction_battle_action": ("каким действием реагирует, <code>BA_*</code>", "by which action it reacts, <code>BA_*</code>"),
+    "reaction_count": ("счётчик реакций этого юнита", "the count of this unit's reactions"),
+    "action_target": ("цель действия, клетка; может быть nil", "the action's target, a tile; may be nil"),
+    "arc_to_action_unit": ("с какой стороны действующий: 0 спереди, 4 сзади", "where the acting unit is: 0 the front, 4 the rear"),
+    "battle_game": ("бой", "the battle"),
+    "observer_unit": ("кто смотрит", "who looks"),
+    "target_unit": ("цель; в <code>visibilityUnit</code> nil, если проверяется клетка", "the target; nil in <code>visibilityUnit</code> if a tile is checked"),
+    "target_tile": ("клетка цели", "the target's tile"),
+    "distance_max": ("наибольшая дальность зрения для цели, в вокселях", "the greatest view distance for the target, in voxels"),
+    "distance_target_max": ("наибольшая дальность зрения для цели, в клетках", "the greatest view distance for the target, in tiles"),
+    "smoke_density": ("дым на пути", "the smoke on the way"),
+    "fire_density": ("огонь на пути", "the fire on the way"),
+    "smoke_density_near_observer": ("дым у смотрящего", "the smoke near the observer"),
+    "fire_density_near_observer": ("огонь у смотрящего", "the fire near the observer"),
+    "ai_unit": ("юнит ИИ", "the AI's unit"),
+    "item_rule": ("правила предмета", "the item rules"),
+    "armor_rule": ("правила брони", "the armor rules"),
+    "craft_rule": ("правила корабля", "the craft rules"),
+    "ufo_rule": ("правила НЛО", "the UFO rules"),
+    "difficulty_coefficient": ("множитель цены этой игры, в процентах", "this game's price multiplier, in percent"),
+    "nerds": ("страница для нердов, в неё дописываются строки", "the nerds' page, rows are added to it"),
+}
+
+REACTION_OUT = {
+    "reaction_chance": ("шанс реакции в процентах", "the reaction chance in percent"),
+    "distance": ("расстояние до действующего, в вокселях", "the distance to the acting unit, in voxels"),
 }
 
 # обработчик: выходное значение: (по-русски, по-английски). Смысл прочитан в BattleUnit::damage, TileEngine::medikitUse, skillUse, BattleUnit::postMissionProcedures
@@ -564,7 +687,50 @@ OUT_WORDS = {
         "detection_type": ("как заметит, <code>DETECTION_*</code>; другое значение: ошибка", "how it detects, <code>DETECTION_*</code>; another value is an error"),
         "detection_chance": ("шанс в процентах", "the chance in percent"),
     },
+    "reactionWeaponAction": REACTION_OUT,
+    "reactionUnitAction": REACTION_OUT,
+    "reactionUnitReaction": REACTION_OUT,
+    "visibilityUnit": {
+        "current_visibility": ("больше нуля: цель видна. Это запас видимости, а не шанс", "above zero the target is seen. It is a margin of visibility, not a chance"),
+        "default_visibility": ("запас видимости без скриптов", "the margin of visibility without scripts"),
+    },
+    "aiCalculateTargetWeight": {
+        "current_target_weight": ("вес цели: чем больше, тем охотнее ИИ её выберет", "the target's weight: the higher, the more readily the AI picks it"),
+        "default_target_weight": ("вес из рулсета", "the weight from the ruleset"),
+    },
+    "sellCostItem": {
+        "cost_current": ("цена продажи с поправками", "the sale price with adjustments"),
+        "cost_base": ("цена продажи из рулсета", "the sale price from the ruleset"),
+    },
+    "buyCostItem": {
+        "cost_current": ("цена покупки с поправками", "the purchase price with adjustments"),
+        "cost_base": ("цена покупки из рулсета", "the purchase price from the ruleset"),
+    },
+    "psiDefenceBonusStats": {"bonus": ("итог защиты от пси", "the final psi defence")},
+    "meleeDodgeBonusStats": {"bonus": ("итог уклонения", "the final dodge")},
+    "damageBonusBonusStats": {"bonus": ("итоговая сила предмета", "the item's final power")},
+    "meleeBonusBonusStats": {"bonus": ("итоговая сила удара", "the final melee power")},
+    "accuracyMultiplierBonusStats": {"bonus": ("итог расчёта точности", "the final accuracy")},
+    "meleeMultiplierBonusStats": {"bonus": ("итог расчёта точности", "the final accuracy")},
+    "throwMultiplierBonusStats": {"bonus": ("итог расчёта точности", "the final accuracy")},
+    "closeQuartersMultiplierBonusStats": {"bonus": ("итог расчёта точности", "the final accuracy")},
+    "timeRecoveryBonusStats": {"bonus": ("итог, сколько очков времени за ход", "the final amount of time units per turn")},
+    "timeSoldierRecoveryBonusStats": {"bonus": ("сколько очков времени даёт бонус", "the amount of time units the bonus gives")},
+    "energyRecoveryBonusStats": {"bonus": ("итог, сколько энергии за ход", "the final amount of energy per turn")},
+    "energySoldierRecoveryBonusStats": {"bonus": ("сколько энергии даёт бонус", "the amount of energy the bonus gives")},
+    "moraleRecoveryBonusStats": {"bonus": ("итог, сколько боевого духа за ход", "the final amount of morale per turn")},
+    "moraleSoldierRecoveryBonusStats": {"bonus": ("сколько боевого духа даёт бонус", "the amount of morale the bonus gives")},
+    "healthRecoveryBonusStats": {"bonus": ("итог, сколько здоровья за ход", "the final amount of health per turn")},
+    "healthSoldierRecoveryBonusStats": {"bonus": ("сколько здоровья даёт бонус", "the amount of health the bonus gives")},
+    "manaRecoveryBonusStats": {"bonus": ("итог, сколько маны за ход", "the final amount of mana per turn")},
+    "manaSoldierRecoveryBonusStats": {"bonus": ("сколько маны даёт бонус", "the amount of mana the bonus gives")},
+    "stunRecoveryBonusStats": {"bonus": ("итог, сколько оглушения за ход", "the final amount of stun per turn")},
+    "stunSoldierRecoveryBonusStats": {"bonus": ("сколько оглушения даёт бонус", "the amount of stun the bonus gives")},
 }
+
+OUT_WORDS["hitUnitAmmo"] = OUT_WORDS["hitUnit"]
+OUT_WORDS["damageUnitAmmo"] = OUT_WORDS["damageUnit"]
+OUT_WORDS["damageSpecialUnitAmmo"] = OUT_WORDS["damageSpecialUnit"]
 
 HIT_HEAD = "game.on(\"hitUnit\", function(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)\n"
 DAMAGE_HEAD = "game.on(\"damageUnit\", function(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)\n"
@@ -695,6 +861,52 @@ RECIPES = [
              "    out.fundingChange = 0\n"
              "  end\n"
              "end)\n"},
+    {"id": "shop", "ru": "Цена в магазине", "en": "A price in the shop",
+     "ru_text": "Всё продаётся на четверть дороже. Обработчик приходит при каждой строке магазина: случайных чисел в нём быть не может, тяжёлых расчётов не нужно.",
+     "en_text": "Everything sells a quarter dearer. The handler comes for each row of the shop: there can be no random numbers in it, and heavy work is not needed.",
+     "code": "game.on(\"sellCostItem\", function(item_rule, geoscape_game, difficulty_coefficient, out)\n"
+             "  out.cost_current = out.cost_current * 125 // 100\n"
+             "end)\n"},
+    {"id": "alert", "ru": "Свой шанс реакции", "en": "A reaction chance of your own",
+     "ru_text": "Реакция на цель сзади вдвое вероятнее. Шанс считается перед каждым выстрелом реакции и идёт дальше в <code>reactionUnitReaction</code>.",
+     "en_text": "A reaction to a target from behind is twice as likely. The chance is worked out before each reaction shot and goes on to <code>reactionUnitReaction</code>.",
+     "code": "game.on(\"reactionUnitReaction\", function(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)\n"
+             "  if arc_to_action_unit >= 3 then\n"
+             "    out.reaction_chance = out.reaction_chance * 2\n"
+             "  end\n"
+             "end)\n"},
+    {"id": "camo", "ru": "Камуфляж", "en": "Camouflage",
+     "ru_text": "Юнит с тегом брони <code>MY_CAMO</code> не виден дальше 10 клеток. Обработчик идёт на каждую пару юнитов при каждом шаге: только простой расчёт, без журнала.",
+     "en_text": "A unit in armor with the tag <code>MY_CAMO</code> is not seen beyond 10 tiles. The handler comes for each pair of units at each step: only simple work, no log.",
+     "rul": "extended:\n  tags:\n    RuleArmor:\n      MY_CAMO: int\narmors:\n  - type: STR_NONE_UC\n    tags:\n      MY_CAMO: 1\n",
+     "code": "game.on(\"visibilityUnit\", function(observer_unit, target_unit, target_tile, distance, distance_max, distance_target_max, smoke_density, fire_density, smoke_density_near_observer, fire_density_near_observer, out)\n"
+             "  if target_unit and target_unit:getRuleArmor():getTag(\"MY_CAMO\") == 1 and distance > 10 * 16 then\n"
+             "    out.current_visibility = 0\n"
+             "  end\n"
+             "end)\n"},
+    {"id": "tired", "ru": "Раненый устаёт", "en": "The wounded get tired",
+     "ru_text": "Раненый вполовину юнит получает за ход на 10 очков времени меньше. <code>out.bonus</code> приходит с расчётом рулсета, так же устроены сила и точность оружия, защита от пси и уклонение.",
+     "en_text": "A unit at half health gets 10 time units less per turn. <code>out.bonus</code> comes with the ruleset's calculation, the power and accuracy of a weapon, psi defence and dodge work the same way.",
+     "code": "game.on(\"timeRecoveryBonusStats\", function(unit, external_bonuses, weapon, ammo, battle_action, skill, out)\n"
+             "  if unit:getHealth() * 2 < unit:getHealthMax() then\n"
+             "    out.bonus = out.bonus - 10\n"
+             "  end\n"
+             "end)\n"},
+    {"id": "nerds", "ru": "Строка на странице для нердов", "en": "A row on the nerds' page",
+     "ru_text": "Своя строка на странице предмета. Игрок её только читает, на бой она не влияет.",
+     "en_text": "A row of your own on an item's page. The player only reads it, it does not affect the battle.",
+     "code": "game.on(\"statsForNerdsItem\", function(item_rule, nerds, geoscape_game)\n"
+             "  if item_rule:isTwoHanded() then\n"
+             "    nerds:addTextRow(\"My mod\", \"two-handed: slower reactions\")\n"
+             "  end\n"
+             "end)\n"},
+    {"id": "other_mod", "ru": "Поиск правила другого мода", "en": "Looking up another mod's rule",
+     "ru_text": "Мод проверяет, стоит ли другой мод: нет такого правила, <code>getRuleItem</code> вернёт nil, ошибки не будет.",
+     "en_text": "A mod checks whether another mod is installed: without such a rule <code>getRuleItem</code> returns nil, there is no error.",
+     "code": "local other = game.getRules():getRuleItem(\"STR_ALIEN_ALLOYS\")\n"
+             "if other then\n"
+             "  game.log(\"found: \" .. other:getType())\n"
+             "end\n"},
 ]
 
 CONST_WORDS = {
@@ -715,6 +927,7 @@ CONST_WORDS = {
     "SATISFACTION": ("настроение страны: satisfaction", "a country's mood: satisfaction"),
     "UFO": ("состояние НЛО: getStatus", "UFO status: getStatus"),
     "DETECTION": ("обнаружение НЛО: detection_type", "UFO detection: detection_type"),
+    "INV": ("виды ячеек: ruleInventory:getType", "slot kinds: ruleInventory:getType"),
 }
 
 TEXT = {
@@ -735,13 +948,18 @@ TEXT = {
             ("Бой", "сообщения, скрытие юнита, открытие клеток игроку, уровень снаряжения врага, списки юнитов и предметов"),
             ("Солдат", "постоянные характеристики, раны, недостающие здоровье и мана"),
             ("Расчёты движка", "шанс пси-атаки и удара, сколько опыта за попадание, звук шага, замечено ли НЛО, итог месяца для страны"),
+            ("Реакции и видимость", "шанс реакции, видит ли юнит цель, камуфляж, вес цели для ИИ"),
+            ("Формулы из рулсета", "сила и точность оружия, защита от пси, уклонение, восстановление за ход"),
+            ("Магазин и справка", "цены покупки и продажи, свои строки на странице для нердов"),
+            ("Чужие правила", "найти правила предмета, брони, юнита, навыка, исследования и ячейки инвентаря по имени"),
             ("Конец миссии", "срок лечения, сколько здоровья и маны солдат недобирает на базе"),
             ("Служебное", "теги юнита, предмета, боя, солдата и геоскейпа, журнал"),
         ],
         "cannot": "<b>Из Lua нельзя:</b>"
-                  "<ul><li>базы, наука, производство, деньги: геоскейп можно читать, а менять только теги, итог месяца для страны и обнаружение НЛО;</li>"
+                  "<ul><li>базы, наука, производство, деньги: геоскейп можно читать, а менять только теги, итог месяца для страны, обнаружение НЛО и цены;</li>"
                   "<li>создавать и двигать юнитов и предметы, менять карту;</li>"
-                  "<li>спрайты, перекраску, свои экраны, расчёт видимости и реакций, решения ИИ, цены. Эти обработчики Y-script в Lua не вынесены, для них есть Y-script.</li></ul>"
+                  "<li>спрайты и перекраску: эти обработчики Y-script идут из потоков рисования на каждый кадр, для них есть Y-script;</li>"
+                  "<li>свои экраны и выбор действий ИИ, кроме веса цели.</li></ul>"
                   "<b>Рядом с кодом работает обычный OXCE.</b> Папка <code>Ruleset/</code> мода с файлами <code>.rul</code> подключается как у любого мода: там меняются числа предметов, брони и юнитов, исследования и всё остальное, что умеют рулсеты, в том числе Y-script. "
                   "Нужна новая возможность в Lua — напишите нам тикет с описанием, что мод должен делать.",
         "h_args": "Аргументы",
@@ -761,15 +979,16 @@ TEXT = {
         "th_event": "Обработчик", "th_when": "Когда", "th_out": "out",
         "readonly": "только чтение",
         "only_reads": "только читает",
+        "pure": "без случайных чисел",
         "h_api": "Объекты",
         "th_method": "Метод", "th_what": "Что делает",
         "h_game": "Таблица game",
-        "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры.",
+        "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше.",
         "h_const": "Константы",
         "h_tags": "Теги: память между сохранениями",
         "tags": "Переменные Lua обнуляются при загрузке сейва, в новом бою и по Ctrl+F5. Долгая память — только теги. Тег объявляется в рулсете мода, например в файле <code>Ruleset/my_mod.rul</code>:"
                 "<pre>extended:\n  tags:\n    BattleUnit:\n      MY_REGEN: int\n    BattleItem:\n      MY_CHARGE: int</pre>"
-                "Разделы по объектам: BattleUnit, BattleItem, BattleGame, GeoscapeGame, GeoscapeSoldier, Country, Ufo, Craft, RuleArmor, RuleItem, RuleSoldier, RuleSoldierBonus, RuleUfo, RuleCraft. Имя тега одно на всю игру: то же имя во втором разделе движок отбросит с ошибкой в своём журнале. "
+                "Разделы по объектам: BattleUnit, BattleItem, BattleGame, GeoscapeGame, GeoscapeSoldier, Country, Ufo, Craft, RuleArmor, RuleItem, RuleSoldier, RuleSoldierBonus, RuleUfo, RuleCraft, RuleCountry, RuleResearch. Имя тега одно на всю игру: то же имя во втором разделе движок отбросит с ошибкой в своём журнале. "
                 "В коде имя без приставки: <code>unit:getTag(\"MY_REGEN\")</code>. Чтение и запись незнакомого тега — ошибка: опечатка видна сразу. Тег с одним именем в двух модах — один на двоих. "
                 "Значение живёт, пока мод стоит: сейв без мода грузится и играется, но новое сохранение без мода значения теряет.",
         "h_lua": "Что есть в самой Lua",
@@ -788,7 +1007,10 @@ TEXT = {
         "know": "<li>Объект живёт только внутри обработчика, который его получил. Сохранённый в переменной даёт ошибку Lua, игра не падает.</li>"
                 "<li>Порядок <code>pairs</code> постоянен только у строковых ключей. Ключи-таблицы и <code>tostring(таблица)</code> зависят от адресов: у двух игроков тот же мод даст разный итог.</li>"
                 "<li><code>health_recovery</code> у <code>healUnit</code> действует только на часть тела с раной, как и у Y-script.</li>"
-                "<li>Обработчик <code>hitUnit</code>, <code>damageUnit</code> или <code>damageSpecialUnit</code> лишает ИИ точного прогноза выстрела: он считает результат неизвестным и может стрелять по неуязвимой цели.</li>"
+                "<li>Обработчик <code>hitUnit</code>, <code>damageUnit</code>, <code>damageSpecialUnit</code>, их <code>...Ammo</code>, <code>damageBonusBonusStats</code> или <code>meleeBonusBonusStats</code> лишает ИИ точного прогноза выстрела: он считает результат неизвестным и может стрелять по неуязвимой цели.</li>"
+                "<li>Обработчики с пометкой «без случайных чисел» приходят из списков, подсказок и прогнозов, и сколько раз, игра не определяет: случайное число там сдвинуло бы общий генератор, поэтому <code>math.random</code>, <code>randomRange</code> и <code>randomChance</code> в них — ошибка. Изменить что-то кроме <code>out</code> там тоже нельзя.</li>"
+                "<li><code>visibilityUnit</code>, бонусы и цены идут очень часто: на каждую пару юнитов при каждом шаге, на каждую строку магазина. Тяжёлый код или журнал на каждый вызов замедлят игру, а расчёт списков упрётся в лимит.</li>"
+                "<li>Там, где движок считает те же формулы в фоновых потоках, Lua не вызывается: остаётся значение Y-script. Итог действия считается в основном потоке и учитывает Lua.</li>"
                 "<li>Методы <code>set...</code> и <code>add...</code> сами держат значение в границах: здоровье и очки времени не выше максимума, боевой дух от 0 до 100. Поэтому прибавка очков времени в начале хода обычно ничего не даёт: они уже полные.</li>"
                 "<li><code>damageSpecialUnit</code> приходит и при нулевом уроне, <code>damageUnit</code> только при силе попадания больше нуля.</li>"
                 "<li><code>getUnits</code>, <code>getItems</code> и другие списки делают новую таблицу при каждом вызове и платят за каждый элемент. Лимит памяти или тактов даёт ошибку <code>not enough memory</code> или про лимит: вызывайте их редко, а не на каждый предмет каждого хода.</li>"
@@ -814,13 +1036,18 @@ TEXT = {
             ("The battle", "messages, concealing a unit, discovering tiles for the player, the enemy's item level, lists of units and items"),
             ("A soldier", "permanent stats, wounds, missing health and mana"),
             ("The engine's calculations", "the chance of psi and melee attacks, how much experience a hit gives, the sound of a step, whether a UFO is detected, the end of a month for a country"),
+            ("Reactions and visibility", "the reaction chance, whether a unit sees a target, camouflage, a target's weight for the AI"),
+            ("Formulas from the ruleset", "a weapon's power and accuracy, psi defence, dodge, recovery per turn"),
+            ("The shop and the reference", "purchase and sale prices, your own rows on the nerds' page"),
+            ("Other rules", "find the rules of an item, armor, unit, skill, research or inventory slot by name"),
             ("The end of a mission", "the recovery time, how much health and mana a soldier lacks at the base"),
             ("Service", "tags of units, items, the battle, soldiers and the geoscape, the log"),
         ],
         "cannot": "<b>From Lua you cannot:</b>"
-                  "<ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month and UFO detection can be changed;</li>"
+                  "<ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li>"
                   "<li>create or move units and items, change the map;</li>"
-                  "<li>touch sprites, recolouring, your own screens, the calculation of visibility and reactions, AI decisions, prices. Those Y-script handlers are not in Lua, the Y-script is there for them.</li></ul>"
+                  "<li>touch sprites and recolouring: those Y-script handlers come from the drawing threads on every frame, the Y-script is there for them;</li>"
+                  "<li>make your own screens or choose the AI's actions, except a target's weight.</li></ul>"
                   "<b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. "
                   "If you need something new in Lua, send us a ticket saying what the mod should do.",
         "h_args": "Arguments",
@@ -840,15 +1067,16 @@ TEXT = {
         "th_event": "Handler", "th_when": "When", "th_out": "out",
         "readonly": "read only",
         "only_reads": "only reads",
+        "pure": "no random numbers",
         "h_api": "Objects",
         "th_method": "Method", "th_what": "What it does",
         "h_game": "The game table",
-        "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log.",
+        "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above.",
         "h_const": "Constants",
         "h_tags": "Tags: memory between saves",
         "tags": "Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset, for example in the file <code>Ruleset/my_mod.rul</code>:"
                 "<pre>extended:\n  tags:\n    BattleUnit:\n      MY_REGEN: int\n    BattleItem:\n      MY_CHARGE: int</pre>"
-                "The sections go by object: BattleUnit, BattleItem, BattleGame, GeoscapeGame, GeoscapeSoldier, Country, Ufo, Craft, RuleArmor, RuleItem, RuleSoldier, RuleSoldierBonus, RuleUfo, RuleCraft. A tag name is one for the whole game: the same name in a second section is dropped by the engine with an error in its log. "
+                "The sections go by object: BattleUnit, BattleItem, BattleGame, GeoscapeGame, GeoscapeSoldier, Country, Ufo, Craft, RuleArmor, RuleItem, RuleSoldier, RuleSoldierBonus, RuleUfo, RuleCraft, RuleCountry, RuleResearch. A tag name is one for the whole game: the same name in a second section is dropped by the engine with an error in its log. "
                 "In the code the name has no prefix: <code>unit:getTag(\"MY_REGEN\")</code>. Reading or writing an unknown tag is an error: a typo shows at once. A tag of the same name in two mods is shared by them. "
                 "A value lives while the mod is installed: a save without the mod loads and plays, but a new save made without the mod loses the values.",
         "h_lua": "What Lua itself has",
@@ -867,7 +1095,10 @@ TEXT = {
         "know": "<li>An object lives only inside the handler that received it. One kept in a variable gives a Lua error, the game does not crash.</li>"
                 "<li>The order of <code>pairs</code> is stable only for string keys. Table keys and <code>tostring(table)</code> depend on addresses: the same mod gives two players different results.</li>"
                 "<li><code>health_recovery</code> of <code>healUnit</code> works only on a body part with a wound, as in the Y-script.</li>"
-                "<li>A <code>hitUnit</code>, <code>damageUnit</code> or <code>damageSpecialUnit</code> handler takes the AI's exact forecast of a shot away: it treats the result as unknown and may shoot at an invulnerable target.</li>"
+                "<li>A <code>hitUnit</code>, <code>damageUnit</code>, <code>damageSpecialUnit</code>, their <code>...Ammo</code>, <code>damageBonusBonusStats</code> or <code>meleeBonusBonusStats</code> handler takes the AI's exact forecast of a shot away: it treats the result as unknown and may shoot at an invulnerable target.</li>"
+                "<li>Handlers marked \"no random numbers\" come from lists, tooltips and forecasts, and how many times is not up to the game: a random number there would shift the common generator, so <code>math.random</code>, <code>randomRange</code> and <code>randomChance</code> in them are an error. Nothing but <code>out</code> can be changed there either.</li>"
+                "<li><code>visibilityUnit</code>, the bonuses and the prices come very often: for each pair of units at each step, for each row of the shop. Heavy code or a log line on every call slows the game, and working out lists will hit the limit.</li>"
+                "<li>Where the engine works the same formulas out in background threads, Lua is not called: the value of the Y-script stays. The outcome of an action is worked out in the main thread and takes Lua into account.</li>"
                 "<li><code>set...</code> and <code>add...</code> methods keep the value within its limits themselves: health and time units no higher than the maximum, morale from 0 to 100. So adding time units at the start of a turn usually does nothing: they are already full.</li>"
                 "<li><code>damageSpecialUnit</code> comes at zero damage too, <code>damageUnit</code> only when the power of the hit is above zero.</li>"
                 "<li><code>getUnits</code>, <code>getItems</code> and other lists make a new table on every call and pay for each element. The memory or tick limit gives an error <code>not enough memory</code> or about the limit: call them rarely, not for every item of every turn.</li>"
@@ -912,8 +1143,8 @@ def read_engine():
     if not m:
         fail(["нет таблицы EVENTS в LuaHost.cpp"])
     events = {}
-    for name, outs, ro, reads in re.findall(r'\{\s*"(\w+)",\s*\{([^}]*)\},\s*\{([^}]*)\}(\s*,\s*true)?', m.group(1)):
-        events[name] = (re.findall(r'"(\w+)"', outs), set(re.findall(r'"(\w+)"', ro)), bool(reads))
+    for name, outs, ro, reads, pure in re.findall(r'\{\s*"(\w+)",\s*\{([^}]*)\},\s*\{([^}]*)\}(\s*,\s*true)?(\s*,\s*\{\s*\}\s*,\s*true)?', m.group(1)):
+        events[name] = (re.findall(r'"(\w+)"', outs), set(re.findall(r'"(\w+)"', ro)), bool(reads), bool(pure))
     m = re.search(r"const Constant CONSTANTS\[\] = \{(.*?)\n\};", src, re.S)
     constants = re.findall(r'\{\s*"(\w+)"\s*,', m.group(1))
 
@@ -924,6 +1155,8 @@ def read_engine():
             continue
         for enum, args in re.findall(r"lua->fire\(LuaHost::(\w+),\s*(?:[\w.]+,\s*)?\{([^}]*)\}\s*\)", text):
             calls[enum] = len([a for a in args.split(",") if a.strip()])
+        for args in re.findall(r"lua->fire\(static_cast<LuaHost::Event>\(_luaEvent\),\s*[\w.]+,\s*\{([^}]*)\}\s*\)", text):
+            calls["BONUS"] = len([a for a in args.split(",") if a.strip()])
 
     sandbox = SANDBOX.read_text(encoding="utf-8-sig")
     m = re.search(r"BASE_ALLOWED\[\] = \{(.*?)\};", sandbox, re.S)
@@ -955,14 +1188,15 @@ def check_words(tables, events, calls):
     problems += [f"обработчик {n} нет описания" for n in events if n not in EVENTS]
     problems += [f"обработчик {n} описан, а в движке нет" for n in EVENTS if n not in events]
     for name, (enum, args, *_rest) in EVENTS.items():
-        if enum not in calls:
+        called = calls.get("BONUS" if enum.endswith("_BONUS") else enum)
+        if called is None:
             problems.append(f"{name}: вызов lua->fire(LuaHost::{enum}) не найден")
-        elif calls[enum] != len(args.split(",")):
-            problems.append(f"{name}: в движке аргументов {calls[enum]}, в описании {len(args.split(','))}")
+        elif called != len(args.split(",")):
+            problems.append(f"{name}: в движке аргументов {called}, в описании {len(args.split(','))}")
         problems += [f"{name}: аргумент {a} без описания" for a in (x.strip() for x in args.split(",")) if a not in ARG_WORDS]
     used = {x.strip() for _enum, args, *_rest in EVENTS.values() for x in args.split(",")}
     problems += [f"аргумент {a} описан, а его нет ни у кого" for a in ARG_WORDS if a not in used]
-    for name, (outs, _ro, _reads) in events.items():
+    for name, (outs, _ro, _reads, _pure) in events.items():
         words = OUT_WORDS.get(name, {})
         problems += [f"{name}: out.{o} без описания" for o in outs if o not in words]
         problems += [f"{name}: out.{o} описан, а в движке нет" for o in words if o not in outs]
@@ -994,17 +1228,18 @@ def page(lang, tables, events, constants, base, numbers):
            *recipes_html(lang),
            f"<h2>{t['h_events']}</h2><p>{t['events']}</p>",
            f"<table><tr><th>{t['th_event']}</th><th>{t['th_when']}</th><th>{t['th_out']}</th></tr>"]
-    for name, (outs, ro, reads) in events.items():
+    for name, (outs, ro, reads, pure) in events.items():
         _enum, args, *when = EVENTS[name]
         full = args + (", out" if outs else "")
         listed = ", ".join(f'<code>{o}</code>' + (f' <span class="ro">({t["readonly"]})</span>' if o in ro else "") for o in outs) or "-"
         mark = f' <span class="ro">({t["only_reads"]})</span>' if reads else ""
-        out.append(f'<tr id="event.{name}"><td><code>{name}({full})</code>{mark}</td><td>{html.escape(when[i])}</td><td>{listed}</td></tr>')
+        mark += f' <span class="ro">({t["pure"]})</span>' if pure else ""
+        out.append(f'<tr id="event.{name}"><td><code>{name}({full})</code>{mark}</td><td>{when[i]}</td><td>{listed}</td></tr>')
     out.append("</table>")
     out.append(f"<h3>{t['h_args']}</h3><p>{t['args_note']}</p><ul>")
     out += [f"<li><code>{a}</code>: {words[i]}</li>" for a, words in ARG_WORDS.items()]
     out.append(f"</ul><h3>{t['h_outs']}</h3><table><tr><th>{t['th_event']}</th><th>{t['th_out']}</th><th>{t['th_what']}</th></tr>")
-    for name, (outs, ro, _reads) in events.items():
+    for name, (outs, ro, _reads, _pure) in events.items():
         for o in outs:
             mark = f' <span class="ro">({t["readonly"]})</span>' if o in ro else ""
             out.append(f"<tr><td><code>{name}</code></td><td><code>{o}</code>{mark}</td><td>{OUT_WORDS[name][o][i]}</td></tr>")

@@ -67,6 +67,7 @@ class RuleResearch
 public:
 	/// Name of class used in script.
 	static constexpr const char* ScriptName = "RuleResearch";
+	const ScriptValues<RuleResearch>& getScriptValuesRaw() const { return _scriptValues; }
 	/// Register all useful function used by script.
 	static void ScriptRegister(ScriptParserBase* parser);
 

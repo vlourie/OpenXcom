@@ -61,8 +61,34 @@ PROBES = {
     "month": ('game.on("newMonthCountry", function(country, geoscape_game, totalXcomScore, totalAlienScore, out)\n  out.fundingChange = -5\nend)\n',
               'game.on("newMonthCountry", function(country, geoscape_game, totalXcomScore, totalAlienScore, out)\n  say("month", totalXcomScore, totalAlienScore, out.fundingChange)\nend)\n'),
 }
+PROBES["alert"] = ('game.on("reactionUnitReaction", function(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)\n  before = out.reaction_chance\nend)\n',
+                   'game.on("reactionUnitReaction", function(action_unit, reaction_unit, reaction_weapon, reaction_battle_action, reaction_count, weapon, skill, battle_action, action_target, move, arc_to_action_unit, battle_game, out)\n  say("alert", arc_to_action_unit, before, out.reaction_chance)\nend)\n')
+VIS = "observer_unit, target_unit, target_tile, distance, distance_max, distance_target_max, smoke_density, fire_density, smoke_density_near_observer, fire_density_near_observer, out"
+PROBES["camo"] = (f'game.on("visibilityUnit", function({VIS})\n  before = out.current_visibility\nend)\n',
+                  f'local hidden, open = 0, 0\ngame.on("visibilityUnit", function({VIS})\n'
+                  '  if target_unit and target_unit:getRuleArmor():getTag("MY_CAMO") == 1 then\n'
+                  '    local far = distance > 32\n'
+                  '    if far and hidden < 25 then hidden = hidden + 1; say("camo", "far", before, out.current_visibility) end\n'
+                  '    if not far and open < 25 then open = open + 1; say("camo", "near", before, out.current_visibility) end\n'
+                  '  end\nend)\n')
+PROBES["tired"] = ('local pressed = 0\ngame.on("newTurnUnit", function(unit, battle, turn, side)\n'
+                   '  if side == unit:getFaction() and side == game.FACTION_PLAYER and pressed < 3 and not unit:isKilled() and not unit:isStunned() then\n'
+                   '    pressed = pressed + 1\n    unit:addHealth(1 - unit:getHealth())\n  end\nend)\n'
+                   'game.on("timeRecoveryBonusStats", function(unit, external_bonuses, weapon, ammo, battle_action, skill, out)\n  before = out.bonus\nend)\n',
+                   'game.on("timeRecoveryBonusStats", function(unit, external_bonuses, weapon, ammo, battle_action, skill, out)\n'
+                   '  say("tired", unit:getHealth() * 2 < unit:getHealthMax() and "hurt" or "whole", before, out.bonus)\nend)\n')
+PROBES["other_mod"] = ('', 'say("other_mod", other and other:getType() or "nil")\n')
+PROBES["shop"] = ('game.on("sellCostItem", function(item_rule, geoscape_game, difficulty_coefficient, out)\n  before = out.cost_current\nend)\n',
+                  'game.on("sellCostItem", function(item_rule, geoscape_game, difficulty_coefficient, out)\n  say("shop", before, out.cost_current)\nend)\n')
+PROBES["nerds"] = ('game.on("statsForNerdsItem", function(item_rule, nerds, geoscape_game)\n  say("nerds_item", item_rule:getType())\nend)\n', '')
 # Типы оружия боя заранее неизвестны: путь «тип найден» проверяем на любом оружии, остальной код рецепта тот же.
-PATCH = {"weapon": ("local BONUS = { STR_PISTOL = 5, STR_RIFLE = 10 }", "local BONUS = setmetatable({}, { __index = function() return 5 end })")}
+PATCH = {"weapon": ("local BONUS = { STR_PISTOL = 5, STR_RIFLE = 10 }", "local BONUS = setmetatable({}, { __index = function() return 5 end })"),
+         # враг редко стоит дальше 10 клеток, а видит дальше: порог короче, код рецепта тот же
+         "camo": ("distance > 10 * 16", "distance > 2 * 16")}
+
+
+# камуфляж всем в этом бою: тег на броне настоящих юнитов сейва
+CAMO_RUL = "".join(f"  - type: {a}\n    tags:\n      MY_CAMO: 1\n" for a in ("STR_OGRE_BREECHES_UC", "STR_NEKO_STS_UC"))
 
 
 def check(what, ok, detail=""):
@@ -147,8 +173,8 @@ def pirates():
     for d in REAL.iterdir():
         if d.is_dir() and not (mods / d.name).exists():
             subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
-    ids = ["regen", "headshot", "weapon", "shock", "rage", "recharge", "recovery", "officer", "veteran", "experience", "backstab"]
-    names = [make(mods, rid, "piratez") for rid in ids]
+    ids = ["regen", "headshot", "weapon", "shock", "rage", "recharge", "recovery", "officer", "veteran", "experience", "backstab", "alert", "camo", "tired", "other_mod"]
+    names = [make(mods, rid, "piratez", CAMO_RUL if rid == "camo" else "") for rid in ids]
     text = SAVE.read_text(encoding="utf-8")
     text = re.sub(r"(?:  - 'lua_\w+ ver: [^']*'\n)+", "".join(f"  - '{n} ver: 0.1'\n" for n in names), text, count=1)
     save = HERE / "rcp_battle.sav"
@@ -159,7 +185,7 @@ def pirates():
     # настоящий выстрел ИИ приходит не сразу: ждём его, но не дольше 16 ходов
     for t in range(16):
         end_turn(name)
-        if t >= 3 and any(x[0] == "has" for x in rows(name, "weapon")) and rows(name, "experience") and rows(name, "backstab"):
+        if t >= 3 and any(x[0] == "has" for x in rows(name, "weapon")) and rows(name, "experience") and rows(name, "backstab") and rows(name, "alert"):
             break
     print("ходов", t + 1, flush=True)
     run(name, "key 97; wait 1500; state; key 13; wait 15000; state", 120)
@@ -177,6 +203,10 @@ def pirates():
     verify(name, "veteran", lambda x: int(x[1]) == int(x[0]) + 1, "храбрость +1 на этот бой")
     verify(name, "experience", lambda x: int(x[1]) == int(x[0]) * 2, "опыт вдвое", lambda x: int(x[0]) > 0)
     verify(name, "backstab", lambda x: int(x[2]) == int(x[1]) + (20 if int(x[0]) >= 2 else 0), "шанс +20 сбоку и сзади", lambda x: int(x[0]) >= 2)
+    verify(name, "alert", lambda x: int(x[2]) == int(x[1]) * (2 if int(x[0]) >= 3 else 1), "реакция вдвое сзади")
+    verify(name, "camo", lambda x: int(x[2]) == (0 if x[0] == "far" else int(x[1])), "дальше 10 клеток не видно, ближе как было", lambda x: x[0] == "far" and int(x[1]) > 0)
+    verify(name, "tired", lambda x: int(x[2]) == int(x[1]) - (10 if x[0] == "hurt" else 0), "раненый получает на 10 меньше", lambda x: x[0] == "hurt")
+    verify(name, "other_mod", lambda x: x[0] == "STR_ALIEN_ALLOYS", "правило находится, пока грузится main.lua")
     text = errors(name)
     check("журнал ошибок Lua пуст", not text, text[:500])
     call("stop", "--name", name, timeout=60)
@@ -237,6 +267,34 @@ armors:
     verify(name, "medikit", lambda x: int(x[1]) == int(x[0]) * 2, "лечение вдвое")
     text = errors(name)
     check("UFO: журнал ошибок Lua пуст", not text, text[:500])
+    call("stop", "--name", name, timeout=60)
+
+
+def screens():
+    """Цена и строка для нердов: экраны на геоскейпе, цена видна и на снимке."""
+    mods = HERE / "mods_pirates"
+    mods.mkdir(exist_ok=True)
+    for d in REAL.iterdir():
+        if d.is_dir() and not (mods / d.name).exists():
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
+    ids = ["shop", "nerds"]
+    names = [make(mods, rid, "piratez") for rid in ids]
+    save = HERE / "rcp_screens.sav"
+    shutil.copyfile(REAL.parent / "piratez/NoCodexCatZ.sav", save)
+    name = "rcps"
+    a = ["start", "--name", name, "--exe", EXE, "--save", str(save), "--mods-dir", str(mods), "--mods", ";".join(n + "=true" for n in names), "--timeout", "400", "--set", "oxceLuaMods=true"]
+    print(name, call(*a).strip().splitlines()[-1][:120], flush=True)
+    # окно после загрузки перехватывает клавиши; нажатия в координатах базы 480x270: покупка 335,202, продажа 335,215
+    for _ in range(40):
+        run(name, "key 13; wait 500", 30)
+        if "Error" not in run(name, "state", 30):
+            break
+    print(run(name, "key 98; wait 2500; click 335,215; wait 3000; key 27; wait 1500; click 335,202; wait 2000; rclick 385,196; wait 800; mclick 140,159; wait 2500; key 117; wait 2500; state", 120)[-300:], flush=True)
+    verify(name, "shop", lambda x: int(x[1]) == int(x[0]) * 125 // 100, "цена на четверть выше", lambda x: int(x[0]) > 0)
+    found = rows(name, "nerds_item")
+    check("nerds: страница открылась", bool(found), str(found[:2]))
+    text = errors(name)
+    check("экраны: журнал ошибок Lua пуст", not text, text[:500])
     call("stop", "--name", name, timeout=60)
 
 

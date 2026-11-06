@@ -27,6 +27,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <thread>
 #include "Armor.h"
 #include "Mod.h"
 #include "RuleCountry.h"
@@ -64,6 +65,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Tile.h"
 #include "../Savegame/Ufo.h"
+#include "../Ufopaedia/StatsForNerdsState.h"
 #include "../../libs/lua/lua.h"
 #include "../../libs/lua/lauxlib.h"
 
@@ -92,6 +94,10 @@ const char *const TYPE_GEOSCAPE = "geoscape";
 const char *const TYPE_COUNTRY = "country";
 const char *const TYPE_UFO = "ufo";
 const char *const TYPE_CRAFT = "craft";
+const char *const TYPE_RULES = "rules";
+const char *const TYPE_RULE_RESEARCH = "ruleResearch";
+const char *const TYPE_RULE_INVENTORY = "ruleInventory";
+const char *const TYPE_NERDS = "statsForNerds";
 const char *const MOD_KEY = "oxce.mod";
 const char *const OUT_KEY = "oxce.out";
 
@@ -102,6 +108,7 @@ const size_t MESSAGE_MAX = 200, JOURNAL_MAX = 256 * 1024;
 /// Handlers and their output values, the names of the Y-script. A value in `readOnly` is shown, not taken back.
 /// `onlyReads`: the Y-script gets the arguments as const, so what it may not change Lua may not either.
 /// `ranges`: the game casts these values to its own enum, a number outside is refused like a non-number.
+/// `pure`: called from lists, tooltips and the frame, so the number of calls is not the game's: no random numbers.
 struct EventInfo
 {
 	const char *name;
@@ -109,6 +116,7 @@ struct EventInfo
 	std::set<std::string> readOnly;
 	bool onlyReads = false;
 	std::map<std::string, std::pair<int, int>> ranges = { };
+	bool pure = false;
 };
 
 const EventInfo EVENTS[LuaHost::EVENT_COUNT] = {
@@ -135,18 +143,65 @@ const EventInfo EVENTS[LuaHost::EVENT_COUNT] = {
 	{ "detectUfoFromBase", { "detection_type", "detection_chance" }, { }, true, { { "detection_type", { DETECTION_NONE, DETECTION_HYPERWAVE } } } },
 	{ "detectUfoFromCraft", { "detection_type", "detection_chance" }, { }, true, { { "detection_type", { DETECTION_NONE, DETECTION_HYPERWAVE } } } },
 	{ "applySoldierBonuses", { }, { } },
+	{ "hitUnitAmmo", { "power", "part", "side" }, { } },
+	{ "damageUnitAmmo", { "to_health", "to_armor", "to_stun", "to_time", "to_energy", "to_morale", "to_wound", "to_transform", "to_mana" }, { } },
+	{ "damageSpecialUnitAmmo", { "transform", "transform_chance", "self_destruct", "self_destruct_chance", "morale_loss", "fire",
+		"attacker_turns_since_spotted", "attacker_turns_left_spotted_for_snipers" }, { "transform", "self_destruct" } },
+	{ "reactionUnitAction", { "reaction_chance", "distance" }, { "distance" }, true },
+	{ "reactionUnitReaction", { "reaction_chance", "distance" }, { "distance" }, true },
+	{ "reactionWeaponAction", { "reaction_chance", "distance" }, { "distance" }, true },
+	{ "visibilityUnit", { "current_visibility", "default_visibility" }, { "default_visibility" }, true, { }, true },
+	{ "aiCalculateTargetWeight", { "current_target_weight", "default_target_weight" }, { "default_target_weight" }, true },
+	{ "sellCostItem", { "cost_current", "cost_base" }, { "cost_base" }, true, { }, true },
+	{ "buyCostItem", { "cost_current", "cost_base" }, { "cost_base" }, true, { }, true },
+	{ "statsForNerdsItem", { }, { }, true, { }, true },
+	{ "statsForNerdsArmor", { }, { }, true, { }, true },
+	{ "statsForNerdsCraft", { }, { }, true, { }, true },
+	{ "statsForNerdsUfo", { }, { }, true, { }, true },
+	{ "psiDefenceBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "meleeDodgeBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "timeRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "energyRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "moraleRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "healthRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "manaRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "stunRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "timeSoldierRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "energySoldierRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "moraleSoldierRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "healthSoldierRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "manaSoldierRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "stunSoldierRecoveryBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "damageBonusBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "meleeBonusBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "accuracyMultiplierBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "meleeMultiplierBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "throwMultiplierBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "closeQuartersMultiplierBonusStats", { "bonus" }, { }, true, { }, true },
 };
 
+/// Set before main() runs. Not the thread that makes the host: the mods load in a thread of their own (StartState).
+const std::thread::id g_mainThread = std::this_thread::get_id();
 /// The battle screen may be gone by then: the debriefing runs after it.
 bool g_noScreen = false;
 /// The running handler is one of EventInfo::onlyReads.
 bool g_onlyReads = false;
+/// The running handler is one of EventInfo::pure.
+bool g_pure = false;
 
 void checkWritable(lua_State *L)
 {
 	if (g_onlyReads)
 	{
 		luaL_error(L, "this handler only reads: the Y-script of the same name gets these objects as const");
+	}
+}
+
+void checkRandomAllowed(lua_State *L)
+{
+	if (g_pure)
+	{
+		luaL_error(L, "no random numbers in this handler: it is called from lists, tooltips and the frame, and would move the game's generator");
 	}
 }
 
@@ -223,6 +278,11 @@ template<> struct LuaType<SavedGame> { static const char *name() { return TYPE_G
 template<> struct LuaType<Country> { static const char *name() { return TYPE_COUNTRY; } };
 template<> struct LuaType<Ufo> { static const char *name() { return TYPE_UFO; } };
 template<> struct LuaType<Craft> { static const char *name() { return TYPE_CRAFT; } };
+template<> struct LuaType<Mod> { static const char *name() { return TYPE_RULES; } };
+template<> struct LuaType<RuleResearch> { static const char *name() { return TYPE_RULE_RESEARCH; } };
+template<> struct LuaType<RuleInventory> { static const char *name() { return TYPE_RULE_INVENTORY; } };
+template<> struct LuaType<RuleSkill> { static const char *name() { return TYPE_SKILL; } };
+template<> struct LuaType<StatsForNerdsState> { static const char *name() { return TYPE_NERDS; } };
 
 template<typename T>
 T *self(lua_State *L)
@@ -1205,6 +1265,7 @@ int battleGetSelectedUnit(lua_State *L)
 int battleRandomRange(lua_State *L)
 {
 	checkBattle(L);
+	checkRandomAllowed(L);
 	const int low = checkInt(L, 2), high = checkInt(L, 3);
 	luaL_argcheck(L, high >= low, 3, "the upper bound is below the lower one");
 	lua_pushinteger(L, RNG::generate(low, high));
@@ -1214,6 +1275,7 @@ int battleRandomRange(lua_State *L)
 int battleRandomChance(lua_State *L)
 {
 	checkBattle(L);
+	checkRandomAllowed(L);
 	lua_pushboolean(L, RNG::percent(checkInt(L, 2)));
 	return 1;
 }
@@ -1388,6 +1450,34 @@ int geoscapeIsResearched(lua_State *L)
 	return 1;
 }
 
+int geoscapeRandomRange(lua_State *L)
+{
+	self<SavedGame>(L);
+	checkRandomAllowed(L);
+	const int low = checkInt(L, 2), high = checkInt(L, 3);
+	luaL_argcheck(L, high >= low, 3, "the upper bound is below the lower one");
+	lua_pushinteger(L, RNG::generate(low, high));
+	return 1;
+}
+
+int geoscapeRandomRangeSymmetric(lua_State *L)
+{
+	self<SavedGame>(L);
+	checkRandomAllowed(L);
+	const int max = checkInt(L, 2);
+	luaL_argcheck(L, max >= 0 && max < INT_MAX, 2, "must not be negative");
+	lua_pushinteger(L, RNG::generate(-max, max));
+	return 1;
+}
+
+int geoscapeRandomChance(lua_State *L)
+{
+	self<SavedGame>(L);
+	checkRandomAllowed(L);
+	lua_pushboolean(L, RNG::percent(checkInt(L, 2)));
+	return 1;
+}
+
 const luaL_Reg GEOSCAPE_METHODS[] = {
 	{ "getTime", geoscapeGetTime },
 	{ "difficultyLevel", geoscapeDifficultyLevel },
@@ -1395,6 +1485,9 @@ const luaL_Reg GEOSCAPE_METHODS[] = {
 	{ "getDaysPassed", getInt<&SavedGame::getDaysPassed> },
 	{ "getCountries", geoscapeGetCountries },
 	{ "isResearched", geoscapeIsResearched },
+	{ "randomRange", geoscapeRandomRange },
+	{ "randomRangeSymmetric", geoscapeRandomRangeSymmetric },
+	{ "randomChance", geoscapeRandomChance },
 	{ "getTag", getTagOf<SavedGame> },
 	{ "setTag", setTagOf<SavedGame> },
 	{ nullptr, nullptr }
@@ -1707,9 +1800,154 @@ const luaL_Reg RULE_UNIT_METHODS[] = {
 
 const luaL_Reg RULE_SOLDIER_METHODS[] = { { "getType", getString<&RuleSoldier::getType> }, { "getTag", getTagOf<RuleSoldier> }, { nullptr, nullptr } };
 const luaL_Reg RULE_BONUS_METHODS[] = { { "getType", getString<&RuleSoldierBonus::getName> }, { "getTag", getTagOf<RuleSoldierBonus> }, { nullptr, nullptr } };
-const luaL_Reg RULE_COUNTRY_METHODS[] = { { "getType", getString<&RuleCountry::getType> }, { nullptr, nullptr } };
-const luaL_Reg RULE_UFO_METHODS[] = { { "getType", getString<&RuleUfo::getType> }, { "getTag", getTagOf<RuleUfo> }, { nullptr, nullptr } };
-const luaL_Reg RULE_CRAFT_METHODS[] = { { "getType", getString<&RuleCraft::getType> }, { "getTag", getTagOf<RuleCraft> }, { nullptr, nullptr } };
+const luaL_Reg RULE_COUNTRY_METHODS[] = {
+	{ "getType", getString<&RuleCountry::getType> },
+	{ "getFundingCap", getInt<&RuleCountry::getFundingCap> },
+	{ "getTag", getTagOf<RuleCountry> },
+	{ nullptr, nullptr }
+};
+const luaL_Reg RULE_UFO_METHODS[] = {
+	{ "getType", getString<&RuleUfo::getType> },
+	{ "getRadius", getInt<&RuleUfo::getRadius> },
+	{ "getWeaponRange", getInt<&RuleUfo::getWeaponRange> },
+	{ "getWeaponPower", getInt<&RuleUfo::getWeaponPower> },
+	{ "getWeaponReload", getInt<&RuleUfo::getWeaponReload> },
+	{ "getTag", getTagOf<RuleUfo> },
+	{ nullptr, nullptr }
+};
+const luaL_Reg RULE_CRAFT_METHODS[] = {
+	{ "getType", getString<&RuleCraft::getType> },
+	{ "getWeaponsMax", getInt<&RuleCraft::getWeapons> },
+	{ "getSoldiersMax", getInt<&RuleCraft::getMaxUnits> },
+	{ "getVehiclesMax", getInt<&RuleCraft::getMaxVehiclesAndLargeSoldiers> },
+	{ "getPilotsMax", getInt<&RuleCraft::getPilots> },
+	{ "getTag", getTagOf<RuleCraft> },
+	{ nullptr, nullptr }
+};
+const luaL_Reg RULE_RESEARCH_METHODS[] = {
+	{ "getType", getString<&RuleResearch::getName> },
+	{ "getCost", getInt<&RuleResearch::getCost> },
+	{ "getPoints", getInt<&RuleResearch::getPoints> },
+	{ "getLookup", getObject<&RuleResearch::getLookup> },
+	{ "getNeededItem", getObject<&RuleResearch::getNeededItem> },
+	{ "getTag", getTagOf<RuleResearch> },
+	{ nullptr, nullptr }
+};
+
+int inventoryGetMoveToCost(lua_State *L)
+{
+	const auto *inventory = self<RuleInventory>(L);
+	const auto *other = static_cast<RuleInventory*>(LuaSandbox::checkObject(L, 2, TYPE_RULE_INVENTORY));
+	lua_pushinteger(L, inventory->getCost(other));
+	return 1;
+}
+
+const luaL_Reg RULE_INVENTORY_METHODS[] = {
+	{ "getId", getString<&RuleInventory::getId> },
+	{ "getType", getInt<&RuleInventory::getType> },
+	{ "isRightHand", getBool<&RuleInventory::isRightHand> },
+	{ "isLeftHand", getBool<&RuleInventory::isLeftHand> },
+	{ "getMoveToCost", inventoryGetMoveToCost },
+	{ nullptr, nullptr }
+};
+
+/// By name, as the script's rules.getRuleItem: a rule that is not there is nil, a mod may look for another mod's rule.
+template<typename T, T *(Mod::*Find)(const std::string &, bool) const>
+int rulesFind(lua_State *L)
+{
+	LuaSandbox::from(L)->charge(L, TAG_TICKS);
+	const auto *mod = self<Mod>(L);
+	size_t len = 0;
+	const char *name = luaL_checklstring(L, 2, &len);
+	luaL_argcheck(L, len <= MESSAGE_MAX, 2, "too long");
+	pushOrNil(L, LuaType<T>::name(), (mod->*Find)(name, false));
+	return 1;
+}
+
+/// The Mod's own getters of these slots throw when the slot is missing, and an exception must not cross Lua.
+const char *const SLOT_NAMES[] = { "STR_RIGHT_HAND", "STR_LEFT_HAND", "STR_BACK_PACK", "STR_BELT", "STR_GROUND" };
+
+template<int Slot>
+int rulesSlot(lua_State *L)
+{
+	pushOrNil(L, TYPE_RULE_INVENTORY, self<Mod>(L)->getInventory(SLOT_NAMES[Slot], false));
+	return 1;
+}
+
+/// The formula of the script's rules.getSmokeReduction.
+int rulesGetSmokeReduction(lua_State *L)
+{
+	const auto *mod = self<Mod>(L);
+	lua_pushinteger(L, (lua_Integer)checkInt(L, 2) * mod->getMaxViewDistance() / (3 * 20));
+	return 1;
+}
+
+const luaL_Reg RULES_METHODS[] = {
+	{ "getRuleUnit", rulesFind<Unit, &Mod::getUnit> },
+	{ "getRuleItem", rulesFind<RuleItem, &Mod::getItem> },
+	{ "getRuleArmor", rulesFind<Armor, &Mod::getArmor> },
+	{ "getRuleSkill", rulesFind<RuleSkill, &Mod::getSkill> },
+	{ "getRuleResearch", rulesFind<RuleResearch, &Mod::getResearch> },
+	{ "getRuleSoldier", rulesFind<RuleSoldier, &Mod::getSoldier> },
+	{ "getRuleInventory", rulesFind<RuleInventory, &Mod::getInventory> },
+	{ "getRuleInventoryRightHand", rulesSlot<0> },
+	{ "getRuleInventoryLeftHand", rulesSlot<1> },
+	{ "getRuleInventoryBackpack", rulesSlot<2> },
+	{ "getRuleInventoryBelt", rulesSlot<3> },
+	{ "getRuleInventoryGround", rulesSlot<4> },
+	{ "getMaxDarknessToSeeUnits", getInt<&Mod::getMaxDarknessToSeeUnits> },
+	{ "getMaxViewDistance", getInt<&Mod::getMaxViewDistance> },
+	{ "getSmokeReduction", rulesGetSmokeReduction },
+	{ nullptr, nullptr }
+};
+
+int gameGetRules(lua_State *L)
+{
+	LuaSandbox::pushObject(L, TYPE_RULES, const_cast<Mod*>(gameMod(L)));
+	return 1;
+}
+
+std::string nerdsText(lua_State *L, int index)
+{
+	size_t len = 0;
+	const char *text = luaL_checklstring(L, index, &len);
+	luaL_argcheck(L, len <= MESSAGE_MAX, index, "too long");
+	return text;
+}
+
+int nerdsAddIntRow(lua_State *L)
+{
+	self<StatsForNerdsState>(L)->addIntegerScript(nerdsText(L, 2), checkInt(L, 3));
+	return 0;
+}
+
+int nerdsAddTextRow(lua_State *L)
+{
+	self<StatsForNerdsState>(L)->addTextScript(nerdsText(L, 2), nerdsText(L, 3));
+	return 0;
+}
+
+int nerdsAddTextFormatRow(lua_State *L)
+{
+	auto *nerds = self<StatsForNerdsState>(L);
+	const std::string name = nerdsText(L, 2), format = nerdsText(L, 3);
+	if (lua_isnoneornil(L, 5))
+	{
+		nerds->addTextFormat1Script(name, format, checkInt(L, 4));
+	}
+	else
+	{
+		nerds->addTextFormat2Script(name, format, checkInt(L, 4), checkInt(L, 5));
+	}
+	return 0;
+}
+
+const luaL_Reg NERDS_METHODS[] = {
+	{ "addIntRow", nerdsAddIntRow },
+	{ "addTextRow", nerdsAddTextRow },
+	{ "addTextFormatRow", nerdsAddTextFormatRow },
+	{ nullptr, nullptr }
+};
 
 int soldierGetId(lua_State *L)
 {
@@ -1799,6 +2037,7 @@ const Constant CONSTANTS[] = {
 	{ "BT_PROXIMITYGRENADE", BT_PROXIMITYGRENADE }, { "BT_MEDIKIT", BT_MEDIKIT }, { "BT_SCANNER", BT_SCANNER }, { "BT_MINDPROBE", BT_MINDPROBE },
 	{ "BT_PSIAMP", BT_PSIAMP }, { "BT_FLARE", BT_FLARE }, { "BT_CORPSE", BT_CORPSE },
 	{ "BAM_NORMAL", BAM_NORMAL }, { "BAM_RUN", BAM_RUN }, { "BAM_STRAFE", BAM_STRAFE }, { "BAM_SNEAK", BAM_SNEAK },
+	{ "INV_SLOT", INV_SLOT }, { "INV_HAND", INV_HAND }, { "INV_GROUND", INV_GROUND },
 	{ "BMA_HEAL", BMA_HEAL }, { "BMA_STIMULANT", BMA_STIMULANT }, { "BMA_PAINKILLER", BMA_PAINKILLER },
 	{ "SATISFACTION_ALIENPACT", (int)Country::Satisfaction::ALIEN_PACT }, { "SATISFACTION_UNHAPPY", (int)Country::Satisfaction::UNHAPPY },
 	{ "SATISFACTION_SATISFIED", (int)Country::Satisfaction::SATISFIED }, { "SATISFACTION_HAPPY", (int)Country::Satisfaction::HAPPY },
@@ -1827,9 +2066,15 @@ void setupGame(lua_State *L, void *mod)
 	LuaSandbox::defineType(L, TYPE_COUNTRY, COUNTRY_METHODS);
 	LuaSandbox::defineType(L, TYPE_UFO, UFO_METHODS);
 	LuaSandbox::defineType(L, TYPE_CRAFT, CRAFT_METHODS);
+	LuaSandbox::defineType(L, TYPE_RULES, RULES_METHODS);
+	LuaSandbox::defineType(L, TYPE_RULE_RESEARCH, RULE_RESEARCH_METHODS);
+	LuaSandbox::defineType(L, TYPE_RULE_INVENTORY, RULE_INVENTORY_METHODS);
+	LuaSandbox::defineType(L, TYPE_NERDS, NERDS_METHODS);
 	lua_pushlightuserdata(L, mod);
 	lua_setfield(L, LUA_REGISTRYINDEX, MOD_KEY);
 	lua_getglobal(L, "game");
+	lua_pushcfunction(L, gameGetRules);
+	lua_setfield(L, -2, "getRules");
 	for (const auto &constant : CONSTANTS)
 	{
 		lua_pushinteger(L, constant.value);
@@ -1865,6 +2110,12 @@ int pushArgs(lua_State *L, void *data)
 		case LuaHost::Arg::UFO: pushOrNil(L, TYPE_UFO, arg.object); break;
 		case LuaHost::Arg::CRAFT: pushOrNil(L, TYPE_CRAFT, arg.object); break;
 		case LuaHost::Arg::BONUS: pushOrNil(L, TYPE_RULE_BONUS, arg.object); break;
+		case LuaHost::Arg::TILE: pushOrNil(L, TYPE_TILE, arg.object); break;
+		case LuaHost::Arg::RULE_ITEM: pushOrNil(L, TYPE_RULE_ITEM, arg.object); break;
+		case LuaHost::Arg::RULE_ARMOR: pushOrNil(L, TYPE_RULE_ARMOR, arg.object); break;
+		case LuaHost::Arg::RULE_UFO: pushOrNil(L, TYPE_RULE_UFO, arg.object); break;
+		case LuaHost::Arg::RULE_CRAFT: pushOrNil(L, TYPE_RULE_CRAFT, arg.object); break;
+		case LuaHost::Arg::NERDS: pushOrNil(L, TYPE_NERDS, arg.object); break;
 		case LuaHost::Arg::INT: lua_pushinteger(L, arg.value); break;
 		}
 	}
@@ -1924,7 +2175,27 @@ bool takeOutputs(lua_State *L, void *data, std::string &error)
 
 }
 
-LuaHost::~LuaHost() = default;
+LuaHost *LuaHost::_active = nullptr;
+
+LuaHost::~LuaHost()
+{
+	if (_active == this)
+	{
+		_active = nullptr;
+	}
+}
+
+int LuaHost::bonusEvent(const std::string &scriptName)
+{
+	for (int e = PSI_DEFENCE_BONUS; e <= CLOSE_QUARTERS_MULTIPLIER_BONUS; ++e)
+	{
+		if (scriptName == EVENTS[e].name)
+		{
+			return e;
+		}
+	}
+	return -1;
+}
 
 LuaHost *LuaHost::create(Mod *mod)
 {
@@ -1961,6 +2232,7 @@ LuaHost *LuaHost::create(Mod *mod)
 	if (host)
 	{
 		host->reload();
+		_active = host.get();
 	}
 	return host.release();
 }
@@ -2050,18 +2322,31 @@ void LuaHost::noteError(size_t entry, const std::string &event, const std::strin
 
 void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out)
 {
+	// the formulas reach the workers of the frame and the AI's map: Lua is one thread, there the script's value stands
+	if (std::this_thread::get_id() != g_mainThread)
+	{
+		return;
+	}
 	if (_handled[event])
 	{
 		FireData data{ &EVENTS[event], args.begin(), args.size(), out };
+		// a method of a handler can reach a formula, and with it another mod's handler: the outer one goes on after it
+		const bool noScreen = g_noScreen, onlyReads = g_onlyReads, pure = g_pure;
 		g_noScreen = event == RETURN_FROM_MISSION_UNIT;
 		g_onlyReads = EVENTS[event].onlyReads;
+		g_pure = EVENTS[event].pure;
 		for (auto &entry : _entries)
 		{
 			if (entry.sandbox)
 			{
+				const bool noRandom = entry.sandbox->setNoRandom(EVENTS[event].pure);
 				entry.sandbox->fire(EVENTS[event].name, pushArgs, &data, out ? takeOutputs : nullptr);
+				entry.sandbox->setNoRandom(noRandom);
 			}
 		}
+		g_noScreen = noScreen;
+		g_onlyReads = onlyReads;
+		g_pure = pure;
 	}
 	if (!_notice.empty() && event != RETURN_FROM_MISSION_UNIT)
 	{
