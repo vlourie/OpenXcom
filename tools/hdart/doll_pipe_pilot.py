@@ -81,6 +81,9 @@ ITEM = ("Close-up of the bare {skin} skin of {who}, part of a hand-painted paper
         "Painted game art, not a photo.")
 ARMOR = ("{style} {what}. Her skin, face and hair stay exactly as in the input; paint the clothing and gear: fabric "
          "folds, leather, seams, buckles, metal. Keep the colours of every item of the input.")
+FABRIC = ("{style} {what}. Her skin, face and hair stay exactly as in the input; paint the clothing as thin soft "
+          "fabric with natural folds only. Keep the colours of every item of the input.")   # ARMOR просит пряжки и металл: платье выходит латами
+FABRIC_NEGATIVE = ", rivets, studs, buckles, belts, straps, zippers, metal plates, armor, leather, hardware"
 NEGATIVE = (pp.NEGATIVE + ", plastic skin, doll face, identical faces, extra fingers, "
             "man, male, masculine face, beard, stubble, flat male chest, "     # M51 вышла мужчиной (пилот 03.11)
             "old woman, middle-aged, mature face, wrinkles, nasolabial folds, sagging skin, tired face, "
