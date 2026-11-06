@@ -185,16 +185,17 @@ def k1():
 def clean():
     """Сначала снимаем соединения, потом удаляем: rmtree через соединение снёс бы моды установки (R-047)."""
     tmp = Path(os.environ["TEMP"])
-    for u in [HERE, *tmp.glob("oxce_bench_s2*"), *tmp.glob("oxce_bench_s1*"), tmp / "oxce_lua_stage1"]:
-        if not u.exists():
-            continue
-        for link in [*u.glob("*"), *u.glob("*/*")]:
-            if os.path.isjunction(link):
-                os.rmdir(link)
+    folders = [HERE, *tmp.glob("oxce_bench_s2*"), *tmp.glob("oxce_bench_s1*"), tmp / "oxce_lua_stage1"]
     LOG.close()
-    for u in [HERE, *tmp.glob("oxce_bench_s2*"), *tmp.glob("oxce_bench_s1*"), tmp / "oxce_lua_stage1"]:
-        if u.exists():
-            shutil.rmtree(u, ignore_errors=True)
+    for u in folders:
+        for top, dirs, _ in os.walk(u):
+            for d in list(dirs):
+                p = os.path.join(top, d)
+                if os.path.isjunction(p):
+                    os.rmdir(p)     # только связь; внутрь соединения walk не заходит
+                    dirs.remove(d)
+        shutil.rmtree(u, ignore_errors=True)
+        print(u.name, "убрано" if not u.exists() else "ОСТАЛОСЬ")
 
 
 try:
