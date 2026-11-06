@@ -8,8 +8,90 @@ code,pre{font-family:Consolas,monospace;font-size:13px;background:var(--code);bo
 table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:auto}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}th{color:var(--dim);font-weight:600}
 .ro{color:var(--dim)}
 </style></head><body>
-<h1>Lua API for OXCE-HD mods, version 1</h1><p>A mod is written in <code>lua/main.lua</code> in its folder, <code>metadata.yml</code> says <code>luaApi: 1</code>. Only the game runs Lua, the launcher never executes a mod's code. The border of the API: Lua can do what the Y-script can do and nothing beyond it. The names of the handlers and of the output values are those of the Y-script.</p>
+<h1>Lua API for OXCE-HD mods, version 1</h1><p>A mod is written in <code>lua/main.lua</code> in its folder, <code>metadata.yml</code> says <code>luaApi: 1</code>. Only the game runs Lua, the launcher never executes a mod's code. The API covers a part of what the Y-script can do and does not go beyond it. This page describes all of it: what is not here cannot be done from Lua. The names of the handlers and of the output values are those of the Y-script.</p>
+<h2>Where it works</h2><p>Only in our OXCE-HD build. Plain OXCE does not know the <code>luaApi</code> key and runs the mod without Lua: the mod's rulesets work and its code does not. If the mod is needed there too, write it in the Y-script.</p>
 <h2>Getting started</h2><ol><li>In the launcher: Settings, "Modding mode", "Create mod". A folder with a working example appears.</li><li>Start the game and begin a battle. Lines from <code>game.log</code> and <code>print</code> go to <code>user/openxcom.log</code>.</li><li>Change <code>main.lua</code> and press <b>Ctrl+F5</b> in battle: the code of all mods is read again, the result is on the screen. The usual quick save F5 works as before.</li></ol>
+<h2>What a mod can change</h2><table><tr><th>What</th><th>From Lua</th></tr>
+<tr><td>A unit in battle</td><td>time units, health, mana, energy, stun, morale, burning, the armor of each side, wounds</td></tr>
+<tr><td>A hit and damage</td><td>the power, the body part, the side, what takes how much, the chance of transformation and explosion, setting on fire, revealing the attacker</td></tr>
+<tr><td>A medikit and a skill</td><td>how much a medikit heals, whether a skill&#x27;s action goes on, whether it costs time units</td></tr>
+<tr><td>An item in battle</td><td>rounds, the fuse timer, medikit charges</td></tr>
+<tr><td>The end of a mission</td><td>the recovery time, how much health and mana a soldier lacks at the base</td></tr>
+<tr><td>Service</td><td>tags of units and items, a message on the screen, the log</td></tr>
+</table><div><b>From Lua you cannot:</b><ul><li>touch the geoscape, bases, research, production, money, countries, UFOs, a soldier's stats outside battle;</li><li>create or move units and items, change the map. There is no list of all units: a unit or an item comes only in a handler;</li><li>touch sprites, sound, your own screens, visibility, reactions, AI decisions, the chance of psi and melee attacks, experience, prices.</li></ul><b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. If you need something new in Lua, send us a ticket saying what the mod should do.</div>
+<h2>Recipes</h2><p>Each recipe is a whole <code>lua/main.lua</code> file. All are checked in a real battle. One file can hold any number of subscriptions, several on one handler too: they run in the order they are written.</p>
+<h3>Regeneration</h3><p>Each living unit gets 1 health at the start of its own turn. <code>newTurnUnit</code> comes on the turn of each side, so <code>side</code> is compared with the unit's side.</p>
+<pre><code>game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
+  if side == unit:getFaction() and not unit:isKilled() and not unit:isStunned() then
+    unit:addHealth(1)
+  end
+end)
+</code></pre>
+<h3>A head hit and a message on the screen</h3><p>The power doubles before the armor is subtracted, the player sees a message.</p>
+<pre><code>game.on(&quot;hitUnit&quot;, function(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)
+  if out.part == game.BODYPART_HEAD then
+    out.power = out.power * 2
+    battle:flashMessage(&quot;Head hit! Power {0}&quot;, out.power)
+  end
+end)
+</code></pre>
+<h3>A particular weapon</h3><p>A bonus to the power by the weapon type from the ruleset. Put your own types in. <code>weapon_item</code> may be nil, so it is checked first.</p>
+<pre><code>local BONUS = { STR_PISTOL = 5, STR_RIFLE = 10 }
+
+game.on(&quot;hitUnit&quot;, function(unit, damaging_item, weapon_item, attacker, battle, skill, orig_power, damaging_type, battle_action, out)
+  local bonus = weapon_item and BONUS[weapon_item:getRuleItem():getType()]
+  if bonus then
+    out.power = out.power + bonus
+  end
+end)
+</code></pre>
+<h3>A wound takes time units</h3><p>As much health as is taken, as many time units are taken.</p>
+<pre><code>game.on(&quot;damageUnit&quot;, function(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)
+  if out.to_health &gt; 0 then
+    out.to_time = out.to_time + out.to_health
+  end
+end)
+</code></pre>
+<h3>Memory in a tag: rage</h3><p>Wounds add up in a tag and return morale at the start of the unit's own turn. A Lua variable would be reset when a save is loaded, a tag is saved. The tag is declared in the file <code>Ruleset/my_mod.rul</code>:</p>
+<pre><code>extended:
+  tags:
+    BattleUnit:
+      MY_RAGE: int
+</code></pre>
+<pre><code>game.on(&quot;damageUnit&quot;, function(unit, damaging_item, weapon_item, attacker, battle, skill, currPower, orig_power, part, side, damaging_type, battle_action, out)
+  if out.to_health &gt; 0 then
+    unit:setTag(&quot;MY_RAGE&quot;, unit:getTag(&quot;MY_RAGE&quot;) + 1)
+  end
+end)
+
+game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
+  local rage = unit:getTag(&quot;MY_RAGE&quot;)
+  if side == unit:getFaction() and rage &gt; 0 then
+    unit:addMorale(rage * 5)
+    unit:setTag(&quot;MY_RAGE&quot;, 0)
+  end
+end)
+</code></pre>
+<h3>Rounds recharge</h3><p>At the start of the player's turn each clip loaded into a weapon gets 1 round, on all sides. It has no owner: it lies in the weapon.</p>
+<pre><code>game.on(&quot;newTurnItem&quot;, function(item, battle, turn, side)
+  if side == game.FACTION_PLAYER and item:isAmmo() then
+    local now, max = item:getAmmoQuantity(), item:getAmmoQuantityMax()
+    if now &lt; max then
+      item:setAmmoQuantity(now + 1)
+    end
+  end
+end)
+</code></pre>
+<h3>A medikit heals twice as much</h3><p>Health returns only if this body part has a wound.</p>
+<pre><code>game.on(&quot;healUnit&quot;, function(actor, item, battle, target, battle_action, out)
+  out.health_recovery = out.health_recovery * 2
+end)
+</code></pre>
+<h3>A quick recovery</h3><p>After a mission a soldier heals wounds twice as fast. The division is whole: <code>out</code> takes only whole numbers, <code>/</code> would give an error.</p>
+<pre><code>game.on(&quot;returnFromMissionUnit&quot;, function(unit, battle, soldier, out)
+  out.recovery_time = out.recovery_time // 2
+end)
+</code></pre>
 <h2>Handlers</h2><p>To subscribe: <code>game.on("name", function)</code>. Arguments come in the order of the Y-script's input, the last one is the table <code>out</code> of output values, if there are any. Values in <code>out</code> are taken as whole numbers and only all at once: one bad value is an error, the others are not applied. On one handler the Y-script runs first, then Lua in the mods' load order.</p>
 <table><tr><th>Handler</th><th>When</th><th>out</th></tr>
 <tr id="event.createUnit"><td><code>createUnit(unit, battle, turn)</code></td><td>a unit appears in the battle</td><td>-</td></tr>
@@ -22,6 +104,64 @@ table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:
 <tr id="event.returnFromMissionUnit"><td><code>returnFromMissionUnit(unit, battle, soldier, out)</code></td><td>the end of a mission, for each soldier; the battle screen is gone</td><td><code>recovery_time</code>, <code>mana_loss</code> <span class="ro">(read only)</span>, <code>health_loss</code> <span class="ro">(read only)</span>, <code>final_mana_loss</code>, <code>final_health_loss</code></td></tr>
 <tr id="event.createItem"><td><code>createItem(item, unit, battle, turn)</code></td><td>an item appears in the battle; unit may be nil</td><td>-</td></tr>
 <tr id="event.newTurnItem"><td><code>newTurnItem(item, battle, turn, side)</code></td><td>the start of a side&#x27;s turn, for each item</td><td>-</td></tr>
+</table>
+<h3>Arguments</h3><p>Handlers get them in the order of the table above. Check values that may be nil before calling a method on them, otherwise it is an error.</p><ul>
+<li><code>unit</code>: the unit it happened to</li>
+<li><code>item</code>: the item; in <code>healUnit</code> and <code>skillUseUnit</code> the one used, in <code>skillUseUnit</code> it may be nil</li>
+<li><code>battle</code>: the battle</li>
+<li><code>turn</code>: the turn number</li>
+<li><code>side</code>: in <code>newTurn*</code> whose turn it is, <code>FACTION_*</code>; in the damage handlers the side of the unit, <code>SIDE_*</code></li>
+<li><code>damaging_item</code>: what did the damage, usually a round; may be nil</li>
+<li><code>weapon_item</code>: the weapon; may be nil</li>
+<li><code>attacker</code>: who attacked; may be nil, for example fire or the environment</li>
+<li><code>skill</code>: the skill; usually nil in the damage handlers</li>
+<li><code>orig_power</code>: the power of the hit after the armor's resistance to the damage type, before scripts and before the armor is subtracted</li>
+<li><code>damaging_type</code>: the damage type, <code>DT_*</code></li>
+<li><code>battle_action</code>: the action, <code>BA_*</code></li>
+<li><code>currPower</code>: the power after the armor is subtracted, may be zero or less</li>
+<li><code>part</code>: the body part, <code>BODYPART_*</code></li>
+<li><code>health_damage</code>: how much health was taken, the final <code>to_health</code></li>
+<li><code>actor</code>: who acts</li>
+<li><code>target</code>: who is healed</li>
+<li><code>have_tu</code>: 1 if there are enough time units for the action, otherwise 0</li>
+<li><code>soldier</code>: the player's soldier</li>
+</ul><h3>What each out value means</h3><table><tr><th>Handler</th><th>out</th><th>What it does</th></tr>
+<tr><td><code>hitUnit</code></td><td><code>power</code></td><td>the power of the hit; zero or less: no damage, and <code>damageUnit</code> does not come</td></tr>
+<tr><td><code>hitUnit</code></td><td><code>part</code></td><td>where it hit, <code>BODYPART_*</code>; a wrong value becomes the head</td></tr>
+<tr><td><code>hitUnit</code></td><td><code>side</code></td><td>from which side, <code>SIDE_*</code>, a wrong value becomes the front. For damage from the environment the engine sets the side and the part itself</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_health</code></td><td>how much health to take</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_armor</code></td><td>how much armor of this side to take</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_stun</code></td><td>how much stun to add; does nothing to a unit immune to pain, unless the damage type ignores that</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_time</code></td><td>how many time units to take</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_energy</code></td><td>how much energy to take</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_morale</code></td><td>how much morale to take, the unit's bravery reduces it</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_wound</code></td><td>how many wounds to add on this body part; as much morale is taken</td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_transform</code></td><td>the chance of transformation in percent, it goes on to <code>transform_chance</code></td></tr>
+<tr><td><code>damageUnit</code></td><td><code>to_mana</code></td><td>how much mana to take</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>transform</code> <span class="ro">(read only)</span></td><td>1 if this damage can transform</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>transform_chance</code></td><td>the chance of transformation in percent</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>self_destruct</code> <span class="ro">(read only)</span></td><td>1 if the unit explodes when it dies</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>self_destruct_chance</code></td><td>the chance of the explosion in percent; 100 if this hit takes it out</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>morale_loss</code></td><td>how much morale to take</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>fire</code></td><td>how many turns the unit will burn, the final value</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>attacker_turns_since_spotted</code></td><td>for the target's side: 0 means the attacker is revealed, 255 means not spotted</td></tr>
+<tr><td><code>damageSpecialUnit</code></td><td><code>attacker_turns_left_spotted_for_snipers</code></td><td>for how many turns the snipers of the target's side still see the attacker</td></tr>
+<tr><td><code>healUnit</code></td><td><code>medikit_action_type</code></td><td>what the medikit does, a sum: 1 heal, 2 stimulant, 4 painkiller. The charge is already spent by now</td></tr>
+<tr><td><code>healUnit</code></td><td><code>body_part</code></td><td>which body part is healed, <code>BODYPART_*</code></td></tr>
+<tr><td><code>healUnit</code></td><td><code>wound_recovery</code></td><td>how many wounds to close</td></tr>
+<tr><td><code>healUnit</code></td><td><code>health_recovery</code></td><td>how much health to return; only if this body part has a wound</td></tr>
+<tr><td><code>healUnit</code></td><td><code>energy_recovery</code></td><td>stimulant: how much energy to return</td></tr>
+<tr><td><code>healUnit</code></td><td><code>stun_recovery</code></td><td>stimulant: how much stun to take away</td></tr>
+<tr><td><code>healUnit</code></td><td><code>mana_recovery</code></td><td>stimulant: how much mana to return</td></tr>
+<tr><td><code>healUnit</code></td><td><code>morale_recovery</code></td><td>painkiller: how much morale to return</td></tr>
+<tr><td><code>healUnit</code></td><td><code>painkiller_recovery</code></td><td>painkiller: the strength in hundredths, 100 means 1.0</td></tr>
+<tr><td><code>skillUseUnit</code></td><td><code>continue_action</code></td><td>1 means the action goes on, 0 cancels it: the mod did it all itself</td></tr>
+<tr><td><code>skillUseUnit</code></td><td><code>spend_tu</code></td><td>1 spends the cost of the action; 0 by default</td></tr>
+<tr><td><code>returnFromMissionUnit</code></td><td><code>recovery_time</code></td><td>for how many days the soldier heals wounds</td></tr>
+<tr><td><code>returnFromMissionUnit</code></td><td><code>mana_loss</code> <span class="ro">(read only)</span></td><td>how much mana was missing at the end of the battle</td></tr>
+<tr><td><code>returnFromMissionUnit</code></td><td><code>health_loss</code> <span class="ro">(read only)</span></td><td>how much health was missing at the end of the battle</td></tr>
+<tr><td><code>returnFromMissionUnit</code></td><td><code>final_mana_loss</code></td><td>how much mana is missing at the base</td></tr>
+<tr><td><code>returnFromMissionUnit</code></td><td><code>final_health_loss</code></td><td>how much health is missing at the base</td></tr>
 </table>
 <h2>Objects</h2>
 <h3>Unit: <code>unit</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
@@ -81,8 +221,8 @@ table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:
 <h3>Item: <code>item</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
 <tr id="item.getId"><td><code>item:getId()</code></td><td>the item&#x27;s number in the battle</td></tr>
 <tr id="item.getRuleItem"><td><code>item:getRuleItem()</code></td><td>the item rules, or nil</td></tr>
-<tr id="item.getOwner"><td><code>item:getOwner()</code></td><td>the owner, a unit, or nil</td></tr>
-<tr id="item.isAmmo"><td><code>item:isAmmo()</code></td><td>this is ammunition</td></tr>
+<tr id="item.getOwner"><td><code>item:getOwner()</code></td><td>the owner, a unit, or nil; nil for ammunition loaded into a weapon</td></tr>
+<tr id="item.isAmmo"><td><code>item:isAmmo()</code></td><td>loaded into a weapon</td></tr>
 <tr id="item.getAmmoQuantity"><td><code>item:getAmmoQuantity()</code></td><td>rounds now</td></tr>
 <tr id="item.getAmmoQuantityMax"><td><code>item:getAmmoQuantityMax()</code></td><td>rounds in a clip by the rules</td></tr>
 <tr id="item.setAmmoQuantity"><td><code>item:setAmmoQuantity(value)</code></td><td>set the rounds</td></tr>
@@ -116,14 +256,14 @@ table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:
 <h3>Skill: <code>skill</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
 <tr id="skill.getType"><td><code>skill:getType()</code></td><td>the type from the ruleset, a string</td></tr>
 </table>
-<h2>The game table</h2><p><code>game.on(name, function)</code> subscribes a function to a handler. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log.</p>
+<h2>The game table</h2><p><code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log.</p>
 <h2>Constants</h2>
 <p>body parts: part: <code>game.BODYPART_HEAD</code> <code>game.BODYPART_TORSO</code> <code>game.BODYPART_RIGHTARM</code> <code>game.BODYPART_LEFTARM</code> <code>game.BODYPART_RIGHTLEG</code> <code>game.BODYPART_LEFTLEG</code></p>
 <p>sides of a unit: side in the damage handlers and in armor: <code>game.SIDE_FRONT</code> <code>game.SIDE_LEFT</code> <code>game.SIDE_RIGHT</code> <code>game.SIDE_REAR</code> <code>game.SIDE_UNDER</code></p>
 <p>sides of the battle: <code>game.FACTION_PLAYER</code> <code>game.FACTION_HOSTILE</code> <code>game.FACTION_NEUTRAL</code></p>
 <p>actions: battle_action: <code>game.BA_NONE</code> <code>game.BA_TURN</code> <code>game.BA_WALK</code> <code>game.BA_KNEEL</code> <code>game.BA_PRIME</code> <code>game.BA_UNPRIME</code> <code>game.BA_THROW</code> <code>game.BA_AUTOSHOT</code> <code>game.BA_SNAPSHOT</code> <code>game.BA_AIMEDSHOT</code> <code>game.BA_HIT</code> <code>game.BA_USE</code> <code>game.BA_LAUNCH</code> <code>game.BA_MINDCONTROL</code> <code>game.BA_PANIC</code> <code>game.BA_RETHINK</code> <code>game.BA_CQB</code></p>
 <p>damage types: damaging_type: <code>game.DT_NONE</code> <code>game.DT_AP</code> <code>game.DT_IN</code> <code>game.DT_HE</code> <code>game.DT_LASER</code> <code>game.DT_PLASMA</code> <code>game.DT_STUN</code> <code>game.DT_MELEE</code> <code>game.DT_ACID</code> <code>game.DT_SMOKE</code> <code>game.DT_10</code> <code>game.DT_11</code> <code>game.DT_12</code> <code>game.DT_13</code> <code>game.DT_14</code> <code>game.DT_15</code> <code>game.DT_16</code> <code>game.DT_17</code> <code>game.DT_18</code> <code>game.DT_19</code></p>
-<h2>Tags: memory between saves</h2><p>Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset:<pre>extended:
+<h2>Tags: memory between saves</h2><p>Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset, for example in the file <code>Ruleset/my_mod.rul</code>:<pre>extended:
   tags:
     BattleUnit:
       MY_REGEN: int
@@ -132,5 +272,5 @@ table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:
 <h2>What Lua itself has</h2><p>Base functions: <code>assert</code> <code>error</code> <code>getmetatable</code> <code>ipairs</code> <code>next</code> <code>pairs</code> <code>pcall</code> <code>print</code> <code>rawequal</code> <code>rawget</code> <code>rawlen</code> <code>rawset</code> <code>select</code> <code>setmetatable</code> <code>tonumber</code> <code>tostring</code> <code>type</code> <code>xpcall</code>. Libraries <code>string</code> (no <code>dump</code>), <code>table</code>, <code>math</code> (no <code>randomseed</code>), <code>utf8</code>. There is no <code>io os debug package require load dofile loadfile coroutine collectgarbage</code>, bytecode is not loaded. <code>math.random</code> goes through the game's generator; while <code>main.lua</code> loads it is an error: loading must not shift the battle's seed. There are no clocks and no time.</p>
 <h2>Limits</h2><ul><li>Memory: 32 MB per mod.</li><li>One handler call: 2 000 000 instructions, 5 000 000 ticks of C functions (string patterns, <code>string.rep</code>, <code>table.*</code>). <code>main.lua</code> gets ten times the instructions while it loads.</li><li>5 errors in a row switch the mod off until Ctrl+F5 or a new load. The game neither crashes nor hangs.</li><li>A <code>flashMessage</code>: up to 200 bytes of text.</li></ul>
 <h2>Errors</h2><p>An error or a limit reached: the output values stay as they were before the call, <code>user/lua_errors.log</code> gets the mod, file, line, handler and text. The screen shows a mod's first error of the load and its switching off, not every error. The log starts anew at each start of the game.</p>
-<h2>Good to know</h2><ul><li>An object lives only inside the handler that received it. One kept in a variable gives a Lua error, the game does not crash.</li><li>The order of <code>pairs</code> is stable only for string keys. Table keys and <code>tostring(table)</code> depend on addresses: the same mod gives two players different results.</li><li><code>health_recovery</code> of <code>healUnit</code> works only on a body part with a wound, as in the Y-script.</li><li>A <code>hitUnit</code>, <code>damageUnit</code> or <code>damageSpecialUnit</code> handler takes the AI's exact forecast of a shot away: it treats the result as unknown and may shoot at an invulnerable target.</li><li>API version 1 has no sprites, visibility, reactions or AI: these are frequent calls and drawing.</li><li>A local mod can change game mechanics and break a save. A separate build in the launcher is better for experiments.</li><li>A bug report carries only the mod's id, version and the mark <code>[lua local]</code>, not its code or files. The error log goes with it only if you tick it in the form yourself.</li></ul>
+<h2>Good to know</h2><ul><li>An object lives only inside the handler that received it. One kept in a variable gives a Lua error, the game does not crash.</li><li>The order of <code>pairs</code> is stable only for string keys. Table keys and <code>tostring(table)</code> depend on addresses: the same mod gives two players different results.</li><li><code>health_recovery</code> of <code>healUnit</code> works only on a body part with a wound, as in the Y-script.</li><li>A <code>hitUnit</code>, <code>damageUnit</code> or <code>damageSpecialUnit</code> handler takes the AI's exact forecast of a shot away: it treats the result as unknown and may shoot at an invulnerable target.</li><li><code>set...</code> and <code>add...</code> methods keep the value within its limits themselves: health and time units no higher than the maximum, morale from 0 to 100. So adding time units at the start of a turn usually does nothing: they are already full.</li><li><code>damageSpecialUnit</code> comes at zero damage too, <code>damageUnit</code> only when the power of the hit is above zero.</li><li>A local mod can change game mechanics and break a save. A separate build in the launcher is better for experiments.</li><li>A bug report carries only the mod's id, version and the mark <code>[lua local]</code>, not its code or files. The error log goes with it only if you tick it in the form yourself.</li></ul>
 </body></html>
