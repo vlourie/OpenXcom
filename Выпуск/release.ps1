@@ -355,6 +355,18 @@ try {
         if ($coreInStage -ne $coreInProfile) {
             throw "hd_core в стейдже: $coreInStage, в его xp-profiles.json: $coreInProfile - переключение сделано наполовину (tools\compat\hd_core_switch.py)"
         }
+        # Lua-моды каталога (docs\portal\LUA_MODS.md §8.4): в стейдже только одобренные cm-*, отзывы идут в манифест. Старый лаунчер
+        # каталога не знает: сам поставил бы мод для любой игры и не включил бы Lua, поэтому выпуск с модами требует нового
+        $luaCatalog = Join-Path $PSScriptRoot 'lua_catalog'
+        if (Test-Path -LiteralPath (Join-Path $luaCatalog 'catalog.json')) {
+            & py -3.13 (Join-Path $root 'tools\lua_catalog.py') sync --stage $cfg.Stage | Out-Host
+            if ($LASTEXITCODE -ne 0) { throw "каталог Lua-модов не лёг в стейдж (код $LASTEXITCODE)" }
+            $luaCat = Get-Content -LiteralPath (Join-Path $luaCatalog 'catalog.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+            if (@($luaCat.mods).Count -and (-not $luaCat.minLauncher -or -not $minLauncher -or [version]$minLauncher -lt [version]$luaCat.minLauncher)) {
+                throw "в каталоге моды, нужен лаунчер от '$($luaCat.minLauncher)', а MinLauncher выпуска '$minLauncher'. Номер: py -3.13 tools\lua_catalog.py min-launcher <версия>"
+            }
+            $buildArgs += @('--revoked', (Join-Path $luaCatalog 'revoked.json'))
+        }
         if ($minLauncher) {
             $ownExe = Join-Path $cfg.LauncherDir 'XPiratezLauncher.exe'
             $own = if (Test-Path -LiteralPath $ownExe) { ((Get-Item -LiteralPath $ownExe).VersionInfo.ProductVersion -split '\+')[0] } else { '0.0.0' }
