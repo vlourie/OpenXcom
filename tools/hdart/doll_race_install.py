@@ -46,8 +46,14 @@ def main():
     if a.race.lower() == "armor_batch":             # пачка броней поверх тел: запечатанные слои
         src = os.path.join("art", "doll", "pipe_pilot", "armor_batch", "chosen")
         generator = "doll_armor_batch.py"
+    if a.race.lower() == "ubergal_pasties":         # тела без кружков и круги слоем, выбор Vitali 06.11
+        src = os.path.join("art", "doll", "pipe_pilot", "pasties_uber", "chosen")
+        generator = "doll_ubergal_pasties.py"
     files = sorted(f for f in os.listdir(src) if f.endswith(".png"))
-    images = {k.lower() for k in set(db.sprite_files()) | dl.layer_names()}
+    if a.race.lower() == "ubergal":                 # тела теперь чистые, их ставит ubergal_pasties
+        clean = set(os.listdir(os.path.join("art", "doll", "pipe_pilot", "pasties_uber", "chosen")))
+        files = [f for f in files if f not in clean]
+    images ={k.lower() for k in set(db.sprite_files()) | dl.layer_names()}
     alien = [f for f in files if f[:-4] not in images]
     if alien:
         raise SystemExit("нет образа в рулсетах: %d, например %s" % (len(alien), alien[:5]))

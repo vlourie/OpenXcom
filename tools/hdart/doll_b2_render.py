@@ -61,8 +61,8 @@ def sprite_files():
         if not fn.endswith(".rul"):
             continue
         txt = open(os.path.join(rdir, fn), encoding=ENC, errors="replace").read()
-        for t, f in re.findall(r"typeSingle:\s*(\S+)\s*\n\s*fileSingle:\s*(\S+)", txt):
-            res[t] = os.path.join(MOD, f.strip("'\""))
+        for t, f in re.findall(r"typeSingle:\s*(\S+)\s*\n\s*fileSingle:[ \t]*([^\n]+)", txt):    # в пути бывает пробел: Party Dress/
+            res[t] = os.path.join(MOD, f.split(" #")[0].strip().strip("'\""))
     return res
 
 
