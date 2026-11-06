@@ -813,6 +813,15 @@ game.on("applySoldierBonuses", function(unit, battle, bonus)
     unit:addStat("health", -1)
   end
 end)
+for _, what in ipairs({ "time", "energy", "morale", "health", "mana", "stun" }) do
+  local ev = what .. "SoldierRecoveryBonusStats"
+  game.on(ev, function(...)
+    if not done[ev] then
+      done[ev] = true
+      game.log("S5SEEN", ev)
+    end
+  end)
+end
 '''
     bench, mods, out = stand("bonus", mod_code(kinds, tail))
     add_tags(mods)
@@ -821,6 +830,18 @@ end)
     defects.wait_landing(bench, name)
     defects.land(bench, name)
     report_methods(bench, name, kinds)
+    # восстановление от бонуса солдата считается в начале хода, у солдат кампании бонусы настоящие
+    t0 = time.time()
+    while bench.state(name)[0] != "BattlescapeState" and time.time() - t0 < 60:
+        # брифинг закрывает Enter, снаряжение перед боем - Esc
+        bench.run(name, ("key 27" if bench.state(name)[0] == "InventoryState" else "key 13") + "; wait 1000", 30)
+    check("бой открылся", bench.state(name)[0] == "BattlescapeState", bench.state(name)[0])
+    for t in range(3):
+        bench.end_turn(name, limit=60)
+    have ={l.split("S5SEEN", 1)[1].strip() for l in lines(bench, name, "S5SEEN")}
+    print("видели", sorted(have), flush=True)
+    for what in ("time", "energy", "morale", "health", "mana", "stun"):
+        check("вызван " + what + "SoldierRecoveryBonusStats", what + "SoldierRecoveryBonusStats" in have)
     check("в бонусе можно менять юнита", values(bench, name).get("bonus_stat") == "1", str(values(bench, name)))
     errors = bench.folder(name) / "lua_errors.log"
     text = errors.read_text(encoding="utf-8", errors="replace") if errors.exists() else ""
