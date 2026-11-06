@@ -37,7 +37,7 @@
 Токен устройства в приёмке сайта записан в базу напрямую: привязка устройства не менялась и не проверялась заново.
 Подпись «мод игрока, проверен нами» на странице компонентов глазами не смотрели.
 
-Тесты в копии от `62d6f6abc` плюс этап 4: Core 501/501, UI 37/37, сайт 242/242.
+Тесты в `hd-render` с этапом 4: UI 37/37, сайт 242/242, Core 498/501. Три падения не про Lua и были до этапа 4: `ReviewTests.The_plan_matches_the_one_python_builds`, `PckTests.Frames_match_the_census_fingerprints`, `PckTests.Tile_types_and_ground_flags_match_the_python_pipeline`.
 
 ## Как устроен каталог
 
