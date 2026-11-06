@@ -180,6 +180,13 @@ def draw_all(plan, texts, only=None, seed=SEED, keep=None):
     base_crop, base_zoom = dp.CROP, dp.Z
     negative = S.NEGATIVE + ", extra limbs, nude, bare breasts"
     left = [x for x in frames if not os.path.exists(os.path.join(raw, "f%03d_out.png" % x["id"]))]
+
+    def prompt_of(x):
+        return (P.FABRIC if x.get("fabric") else P.ARMOR).format(style=S.STYLE, what=texts[str(x["id"])])
+
+    def negative_of(x):
+        return negative + P.FABRIC_NEGATIVE if x.get("fabric") else negative
+
     for fr in frames:
         tag = "f%03d" % fr["id"]
         done = os.path.join(raw, tag + "_out.png")
@@ -218,13 +225,12 @@ def draw_all(plan, texts, only=None, seed=SEED, keep=None):
                 Image.fromarray(P.to8(canvas)).save(done)
             else:
                 if "painter" not in keep:
-                    keep["painter"] = P.Painter([P.ARMOR.format(style=S.STYLE, what=texts[str(x["id"])]) for x in left] + [negative])
+                    keep["painter"] = P.Painter([prompt_of(x) for x in left] + [negative_of(x) for x in left])
                     print("модель загружена за %d с" % keep["painter"].load_s, flush=True)
                 ctl = vc.control_map(dp.classic(P.FILES, P.PAL, names).crop(dp.CROP), dp.Z, "gray")
-                prompt = P.ARMOR.format(style=S.STYLE, what=texts[str(fr["id"])])
                 try:
-                    rgb, _s0 = keep["painter"].paint(P.to8(canvas), P.mask8(um, P.RUN["armor"]["grow8"]), ctl, prompt,
-                                                     P.RUN["seed"] + 500 + seed + fr["id"], S.STRENGTH, P.RUN["item"]["control"], negative)
+                    rgb, _s0 = keep["painter"].paint(P.to8(canvas), P.mask8(um, P.RUN["armor"]["grow8"]), ctl, prompt_of(fr),
+                                                     P.RUN["seed"] + 500 + seed + fr["id"], S.STRENGTH, P.RUN["item"]["control"], negative_of(fr))
                 except Exception as e:
                     print("кадр %s упал: %s" % (tag, str(e)[:300]), flush=True)
                     sys.exit(75)
