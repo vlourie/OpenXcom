@@ -29,6 +29,7 @@ if HERE not in sys.path:
 
 import doll_b2_render as db
 
+RACE = "UBERGAL"
 OUT = os.path.join(db.ROOT, "art", "doll", "pipe_pilot", "armor_batch")
 UI = os.path.join(db.ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods", "hd", "hd", "UI")
 PLAN = os.path.join(OUT, "plan.json")
@@ -37,6 +38,15 @@ SEED = 0
 SERIES_MIN = 5                                      # от стольких вещей с суффиксом внешности - серия, не личная вещь
 WIDE_MIN = 40                                       # от стольких точек вещи вне рамки - свой широкий кадр, R-738
 WIDE_PIXELS = 740000                                # широкий кадр не дороже обычного 640x1024 больше чем на 13%
+
+
+def set_race(race):
+    """Другая раса: своя папка armor_<раса>, UBERGAL остаётся в armor_batch."""
+    global RACE, OUT, PLAN, TEXTS
+    RACE = race
+    if race != "UBERGAL":
+        OUT = os.path.join(db.ROOT, "art", "doll", "pipe_pilot", "armor_" + race.lower())
+    PLAN, TEXTS = os.path.join(OUT, "plan.json"), os.path.join(OUT, "texts.json")
 
 
 def is_look(x):
@@ -58,7 +68,7 @@ def have_set():
 def make_plan(real):
     """real: {броня: кукол на сейвах}. Кадры по убыванию отдачи: кадр - один набор слоёв брони, paint - вещи, которых ещё нет."""
     files, armors = db.sprite_files(), db.armor_layers()
-    armors = {a: {k: v for k, v in d.items() if v and v[0].startswith("UBERGAL")} for a, d in armors.items()}
+    armors = {a: {k: v for k, v in d.items() if v and v[0].startswith(RACE)} for a, d in armors.items()}
     armors = {a: d for a, d in armors.items() if d}
     have = have_set()
     names = {x for d in armors.values() for v in d.values() for x in v if not is_look(x)}
@@ -168,24 +178,30 @@ def draw_all(plan, texts, only=None, seed=SEED, keep=None):
     from PIL import Image
     S.common()
     raw, batch = os.path.join(OUT, "raw"), os.path.join(OUT, "layers")
-    dirs = (UI, batch)
+    bodies = os.path.join(db.ROOT, "art", "doll", "pipe_pilot", RACE.lower(), "heads", "layers")   # тела MHUMAN рисуются вместе с бронёй, в моде их ещё нет
+    dirs = (UI, bodies, batch)
     frames = plan["frames"]
     if only is not None:
         raw, batch = os.path.join(OUT, "redo", "s%d" % seed, "raw"), os.path.join(OUT, "redo", "s%d" % seed, "layers")
-        dirs = (batch, os.path.join(OUT, "layers"), UI)
+        dirs = (batch, os.path.join(OUT, "layers"), UI, bodies)
         frames = [x for x in frames if x["id"] in only]
     os.makedirs(raw, exist_ok=True)
     os.makedirs(batch, exist_ok=True)
     keep = {} if keep is None else keep                 # модель одна на все сиды перерисовки
     base_crop, base_zoom = dp.CROP, dp.Z
-    negative = S.NEGATIVE + ", extra limbs, nude, bare breasts"
+    negative = S.NEGATIVE + ", extra limbs, nude, bare breasts, letters, words, writing, inscription, typography"
     left = [x for x in frames if not os.path.exists(os.path.join(raw, "f%03d_out.png" % x["id"]))]
+    # «X-COM-style» и «no text» модель пишет буквами на гладкой ткани (платье пастушки, R-760)
+    style = S.STYLE.replace("an X-COM-style strategy game", "a strategy game").replace(", no text.", ".")
+    assert "X-COM" not in style and "text" not in style
 
     def prompt_of(x):
-        return (P.FABRIC if x.get("fabric") else P.ARMOR).format(style=S.STYLE, what=texts[str(x["id"])])
+        t = (P.FABRIC if x.get("fabric") else P.ARMOR).format(style=style, what=texts[str(x["id"])])
+        return t.replace("Her skin, face and hair", "His skin, face and hair") if RACE == "MHUMAN" else t
 
     def negative_of(x):
-        return negative + P.FABRIC_NEGATIVE if x.get("fabric") else negative
+        extra = ", buttons, studs, rivets, pockets, double-breasted" if RACE == "FHUMAN" and x["id"] == 83 else ""     # заметка Vitali 06.11: в классике платья пуговиц нет
+        return (negative + P.FABRIC_NEGATIVE if x.get("fabric") else negative) + extra
 
     for fr in frames:
         tag = "f%03d" % fr["id"]
@@ -277,7 +293,9 @@ def main():
     ap.add_argument("--worker", action="store_true", help="(служебное) рисовать недостающие кадры подряд")
     ap.add_argument("--redo", help="номера кадров через запятую: перерисовать в redo/s<сид>")
     ap.add_argument("--seeds", default="0", help="сиды перерисовки через запятую")
+    ap.add_argument("--race", default="UBERGAL", help="раса, папка armor_<раса>")
     ns = ap.parse_args()
+    set_race(ns.race)
     os.makedirs(OUT, exist_ok=True)
     if ns.dry_run:
         real = json.load(open(ns.real, encoding="utf-8-sig")) if ns.real else {}
@@ -307,7 +325,7 @@ def main():
         return
     if not ns.redo:
         cut_hair(plan)
-    extra = ["--redo", ns.redo, "--seeds", ns.seeds] if ns.redo else []
+    extra = ["--race", ns.race] + (["--redo", ns.redo, "--seeds", ns.seeds] if ns.redo else [])
     for attempt in range(8):
         r = subprocess.run([sys.executable, os.path.abspath(__file__), "--worker"] + extra)
         print("рабочий процесс вышел с кодом %s (попытка %d)" % (r.returncode, attempt + 1), flush=True)
