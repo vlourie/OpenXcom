@@ -620,6 +620,16 @@ def main():
         else:
             path.write_text(text, encoding="utf-8-sig", newline="\n")
             print(path, len(text))
+    # имена для проверки заявок: лаунчер и tools/lua_mod_check.py сверяют вызовы мода с одним и тем же списком
+    names = [f"api\t{numbers['api']}"] + [f"event\t{e}" for e in events] + [f"const\t{c}" for c in constants] + [f"base\t{b}" for b in base]
+    names += [f"method\t{m}" for m in sorted({m for v in tables.values() for m in v})]
+    text = "\n".join(names) + "\n"
+    path = OUT / "lua_api.names.txt"
+    if check:
+        if not path.exists() or path.read_text(encoding="utf-8") != text:
+            stale.append(path.name)
+    else:
+        path.write_text(text, encoding="utf-8", newline="\n")
     if stale:
         fail([f"{n} устарел: py -3 tools/lua_api_doc.py" for n in stale])
     count = sum(len(v) for v in tables.values())
