@@ -1,1 +1,3 @@
-﻿- Globe: the T'Lieh Brig and Heavy Brig now fly wide end first, with the narrow tail behind.
+﻿- Launcher: Lua mods by players that we have checked will appear in the list of components as an optional tick, marked "a player's mod, checked by us". They never install on their own. There are no such mods yet.
+- Launcher: if a checked mod has to be taken back, the launcher switches it off by itself and tells you why once; the mod's files leave with the update. Saves are not touched.
+- Globe: the T'Lieh Brig and Heavy Brig now fly wide end first, with the narrow tail behind.
