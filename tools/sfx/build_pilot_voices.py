@@ -108,8 +108,77 @@ def plan(only=None):
     return out
 
 
+def plan_types():
+    """XP-000519, голоса по типам бойцов (gen_pilot_types.py): [(rel, wav, голос, задание)]; номера подряд с 1, реплики с
+    близостью ниже DROP_BELOW выпадают, пока в событии остаётся EVENT_KEEP. Нет выбранной реплики - стоп."""
+    import gen_pilot_types as T
+    from concurrent.futures import ThreadPoolExecutor
+    out, dropped = [], []
+    for r in T.rows_own():
+        st = T.load_state(r["voice"])
+        script = T.script_of(r["reg"])
+        for kind in T.CARD:
+            for lang in T.LANGS:
+                for ev in EVENTS:
+                    lines = sorted((ln for k, la, ln in script if k == kind and la == lang and ln["part"] == ev),
+                                   key=lambda ln: ln["n"])
+                    if not lines:
+                        raise SystemExit(f"{r['type']} {kind} {lang} {ev}: нет реплик в сценарии")
+                    its = []
+                    for ln in lines:
+                        it = st["items"].get(T.key_of(lang, ln[lang]))
+                        if not it or "chosen" not in it:
+                            raise SystemExit(f"{r['voice']} {lang}: не выбрана реплика «{ln[lang]}»")
+                        its.append(it)
+                    for it in sorted(its, key=lambda it: it["chosen"]["close"]):
+                        if it["chosen"]["close"] < T.DROP_BELOW and len(its) > T.EVENT_KEEP:
+                            its.remove(it)
+                            dropped.append((r["voice"], lang, it["text"], it["chosen"]["close"]))
+                    for i, it in enumerate(its, 1):
+                        out.append((f"PILOT/{kind}_{r['type']}/{ev}/{lang}_{i}.ogg", T.OUT / it["chosen"]["file"], r["voice"], it))
+    print(f"выпало реплик ниже {T.DROP_BELOW}: {len(dropped)}")
+    for d in dropped:
+        print(" ", *d)
+    # общая реплика воздуха и земли кодируется один раз (тот же вход - те же байты, R-494)
+    first = {}
+    for rel, src, _v, _it in out:
+        first.setdefault(src, rel)
+
+    def one(pair):
+        encode(pair[0], OUT.parent / pair[1])
+    with ThreadPoolExecutor(max_workers=max(2, (os.cpu_count() or 4) // 2)) as pool:
+        list(pool.map(one, first.items()))
+    for rel, src, _v, _it in out:
+        if first[src] != rel:
+            (OUT.parent / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(OUT.parent / first[src], OUT.parent / rel)
+    return out
+
+
+def install_types(approval):
+    items = plan_types()
+    size = sum((OUT.parent / rel).stat().st_size for rel, *_ in items)
+    print(f"{len(items)} реплик, {size / 1e6:.1f} МБ -> {OUT}")
+    if not approval:
+        return
+    sys.path.insert(0, str(ROOT / "tools/hdart"))
+    import build_hd_pack as bp
+    man = bp.load()
+    for rel, src, vid, it in items:
+        bp.stage(man, rel, str(OUT.parent / rel), generator="pilot_voices_types",
+                 generator_version="build_pilot_voices.py 06.11 radio q4 bitexact",
+                 source_path=str(src.relative_to(ROOT)).replace("\\", "/"), approved=True, approval=approval,
+                 source_frame=f"{vid}:{it['lang']}:{it['n']}")
+    rels = [rel for rel, *_ in items]
+    bp.save(man, why=f"pilot_voices: {len(rels)} реплик пилотов по типам бойцов (XP-000519)")
+    print("game:", bp.install(man, "game", only=rels))
+    print("repo:", bp.install(man, "repo", only=rels))
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--types", action="store_true",
+                    help="XP-000519: голоса по типам бойцов из art/sfx/pilot_types; с --approval - сразу в мод hd")
     ap.add_argument("--install", action="store_true", help="в мод hd через манифест build_hd_pack")
     ap.add_argument("--only", default="",
                     help="через запятую: air, ground, air_male, ground_male, dog - собрать (и поставить) только их; "
@@ -119,6 +188,9 @@ def main():
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     os.chdir(ROOT)
+    if a.types:
+        install_types(a.approval)
+        return
     only = {x.strip() for x in a.only.split(",") if x.strip()}
     bad = only - set(KINDS.values()) - {DOG}
     if bad:

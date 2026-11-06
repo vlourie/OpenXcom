@@ -1,4 +1,5 @@
-﻿- HD interface, dolls: new bodies, faces and hair for the Lokk'Naar (16 looks). On the battle panel the face is in HD for all of them, whatever armor they wear. On the soldier's sheet HD is for now only without armor and in Synthmetal; in other armor the doll stays as it was until layers are drawn for it.
+﻿- Pilot voices on the globe: each soldier type now has its own voice, the same as in battle. The one at the controls or at the wheel answers.
+- HD interface, dolls: new bodies, faces and hair for the Lokk'Naar (16 looks). On the battle panel the face is in HD for all of them, whatever armor they wear. On the soldier's sheet HD is for now only without armor and in Synthmetal; in other armor the doll stays as it was until layers are drawn for it.
 - HD interface, dolls: on the soldier's sheet the Juggernaut and DOOM 2 in all colours are now in HD.
 - HD interface, dolls: on the soldier's sheet the Ganger, Rags, Heavy Suit and Castaway are now in HD.
 - HD interface, dolls: on the soldier's sheet all 145 armors of the main soldiers are now in HD, among them the Annihilator, Assault, Sear, Hover, Harbinger, chainmail, plate mail and bikinis; the Guardian and Chromeback helmets, fishnet stockings, teddy and bra are redrawn.

@@ -135,25 +135,47 @@ const Soldier *speaker(const Craft *craft)
 	return nullptr;
 }
 
-/// The voice set of a fighter: "dog" for the Piratez dogs, "<class>_male" for men, else "" (the class set itself).
+/// The set of a soldier type; three types share a voice and its files (tools/sfx/gen_pilot_types.py, ALIAS).
+std::string typeSet(const std::string &type)
+{
+	if (type == "STR_SOLDIER_S")
+	{
+		return "STR_SOLDIER";
+	}
+	if (type == "STR_SOLDIER_V")
+	{
+		return "STR_SOLDIER_M";
+	}
+	if (type == "STR_SOLDIER_PUREBLOOD")
+	{
+		return "STR_SOLDIER_SLAVE";
+	}
+	return type;
+}
+
+/// The voice sets of a fighter, the first with files speaks: "dog" for the Piratez dogs, else "<class>_<type>",
+/// for men then "<class>_male"; none and the class set itself speaks.
 /// Men are told by the soldier type, not by getGender(): in Piratez the gender of a gal only picks her look set
 /// (UBERGAL M0-M59 / F0-F59, both women), so half of the gals are GENDER_MALE (R-521, XP-000341).
-std::string setOf(const Soldier *soldier, const std::string &kind)
+std::vector<std::string> setsOf(const Soldier *soldier, const std::string &kind)
 {
+	std::vector<std::string> sets;
 	if (!soldier)
 	{
-		return "";
+		return sets;
 	}
 	const std::string &type = soldier->getRules()->getType();
 	if (type == "STR_SOLDIER_DOGE" || type == "STR_SOLDIER_BLOODOGE")
 	{
-		return "dog";
+		sets.push_back("dog");
+		return sets;
 	}
+	sets.push_back(kind + "_" + typeSet(type));
 	if (type == "STR_SOLDIER_SLAVE" || type == "STR_SOLDIER_HERO" || type == "STR_SOLDIER_PUREBLOOD")
 	{
-		return kind + "_male";
+		sets.push_back(kind + "_male");
 	}
-	return "";
+	return sets;
 }
 
 /// The lines of an event in the player's language, else in English; null when the set has none.
@@ -175,15 +197,15 @@ bool say(const Craft *craft, Event ev)
 	}
 	const int alt = craft->getRules()->getMaxAltitude();
 	std::string kind = (alt >= 0 && alt <= 1) ? "ground" : "air";
-	// the fighter's own set first; where it has no files for the event, the class set (air/ground) speaks as before
+	// the fighter's own sets first; where they have no files for the event, the class set (air/ground) speaks as before
 	Lines *lines = nullptr;
-	const std::string own = setOf(speaker(craft), kind);
-	if (!own.empty())
+	for (const std::string &own : setsOf(speaker(craft), kind))
 	{
 		lines = find(own, ev);
 		if (lines)
 		{
 			kind = own;
+			break;
 		}
 	}
 	if (!lines)
@@ -227,11 +249,14 @@ void prime(const Craft *craft, Event ev)
 	// the same lookup as say(), without the line: loads the files of the speaker's set (else the class set)
 	const int alt = craft->getRules()->getMaxAltitude();
 	const std::string kind = (alt >= 0 && alt <= 1) ? "ground" : "air";
-	const std::string own = setOf(speaker(craft), kind);
-	if (own.empty() || !find(own, ev))
+	for (const std::string &own : setsOf(speaker(craft), kind))
 	{
-		find(kind, ev);
+		if (find(own, ev))
+		{
+			return;
+		}
 	}
+	find(kind, ev);
 }
 
 void report(const Craft *craft, Event ev)

@@ -11,6 +11,8 @@
  * only), else the first fighter aboard. Sets next to air/ground, same layout inside: air_male, ground_male (men),
  * dog (STR_SOLDIER_DOGE / STR_SOLDIER_BLOODOGE); women speak with air/ground. A set with no files for the event
  * (or no folder at all) falls back to air/ground by the craft class.
+ * Ticket XP-000519: each soldier type has its own voice, sets <air|ground>_<type> (air_STR_SOLDIER_X, ...); the sets
+ * of the ticket XP-000339 stay as the fallback, for a type of another mod the class set speaks.
  * Option oxceHdPilotVoice, on by default; off = silence.
  */
 
