@@ -142,7 +142,13 @@ std::string modsJson()
 	for (const ModInfo *mod : Options::getActiveMods())
 	{
 		ss << (first ? "" : ", ") << "{\"id\": " << HdTest::jsonString(mod->getId())
-		   << ", \"version\": " << HdTest::jsonString(mod->getVersion()) << "}";
+		   << ", \"version\": " << HdTest::jsonString(mod->getVersion());
+		// the rule of LuaHost::create: this mod's Lua was running, a ticket has to say so
+		if (Options::oxceLuaMods && mod->getLuaApi() > 0 && CrossPlatform::fileExists(mod->getPath() + "/lua/main.lua"))
+		{
+			ss << ", \"lua\": true";
+		}
+		ss << "}";
 		first = false;
 	}
 	ss << "]";
@@ -290,6 +296,7 @@ bool Feedback::open(Game *game, const State *top)
 	// local paths are for the launcher to offer the files; it never sends them
 	f.emplace_back("shot", HdTest::jsonString("shot.png"));
 	f.emplace_back("log", HdTest::jsonString(CrossPlatform::getLogFileName()));
+	f.emplace_back("luaLog", HdTest::jsonString(Options::getUserFolder() + "lua_errors.log"));
 	f.emplace_back("saveDir", HdTest::jsonString(Options::getMasterUserFolder()));
 	f.emplace_back("save", HdTest::jsonString(snapshot));
 	f.emplace_back("gameDir", HdTest::jsonString(CrossPlatform::getExeFolder()));

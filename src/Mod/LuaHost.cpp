@@ -659,7 +659,12 @@ std::string LuaHost::reload()
 			noteError(i, "main.lua", "cannot read " + entry.path);
 			continue;
 		}
-		const std::string code{ std::istreambuf_iterator<char>(*file), std::istreambuf_iterator<char>() };
+		std::string code{ std::istreambuf_iterator<char>(*file), std::istreambuf_iterator<char>() };
+		// a text editor's UTF-8 with BOM: Lua reads the mark as a syntax error on the first line
+		if (code.compare(0, 3, "\xEF\xBB\xBF") == 0)
+		{
+			code.erase(0, 3);
+		}
 		const std::string id = entry.id;
 		entry.sandbox = std::make_unique<LuaSandbox>(LuaSandbox::Limits{}, names,
 			[id](const std::string &text) { Log(LOG_INFO) << "[lua] " << id << ": " << text; },
