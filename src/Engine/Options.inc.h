@@ -184,6 +184,7 @@ OPT bool oxceEmbeddedOnly;
 OPT bool oxceListVFSContents;
 OPT bool oxceEnablePaletteFlickerFix;
 OPT bool oxceRecommendedOptionsWereSet;
+OPT bool oxceLuaMods;
 OPT std::string password;
 
 // HD render: battlescape sprite scale (1 = classic 32x40, 2..4 = HD; needs a 32-bit display), applied at the next battle

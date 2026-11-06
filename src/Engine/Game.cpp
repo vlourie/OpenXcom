@@ -50,6 +50,7 @@
 #include "HdUpdateNotice.h"
 #include "HdChatNotice.h"
 #include "../Mod/Mod.h"
+#include "../Mod/LuaHost.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "Action.h"
@@ -930,6 +931,11 @@ void Game::setSavedGame(SavedGame *save)
 {
 	delete _save;
 	_save = save;
+	// only tags live in a save: Lua variables start over, so one save gives one result
+	if (save && _mod && _mod->getLuaHost())
+	{
+		_mod->getLuaHost()->reload();
+	}
 }
 
 /**

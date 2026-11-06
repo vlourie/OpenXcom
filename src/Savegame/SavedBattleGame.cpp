@@ -53,6 +53,7 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleWeaponSet.h"
+#include "../Mod/LuaHost.h"
 #include "../fallthrough.h"
 #include "../fmath.h"
 #include "../Engine/Language.h"
@@ -1331,6 +1332,10 @@ void SavedBattleGame::newTurnUpdateScripts()
 		}
 
 		ModScript::scriptCallback<ModScript::NewTurnUnit>(bu->getArmor(), bu, this, this->getTurn(), _side);
+		if (auto *lua = _rule->getLuaHost())
+		{
+			lua->fire(LuaHost::NEW_TURN_UNIT, { bu, this, this->getTurn(), (int)_side });
+		}
 	}
 
 	for (auto* item : _items)
@@ -1341,6 +1346,10 @@ void SavedBattleGame::newTurnUpdateScripts()
 		}
 
 		ModScript::scriptCallback<ModScript::NewTurnItem>(item->getRules(), item, this, this->getTurn(), _side);
+		if (auto *lua = _rule->getLuaHost())
+		{
+			lua->fire(LuaHost::NEW_TURN_ITEM, { item, this, this->getTurn(), (int)_side });
+		}
 	}
 
 	reviveUnconsciousUnits(false);
@@ -2048,6 +2057,10 @@ void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
 	}
 
 	ModScript::scriptCallback<ModScript::CreateUnit>(armor, unit, this, this->getTurn());
+	if (auto *lua = _rule->getLuaHost())
+	{
+		lua->fire(LuaHost::CREATE_UNIT, { unit, this, this->getTurn() });
+	}
 
 	if (auto* solder = unit->getGeoscapeSoldier())
 	{
@@ -2070,6 +2083,10 @@ void SavedBattleGame::initItem(BattleItem *item, BattleUnit *unit)
 	}
 
 	ModScript::scriptCallback<ModScript::CreateItem>(item->getRules(), item, unit, this, this->getTurn());
+	if (auto *lua = _rule->getLuaHost())
+	{
+		lua->fire(LuaHost::CREATE_ITEM, { item, unit, this, this->getTurn() });
+	}
 }
 
 /**
