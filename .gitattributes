@@ -23,3 +23,5 @@ tools/collapse_ctype_marks.py text eol=crlf
 *.gif binary
 # таблица пилота обрушения, встраивается в exe (tools/collapse_blob.py)
 src/Battlescape/CollapsePilotData*.bin binary
+# моды каталога Lua: sha256 в catalog.json на байты файла, концы строк менять нельзя
+Выпуск/lua_catalog/cm-*/** -text
