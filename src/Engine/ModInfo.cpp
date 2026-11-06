@@ -215,6 +215,7 @@ void ModInfo::load(const YAML::YamlNodeReader& reader)
 	reader.tryRead("isMaster", _isMaster);
 	reader.tryRead("reservedSpace", _reservedSpace);
 	reader.tryRead("luaApi", _luaApi);
+	reader.tryRead("luaCaps", _luaCaps);
 
 	if (reader.tryRead("requiredExtendedVersion", _requiredExtendedVersion))
 		_requiredExtendedEngine = "Extended"; // for backward compatibility

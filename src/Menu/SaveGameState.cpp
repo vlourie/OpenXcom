@@ -30,6 +30,7 @@
 #include "ErrorMessageState.h"
 #include "MainMenuState.h"
 #include "../Savegame/SavedGame.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 
@@ -185,6 +186,15 @@ void SaveGameState::think()
 			_game->getSavedGame()->setName(_filename);
 		default:
 			break;
+		}
+
+		// the queue of Lua is not in the save: a save before it runs would load into another battle
+		if (auto *lua = _game->getMod()->getLuaHost())
+		{
+			if (auto *battle = _game->getSavedGame()->getSavedBattle())
+			{
+				lua->runQueue(battle);
+			}
 		}
 
 		// Save the game

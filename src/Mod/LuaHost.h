@@ -57,6 +57,10 @@ class LuaHost
 public:
 	/// The API version a mod names in metadata.yml as luaApi.
 	static const int API_VERSION = 1;
+	/// API 2 (docs/portal/LUA_MODS_V2.md) under construction: only with the environment variable OXCE_LUA_API2.
+	static const int NEXT_API = 2;
+	/// What the mod's metadata.yml may name in luaCaps; a method of API 2 needs its word there.
+	enum Cap { CAP_SPAWN = 1 };
 
 	enum Event
 	{
@@ -133,6 +137,21 @@ public:
 
 	/// Reads every mod's main.lua again: Lua variables are gone, a switched off mod is back. What happened, in a line.
 	std::string reload();
+	/// Puts a new item on the battle's map, later: a handler may be called from a walk over the game's lists.
+	/// `done` is LuaSandbox::keep() of the mod's function or 0. An error text, or empty.
+	std::string queueSpawnItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, const RuleItem *rule, int x, int y, int z, int done);
+	/// Does the mod declare this in luaCaps?
+	bool hasCap(const LuaSandbox *sandbox, Cap cap) const;
+	/// Does what the handlers asked for. Only where nothing walks the lists: the battle's idle moment, before a save.
+	void runQueue(SavedBattleGame *battle)
+	{
+		if (!_queue.empty())
+		{
+			runQueueNow(battle);
+		}
+	}
+	/// The battle ended or goes on another map: what was asked for has no place to happen. The next battle's reload() and the next stage call this.
+	void dropQueue();
 	/// A mod handles the damage or the power of a shot: the AI's forecast of it does not know the result.
 	bool hasDamageHandlers() const
 	{
@@ -144,13 +163,25 @@ public:
 private:
 	struct Entry
 	{
-		std::string id, path;
+		std::string id, path, capsError;
 		int api = 0;
+		int caps = 0;
 		std::unique_ptr<LuaSandbox> sandbox;
 		bool notified = false;
+		/// Queued by the running call, and by this turn of the battle: the budget of Lua does not see the engine's work.
+		int callItems = 0, turnItems = 0, turn = -1;
+	};
+	struct Pending
+	{
+		size_t entry;
+		const RuleItem *rule;
+		int x, y, z, done;
 	};
 
 	void fireOutputs(Event event, std::initializer_list<Arg> args, int *out);
+	void runQueueNow(SavedBattleGame *battle);
+	void dropQueued(size_t from);
+	void showNotice(SavedBattleGame *battle);
 	void noteError(size_t entry, const std::string &event, const std::string &text);
 	void writeJournal(const std::string &id, const std::string &event, const std::string &text);
 
@@ -158,6 +189,7 @@ private:
 
 	Mod *_mod = nullptr;
 	std::vector<Entry> _entries;
+	std::vector<Pending> _queue;
 	bool _handled[EVENT_COUNT] = { };
 	std::string _notice, _journal;
 };

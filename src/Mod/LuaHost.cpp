@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <climits>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <istream>
@@ -102,7 +103,10 @@ const char *const MOD_KEY = "oxce.mod";
 const char *const OUT_KEY = "oxce.out";
 
 /// What a slow API call costs a handler, in C loop steps: the counter sees it as one instruction.
-const unsigned long long TAG_TICKS = 100, LIST_TICKS = 20, MESSAGE_TICKS = 20000;
+const unsigned long long TAG_TICKS = 100, LIST_TICKS = 20, MESSAGE_TICKS = 20000, SPAWN_TICKS = 1000;
+/// The ceilings of the queue: the engine's work behind one call is not in the mod's budget.
+const int SPAWN_ITEMS_PER_CALL = 32, SPAWN_ITEMS_PER_TURN = 256;
+const size_t GLOW_ONE_BY_ONE = 4;
 const size_t MESSAGE_MAX = 200, JOURNAL_MAX = 256 * 1024;
 
 /// Handlers and their output values, the names of the Y-script. A value in `readOnly` is shown, not taken back.
@@ -1309,6 +1313,64 @@ int battleTryConcealUnit(lua_State *L)
 	return 1;
 }
 
+/// The running handler may not change the game, or the battle has no more moments to do it in.
+void checkMayQueue(lua_State *L)
+{
+	checkWritable(L);
+	if (g_pure || g_noScreen)
+	{
+		luaL_error(L, "this handler cannot change the battle: nothing it queues would run in its place");
+	}
+}
+
+/// battle:spawnItem(type, x, y, z[, done]): done(item) runs later, when the item is on the map.
+int battleSpawnItem(lua_State *L)
+{
+	checkMayQueue(L);
+	auto *host = LuaHost::active();
+	auto *sandbox = LuaSandbox::from(L);
+	if (!host || !host->hasCap(sandbox, LuaHost::CAP_SPAWN))
+	{
+		return luaL_error(L, "spawnItem needs 'spawn' in luaCaps of metadata.yml");
+	}
+	auto *battle = checkBattle(L);
+	if (battle->isPreview())
+	{
+		return luaL_error(L, "spawnItem does not work in the craft's preview");
+	}
+	const char *type = luaL_checkstring(L, 2);
+	const RuleItem *rule = battle->getMod()->getItem(type);
+	if (!rule)
+	{
+		return luaL_error(L, "no item '%s' in the rules", type);
+	}
+	const int x = checkInt(L, 3), y = checkInt(L, 4), z = checkInt(L, 5);
+	// Position keeps short numbers: one past them would wrap into the map
+	luaL_argcheck(L, x >= 0 && y >= 0 && z >= 0 && x < battle->getMapSizeX() && y < battle->getMapSizeY() && z < battle->getMapSizeZ(), 3, "outside the map");
+	if (!lua_isnoneornil(L, 6))
+	{
+		luaL_checktype(L, 6, LUA_TFUNCTION);
+	}
+	sandbox->charge(L, SPAWN_TICKS);
+	const int done = lua_isnoneornil(L, 6) ? 0 : LuaSandbox::keep(L, 6);
+	const std::string error = host->queueSpawnItem(sandbox, battle, rule, x, y, z, done);
+	if (!error.empty())
+	{
+		if (done)
+		{
+			sandbox->drop(done);
+		}
+		return luaL_error(L, "%s", error.c_str());
+	}
+	return 0;
+}
+
+/// Methods of API 2, on top of the table the mod's page is built from: under construction they are not on that page.
+const luaL_Reg API2_BATTLE_REGS[] = {
+	{ "spawnItem", battleSpawnItem },
+	{ nullptr, nullptr }
+};
+
 const luaL_Reg BATTLE_METHODS[] = {
 	{ "getTurn", battleGetTurn },
 	{ "getSize", battleGetSize },
@@ -2083,6 +2145,32 @@ void setupGame(lua_State *L, void *mod)
 	lua_pop(L, 1);
 }
 
+void setupApi2(lua_State *L, void *)
+{
+	luaL_getmetatable(L, TYPE_BATTLE);
+	lua_getfield(L, -1, "__index");
+	luaL_setfuncs(L, API2_BATTLE_REGS, 0);
+	lua_pop(L, 2);
+}
+
+int pushDone(lua_State *L, void *item)
+{
+	pushOrNil(L, TYPE_ITEM, item);
+	return 1;
+}
+
+int capOf(const std::string &word)
+{
+	return word == "spawn" ? LuaHost::CAP_SPAWN : 0;
+}
+
+/// API 2 stays closed in a release until its stages are through.
+int apiAllowed()
+{
+	static const int allowed = std::getenv("OXCE_LUA_API2") ? LuaHost::NEXT_API : LuaHost::API_VERSION;
+	return allowed;
+}
+
 struct FireData
 {
 	const EventInfo *info;
@@ -2224,6 +2312,18 @@ LuaHost *LuaHost::create(Mod *mod)
 		entry.id = info->getId();
 		entry.path = path;
 		entry.api = info->getLuaApi();
+		for (const auto &word : info->getLuaCaps())
+		{
+			entry.caps |= capOf(word);
+			if (!capOf(word))
+			{
+				entry.capsError = "metadata.yml: luaCaps has an unknown word '" + word + "', the mod's Lua is off";
+			}
+		}
+		if (!info->getLuaCaps().empty() && entry.api < NEXT_API)
+		{
+			entry.capsError = "metadata.yml: luaCaps needs luaApi " + std::to_string(NEXT_API) + ", the mod's Lua is off";
+		}
 	}
 	if (off > 0)
 	{
@@ -2240,6 +2340,7 @@ LuaHost *LuaHost::create(Mod *mod)
 std::string LuaHost::reload()
 {
 	int loaded = 0, failed = 0;
+	dropQueue();
 	std::fill(std::begin(_handled), std::end(_handled), false);
 	std::set<std::string> names;
 	for (const auto &event : EVENTS)
@@ -2251,10 +2352,17 @@ std::string LuaHost::reload()
 		auto &entry = _entries[i];
 		entry.sandbox.reset();
 		entry.notified = false;
-		if (entry.api > API_VERSION)
+		entry.turn = -1;
+		if (entry.api > apiAllowed())
 		{
 			++failed;
-			noteError(i, "main.lua", "the mod needs Lua API " + std::to_string(entry.api) + ", this game has " + std::to_string(API_VERSION) + ", the mod's Lua is off");
+			noteError(i, "main.lua", "the mod needs Lua API " + std::to_string(entry.api) + ", this game has " + std::to_string(apiAllowed()) + ", the mod's Lua is off");
+			continue;
+		}
+		if (!entry.capsError.empty())
+		{
+			++failed;
+			noteError(i, "main.lua", entry.capsError);
 			continue;
 		}
 		auto file = CrossPlatform::readFile(entry.path);
@@ -2275,7 +2383,7 @@ std::string LuaHost::reload()
 			[id](const std::string &text) { Log(LOG_INFO) << "[lua] " << id << ": " << text; },
 			[](int low, int high) { return RNG::generate(low, high); });
 		entry.sandbox->setErrorFn([this, i](const std::string &event, const std::string &text) { noteError(i, event, text); });
-		if (!entry.sandbox->setup(setupGame, _mod) || !entry.sandbox->load("main.lua", code))
+		if (!entry.sandbox->setup(setupGame, _mod) || (entry.api >= NEXT_API && !entry.sandbox->setup(setupApi2, nullptr)) || !entry.sandbox->load("main.lua", code))
 		{
 			++failed;
 			Log(LOG_ERROR) << "[lua] " << id << ": main.lua failed, the mod's Lua is off";
@@ -2340,7 +2448,15 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 			if (entry.sandbox)
 			{
 				const bool noRandom = entry.sandbox->setNoRandom(EVENTS[event].pure);
+				const size_t queued = _queue.size();
+				const int errors = entry.sandbox->errorCount();
+				entry.callItems = 0;
 				entry.sandbox->fire(EVENTS[event].name, pushArgs, &data, out ? takeOutputs : nullptr);
+				// like the output values: a call that failed changes nothing
+				if (entry.sandbox->errorCount() != errors)
+				{
+					dropQueued(queued);
+				}
 				entry.sandbox->setNoRandom(noRandom);
 			}
 		}
@@ -2352,14 +2468,144 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 	{
 		for (const auto &arg : args)
 		{
-			if (arg.kind == Arg::BATTLE && arg.object && static_cast<SavedBattleGame*>(arg.object)->getBattleState())
+			if (arg.kind == Arg::BATTLE && arg.object)
 			{
-				static_cast<SavedBattleGame*>(arg.object)->getBattleState()->warningLongRaw(_notice);
-				_notice.clear();
+				showNotice(static_cast<SavedBattleGame*>(arg.object));
 				break;
 			}
 		}
 	}
+}
+
+void LuaHost::showNotice(SavedBattleGame *battle)
+{
+	if (!_notice.empty() && battle->getBattleState())
+	{
+		battle->getBattleState()->warningLongRaw(_notice);
+		_notice.clear();
+	}
+}
+
+bool LuaHost::hasCap(const LuaSandbox *sandbox, Cap cap) const
+{
+	for (const auto &entry : _entries)
+	{
+		if (entry.sandbox.get() == sandbox)
+		{
+			return entry.caps & cap;
+		}
+	}
+	return false;
+}
+
+std::string LuaHost::queueSpawnItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, const RuleItem *rule, int x, int y, int z, int done)
+{
+	for (size_t i = 0; i < _entries.size(); ++i)
+	{
+		auto &entry = _entries[i];
+		if (entry.sandbox.get() != sandbox)
+		{
+			continue;
+		}
+		if (entry.turn != battle->getTurn())
+		{
+			entry.turn = battle->getTurn();
+			entry.turnItems = 0;
+		}
+		if (entry.callItems >= SPAWN_ITEMS_PER_CALL)
+		{
+			return "spawnItem: more than " + std::to_string(SPAWN_ITEMS_PER_CALL) + " items in one call";
+		}
+		if (entry.turnItems >= SPAWN_ITEMS_PER_TURN)
+		{
+			return "spawnItem: more than " + std::to_string(SPAWN_ITEMS_PER_TURN) + " items in one turn of the battle";
+		}
+		++entry.callItems;
+		++entry.turnItems;
+		_queue.push_back({ i, rule, x, y, z, done });
+		return std::string();
+	}
+	return "spawnItem: not a running mod";
+}
+
+void LuaHost::dropQueued(size_t from)
+{
+	for (size_t i = from; i < _queue.size(); ++i)
+	{
+		if (_queue[i].done && _entries[_queue[i].entry].sandbox)
+		{
+			_entries[_queue[i].entry].sandbox->drop(_queue[i].done);
+		}
+	}
+	_queue.resize(from);
+}
+
+void LuaHost::dropQueue()
+{
+	if (!_queue.empty())
+	{
+		writeJournal("lua", "queue", std::to_string(_queue.size()) + " queued changes of the battle are dropped: the map they were for is gone");
+		dropQueued(0);
+	}
+}
+
+void LuaHost::runQueueNow(SavedBattleGame *battle)
+{
+	// what the functions called here add waits for the next moment: a chain is stopped by the ceiling of the turn
+	std::vector<Pending> now;
+	now.swap(_queue);
+	std::vector<BattleItem*> items(now.size(), nullptr);
+	std::vector<BattleItem*> glowing;
+	auto *tileEngine = battle->getTileEngine();
+	for (size_t i = 0; i < now.size(); ++i)
+	{
+		const auto &op = now[i];
+		auto &entry = _entries[op.entry];
+		if (!entry.sandbox)
+		{
+			continue;
+		}
+		if (entry.sandbox->isDisabled())
+		{
+			if (op.done)
+			{
+				entry.sandbox->drop(op.done);
+			}
+			continue;
+		}
+		// the way of BattlescapeGame::spawnNewItem
+		items[i] = battle->createItemForTile(op.rule, battle->getTile(Position(op.x, op.y, op.z)));
+		tileEngine->applyGravity(items[i]->getTile());
+		if (items[i]->getGlow())
+		{
+			glowing.push_back(items[i]);
+		}
+	}
+	// the light of many items at once: one pass over the map costs what a few of them do one by one (LUA_MODS_V2_STAGE0.md)
+	if (glowing.size() > GLOW_ONE_BY_ONE)
+	{
+		tileEngine->calculateLighting(LL_ITEMS);
+		tileEngine->recalculateFOV();
+	}
+	else
+	{
+		for (auto *item : glowing)
+		{
+			const Position pos = item->getTile()->getPosition();
+			tileEngine->calculateLighting(LL_ITEMS, pos);
+			tileEngine->calculateFOV(pos, item->getVisibilityUpdateRange(), false);
+		}
+	}
+	for (size_t i = 0; i < now.size(); ++i)
+	{
+		if (items[i] && now[i].done)
+		{
+			auto &entry = _entries[now[i].entry];
+			entry.callItems = 0;
+			entry.sandbox->callKept(now[i].done, "spawnItem done", pushDone, items[i]);
+		}
+	}
+	showNotice(battle);
 }
 
 }

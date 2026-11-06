@@ -43,6 +43,14 @@ static int pushToy(lua_State *L, void *data)
 
 enum Expect { CLEAN, ERROR_IN_HANDLER, LIMIT_HIT, LOAD_FAILS };
 
+static int g_kept[8], g_keptCount = 0;
+static int keepIt(lua_State *L)
+{
+	g_kept[g_keptCount++] = LuaSandbox::keep(L, 1);
+	return 0;
+}
+static void setupKeep(lua_State *L, void *) { lua_register(L, "keepIt", keepIt); }
+
 static void report(const char *name, bool ok, const char *why, long long ms)
 {
 	printf("%s  %-30s %5lld ms  %s\n", ok ? "PASS" : "FAIL", name, ms, ok ? "" : why);
@@ -327,6 +335,47 @@ int main()
 		g_current = "";
 		printf("speed  полный бюджет циклов C (%llu): %.2f мс\n", LuaSandbox::Limits{}.cTicks,
 			std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - t1).count() / 1000.0);
+	}
+
+	// функция мода на потом: очередь API 2
+	{
+		g_current = "kept call"; g_startMs = nowMs();
+		const auto t0 = nowMs();
+		LuaSandbox *s = make();
+		Toy toy;
+		s->setup(setupToy, nullptr);
+		s->setup(setupKeep, nullptr);
+		s->load("main.lua", "game.on('tick', function(toy)\n"
+			"  keepIt(function(t) print('kept', t:get()) end)\n"
+			"  keepIt(function(t) error('kept failed') end)\n"
+			"  keepIt(function(t) while true do end end)\n"
+			"  keepIt(function(t) print('dropped') end)\n"
+			"end)");
+		s->fire("tick", pushToy, &toy);
+		s->callKept(g_kept[0], "done", pushToy, &toy);
+		report("kept: called with a live handle", g_lastLog == "kept\t7" || g_lastLog == "kept 7", g_lastLog.c_str(), nowMs() - t0);
+		const int errors = s->errorCount();
+		s->callKept(g_kept[1], "done", pushToy, &toy);
+		report("kept: error is the mod's error", s->errorCount() == errors + 1 && !s->isDisabled(), "", nowMs() - t0);
+		s->callKept(g_kept[2], "done", pushToy, &toy);
+		report("kept: endless loop is stopped", !s->isDisabled() && s->errorCount() >= errors + 1, "", nowMs() - t0);
+		s->drop(g_kept[3]);
+		delete s;
+		g_keptCount = 0;
+		s = make();
+		s->setup(setupKeep, nullptr);
+		s->load("main.lua", "local kept = false\ngame.on('tick', function()\n"
+			"  if not kept then kept = true; keepIt(function() print('not called') end) end\n"
+			"  error('always')\nend)");
+		for (int i = 0; i < 1000 && !s->isDisabled(); ++i)
+		{
+			s->fire("tick", nullptr, nullptr);
+		}
+		g_lastLog.clear();
+		s->callKept(g_kept[0], "done", nullptr, nullptr);
+		report("kept: an off mod is not called", s->isDisabled() && g_lastLog.find("not called") == std::string::npos, g_lastLog.c_str(), nowMs() - t0);
+		delete s;
+		g_current = "";
 	}
 
 	printf("итог: PASS %d, FAIL %d\n", g_passed, g_failed);
