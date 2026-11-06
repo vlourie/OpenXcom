@@ -1,0 +1,1 @@
+﻿- Globe: the T'Lieh Brig and Heavy Brig now fly wide end first, with the narrow tail behind.
