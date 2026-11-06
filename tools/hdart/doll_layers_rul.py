@@ -28,13 +28,44 @@ RULESET = "hd_doll_layers.rul"
 EMPTY = "Resources/Doll/empty_320x200.png"
 # префикс расы -> (слот, имя слоя, брони, которым он добавляется)
 EXTRA = {"LOKNAR": (3, "PASTIES", ("STR_LOKNAR_NUDE_UC", "STR_LOKNAR_NUDE_SEA_UC", "STR_LOKNAR_NUDE_DREAMLAND_UC"))}
+# UBERGAL: брони с открытой грудью по выбору Vitali 06.11; у каждой внешности свой круг, tools/hdart/doll_ubergal_pasties.py
+UBERGAL = ("STR_PIR_NUDE_UC", "STR_PIR_NUDE_SEA_UC", "STR_PIR_NUDE_DREAMLAND_UC", "STR_PIR_TOPLESS_UC", "STR_TOPLESS_SEA_UC", "STR_PIR_CHAINS_UC",
+           "STR_ARMOR_SAINT_UC", "STR_ARMOR_SAINT_FAKE_UC", "STR_PATIENT_OUTFIT_UC", "STR_HYENA_RIDER_ARMOR_UC", "STR_PIR_SLAVE_ARMOR_UC",
+           "STR_PIR_SLAVE_ARMOR_FAKE_UC", "STR_BRAINER_OUTFIT_SEA_UC", "STR_AMAZON_ARMOR_SEA_UC", "STR_THEBAN_DRESS_UC", "STR_THEBAN_DRESS_SEA_UC",
+           "STR_SAVAGE_ARMOR_UC", "STR_PIR_MINX_UC", "STR_PIR_GREMRIN_UC", "STR_PIR_GREMRIN_DREAMLAND_UC", "STR_MONOKINI_SHELL_SEA_UC", "STR_RAGS_UC",
+           "STR_HERMIT_UC", "STR_DEMONIC_ARMOR_UC", "STR_DEMONIC_ARMOR_SEA_UC", "STR_PIR_SWASHBUCKLER_UC")
+COVERS = "__SWASH_BRA_"                              # лежит в слоте ниже круга и закрывает его: у таких внешностей круга нет
 ROOTS = [os.path.join(ROOT, "user", "mods", "hd"),
          os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods", "hd")]
 
 
+def uber_slot(names):
+    """Слот круга UBERGAL: первый свободный над телом (слот 2), ниже него лежит только то, что грудь не задевает; None - круга нет."""
+    if any(COVERS in n for n in names if n):
+        return None
+    used = {int(n.split("__")[1]) for n in names if n}
+    slot = 3
+    while slot in used:
+        slot += 1
+    return slot
+
+
+def uber_layers(arms):
+    """{(броня, внешность): (слот, имя слоя)} для всех кругов UBERGAL."""
+    res = {}
+    for arm in UBERGAL:
+        for look, names in arms[arm].items():
+            slot = uber_slot(names)
+            if slot is not None:
+                res[arm, look] = (slot, "PASTIES_%s" % look)
+    return res
+
+
 def layer_names():
     """Имена слоёв, у которых образ в этом рулсете, - их нет в рулсетах Пираток."""
-    return {"%s__%d__%s" % (race, slot, name) for race, (slot, name, _) in EXTRA.items()}
+    res = {"%s__%d__%s" % (race, slot, name) for race, (slot, name, _) in EXTRA.items()}
+    res |= {"UBERGAL__%d__%s" % v for v in uber_layers(db.armor_layers()).values()}
+    return res
 
 
 def definition(names, slot, name):
@@ -47,7 +78,8 @@ def definition(names, slot, name):
             row[int(i)] = short
     if slot in row:
         raise SystemExit("слот %d занят: %s" % (slot, names))
-    row[slot] = name
+    if slot is not None:
+        row[slot] = name
     return [row.get(i, "") for i in range(max(row) + 1)]
 
 
@@ -65,6 +97,12 @@ def ruleset():
             for look, names in sorted(arms[arm].items()):
                 row = definition(names, slot, name)
                 lines.append("      %s: [%s]" % (look, ", ".join('"%s"' % v for v in row)))
+    uber = uber_layers(arms)
+    for arm in UBERGAL:
+        lines += ["  - type: %s" % arm, "    layersDefinition:"]
+        for look, names in sorted(arms[arm].items()):
+            row = definition(names, *uber.get((arm, look), (None, None)))
+            lines.append("      %s: [%s]" % (look, ", ".join('"%s"' % v for v in row)))
     return ("\n".join(lines) + "\n").encode("utf-8")
 
 
