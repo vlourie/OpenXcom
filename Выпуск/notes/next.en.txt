@@ -1,0 +1,1 @@
+﻿- HD interface: the "Cruiser hull" battle panel is now a dark wine brown matching the ship, not blue-lilac.
