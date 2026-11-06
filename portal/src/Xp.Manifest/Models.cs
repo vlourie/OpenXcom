@@ -28,6 +28,21 @@ public sealed class ReleaseManifest
     /// (<see cref="BlobKeys.Pack"/>). Launchers before 0.3.19 do not know the field and fetch blob by blob.
     /// </summary>
     public List<UpdatePack> Packs { get; set; } = new();
+    /// <summary>
+    /// Catalog mods taken back (docs/portal/LUA_MODS.md §8.4): the launcher switches them off and says why, once.
+    /// Every later release repeats the list, so a player who missed one still hears. Older launchers do not read it.
+    /// </summary>
+    public List<RevokedMod> Revoked { get; set; } = new();
+}
+
+public sealed class RevokedMod
+{
+    public string Mod { get; set; } = "";
+    public string Version { get; set; } = "";
+    /// <summary>Its folder under user/mods: cm-&lt;id&gt;.</summary>
+    public string Folder { get; set; } = "";
+    /// <summary>Language code -> why.</summary>
+    public Dictionary<string, string> Reason { get; set; } = new();
 }
 
 public sealed class UpdatePack
@@ -99,6 +114,11 @@ public sealed class ComponentInfo
     public List<string> Requires { get; set; } = new();
     /// <summary>Installed only after the player confirmed the age.</summary>
     public bool Adult { get; set; }
+    /// <summary>
+    /// A player's Lua mod we checked and approved (docs/portal/LUA_MODS.md §8.4), its folder cm-&lt;id&gt;.
+    /// Never ticked for the player and never offered: they take it on the components page themselves.
+    /// </summary>
+    public bool Catalog { get; set; }
     public long Size { get; set; }
     public int Files { get; set; }
 }
@@ -198,6 +218,7 @@ public sealed class SignatureFile
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 [JsonSerializable(typeof(ReleaseManifest))]
+[JsonSerializable(typeof(List<RevokedMod>))]
 [JsonSerializable(typeof(ChannelPointer))]
 [JsonSerializable(typeof(Catalog))]
 [JsonSerializable(typeof(ChannelNotes))]

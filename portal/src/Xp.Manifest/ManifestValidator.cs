@@ -108,7 +108,19 @@ public static partial class ManifestValidator
                 if (!ids.Contains(r)) throw new ManifestException($"component '{c.Id}' requires unknown '{r}'");
         foreach (var f in m.Files)
             if (!ids.Contains(f.Component)) throw new ManifestException($"'{f.Path}' belongs to unknown component '{f.Component}'");
+        foreach (var r in m.Revoked)
+        {
+            // the launcher switches a mod off by this id and looks at this folder: a signed list, still only for what it claims
+            if (r.Mod.Length == 0 || !r.Folder.StartsWith(CatalogFolderPrefix, StringComparison.Ordinal) || !SafePath.IsValid("user/mods/" + r.Folder) || r.Folder.Contains('/'))
+                throw new ManifestException($"bad revoked mod '{r.Mod}' in '{r.Folder}'");
+            var inside = $"user/mods/{r.Folder}/";
+            if (m.Files.Any(f => f.Path.StartsWith(inside, StringComparison.OrdinalIgnoreCase)))
+                throw new ManifestException($"'{r.Folder}' is revoked and shipped at once");
+        }
     }
+
+    /// <summary>A catalog mod's folder is cm-&lt;id&gt;: never the author's own folder of the same mod.</summary>
+    public const string CatalogFolderPrefix = "cm-";
 
     public static Catalog ParseCatalog(ReadOnlySpan<byte> json)
     {

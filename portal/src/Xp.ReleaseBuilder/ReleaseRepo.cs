@@ -21,6 +21,7 @@ public sealed class BuildOptions
     public string MinLauncher { get; set; } = "0.0.0";
     public bool Mandatory { get; set; }
     public Dictionary<string, string> Changelog { get; } = new();
+    public List<RevokedMod> Revoked { get; set; } = new();
     /// <summary>Component id -> version, for components whose version no metadata.yml gives (the engine).</summary>
     public Dictionary<string, string> Components { get; } = new();
     /// <summary>Engine line of the release: "oxce" (Meridian's) or "oxce-hd" (ours).</summary>
@@ -140,6 +141,7 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
             Roots = roots.ToList(),
             Files = files,
             Components = components,
+            Revoked = o.Revoked,
         };
         foreach (var kv in o.Changelog) manifest.Release.Changelog[kv.Key] = kv.Value;
         manifest.Deletes = ComputeDeletes(o.Channel, manifest);

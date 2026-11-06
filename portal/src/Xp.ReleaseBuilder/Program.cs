@@ -11,7 +11,7 @@ xp-release <command> [options]
   keygen   --out <dir>                      new Ed25519 key pair: release.key (secret) + release.pub
   build    --repo <dir> --id <id> --version <v> [--channel stable]
            [--stage <dir>] [--add <dest>=<src>]... [--launch openxcom_hd.exe]
-           [--min-launcher 1.0.0] [--mandatory] [--changelog-ru <file>] [--changelog-en <file>]
+           [--min-launcher 1.0.0] [--mandatory] [--changelog-ru <file>] [--changelog-en <file>] [--revoked <file>]
            [--line oxce-hd] [--engine-name OXCE-HD]... [--map <prefix>=<component>]...
            [--component engine=<version>]... [--keep-hd18-copies]
            [--root <root>]... [--launcher-kind] [--pack-from 3] [--pack-quality 9] --key <file>
@@ -79,6 +79,8 @@ try
             if (roots.Count > 0) o.Roots = roots;
             foreach (var lang in new[] { "ru", "en" })
                 if (opt.Get("changelog-" + lang) is { } f) o.Changelog[lang] = File.ReadAllText(f);
+            if (opt.Get("revoked") is { } gone)
+                o.Revoked = System.Text.Json.JsonSerializer.Deserialize(File.ReadAllBytes(gone), ManifestJson.Default.ListRevokedMod) ?? new();
             repo!.Build(o, LoadKey(opt));
             return 0;
         }

@@ -49,7 +49,9 @@ public sealed class ComponentPlan
                 var folder = seg[2];
                 if (!mods.TryGetValue(folder, out var meta))
                     mods[folder] = meta = plan.ReadMetadata(sources, folder);
-                if (Is(seg[3], Hd18Folder) && seg.Length > 4) id = Hd18Id;
+                // a catalog mod goes and comes whole, its own hd/ too: art.hd would keep the folder after a revocation
+                if (folder.StartsWith(ManifestValidator.CatalogFolderPrefix, StringComparison.Ordinal)) id = plan.CatalogComponent(meta, folder);
+                else if (Is(seg[3], Hd18Folder) && seg.Length > 4) id = Hd18Id;
                 else if ((Is(seg[3], HdFolder) && seg.Length > 4) || meta.Id is HdModId or HdCoreModId) id = HdId;
                 else id = plan.ModComponent(meta);
             }
@@ -62,6 +64,10 @@ public sealed class ComponentPlan
         foreach (var id in plan.FileComponent.Values.Distinct())
             if (!plan.Components.ContainsKey(id)) plan.Components[id] = plan.Fixed(id, mods);
 
+        // the same id in cm-<id> and in a folder of ours would be one component with two folders
+        foreach (var (folder, meta) in mods)
+            if (!folder.StartsWith(ManifestValidator.CatalogFolderPrefix, StringComparison.Ordinal) && plan.Components.TryGetValue("mod." + meta.Id, out var c) && c.Catalog)
+                throw new InvalidOperationException($"mod '{meta.Id}' is both in the catalog and in user/mods/{folder}");
         plan.Link(mods, engines);
         foreach (var c in plan.Components.Values)
             if (versions.TryGetValue(c.Id, out var v)) c.Version = v;
@@ -87,6 +93,15 @@ public sealed class ComponentPlan
                 Kind = meta.IsMaster ? ComponentKind.Master : meta.AnyMaster ? ComponentKind.Shared : ComponentKind.Addon,
                 Master = meta.Master,
             };
+        return id;
+    }
+
+    string CatalogComponent(ModMetadata meta, string folder)
+    {
+        if (folder != ManifestValidator.CatalogFolderPrefix + meta.Id || meta.IsMaster)
+            throw new InvalidOperationException($"catalog folder '{folder}' holds mod '{meta.Id}'{(meta.IsMaster ? ", a master" : "")}: tools/lua_catalog.py never makes that");
+        var id = ModComponent(meta);
+        Components[id].Catalog = true;
         return id;
     }
 
