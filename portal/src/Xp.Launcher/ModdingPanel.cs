@@ -140,6 +140,7 @@ sealed class ModdingPanel : StackPanel
         var words = new List<string> { L.T("modding.label"), "user/mods/" + m.Folder, L.T(m.Active ? "modding.on" : "modding.off") };
         if (m.OtherMaster is { } om) words.Add(L.T("setup.ownOtherMaster", om));
         box.Children.Add(new TextBlock { Text = string.Join("  ·  ", words), FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.WarnText) });
+        if (m.Twin) box.Children.Add(new TextBlock { Text = L.T("modding.twin", "user/mods/" + ManifestValidator.CatalogFolderPrefix + m.Id), FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.WarnText) });
         if (_offers.TryGetValue(m.Id, out var offered))
         {
             var says = L.T("modding.offer", offered.DisplayNumber, offered.Version, L.T("modding.offer." + offered.Status));

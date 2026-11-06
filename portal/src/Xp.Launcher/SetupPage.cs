@@ -457,7 +457,7 @@ public sealed class SetupPage : UserControl
         head.Inlines!.Add(new Run(name));
         if (_fresh.Contains(c.Id)) head.Inlines.Add(new Run("   " + L.T("setup.new")) { FontSize = 12, Foreground = Skin.B(Skin.Accent) });
         text.Children.Add(head);
-        var kind = L.T("setup.kind." + c.Kind);
+        var kind = L.T(c.Catalog ? "setup.kind.catalog" : "setup.kind." + c.Kind);
         var why = r.Locked ? L.T("setup.always")
                 : r.Needs is { } n ? L.T("setup.needs", n)
                 : r.WrongEngine is { } e ? L.T("setup.wrongEngine", e) : null;

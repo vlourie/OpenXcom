@@ -100,6 +100,8 @@ public sealed class LauncherState
     /// "Update" asked about new mods (<see cref="Setup.Unseen"/>); null - none recorded yet.
     /// </summary>
     public List<string>? SeenComponents { get; set; }
+    /// <summary>Revocations already carried out here, "folder@version" (<see cref="LuaMods.ApplyRevoked"/>): each is said once.</summary>
+    public List<string>? RevokedDone { get; set; }
     /// <summary>Files the player chose to keep modified, until the next release.</summary>
     public Dictionary<string, KeptFile> Kept { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, CacheEntry> Cache { get; set; } = new(StringComparer.OrdinalIgnoreCase);

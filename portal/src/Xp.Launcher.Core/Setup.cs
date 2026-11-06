@@ -39,7 +39,7 @@ public static class Setup
             {
                 ComponentKind.Engine => true,
                 ComponentKind.Master => profile is null || Same(c.Mod, profile.Master),
-                ComponentKind.Art or ComponentKind.Shared => !c.Adult,
+                ComponentKind.Art or ComponentKind.Shared => !c.Adult && !c.Catalog,
                 ComponentKind.Addon => profile?.Mods.Any(pm => Same(pm.Id, c.Mod) && pm.OnFor(lang)) == true,
                 _ => false,
             };
@@ -158,7 +158,7 @@ public static class Setup
         var lang = ProfileWriter.LangOf(language);
         return m.Components.Where(c =>
         {
-            if (c.Kind is not (ComponentKind.Addon or ComponentKind.Shared) || c.Adult) return false;
+            if (c.Kind is not (ComponentKind.Addon or ComponentKind.Shared) || c.Adult || c.Catalog) return false;
             if (picked.Contains(c.Id) || seen.Contains(c.Id)) return false;
             if (profile?.Mods.FirstOrDefault(pm => Same(pm.Id, c.Mod)) is { } pm && !pm.OnFor(lang)) return false;
             return Normalize(m, picked.Append(c.Id)).Contains(c.Id);   // its master is ticked, its engine is this one
@@ -212,6 +212,7 @@ public static class Setup
             Deletes = m.Deletes,
             // the pack carries every component's blobs and the unpacking takes only the wanted ones (R-527)
             Packs = m.Packs,
+            Revoked = m.Revoked,
         };
     }
 

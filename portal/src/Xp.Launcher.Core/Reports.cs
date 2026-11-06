@@ -44,11 +44,13 @@ public sealed class ModRef
 {
     public string Id { get; set; } = "";
     public string Version { get; set; } = "";
-    /// <summary>The engine was running this mod's Lua at F8 (LUA_MODS §7). No catalog yet: every such mod is the author's own.</summary>
+    /// <summary>The engine was running this mod's Lua at F8 (LUA_MODS §7).</summary>
     public bool Lua { get; set; }
+    /// <summary>It runs from a catalog folder, cm-&lt;id&gt;: a checked mod, not the player's own.</summary>
+    public bool Catalog { get; set; }
 
     /// <summary>Id, version and the mark: all that a report ever says of a mod.</summary>
-    public string Line => (string.IsNullOrEmpty(Version) ? Id : $"{Id} {Version}") + (Lua ? " [lua local]" : "");
+    public string Line => (string.IsNullOrEmpty(Version) ? Id : $"{Id} {Version}") + (Lua ? Catalog ? " [lua catalog]" : " [lua local]" : "");
 }
 
 public enum ReportStatus { Draft, Queued, Sent }

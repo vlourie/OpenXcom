@@ -566,6 +566,54 @@ public sealed class BuildsWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void A_revoked_catalog_mod_goes_off_at_the_check_and_the_player_hears_why_once()
+    {
+        var w = Open();
+        Directory.CreateDirectory(Path.Combine(Game, "user", "mods", "cm-bad"));
+        File.WriteAllText(Path.Combine(Game, "user", "mods", "cm-bad", "metadata.yml"), "id: bad\nmaster: \"*\"\nluaApi: 1\n");
+
+        var repoDir = Path.Combine(_root, "repo");
+        var stage = Path.Combine(_root, "stage");
+        var (key, pub) = Xp.Manifest.Signing.CreateKeyPair();
+        var repo = new Xp.ReleaseBuilder.ReleaseRepo(repoDir);
+        Directory.CreateDirectory(stage);
+        File.Copy(Path.Combine(Game, "openxcom_hd.exe"), Path.Combine(stage, "openxcom_hd.exe"), overwrite: true);
+        repo.Build(new Xp.ReleaseBuilder.BuildOptions
+        {
+            StageDir = stage, Id = "2026.11.06-1", Version = "2026.11.06-1", Channel = "stable", Launch = "openxcom_hd.exe",
+            Revoked = [new Xp.Manifest.RevokedMod { Mod = "bad", Version = "1.0", Folder = "cm-bad", Reason = new() { ["ru"] = "портит сейвы" } }],
+        }, key);
+        repo.Publish("stable", "2026.11.06-1", key);
+        var client = new Xp.Manifest.RepoClient(new HttpClient(new DirRepo(repoDir)), new Uri("http://repo.test/"), new Xp.Manifest.TrustedKeys([Convert.ToBase64String(pub)]));
+        Set(w, "_repo", client);
+        Set(w, "_watch", new Xp.Launcher.Core.UpdateWatch(client));
+        Call(w, "OpenGameDir", Game);
+
+        var store = new Xp.Launcher.Core.BuildStore(new Xp.Launcher.Core.GamePaths(Game));
+        var build = store.Load().Current!;
+        Xp.Launcher.Core.LuaMods.SetActive(store, build, "bad", true, _ => false);
+
+        Window? Said() => w.OwnedWindows.OfType<MessageDialog>().FirstOrDefault();
+        Pump(() => F<object>(w, "_work").ToString() == "None", "the check of the opening to end");
+        Set(w, "_staleCheck", true);
+        var look = (Task)Call(w, "WatchAsync", true)!;   // the word is modal: the look ends only when the player answers it
+        Pump(() => Said() is not null, "the word about the revoked mod");
+        var text = string.Join(" ", Said()!.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text));
+        Assert.Contains("bad", text);
+        Assert.Contains("портит сейвы", text);
+        Assert.DoesNotContain(Xp.Launcher.Core.OptionsCfg.Parse(File.ReadAllText(store.OptionsFile(build))).Mods, m => m.Id == "bad" && m.Active);
+        Said()!.Close(true);
+        Pump(() => look.IsCompleted, "the look to end");
+
+        // said once: the next look finds the same list and keeps silent
+        Set(w, "_staleCheck", true);
+        Watch(w);
+        Assert.Null(Said());
+        Assert.True(Directory.Exists(Path.Combine(Game, "user", "mods", "cm-bad")));   // the files leave only with the update
+        w.Close();
+    }
+
+    [AvaloniaFact]
     public void A_launcher_update_shows_its_percent_on_the_settings_page_too()
     {
         var w = Open();

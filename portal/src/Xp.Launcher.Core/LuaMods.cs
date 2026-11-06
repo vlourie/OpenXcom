@@ -6,7 +6,8 @@ namespace Xp.Launcher.Core;
 
 /// <summary>A mod with Lua that the author keeps in user/mods: not from a release, not checked by us.</summary>
 /// <param name="OtherMaster">the master it is made for, when that is not the build's; the engine will not switch it on</param>
-public sealed record LocalLuaMod(string Id, string Name, string Version, string Folder, bool Active, string? OtherMaster);
+/// <param name="Twin">the release installed a checked mod of the same id here too: the engine takes the first it finds</param>
+public sealed record LocalLuaMod(string Id, string Name, string Version, string Folder, bool Active, string? OtherMaster, bool Twin = false);
 
 /// <summary>The folder or the id a new mod would take is someone else's: nothing was created.</summary>
 public sealed class LuaModNameTakenException(string folder) : Exception($"the name is taken: {folder}")
@@ -38,15 +39,41 @@ public static class LuaMods
     public static bool IsLua(string modDir, ModMetadata md) => md.LuaApi > 0 || Directory.Exists(Path.Combine(modDir, "lua"));
 
     /// <summary>
-    /// The option as the mode says, before every start. A player who never turned the mode on keeps options.cfg as it
-    /// is, without the line: the engine's default is off. True when the file changed.
+    /// The folders of the catalog mods (cm-&lt;id&gt;) the launcher itself installed: what a player merely put into a folder
+    /// of that name is not one, so it can never turn Lua on past the modding mode.
     /// </summary>
-    public static bool ApplyOption(GamePaths paths, string cfgPath)
+    static IEnumerable<string> CatalogFolders(IEnumerable<string> installedFiles)
+    {
+        foreach (var f in installedFiles)
+        {
+            var seg = f.Split('/');
+            if (seg.Length == 4 && seg[0].Equals("user", StringComparison.OrdinalIgnoreCase) && seg[1].Equals("mods", StringComparison.OrdinalIgnoreCase)
+                && seg[2].StartsWith(ManifestValidator.CatalogFolderPrefix, StringComparison.Ordinal) && seg[3].Equals("metadata.yml", StringComparison.OrdinalIgnoreCase))
+                yield return seg[2];
+        }
+    }
+
+    static IEnumerable<string> CatalogIds(GamePaths paths, IEnumerable<string> installedFiles)
+    {
+        foreach (var folder in CatalogFolders(installedFiles))
+        {
+            var meta = Path.Combine(paths.GameDir, "user", "mods", folder, "metadata.yml");
+            if (File.Exists(meta)) yield return ModMetadata.Parse(File.ReadAllText(meta), folder).Id;
+        }
+    }
+
+    /// <summary>
+    /// The option before every start: on with the modding mode, or with a catalog mod switched on in this build. A player
+    /// with neither keeps options.cfg as it is, without the line: the engine's default is off. True when the file changed.
+    /// The option is one for the whole game: with a catalog mod on, the build's active local mods run too.
+    /// </summary>
+    /// <param name="installedFiles">the keys of the state's Installed</param>
+    public static bool ApplyOption(GamePaths paths, string cfgPath, IEnumerable<string>? installedFiles = null)
     {
         var before = File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "";
         var cfg = OptionsCfg.Parse(before);
         var have = cfg.Get(Option);
-        bool on = ModeOn(paths);
+        bool on = ModeOn(paths) || CatalogIds(paths, installedFiles ?? []).Any(id => cfg.Mods.Any(m => m.Id == id && m.Active));
         if (on ? have == "true" : have is null or "false") return false;
         cfg.Set(Option, on ? "true" : "false");
         WriteCfg(cfgPath, before, cfg.Render());
@@ -58,6 +85,7 @@ public static class LuaMods
     public static List<LocalLuaMod> List(GamePaths paths, string cfgPath, string? master, IEnumerable<string> installedFiles)
     {
         var shipped = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var checkedIds = CatalogIds(paths, installedFiles).ToHashSet(StringComparer.Ordinal);
         foreach (var f in installedFiles)
         {
             var seg = f.Split('/');
@@ -78,10 +106,39 @@ public static class LuaMods
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
             if (!IsLua(dir, md)) continue;
             var otherMaster = !md.IsMaster && !md.AnyMaster && master is not null && md.Master != master ? md.Master : null;
-            result.Add(new LocalLuaMod(md.Id, md.Name, md.Version, folder, cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster));
+            result.Add(new LocalLuaMod(md.Id, md.Name, md.Version, folder, cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, checkedIds.Contains(md.Id)));
         }
         return result;
     }
+
+    /// <summary>
+    /// Carries out the release's revocations (LUA_MODS §8.4): a mod still in its folder here goes off in every build at once,
+    /// before any update takes the files. Saves and the author's own folder stay. Returns those the player has not heard of;
+    /// under a running game nothing changes and the next check tries again.
+    /// </summary>
+    public static List<RevokedMod> ApplyRevoked(Updater u, BuildStore builds, ReleaseManifest m, LauncherState state)
+    {
+        var fresh = new List<RevokedMod>();
+        if (m.Revoked.Count == 0 || u.IsGameRunning(u.Paths.GameDir)) return fresh;
+        var done = new HashSet<string>(state.RevokedDone ?? [], StringComparer.Ordinal);
+        foreach (var r in m.Revoked)
+        {
+            if (done.Contains($"{r.Folder}@{r.Version}") || !Directory.Exists(u.Paths.Full("user/mods/" + r.Folder))) continue;
+            foreach (var build in builds.Load().Builds) SetActive(builds, build, r.Mod, false);
+            done.Add($"{r.Folder}@{r.Version}");
+            fresh.Add(r);
+        }
+        if (fresh.Count > 0)
+        {
+            state.RevokedDone = [.. done.Order(StringComparer.Ordinal)];
+            state.Save(u.Paths);
+        }
+        return fresh;
+    }
+
+    /// <summary>Why, in the launcher's language or the nearest there is.</summary>
+    public static string ReasonOf(RevokedMod r, string language) =>
+        r.Reason.TryGetValue(language.StartsWith("ru", StringComparison.OrdinalIgnoreCase) ? "ru" : "en", out var t) || r.Reason.TryGetValue("en", out t) ? t : r.Reason.Values.FirstOrDefault() ?? "";
 
     /// <summary>On or off in the build's options.cfg, as the game's own menu would. A list the launcher kept stays the launcher's.</summary>
     public static void SetActive(BuildStore builds, Build build, string id, bool on, Func<string, bool>? isGameRunning = null)
@@ -153,6 +210,7 @@ public static class LuaMods
         var folder = FolderFor(name);
         var rel = "user/mods/" + folder;
         if (!SafePath.IsValid(rel)
+            || folder.StartsWith(ManifestValidator.CatalogFolderPrefix, StringComparison.Ordinal)
             || (reserved ?? []).Contains(folder, StringComparer.OrdinalIgnoreCase)
             || ProfileWriter.ScanMods(paths.GameDir).Any(m => m.Id.Equals(folder, StringComparison.OrdinalIgnoreCase)))
             throw new LuaModNameTakenException(folder);

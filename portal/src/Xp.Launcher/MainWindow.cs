@@ -1399,6 +1399,23 @@ public sealed class MainWindow : Window
         return true;
     }
 
+    /// <summary>A checked mod was taken back (LUA_MODS §8.4): it goes off before anything else happens, and the player hears why, once.</summary>
+    async Task TellRevokedAsync(Updater u, LauncherState state)
+    {
+        List<RevokedMod> gone;
+        try { gone = _builds is { } store ? LuaMods.ApplyRevoked(u, store, _latest!.Manifest, state) : []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or UpdateBlockedException)
+        {
+            _fileLog?.Error("revoked mods not switched off: " + e.Message);
+            return;
+        }
+        foreach (var r in gone)
+        {
+            _fileLog?.Info($"revoked mod switched off: {r.Mod} {r.Version}");
+            await new MessageDialog(L.T("modding.revoked", r.Mod, LuaMods.ReasonOf(r, L.Language)), withNo: false).ShowDialog<bool>(this);
+        }
+    }
+
     /// <summary>The player changed the mods in the game and wants ours back: the profile's list and recommended options.</summary>
     async Task ResetProfileAsync()
     {
@@ -1512,6 +1529,7 @@ public sealed class MainWindow : Window
         else UpdateNotice.Clear(_paths!);
         _watchChannels = [state.Channel, SelfUpdate.ChannelFor(state.Channel)];
         _staleCheck = false;
+        await TellRevokedAsync(u, state);
         var channel = _latest.Manifest.Release.Channel is { Length: > 0 } ch ? ch : state.Channel;
         ShowRelease(_latest.Manifest, await NotesAsync(channel, ct), state.InstalledVersion);
         await CheckLauncherAsync(state.Channel, ct);
@@ -1643,7 +1661,7 @@ public sealed class MainWindow : Window
             // Lua runs only with the modding mode of this installation (LUA_MODS §5.2): the option goes with every start of every build
             try
             {
-                if (LuaMods.ApplyOption(_updater.Paths, _builds!.OptionsFile(build))) _fileLog?.Info($"{build.Cfg}options.cfg: {LuaMods.Option} follows the modding mode");
+                if (LuaMods.ApplyOption(_updater.Paths, _builds!.OptionsFile(build), _updater.PeekState()?.Installed.Keys)) _fileLog?.Info($"{build.Cfg}options.cfg: {LuaMods.Option} follows the modding mode");
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("lua option not written: " + e.Message); }
             // before the start: once the game runs, nothing of the builds is written
