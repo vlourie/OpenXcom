@@ -100,8 +100,9 @@ const Theme GOLD = {
 	0,
 };
 
-// the ships' hulls (oxceHdBattleHudColor 2 the Consul's light lilac steel, 3 the Cruiser's dark one): the plaques
-// cast in the hull's plating, the steel between them and the floors in the same cool tone
+// the ships' hulls (oxceHdBattleHudColor 2 the Consul's light lilac steel; CRUISER the dark one, which the windows wear,
+// the panel's value 3 is it toned to wine brown, cruiserPanel): the plaques cast in the hull's plating, the steel
+// between them and the floors in the same cool tone
 const Theme CONSUL = {
 	0xF4211C2Cu, 0xF40E0B14u, 0x60CFCEE6u,
 	0xFF8C86A6u, 0xFF6E6586u, 0x70CFCEE6u, 0xFFA3A0BEu, 0xFF7A7396u, 0x30CFCEE6u, 0x04CFCEE6u,
@@ -286,6 +287,28 @@ Uint32 backTone(Uint32 c, const Hsv &b)
 	return fromHsv(b.h, s, a.v * b.v / ref.v, c);
 }
 
+/// The Cruiser's theme moved to a keys' colour and a background's colour; `ramp` (7 shades) receives its metal.
+Theme tonedTheme(const Hsv &k, const Hsv &b, Uint32 *ramp)
+{
+	const Theme &base = CRUISER;
+	Theme t = base;
+	for (int i = 0; i < 7; ++i) ramp[i] = keyTone(HULL_DARK[i], k) | 0xFF000000u;
+	t.ramp = ramp;
+	t.tileTop = keyTone(base.tileTop, k); t.tileBottom = keyTone(base.tileBottom, k); t.tileEdge = keyTone(base.tileEdge, k);
+	t.hoverTop = keyTone(base.hoverTop, k); t.hoverBottom = keyTone(base.hoverBottom, k);
+	t.sheenTop = keyTone(base.sheenTop, k); t.sheenBottom = keyTone(base.sheenBottom, k);
+	t.accent = keyTone(base.accent, k); t.litTop = keyTone(base.litTop, k); t.litBottom = keyTone(base.litBottom, k);
+	t.icon = keyTone(base.icon, k); t.iconHover = keyTone(base.iconHover, k); t.iconLit = keyTone(base.iconLit, k);
+	t.panelTop = backTone(base.panelTop, b); t.panelBottom = backTone(base.panelBottom, b); t.panelEdge = backTone(base.panelEdge, b);
+	t.wellTop = backTone(base.wellTop, b); t.wellBottom = backTone(base.wellBottom, b); t.wellEdge = backTone(base.wellEdge, b);
+	t.cardTop = backTone(base.cardTop, b); t.cardBottom = backTone(base.cardBottom, b); t.cardEdge = backTone(base.cardEdge, b);
+	t.rankFill = backTone(base.rankFill, b);
+	t.steel = backTone(base.steel, b); t.wellBase = backTone(base.wellBase, b); t.cardBase = backTone(base.cardBase, b);
+	t.lipLight = backTone(base.lipLight, b);
+	t.grooveTop = backTone(base.grooveTop, b); t.grooveBottom = backTone(base.grooveBottom, b);
+	return t;
+}
+
 /// Builds the theme again if an option it comes from changed. The first call after a change must come from the main
 /// thread, before the render threads read the theme (themeKey, metalCached and the drawing calls do).
 void customRefresh()
@@ -303,27 +326,20 @@ void customRefresh()
 		return;
 	}
 	const Hsv k = { (float)sig[0], (float)sig[1] / 100.0f, (float)sig[2] / 100.0f }, b = { (float)sig[3], (float)sig[4] / 100.0f, (float)sig[5] / 100.0f };
-	const Theme &base = CRUISER;
-	Theme t = base;
-	for (int i = 0; i < 7; ++i) custom.ramp[i] = keyTone(HULL_DARK[i], k) | 0xFF000000u;
-	t.ramp = custom.ramp;
-	t.tileTop = keyTone(base.tileTop, k); t.tileBottom = keyTone(base.tileBottom, k); t.tileEdge = keyTone(base.tileEdge, k);
-	t.hoverTop = keyTone(base.hoverTop, k); t.hoverBottom = keyTone(base.hoverBottom, k);
-	t.sheenTop = keyTone(base.sheenTop, k); t.sheenBottom = keyTone(base.sheenBottom, k);
-	t.accent = keyTone(base.accent, k); t.litTop = keyTone(base.litTop, k); t.litBottom = keyTone(base.litBottom, k);
-	t.icon = keyTone(base.icon, k); t.iconHover = keyTone(base.iconHover, k); t.iconLit = keyTone(base.iconLit, k);
-	t.panelTop = backTone(base.panelTop, b); t.panelBottom = backTone(base.panelBottom, b); t.panelEdge = backTone(base.panelEdge, b);
-	t.wellTop = backTone(base.wellTop, b); t.wellBottom = backTone(base.wellBottom, b); t.wellEdge = backTone(base.wellEdge, b);
-	t.cardTop = backTone(base.cardTop, b); t.cardBottom = backTone(base.cardBottom, b); t.cardEdge = backTone(base.cardEdge, b);
-	t.rankFill = backTone(base.rankFill, b);
-	t.steel = backTone(base.steel, b); t.wellBase = backTone(base.wellBase, b); t.cardBase = backTone(base.cardBase, b);
-	t.lipLight = backTone(base.lipLight, b);
-	t.grooveTop = backTone(base.grooveTop, b); t.grooveBottom = backTone(base.grooveBottom, b);
-	custom.theme = t;
+	custom.theme = tonedTheme(k, b, custom.ramp);
 	custom.keyH = k.h;
 	custom.keyV = k.v;
 	std::copy(sig, sig + 6, custom.sig);
 	++custom.version;
+}
+
+/// The Cruiser's panel (XP-000523): the wine brown of the hull as the ship looks in battle, the lilac theme toned as the
+/// player's own colour is. The windows that have the Cruiser's colour chosen keep the lilac steel (themeOf).
+const Theme &cruiserPanel()
+{
+	static Uint32 ramp[7];
+	static const Theme panel = tonedTheme(Hsv{ 0.0f, 0.32f, 0.34f }, Hsv{ 0.0f, 0.32f, 0.26f }, ramp);
+	return panel;
 }
 
 /// What the player's own colour of the windows' metal made (XP-000479): the ramp of the keys' colour alone (the windows have
@@ -377,7 +393,7 @@ const Theme &themeOf(int color)
 
 const Theme &theme()
 {
-	return themeOf(Options::oxceHdBattleHudColor);
+	return Options::oxceHdBattleHudColor == 3 ? cruiserPanel() : themeOf(Options::oxceHdBattleHudColor);
 }
 
 inline Uint32 withAlpha(Uint32 c, Uint32 a) { return (c & 0x00FFFFFFu) | (a << 24); }
@@ -1186,8 +1202,8 @@ const KeyLook &keyLook()
 	static const KeyLook BRASS_KEYS = { false, 0, 0, 0, 0xFFFFE9A6u, 0xFFF8E57Bu, false, 0, 0, false, nullptr };
 	static const KeyLook CONSUL_KEYS = { true, 0xFF1D1934u, 0xFF0A0816u, 0xFFF2F0FFu, 0xFFB8AEFFu, 0xFFE6E4FAu, false, 0, 0, false, nullptr };
 	// the Cruiser's signs cut dark into its steel, as before the glass keys (players asked it back); its reserve keys
-	// keep their lit glass
-	static const KeyLook CRUISER_KEYS = { false, 0, 0, 0, 0xFFA494F0u, 0xFFCFC6E0u, false, 0, 0, false, nullptr };
+	// keep their lit glass; the lights are of its wine brown (XP-000523), as customKeyLook makes them
+	static const KeyLook CRUISER_KEYS = { false, 0, 0, 0, 0xFFF78888u, 0xFFE0C5C5u, false, 0, 0, false, nullptr };
 	// a sign lit in a coal's orange, not the ember of the glow round the key: brass is light orange itself, and a sign
 	// lit in that colour sinks into it; each metal after it lights its signs in a colour that stands out of it
 	static const KeyLook PIRATE_KEYS = { false, 0, 0, 0, 0xFFFFC870u, 0xFFF6D890u, true, EMBER, 0xFFFF6A12u, false, "UI/battle_keys/" };
