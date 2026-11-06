@@ -63,6 +63,7 @@
 #include "../Savegame/BattleUnitStatistics.h"
 #include "ConfirmEndMissionState.h"
 #include "../fmath.h"
+#include "../Mod/LuaHost.h"
 
 namespace OpenXcom
 {
@@ -224,6 +225,10 @@ int BattlescapeGame::think()
 	// nothing is happening - see if we need some alien AI or units panicking or what have you
 	if (_states.empty())
 	{
+		if (auto *lua = getMod()->getLuaHost())
+		{
+			lua->runQueue(_save);
+		}
 		if (_save->getUnitsFalling())
 		{
 			statePushFront(new UnitFallBState(this));

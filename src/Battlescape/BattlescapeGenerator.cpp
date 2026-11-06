@@ -238,6 +238,11 @@ void BattlescapeGenerator::setMissionSite(MissionSite *mission)
  */
 void BattlescapeGenerator::nextStage()
 {
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->dropQueue();
+	}
+
 	// check if the unit is available in the next stage
 	auto isUnitStillActive = [](const BattleUnit* u)
 	{

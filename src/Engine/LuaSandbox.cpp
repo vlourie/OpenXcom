@@ -581,15 +581,61 @@ void LuaSandbox::fire(const char *event, PushFn push, void *data, AfterFn after)
 	{
 		return;
 	}
+	_firePush = push;
+	_fireData = data;
+	_fireAfter = after;
+	runProtected(event, fireProtected);
+}
+
+int LuaSandbox::callProtected(lua_State *L)
+{
+	auto *self = from(L);
+	lua_pushcfunction(L, messageHandler);
+	const int handler = lua_gettop(L);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, self->_keptCall);
+	const int args = self->_firePush ? self->_firePush(L, self->_fireData) : 0;
+	if (lua_pcall(L, args, 0, handler) != LUA_OK)
+	{
+		const char *text = lua_tostring(L, -1);
+		self->noteError(text ? text : "unknown error");
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+	return 0;
+}
+
+int LuaSandbox::keep(lua_State *L, int index)
+{
+	lua_pushvalue(L, index);
+	return luaL_ref(L, LUA_REGISTRYINDEX);
+}
+
+void LuaSandbox::drop(int kept)
+{
+	luaL_unref(_L, LUA_REGISTRYINDEX, kept);
+}
+
+void LuaSandbox::callKept(int kept, const char *what, PushFn push, void *data)
+{
+	if (!_disabled && !_inFire)
+	{
+		_keptCall = kept;
+		_firePush = push;
+		_fireData = data;
+		_fireAfter = nullptr;
+		runProtected(what, callProtected);
+	}
+	drop(kept);
+}
+
+void LuaSandbox::runProtected(const char *event, int (*body)(lua_State*))
+{
 	_inFire = true;
 	// a formula reached from another mod's handler: that one goes on counting after this
 	LuaSandbox *const outer = _running;
 	begin(_limits.instructions);
 	_fireEvent = event;
-	_firePush = push;
-	_fireData = data;
-	_fireAfter = after;
-	lua_pushcfunction(_L, fireProtected);
+	lua_pushcfunction(_L, body);
 	if (lua_pcall(_L, 0, 0, 0) != LUA_OK)
 	{
 		const char *text = lua_tostring(_L, -1);

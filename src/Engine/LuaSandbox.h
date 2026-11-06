@@ -73,6 +73,12 @@ public:
 	static std::string compileOnly(const std::string &chunkName, const std::string &code);
 	/// Calls the event's handlers, cheap when there are none.
 	void fire(const char *event, PushFn push, void *data, AfterFn after = nullptr);
+	/// Keeps a function of the mod for a later call: what callKept() takes.
+	static int keep(lua_State *L, int index);
+	/// Forgets a kept function that will not be called.
+	void drop(int kept);
+	/// Calls a kept function like a handler, with the limits of one fire(), and forgets it. `what` names it in errors.
+	void callKept(int kept, const char *what, PushFn push, void *data);
 
 	/// The mod is off: too many errors or it failed to load.
 	bool isDisabled() const { return _disabled; }
@@ -104,6 +110,7 @@ private:
 	static void countHook(lua_State *L, struct lua_Debug *ar);
 	static int openLibs(lua_State *L);
 	static int fireProtected(lua_State *L);
+	static int callProtected(lua_State *L);
 	static int messageHandler(lua_State *L);
 	static int gameOn(lua_State *L);
 	static int gameLog(lua_State *L);
@@ -114,6 +121,7 @@ private:
 	static int runSetup(lua_State *L);
 
 	void begin(unsigned long long instructions);
+	void runProtected(const char *event, int (*body)(lua_State*));
 	void hitLimit(lua_State *L, const char *what);
 	void noteError(const std::string &text);
 	void writeLog(const std::string &text);
@@ -132,7 +140,7 @@ private:
 	void *_fireData = nullptr;
 	SetupFn _setupFn = nullptr;
 	void *_setupData = nullptr;
-	int _errorsInRow = 0, _totalErrors = 0, _totalLimits = 0, _logLeft = 1000;
+	int _keptCall = 0, _errorsInRow = 0, _totalErrors = 0, _totalLimits = 0, _logLeft = 1000;
 	bool _limitHit = false, _loading = false, _inFire = false, _disabled = false, _anyError = false, _noRandom = false;
 };
 
