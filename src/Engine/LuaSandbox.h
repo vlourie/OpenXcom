@@ -67,6 +67,8 @@ public:
 	bool setup(SetupFn fn, void *data);
 	/// Compiles (text only) and runs the mod's code. game.on() works only here.
 	bool load(const std::string &chunkName, const std::string &code);
+	/// Compiles (text only) in a state of its own and runs nothing: the error text, or empty.
+	static std::string compileOnly(const std::string &chunkName, const std::string &code);
 	/// Calls the event's handlers, cheap when there are none.
 	void fire(const char *event, PushFn push, void *data, AfterFn after = nullptr);
 

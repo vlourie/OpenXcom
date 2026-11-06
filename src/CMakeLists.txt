@@ -207,6 +207,7 @@ set ( engine_src
   Engine/LanguagePlurality.cpp
   Engine/LocalizedText.cpp
   Engine/LuaSandbox.cpp
+  Engine/ModCheck.cpp
   Engine/ModInfo.cpp
   Engine/Music.cpp
   Engine/OpenGL.cpp
