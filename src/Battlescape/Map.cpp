@@ -750,10 +750,12 @@ const HdFrame &arcStop(int k)
 }
 
 /// The shade of the corners on the floor (Map::hdFloorAo): the opacity of the darkest level, the levels of the grid,
-/// the share of the own object's lower voxels above which the floor is not seen, the most looks kept for a battle.
+/// the share of the own object's lower voxels above which the floor is not seen, the voxels above a plate below which what
+/// stands on it is thin (Map::hdAoShape), the most looks kept for a battle.
 const int FLOOR_AO_ALPHA = 135;
 const int FLOOR_AO_LEVELS = 16;
 const int FLOOR_AO_HIDDEN = 230;
+const int FLOOR_AO_THIN = 64;
 const size_t FLOOR_AO_MAX_FRAMES = 2048;
 
 /**
@@ -2973,6 +2975,7 @@ const Map::HdAoShape &Map::hdAoShape(const MapData *part)
 	const int lofts = voxels ? (int)(voxels->size() / 16) : 0;
 	auto usable = [&](int id) { return id > 0 && id < lofts; };
 	int top = -1;
+	Uint16 above[16] = {};
 	for (int layer = 0; layer < 12; ++layer)
 	{
 		const int id = part->getLoftID(layer);
@@ -2987,18 +2990,33 @@ const Map::HdAoShape &Map::hdAoShape(const MapData *part)
 			{
 				shape.rows[y] |= row;
 			}
+			if (layer == 1)
+			{
+				above[y] = row;
+			}
 			if (row)
 			{
 				top = layer;
 			}
 		}
 	}
+	int aboveCount = 0;
 	for (int y = 0; y < 16; ++y)
 	{
 		for (Uint16 row = shape.rows[y]; row; row &= row - 1)
 		{
 			++shape.count;
 		}
+		for (Uint16 row = above[y]; row; row &= row - 1)
+		{
+			++aboveCount;
+		}
+	}
+	// a thin thing on a plate filling the cell (a dead tree on its patch of ground): the plate is ground and shades nothing, as a flat part does (XP-000514)
+	if (shape.count >= FLOOR_AO_HIDDEN && aboveCount < FLOOR_AO_THIN && top >= 2)
+	{
+		std::copy(above, above + 16, shape.rows);
+		shape.count = aboveCount;
 	}
 	// a low part covering the whole cell (tall grass, top layer 1) is a carpet, not a wall: it shades no neighbour (XP-000439)
 	shape.valid = shape.count > 0 && top >= 1 && !(shape.count >= FLOOR_AO_HIDDEN && top <= 1);
