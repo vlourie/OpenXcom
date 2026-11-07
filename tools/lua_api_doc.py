@@ -1115,7 +1115,7 @@ TEXT = {
         ],
         "cannot": "<b>Из Lua нельзя:</b>"
                   "<ul><li>наука и производство; базы и деньги только с разрешением <code>economy</code>. Без него геоскейп можно читать, а менять только теги, итог месяца для страны, обнаружение НЛО и цены;</li>"
-                  "<li>создавать и двигать юнитов и предметы, менять карту;</li>"
+                  "<li>двигать юнитов и предметы; создавать и снимать их и менять карту только с разрешениями <code>spawn</code> и <code>map</code>;</li>"
                   "<li>спрайты и перекраску: эти обработчики Y-script идут из потоков рисования на каждый кадр, для них есть Y-script;</li>"
                   "<li>выбор действий ИИ, кроме веса цели.</li></ul>"
                   "<b>Рядом с кодом работает обычный OXCE.</b> Папка <code>Ruleset/</code> мода с файлами <code>.rul</code> подключается как у любого мода: там меняются числа предметов, брони и юнитов, исследования и всё остальное, что умеют рулсеты, в том числе Y-script. "
@@ -1247,7 +1247,7 @@ TEXT = {
         ],
         "cannot": "<b>From Lua you cannot:</b>"
                   "<ul><li>touch research and production; bases and money only with the permission <code>economy</code>. Without it the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li>"
-                  "<li>create or move units and items, change the map;</li>"
+                  "<li>move units and items; create and remove them and change the map only with the permissions <code>spawn</code> and <code>map</code>;</li>"
                   "<li>touch sprites and recolouring: those Y-script handlers come from the drawing threads on every frame, the Y-script is there for them;</li>"
                   "<li>choose the AI's actions, except a target's weight.</li></ul>"
                   "<b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. "
