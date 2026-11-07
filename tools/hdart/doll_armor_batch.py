@@ -74,6 +74,9 @@ def make_plan(real):
     names = {x for d in armors.values() for v in d.values() for x in v if not is_look(x)}
     fam = collections.Counter(re.sub(r"_[MF]\d+$", "", short(x)) for x in names if re.search(r"_[MF]\d+$", short(x)))
     series = {x for x in names if re.search(r"_[MF]\d+$", short(x)) and fam[re.sub(r"_[MF]\d+$", "", short(x))] >= SERIES_MIN and not is_hair(x)}
+    if RACE == "NEKOMIMI":                                  # у кошек серии - те же силуэты разного цвета: рисунок один, цвет от своей классики
+        series = set()
+        names = {x for x in names if not short(x).startswith("CAMO_")}      # камуфляж без карты, doll_camo.py
     masks, missing = {}, set()
     for x in names:
         if is_hair(x) or x.lower() in have or x in series:
@@ -112,6 +115,8 @@ def make_plan(real):
 
 def cut_hair(plan):
     """Слой HAIR_<внешность> = голова поверх тела этой внешности, альфа - силуэт классики x4."""
+    if RACE == "NEKOMIMI":                                  # волосы кошек вырезает doll_neko_heads.py из кадра головы
+        return
     import doll_pipe_pilot as P
     import doll_photo_pilot as dp
     from PIL import Image
@@ -201,6 +206,11 @@ def draw_all(plan, texts, only=None, seed=SEED, keep=None):
 
     def negative_of(x):
         extra = ", buttons, studs, rivets, pockets, double-breasted" if RACE == "FHUMAN" and x["id"] == 83 else ""     # заметка Vitali 06.11: в классике платья пуговиц нет
+        if RACE == "NEKOMIMI":
+            if any("__1__TAIL_" in n for n in x["paint"]):     # кончик хвоста выходил шаром и металлом с болтами
+                extra += ", metal tail, mechanical tail, armored tail, ball on the tail, sphere, knob, bolts, rivets"
+            if x["armor"] == "STR_NEKO_HERBALIST_OUTFIT_UC":    # R-792: в классике платья пуговиц нет
+                extra += ", buttons, studs"
         return (negative + P.FABRIC_NEGATIVE if x.get("fabric") else negative) + extra
 
     for fr in frames:

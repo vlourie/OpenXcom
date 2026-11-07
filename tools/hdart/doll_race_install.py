@@ -43,7 +43,7 @@ def main():
     if a.race.lower() == "armor_over":              # брони из нескольких вещей: выбранные сиды Vitali
         src = os.path.join("art", "doll", "pipe_pilot", "armor_over", "chosen")
         generator = "doll_armor_over.py"
-    if a.race.lower() in ("armor_batch", "armor_fhuman", "armor_mhuman"):   # пачка броней поверх тел: запечатанные слои
+    if a.race.lower() in ("armor_batch", "armor_fhuman", "armor_mhuman", "armor_nekomimi"):   # пачка броней поверх тел: запечатанные слои
         src = os.path.join("art", "doll", "pipe_pilot", a.race.lower(), "chosen")
         generator = "doll_armor_batch.py"
     if a.race.lower() == "ubergal_pasties":         # тела без кружков и круги слоем, выбор Vitali 06.11
