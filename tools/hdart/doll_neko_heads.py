@@ -27,13 +27,27 @@ OLD_FACE = ("A pretty young woman's face with smooth unlined skin and soft femin
 NEW_FACE = ("A grown woman's face with defined adult features and smooth skin: clear eyes with irises and highlights, neat brows, "
             "a straight nose, soft lips. The cat ears are covered in short fur and stay exactly where the input has them; she has no human ears.")
 NO_EXTRA = ", human ears, text, letters, smile, grin, open mouth, teeth, big eyes, anime eyes"
+# Необязательное поле muzzle: у кошачьей морды классики (XP-000531) вместо человеческого лица - кошачья мордочка. Без поля - как раньше.
+MUZZLE_HEAD = ("Close-up of the head and face of {who}, an anthropomorphic cat woman, part of a hand-painted paper-doll portrait for a strategy "
+               "game, seen straight from the front, soft light from the upper left. Repaint the low-resolution input in high detail without "
+               "changing its design; the face stays the same size and the hairline stays where it is. Hair: {hair}. {head}{neck} "
+               "Her face is a real feline muzzle covered in short {skin} fur: {muzzle}. Clear cat eyes with irises and highlights, {eyes}, "
+               "a calm confident look; a grown adult face with adult proportions. No makeup, no lipstick, no human lips, no human nose. "
+               "The cat ears are covered in short fur and stay exactly where the input has them; she has no human ears. "
+               "Dark spots on the fur of the input are soft shading only. Painted game art, not a photo.")
+NO_MUZZLE = ", human lips, full lips, glossy lips, lipstick, makeup, human nose, human face, human skin, chibi, baby face, childlike"
 SKIN_L, SKIN_LIT, LIT_PCT = 8, 12, 65               # как у MHUMAN: лицо только светлеет, иначе лицо темнее тела (R-790)
 neck_text = P.neck_text
 base_setup = H.setup
 base_passport = P.passport
 base_skin_match = P.skin_match
 base_negative = P.negative_for
+base_head_text = P.head_text
 base_compose = H.compose
+base_job = H.job
+# Выбор Vitali 08.11 (XP-000531): сид кадра головы закреплён по внешности, а не по месту в списке (порядок --looks его менял бы).
+# F3 - вариант C (3110+50+2000), F7 и M23 - B (+1000), F17 - B, M11 - A. M5 оставлен как был: у него сида нет, голова прежняя.
+PIN = {"F3": 5160, "F7": 4161, "F17": 4162, "M11": 3164, "M23": 4165}
 
 
 def passport(files, pal, look):
@@ -44,11 +58,20 @@ def passport(files, pal, look):
     pz["face"] = ", ".join((rnd.choice(["an oval face", "a heart-shaped face", "a face with high cheekbones"]), d["eyes"], "a calm confident look"))
     pz["skin"] = d.get("skin", pz["skin"])
     pz["neg"] = d.get("neg", "")
+    pz["muzzle"] = d.get("muzzle", "")
+    pz["eyes"] = d["eyes"]
     return pz
 
 
+def head_text(pz):
+    if not pz["muzzle"]:
+        return base_head_text(pz)
+    return MUZZLE_HEAD.format(who=P.WHO, hair=pz["hair"], head="She has %s. " % pz["head"] if pz["head"] else "", neck=neck_text(pz),
+                              skin=pz["skin"], muzzle=pz["muzzle"], eyes=pz["eyes"])
+
+
 def negative_for(pz):
-    return base_negative(pz) + NO_EXTRA + (", " + pz["neg"] if pz["neg"] else "")
+    return base_negative(pz) + NO_EXTRA + (", " + pz["neg"] if pz["neg"] else "") + (NO_MUZZLE if pz["muzzle"] else "")
 
 
 def lit_gap(rgb, look, region, sample):
@@ -124,6 +147,13 @@ def compose(j, rgb):
     return body, None, hair, info
 
 
+def job(i, look):
+    j = base_job(i, look)
+    if look in PIN:
+        j["seed"] = PIN[look]
+    return j
+
+
 def setup(looks_file):
     base_setup(looks_file)
     M.setup()
@@ -133,6 +163,7 @@ def setup(looks_file):
     assert "X-COM" not in P.HEAD
     P.passport = passport
     P.negative_for = negative_for
+    P.head_text = head_text
     P.skin_match = skin_match
     P.hair_zone = hair_zone
 
@@ -147,6 +178,7 @@ H.SHEET_CLOSE = (58, 38, 106, 90)
 H.SHEET_FULL = (56, 38, 106, 148)
 H.saved_names = lambda look: [NC.real_body(look), "", NC.real_hair(look)]
 H.compose = compose
+H.job = job
 H.setup = setup
 
 if __name__ == "__main__":
