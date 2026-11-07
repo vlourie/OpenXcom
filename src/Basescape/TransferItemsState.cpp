@@ -107,6 +107,34 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	add(_lstItems, "list", "transferMenu");
 	add(_cbxCategory, "text", "transferMenu");
 
+	// OXCE-HD (oxceHdTransferSides, XP-000525): the colours of the items that are only on one of the two bases. A text colour is
+	// the first index of a run: the letters take the next five shades of it, so the run is chosen by the middle of those five
+	// (and must not cross into the next group of sixteen) to be the nearest in the palette of this screen to a light green and a gold
+	_hereOnlyColor = _thereOnlyColor = 0;
+	if (Options::oxceHdTransferSides && _exchange)
+	{
+		SDL_Color *pal = _lstItems->getPalette();
+		auto nearest = [pal](int r, int g, int b)
+		{
+			int best = 0, bestD = INT_MAX;
+			for (int c = 0; c < 250; ++c)
+			{
+				if ((c & 15) > 10)
+					continue;
+				const int dr = pal[c + 2].r - r, dg = pal[c + 2].g - g, db = pal[c + 2].b - b;
+				const int d = dr * dr + dg * dg + db * db;
+				if (d < bestD)
+				{
+					bestD = d;
+					best = c;
+				}
+			}
+			return (Uint8)best;
+		};
+		_hereOnlyColor = nearest(0xb6, 0xe0, 0x8a);
+		_thereOnlyColor = nearest(0xe0, 0xc0, 0x60);
+	}
+
 	touchComponentsAdd("button2", "transferMenu", _window);
 
 	centerAllSurfaces();
@@ -608,6 +636,10 @@ void TransferItemsState::updateList()
 		if (_items[i].amount != 0)
 		{
 			_lstItems->setRowColor(_rows.size() - 1, _lstItems->getSecondaryColor());
+		}
+		else if (sideColor(_items[i]) >= 0)
+		{
+			_lstItems->setRowColor(_rows.size() - 1, (Uint8)sideColor(_items[i]));
 		}
 		else if (ammo)
 		{
@@ -1250,6 +1282,23 @@ void TransferItemsState::exchangeTexts(const TransferRow &row, std::string &from
 }
 
 /**
+ * OXCE-HD (oxceHdTransferSides, XP-000525): the colour of an item row in the exchange that is only on one of the two bases.
+ * Decided by the quantities the bases have (qtySrc, qtyDst stay as they were when the screen opened), not by what was picked.
+ * @param row The row.
+ * @return The colour, or -1 when the option is off, the row is not an item or the item is on both bases.
+ */
+int TransferItemsState::sideColor(const TransferRow &row) const
+{
+	if (!Options::oxceHdTransferSides || !_exchange || row.type != TRANSFER_ITEM)
+		return -1;
+	if (row.qtySrc > 0 && row.qtyDst <= 0)
+		return _hereOnlyColor;
+	if (row.qtySrc <= 0 && row.qtyDst > 0)
+		return _thereOnlyColor;
+	return -1;
+}
+
+/**
  * Moves the selected row in exchange mode. What goes the other way is cancelled first,
  * and room is checked on the receiving base net of what it sends away.
  * @param change How many: positive toward the destination base, negative back to the source base.
@@ -1390,7 +1439,11 @@ void TransferItemsState::updateItemStrings()
 	else
 	{
 		_lstItems->setRowColor(_sel, _lstItems->getColor());
-		if (getRow().type == TRANSFER_ITEM)
+		if (sideColor(getRow()) >= 0)
+		{
+			_lstItems->setRowColor(_sel, (Uint8)sideColor(getRow()));
+		}
+		else if (getRow().type == TRANSFER_ITEM)
 		{
 			RuleItem *rule = (RuleItem*)getRow().rule;
 			if (rule->getBattleType() == BT_AMMO || (rule->getBattleType() == BT_NONE && rule->getClipSize() > 0))
