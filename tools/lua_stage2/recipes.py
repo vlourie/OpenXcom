@@ -92,6 +92,7 @@ PROBES["reinforce"] = ("", "")
 PATCH["reinforce"] = ("  if turn % 3 ~= 0 or called == turn then return end\n", "  if called == turn then return end\n")
 # банк: зонд в show, каждое показанное значение в журнал
 PROBES["bank"] = ("", "")
+PROBES["breach"] = ("", "")
 PROBES["tithe"] = ("", "")
 # неделя в проверке одни сутки: на этом сейве перехват останавливает часы раньше вторых; приход виден в журнале
 PATCH["tithe"] = ("  if days >= 7 then\n    geoscape_game:addFunds(50000)\n", '  say("tithe", days)\n  if days >= 1 then\n    say("tithe_paid", geoscape_game:getFunds())\n    geoscape_game:addFunds(50000)\n    say("tithe_now", geoscape_game:getFunds())\n')
@@ -396,6 +397,34 @@ def reinforce():
     check("reinforce: ОВ полные", all(x[-2] == x[-1] and int(x[-1]) > 0 for x in done), str(done[:3]))
     text = errors(name)
     check("reinforce: журнал ошибок Lua пуст", not text, text[:500])
+    call("stop", "--name", name, timeout=60)
+
+
+def breach():
+    """Рецепт карты: на третьем ходу падают стены вокруг первого солдата, отказ это не ошибка, журнал ошибок пуст."""
+    mods = HERE / "mods_pirates"
+    mods.mkdir(exist_ok=True)
+    for d in REAL.iterdir():
+        if d.is_dir() and not (mods / d.name).exists():
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
+    mod = make(mods, "breach", "piratez")
+    main = mods / mod / "lua" / "main.lua"
+    code = main.read_text(encoding="utf-8")
+    assert "  if not tile then\n" in code and "  fell = true\n" in code
+    code = code.replace("  if not tile then\n", "  say(\"breach\", tostring(tile ~= nil), tostring(why))\n  if not tile then\n")
+    code = code.replace("  fell = true\n", "  fell = true\n  say(\"turn\", turn)\n")
+    main.write_text(code, encoding="utf-8", newline="\n")
+    name = "rcpb"
+    a = ["start", "--name", name, "--exe", EXE, "--save", str(SAVE), "--mods-dir", str(mods), "--mods", mod + "=true", "--timeout", "200", "--set", "oxceLuaMods=true"]
+    print(name, call(*a).strip().splitlines()[-1][:120], flush=True)
+    for _ in range(3):
+        end_turn(name)
+    turn, done = rows(name, "turn"), rows(name, "breach")
+    print("ход:", turn[:1], "стены:", len(done), done[:2], flush=True)
+    check("breach: сработал на третьем ходу", turn[:1] == [["3"]], str(turn[:1]))
+    check("breach: стены упали", any(x[0] == "true" for x in done), str(done[:3]))
+    text = errors(name)
+    check("breach: журнал ошибок Lua пуст", not text, text[:500])
     call("stop", "--name", name, timeout=60)
 
 

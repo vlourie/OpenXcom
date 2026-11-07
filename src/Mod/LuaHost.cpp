@@ -69,6 +69,8 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Tile.h"
+#include "MapData.h"
+#include "MapDataSet.h"
 #include "../Savegame/Transfer.h"
 #include "../Savegame/Ufo.h"
 #include "../Ufopaedia/StatsForNerdsState.h"
@@ -113,7 +115,7 @@ const char *const OUT_KEY = "oxce.out";
 /// What a slow API call costs a handler, in C loop steps: the counter sees it as one instruction.
 const unsigned long long TAG_TICKS = 100, LIST_TICKS = 20, MESSAGE_TICKS = 20000, SPAWN_TICKS = 1000, WIDGET_TICKS = 2000, ROW_TICKS = 200;
 /// The ceilings of the queue: the engine's work behind one call is not in the mod's budget.
-const int SPAWN_ITEMS_PER_CALL = 32, SPAWN_ITEMS_PER_TURN = 256, SPAWN_UNITS_PER_CALL = 4, SPAWN_UNITS_PER_TURN = 16;
+const int SPAWN_ITEMS_PER_CALL = 32, SPAWN_ITEMS_PER_TURN = 256, SPAWN_UNITS_PER_CALL = 4, SPAWN_UNITS_PER_TURN = 16, MAP_TILES_PER_CALL = 64, MAP_TILES_PER_TURN = 512;
 const int SCREENS_PER_CALL = 1, SCREENS_PER_PERIOD = 8;
 const int SOLDIERS_PER_CALL = 16, SOLDIERS_PER_DAY = 64;
 const lua_Integer ECONOMY_MAX = 1000000000;
@@ -1375,14 +1377,14 @@ SavedGame *checkEconomy(lua_State *L, const char *method)
 	return saved;
 }
 
-/// What a method of 'spawn' asks of the moment.
-SavedBattleGame *checkSpawn(lua_State *L, const char *method)
+/// What a method of 'spawn' or 'map' asks of the moment.
+SavedBattleGame *checkSpawn(lua_State *L, const char *method, LuaHost::Cap cap = LuaHost::CAP_SPAWN, const char *word = "spawn")
 {
 	checkMayQueue(L);
 	auto *host = LuaHost::active();
-	if (!host || !host->hasCap(LuaSandbox::from(L), LuaHost::CAP_SPAWN))
+	if (!host || !host->hasCap(LuaSandbox::from(L), cap))
 	{
-		luaL_error(L, "%s needs 'spawn' in luaCaps of metadata.yml", method);
+		luaL_error(L, "%s needs '%s' in luaCaps of metadata.yml", method, word);
 	}
 	auto *saved = LuaScreenState::savedGame();
 	auto *battle = saved ? saved->getSavedBattle() : nullptr;
@@ -1508,6 +1510,114 @@ int unitGiveItem(lua_State *L)
 	sandbox->charge(L, SPAWN_TICKS);
 	const int done = keepDone(L, 3);
 	return finishQueued(L, done, LuaHost::active()->queueGiveItem(sandbox, battle, unit, rule, done));
+}
+
+/// A part of a tile as a mod names it. R-777: it becomes an index.
+TilePart checkPart(lua_State *L, int index)
+{
+	const int part = checkInt(L, index);
+	luaL_argcheck(L, part >= O_FLOOR && part < O_MAX, index, "no such part, see game.PART_*");
+	return (TilePart)part;
+}
+
+/// tile:getPart(part): the name of the set and the number in it, nil for an empty part.
+int tileGetPart(lua_State *L)
+{
+	const auto *tile = self<Tile>(L);
+	const TilePart part = checkPart(L, 2);
+	const auto *data = tile->getMapData(part);
+	if (!data)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+	int id, set;
+	tile->getMapData(&id, &set, part);
+	lua_pushstring(L, data->getDataset()->getName().c_str());
+	lua_pushinteger(L, id);
+	return 2;
+}
+
+/// The end of every method of 'map': the part, the set and the value mean what `op` needs of them.
+int queueMapOp(lua_State *L, const char *method, LuaHost::MapOp op, TilePart part, int id, int set, int value, int doneIndex)
+{
+	auto *battle = checkSpawn(L, method, LuaHost::CAP_MAP, "map");
+	auto *sandbox = LuaSandbox::from(L);
+	const Position pos = self<Tile>(L)->getPosition();
+	sandbox->charge(L, SPAWN_TICKS);
+	const int done = keepDone(L, doneIndex);
+	return finishQueued(L, done, LuaHost::active()->queueMapOp(sandbox, battle, method, op, pos.x, pos.y, pos.z, part, id, set, value, done));
+}
+
+/// tile:setPart(part, set, id[, done]): done(tile) runs later, or done(nil, reason).
+int tileSetPart(lua_State *L)
+{
+	auto *battle = checkSpawn(L, "setPart", LuaHost::CAP_MAP, "map");
+	const TilePart part = checkPart(L, 2);
+	const char *name = luaL_checkstring(L, 3);
+	auto &sets = *battle->getMapDataSets();
+	int set = -1;
+	for (size_t i = 0; i < sets.size() && set < 0; ++i)
+	{
+		if (sets[i]->getName() == name)
+		{
+			set = (int)i;
+		}
+	}
+	if (set < 0)
+	{
+		return luaL_error(L, "no set '%s' in this battle, see battle:getMapSets()", name);
+	}
+	const int id = checkInt(L, 4);
+	luaL_argcheck(L, id >= 0 && (size_t)id < sets[set]->getSize(), 4, "no such number in the set");
+	luaL_argcheck(L, sets[set]->getObject(id)->getObjectType() == part, 4, "this number of the set is another part of a tile");
+	return queueMapOp(L, "setPart", LuaHost::MAP_SET, part, id, set, 0, 5);
+}
+
+/// tile:clearPart(part[, done]): the same.
+int tileClearPart(lua_State *L)
+{
+	return queueMapOp(L, "clearPart", LuaHost::MAP_CLEAR, checkPart(L, 2), -1, -1, 0, 3);
+}
+
+/// tile:destroyPart(part[, done]): the same, the way of an explosion: the part turns into its wreck.
+int tileDestroyPart(lua_State *L)
+{
+	return queueMapOp(L, "destroyPart", LuaHost::MAP_DESTROY, checkPart(L, 2), -1, -1, 0, 3);
+}
+
+/// tile:setFire(turns[, done]): the same. As in the engine's burning, 0 to 255 turns.
+int tileSetFire(lua_State *L)
+{
+	const int turns = checkInt(L, 2);
+	luaL_argcheck(L, turns >= 0 && turns <= 255, 2, "from 0 to 255 turns");
+	return queueMapOp(L, "setFire", LuaHost::MAP_FIRE, O_FLOOR, -1, -1, turns, 3);
+}
+
+/// tile:setSmoke(density[, done]): the same. The engine's smoke has 0 to 15, Map takes a sprite by it.
+int tileSetSmoke(lua_State *L)
+{
+	const int density = checkInt(L, 2);
+	luaL_argcheck(L, density >= 0 && density <= 15, 2, "from 0 to 15");
+	return queueMapOp(L, "setSmoke", LuaHost::MAP_SMOKE, O_FLOOR, -1, -1, density, 3);
+}
+
+/// battle:getMapSets(): what setPart may take in this battle, a list of { name, size }.
+int battleGetMapSets(lua_State *L)
+{
+	const auto &sets = *checkBattle(L)->getMapDataSets();
+	LuaSandbox::from(L)->charge(L, LIST_TICKS * sets.size());
+	lua_createtable(L, (int)sets.size(), 0);
+	for (size_t i = 0; i < sets.size(); ++i)
+	{
+		lua_createtable(L, 0, 2);
+		lua_pushstring(L, sets[i]->getName().c_str());
+		lua_setfield(L, -2, "name");
+		lua_pushinteger(L, (lua_Integer)sets[i]->getSize());
+		lua_setfield(L, -2, "size");
+		lua_rawseti(L, -2, (lua_Integer)i + 1);
+	}
+	return 1;
 }
 
 /// A handle of a screen: unlike the game's objects it outlives the call, and dies when the screen closes.
@@ -2198,6 +2308,17 @@ const luaL_Reg API2_BATTLE_REGS[] = {
 	{ "spawnItem", battleSpawnItem },
 	{ "removeItem", battleRemoveItem },
 	{ "spawnUnit", battleSpawnUnit },
+	{ "getMapSets", battleGetMapSets },
+	{ nullptr, nullptr }
+};
+
+const luaL_Reg API2_TILE_REGS[] = {
+	{ "getPart", tileGetPart },
+	{ "setPart", tileSetPart },
+	{ "clearPart", tileClearPart },
+	{ "destroyPart", tileDestroyPart },
+	{ "setFire", tileSetFire },
+	{ "setSmoke", tileSetSmoke },
 	{ nullptr, nullptr }
 };
 
@@ -3103,6 +3224,7 @@ const Constant CONSTANTS[] = {
 	{ "BODYPART_LEFTARM", BODYPART_LEFTARM }, { "BODYPART_RIGHTLEG", BODYPART_RIGHTLEG }, { "BODYPART_LEFTLEG", BODYPART_LEFTLEG },
 	{ "SIDE_FRONT", SIDE_FRONT }, { "SIDE_LEFT", SIDE_LEFT }, { "SIDE_RIGHT", SIDE_RIGHT }, { "SIDE_REAR", SIDE_REAR }, { "SIDE_UNDER", SIDE_UNDER },
 	{ "FACTION_PLAYER", FACTION_PLAYER }, { "FACTION_HOSTILE", FACTION_HOSTILE }, { "FACTION_NEUTRAL", FACTION_NEUTRAL },
+	{ "PART_FLOOR", O_FLOOR }, { "PART_WEST", O_WESTWALL }, { "PART_NORTH", O_NORTHWALL }, { "PART_OBJECT", O_OBJECT },
 	{ "BA_NONE", BA_NONE }, { "BA_TURN", BA_TURN }, { "BA_WALK", BA_WALK }, { "BA_KNEEL", BA_KNEEL }, { "BA_PRIME", BA_PRIME },
 	{ "BA_UNPRIME", BA_UNPRIME }, { "BA_THROW", BA_THROW }, { "BA_AUTOSHOT", BA_AUTOSHOT }, { "BA_SNAPSHOT", BA_SNAPSHOT },
 	{ "BA_AIMEDSHOT", BA_AIMEDSHOT }, { "BA_HIT", BA_HIT }, { "BA_USE", BA_USE }, { "BA_LAUNCH", BA_LAUNCH },
@@ -3177,6 +3299,10 @@ void setupApi2(lua_State *L, void *)
 	lua_getfield(L, -1, "__index");
 	luaL_setfuncs(L, API2_UNIT_REGS, 0);
 	lua_pop(L, 2);
+	luaL_getmetatable(L, TYPE_TILE);
+	lua_getfield(L, -1, "__index");
+	luaL_setfuncs(L, API2_TILE_REGS, 0);
+	lua_pop(L, 2);
 	luaL_getmetatable(L, TYPE_GEOSCAPE);
 	lua_getfield(L, -1, "__index");
 	luaL_setfuncs(L, API2_GEOSCAPE_REGS, 0);
@@ -3197,15 +3323,16 @@ int pushDone(lua_State *L, void *item)
 
 int capOf(const std::string &word)
 {
-	return word == "spawn" ? LuaHost::CAP_SPAWN : word == "screens" ? LuaHost::CAP_SCREENS : word == "economy" ? LuaHost::CAP_ECONOMY : 0;
+	return word == "spawn" ? LuaHost::CAP_SPAWN : word == "screens" ? LuaHost::CAP_SCREENS : word == "economy" ? LuaHost::CAP_ECONOMY : word == "map" ? LuaHost::CAP_MAP : 0;
 }
 
-/// What a method of 'spawn' comes to: `done(object)`, `done(true)` for an item taken away, or `done(nil, reason)`.
+/// What a method of 'spawn' or 'map' comes to: `done(object)`, `done(true)` for an item taken away, or `done(nil, reason)`.
 struct SpawnDone
 {
 	bool ran = false, removed = false;
 	BattleItem *item = nullptr;
 	BattleUnit *unit = nullptr;
+	Tile *tile = nullptr;
 	const char *reason = nullptr;
 };
 
@@ -3222,6 +3349,11 @@ int pushSpawnDone(lua_State *L, void *data)
 		pushOrNil(L, TYPE_UNIT, done->unit);
 		return 1;
 	}
+	if (done->tile)
+	{
+		pushOrNil(L, TYPE_TILE, done->tile);
+		return 1;
+	}
 	if (done->removed)
 	{
 		lua_pushboolean(L, 1);
@@ -3233,6 +3365,95 @@ int pushSpawnDone(lua_State *L, void *data)
 }
 
 /// Takes an item out of the battle; why not, or null. What the engine would leave half done is refused or undone first.
+/// What a method of 'map' does to the tile, without gravity, light and sight: they run once for the whole moment (R-302).
+/// Null, or why not.
+const char *changeTile(SavedBattleGame *battle, Tile *tile, LuaHost::MapOp op, TilePart part, int id, int set, int value)
+{
+	// _baseModules counts the map and the end of a base defense reads it
+	if (battle->getMissionType() == "STR_BASE_DEFENSE")
+	{
+		return "not in a base defense";
+	}
+	if (op == LuaHost::MAP_SMOKE)
+	{
+		tile->setSmoke(value);
+		return nullptr;
+	}
+	if (op == LuaHost::MAP_FIRE)
+	{
+		if (value && !tile->getMapData(O_FLOOR) && !tile->getMapData(O_OBJECT))
+		{
+			return "nothing to burn on the tile";
+		}
+		tile->setFire(value);
+		// Map draws fire only with smoke, and its density is what burns a unit: the way of an explosion
+		if (value && !tile->getSmoke())
+		{
+			tile->setSmoke(Clamp(15 - (tile->getFlammability() / 10), 1, 12));
+		}
+		return nullptr;
+	}
+	const MapData *old = tile->getMapData(part);
+	if (!old && op != LuaHost::MAP_SET)
+	{
+		return "the part is empty";
+	}
+	if (old && old->isGravLift())
+	{
+		return "a lift stays";
+	}
+	if (old && op != LuaHost::MAP_DESTROY && old->getSpecialType() == battle->getObjectiveType())
+	{
+		return "the mission counts this part, only destroyPart may take it";
+	}
+	if (op == LuaHost::MAP_SET)
+	{
+		MapData *data = (*battle->getMapDataSets())[set]->getObject(id);
+		if (data->getSpecialType() == battle->getObjectiveType())
+		{
+			return "the mission would not count this part";
+		}
+		if (part == O_FLOOR && tile->getPosition().z == 0 && data->isNoFloor())
+		{
+			return "the lowest level needs a floor";
+		}
+		const BattleUnit *unit = tile->getUnit();
+		if (unit && (part == O_FLOOR || part == O_OBJECT) && (data->getBigWall() != 0 || data->getTUCost(unit->getMovementType()) == 255))
+		{
+			return "occupied";
+		}
+		tile->setMapData(data, id, set, part);
+		// its frame was the frame of the old part: a UFO door would stand half open, the rest of the frames are one picture
+		if (data->isUFODoor())
+		{
+			tile->closeUfoDoor();
+		}
+		return nullptr;
+	}
+	if (op == LuaHost::MAP_DESTROY)
+	{
+		if (tile->destroy(part, battle->getObjectiveType()))
+		{
+			battle->addDestroyedObjective();
+		}
+	}
+	else
+	{
+		tile->setMapData(nullptr, -1, -1, part);
+		// the way of Tile::destroy: nothing below the lowest level to fall into
+		if (part == O_FLOOR && tile->getPosition().z == 0)
+		{
+			tile->setMapData(MapDataSet::getScorchedEarthTile(), 1, 0, O_FLOOR);
+		}
+	}
+	// the way of an explosion: the fire is out with what it burned on
+	if (tile->getFire() && !tile->getMapData(O_FLOOR) && !tile->getMapData(O_OBJECT))
+	{
+		tile->setFire(0);
+	}
+	return nullptr;
+}
+
 const char *takeOutOfBattle(SavedBattleGame *battle, BattleItem *item)
 {
 	auto &items = *battle->getItems();
@@ -3648,6 +3869,7 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 				const int errors = entry.sandbox->errorCount();
 				entry.callItems = 0;
 				entry.callUnits = 0;
+				entry.callTiles = 0;
 				entry.callScreens = 0;
 				entry.callHires = 0;
 				entry.sandbox->fire(EVENTS[event].name, pushArgs, &data, out ? takeOutputs : nullptr);
@@ -3718,18 +3940,24 @@ std::string LuaHost::queueBattleOp(const LuaSandbox *sandbox, const SavedBattleG
 			entry.turn = battle->getTurn();
 			entry.turnItems = 0;
 			entry.turnUnits = 0;
+			entry.turnTiles = 0;
 		}
-		const bool isUnit = op.unitRule != nullptr;
-		if ((isUnit ? entry.callUnits : entry.callItems) >= (isUnit ? SPAWN_UNITS_PER_CALL : SPAWN_ITEMS_PER_CALL))
+		const bool isUnit = op.unitRule != nullptr, isTile = op.mapOp != MAP_NONE;
+		int &inCall = isTile ? entry.callTiles : isUnit ? entry.callUnits : entry.callItems;
+		int &inTurn = isTile ? entry.turnTiles : isUnit ? entry.turnUnits : entry.turnItems;
+		const int perCall = isTile ? MAP_TILES_PER_CALL : isUnit ? SPAWN_UNITS_PER_CALL : SPAWN_ITEMS_PER_CALL;
+		const int perTurn = isTile ? MAP_TILES_PER_TURN : isUnit ? SPAWN_UNITS_PER_TURN : SPAWN_ITEMS_PER_TURN;
+		const char *what = isTile ? " changes of tiles" : isUnit ? " units" : " items";
+		if (inCall >= perCall)
 		{
-			return std::string(method) + ": more than " + std::to_string(isUnit ? SPAWN_UNITS_PER_CALL : SPAWN_ITEMS_PER_CALL) + (isUnit ? " units" : " items") + " in one call";
+			return std::string(method) + ": more than " + std::to_string(perCall) + what + " in one call";
 		}
-		if ((isUnit ? entry.turnUnits : entry.turnItems) >= (isUnit ? SPAWN_UNITS_PER_TURN : SPAWN_ITEMS_PER_TURN))
+		if (inTurn >= perTurn)
 		{
-			return std::string(method) + ": more than " + std::to_string(isUnit ? SPAWN_UNITS_PER_TURN : SPAWN_ITEMS_PER_TURN) + (isUnit ? " units" : " items") + " in one turn of the battle";
+			return std::string(method) + ": more than " + std::to_string(perTurn) + what + " in one turn of the battle";
 		}
-		++(isUnit ? entry.callUnits : entry.callItems);
-		++(isUnit ? entry.turnUnits : entry.turnItems);
+		++inCall;
+		++inTurn;
 		op.entry = i;
 		_queue.push_back(op);
 		return std::string();
@@ -3763,6 +3991,17 @@ std::string LuaHost::queueSpawnUnit(const LuaSandbox *sandbox, const SavedBattle
 	op.faction = faction;
 	op.direction = direction;
 	return queueBattleOp(sandbox, battle, op, "spawnUnit");
+}
+
+std::string LuaHost::queueMapOp(const LuaSandbox *sandbox, const SavedBattleGame *battle, const char *method, MapOp mapOp, int x, int y, int z, int part, int id, int set, int value, int done)
+{
+	Pending op{ 0, nullptr, x, y, z, done };
+	op.mapOp = mapOp;
+	op.part = part;
+	op.mapId = id;
+	op.mapSet = set;
+	op.mapValue = value;
+	return queueBattleOp(sandbox, battle, op, method);
 }
 
 std::string LuaHost::queueHire(const LuaSandbox *sandbox, Base *base, const RuleSoldier *rule, int done)
@@ -4030,6 +4269,7 @@ void LuaHost::callScreenFn(Entry &entry, int fn, const char *what, bool pure, vo
 	const size_t queued = _queue.size(), screens = _screens.size(), undo = _undo.size();
 	const int errors = entry.sandbox->errorCount();
 	entry.callItems = 0;
+	entry.callTiles = 0;
 	entry.callScreens = 0;
 	entry.callHires = 0;
 	entry.sandbox->callHeld(fn, what, pushScreenCall, call);
@@ -4146,8 +4386,9 @@ void LuaHost::runQueueNow(SavedBattleGame *battle, bool all)
 	}
 	std::vector<SpawnDone> results(count);
 	std::vector<std::pair<Position, int>> glowing;
+	std::vector<Tile*> tiles;
 	auto *tileEngine = battle->getTileEngine();
-	bool newUnits = false;
+	bool newUnits = false, newParts = false;
 	for (size_t i = 0; i < count; ++i)
 	{
 		const auto &op = now[i];
@@ -4166,7 +4407,19 @@ void LuaHost::runQueueNow(SavedBattleGame *battle, bool all)
 			continue;
 		}
 		result.ran = true;
-		if (op.unitRule)
+		if (op.mapOp != MAP_NONE)
+		{
+			auto *tile = battle->getTile(Position(op.x, op.y, op.z));
+			result.reason = changeTile(battle, tile, op.mapOp, (TilePart)op.part, op.mapId, op.mapSet, op.mapValue);
+			if (!result.reason)
+			{
+				result.tile = tile;
+				tiles.push_back(tile);
+				newParts = newParts || (op.mapOp != MAP_FIRE && op.mapOp != MAP_SMOKE);
+				battle->getGeoscapeSave()->luaTouch(entry.id, "map");
+			}
+		}
+		else if (op.unitRule)
 		{
 			result.unit = battle->placeNewUnit(op.unitRule, (UnitFaction)op.faction, Position(op.x, op.y, op.z), 0, op.direction, nullptr);
 			result.reason = "no room for the unit";
@@ -4217,6 +4470,17 @@ void LuaHost::runQueueNow(SavedBattleGame *battle, bool all)
 			battle->getGeoscapeSave()->luaTouch(entry.id, "spawn");
 		}
 	}
+	// the order of an explosion (R-302): all the parts, gravity on each tile and the one above, light and sight once
+	if (!tiles.empty())
+	{
+		for (auto *tile : tiles)
+		{
+			tileEngine->applyGravity(tile);
+			tileEngine->applyGravity(battle->getAboveTile(tile));
+		}
+		tileEngine->calculateLighting(newParts ? LL_AMBIENT : LL_FIRE, TileEngine::invalid, 0, true);
+		tileEngine->recalculateFOV();
+	}
 	// the light of many items at once: one pass over the map costs what a few of them do one by one (LUA_MODS_V2_STAGE0.md)
 	if (glowing.size() > GLOW_ONE_BY_ONE)
 	{
@@ -4231,7 +4495,7 @@ void LuaHost::runQueueNow(SavedBattleGame *battle, bool all)
 			tileEngine->calculateFOV(glow.first, glow.second, false);
 		}
 	}
-	if (newUnits && battle->getBattleState())
+	if ((newUnits || !tiles.empty()) && battle->getBattleState())
 	{
 		battle->getBattleState()->updateSoldierInfo(false);
 	}
@@ -4242,10 +4506,11 @@ void LuaHost::runQueueNow(SavedBattleGame *battle, bool all)
 			auto &entry = _entries[now[i].entry];
 			entry.callItems = 0;
 			entry.callUnits = 0;
+			entry.callTiles = 0;
 			entry.callScreens = 0;
 			const size_t queued = _queue.size();
 			const int errors = entry.sandbox->errorCount();
-			entry.sandbox->callKept(now[i].done, now[i].unitRule ? "spawnUnit done" : now[i].unit ? "giveItem done" : now[i].item ? "removeItem done" : "spawnItem done", pushSpawnDone, &results[i]);
+			entry.sandbox->callKept(now[i].done, now[i].mapOp != MAP_NONE ? "map done" : now[i].unitRule ? "spawnUnit done" : now[i].unit ? "giveItem done" : now[i].item ? "removeItem done" : "spawnItem done", pushSpawnDone, &results[i]);
 			// like a handler: a call that failed asked for nothing
 			if (entry.sandbox->errorCount() != errors)
 			{
