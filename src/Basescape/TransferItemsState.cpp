@@ -109,17 +109,21 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 
 	// OXCE-HD (oxceHdTransferSides, XP-000525): the colours of the items that are only on one of the two bases. A text colour is
 	// the first index of a run: the letters take the next five shades of it, so the run is chosen by the middle of those five
-	// (and must not cross into the next group of sixteen) to be the nearest in the palette of this screen to a light green and a gold
+	// (and must not cross into the next group of sixteen, nor be a mixed group 13 or 15) to be the nearest in the palette of this screen to a light green and a gold
 	_hereOnlyColor = _thereOnlyColor = 0;
 	if (Options::oxceHdTransferSides && _exchange)
 	{
 		SDL_Color *pal = _lstItems->getPalette();
-		auto nearest = [pal](int r, int g, int b)
+		auto nearest = [pal](int r, int g, int b, bool green)
 		{
 			int best = 0, bestD = INT_MAX;
 			for (int c = 0; c < 250; ++c)
 			{
-				if ((c & 15) > 10)
+				// groups 13 and 15 are not shade runs (white, greys, yellow, blue mixed): letters would come out in grey and black
+				if ((c & 15) > 10 || (c >> 4) == 13 || (c >> 4) == 15)
+					continue;
+				// a green wanted must be green: by the distance alone the nearest to a light green is a beige
+				if (green && !(pal[c + 2].g > pal[c + 2].r + 20 && pal[c + 2].g > pal[c + 2].b + 60))
 					continue;
 				const int dr = pal[c + 2].r - r, dg = pal[c + 2].g - g, db = pal[c + 2].b - b;
 				const int d = dr * dr + dg * dg + db * db;
@@ -131,8 +135,8 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 			}
 			return (Uint8)best;
 		};
-		_hereOnlyColor = nearest(0xb6, 0xe0, 0x8a);
-		_thereOnlyColor = nearest(0xe0, 0xc0, 0x60);
+		_hereOnlyColor = nearest(0xb6, 0xe0, 0x8a, true);
+		_thereOnlyColor = nearest(0xe0, 0xc0, 0x60, false);
 	}
 
 	touchComponentsAdd("button2", "transferMenu", _window);
