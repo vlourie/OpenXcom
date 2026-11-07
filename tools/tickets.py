@@ -493,6 +493,11 @@ def cmd_release_sync(a):
             r["released"] = release
             print(f"{r['ticket']}: Resolved, игроку написано про выпуск {release}")
         except ApiError as e:
+            if "status_move_invalid" in str(e):
+                # Тикет уже не открыт (дубль или закрыт руками) - выпуск до него дошёл, ждать больше нечего.
+                r["released"] = release
+                print(f"{r['ticket']}: уже не открыт на сайте ({e}), в выпуске {release} - отмечен вышедшим")
+                continue
             bad += 1
             print(f"{r['ticket']}: {e}", file=sys.stderr)
     if not a.dry_run:
