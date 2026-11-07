@@ -31,6 +31,7 @@ BASES = ("M2", "F14", "M19", "F10", "F1")
 BY_EYE = {"F47": "M2"}  # кубики в классике, перепись и подбор их не видят (лист 05.11)
 ROW = 69                # шея классики
 HEAD_ROW = 66           # выше - черновая голова основы, её в теле нет
+HEAD_X = db.W           # и левее этого столбца: у NEKOMIMI правее поднята кисть
 TORSO = (72, 108)
 CROTCH = (88, 102, 66, 95)  # строки и столбцы: трусы и волосы в паху, там стринги
 GROUPS = "fhuman_groups.json"
@@ -220,7 +221,7 @@ def assemble(base, look):
         rgb = bp._lab_to_rgb(lab * (1 - w[..., None]) + new * w[..., None]) * 255.0
         out = np.dstack([rgb, im[..., 3]])
         tint = float((np.abs(dL) + np.abs(da) + np.abs(db_) > 4)[w > 0.5].mean() * 100)      # доля кожи
-    out[:HEAD_ROW * K, 3] = 0
+    out[:HEAD_ROW * K, :HEAD_X * K, 3] = 0
     return Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGBA"), int(neck.sum()), tint
 
 
@@ -248,7 +249,7 @@ def main():
                     moved.append("%s %s>%s" % (n, BASE[g], base))
                 todo.append((base, n))
     print("другая основа:", len(moved), moved, flush=True)
-    todo.sort(key=lambda x: (x[0], x[1][0], int(x[1][1:])))
+    todo.sort(key=lambda x: (x[0], x[1].rstrip("0123456789"), int(x[1][len(x[1].rstrip("0123456789")):])))
     box = tuple(v * K for v in SHEET_BOX)
     w, h = (box[2] - box[0]) // 2, (box[3] - box[1]) // 2
     FONT = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 15)

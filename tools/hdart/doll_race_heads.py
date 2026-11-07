@@ -46,6 +46,11 @@ def names_of(look):
     return ["%s__%d__%s_NUDE" % (RACE, BODY, look), "%s__%d__HEAD_%s" % (RACE, HEAD, look), "%s__%d__HAIR_%s" % (RACE, HAIR, look)]
 
 
+def saved_names(look):
+    """Под какими именами слои идут в layers/: у NEKOMIMI свои."""
+    return names_of(look)
+
+
 def mask_of(n):
     return dp.layer_mask(P.FILES, n) if n in P.FILES else np.zeros((db.H, db.W), bool)
 
@@ -317,7 +322,7 @@ def finish_page(jobs, dry, page):
         rgb = np.asarray(Image.open(os.path.join(HEADS, "raw", j["tag"] + "_out.png")).convert("RGB"))
         body, head, hair, info = compose(j, rgb)
         report[look] = info
-        for nm, lay in zip(names_of(look), (body, head, hair)):
+        for nm, lay in zip(saved_names(look), (body, head, hair)):
             if lay is not None:
                 lay.save(os.path.join(HEADS, "layers", nm.lower() + ".png"))
         all_ = Image.new("RGBA", (db.W * k, db.H * k), (40, 42, 50, 255))
