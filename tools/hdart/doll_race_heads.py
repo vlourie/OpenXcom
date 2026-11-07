@@ -37,6 +37,10 @@ HEADS = os.path.join(OUT, "heads")
 BODY, HEAD, HAIR = 2, 10, 13
 FACE_BOX = (77, 56, 84, 66)                         # проверено на 6 внешностях крупно, 05.11
 NECK_ROW = 69                                       # выше - цвет и альфа кадра головы, ниже - тело как собрано
+NECK_SEAM = 0                                       # шея шире лица (OGRE): на сколько точек x4 внутрь зоны гасить разницу кадра и тела, 0 - выключено
+RESEED = {}                                         # внешность -> сдвиг сида: кадр забракован при просмотре
+NECK_MARK = None                                  # внешность -> маска k=1 вещей на шее ниже зоны лица, шов их не трогает
+NECK_SPOTS = {}                                     # внешность -> [(x, y, радиус) в x1]: пятна модели на шее и плечах
 PAGE = 8                                            # внешностей на лист
 SHEET_CLOSE = (56, 38, 104, 90)
 SHEET_FULL = (50, 38, 110, 148)
@@ -105,7 +109,7 @@ def job(i, look):
     whole_zone = P.hair_zone(look, (0, 0, db.W, db.H))
     return {"look": look, "tag": "head_%s" % look, "names": names, "pz": pz, "box": box, "b4": b4, "zone": zone, "classic": cl,
             "lost": int((whole_zone & ~zone).sum()),                    # что зона хотела бы, а в кадр не влезло
-            "prompt": P.head_text(pz), "negative": P.negative_for(pz), "seed": P.RUN["seed"] + 50 + i,
+            "prompt": P.head_text(pz), "negative": P.negative_for(pz), "seed": P.RUN["seed"] + 50 + i + RESEED.get(look, 0),
             "init": start.crop(b4).resize(size, Image.LANCZOS),
             "mask": Image.fromarray((hs > 0.5).astype(np.uint8) * 255).resize(size, Image.NEAREST),
             "control": vc.control_map(cl.crop(box), z, "gray"), "kind": "head", "items": item_jobs(i, look, pz, cl)}
@@ -257,6 +261,11 @@ def compose(j, rgb):
     if j["pz"]["face_to_body"]:
         fh = P.face_to_body(fh, f4)
     w = np.clip(cv2.GaussianBlur(zone4.astype(np.float32), (0, 0), 4.0) * 2, 0, 1)
+    if NECK_SEAM:
+        fh, to_body = neck_seam(fh, f4, base, zone4, dl, ws.sil4(mask_of(hn)) > 0)
+        if NECK_MARK:                                   # бусы ниже шеи серые, как кожа в тени: шов отдавал их телу (HYBRID F2, F3)
+            to_body = to_body * (1 - cv2.GaussianBlur((ws.sil4(NECK_MARK(look)) > 0).astype(np.float32), (0, 0), 3))
+        w = w * (1 - to_body)
     w = np.maximum(w, cv2.GaussianBlur(hole.astype(np.float32), (0, 0), 1.0) * 2).clip(0, 1)[..., None]
     whole = f4 * (1 - w) + fh * w
     body = np.asarray(P.layer_from(whole, mask_of(bn)), np.float32).copy()
@@ -267,7 +276,14 @@ def compose(j, rgb):
     near = w[..., 0] * keep
     body[..., :3] = np.where(keep[..., None], base[..., :3] * (1 - near[..., None]) + body[..., :3] * near[..., None], body[..., :3])
     body[..., 3] = np.where(keep, np.maximum(base[..., 3], ws.sil4(zone & below) * 255), body[..., 3])
-    body = Image.fromarray(np.clip(body + 0.5, 0, 255).astype(np.uint8), "RGBA")
+    body = np.clip(body + 0.5, 0, 255).astype(np.uint8)
+    for sx, sy, sr in NECK_SPOTS.get(look, ()):         # пятно на коже: заливка от соседей
+        spot = np.zeros(zone4.shape, np.uint8)
+        cv2.circle(spot, (sx * k, sy * k), (sr + 3) * k, 1, -1)
+        spot[(spot > 0) & (body[..., 3] > 128)] = 0     # за контуром цвет подложки: заливка не должна его брать
+        cv2.circle(spot, (sx * k, sy * k), sr * k, 1, -1)
+        body[..., :3] = cv2.inpaint(body[..., :3], spot, 5, cv2.INPAINT_TELEA)
+    body = Image.fromarray(body, "RGBA")
     # край слоя головы и волос у фигуры внутри: подложки за ним нет, а цвет изнутри давал светлую рамку подбородка (M33, M35)
     outer = (ws.sil4(mask_of(bn)) > 0) | (ws.sil4(mask_of(hn)) > 0) | (ws.sil4(mask_of(rn)) > 0)
     inside = cv2.distanceTransform(outer.astype(np.uint8), cv2.DIST_L2, 5) > 5
@@ -278,6 +294,27 @@ def compose(j, rgb):
         return Image.fromarray(np.clip(a + 0.5, 0, 255).astype(np.uint8), "RGBA")
 
     return body, (part(hn) if hn in P.FILES else None), (part(rn) if rn in P.FILES else None), {"skin": sd, "hair_dE": [d0, d1]}
+
+
+def neck_seam(fh, f4, base, zone4, dl, head4):
+    """Широкие плечи и шея из кадра головы другого тона, чем собранное тело: заплатка с прямым срезом по NECK_ROW. Разница кожи кадра и тела сразу за зоной уводится внутрь зоны и гаснет к лицу. Отдаёт ещё долю, где кожа кадра уступает телу: у верха тела кадр срисовал светлые полосы классики. Волосы, борода и лицо не меняются."""
+    # не hairish из compose: там тень шеи темнее щёк уже считается волосами, поправка обходила её и оставляла клинья
+    body4 = base[..., 3] > 200
+    ring = (cv2.dilate(zone4.astype(np.uint8), np.ones((25, 25), np.uint8)) > 0) & ~zone4 & body4
+    # кожа - близко к щекам или к телу за зоной: у лица другого цвета, чем тело (F0), плечи иначе считались волосами
+    lab = bp._rgb_to_lab(fh / 255.0)
+    d2 = lab - np.median(bp._rgb_to_lab(f4 / 255.0)[ring], axis=0)
+    far = np.minimum(*[np.sqrt((v[..., 0] * 0.35) ** 2 + v[..., 1] ** 2 + v[..., 2] ** 2) for v in (dl, d2)])
+    hair = np.clip((far - 14) / 8, 0, 1).astype(np.float32)
+    skin = 1 - cv2.GaussianBlur(hair, (0, 0), 1.5)
+    skin = skin * (1 - cv2.GaussianBlur(head4.astype(np.float32), (0, 0), 4))
+    weight = ring * skin
+    den = cv2.GaussianBlur(weight, (0, 0), 14)
+    field = cv2.GaussianBlur((f4 - fh) * weight[..., None], (0, 0), 14) / np.maximum(den, 1e-3)[..., None]
+    fade = np.clip(1 - cv2.distanceTransform(zone4.astype(np.uint8), cv2.DIST_L2, 5) / NECK_SEAM, 0, 1)
+    fade = fade * skin * np.clip(den / 0.05, 0, 1)
+    to_body = cv2.GaussianBlur(cv2.erode(body4.astype(np.uint8), np.ones((9, 9), np.uint8)).astype(np.float32), (0, 0), 3) * skin    # отступ: у верхнего края тела кайма основы
+    return fh + field * fade[..., None], to_body
 
 
 def finish(jobs, dry):
@@ -343,6 +380,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--looks", default="")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--paint", action="store_true", help="рисовать недостающие кадры, только в задаче очереди карты")
     ap.add_argument("--worker", action="store_true", help="(служебное) рисовать недостающие кадры подряд")
     ns = ap.parse_args()
     for d in ("raw", "layers"):
@@ -356,6 +394,8 @@ def main():
         for attempt in range(3):
             if all(os.path.exists(os.path.join(HEADS, "raw", j["tag"] + "_out.png")) for j in frames(jobs)):
                 break
+            if not ns.paint:                            # прямой запуск только собирает слои, рисует задача очереди карты с --paint (R-836)
+                raise SystemExit("кадров нет: рисует только задача очереди, tools/gpuq.py add ... --paint")
             r = subprocess.run([sys.executable, os.path.abspath(sys.argv[0]), "--worker"] + (["--looks", ns.looks] if ns.looks else []))
             print("рабочий процесс вышел с кодом %s (попытка %d)" % (r.returncode, attempt + 1), flush=True)
         missing = [j["tag"] for j in frames(jobs) if not os.path.exists(os.path.join(HEADS, "raw", j["tag"] + "_out.png"))]
