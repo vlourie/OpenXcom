@@ -87,6 +87,9 @@ PATCH = {"weapon": ("local BONUS = { STR_PISTOL = 5, STR_RIFLE = 10 }", "local B
          "camo": ("distance > 10 * 16", "distance > 2 * 16")}
 
 
+PROBES["reinforce"] = ("", "")
+# третий ход в проверке первый же ход врага; зонд смотрит, что done получил и сколько ОВ выдал
+PATCH["reinforce"] = ("  if turn % 3 ~= 0 or called == turn then return end\n", "  if called == turn then return end\n")
 # банк: зонд в show, каждое показанное значение в журнал
 PROBES["bank"] = ("", "")
 PROBES["tithe"] = ("", "")
@@ -365,6 +368,34 @@ def tithe():
     check("tithe: пришло ровно 50000", before and after and int(after[0][0]) - int(before[0][0]) == 50000, f"{before[:1]} {after[:1]}")
     text = errors(name)
     check("tithe: журнал ошибок Lua пуст", not text, text[:500])
+    call("stop", "--name", name, timeout=60)
+
+
+def reinforce():
+    """Рецепт создания: на ходу врага появляется такой же, с полными ОВ; занятая клетка даёт отказ, а не ошибку."""
+    mods = HERE / "mods_pirates"
+    mods.mkdir(exist_ok=True)
+    for d in REAL.iterdir():
+        if d.is_dir() and not (mods / d.name).exists():
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
+    mod = make(mods, "reinforce", "piratez")
+    main = mods / mod / "lua" / "main.lua"
+    code = main.read_text(encoding="utf-8")
+    assert "      new:setTimeUnits(new:getTimeUnitsMax())\n" in code and "      game.log(\"no reinforcements:\", why)\n" in code
+    code = code.replace("      new:setTimeUnits(new:getTimeUnitsMax())\n", "      new:setTimeUnits(new:getTimeUnitsMax())\n      say(\"reinforce\", new:getType(), new:getTimeUnits(), new:getTimeUnitsMax())\n")
+    code = code.replace("      game.log(\"no reinforcements:\", why)\n", "      game.log(\"no reinforcements:\", why)\n      say(\"refused\", why)\n")
+    main.write_text(code, encoding="utf-8", newline="\n")
+    name = "rcpr"
+    a = ["start", "--name", name, "--exe", EXE, "--save", str(SAVE), "--mods-dir", str(mods), "--mods", mod + "=true", "--timeout", "200", "--set", "oxceLuaMods=true"]
+    print(name, call(*a).strip().splitlines()[-1][:120], flush=True)
+    for _ in range(3):
+        end_turn(name)
+    done, refused = rows(name, "reinforce"), rows(name, "refused")
+    print("подкрепления:", done[:3], "отказы:", refused[:3], flush=True)
+    check("reinforce: подкрепление пришло", bool(done), f"{len(done)} при {len(refused)} отказах")
+    check("reinforce: ОВ полные", all(x[-2] == x[-1] and int(x[-1]) > 0 for x in done), str(done[:3]))
+    text = errors(name)
+    check("reinforce: журнал ошибок Lua пуст", not text, text[:500])
     call("stop", "--name", name, timeout=60)
 
 

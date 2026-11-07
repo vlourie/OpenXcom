@@ -53,6 +53,7 @@ class State;
 class StatsForNerdsState;
 class Tile;
 class Ufo;
+class Unit;
 
 /**
  * The Lua of the active mods: one sandbox per mod, in load order. Exists only with the option
@@ -149,14 +150,21 @@ public:
 	/// Puts a new item on the battle's map, later: a handler may be called from a walk over the game's lists.
 	/// `done` is LuaSandbox::keep() of the mod's function or 0. An error text, or empty.
 	std::string queueSpawnItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, const RuleItem *rule, int x, int y, int z, int done);
+	/// The same for an item into a unit's inventory.
+	std::string queueGiveItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, BattleUnit *unit, const RuleItem *rule, int done);
+	/// The same for taking an item out of the battle.
+	std::string queueRemoveItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, BattleItem *item, int done);
+	/// The same for a new unit. `direction` below 0 is a random one.
+	std::string queueSpawnUnit(const LuaSandbox *sandbox, const SavedBattleGame *battle, const Unit *rule, int x, int y, int z, int faction, int direction, int done);
 	/// Does the mod declare this in luaCaps?
 	bool hasCap(const LuaSandbox *sandbox, Cap cap) const;
 	/// Does what the handlers asked for. Only where nothing walks the lists: the battle's idle moment, before a save.
-	void runQueue(SavedBattleGame *battle)
+	/// `all`: new units too, at once; else one a moment, a unit is a step of the frame.
+	void runQueue(SavedBattleGame *battle, bool all = false)
 	{
 		if (!_queue.empty())
 		{
-			runQueueNow(battle);
+			runQueueNow(battle, all);
 		}
 	}
 	/// The same outside a battle: the geoscape's think, a click on a screen, before a save.
@@ -213,7 +221,7 @@ private:
 		std::unique_ptr<LuaSandbox> sandbox;
 		bool notified = false;
 		/// Queued by the running call, and by this turn of the battle: the budget of Lua does not see the engine's work.
-		int callItems = 0, turnItems = 0, turn = -1;
+		int callItems = 0, turnItems = 0, callUnits = 0, turnUnits = 0, turn = -1;
 		/// The same for screens: in a battle by its turn, outside it by the day.
 		int callScreens = 0, periodScreens = 0, screenPeriod = -1;
 		/// The same for soldiers, by the day.
@@ -228,10 +236,18 @@ private:
 		/// A hire instead of an item: it waits for a moment outside a battle.
 		Base *base = nullptr;
 		const RuleSoldier *soldier = nullptr;
+		/// An item into this unit's inventory instead of the map.
+		BattleUnit *unit = nullptr;
+		/// This item out of the battle.
+		BattleItem *item = nullptr;
+		/// A new unit instead of an item, at x, y, z.
+		const Unit *unitRule = nullptr;
+		int faction = 0, direction = -1;
 	};
 
 	void fireOutputs(Event event, std::initializer_list<Arg> args, int *out);
-	void runQueueNow(SavedBattleGame *battle);
+	std::string queueBattleOp(const LuaSandbox *sandbox, const SavedBattleGame *battle, Pending op, const char *method);
+	void runQueueNow(SavedBattleGame *battle, bool all);
 	void runGeoscapeQueueNow(SavedGame *save);
 	void endEconomy(const Entry &entry, size_t undo, bool failed);
 	void dropQueued(size_t from);

@@ -3,9 +3,11 @@ import difflib, json, os, re, subprocess, sys
 from pathlib import Path
 
 A, B = [Path(os.environ["TEMP"]) / f"oxce_bench_{n}" / "piratez" for n in sys.argv[1:3]]
-for i in range(0, 12):
+# все дампы папки: start в stage1.py убирает прошлые, иначе сверка читает старые снимки
+for i in sorted(int(j.stem[6:]) for j in A.glob("hdtest*.json")):
     ja, jb = A / f"hdtest{i:03d}.json", B / f"hdtest{i:03d}.json"
     if not (ja.exists() and jb.exists()):
+        print(i, "DIFF нет пары дампа")
         continue
     r = subprocess.run(["py", "-3.13", "E:/OpenXCom/tools/hdtest_compare.py", str(A / f"hdtest{i:03d}"), str(B / f"hdtest{i:03d}")], capture_output=True, text=True, encoding="utf-8", errors="replace")
     d = json.loads(ja.read_text(encoding="utf-8-sig"))

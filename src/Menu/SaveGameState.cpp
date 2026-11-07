@@ -193,7 +193,7 @@ void SaveGameState::think()
 		{
 			if (auto *battle = _game->getSavedGame()->getSavedBattle())
 			{
-				lua->runQueue(battle);
+				lua->runQueue(battle, true);
 			}
 			else
 			{

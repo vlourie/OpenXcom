@@ -469,6 +469,8 @@ public:
 	BattleItem *createTempItem(const RuleItem *rule);
 	/// Create new temporary unit.
 	BattleUnit *createTempUnit(const Unit *rules, UnitFaction faction, int nextUnitId = -1);
+	/// Puts a new unit on the map, the way of an item's spawnUnit. Null when it has no place there; `direction` below 0 is a random one.
+	BattleUnit *placeNewUnit(const Unit *rules, UnitFaction faction, Position position, int checkDirection, int direction, BattleUnit *owner);
 	/// Converts a unit into a unit of another type.
 	BattleUnit *convertUnit(BattleUnit *unit);
 
