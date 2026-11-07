@@ -986,6 +986,14 @@ void BattlescapeGenerator::run()
 	{
 		explodeOtherJunk();
 	}
+
+	if (!isPreview)
+	{
+		if (auto *lua = _game->getMod()->getLuaHost())
+		{
+			lua->fire(LuaHost::BATTLE_START, { _save });
+		}
+	}
 }
 
 /**

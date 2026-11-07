@@ -19,6 +19,7 @@
  */
 #include <climits>
 #include <cstddef>
+#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -31,6 +32,7 @@ namespace OpenXcom
 {
 
 class Armor;
+class Base;
 class BattleItem;
 class BattleUnit;
 class Country;
@@ -41,6 +43,7 @@ class Mod;
 class RuleCraft;
 class RuleItem;
 class RuleSkill;
+class RuleSoldier;
 class RuleSoldierBonus;
 class RuleUfo;
 class SavedBattleGame;
@@ -64,7 +67,7 @@ public:
 	/// From this version a mod has luaCaps and the methods behind them (docs/portal/LUA_MODS_V2.md).
 	static const int API_WITH_CAPS = 2;
 	/// What the mod's metadata.yml may name in luaCaps; a method of API 2 needs its word there.
-	enum Cap { CAP_SPAWN = 1, CAP_SCREENS = 2 };
+	enum Cap { CAP_SPAWN = 1, CAP_SCREENS = 2, CAP_ECONOMY = 4 };
 
 	enum Event
 	{
@@ -81,6 +84,8 @@ public:
 		TIME_SOLDIER_RECOVERY_BONUS, ENERGY_SOLDIER_RECOVERY_BONUS, MORALE_SOLDIER_RECOVERY_BONUS, HEALTH_SOLDIER_RECOVERY_BONUS,
 		MANA_SOLDIER_RECOVERY_BONUS, STUN_SOLDIER_RECOVERY_BONUS,
 		DAMAGE_BONUS_BONUS, MELEE_BONUS_BONUS, ACCURACY_MULTIPLIER_BONUS, MELEE_MULTIPLIER_BONUS, THROW_MULTIPLIER_BONUS, CLOSE_QUARTERS_MULTIPLIER_BONUS,
+		// from here on only a mod of API_WITH_CAPS has these, for the rest they stay unknown events
+		NEW_HOUR, NEW_DAY, NEW_MONTH, BATTLE_START, BATTLE_END,
 		EVENT_COUNT
 	};
 
@@ -154,6 +159,18 @@ public:
 			runQueueNow(battle);
 		}
 	}
+	/// The same outside a battle: the geoscape's think, a click on a screen, before a save.
+	void runQueue(SavedGame *save)
+	{
+		if (!_queue.empty())
+		{
+			runGeoscapeQueueNow(save);
+		}
+	}
+	/// Hires a soldier for the base, later: the new soldier takes numbers from the game's generator. `done` as in queueSpawnItem.
+	std::string queueHire(const LuaSandbox *sandbox, Base *base, const RuleSoldier *rule, int done);
+	/// The running call changed money or stock: how to take it back if the call fails.
+	void noteEconomy(std::function<void()> undo) { _undo.push_back(std::move(undo)); }
 	/// The battle ended or goes on another map: what was asked for has no place to happen. The next battle's reload() and the next stage call this.
 	void dropQueue();
 	/// A screen declared in main.lua: game.screen(name, fn, options). `fn` is LuaSandbox::keep(). An error text, or empty.
@@ -199,6 +216,8 @@ private:
 		int callItems = 0, turnItems = 0, turn = -1;
 		/// The same for screens: in a battle by its turn, outside it by the day.
 		int callScreens = 0, periodScreens = 0, screenPeriod = -1;
+		/// The same for soldiers, by the day.
+		int callHires = 0, periodHires = 0, hirePeriod = -1;
 		std::vector<ScreenInfo> screens;
 	};
 	struct Pending
@@ -206,10 +225,15 @@ private:
 		size_t entry;
 		const RuleItem *rule;
 		int x, y, z, done;
+		/// A hire instead of an item: it waits for a moment outside a battle.
+		Base *base = nullptr;
+		const RuleSoldier *soldier = nullptr;
 	};
 
 	void fireOutputs(Event event, std::initializer_list<Arg> args, int *out);
 	void runQueueNow(SavedBattleGame *battle);
+	void runGeoscapeQueueNow(SavedGame *save);
+	void endEconomy(const Entry &entry, size_t undo, bool failed);
 	void dropQueued(size_t from);
 	State *nextScreenNow();
 	State *buildScreen(size_t entry, const ScreenInfo &screen);
@@ -223,6 +247,7 @@ private:
 	Mod *_mod = nullptr;
 	std::vector<Entry> _entries;
 	std::vector<Pending> _queue;
+	std::vector<std::function<void()>> _undo;
 	/// The screens asked for: the mod and the place in its Entry::screens.
 	std::vector<std::pair<size_t, size_t>> _screens;
 	bool _menuScreens = false;

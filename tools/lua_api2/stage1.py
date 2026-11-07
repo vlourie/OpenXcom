@@ -355,7 +355,7 @@ def bank(st, k, top, want):
     st.run(f"{p(150, 163)}; wait 200")
     check(f"{top} k={k}: кнопка закрытия", len(st.lines("S1 bank closed")) == closed + 1 and st.top() == "LuaModsState", st.top())
     st.run(ESC)
-    check(f"{top} k={k}: вернулись", st.top() == top, st.top())
+    check(f"{top} k={k}: вернулись", back(st, top), st.top())
 
 
 def quick(st, target):
@@ -374,6 +374,12 @@ def quick(st, target):
             return now[0]
         time.sleep(0.3)
     return None
+
+
+def back(st, top):
+    """Экран мода закрыт и под ним прежнее окно; окно игры на геоскейпе может прийти поверх него."""
+    stack = st.info().group(2)
+    return top in stack and "Lua" not in stack
 
 
 def reach(st, keys, want, tries=5):
@@ -540,7 +546,7 @@ def part_limits(ctx):
         ceil = st.lines("S1 ceil open")
         check("геоскейп: потолок 8 за день", len([l for l in ceil if "true" in l]) == 8 and "more than 8" in ceil[-1], ceil[-1][-70:])
         st.run(f"{ESC}; {ESC}")
-        check("геоскейп: вернулись", st.top() == "GeoscapeState", st.top())
+        check("геоскейп: вернулись", back(st, "GeoscapeState"), st.top())
 
 
 def end_turn(st, limit=120):

@@ -58,15 +58,18 @@
 #include "../Engine/Unicode.h"
 #include "../Interface/Text.h"
 #include "../Menu/LuaScreenState.h"
+#include "../Savegame/Base.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/Country.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/GameTime.h"
+#include "../Savegame/ItemContainer.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Tile.h"
+#include "../Savegame/Transfer.h"
 #include "../Savegame/Ufo.h"
 #include "../Ufopaedia/StatsForNerdsState.h"
 #include "../../libs/lua/lua.h"
@@ -103,6 +106,7 @@ const char *const TYPE_RULE_INVENTORY = "ruleInventory";
 const char *const TYPE_NERDS = "statsForNerds";
 const char *const TYPE_UI = "ui";
 const char *const TYPE_UI_WIDGET = "uiWidget";
+const char *const TYPE_BASE = "base";
 const char *const MOD_KEY = "oxce.mod";
 const char *const OUT_KEY = "oxce.out";
 
@@ -111,6 +115,9 @@ const unsigned long long TAG_TICKS = 100, LIST_TICKS = 20, MESSAGE_TICKS = 20000
 /// The ceilings of the queue: the engine's work behind one call is not in the mod's budget.
 const int SPAWN_ITEMS_PER_CALL = 32, SPAWN_ITEMS_PER_TURN = 256;
 const int SCREENS_PER_CALL = 1, SCREENS_PER_PERIOD = 8;
+const int SOLDIERS_PER_CALL = 16, SOLDIERS_PER_DAY = 64;
+const lua_Integer ECONOMY_MAX = 1000000000;
+const unsigned long long ECONOMY_TICKS = 1000;
 const size_t SCREENS_PER_MOD = 64, UI_TEXT_MAX = 2000;
 const size_t GLOW_ONE_BY_ONE = 4;
 const size_t MESSAGE_MAX = 200, JOURNAL_MAX = 256 * 1024;
@@ -188,6 +195,11 @@ const EventInfo EVENTS[LuaHost::EVENT_COUNT] = {
 	{ "meleeMultiplierBonusStats", { "bonus" }, { }, true, { }, true },
 	{ "throwMultiplierBonusStats", { "bonus" }, { }, true, { }, true },
 	{ "closeQuartersMultiplierBonusStats", { "bonus" }, { }, true, { }, true },
+	{ "newHour", { }, { } },
+	{ "newDay", { }, { } },
+	{ "newMonth", { }, { } },
+	{ "battleStart", { }, { }, true },
+	{ "battleEnd", { }, { }, true },
 };
 
 /// Set before main() runs. Not the thread that makes the host: the mods load in a thread of their own (StartState).
@@ -200,6 +212,8 @@ bool g_onlyReads = false;
 bool g_pure = false;
 /// The running function builds a screen or is its onClose: it only reads, for another reason than the Y-script's.
 bool g_screenReads = false;
+/// The running function is one of those whose moment is known: the methods of 'economy' work only there.
+bool g_mayEconomy = false;
 
 void checkWritable(lua_State *L)
 {
@@ -296,6 +310,7 @@ template<> struct LuaType<RuleResearch> { static const char *name() { return TYP
 template<> struct LuaType<RuleInventory> { static const char *name() { return TYPE_RULE_INVENTORY; } };
 template<> struct LuaType<RuleSkill> { static const char *name() { return TYPE_SKILL; } };
 template<> struct LuaType<StatsForNerdsState> { static const char *name() { return TYPE_NERDS; } };
+template<> struct LuaType<Base> { static const char *name() { return TYPE_BASE; } };
 
 template<typename T>
 T *self(lua_State *L)
@@ -1332,6 +1347,29 @@ void checkMayQueue(lua_State *L)
 	}
 }
 
+/// What a method of 'economy' asks of the moment. Numbers change on the spot: nothing walks a list at these moments.
+SavedGame *checkEconomy(lua_State *L, const char *method)
+{
+	checkWritable(L);
+	auto *host = LuaHost::active();
+	auto *sandbox = LuaSandbox::from(L);
+	if (!host || !host->hasCap(sandbox, LuaHost::CAP_ECONOMY))
+	{
+		luaL_error(L, "%s needs 'economy' in luaCaps of metadata.yml", method);
+	}
+	auto *saved = LuaScreenState::savedGame();
+	if (!saved || saved->getSavedBattle())
+	{
+		luaL_error(L, "%s does not work in a battle: its end takes from the stores and fills them by itself", method);
+	}
+	if (!g_mayEconomy)
+	{
+		luaL_error(L, "%s works in newHour, newDay, newMonth, in a click on a screen and in the function of hireSoldier", method);
+	}
+	sandbox->charge(L, ECONOMY_TICKS);
+	return saved;
+}
+
 /// battle:spawnItem(type, x, y, z[, done]): done(item) runs later, when the item is on the map.
 int battleSpawnItem(lua_State *L)
 {
@@ -2036,11 +2074,23 @@ int gameGetGeoscape(lua_State *L)
 	return 1;
 }
 
+int gameGetBases(lua_State *L)
+{
+	auto *saved = LuaScreenState::savedGame();
+	if (!saved)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+	return pushList(L, TYPE_BASE, *saved->getBases(), [](Base*) { return true; });
+}
+
 const luaL_Reg API2_GAME_REGS[] = {
 	{ "screen", gameScreen },
 	{ "openScreen", gameOpenScreen },
 	{ "getBattle", gameGetBattle },
 	{ "getGeoscape", gameGetGeoscape },
+	{ "getBases", gameGetBases },
 	{ nullptr, nullptr }
 };
 
@@ -2231,6 +2281,193 @@ const luaL_Reg GEOSCAPE_METHODS[] = {
 	{ "randomChance", geoscapeRandomChance },
 	{ "getTag", getTagOf<SavedGame> },
 	{ "setTag", setTagOf<SavedGame> },
+	{ nullptr, nullptr }
+};
+
+int geoscapeGetFunds(lua_State *L)
+{
+	lua_pushinteger(L, self<SavedGame>(L)->getFunds());
+	return 1;
+}
+
+/// geoscape:addFunds(n): what setFunds does for a purchase, the income and the spending of the month count themselves.
+int geoscapeAddFunds(lua_State *L)
+{
+	auto *saved = self<SavedGame>(L);
+	checkEconomy(L, "addFunds");
+	const lua_Integer n = luaL_checkinteger(L, 2);
+	luaL_argcheck(L, n >= -ECONOMY_MAX && n <= ECONOMY_MAX, 2, "must be from -1000000000 to 1000000000");
+	if (n != 0)
+	{
+		const int64_t funds = saved->getFunds(), income = saved->getIncomes().back(), spent = saved->getExpenditures().back();
+		saved->setFunds(funds + n);
+		LuaHost::active()->noteEconomy([=]()
+		{
+			saved->getFundsList().back() = funds;
+			saved->getIncomes().back() = income;
+			saved->getExpenditures().back() = spent;
+		});
+	}
+	return 0;
+}
+
+/// On top of the table the mod's page is built from, like API2_BATTLE_REGS: a mod of API 1 does not have them.
+const luaL_Reg API2_GEOSCAPE_REGS[] = {
+	{ "getFunds", geoscapeGetFunds },
+	{ "addFunds", geoscapeAddFunds },
+	{ nullptr, nullptr }
+};
+
+int checkCount(lua_State *L, int index)
+{
+	const lua_Integer n = luaL_optinteger(L, index, 1);
+	luaL_argcheck(L, n >= 1 && n <= ECONOMY_MAX, index, "must be from 1 to 1000000000");
+	return (int)n;
+}
+
+const RuleItem *checkItemRule(lua_State *L, int index)
+{
+	const char *type = luaL_checkstring(L, index);
+	const RuleItem *rule = gameMod(L)->getItem(type);
+	if (!rule)
+	{
+		luaL_error(L, "no item '%s' in the rules", type);
+	}
+	return rule;
+}
+
+int baseGetName(lua_State *L)
+{
+	lua_pushstring(L, self<Base>(L)->getName().c_str());
+	return 1;
+}
+
+void pushCapacity(lua_State *L, int capacity)
+{
+	lua_pushinteger(L, capacity);
+	lua_setfield(L, -2, "capacity");
+}
+
+int baseGetStores(lua_State *L)
+{
+	const auto *base = self<Base>(L);
+	lua_createtable(L, 0, 2);
+	lua_pushnumber(L, base->getUsedStores());
+	lua_setfield(L, -2, "used");
+	pushCapacity(L, base->getAvailableStores());
+	return 1;
+}
+
+int baseGetQuarters(lua_State *L)
+{
+	const auto *base = self<Base>(L);
+	lua_createtable(L, 0, 2);
+	lua_pushinteger(L, base->getUsedQuarters());
+	lua_setfield(L, -2, "used");
+	pushCapacity(L, base->getAvailableQuarters());
+	return 1;
+}
+
+int baseGetItemCount(lua_State *L)
+{
+	const auto *base = self<Base>(L);
+	lua_pushinteger(L, base->getStorageItems()->getItem(checkItemRule(L, 2)));
+	return 1;
+}
+
+int baseAddItem(lua_State *L)
+{
+	auto *base = self<Base>(L);
+	checkEconomy(L, "addItem");
+	const RuleItem *rule = checkItemRule(L, 2);
+	const int n = checkCount(L, 3), have = base->getStorageItems()->getItem(rule);
+	if (have > INT_MAX - n)
+	{
+		return luaL_error(L, "addItem: %d more of '%s' do not fit a number of the stores, there are %d", n, rule->getType().c_str(), have);
+	}
+	base->getStorageItems()->addItem(rule, n);
+	LuaHost::active()->noteEconomy([=]() { base->getStorageItems()->removeItem(rule, n); });
+	return 0;
+}
+
+int baseRemoveItem(lua_State *L)
+{
+	auto *base = self<Base>(L);
+	checkEconomy(L, "removeItem");
+	const RuleItem *rule = checkItemRule(L, 2);
+	const int n = checkCount(L, 3), have = base->getStorageItems()->getItem(rule);
+	if (have < n)
+	{
+		return luaL_error(L, "removeItem: %d of '%s' asked, the stores have %d", n, rule->getType().c_str(), have);
+	}
+	base->getStorageItems()->removeItem(rule, n);
+	LuaHost::active()->noteEconomy([=]() { base->getStorageItems()->addItem(rule, n); });
+	return 0;
+}
+
+/// getScientists and getEngineers count only those without work: the busy ones cannot be taken.
+int changeStaff(lua_State *L, const char *method, int (Base::*get)() const, void (Base::*set)(int), bool add)
+{
+	auto *base = self<Base>(L);
+	checkEconomy(L, method);
+	const int n = checkCount(L, 2), have = (base->*get)();
+	if (add ? have > INT_MAX - n : have < n)
+	{
+		return luaL_error(L, add ? "%s: %d more do not fit a number, there are %d" : "%s: %d asked, %d are without work", method, n, have);
+	}
+	(base->*set)(add ? have + n : have - n);
+	LuaHost::active()->noteEconomy([=]() { (base->*set)(have); });
+	return 0;
+}
+
+int baseAddScientists(lua_State *L) { return changeStaff(L, "addScientists", &Base::getScientists, &Base::setScientists, true); }
+int baseRemoveScientists(lua_State *L) { return changeStaff(L, "removeScientists", &Base::getScientists, &Base::setScientists, false); }
+int baseAddEngineers(lua_State *L) { return changeStaff(L, "addEngineers", &Base::getEngineers, &Base::setEngineers, true); }
+int baseRemoveEngineers(lua_State *L) { return changeStaff(L, "removeEngineers", &Base::getEngineers, &Base::setEngineers, false); }
+
+/// base:hireSoldier(type[, done]): done(soldier) or done(nil, reason) runs later, when the soldier is on the way.
+int baseHireSoldier(lua_State *L)
+{
+	auto *base = self<Base>(L);
+	checkEconomy(L, "hireSoldier");
+	const char *type = luaL_checkstring(L, 2);
+	const RuleSoldier *rule = gameMod(L)->getSoldier(type);
+	if (!rule)
+	{
+		return luaL_error(L, "no soldier '%s' in the rules", type);
+	}
+	if (!lua_isnoneornil(L, 3))
+	{
+		luaL_checktype(L, 3, LUA_TFUNCTION);
+	}
+	auto *sandbox = LuaSandbox::from(L);
+	const int done = lua_isnoneornil(L, 3) ? 0 : LuaSandbox::keep(L, 3);
+	const std::string error = LuaHost::active()->queueHire(sandbox, base, rule, done);
+	if (!error.empty())
+	{
+		if (done)
+		{
+			sandbox->drop(done);
+		}
+		return luaL_error(L, "%s", error.c_str());
+	}
+	return 0;
+}
+
+const luaL_Reg BASE_METHODS[] = {
+	{ "getName", baseGetName },
+	{ "getStores", baseGetStores },
+	{ "getQuarters", baseGetQuarters },
+	{ "getItemCount", baseGetItemCount },
+	{ "addItem", baseAddItem },
+	{ "removeItem", baseRemoveItem },
+	{ "getFreeScientists", getInt<&Base::getAvailableScientists> },
+	{ "addScientists", baseAddScientists },
+	{ "removeScientists", baseRemoveScientists },
+	{ "getFreeEngineers", getInt<&Base::getAvailableEngineers> },
+	{ "addEngineers", baseAddEngineers },
+	{ "removeEngineers", baseRemoveEngineers },
+	{ "hireSoldier", baseHireSoldier },
 	{ nullptr, nullptr }
 };
 
@@ -2830,8 +3067,13 @@ void setupApi2(lua_State *L, void *)
 	lua_getfield(L, -1, "__index");
 	luaL_setfuncs(L, API2_BATTLE_REGS, 0);
 	lua_pop(L, 2);
+	luaL_getmetatable(L, TYPE_GEOSCAPE);
+	lua_getfield(L, -1, "__index");
+	luaL_setfuncs(L, API2_GEOSCAPE_REGS, 0);
+	lua_pop(L, 2);
 	LuaSandbox::defineType(L, TYPE_UI, UI_METHODS);
 	LuaSandbox::defineType(L, TYPE_UI_WIDGET, UI_WIDGET_METHODS);
+	LuaSandbox::defineType(L, TYPE_BASE, BASE_METHODS);
 	lua_getglobal(L, "game");
 	luaL_setfuncs(L, API2_GAME_REGS, 0);
 	lua_pop(L, 1);
@@ -2850,7 +3092,55 @@ int capOf(const std::string &word)
 	{
 		return std::getenv("OXCE_LUA_API2") ? LuaHost::CAP_SPAWN : 0;
 	}
-	return word == "screens" ? LuaHost::CAP_SCREENS : 0;
+	return word == "screens" ? LuaHost::CAP_SCREENS : word == "economy" ? LuaHost::CAP_ECONOMY : 0;
+}
+
+struct HireDone
+{
+	Soldier *soldier;
+	const char *reason;
+};
+
+int pushHireDone(lua_State *L, void *data)
+{
+	auto *hire = static_cast<HireDone*>(data);
+	pushOrNil(L, TYPE_SOLDIER, hire->soldier);
+	if (hire->soldier)
+	{
+		return 1;
+	}
+	lua_pushstring(L, hire->reason);
+	return 2;
+}
+
+/// The way of PurchaseState::purchase, the money is the mod's own business.
+Soldier *hireSoldier(Mod *mod, SavedGame *save, Base *base, const RuleSoldier *rule)
+{
+	if (rule->getMonthlyBuyLimit() > 0)
+	{
+		save->getMonthlyPurchaseLimitLog()[rule->getType()] += 1;
+	}
+	int time = rule->getTransferTime();
+	if (time == 0)
+	{
+		time = mod->getPersonnelTime();
+	}
+	auto *transfer = new Transfer(time);
+	const int nationality = save->selectSoldierNationalityByLocation(mod, rule, base);
+	auto *soldier = mod->genSoldier(save, rule, nationality);
+	if (!rule->getSpawnedSoldierTemplate().yaml.empty())
+	{
+		YAML::YamlRootNodeReader reader(rule->getSpawnedSoldierTemplate(), "(spawned soldier template)");
+		const int nationalityOrig = soldier->getNationality();
+		soldier->load(reader.toBase(), mod, save, mod->getScriptGlobal(), true);
+		if (soldier->getNationality() != nationalityOrig)
+		{
+			soldier->genName();
+		}
+	}
+	transfer->setSoldier(soldier);
+	base->getTransfers()->push_back(transfer);
+	return soldier;
 }
 
 struct ScreenCall
@@ -3061,10 +3351,14 @@ std::string LuaHost::reload()
 	dropQueue();
 	_menuScreens = false;
 	std::fill(std::begin(_handled), std::end(_handled), false);
-	std::set<std::string> names;
-	for (const auto &event : EVENTS)
+	std::set<std::string> names, namesApi1;
+	for (int e = 0; e < EVENT_COUNT; ++e)
 	{
-		names.insert(event.name);
+		names.insert(EVENTS[e].name);
+		if (e < NEW_HOUR)
+		{
+			namesApi1.insert(EVENTS[e].name);
+		}
 	}
 	for (size_t i = 0; i < _entries.size(); ++i)
 	{
@@ -3100,7 +3394,7 @@ std::string LuaHost::reload()
 			code.erase(0, 3);
 		}
 		const std::string id = entry.id;
-		entry.sandbox = std::make_unique<LuaSandbox>(LuaSandbox::Limits{}, names,
+		entry.sandbox = std::make_unique<LuaSandbox>(LuaSandbox::Limits{}, entry.api >= API_WITH_CAPS ? names : namesApi1,
 			[id](const std::string &text) { Log(LOG_INFO) << "[lua] " << id << ": " << text; },
 			[](int low, int high) { return RNG::generate(low, high); });
 		entry.sandbox->setErrorFn([this, i](const std::string &event, const std::string &text) { noteError(i, event, text); });
@@ -3160,8 +3454,9 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 	{
 		FireData data{ &EVENTS[event], args.begin(), args.size(), out };
 		// a method of a handler can reach a formula, and with it another mod's handler: the outer one goes on after it
-		const bool noScreen = g_noScreen, onlyReads = g_onlyReads, pure = g_pure;
-		g_noScreen = event == RETURN_FROM_MISSION_UNIT;
+		const bool noScreen = g_noScreen, onlyReads = g_onlyReads, pure = g_pure, mayEconomy = g_mayEconomy;
+		g_noScreen = event == RETURN_FROM_MISSION_UNIT || event == BATTLE_END;
+		g_mayEconomy = event == NEW_HOUR || event == NEW_DAY || event == NEW_MONTH;
 		g_onlyReads = EVENTS[event].onlyReads;
 		g_pure = EVENTS[event].pure;
 		for (auto &entry : _entries)
@@ -3169,15 +3464,21 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 			if (entry.sandbox)
 			{
 				const bool noRandom = entry.sandbox->setNoRandom(EVENTS[event].pure);
-				const size_t queued = _queue.size();
+				const size_t queued = _queue.size(), undo = _undo.size();
 				const int errors = entry.sandbox->errorCount();
 				entry.callItems = 0;
 				entry.callScreens = 0;
+				entry.callHires = 0;
 				entry.sandbox->fire(EVENTS[event].name, pushArgs, &data, out ? takeOutputs : nullptr);
 				// like the output values: a call that failed changes nothing
-				if (entry.sandbox->errorCount() != errors)
+				const bool failed = entry.sandbox->errorCount() != errors;
+				if (failed)
 				{
 					dropQueued(queued);
+				}
+				if (_undo.size() > undo)
+				{
+					endEconomy(entry, undo, failed);
 				}
 				entry.sandbox->setNoRandom(noRandom);
 			}
@@ -3185,8 +3486,9 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 		g_noScreen = noScreen;
 		g_onlyReads = onlyReads;
 		g_pure = pure;
+		g_mayEconomy = mayEconomy;
 	}
-	if (!_notice.empty() && event != RETURN_FROM_MISSION_UNIT)
+	if (!_notice.empty() && event != RETURN_FROM_MISSION_UNIT && event != BATTLE_END)
 	{
 		for (const auto &arg : args)
 		{
@@ -3250,6 +3552,54 @@ std::string LuaHost::queueSpawnItem(const LuaSandbox *sandbox, const SavedBattle
 	return "spawnItem: not a running mod";
 }
 
+std::string LuaHost::queueHire(const LuaSandbox *sandbox, Base *base, const RuleSoldier *rule, int done)
+{
+	for (size_t i = 0; i < _entries.size(); ++i)
+	{
+		auto &entry = _entries[i];
+		if (entry.sandbox.get() != sandbox)
+		{
+			continue;
+		}
+		const auto *saved = LuaScreenState::savedGame();
+		const int period = saved ? saved->getDaysPassed() : 0;
+		if (entry.hirePeriod != period)
+		{
+			entry.hirePeriod = period;
+			entry.periodHires = 0;
+		}
+		if (entry.callHires >= SOLDIERS_PER_CALL)
+		{
+			return "hireSoldier: more than " + std::to_string(SOLDIERS_PER_CALL) + " soldiers in one call";
+		}
+		if (entry.periodHires >= SOLDIERS_PER_DAY)
+		{
+			return "hireSoldier: more than " + std::to_string(SOLDIERS_PER_DAY) + " soldiers in one day";
+		}
+		++entry.callHires;
+		++entry.periodHires;
+		_queue.push_back({ i, nullptr, 0, 0, 0, done, base, rule });
+		return std::string();
+	}
+	return "hireSoldier: not a running mod";
+}
+
+void LuaHost::endEconomy(const Entry &entry, size_t undo, bool failed)
+{
+	if (failed)
+	{
+		for (size_t i = _undo.size(); i > undo; --i)
+		{
+			_undo[i - 1]();
+		}
+	}
+	else if (auto *saved = LuaScreenState::savedGame())
+	{
+		saved->luaTouch(entry.id, "economy");
+	}
+	_undo.erase(_undo.begin() + undo, _undo.end());
+}
+
 void LuaHost::dropQueued(size_t from)
 {
 	for (size_t i = from; i < _queue.size(); ++i)
@@ -3267,7 +3617,7 @@ void LuaHost::dropQueue()
 	_screens.clear();
 	if (!_queue.empty())
 	{
-		writeJournal("lua", "queue", std::to_string(_queue.size()) + " queued changes of the battle are dropped: the map they were for is gone");
+		writeJournal("lua", "queue", std::to_string(_queue.size()) + " queued changes are dropped: the battle they were for is gone");
 		dropQueued(0);
 	}
 }
@@ -3443,6 +3793,12 @@ void LuaHost::callScreen(LuaScreenState *screen, int fn, const char *what, bool 
 		{
 			ScreenCall call{ screen, widget, value, text, false };
 			callScreenFn(entry, fn, what, pure, &call);
+			// a click outside a battle has its moment right here, the screen is on top until it closes
+			auto *saved = LuaScreenState::savedGame();
+			if (!pure && saved && !saved->getSavedBattle())
+			{
+				runQueue(saved);
+			}
 			return;
 		}
 	}
@@ -3450,28 +3806,105 @@ void LuaHost::callScreen(LuaScreenState *screen, int fn, const char *what, bool 
 
 void LuaHost::callScreenFn(Entry &entry, int fn, const char *what, bool pure, void *call)
 {
-	const bool noScreen = g_noScreen, onlyReads = g_onlyReads, wasPure = g_pure, screenReads = g_screenReads;
+	const bool noScreen = g_noScreen, onlyReads = g_onlyReads, wasPure = g_pure, screenReads = g_screenReads, mayEconomy = g_mayEconomy;
 	const bool noRandom = entry.sandbox->setNoRandom(pure);
 	g_noScreen = false;
 	g_onlyReads = pure;
 	g_pure = pure;
 	g_screenReads = pure;
-	const size_t queued = _queue.size(), screens = _screens.size();
+	g_mayEconomy = !pure;
+	const size_t queued = _queue.size(), screens = _screens.size(), undo = _undo.size();
 	const int errors = entry.sandbox->errorCount();
 	entry.callItems = 0;
 	entry.callScreens = 0;
+	entry.callHires = 0;
 	entry.sandbox->callHeld(fn, what, pushScreenCall, call);
 	// like the handlers: a call that failed changes nothing
-	if (entry.sandbox->errorCount() != errors)
+	const bool failed = entry.sandbox->errorCount() != errors;
+	if (failed)
 	{
 		dropQueued(queued);
 		_screens.resize(screens);
+	}
+	if (_undo.size() > undo)
+	{
+		endEconomy(entry, undo, failed);
 	}
 	entry.sandbox->setNoRandom(noRandom);
 	g_noScreen = noScreen;
 	g_onlyReads = onlyReads;
 	g_pure = wasPure;
 	g_screenReads = screenReads;
+	g_mayEconomy = mayEconomy;
+}
+
+void LuaHost::runGeoscapeQueueNow(SavedGame *save)
+{
+	// what the functions called here add waits for the next moment
+	std::vector<Pending> now;
+	now.swap(_queue);
+	int battleOps = 0;
+	for (const auto &op : now)
+	{
+		auto &entry = _entries[op.entry];
+		if (!entry.sandbox)
+		{
+			continue;
+		}
+		if (!op.base || entry.sandbox->isDisabled())
+		{
+			battleOps += op.base ? 0 : 1;
+			if (op.done)
+			{
+				entry.sandbox->drop(op.done);
+			}
+			continue;
+		}
+		HireDone hire{ nullptr, nullptr };
+		const auto &bases = *save->getBases();
+		const int limit = op.soldier->getMonthlyBuyLimit();
+		if (std::find(bases.begin(), bases.end(), op.base) == bases.end())
+		{
+			hire.reason = "the base is gone";
+		}
+		else if (op.base->getAvailableQuarters() - op.base->getUsedQuarters() < 1)
+		{
+			hire.reason = "no free quarters";
+		}
+		else if (limit > 0 && save->getMonthlyPurchaseLimitLog()[op.soldier->getType()] >= limit)
+		{
+			hire.reason = "the monthly limit of this soldier";
+		}
+		else
+		{
+			hire.soldier = hireSoldier(_mod, save, op.base, op.soldier);
+			save->luaTouch(entry.id, "economy");
+		}
+		if (op.done)
+		{
+			const bool mayEconomy = g_mayEconomy;
+			g_mayEconomy = true;
+			const size_t queued = _queue.size(), undo = _undo.size();
+			const int errors = entry.sandbox->errorCount();
+			entry.callHires = 0;
+			entry.callScreens = 0;
+			entry.sandbox->callKept(op.done, "hireSoldier done", pushHireDone, &hire);
+			const bool failed = entry.sandbox->errorCount() != errors;
+			if (failed)
+			{
+				dropQueued(queued);
+			}
+			if (_undo.size() > undo)
+			{
+				endEconomy(entry, undo, failed);
+			}
+			g_mayEconomy = mayEconomy;
+		}
+	}
+	if (battleOps > 0)
+	{
+		writeJournal("lua", "queue", std::to_string(battleOps) + " queued changes are dropped: the battle they were for is gone");
+	}
 }
 
 void LuaHost::runQueueNow(SavedBattleGame *battle)
@@ -3490,7 +3923,7 @@ void LuaHost::runQueueNow(SavedBattleGame *battle)
 		{
 			continue;
 		}
-		if (entry.sandbox->isDisabled())
+		if (entry.sandbox->isDisabled() || op.base)
 		{
 			if (op.done)
 			{

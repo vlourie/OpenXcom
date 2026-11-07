@@ -227,7 +227,7 @@ def check_metadata(data, rep, api, known_caps=()):
 # ---- 3. Lua ----
 
 def load_names():
-    names = {"event": set(), "const": set(), "base": set(), "method": set(), "game": set(), "cap": set()}
+    names = {"event": set(), "event2": set(), "const": set(), "base": set(), "method": set(), "game": set(), "cap": set()}
     api = 1
     for line in NAMES.read_text(encoding="utf-8").splitlines():
         kind, name = line.split("\t")
@@ -275,7 +275,7 @@ def strip_lua(text):
     return "".join(code), strings
 
 
-def scan_lua(path, text, names, rep):
+def scan_lua(path, text, names, rep, lua_api=1):
     code, strings = strip_lua(text)
     if not path.startswith("lua/"):
         rep.signal("lua", "lua_outside", "файл Lua вне папки lua/: игра его сама не запускает", path)
@@ -296,6 +296,8 @@ def scan_lua(path, text, names, rep):
     for m in re.finditer(r"\bgame\s*\.\s*on\s*\(\s*[\"']([^\"']*)[\"']", text):
         if m.group(1) not in names["event"]:
             rep.signal("lua", "api_event", f"обработчик '{m.group(1)}': такого события в API нет", path)
+        elif m.group(1) in names["event2"] and lua_api < 2:
+            rep.signal("lua", "api_event", f"обработчик '{m.group(1)}': только при luaApi: 2", path)
     if any(len(line) > LONG_LINE for line in text.splitlines()):
         rep.signal("lua", "long_line", f"строка кода длиннее {LONG_LINE} знаков: прочитать глазами", path)
     for s in strings:
@@ -673,7 +675,8 @@ def main():
         for name, body in sorted(data.items()):
             if PurePosixPath(name).suffix.lower() == ".lua":
                 try:
-                    scan_lua(name, body.decode("utf-8-sig"), names, rep)
+                    declared = rep.mod.get("luaApi", "") if getattr(rep, "mod", None) else ""
+                    scan_lua(name, body.decode("utf-8-sig"), names, rep, int(declared) if declared.isdigit() else 1)
                 except UnicodeDecodeError:
                     pass  # стадия данных скажет об этом сама
         check_data(data, clean, a.out, rep)

@@ -27,6 +27,7 @@ TYPES = {
     "UI_WIDGET": ("uiWidget", "Виджет экрана мода", "A widget of a mod's screen"),
     "ITEM": ("item", "Предмет", "Item"),
     "BATTLE": ("battle", "Бой", "Battle"),
+    "BASE": ("base", "База, game.getBases()", "A base, game.getBases()"),
     "SOLDIER": ("soldier", "Солдат", "Soldier"),
     "RULE_ARMOR": ("ruleArmor", "Правила брони", "Armor rules"),
     "RULE_ITEM": ("ruleItem", "Правила предмета", "Item rules"),
@@ -50,8 +51,10 @@ TYPES = {
 }
 
 # слова luaCaps: открытые и закрытые до своего этапа docs/portal/LUA_MODS_V2.md
-CAPS = ("screens",)
+CAPS = ("screens", "economy")
 CLOSED_CAPS = ("spawn",)
+# обработчики только для luaApi: 2, в движке namesApi1 их не знает
+API2_EVENTS = ("newHour", "newDay", "newMonth", "battleStart", "battleEnd")
 
 # имена характеристик для getStat, setStat, addStat, getExp
 STATS_RU = "timeUnits, stamina, health, manaPool, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee"
@@ -329,6 +332,8 @@ METHODS = {
         "getObjectSpecialTileType": ("", "особый тип объекта, STT_* или другое число из рулсета", "the special object type, STT_* or another number from the ruleset"),
     },
     "geoscape": {
+        "getFunds": ("", "деньги, только luaApi: 2", "the money, only luaApi: 2"),
+        "addFunds": ("n", "прибавить деньги, n от -1000000000 до 1000000000. Разрешение economy", "add money, n from -1000000000 to 1000000000. Permission economy"),
         "getTime": ("", "таблица по Гринвичу: second, minute, hour, day, month, year, secondsPastMidnight, daysPastEpoch", "a table in Greenwich time: second, minute, hour, day, month, year, secondsPastMidnight, daysPastEpoch"),
         "difficultyLevel": ("", "сложность, DIFF_*", "the difficulty, DIFF_*"),
         "getMonthsPassed": ("", "сколько месяцев идёт игра", "how many months the game has run"),
@@ -493,6 +498,21 @@ METHODS = {
         "setFocus": ("", "ввод с клавиатуры в это поле: edit. Пока фокус в поле, первый щелчок вне него только снимает фокус, а onKey молчит", "keyboard input into this field: edit. While the field has the focus, the first click outside it only takes the focus away, and onKey is silent"),
         "setImage": ("name", "другая картинка того же размера или меньше: image", "another picture of the same size or smaller: image"),
     },
+    "base": {
+        "getName": ("", "имя базы", "the base's name"),
+        "getStores": ("", "таблица: used, занято места на складе, capacity, сколько вмещает", "a table: used, the stores' space taken, capacity, how much they hold"),
+        "getQuarters": ("", "таблица: used, занято мест в жилье, capacity, сколько вмещает", "a table: used, the quarters taken, capacity, how many they hold"),
+        "getItemCount": ("type", "сколько таких предметов на складе; нет правила: ошибка", "how many such items are in the stores; no such rule: an error"),
+        "addItem": ("type[, n]", "положить на склад, по умолчанию один. Разрешение economy", "put into the stores, one by default. Permission economy"),
+        "removeItem": ("type[, n]", "убрать со склада; больше, чем есть: ошибка. Разрешение economy", "take from the stores; more than there are: an error. Permission economy"),
+        "getFreeScientists": ("", "незанятые учёные", "scientists without work"),
+        "addScientists": ("n", "добавить учёных. Разрешение economy", "add scientists. Permission economy"),
+        "removeScientists": ("n", "убрать незанятых учёных; больше: ошибка. Разрешение economy", "remove scientists without work; more: an error. Permission economy"),
+        "getFreeEngineers": ("", "незанятые инженеры", "engineers without work"),
+        "addEngineers": ("n", "добавить инженеров. Разрешение economy", "add engineers. Permission economy"),
+        "removeEngineers": ("n", "убрать незанятых инженеров; больше: ошибка. Разрешение economy", "remove engineers without work; more: an error. Permission economy"),
+        "hireSoldier": ("type[, done]", "нанять солдата после обработчика, бесплатно: done(soldier) или done(nil, причина). Разрешение economy", "hire a soldier after the handler, free: done(soldier) or done(nil, reason). Permission economy"),
+    },
     "statsForNerds": {
         "addIntRow": ("name, value", "строка с числом", "a row with a number"),
         "addTextRow": ("name, text", "строка с текстом", "a row with text"),
@@ -570,6 +590,12 @@ EVENTS = {
     "meleeMultiplierBonusStats": ("MELEE_MULTIPLIER_BONUS", BONUS, "точность удара от характеристик", "melee accuracy from the stats"),
     "throwMultiplierBonusStats": ("THROW_MULTIPLIER_BONUS", BONUS, "точность броска от характеристик", "throwing accuracy from the stats"),
     "closeQuartersMultiplierBonusStats": ("CLOSE_QUARTERS_MULTIPLIER_BONUS", BONUS, "точность в упор от характеристик", "close quarters accuracy from the stats"),
+    "newHour": ("NEW_HOUR", "geoscape_game", "начало игрового часа, геоскейп; только luaApi: 2", "a new game hour, geoscape; only luaApi: 2"),
+    "newDay": ("NEW_DAY", "geoscape_game", "начало игровых суток, геоскейп; только luaApi: 2", "a new game day, geoscape; only luaApi: 2"),
+    "newMonth": ("NEW_MONTH", "geoscape_game", "начало игрового месяца, отчёт уже посчитан; в одном такте месяц, сутки, час; только luaApi: 2",
+                 "a new game month, the report is already counted; in one tick the month, the day, the hour; only luaApi: 2"),
+    "battleStart": ("BATTLE_START", "battle", "бой создан, предпросмотр не считается; только чтение; только luaApi: 2", "a battle is created, a preview does not count; read only; only luaApi: 2"),
+    "battleEnd": ("BATTLE_END", "battle, aborted", "бой кончился, итог миссии ещё не посчитан; только чтение; только luaApi: 2", "a battle ended, the mission's result is not counted yet; read only; only luaApi: 2"),
 }
 
 # аргумент обработчика: (по-русски, по-английски)
@@ -578,6 +604,7 @@ ARG_WORDS = {
     "item": ("предмет; в <code>healUnit</code> и <code>skillUseUnit</code> то, чем действуют, в <code>skillUseUnit</code> может быть nil", "the item; in <code>healUnit</code> and <code>skillUseUnit</code> the one used, in <code>skillUseUnit</code> it may be nil"),
     "battle": ("бой", "the battle"),
     "turn": ("номер хода", "the turn number"),
+    "aborted": ("1, если отряд ушёл по команде, иначе 0", "1 if the squad left on an order, otherwise 0"),
     "side": ("в <code>newTurn*</code> чей сейчас ход, <code>FACTION_*</code>; в обработчиках урона сторона юнита, <code>SIDE_*</code>", "in <code>newTurn*</code> whose turn it is, <code>FACTION_*</code>; in the damage handlers the side of the unit, <code>SIDE_*</code>"),
     "damaging_item": ("чем нанесён урон, обычно патрон; может быть nil", "what did the damage, usually a round; may be nil"),
     "weapon_item": ("оружие; может быть nil", "the weapon; may be nil"),
@@ -971,6 +998,19 @@ RECIPES = [
              "    ui:close()\n"
              "  end }\n"
              "end, { menu = \"STR_MY_BANK\" })\n"},
+    {"id": "tithe", "ru": "Деньги: десятина раз в неделю", "en": "Money: a tithe once a week",
+     "ru_text": "Раз в семь суток кампании приносит 50 000. Нужны <code>luaApi: 2</code> и <code>luaCaps: [economy]</code>. Счётчик суток лежит в теге кампании: переменная Lua обнулилась бы после первого боя. Приход виден в отчёте месяца. Снимете мод: уже полученные деньги останутся.",
+     "en_text": "Once in seven days the campaign earns 50,000. It takes <code>luaApi: 2</code> and <code>luaCaps: [economy]</code>. The day counter is in a campaign tag: a Lua variable would be reset after the first battle. The income shows in the month's report. Remove the mod: the money already received stays.",
+     "api": 2, "caps": "economy",
+     "rul": "extended:\n  tags:\n    GeoscapeGame:\n      MY_TITHE_DAYS: int\n",
+     "code": "game.on(\"newDay\", function(geoscape_game)\n"
+             "  local days = geoscape_game:getTag(\"MY_TITHE_DAYS\") + 1\n"
+             "  if days >= 7 then\n"
+             "    geoscape_game:addFunds(50000)\n"
+             "    days = 0\n"
+             "  end\n"
+             "  geoscape_game:setTag(\"MY_TITHE_DAYS\", days)\n"
+             "end)\n"},
 ]
 
 CONST_WORDS = {
@@ -1020,7 +1060,7 @@ TEXT = {
             ("Служебное", "теги юнита, предмета, боя, солдата и геоскейпа, журнал"),
         ],
         "cannot": "<b>Из Lua нельзя:</b>"
-                  "<ul><li>базы, наука, производство, деньги: геоскейп можно читать, а менять только теги, итог месяца для страны, обнаружение НЛО и цены;</li>"
+                  "<ul><li>наука и производство; базы и деньги только с разрешением <code>economy</code>. Без него геоскейп можно читать, а менять только теги, итог месяца для страны, обнаружение НЛО и цены;</li>"
                   "<li>создавать и двигать юнитов и предметы, менять карту;</li>"
                   "<li>спрайты и перекраску: эти обработчики Y-script идут из потоков рисования на каждый кадр, для них есть Y-script;</li>"
                   "<li>выбор действий ИИ, кроме веса цели.</li></ul>"
@@ -1047,16 +1087,26 @@ TEXT = {
         "h_api": "Объекты",
         "th_method": "Метод", "th_what": "Что делает",
         "h_game": "Таблица game",
-        "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше. С <code>luaApi: 2</code>: <code>game.getBattle()</code> и <code>game.getGeoscape()</code> дают бой и кампанию там, где обработчик их не получает, например из щелчка на экране; боя нет: nil. Только разрешение <code>screens</code>: <code>game.screen(имя, функция[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> объявляет экран, только пока грузится <code>main.lua</code>; <code>game.openScreen(имя)</code> открывает его из обработчика.",
+        "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше. С <code>luaApi: 2</code>: <code>game.getBattle()</code> и <code>game.getGeoscape()</code> дают бой и кампанию там, где обработчик их не получает, например из щелчка на экране; боя нет: nil. <code>game.getBases()</code> даёт таблицу баз игрока, в бою и в щелчке тоже. Только разрешение <code>screens</code>: <code>game.screen(имя, функция[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> объявляет экран, только пока грузится <code>main.lua</code>; <code>game.openScreen(имя)</code> открывает его из обработчика.",
         "h_caps": "Разрешения и свои экраны",
-        "caps": "<p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть одно слово: <code>screens</code>.</p>"
+        "caps": "<p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens, economy]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть два слова: <code>screens</code> и <code>economy</code>.</p>"
                 "<ul><li>Экран строится из виджетов игры в координатах 320×200, поэтому работает при любом разрешении и масштабе.</li>"
                 "<li>Открывает его игрок на экране модов, если у <code>game.screen</code> есть <code>menu</code>, или обработчик через <code>game.openScreen</code>: тогда экран откроется, когда игра закончит свой шаг, в бою это может быть после анимации или после брифинга. Пока экран открыт, игра под ним стоит.</li>"
                 "<li>Функция построения и <code>onClose</code> только читают: без случайных чисел, записи и <code>openScreen</code>. Открытый и закрытый экран не меняет игру. В щелчке можно всё, что можно в обработчике.</li>"
-                "<li>Обработчики только для чтения, в том числе все обработчики геоскейпа и страниц для нердов, экран не открывают.</li>"
+                "<li>Обработчики только для чтения, в том числе старые обработчики геоскейпа и страницы для нердов, экран не открывают.</li>"
                 "<li>Esc закрывает экран всегда. Ошибка в построении закрывает экран и пишется в журнал. Кадровых обработчиков и таймеров нет: только реакция на действие.</li>"
                 "<li>Ручки виджетов живут, пока экран открыт, после закрытия: ошибка Lua.</li>"
-                "<li>Потолки: 64 виджета, 2000 строк списка, 8 столбцов, 256 пунктов, 64 экрана на мод, вложенность и очередь вместе 4, один экран на вызов, 8 экранов за ход боя или день кампании. Сверх потолка: ошибка мода, игра живёт.</li></ul>",
+                "<li>Потолки: 64 виджета, 2000 строк списка, 8 столбцов, 256 пунктов, 64 экрана на мод, вложенность и очередь вместе 4, один экран на вызов, 8 экранов за ход боя или день кампании. Сверх потолка: ошибка мода, игра живёт.</li></ul>"
+                "<p><code>economy</code>: деньги, склад, персонал и наём, только вне боя.</p>"
+                "<ul><li><b>Переменные Lua обнуляются при каждом новом бою и загрузке.</b> Счётчик дней в переменной забудется после первого боя. Всё, что должно пережить бой, держите в тегах, для кампании раздел <code>GeoscapeGame</code>.</li>"
+                "<li>Читать можно без слова: <code>game.getBases()</code>, <code>geoscape:getFunds()</code>, методы чтения <code>base</code>. Менять можно только со словом и только в <code>newHour</code>, <code>newDay</code>, <code>newMonth</code>, в щелчке на экране и в функции <code>done</code> у <code>hireSoldier</code>. В бою нельзя: конец боя сам считает склад.</li>"
+                "<li>Эти три обработчика могут открыть экран: <code>game.openScreen</code>. <code>battleStart</code> и <code>battleEnd</code> только читают.</li>"
+                "<li>Деньги, склад и персонал меняются сразу. Ошибка Lua в том же вызове отменяет всё, что вызов успел, и наём тоже.</li>"
+                "<li><code>addFunds</code> попадает в приход или расход месяца, как обычные деньги. В <code>newMonth</code> отчёт прошлого месяца уже посчитан: деньги идут в новый месяц. Долг ниже порога даёт обычное предупреждение совета, затем обычный проигрыш.</li>"
+                "<li><code>hireSoldier(type[, done])</code> бесплатный: цену, если нужна, снимает сам мод. Солдат создаётся после обработчика и едет на базу обычной пересылкой. <code>done(soldier)</code> получает нового солдата, <code>done(nil, причина)</code> отказ: нет мест или месячный лимит. Объекты из обработчика в <code>done</code> уже мертвы, базу берите заново через <code>game.getBases()</code>.</li>"
+                "<li>Склад сверх лимита игра обрабатывает как обычно: окно продажи, которое нельзя закрыть, пока лишнее не продано. Не выдавайте игроку больше, чем вмещает склад. На Пиратках <code>getStores().used</code> бывает отрицательным: есть предметы с отрицательным размером.</li>"
+                "<li>Мод снят: деньги, предметы обычных правил и персонал остаются, отмены нет; теги теряются при новом сохранении. В сейв пишется отметка <code>luaTouched</code>, она остаётся и после снятия мода и видна в отчёте об ошибке.</li>"
+                "<li>Потолки: <code>addFunds</code> до ±1 000 000 000 за вызов, предметы и персонал до 1 000 000 000 за вызов, наём 16 за вызов и 64 в сутки. Сверх потолка: ошибка мода, игра живёт.</li></ul>",
         "h_const": "Константы",
         "h_tags": "Теги: память между сохранениями",
         "tags": "Переменные Lua обнуляются при загрузке сейва, в новом бою и по Ctrl+F5. Долгая память — только теги. Тег объявляется в рулсете мода, например в файле <code>Ruleset/my_mod.rul</code>:"
@@ -1117,7 +1167,7 @@ TEXT = {
             ("Service", "tags of units, items, the battle, soldiers and the geoscape, the log"),
         ],
         "cannot": "<b>From Lua you cannot:</b>"
-                  "<ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li>"
+                  "<ul><li>touch research and production; bases and money only with the permission <code>economy</code>. Without it the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li>"
                   "<li>create or move units and items, change the map;</li>"
                   "<li>touch sprites and recolouring: those Y-script handlers come from the drawing threads on every frame, the Y-script is there for them;</li>"
                   "<li>choose the AI's actions, except a target's weight.</li></ul>"
@@ -1144,16 +1194,26 @@ TEXT = {
         "h_api": "Objects",
         "th_method": "Method", "th_what": "What it does",
         "h_game": "The game table",
-        "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above. With <code>luaApi: 2</code>: <code>game.getBattle()</code> and <code>game.getGeoscape()</code> give the battle and the campaign where a handler does not receive them, a click on a screen for one; no battle: nil. Only with the permission <code>screens</code>: <code>game.screen(name, function[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> declares a screen, only while <code>main.lua</code> loads; <code>game.openScreen(name)</code> opens it from a handler.",
+        "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above. With <code>luaApi: 2</code>: <code>game.getBattle()</code> and <code>game.getGeoscape()</code> give the battle and the campaign where a handler does not receive them, a click on a screen for one; no battle: nil. <code>game.getBases()</code> gives a table of the player's bases, in a battle and in a click too. Only with the permission <code>screens</code>: <code>game.screen(name, function[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> declares a screen, only while <code>main.lua</code> loads; <code>game.openScreen(name)</code> opens it from a handler.",
         "h_caps": "Permissions and screens of your own",
-        "caps": "<p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There is one word now: <code>screens</code>.</p>"
+        "caps": "<p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens, economy]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There are two words now: <code>screens</code> and <code>economy</code>.</p>"
                 "<ul><li>A screen is made of the game's widgets in coordinates 320×200, so it works at any resolution and scale.</li>"
                 "<li>The player opens it on the mods' screen, if <code>game.screen</code> has <code>menu</code>, or a handler through <code>game.openScreen</code>: the screen then opens when the game has finished its step, in battle it may be after an animation or after the briefing. While a screen is open the game under it stands.</li>"
                 "<li>The building function and <code>onClose</code> only read: no random numbers, writes or <code>openScreen</code>. A screen opened and closed does not change the game. In a click you may do all a handler may.</li>"
-                "<li>Read-only handlers, all handlers of the geoscape and the nerds' pages among them, do not open screens.</li>"
+                "<li>Read-only handlers, the old handlers of the geoscape and the nerds' pages among them, do not open screens.</li>"
                 "<li>Esc always closes a screen. An error while building closes the screen and goes to the log. There are no frame handlers or timers: only a reaction to an action.</li>"
                 "<li>Widget handles live while the screen is open, after closing: a Lua error.</li>"
-                "<li>Ceilings: 64 widgets, 2000 list rows, 8 columns, 256 options, 64 screens a mod, nesting and the queue together 4, one screen a call, 8 screens a battle turn or a campaign day. Over a ceiling: the mod's error, the game lives.</li></ul>",
+                "<li>Ceilings: 64 widgets, 2000 list rows, 8 columns, 256 options, 64 screens a mod, nesting and the queue together 4, one screen a call, 8 screens a battle turn or a campaign day. Over a ceiling: the mod's error, the game lives.</li></ul>"
+                "<p><code>economy</code>: money, stores, personnel and hiring, only out of a battle.</p>"
+                "<ul><li><b>Lua variables are reset at every new battle and load.</b> A day counter in a variable is forgotten after the first battle. Whatever has to outlive a battle goes into tags, for the campaign the section <code>GeoscapeGame</code>.</li>"
+                "<li>Reading needs no word: <code>game.getBases()</code>, <code>geoscape:getFunds()</code>, the reading methods of <code>base</code>. Changes need the word and work only in <code>newHour</code>, <code>newDay</code>, <code>newMonth</code>, in a click on a screen and in the function <code>done</code> of <code>hireSoldier</code>. Not in a battle: its end counts the stores itself.</li>"
+                "<li>These three handlers may open a screen: <code>game.openScreen</code>. <code>battleStart</code> and <code>battleEnd</code> only read.</li>"
+                "<li>Money, stores and personnel change at once. A Lua error in the same call undoes everything the call did, hiring too.</li>"
+                "<li><code>addFunds</code> goes to the month's income or expenditure, like ordinary money. In <code>newMonth</code> the report of the past month is already counted: the money goes to the new month. A debt below the threshold gives the council's usual warning, then the usual defeat.</li>"
+                "<li><code>hireSoldier(type[, done])</code> is free: the mod takes the price itself if it wants one. The soldier is created after the handler and travels to the base as a usual transfer. <code>done(soldier)</code> gets the new soldier, <code>done(nil, reason)</code> a refusal: no quarters or the monthly limit. Objects of the handler are dead in <code>done</code>, take the base again with <code>game.getBases()</code>.</li>"
+                "<li>The game treats stores over the limit as usual: a sell window that does not close until the excess is sold. Do not give the player more than the stores hold. On Piratez <code>getStores().used</code> can be negative: some items have a negative size.</li>"
+                "<li>The mod removed: money, items of ordinary rules and personnel stay, nothing is undone; tags are lost at a new save. The mark <code>luaTouched</code> goes into the save, it stays after the mod is removed and shows in an error report.</li>"
+                "<li>Ceilings: <code>addFunds</code> up to ±1,000,000,000 a call, items and personnel up to 1,000,000,000 a call, hiring 16 a call and 64 a day. Over a ceiling: the mod's error, the game lives.</li></ul>",
         "h_const": "Constants",
         "h_tags": "Tags: memory between saves",
         "tags": "Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset, for example in the file <code>Ruleset/my_mod.rul</code>:"
@@ -1221,6 +1281,10 @@ def read_engine():
         if not m:
             fail([f"нет таблицы {prefix}_METHODS в LuaHost.cpp"])
         tables[lua_name] = re.findall(r'\{\s*"(\w+)"\s*,', m.group(1))
+    m = re.search(r"const luaL_Reg API2_GEOSCAPE_REGS\[\] = \{(.*?)\n?\};", src, re.S)
+    if not m:
+        fail(["нет таблицы API2_GEOSCAPE_REGS в LuaHost.cpp"])
+    tables["geoscape"] += re.findall(r'\{\s*"(\w+)"\s*,', m.group(1))
     m = re.search(r"const EventInfo EVENTS\[.*?\] = \{(.*?)\n\};", src, re.S)
     if not m:
         fail(["нет таблицы EVENTS в LuaHost.cpp"])
@@ -1382,7 +1446,7 @@ def main():
             path.write_text(text, encoding="utf-8-sig", newline="\n")
             print(path, len(text))
     # имена для проверки заявок: лаунчер и tools/lua_mod_check.py сверяют вызовы мода с одним и тем же списком
-    names = [f"api\t{numbers['api']}"] + [f"event\t{e}" for e in events] + [f"const\t{c}" for c in constants] + [f"base\t{b}" for b in base]
+    names = [f"api\t{numbers['api']}"] + [f"event\t{e}" for e in events] + [f"event2\t{e}" for e in API2_EVENTS] + [f"const\t{c}" for c in constants] + [f"base\t{b}" for b in base]
     names += [f"method\t{m}" for m in sorted({m for v in tables.values() for m in v})]
     names += [f"game\t{g}" for g in game_calls()] + [f"cap\t{c}" for c in CAPS]
     text = "\n".join(names) + "\n"

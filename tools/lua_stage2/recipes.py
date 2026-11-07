@@ -89,6 +89,9 @@ PATCH = {"weapon": ("local BONUS = { STR_PISTOL = 5, STR_RIFLE = 10 }", "local B
 
 # банк: зонд в show, каждое показанное значение в журнал
 PROBES["bank"] = ("", "")
+PROBES["tithe"] = ("", "")
+# неделя в проверке одни сутки: на этом сейве перехват останавливает часы раньше вторых; приход виден в журнале
+PATCH["tithe"] = ("  if days >= 7 then\n    geoscape_game:addFunds(50000)\n", '  say("tithe", days)\n  if days >= 1 then\n    say("tithe_paid", geoscape_game:getFunds())\n    geoscape_game:addFunds(50000)\n    say("tithe_now", geoscape_game:getFunds())\n')
 PATCH["bank"] = ("  local function show()\n", '  local function show()\n    say("bank", balance())\n')
 
 
@@ -327,6 +330,41 @@ def bank():
     check("bank: вернулись в бой", state(name)[0] == "BattlescapeState", state(name)[0])
     text = errors(name)
     check("bank: журнал ошибок Lua пуст", not text, text[:500])
+    call("stop", "--name", name, timeout=60)
+
+
+def tithe():
+    """Рецепт денег: сутки на Пиратках, тег считает, addFunds приносит."""
+    mods = HERE / "mods_pirates"
+    mods.mkdir(exist_ok=True)
+    for d in REAL.iterdir():
+        if d.is_dir() and not (mods / d.name).exists():
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
+    mod = make(mods, "tithe", "piratez")
+    text = (REAL.parent / "piratez/NoCodexCatZ.sav").read_text(encoding="utf-8")
+    text = re.sub(r"(?m)^ironman: true$", "ironman: false", text)
+    text = re.sub(r"(?m)^time: \{.*\}$", "time: {second: 10,minute: 50,hour: 23,weekday: 2,day: 15,month: 3,year: 2606}", text, count=1)
+    save = HERE / "rcp_tithe.sav"
+    save.write_text(text, encoding="utf-8", newline="\n")
+    name = "rcpt"
+    a = ["start", "--name", name, "--exe", EXE, "--save", str(save), "--mods-dir", str(mods), "--mods", mod + "=true", "--timeout", "200", "--set", "oxceLuaMods=true"]
+    print(name, call(*a).strip().splitlines()[-1][:120], flush=True)
+    t0 = time.time()
+    seen = {}
+    while time.time() - t0 < 40 and not rows(name, "tithe_now"):
+        top = state(name)[0]
+        seen[top] = seen.get(top, 0) + 1
+        if top == "GeoscapeState":
+            run(name, "key 54; wait 500", 30)
+        else:
+            run(name, "key 27; wait 300", 30)
+    print("окна:", seen, f"{time.time() - t0:.0f} с", flush=True)
+    days = [int(x[0]) for x in rows(name, "tithe")]
+    check("tithe: тег считает сутки", days[:1] == [1], str(days))
+    before, after = rows(name, "tithe_paid"), rows(name, "tithe_now")
+    check("tithe: пришло ровно 50000", before and after and int(after[0][0]) - int(before[0][0]) == 50000, f"{before[:1]} {after[:1]}")
+    text = errors(name)
+    check("tithe: журнал ошибок Lua пуст", not text, text[:500])
     call("stop", "--name", name, timeout=60)
 
 

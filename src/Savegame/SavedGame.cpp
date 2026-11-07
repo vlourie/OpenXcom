@@ -382,6 +382,16 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_time->load(header["time"]);
 	header.readNode("name", _name, filename);
 	header.tryRead("ironman", _ironman);
+	try
+	{
+		header.tryRead("luaTouched", _luaTouched);
+	}
+	catch (const YAML::Exception &e)
+	{
+		// only a mark for a ticket: a broken one is no reason to lose the save
+		Log(LOG_WARNING) << "luaTouched in " << filename << ": " << e.what();
+		_luaTouched.clear();
+	}
 
 	// Get full save data
 	const auto& reader = documents[1].useIndex();
@@ -771,6 +781,9 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 		modsList.push_back(modInfo->getId() + " ver: " + modInfo->getVersion());
 	headerWriter.write("mods", modsList);
 
+	if (!_luaTouched.empty())
+		headerWriter.write("luaTouched", _luaTouched);
+
 	if (_ironman)
 		headerWriter.write("ironman", _ironman);
 
@@ -1033,6 +1046,15 @@ int64_t SavedGame::getFunds() const
 std::vector<int64_t> &SavedGame::getFundsList()
 {
 	return _funds;
+}
+
+void SavedGame::luaTouch(const std::string &mod, const std::string &word)
+{
+	auto &words = _luaTouched[mod];
+	if (std::find(words.begin(), words.end(), word) == words.end())
+	{
+		words.push_back(word);
+	}
 }
 
 /**
