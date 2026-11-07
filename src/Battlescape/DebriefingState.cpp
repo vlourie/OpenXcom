@@ -34,6 +34,7 @@
 #include "CommendationState.h"
 #include "SoldierStatChangeState.h"
 #include "CommendationLateState.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleCraft.h"
@@ -1120,6 +1121,12 @@ void DebriefingState::prepareDebriefing()
 
 	bool aborted = battle->isAborted();
 	bool success = !aborted || battle->allObjectivesDestroyed();
+
+	// the battle as it ended, nothing of it is taken apart yet
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::BATTLE_END, { battle, aborted ? 1 : 0 });
+	}
 	Craft *craft = 0;
 	Base *base = 0;
 	std::string target;

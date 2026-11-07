@@ -65,7 +65,7 @@ public static partial class LuaSubmit
     sealed class Names
     {
         public int Api = 1;
-        public readonly HashSet<string> Event = [], Const = [], Method = [], Game = [], Cap = [];
+        public readonly HashSet<string> Event = [], Event2 = [], Const = [], Method = [], Game = [], Cap = [];
 
         public static readonly Lazy<Names> Embedded = new(() =>
         {
@@ -78,6 +78,7 @@ public static partial class LuaSubmit
                 if (part.Length != 2) continue;
                 if (part[0] == "api") n.Api = int.Parse(part[1]);
                 else if (part[0] == "event") n.Event.Add(part[1]);
+                else if (part[0] == "event2") n.Event2.Add(part[1]);
                 else if (part[0] == "const") n.Const.Add(part[1]);
                 else if (part[0] == "method") n.Method.Add(part[1]);
                 else if (part[0] == "game") n.Game.Add(part[1]);
@@ -99,7 +100,7 @@ public static partial class LuaSubmit
             p.Errors.Add(new(e.Code, e.File));
         CheckMetadata(text, p);
         foreach (var f in p.Files.Where(f => f.Path.EndsWith(".lua", StringComparison.OrdinalIgnoreCase) && f.Size <= LuaModArchive.MaxFile))
-            ScanLua(f.Path, File.ReadAllText(Path.Combine(modDir, f.Path)), p);
+            ScanLua(f.Path, File.ReadAllText(Path.Combine(modDir, f.Path)), p, p.Meta.LuaApi);
         return p;
     }
 
@@ -186,7 +187,7 @@ public static partial class LuaSubmit
         return (code.ToString(), strings);
     }
 
-    static void ScanLua(string path, string text, LuaPrecheck p)
+    static void ScanLua(string path, string text, LuaPrecheck p, int luaApi)
     {
         var names = Names.Embedded.Value;
         var (code, strings) = Strip(text);
@@ -202,7 +203,7 @@ public static partial class LuaSubmit
         foreach (Match m in MethodRx().Matches(code))
             if (!names.Method.Contains(m.Groups[1].Value) && !StringMethods.Contains(m.Groups[1].Value)) found.Add(new("api_unknown", path, ":" + m.Groups[1].Value + "()"));
         foreach (Match m in EventRx().Matches(text))
-            if (!names.Event.Contains(m.Groups[1].Value)) found.Add(new("api_event", path, m.Groups[1].Value));
+            if (!names.Event.Contains(m.Groups[1].Value) || (luaApi < 2 && names.Event2.Contains(m.Groups[1].Value))) found.Add(new("api_event", path, m.Groups[1].Value));
         if (text.Split('\n').Any(l => l.Length > LongLine)) found.Add(new("long_line", path));
         foreach (var s in strings)
         {

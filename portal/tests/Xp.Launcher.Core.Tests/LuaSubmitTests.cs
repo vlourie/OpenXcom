@@ -94,6 +94,7 @@ public sealed class LuaSubmitTests : IDisposable
     [InlineData("local s = string.dump(print)", "api_escape")]
     [InlineData("game.nothing()", "api_unknown")]
     [InlineData("game.on(\"nope\", print)", "api_event")]
+    [InlineData("game.on(\"newDay\", print)", "api_event")]
     public void Suspicious_calls_warn_but_do_not_stop(string lua, string code)
     {
         GoodMod(lua + "\n");
@@ -101,6 +102,16 @@ public sealed class LuaSubmitTests : IDisposable
         Assert.True(p.CanSend);
         Assert.Contains(p.Signals, s => s.Code == code);
         Assert.Contains(code, LuaSubmit.PrecheckLine(p));
+    }
+
+    [Fact]
+    public void The_events_of_api_2_and_the_word_economy_pass_with_api_2()
+    {
+        GoodMod("game.on(\"newDay\", print)\ngame.on(\"battleEnd\", print)\n");
+        Put("metadata.yml", "id: m\nversion: 1\nmaster: x\nluaApi: 2\nluaCaps: [screens, economy]\n");
+        var p = LuaSubmit.Prepare(_dir);
+        Assert.DoesNotContain(p.Errors, e => e.Code == "metadata_luacaps");
+        Assert.DoesNotContain(p.Signals, s => s.Code == "api_event");
     }
 
     [Fact]

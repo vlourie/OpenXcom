@@ -195,6 +195,10 @@ void SaveGameState::think()
 			{
 				lua->runQueue(battle);
 			}
+			else
+			{
+				lua->runQueue(_game->getSavedGame());
+			}
 		}
 
 		// Save the game

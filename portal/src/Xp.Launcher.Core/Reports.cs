@@ -19,6 +19,8 @@ public sealed class GameContext
     public string Engine { get; set; } = "";
     public string Master { get; set; } = "";
     public List<ModRef> Mods { get; set; } = new();
+    /// <summary>The save's mark: "id economy" for each Lua mod that left traces in this campaign, also one that is gone (LUA_MODS_V2 §4.5).</summary>
+    public List<string> SaveTouched { get; set; } = new();
     public string Os { get; set; } = "";
     public string Language { get; set; } = "";
     public string State { get; set; } = "";
@@ -264,6 +266,7 @@ public sealed class Report
             sb.Append("engine: ").AppendLine(c.Engine);
             sb.Append("master: ").AppendLine(c.Master);
             sb.Append("mods: ").AppendLine(string.Join(", ", c.Mods.Select(m => m.Line)));
+            foreach (var touched in c.SaveTouched) sb.Append("save touched: ").AppendLine(touched);
             sb.Append("os: ").AppendLine(c.Os);
             sb.Append("language: ").AppendLine(c.Language);
             sb.Append("screen: ").Append(c.State).AppendLine(c.Battle ? " (battle)" : "");

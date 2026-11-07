@@ -809,6 +809,15 @@ void GeoscapeState::think()
 {
 	State::think();
 
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->runQueue(_game->getSavedGame());
+		if (auto *screen = lua->nextScreen())
+		{
+			popup(screen);
+		}
+	}
+
 	_zoomInEffectTimer->think(this, 0);
 	_zoomOutEffectTimer->think(this, 0);
 	_dogfightStartTimer->think(this, 0);
@@ -2371,6 +2380,11 @@ void GeoscapeState::time1Hour()
 	}
 
 	updateSlackingIndicator();
+
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::NEW_HOUR, { _game->getSavedGame() });
+	}
 }
 
 /**
@@ -2930,6 +2944,11 @@ void GeoscapeState::time1Day()
 			popup(new CraftErrorState(this, msg, false));
 		}
 	}
+
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::NEW_DAY, { _game->getSavedGame() });
+	}
 }
 
 /**
@@ -2980,6 +2999,12 @@ void GeoscapeState::time1Month()
 				break;
 			}
 		}
+	}
+
+	// the report of the month is already counted: what a mod changes here belongs to the new month
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::NEW_MONTH, { _game->getSavedGame() });
 	}
 }
 

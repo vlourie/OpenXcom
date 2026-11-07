@@ -148,6 +148,7 @@ private:
 	std::map<std::string, int> _manufactureRuleStatus;
 	std::map<std::string, int> _researchRuleStatus;
 	std::map<std::string, int> _monthlyPurchaseLimitLog;
+	std::map<std::string, std::vector<std::string>> _luaTouched;
 	std::map<std::string, bool> _hiddenPurchaseItemsMap;
 	std::map<std::string, RuleCraftDeployment> _customRuleCraftDeployments;
 	Base* _previewBase;
@@ -324,6 +325,10 @@ public:
 	int getUfopediaRuleStatus(const std::string &ufopediaRule);
 	/// Gets the log of monthly purchase limits
 	std::map<std::string, int>& getMonthlyPurchaseLimitLog() { return _monthlyPurchaseLimitLog; }
+	/// A Lua mod did to this campaign what stays when the mod is gone: the mark in the save's header.
+	void luaTouch(const std::string &mod, const std::string &word);
+	/// Which mods, and what they did.
+	const std::map<std::string, std::vector<std::string>> &getLuaTouched() const { return _luaTouched; }
 	/// Gets the list of hidden items
 	const std::map<std::string, bool> &getHiddenPurchaseItems();
 	/// Gets the list of player-defined save-specific RuleCraft '_deployment' overrides

@@ -25,7 +25,7 @@ table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:
 <tr><td>Чужие правила</td><td>найти правила предмета, брони, юнита, навыка, исследования и ячейки инвентаря по имени</td></tr>
 <tr><td>Конец миссии</td><td>срок лечения, сколько здоровья и маны солдат недобирает на базе</td></tr>
 <tr><td>Служебное</td><td>теги юнита, предмета, боя, солдата и геоскейпа, журнал</td></tr>
-</table><div><b>Из Lua нельзя:</b><ul><li>базы, наука, производство, деньги: геоскейп можно читать, а менять только теги, итог месяца для страны, обнаружение НЛО и цены;</li><li>создавать и двигать юнитов и предметы, менять карту;</li><li>спрайты и перекраску: эти обработчики Y-script идут из потоков рисования на каждый кадр, для них есть Y-script;</li><li>выбор действий ИИ, кроме веса цели.</li></ul><b>Рядом с кодом работает обычный OXCE.</b> Папка <code>Ruleset/</code> мода с файлами <code>.rul</code> подключается как у любого мода: там меняются числа предметов, брони и юнитов, исследования и всё остальное, что умеют рулсеты, в том числе Y-script. Нужна новая возможность в Lua — напишите нам тикет с описанием, что мод должен делать.</div>
+</table><div><b>Из Lua нельзя:</b><ul><li>наука и производство; базы и деньги только с разрешением <code>economy</code>. Без него геоскейп можно читать, а менять только теги, итог месяца для страны, обнаружение НЛО и цены;</li><li>создавать и двигать юнитов и предметы, менять карту;</li><li>спрайты и перекраску: эти обработчики Y-script идут из потоков рисования на каждый кадр, для них есть Y-script;</li><li>выбор действий ИИ, кроме веса цели.</li></ul><b>Рядом с кодом работает обычный OXCE.</b> Папка <code>Ruleset/</code> мода с файлами <code>.rul</code> подключается как у любого мода: там меняются числа предметов, брони и юнитов, исследования и всё остальное, что умеют рулсеты, в том числе Y-script. Нужна новая возможность в Lua — напишите нам тикет с описанием, что мод должен делать.</div>
 <h2>Рецепты</h2><p>Каждый рецепт — целый файл <code>lua/main.lua</code>. Все проверены в настоящем бою. В одном файле может быть сколько угодно подписок, в том числе на один обработчик: они идут в порядке записи.</p>
 <h3>Регенерация</h3><p>Каждый живой юнит в начале своего хода получает 1 здоровья. <code>newTurnUnit</code> приходит на ход каждой стороны, поэтому <code>side</code> сравнивается со стороной юнита.</p>
 <pre><code>game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
@@ -226,6 +226,21 @@ game.screen(&quot;bank&quot;, function(ui)
   end }
 end, { menu = &quot;STR_MY_BANK&quot; })
 </code></pre>
+<h3>Деньги: десятина раз в неделю</h3><p>Раз в семь суток кампании приносит 50 000. Нужны <code>luaApi: 2</code> и <code>luaCaps: [economy]</code>. Счётчик суток лежит в теге кампании: переменная Lua обнулилась бы после первого боя. Приход виден в отчёте месяца. Снимете мод: уже полученные деньги останутся.</p>
+<pre><code>extended:
+  tags:
+    GeoscapeGame:
+      MY_TITHE_DAYS: int
+</code></pre>
+<pre><code>game.on(&quot;newDay&quot;, function(geoscape_game)
+  local days = geoscape_game:getTag(&quot;MY_TITHE_DAYS&quot;) + 1
+  if days &gt;= 7 then
+    geoscape_game:addFunds(50000)
+    days = 0
+  end
+  geoscape_game:setTag(&quot;MY_TITHE_DAYS&quot;, days)
+end)
+</code></pre>
 <h2>Обработчики</h2><p>Подписка: <code>game.on("имя", функция)</code>. Аргументы идут в порядке входа Y-script, последним — таблица <code>out</code> с выходными значениями, если они есть. Значения в <code>out</code> принимаются целыми и только все разом: одно плохое значение — ошибка, остальные не применяются. Обработчики с пометкой «только читает» меняют только <code>out</code>: как и в Y-script, объекты там неизменяемые, и вызов <code>set...</code> или <code>add...</code> в них — ошибка. На одном обработчике сначала работает Y-script, затем Lua в порядке загрузки модов.</p>
 <table><tr><th>Обработчик</th><th>Когда</th><th>out</th></tr>
 <tr id="event.createUnit"><td><code>createUnit(unit, battle, turn)</code></td><td>юнит появился в бою</td><td>-</td></tr>
@@ -282,12 +297,18 @@ end, { menu = &quot;STR_MY_BANK&quot; })
 <tr id="event.meleeMultiplierBonusStats"><td><code>meleeMultiplierBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(только читает)</span> <span class="ro">(без случайных чисел)</span></td><td>точность удара от характеристик</td><td><code>bonus</code></td></tr>
 <tr id="event.throwMultiplierBonusStats"><td><code>throwMultiplierBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(только читает)</span> <span class="ro">(без случайных чисел)</span></td><td>точность броска от характеристик</td><td><code>bonus</code></td></tr>
 <tr id="event.closeQuartersMultiplierBonusStats"><td><code>closeQuartersMultiplierBonusStats(unit, external_bonuses, weapon, ammo, battle_action, skill, out)</code> <span class="ro">(только читает)</span> <span class="ro">(без случайных чисел)</span></td><td>точность в упор от характеристик</td><td><code>bonus</code></td></tr>
+<tr id="event.newHour"><td><code>newHour(geoscape_game)</code></td><td>начало игрового часа, геоскейп; только luaApi: 2</td><td>-</td></tr>
+<tr id="event.newDay"><td><code>newDay(geoscape_game)</code></td><td>начало игровых суток, геоскейп; только luaApi: 2</td><td>-</td></tr>
+<tr id="event.newMonth"><td><code>newMonth(geoscape_game)</code></td><td>начало игрового месяца, отчёт уже посчитан; в одном такте месяц, сутки, час; только luaApi: 2</td><td>-</td></tr>
+<tr id="event.battleStart"><td><code>battleStart(battle)</code> <span class="ro">(только читает)</span></td><td>бой создан, предпросмотр не считается; только чтение; только luaApi: 2</td><td>-</td></tr>
+<tr id="event.battleEnd"><td><code>battleEnd(battle, aborted)</code> <span class="ro">(только читает)</span></td><td>бой кончился, итог миссии ещё не посчитан; только чтение; только luaApi: 2</td><td>-</td></tr>
 </table>
 <h3>Аргументы</h3><p>Обработчики получают их в порядке из таблицы выше. Значения, которые могут быть nil, проверяйте перед вызовом метода, иначе будет ошибка.</p><ul>
 <li><code>unit</code>: юнит, с которым это произошло</li>
 <li><code>item</code>: предмет; в <code>healUnit</code> и <code>skillUseUnit</code> то, чем действуют, в <code>skillUseUnit</code> может быть nil</li>
 <li><code>battle</code>: бой</li>
 <li><code>turn</code>: номер хода</li>
+<li><code>aborted</code>: 1, если отряд ушёл по команде, иначе 0</li>
 <li><code>side</code>: в <code>newTurn*</code> чей сейчас ход, <code>FACTION_*</code>; в обработчиках урона сторона юнита, <code>SIDE_*</code></li>
 <li><code>damaging_item</code>: чем нанесён урон, обычно патрон; может быть nil</li>
 <li><code>weapon_item</code>: оружие; может быть nil</li>
@@ -680,6 +701,21 @@ end, { menu = &quot;STR_MY_BANK&quot; })
 <tr id="battle.getTag"><td><code>battle:getTag(name)</code></td><td>значение тега BattleGame</td></tr>
 <tr id="battle.setTag"><td><code>battle:setTag(name, value)</code></td><td>записать тег BattleGame</td></tr>
 </table>
+<h3>База, game.getBases(): <code>base</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
+<tr id="base.getName"><td><code>base:getName()</code></td><td>имя базы</td></tr>
+<tr id="base.getStores"><td><code>base:getStores()</code></td><td>таблица: used, занято места на складе, capacity, сколько вмещает</td></tr>
+<tr id="base.getQuarters"><td><code>base:getQuarters()</code></td><td>таблица: used, занято мест в жилье, capacity, сколько вмещает</td></tr>
+<tr id="base.getItemCount"><td><code>base:getItemCount(type)</code></td><td>сколько таких предметов на складе; нет правила: ошибка</td></tr>
+<tr id="base.addItem"><td><code>base:addItem(type[, n])</code></td><td>положить на склад, по умолчанию один. Разрешение economy</td></tr>
+<tr id="base.removeItem"><td><code>base:removeItem(type[, n])</code></td><td>убрать со склада; больше, чем есть: ошибка. Разрешение economy</td></tr>
+<tr id="base.getFreeScientists"><td><code>base:getFreeScientists()</code></td><td>незанятые учёные</td></tr>
+<tr id="base.addScientists"><td><code>base:addScientists(n)</code></td><td>добавить учёных. Разрешение economy</td></tr>
+<tr id="base.removeScientists"><td><code>base:removeScientists(n)</code></td><td>убрать незанятых учёных; больше: ошибка. Разрешение economy</td></tr>
+<tr id="base.getFreeEngineers"><td><code>base:getFreeEngineers()</code></td><td>незанятые инженеры</td></tr>
+<tr id="base.addEngineers"><td><code>base:addEngineers(n)</code></td><td>добавить инженеров. Разрешение economy</td></tr>
+<tr id="base.removeEngineers"><td><code>base:removeEngineers(n)</code></td><td>убрать незанятых инженеров; больше: ошибка. Разрешение economy</td></tr>
+<tr id="base.hireSoldier"><td><code>base:hireSoldier(type[, done])</code></td><td>нанять солдата после обработчика, бесплатно: done(soldier) или done(nil, причина). Разрешение economy</td></tr>
+</table>
 <h3>Солдат: <code>soldier</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="soldier.getId"><td><code>soldier:getId()</code></td><td>номер солдата</td></tr>
 <tr id="soldier.getRank"><td><code>soldier:getRank()</code></td><td>звание, целое</td></tr>
@@ -778,6 +814,8 @@ end, { menu = &quot;STR_MY_BANK&quot; })
 <tr id="geoscape.randomChance"><td><code>geoscape:randomChance(percent)</code></td><td>true с этим шансом через генератор игры</td></tr>
 <tr id="geoscape.getTag"><td><code>geoscape:getTag(name)</code></td><td>значение тега GeoscapeGame</td></tr>
 <tr id="geoscape.setTag"><td><code>geoscape:setTag(name, value)</code></td><td>записать тег GeoscapeGame</td></tr>
+<tr id="geoscape.getFunds"><td><code>geoscape:getFunds()</code></td><td>деньги, только luaApi: 2</td></tr>
+<tr id="geoscape.addFunds"><td><code>geoscape:addFunds(n)</code></td><td>прибавить деньги, n от -1000000000 до 1000000000. Разрешение economy</td></tr>
 </table>
 <h3>Страна: <code>country</code></h3><table><tr><th>Метод</th><th>Что делает</th></tr>
 <tr id="country.getRuleCountry"><td><code>country:getRuleCountry()</code></td><td>правила страны</td></tr>
@@ -902,8 +940,8 @@ end, { menu = &quot;STR_MY_BANK&quot; })
 <tr id="statsForNerds.addTextRow"><td><code>statsForNerds:addTextRow(name, text)</code></td><td>строка с текстом</td></tr>
 <tr id="statsForNerds.addTextFormatRow"><td><code>statsForNerds:addTextFormatRow(name, format, a[, b])</code></td><td>строка из шаблона: {0} и {1} заменяются числами a и b</td></tr>
 </table>
-<h2>Таблица game</h2><p><code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше. С <code>luaApi: 2</code>: <code>game.getBattle()</code> и <code>game.getGeoscape()</code> дают бой и кампанию там, где обработчик их не получает, например из щелчка на экране; боя нет: nil. Только разрешение <code>screens</code>: <code>game.screen(имя, функция[, { menu = "STR_NAME", interface = "pauseMenu" }])</code> объявляет экран, только пока грузится <code>main.lua</code>; <code>game.openScreen(имя)</code> открывает его из обработчика.</p>
-<h2>Разрешения и свои экраны</h2><p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть одно слово: <code>screens</code>.</p><ul><li>Экран строится из виджетов игры в координатах 320×200, поэтому работает при любом разрешении и масштабе.</li><li>Открывает его игрок на экране модов, если у <code>game.screen</code> есть <code>menu</code>, или обработчик через <code>game.openScreen</code>: тогда экран откроется, когда игра закончит свой шаг, в бою это может быть после анимации или после брифинга. Пока экран открыт, игра под ним стоит.</li><li>Функция построения и <code>onClose</code> только читают: без случайных чисел, записи и <code>openScreen</code>. Открытый и закрытый экран не меняет игру. В щелчке можно всё, что можно в обработчике.</li><li>Обработчики только для чтения, в том числе все обработчики геоскейпа и страниц для нердов, экран не открывают.</li><li>Esc закрывает экран всегда. Ошибка в построении закрывает экран и пишется в журнал. Кадровых обработчиков и таймеров нет: только реакция на действие.</li><li>Ручки виджетов живут, пока экран открыт, после закрытия: ошибка Lua.</li><li>Потолки: 64 виджета, 2000 строк списка, 8 столбцов, 256 пунктов, 64 экрана на мод, вложенность и очередь вместе 4, один экран на вызов, 8 экранов за ход боя или день кампании. Сверх потолка: ошибка мода, игра живёт.</li></ul>
+<h2>Таблица game</h2><p><code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше. С <code>luaApi: 2</code>: <code>game.getBattle()</code> и <code>game.getGeoscape()</code> дают бой и кампанию там, где обработчик их не получает, например из щелчка на экране; боя нет: nil. <code>game.getBases()</code> даёт таблицу баз игрока, в бою и в щелчке тоже. Только разрешение <code>screens</code>: <code>game.screen(имя, функция[, { menu = "STR_NAME", interface = "pauseMenu" }])</code> объявляет экран, только пока грузится <code>main.lua</code>; <code>game.openScreen(имя)</code> открывает его из обработчика.</p>
+<h2>Разрешения и свои экраны</h2><p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens, economy]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть два слова: <code>screens</code> и <code>economy</code>.</p><ul><li>Экран строится из виджетов игры в координатах 320×200, поэтому работает при любом разрешении и масштабе.</li><li>Открывает его игрок на экране модов, если у <code>game.screen</code> есть <code>menu</code>, или обработчик через <code>game.openScreen</code>: тогда экран откроется, когда игра закончит свой шаг, в бою это может быть после анимации или после брифинга. Пока экран открыт, игра под ним стоит.</li><li>Функция построения и <code>onClose</code> только читают: без случайных чисел, записи и <code>openScreen</code>. Открытый и закрытый экран не меняет игру. В щелчке можно всё, что можно в обработчике.</li><li>Обработчики только для чтения, в том числе старые обработчики геоскейпа и страницы для нердов, экран не открывают.</li><li>Esc закрывает экран всегда. Ошибка в построении закрывает экран и пишется в журнал. Кадровых обработчиков и таймеров нет: только реакция на действие.</li><li>Ручки виджетов живут, пока экран открыт, после закрытия: ошибка Lua.</li><li>Потолки: 64 виджета, 2000 строк списка, 8 столбцов, 256 пунктов, 64 экрана на мод, вложенность и очередь вместе 4, один экран на вызов, 8 экранов за ход боя или день кампании. Сверх потолка: ошибка мода, игра живёт.</li></ul><p><code>economy</code>: деньги, склад, персонал и наём, только вне боя.</p><ul><li><b>Переменные Lua обнуляются при каждом новом бою и загрузке.</b> Счётчик дней в переменной забудется после первого боя. Всё, что должно пережить бой, держите в тегах, для кампании раздел <code>GeoscapeGame</code>.</li><li>Читать можно без слова: <code>game.getBases()</code>, <code>geoscape:getFunds()</code>, методы чтения <code>base</code>. Менять можно только со словом и только в <code>newHour</code>, <code>newDay</code>, <code>newMonth</code>, в щелчке на экране и в функции <code>done</code> у <code>hireSoldier</code>. В бою нельзя: конец боя сам считает склад.</li><li>Эти три обработчика могут открыть экран: <code>game.openScreen</code>. <code>battleStart</code> и <code>battleEnd</code> только читают.</li><li>Деньги, склад и персонал меняются сразу. Ошибка Lua в том же вызове отменяет всё, что вызов успел, и наём тоже.</li><li><code>addFunds</code> попадает в приход или расход месяца, как обычные деньги. В <code>newMonth</code> отчёт прошлого месяца уже посчитан: деньги идут в новый месяц. Долг ниже порога даёт обычное предупреждение совета, затем обычный проигрыш.</li><li><code>hireSoldier(type[, done])</code> бесплатный: цену, если нужна, снимает сам мод. Солдат создаётся после обработчика и едет на базу обычной пересылкой. <code>done(soldier)</code> получает нового солдата, <code>done(nil, причина)</code> отказ: нет мест или месячный лимит. Объекты из обработчика в <code>done</code> уже мертвы, базу берите заново через <code>game.getBases()</code>.</li><li>Склад сверх лимита игра обрабатывает как обычно: окно продажи, которое нельзя закрыть, пока лишнее не продано. Не выдавайте игроку больше, чем вмещает склад. На Пиратках <code>getStores().used</code> бывает отрицательным: есть предметы с отрицательным размером.</li><li>Мод снят: деньги, предметы обычных правил и персонал остаются, отмены нет; теги теряются при новом сохранении. В сейв пишется отметка <code>luaTouched</code>, она остаётся и после снятия мода и видна в отчёте об ошибке.</li><li>Потолки: <code>addFunds</code> до ±1 000 000 000 за вызов, предметы и персонал до 1 000 000 000 за вызов, наём 16 за вызов и 64 в сутки. Сверх потолка: ошибка мода, игра живёт.</li></ul>
 <h2>Константы</h2>
 <p>части тела: part: <code>game.BODYPART_HEAD</code> <code>game.BODYPART_TORSO</code> <code>game.BODYPART_RIGHTARM</code> <code>game.BODYPART_LEFTARM</code> <code>game.BODYPART_RIGHTLEG</code> <code>game.BODYPART_LEFTLEG</code></p>
 <p>стороны юнита: side в обработчиках урона и в броне: <code>game.SIDE_FRONT</code> <code>game.SIDE_LEFT</code> <code>game.SIDE_RIGHT</code> <code>game.SIDE_REAR</code> <code>game.SIDE_UNDER</code></p>

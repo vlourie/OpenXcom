@@ -255,6 +255,8 @@
  "modding.none": "No mods yet. \"Create mod\" makes a folder with a working example.",
  "modding.label": "Lua · local · not checked",
  "modding.cap.screens": "screens of its own",
+ "modding.cap.economy": "money and bases",
+ "modding.cap.economy.warn": "This mod changes money, stores and personnel. If you remove it, all of that stays in the campaign, nothing is undone.",
  "modding.on": "on in this build",
  "modding.off": "off in this build",
  "modding.turnOn": "Turn on",

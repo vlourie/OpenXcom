@@ -250,7 +250,7 @@ public sealed class LuaModsTests : IDisposable
         if (repo is null) return;   // off the repository there is no engine to compare with
         var host = File.ReadAllText(Path.Combine(repo, "src", "Mod", "LuaHost.cpp"));
         var ids = new List<string>();
-        foreach (var (table, type) in new[] { ("UNIT", "unit"), ("ITEM", "item"), ("BATTLE", "battle"), ("SOLDIER", "soldier"), ("RULE_ARMOR", "ruleArmor"), ("RULE_ITEM", "ruleItem"), ("SKILL", "skill"),
+        foreach (var (table, type) in new[] { ("UNIT", "unit"), ("ITEM", "item"), ("BATTLE", "battle"), ("BASE", "base"), ("SOLDIER", "soldier"), ("RULE_ARMOR", "ruleArmor"), ("RULE_ITEM", "ruleItem"), ("SKILL", "skill"),
             ("RULE_DAMAGE", "ruleDamage"), ("RULE_UNIT", "ruleUnit"), ("RULE_SOLDIER", "ruleSoldier"), ("RULE_BONUS", "ruleSoldierBonus"), ("RULE_COUNTRY", "ruleCountry"),
             ("RULE_UFO", "ruleUfo"), ("RULE_CRAFT", "ruleCraft"), ("TILE", "tile"), ("GEOSCAPE", "geoscape"), ("COUNTRY", "country"), ("UFO", "ufo"), ("CRAFT", "craft"), ("RULE_RESEARCH", "ruleResearch"), ("RULE_INVENTORY", "ruleInventory"), ("RULES", "rules"), ("NERDS", "statsForNerds"), ("UI", "ui"), ("UI_WIDGET", "uiWidget") })
         {
@@ -258,9 +258,11 @@ public sealed class LuaModsTests : IDisposable
             Assert.True(body.Success, table);
             ids.AddRange(Regex.Matches(body.Groups[1].Value, @"\{\s*""(\w+)""\s*,").Select(m => $"{type}.{m.Groups[1].Value}"));
         }
+        var geoscape2 = Regex.Match(host, @"const luaL_Reg API2_GEOSCAPE_REGS\[\] = \{(.*?)\n?\};", RegexOptions.Singleline);
+        ids.AddRange(Regex.Matches(geoscape2.Groups[1].Value, @"\{\s*""(\w+)""\s*,").Select(m => $"geoscape.{m.Groups[1].Value}"));
         var events = Regex.Match(host, @"const EventInfo EVENTS\[.*?\] = \{(.*?)\n\};", RegexOptions.Singleline);
         ids.AddRange(Regex.Matches(events.Groups[1].Value, @"^\s*\{ ""(\w+)"",", RegexOptions.Multiline).Select(m => $"event.{m.Groups[1].Value}"));
-        Assert.Equal(441, ids.Count);
+        Assert.Equal(461, ids.Count);
 
         var page = LuaMods.WriteDocs(Paths, "ru");
         Assert.EndsWith("lua_api.ru.html", page);

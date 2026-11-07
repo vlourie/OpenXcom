@@ -53,6 +53,16 @@ event	accuracyMultiplierBonusStats
 event	meleeMultiplierBonusStats
 event	throwMultiplierBonusStats
 event	closeQuartersMultiplierBonusStats
+event	newHour
+event	newDay
+event	newMonth
+event	battleStart
+event	battleEnd
+event2	newHour
+event2	newDay
+event2	newMonth
+event2	battleStart
+event2	battleEnd
 const	BODYPART_HEAD
 const	BODYPART_TORSO
 const	BODYPART_RIGHTARM
@@ -184,13 +194,17 @@ base	type
 base	xpcall
 method	addArmor
 method	addEnergy
+method	addEngineers
 method	addFatalwounds
+method	addFunds
 method	addHealth
 method	addHealthWithOverkill
 method	addIntRow
+method	addItem
 method	addMana
 method	addMorale
 method	addRow
+method	addScientists
 method	addStat
 method	addStun
 method	addTextFormatRow
@@ -266,7 +280,10 @@ method	getFatalwoundsMax
 method	getFatalwoundsTotal
 method	getFire
 method	getFloorSpecialTileType
+method	getFreeEngineers
+method	getFreeScientists
 method	getFundingCap
+method	getFunds
 method	getFuseTimer
 method	getFuseTimerDefault
 method	getGender
@@ -287,6 +304,7 @@ method	getIntelligence
 method	getInventoryItem
 method	getInventoryItems
 method	getInventoryMoveCost
+method	getItemCount
 method	getItems
 method	getLeftHandWeapon
 method	getLiveAlienGeoscape
@@ -308,6 +326,7 @@ method	getMoraleMax
 method	getMoveCost
 method	getMoveToCost
 method	getMovementType
+method	getName
 method	getNeededItem
 method	getObjectSpecialTileType
 method	getOriginalFaction
@@ -325,6 +344,7 @@ method	getPosition
 method	getPower
 method	getPreviousOwner
 method	getPsiVision
+method	getQuarters
 method	getRadius
 method	getRandomDamage
 method	getRandomType
@@ -369,6 +389,7 @@ method	getSpecialItems
 method	getStat
 method	getStatus
 method	getStimulantQuantity
+method	getStores
 method	getStun
 method	getStunMax
 method	getTag
@@ -406,6 +427,7 @@ method	getWeaponsMax
 method	getWeight
 method	getWoundRecovery
 method	hasCategory
+method	hireSoldier
 method	image
 method	isAiming
 method	isAmmo
@@ -446,6 +468,9 @@ method	randomRange
 method	randomRangeSymmetric
 method	reduceByBravery
 method	reduceByResistance
+method	removeEngineers
+method	removeItem
+method	removeScientists
 method	setAlienItemLevel
 method	setAmmoQuantity
 method	setArmor
@@ -505,4 +530,6 @@ game	screen
 game	openScreen
 game	getBattle
 game	getGeoscape
+game	getBases
 cap	screens
+cap	economy

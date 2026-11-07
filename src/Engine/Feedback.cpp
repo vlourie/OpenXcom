@@ -295,6 +295,24 @@ bool Feedback::open(Game *game, const State *top)
 	f.emplace_back("engine", HdTest::jsonString(std::string(OPENXCOM_VERSION_SHORT) + OPENXCOM_VERSION_GIT));
 	f.emplace_back("master", HdTest::jsonString(Options::getActiveMaster()));
 	f.emplace_back("mods", modsJson());
+	if (const auto *saved = game->getSavedGame())
+	{
+		// mods that are gone leave their mark too: a ticket has to know whose traces it is looking at
+		std::string touched;
+		for (const auto &mod : saved->getLuaTouched())
+		{
+			std::string line = mod.first;
+			for (const auto &word : mod.second)
+			{
+				line += " " + word;
+			}
+			touched += (touched.empty() ? "" : ", ") + HdTest::jsonString(line);
+		}
+		if (!touched.empty())
+		{
+			f.emplace_back("saveTouched", "[" + touched + "]");
+		}
+	}
 	f.emplace_back("os", HdTest::jsonString(osName()));
 	f.emplace_back("language", HdTest::jsonString(Options::language));
 	f.emplace_back("state", HdTest::jsonString(stateName(top)));

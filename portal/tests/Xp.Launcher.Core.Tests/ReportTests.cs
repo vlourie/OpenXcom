@@ -226,6 +226,7 @@ public sealed class ReportTests : IDisposable
         var r = NewReport(extraMods: """, {"id": "my_mod", "version": "0.1", "lua": true}""", luaLog: luaLog);
         Assert.Contains("mods: Piratez 0.99N, hd, my_mod 0.1 [lua local]", r.ContextText("0.2.0"));
         Assert.Equal(["my_mod 0.1 [lua local]"], r.LuaMods());
+        Assert.Contains("save touched: gone_mod economy", NewReport(extraMods: """], "saveTouched": ["gone_mod economy"], "unused": [1""").ContextText("0.2.0"));
 
         // the journal is there, the box is not ticked: it stays
         r.Draft.AttachLog = true;
