@@ -62,6 +62,7 @@ private:
 	double _iQty;
 	double _distance;
 	Uint8 _ammoColor;
+	Uint8 _hereOnlyColor, _thereOnlyColor; // OXCE-HD (oxceHdTransferSides): items only on this base / only on the other (XP-000525)
 	Timer *_timerInc, *_timerDec;
 	TransferSortDirection _previousSort, _currentSort;
 	bool _errorShown;
@@ -127,6 +128,8 @@ public:
 	void exchangeByValue(int change);
 	/// Gets the texts of a row in exchange mode.
 	void exchangeTexts(const TransferRow &row, std::string &from, std::string &amount, std::string &to) const;
+	/// OXCE-HD (oxceHdTransferSides): the colour of an item row that is only on one of the two bases, or -1 for none.
+	int sideColor(const TransferRow &row) const;
 	/// Sends some of a row from one base to the other.
 	void sendRow(const TransferRow &row, int n, Base *from, Base *to, int time);
 	/// Updates the quantity-strings of the selected item.

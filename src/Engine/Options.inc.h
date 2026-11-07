@@ -269,6 +269,8 @@ OPT int oxceHdAltInfo;
 // HD interface: hovering a weapon lights the ammunition that fits it (battle inventory, craft equipment, stores); off = as it was
 OPT bool oxceHdAmmoHint;
 OPT bool oxceHdTransferCost, oxceHdTransferConfirm;
+// HD base: the exchange between bases colours the items that are only on one of the two bases (XP-000525); off = as it was
+OPT bool oxceHdTransferSides;
 // HD base: the craft armor screen opens sorted by craft (the "Craft" sort), off by default (XP-000345)
 OPT bool oxceHdArmorSortCraft;
 // HD globe and dogfight: own craft and UFOs once read by a hyper-wave decoder as small outlines from above (Engine/HdOutline.h); off = the classic markers and blob
