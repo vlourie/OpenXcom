@@ -84,6 +84,7 @@
 #include "../Engine/HdCraftRoute.h"
 #include "LowFuelState.h"
 #include "MultipleTargetsState.h"
+#include "SelectDestinationState.h"
 #include "ConfirmLandingState.h"
 #include "ItemsArrivingState.h"
 #include "CraftErrorState.h"
@@ -3059,8 +3060,28 @@ void GeoscapeState::globeClick(Action *action)
 		int bx0, by0, bx1, by1;
 		if (_globe->takeBox(bx0, by0, bx1, by1))
 		{
-			// OXCE-HD (oxceHdGlobeBox): a frame was drawn - the same list as a click gives, for the markers inside it
-			v = _globe->getTargetsInRect(bx0, by0, bx1, by1);
+			// OXCE-HD (oxceHdGlobeBox): a frame was drawn - only our craft inside it count (bases, UFOs, sites and
+			// waypoints are left out), and they go at once to the choice of a destination, as the wing of the
+			// Intercept list does (XP-000503): the same rule for who may fly (InterceptState::lstCraftsLeftClick
+			// allowStart) and the same limit (3 with Shift + the last one clicked = 4)
+			std::vector<Craft*> wing;
+			for (Target *t : _globe->getTargetsInRect(bx0, by0, bx1, by1))
+			{
+				Craft *c = dynamic_cast<Craft*>(t);
+				if (c == 0 || wing.size() >= 4)
+					continue;
+				if (c->getStatus() == "STR_READY" || (
+					(c->getStatus() == "STR_OUT" || Options::craftLaunchAlways) &&
+					!c->getLowFuel() &&
+					!c->getMissionComplete()))
+				{
+					wing.push_back(c);
+				}
+			}
+			if (!wing.empty())
+			{
+				_game->pushState(new SelectDestinationState(wing, _globe));
+			}
 		}
 		else
 		{
