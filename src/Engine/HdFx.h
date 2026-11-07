@@ -63,6 +63,10 @@ namespace HdFx
 	/// ("NAME RRGGBB", NAME an armour type or a prefix ending in '*'); -1: no table, no line, or the option is off - the blood stays red.
 	/// XP-000421: `always` asks for the table's colour whatever the option says (the bloody soles have their own colour setting).
 	int bloodRgb(const Armor *armor, bool always = false);
+	/// XP-000526: hd/mech.txt ("NAME", NAME an armour type or a prefix ending in '*'): the armours that are machines whatever their immunities say -
+	/// a hit on them is always drawn as sparks (hit_*_mech), whether "Blood colour by creature" is on or not. noteMachine writes one line
+	/// "HD blood: armour <type> is in the machine list" to the log for an armour of the list (the mod calls it for every armour once after loading).
+	void noteMachine(const Armor *armor);
 	/// XP-000421 (Options::oxceHdBloodSteps): whether bloody soles may be laid on the floor of `tile`: it has a floor, and the floor is
 	/// not water or lava (by the footstep sound and the name of the set, as material()).
 	bool dryFloor(const Tile *tile);
