@@ -1,0 +1,2 @@
+— HD fire no longer pulses or jumps. Flames on a tile and on a burning soldier follow the original game's frames, in eight phases instead of four, and the loop closes without a jerk. Fire on a soldier is now a rich orange that matches the blaze around it.
+— HD smoke no longer "boils" from frame to frame: the cloud slowly churns in place.

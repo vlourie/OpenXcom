@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 #include "../Savegame/SavedGame.h"
 
 namespace OpenXcom
@@ -39,6 +40,7 @@ class RuleItem;
 class RuleEvent;
 class BattleUnit;
 struct UnitStats;
+struct SoldierStatChange;
 
 struct DebriefingStat {
 	std::string item;
@@ -68,6 +70,12 @@ private:
 	Base *_base;
 	std::vector<DebriefingStat*> _stats;
 	std::vector<SoldierStatsEntry> _soldierStats;
+	std::vector<Soldier*> _soldierStatsSoldiers; ///< soldier of each _soldierStats row
+	std::shared_ptr<std::vector<SoldierStatChange>> _statChanges; ///< stats before/after the mission
+	/// Takes the "before" snapshot of all soldiers of the mission.
+	void captureStatsBefore();
+	/// Takes the "after" snapshot (after experience, commendations and promotions).
+	void captureStatsAfter();
 	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer;
 	Window *_window;
 	Text *_txtTitle, *_txtItem, *_txtQuantity, *_txtScore, *_txtRecovery, *_txtRating;
@@ -115,6 +123,8 @@ public:
 	void btnOkClick(Action *action);
 	/// Prepare debriefing.
 	void init() override;
+	/// Handler for clicking a soldier in the stat increase list.
+	void lstSoldierStatsClick(Action *action);
 	/// Handler for clicking the STATS button.
 	void btnStatsClick(Action *action);
 	/// Handler for clicking the SELL button.

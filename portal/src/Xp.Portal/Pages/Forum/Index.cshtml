@@ -1,0 +1,41 @@
+@page "/forum"
+@model Xp.Portal.Pages.Forum.ForumModel
+@{
+    ViewData["Title"] = T["nav.forum"];
+}
+<h1>@T["forum.title"]</h1>
+<p class="lead">@T["forum.lead"]</p>
+
+@if (Model.Sections.Count == 0)
+{
+    <p class="hint">@T["forum.no.sections"]</p>
+}
+else
+{
+    <section class="panel">
+        <table>
+            <tr>
+                <th>@T["forum.section"]</th>
+                <th>@T["forum.topics"]</th>
+                <th>@T["forum.posts"]</th>
+                <th>@T["forum.last"]</th>
+            </tr>
+            @foreach (var s in Model.Sections)
+            {
+                <tr>
+                    <td>
+                        <a href="/forum/@s.Slug">@s.Name</a>
+                        @if (s.StaffOnly)
+                        {
+                            <span class="tag">@T["forum.staff.only"]</span>
+                        }
+                        <div class="hint">@s.Summary</div>
+                    </td>
+                    <td>@s.TopicCount</td>
+                    <td>@s.PostCount</td>
+                    <td class="hint">@(s.LastPostAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                </tr>
+            }
+        </table>
+    </section>
+}

@@ -1,0 +1,23 @@
+# The voice probe's own parts (docs/portal/VOICE_PROBE.md), over compose.voice.yaml: the echo bot and
+# the probe page. station.ps1 adds this file last while voice on the station is a probe (.env:
+# VOICE_PROBE=1 and VOICE_OPEN not 1), so that its Caddy volume lies over !override;
+# '.\station.ps1 voice-open' takes the bot down and leaves the file out.
+services:
+  # answers every "probe-beep" track with an "echo:<identity>" track: the probe page measures the
+  # round trip of its own beep through the server, on one clock
+  voice-echo:
+    build: ./voice-probe/echo
+    image: xp-voice-echo
+    restart: unless-stopped
+    environment:
+      LIVEKIT_URL: ws://livekit:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      PROBE_ROOM: probe
+    depends_on: [livekit]
+    networks: [front]
+
+  caddy:
+    # the probe page, /voice-probe/ in both Caddyfiles
+    volumes:
+      - ./voice-probe/web:/srv/voice-probe:ro

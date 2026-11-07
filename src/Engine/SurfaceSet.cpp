@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SurfaceSet.h"
+#include "HdBlit.h"
+#include "HdWorkers.h"
 #include <climits>
 #include "Surface.h"
 #include "FileMap.h"
@@ -233,6 +235,60 @@ Surface *SurfaceSet::addFrame(int i)
 	}
 	_frames[i] = Surface(_width, _height);
 	return &_frames[i];
+}
+
+/**
+ * HD render: scales every frame of the set in place by a nearest-neighbour
+ * factor, so that a 32x40 set becomes a 32k x 40k set with identical content.
+ * Frames of unusual sizes (mod PNGs) keep their own proportions.
+ * @param scale k >= 1.
+ */
+void SurfaceSet::hdScaleInPlace(int scale)
+{
+	if (scale <= 1)
+	{
+		return;
+	}
+	// the new frames are made here (SDL keeps a shared counter of pixel formats), the pixels on all
+	// cores: a set of a few thousand frames took 100 ms on the first frame of a battle
+	std::vector<Surface> scaled(_frames.size());
+	for (size_t i = 0; i < _frames.size(); ++i)
+	{
+		if (_frames[i])
+		{
+			scaled[i] = Surface(_frames[i].getWidth() * scale, _frames[i].getHeight() * scale, _frames[i].getX(), _frames[i].getY());
+			if (_frames[i].getPalette())
+			{
+				scaled[i].setPalette(_frames[i].getPalette());
+			}
+		}
+	}
+	const int jobs = (int)std::min<size_t>(_frames.size(), 64);
+	HdWorkers::instance().run(jobs, [&](int job)
+	{
+		for (size_t i = job; i < _frames.size(); i += jobs)
+		{
+			if (_frames[i])
+			{
+				HdBlit::upscaleFrame(scaled[i].getSurface(), _frames[i].getSurface(), scale);
+			}
+		}
+	});
+	_frames.swap(scaled);
+	_width *= scale;
+	_height *= scale;
+}
+
+/**
+ * HD render: makes a new set with every frame scaled by a nearest-neighbour factor.
+ * @param scale k >= 1.
+ * @return New set, owned by the caller.
+ */
+SurfaceSet *SurfaceSet::hdScaledCopy(int scale) const
+{
+	SurfaceSet *copy = new SurfaceSet(*this);
+	copy->hdScaleInPlace(scale);
+	return copy;
 }
 
 /**

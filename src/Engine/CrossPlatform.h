@@ -266,6 +266,8 @@ namespace CrossPlatform
 	/// The log file name
 	void setLogFileName(const std::string &path);
 	const std::string& getLogFileName();
+	/// Ends the process at once: the log is flushed, nothing is unloaded or saved (the AI probe's fast mode).
+	void exitNow();
 	/// Get an SDL_RWops to an embedded asset. NULL if not there.
 	SDL_RWops *getEmbeddedAsset(const std::string& assetName);
 	/// Tests the internet connection.

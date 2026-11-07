@@ -32,6 +32,7 @@
 #include "../Battlescape/BattlescapeGame.h"
 #include "../fmath.h"
 #include "SavedBattleGame.h"
+#include "../Battlescape/AiCoverMap.h"
 
 namespace OpenXcom
 {
@@ -219,6 +220,9 @@ void Tile::saveBinary(Uint8** buffer) const
  */
 void Tile::setMapData(MapData *dat, int mapDataID, int mapDataSetID, TilePart part)
 {
+#ifdef OXCE_AI_DEV
+	AiCoverMap::touch(_pos);
+#endif
 	_objects[part] = dat;
 	_mapData->ID[part] = mapDataID;
 	_mapData->SetID[part] = mapDataSetID;
@@ -394,6 +398,9 @@ int Tile::openDoor(TilePart part, BattleUnit *unit, BattleActionType reserve, bo
 		if (unit && cost.Time && !cost.haveTU())
 			return 4;
 		_objectsCache[part].currentFrame = 1; // start opening door
+#ifdef OXCE_AI_DEV
+		AiCoverMap::touch(_pos);
+#endif
 		updateSprite((TilePart)part);
 		return 1;
 	}
@@ -413,6 +420,9 @@ int Tile::closeUfoDoor()
 		if (isUfoDoorOpen((TilePart)part))
 		{
 			_objectsCache[part].currentFrame = 0;
+#ifdef OXCE_AI_DEV
+			AiCoverMap::touch(_pos);
+#endif
 			retval = 1;
 			updateSprite((TilePart)part);
 		}
@@ -716,6 +726,42 @@ void Tile::animate()
 		}
 		updateSprite((TilePart)i);
 	}
+}
+
+/**
+ * Animate the tile parts for the picture only (XP-000097): the frame of every part that is not a UFO door advances as in
+ * animate(); a UFO door keeps its frame - whether it is open or opening is the game's (Tile::getTUCost, openDoor).
+ */
+void Tile::animateDrawOnly()
+{
+	for (int i = O_FLOOR; i < O_MAX; ++i)
+	{
+		if (_objects[i] && !_objectsCache[i].isUfoDoor)
+		{
+			const int newframe = _objectsCache[i].currentFrame + 1;
+			_objectsCache[i].currentFrame = newframe == 8 ? 0 : newframe;
+			updateSprite((TilePart)i);
+		}
+	}
+}
+
+/**
+ * HD render test: puts the tile into a deterministic animation state.
+ * Animated terrain objects go back to frame 0 (UFO doors keep their open/closed
+ * state, which is part of the save), and the random smoke/fire animation offset
+ * assigned on load is zeroed.
+ */
+void Tile::hdTestResetAnimation()
+{
+	for (int i = O_FLOOR; i < O_MAX; ++i)
+	{
+		if (_objects[i] && !_objectsCache[i].isUfoDoor)
+		{
+			_objectsCache[i].currentFrame = 0;
+		}
+		updateSprite((TilePart)i);
+	}
+	_animationOffset = 0;
 }
 
 /**

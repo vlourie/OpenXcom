@@ -1,0 +1,7 @@
+name: "HD render test (4x)"
+version: 0.1
+author: "Vitali + Claude"
+description: "Engine test for the HD renderer: replaces BLANKS.PCK frame 0 with a 128x160 blank, which switches the battlescape to 4x sprite scale. Every battle sprite without an HD version is upscaled nearest-neighbour by the engine. Needs a 32-bit display (OpenGL or xBRZ/HQx)."
+id: hd_test
+master: "*"
+reservedSpace: 1

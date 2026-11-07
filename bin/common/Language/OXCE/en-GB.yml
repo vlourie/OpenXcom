@@ -32,6 +32,7 @@ en-GB:
   STR_ALL: "Everything"
   STR_EQUIPPED: "Equipped"
   STR_NOT_EQUIPPED: "Not equipped"
+  STR_NOT_PURCHASABLE: "Not purchasable"
   STR_UNASSIGNED: "Other"
   STR_NO_MORE_EQUIPMENT_ALLOWED_BY_SIZE: "NO MORE EQUIPMENT ALLOWED ON BOARD!{SMALLLINE}Maximum storage space: {0}"
 #CraftInfoState.cpp
@@ -126,6 +127,7 @@ en-GB:
   STR_SORT_BY_NAME: "By name"
 #ProductionCompleteState.cpp
   STR_RANDOM_PRODUCTION_SUMMARY: "Summary"
+  STR_KEEP_WORKING: "Keep working"
 #PurchaseState.cpp
   STR_NOT_ENOUGH_PRISON_SPACE: "NOT ENOUGH ALIEN CONTAINMENT!{SMALLLINE}Build new alien containment or transfer aliens to other bases."
   STR_MONTHLY_ITEM_PURCHASE_LIMIT_EXCEEDED: "MONTHLY PURCHASE LIMIT EXCEEDED!{SMALLLINE}More items will be available next month."
@@ -135,6 +137,8 @@ en-GB:
   STR_NOT_ENOUGH_CRAFT_SPACE: "Not enough space onboard!"
 #SoldierAvatarState.cpp
   STR_SELECT_AVATAR_FOR: "SELECT AVATAR FOR{NEWLINE}{0}"
+#SoldierVoiceState.cpp
+  STR_SELECT_VOICE_SET_FOR: "SELECT VOICE SET FOR{NEWLINE}{0}"
 #SoldierBonusState.cpp
   STR_SOLDIER_BONUSES_FOR: "SOLDIER BONUSES FOR{NEWLINE}{0}"
   STR_SUMMARY: "Summary"

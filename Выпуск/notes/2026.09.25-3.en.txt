@@ -1,0 +1,8 @@
+﻿Launcher 0.3.0: the game can now be installed from scratch right from it.
+
+— A five-step install wizard: language and folder; where to get the original UFO (the launcher looks in Steam, GOG and earlier installs); what to install; download; "Play".
+— X-Piratez add-ons are ticked in a list. A mod that cannot run without its master mod or on another engine is greyed out, with the reason next to it. For Russian, the RU patch is ticked right away.
+— Before a start the launcher applies our settings for the mod: mod order, language, HD options. It tells you what it changed in plain words, not config keys.
+— If you change the mods yourself in the game's "Mods" menu, the launcher leaves your list alone. To get ours back, use "Restore recommended settings" in "Settings".
+— Mods you put into user\mods yourself are shown in the wizard as a separate list. Their compatibility with our build has not been tested; the launcher neither downloads nor removes them.
+— In the "Graphics" tab, frames of ten sets (barn, jungle, corporation and others) now match what the game shows.

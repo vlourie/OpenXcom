@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Globe.h"
+#include <algorithm>
+#include <functional>
 #include "../fmath.h"
 #include "../Engine/Action.h"
 #include "../Engine/SurfaceSet.h"
@@ -53,6 +55,11 @@
 #include "../Mod/Texture.h"
 #include "../Interface/Cursor.h"
 #include "../Engine/Screen.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/HdCraftRoute.h"
+#include "../Engine/HdOutline.h"
+#include "../Engine/HdWorkers.h"
+#include "GeoscapeState.h"
 
 namespace OpenXcom
 {
@@ -332,7 +339,7 @@ struct CreateShadowWithoutCache
  * @param y Y position in pixels.
  */
 Globe::Globe(Game* game, int cenX, int cenY, int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _cenX(cenX), _cenY(cenY), _rotLon(0.0), _rotLat(0.0), _hoverLon(0.0), _hoverLat(0.0), _craftLon(0.0), _craftLat(0.0), _craftRange(0.0), _game(game), _hover(false), _craft(false), _blink(-1),
-																					_isMouseScrolling(false), _isMouseScrolled(false), _xBeforeMouseScrolling(0), _yBeforeMouseScrolling(0), _lonBeforeMouseScrolling(0.0), _latBeforeMouseScrolling(0.0), _mouseScrollingStartTime(0), _totalMouseMoveX(0), _totalMouseMoveY(0), _mouseMovedOverThreshold(false)
+																					_hdLabelsKept(false), _isMouseScrolling(false), _isMouseScrolled(false), _xBeforeMouseScrolling(0), _yBeforeMouseScrolling(0), _lonBeforeMouseScrolling(0.0), _latBeforeMouseScrolling(0.0), _mouseScrollingStartTime(0), _totalMouseMoveX(0), _totalMouseMoveY(0), _mouseMovedOverThreshold(false)
 {
 	_rules = game->getMod()->getGlobe();
 	_texture = new SurfaceSet(*_game->getMod()->getSurfaceSet("TEXTURE.DAT"));
@@ -370,8 +377,13 @@ Globe::~Globe()
 	delete _rotTimer;
 	delete _countries;
 	delete _markers;
+	for (auto* text : _hdLabelText)
+	{
+		delete text;
+	}
 	delete _texture;
 	delete _radars;
+	delete _hdEarth;
 	delete _clipper;
 
 	for (auto* polygon : _cacheLand)
@@ -454,11 +466,20 @@ bool Globe::pointBack(double lon, double lat) const
 
 Polygon* Globe::getPolygonFromLonLat(double lon, double lat) const
 {
+	return polygonAt(_rules, lon, lat);
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): the polygon under a point without a Globe object (the craft crew screen has none);
+ * the body of getPolygonFromLonLat, unchanged.
+ */
+Polygon* Globe::polygonAt(RuleGlobe *rules, double lon, double lat)
+{
 	const double zDiscard=0.75f;
 	double coslat = cos(lat);
 	double sinlat = sin(lat);
 
-	for (auto* polygon : *_rules->getPolygons())
+	for (auto* polygon : *rules->getPolygons())
 	{
 		double x, y, z, x2, y2;
 		double clat, clon;
@@ -775,14 +796,13 @@ bool Globe::targetNear(Target* target, int x, int y) const
 }
 
 /**
- * Returns a list of all the targets currently near a certain
- * cartesian point over the globe.
- * @param x X coordinate of point.
- * @param y Y coordinate of point.
- * @param craft Only get craft targets.
+ * Returns a list of the targets that hit says yes to: the one place with the rules of what a click
+ * on the globe finds (bases, their craft, detected UFOs, waypoints, sites, found alien bases).
+ * @param hit Does the target count.
+ * @param currentCraft Craft to leave out.
  * @return List of pointers to targets.
  */
-std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentCraft) const
+std::vector<Target*> Globe::collectTargets(const std::function<bool(Target*)> &hit, Craft *currentCraft) const
 {
 	std::vector<Target*> v;
 	{
@@ -791,7 +811,7 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 			if (xbase->getLongitude() == 0.0 && xbase->getLatitude() == 0.0)
 				continue;
 
-			if (targetNear(xbase, x, y))
+			if (hit(xbase))
 			{
 				v.push_back(xbase);
 			}
@@ -803,7 +823,7 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 				if (xcraft->getLongitude() == xbase->getLongitude() && xcraft->getLatitude() == xbase->getLatitude() && xcraft->getDestination() == 0)
 					continue;
 
-				if (targetNear(xcraft, x, y))
+				if (hit(xcraft))
 				{
 					v.push_back(xcraft);
 				}
@@ -815,21 +835,21 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 		if (!ufo->getDetected() || ufo->getStatus() == Ufo::IGNORE_ME)
 			continue;
 
-		if (targetNear(ufo, x, y))
+		if (hit(ufo))
 		{
 			v.push_back(ufo);
 		}
 	}
 	for (auto* wp : *_game->getSavedGame()->getWaypoints())
 	{
-		if (targetNear(wp, x, y))
+		if (hit(wp))
 		{
 			v.push_back(wp);
 		}
 	}
 	for (auto* site : *_game->getSavedGame()->getMissionSites())
 	{
-		if (targetNear(site, x, y))
+		if (hit(site))
 		{
 			v.push_back(site);
 		}
@@ -840,12 +860,52 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 		{
 			continue;
 		}
-		if (targetNear(ab, x, y))
+		if (hit(ab))
 		{
 			v.push_back(ab);
 		}
 	}
 	return v;
+}
+
+/**
+ * Checks if a target is near some part of a rectangle: the circle around its marker that a click hits
+ * touches the rectangle. With a rectangle of one point it is targetNear.
+ */
+bool Globe::targetInRect(Target* target, int x0, int y0, int x1, int y1) const
+{
+	Sint16 tx, ty;
+	if (pointBack(target->getLongitude(), target->getLatitude()))
+		return false;
+	polarToCart(target->getLongitude(), target->getLatitude(), &tx, &ty);
+
+	const int dx = tx < x0 ? x0 - tx : (tx > x1 ? tx - x1 : 0);
+	const int dy = ty < y0 ? y0 - ty : (ty > y1 ? ty - y1 : 0);
+	return (dx * dx + dy * dy <= NEAR_RADIUS);
+}
+
+/**
+ * Returns a list of all the targets currently near a certain
+ * cartesian point over the globe.
+ * @param x X coordinate of point.
+ * @param y Y coordinate of point.
+ * @param craft Only get craft targets.
+ * @return List of pointers to targets.
+ */
+std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentCraft) const
+{
+	return collectTargets([&](Target *target) { return targetNear(target, x, y); }, currentCraft);
+}
+
+/**
+ * Returns the targets that a click anywhere in a rectangle over the globe would find: the same list by the
+ * same rules (getTargets), for the frame drawn with the mouse (oxceHdGlobeBox).
+ */
+std::vector<Target*> Globe::getTargetsInRect(int x0, int y0, int x1, int y1) const
+{
+	if (x0 > x1) std::swap(x0, x1);
+	if (y0 > y1) std::swap(y0, y1);
+	return collectTargets([&](Target *target) { return targetInRect(target, x0, y0, x1, y1); }, 0);
 }
 
 /**
@@ -920,6 +980,15 @@ void Globe::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_countries->setPalette(colors, firstcolor, ncolors);
 	_markers->setPalette(colors, firstcolor, ncolors);
 	_radars->setPalette(colors, firstcolor, ncolors);
+	if (_hdEarth)
+	{
+		_hdEarth->setPalette(colors, firstcolor, ncolors);
+	}
+
+	for (auto* text : _hdLabelText)
+	{
+		text->setPalette(colors, firstcolor, ncolors);
+	}
 }
 
 /**
@@ -965,10 +1034,15 @@ void Globe::draw()
 		cachePolygons();
 	}
 	Surface::draw();
+	_hdEarthDirty = true;
 	drawOcean();
 	drawLand();
 	drawRadars();
 	drawFlights();
+	if (Options::oxceHdCraftRoute)
+	{
+		drawRoutes();
+	}
 	drawShadow();
 	drawMarkers();
 	drawDetail();
@@ -1165,6 +1239,10 @@ void Globe::drawRadars()
 {
 	_radars->clear();
 
+	// the HD layer draws the bases' and the craft's coverage after the blit (hdRadar)
+	_hdRadarKept = hdRadar();
+	_hdEnemyKept = hdEnemyRadar();
+
 	if (!Options::globeRadarLines)
 		return;
 
@@ -1207,7 +1285,7 @@ void Globe::drawRadars()
 			{
 				for (size_t j=0; j<ranges.size(); j++) drawGlobeCircle(lat,lon,ranges[j],48);
 			}
-			else
+			else if (!_hdRadarKept)
 			{
 				range = 0;
 				for (auto* fac : *xbase->getFacilities())
@@ -1228,7 +1306,7 @@ void Globe::drawRadars()
 		// Draw radars around player craft
 		for (auto* xcraft : *xbase->getCrafts())
 		{
-			if (xcraft->getStatus() != "STR_OUT")
+			if (xcraft->getStatus() != "STR_OUT" || _hdRadarKept)
 				continue;
 			lat = xcraft->getLatitude();
 			lon = xcraft->getLongitude();
@@ -1238,7 +1316,8 @@ void Globe::drawRadars()
 		}
 	}
 
-	if (_game->getMod()->getDrawEnemyRadarCircles() > 0)
+	// with the HD interface the HD layer draws the enemy's circles, in red (drawHdEnemyRadar)
+	if (_game->getMod()->getDrawEnemyRadarCircles() > 0 && !_hdEnemyKept)
 	{
 		// Draw radars around UFO hunter-killers
 		for (auto* ufo : *_game->getSavedGame()->getUfos())
@@ -1361,6 +1440,8 @@ void Globe::drawVHLine(Surface *surface, double lon1, double lat1, double lon2, 
 void Globe::drawDetail()
 {
 	_countries->clear();
+	_labels.clear();
+	_hdLabelsKept = hdLabels();
 
 	if (!Options::globeDetail)
 		return;
@@ -1418,7 +1499,7 @@ void Globe::drawDetail()
 			{
 				label->setColor(country->getRules()->getLabelColor());
 			}
-			label->blit(_countries->getSurface());
+			putLabel(label, country->getRules()->getType());
 		}
 
 		delete label;
@@ -1452,7 +1533,7 @@ void Globe::drawDetail()
 				{
 					label->setColor(rule->getLabelColor());
 				}
-				label->blit(_countries->getSurface());
+				putLabel(label, rule->getType());
 			}
 		}
 		delete label;
@@ -1484,7 +1565,7 @@ void Globe::drawDetail()
 				label->setX(x - 50);
 				label->setY(y + 2);
 				label->setText(city->getName(_game->getLanguage()));
-				label->blit(_countries->getSurface());
+				putLabel(label, city->getNameId());
 			}
 		}
 		// Draw bases names
@@ -1497,7 +1578,8 @@ void Globe::drawDetail()
 			label->setY(y + 2);
 			label->setColor(BASE_LABEL_COLOR);
 			label->setText(xbase->getName());
-			label->blit(_countries->getSurface());
+			// the player types a base's name, so there is nothing for the ufopaedia to look up
+			putLabel(label, "");
 		}
 
 		delete label;
@@ -1704,6 +1786,40 @@ void Globe::drawFlights()
 }
 
 /**
+ * Draws the routes of several points (oxceHdCraftRoute): a thin line craft - stop - stop - target and a small cross
+ * on each stop, in the same layer and the same shaded line as the flight paths (smoothed with them in the HD layer).
+ * The routes under way and the one being made in the Select Destination window.
+ */
+void Globe::drawRoutes()
+{
+	const std::vector<std::vector<HdCraftRoute::Point> > routes = HdCraftRoute::lines(_game->getSavedGame());
+	if (routes.empty())
+	{
+		return;
+	}
+	_radars->lock();
+	for (const auto &route : routes)
+	{
+		for (size_t i = 1; i < route.size(); ++i)
+		{
+			drawPath(_radars, route[i - 1].first, route[i - 1].second, route[i].first, route[i].second);
+		}
+		for (size_t i = 1; i < route.size(); ++i)
+		{
+			if (pointBack(route[i].first, route[i].second))
+			{
+				continue;
+			}
+			double x, y;
+			polarToCart(route[i].first, route[i].second, &x, &y);
+			XuLine(_radars, this, x - 2, y, x + 2, y, 8);
+			XuLine(_radars, this, x, y - 2, x, y + 2, 8);
+		}
+	}
+	_radars->unlock();
+}
+
+/**
  * Draws the marker for a specified target on the globe.
  * @param target Pointer to globe target.
  */
@@ -1757,9 +1873,44 @@ void Globe::drawMarkers()
 {
 	_markers->clear();
 	_markers->lock();
-	// Draw the base markers
+	// Draw the base markers; the main base's square is left to the HD layer's own mark (oxceHdRadar 3)
+	_hdMainKept = hdMainBase();
+	_hdMainShow = false;
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
+		if (_hdMainKept && xbase == _game->getSavedGame()->getBases()->front() && xbase->getMarker() != -1)
+		{
+			if (!pointBack(xbase->getLongitude(), xbase->getLatitude()))
+			{
+				polarToCart(xbase->getLongitude(), xbase->getLatitude(), &_hdMainX, &_hdMainY);
+				// the square's colour, in the phase of the blink it would have been drawn in
+				Surface *marker = _markerSet->getFrame(xbase->getMarker());
+				int count[256] = {};
+				for (int my = 0; my < marker->getHeight(); ++my)
+				{
+					for (int mx = 0; mx < marker->getWidth(); ++mx)
+					{
+						++count[marker->getPixel(mx, my)];
+					}
+				}
+				int index = 1;
+				for (int c = 2; c < 256; ++c)
+				{
+					if (count[c] > count[index])
+					{
+						index = c;
+					}
+				}
+				if (_blink <= 0)
+				{
+					index = (index + 1) & 0xFF;
+				}
+				const SDL_Color &rgb = _markers->getPalette()[index];
+				_hdMainColor = ((Uint32)rgb.r << 16) | ((Uint32)rgb.g << 8) | rgb.b;
+				_hdMainShow = true;
+			}
+			continue;
+		}
 		drawTarget(xbase, _markers);
 	}
 
@@ -1781,10 +1932,21 @@ void Globe::drawMarkers()
 		drawTarget(ab, _markers);
 	}
 
+	// the HD layer draws the own craft and the UFOs a decoder has read as outlines after the blit
+	_hdMarksKept = hdOutlines();
+	_hdMarks.clear();
+	std::unordered_map<const Target*, HdHeading> seen;
+
 	// Draw the UFO markers
 	for (auto* ufo : *_game->getSavedGame()->getUfos())
 	{
 		if (ufo->getStatus() == Ufo::IGNORE_ME) continue;
+		if (_hdMarksKept && ufo->getHdDecoded() &&
+			keepHdMark(ufo, ufo->getRules()->getType(), HdOutline::raceColor(ufo->getAlienRace()), ufo->getStatus() == Ufo::CRASHED ? 0.75f : 1.0f,
+				HdOutline::stateColor(ufo->getStatus() == Ufo::CRASHED, ufo->getStatus() == Ufo::LANDED), seen))
+		{
+			continue;
+		}
 		drawTarget(ufo, _markers);
 	}
 
@@ -1793,10 +1955,368 @@ void Globe::drawMarkers()
 	{
 		for (auto* xcraft : *xbase->getCrafts())
 		{
+			if (_hdMarksKept && keepHdMark(xcraft, xcraft->getRules()->getType(), HdOutline::OWN_COLOR, 1.0f, HdOutline::NO_STATE, seen))
+			{
+				continue;
+			}
 			drawTarget(xcraft, _markers);
 		}
 	}
 	_markers->unlock();
+	_hdHeadings.swap(seen);
+}
+
+/**
+ * Are the own craft and the UFOs a hyper-wave decoder has read drawn as outlines? Then they are kept
+ * out of _markers, the way the labels are kept out of _countries, and drawn after the blit.
+ */
+bool Globe::hdOutlines() const
+{
+	return Options::oxceHdCraftOutlines && HdUi::active();
+}
+
+/**
+ * Keeps a craft or a UFO as an outline: where it is on the globe, which way it flies and its colour.
+ * The heading is the projection of a step towards its destination; one that stands keeps the last.
+ * @return false when its type has no outline: the marker is drawn as before.
+ */
+bool Globe::keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, Uint32 state, std::unordered_map<const Target*, HdHeading> &seen)
+{
+	if (!HdOutline::has(type))
+	{
+		return false;
+	}
+	if (target->getMarker() == -1)
+	{
+		// not on the globe at all (a craft in its hangar, a UFO lost from the radar): it appears anew later
+		return true;
+	}
+	const double lon = target->getLongitude(), lat = target->getLatitude();
+	auto old = _hdHeadings.find(target);
+	HdHeading heading = old != _hdHeadings.end() ? old->second : HdHeading{ -(float)M_PI / 2, SDL_GetTicks() };
+	if (pointBack(lon, lat))
+	{
+		seen[target] = heading;
+		return true;
+	}
+	double x, y;
+	polarToCart(lon, lat, &x, &y);
+	// the step MovingTarget::calculateSpeed makes: along the great circle to the destination,
+	// not along the straight line in longitude and latitude, which leaves the base sideways
+	auto course = [&](const Target *to) -> bool
+	{
+		const double mLon = to->getLongitude(), mLat = to->getLatitude();
+		const double dLon = std::sin(mLon - lon) * std::cos(mLat);
+		const double dLat = std::cos(lat) * std::sin(mLat) - std::sin(lat) * std::cos(mLat) * std::cos(mLon - lon);
+		const double len = std::sqrt(dLon * dLon + dLat * dLat);
+		const double stepLat = len > 1e-9 ? dLat / len * 0.001 : 0.0;
+		const double cosLat = std::cos(lat + stepLat);
+		if (len <= 1e-9 || std::fabs(cosLat) <= 1e-6)
+		{
+			return false;
+		}
+		double x2, y2;
+		polarToCart(lon + dLon / len * 0.001 / cosLat, lat + stepLat, &x2, &y2);
+		if (std::fabs(x2 - x) + std::fabs(y2 - y) <= 1e-9)
+		{
+			return false;
+		}
+		heading.angle = (float)std::atan2(y2 - y, x2 - x);
+		return true;
+	};
+	const Target *dest = target->getDestination();
+	if (dest && target->getSpeed() > 0)
+	{
+		// an escort sits on its leader's point every step (MovingTarget::move), so there is no course
+		// to it: it flies the leader's course, else it keeps the one it came in on - often backwards
+		for (int hop = 0; dest && hop < 4 && !course(dest); ++hop)
+		{
+			const MovingTarget *leader = dynamic_cast<const MovingTarget*>(dest);
+			dest = leader && leader->getSpeed() > 0 ? leader->getDestination() : nullptr;
+		}
+	}
+	seen[target] = heading;
+	_hdMarks.push_back(HdMark{ type, x, y, heading.angle, color, strength, heading.since, state });
+	return true;
+}
+
+/**
+ * The kept outlines, drawn straight onto the world layer over the markers: a size per zoom (the
+ * globe's own, not the screen's) times how big the craft is, a light running round each hull.
+ */
+void Globe::drawHdMarks()
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || _hdMarks.empty())
+	{
+		return;
+	}
+	// base pixels an average craft is long at each zoom (tools/hdart/craft_outline.py ZOOM_LEN)
+	static const int LENGTH[] = { 4, 5, 6, 8, 10, 12 };
+	const int length = LENGTH[std::min(_zoom, (size_t)5)];
+	const Uint32 now = SDL_GetTicks();
+	HdUi &ui = HdUi::instance();
+	ui.setClip(getX(), getY(), getWidth(), getHeight());
+	for (const HdMark &m : _hdMarks)
+	{
+		float factor = 1.0f;
+		HdOutline::has(m.type, &factor);
+		// each hull has its own beat, so that a fleet does not flash in step
+		const float phase = ((now + m.since * 7u) % 100000u) / 1000.0f * 2.4f;
+		const float reveal = std::min(1.0f, (now - m.since) / 900.0f);
+		const float cx = (float)((getX() + m.x) * k), cy = (float)((getY() + m.y) * k);
+		HdOutline::draw(m.type, cx, cy, length * k * factor, m.angle, m.color, phase, reveal, m.strength, m.state);
+		// the point the game moves and measures from: how close two craft are, where to hold off
+		HdOutline::beacon(cx, cy, 0.5f + 0.55f * k, reveal);
+	}
+	ui.clearClip();
+}
+
+/**
+ * Is the HD layer drawing the radar coverage of the bases and the craft (oxceHdRadar 1 to 3)? Then
+ * their circles are kept out of _radars; the craft range, the new base's ranges and the enemy's
+ * radars stay circles (the enemy's drawn by the HD layer too, hdEnemyRadar).
+ */
+bool Globe::hdRadar() const
+{
+	return Options::oxceHdRadar > 0 && Options::globeRadarLines && HdUi::active();
+}
+
+/**
+ * Is the HD layer drawing the main base (the first one) with a star of its own instead of its square
+ * (oxceHdRadar 3)? A picture only: the base, its marker and what clicking it does stay as they are.
+ */
+bool Globe::hdMainBase() const
+{
+	return Options::oxceHdRadar == 3 && HdUi::active();
+}
+
+/**
+ * The radar coverage, as drawRadars would have had it: a base by its finished radars (the longest
+ * gives the circle, each one a wave), a craft out of its base by its own. Read from the game only.
+ */
+void Globe::drawHdRadar()
+{
+	const int k = HdUi::scale();
+	if (k <= 0)
+	{
+		return;
+	}
+	std::vector<HdRadar::Source> sources;
+	for (auto* xbase : *_game->getSavedGame()->getBases())
+	{
+		const double lat = xbase->getLatitude(), lon = xbase->getLongitude();
+		if (!(AreSame(lon, 0.0) && AreSame(lat, 0.0)))
+		{
+			std::vector<int> ranges;
+			for (auto* fac : *xbase->getFacilities())
+			{
+				const int r = fac->getRules()->getRadarRange();
+				if (fac->getBuildTime() == 0 && r > 0 && r < MAX_DRAW_RADAR_CIRCLE_RADIUS)
+				{
+					ranges.push_back(r);
+				}
+			}
+			if (!ranges.empty())
+			{
+				std::sort(ranges.begin(), ranges.end(), std::greater<int>());
+				HdRadar::Source s{ xbase, lon, lat, Nautical(ranges.front()), {} };
+				for (size_t i = 0; i < ranges.size() && i < (size_t)HdRadar::MAX_WAVES; ++i)
+				{
+					s.waves.push_back(Nautical(ranges[i]));
+				}
+				sources.push_back(s);
+			}
+		}
+		for (auto* xcraft : *xbase->getCrafts())
+		{
+			const double range = Nautical(xcraft->getCraftStats().radarRange);
+			if (xcraft->getStatus() == "STR_OUT" && range > 0)
+			{
+				sources.push_back(HdRadar::Source{ xcraft, xcraft->getLongitude(), xcraft->getLatitude(), range, {} });
+			}
+		}
+	}
+	const HdRadar::View view = hdRadarView(k);
+	const GameTime *t = _game->getSavedGame()->getTime();
+	const long long minute = (((long long)t->getYear() * 12 + t->getMonth()) * 32 + t->getDay()) * 1440 + t->getHour() * 60 + t->getMinute();
+	HdUi &ui = HdUi::instance();
+	ui.setClip(getX(), getY(), getWidth(), getHeight());
+	static const int WAVE_HOURS[] = { 0, 1, 3, 6 };   // oxceHdRadarWaves: all at once, in turn each 1, 3, 6 hours
+	const int waveHours = WAVE_HOURS[std::max(0, std::min(3, Options::oxceHdRadarWaves))];
+	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar, waveHours, Options::oxceHdRadarBeam);
+	ui.clearClip();
+}
+
+/**
+ * Is the HD layer drawing the enemy's radars as red circles of its own? Whenever the HD interface is
+ * on, whatever oxceHdRadar: in _radars they were the classic shaded line, smoothed with the whole layer.
+ */
+bool Globe::hdEnemyRadar() const
+{
+	return Options::globeRadarLines && HdUi::active();
+}
+
+/**
+ * Where the globe stands in the HD layer: its middle, its radius and its widget, in world pixels.
+ */
+HdRadar::View Globe::hdRadarView(int k) const
+{
+	HdRadar::View view;
+	view.cenLon = _cenLon;
+	view.cenLat = _cenLat;
+	view.cx = (getX() + _cenX) * (double)k;
+	view.cy = (getY() + _cenY) * (double)k;
+	view.radius = _radius * k;
+	view.x = getX() * k;
+	view.y = getY() * k;
+	view.w = getWidth() * k;
+	view.h = getHeight() * k;
+	view.k = k;
+	return view;
+}
+
+/**
+ * The enemy's radars, as drawRadars would have had them: the discovered alien bases and the
+ * hunter-killers it shows. Read from the game only.
+ */
+void Globe::drawHdEnemyRadar()
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || _game->getMod()->getDrawEnemyRadarCircles() <= 0)
+	{
+		return;
+	}
+	std::vector<HdRadar::Ring> rings;
+	for (auto* ufo : *_game->getSavedGame()->getUfos())
+	{
+		if (ufo->isHunterKiller() && ufo->getDetected() && ufo->getStatus() != Ufo::IGNORE_ME
+			&& (_game->getMod()->getDrawEnemyRadarCircles() != 1 || ufo->getHyperDetected()))
+		{
+			const double range = Nautical(ufo->getCraftStats().radarRange);
+			if (range > 0) rings.push_back(HdRadar::Ring{ ufo->getLongitude(), ufo->getLatitude(), range, true });
+		}
+	}
+	for (auto* ab : *_game->getSavedGame()->getAlienBases())
+	{
+		if (ab->getDeployment()->getBaseDetectionRange() > 0 && ab->isDiscovered())
+		{
+			const double range = Nautical(ab->getDeployment()->getBaseDetectionRange());
+			if (range > 0) rings.push_back(HdRadar::Ring{ ab->getLongitude(), ab->getLatitude(), range });
+		}
+	}
+	if (rings.empty())
+	{
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	ui.setClip(getX(), getY(), getWidth(), getHeight());
+	_hdRadar.drawRings(hdRadarView(k), rings);
+	ui.clearClip();
+}
+
+/**
+ * Is the HD interface going to draw the globe's labels with its own fonts? Then they are kept out
+ * of _countries: that surface reaches the screen through the upscaler, and a name smeared by xBRZ
+ * under a sharp one drawn over it reads worse than either alone.
+ */
+bool Globe::hdLabels() const
+{
+	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * A label the globe has just laid out. It is always remembered - a click is answered from this list -
+ * and it is blitted into _countries unless the HD interface is going to draw it with its own fonts.
+ */
+void Globe::putLabel(Text *label, const std::string &id)
+{
+	// lays the string out (the line widths a click needs); blit() below then finds nothing to redo
+	label->draw();
+	Label kept;
+	kept.text = label->getText();
+	kept.id = id;
+	kept.x = label->getX();
+	kept.y = label->getY();
+	kept.w = label->getWidth();
+	kept.h = label->getHeight();
+	// the letters, not the widget: every globe label is a centred line in a box far wider than itself,
+	// and a click has to hit the name, not the empty half of the box next to the neighbouring one
+	const int textW = std::min(label->getTextWidth(), kept.w);
+	const int textH = std::min(label->getTextHeight(), kept.h);
+	kept.inkX = kept.x + (kept.w - textW) / 2;
+	kept.inkY = kept.y;
+	kept.inkW = textW;
+	kept.inkH = textH;
+	kept.color = label->getColor();
+	_labels.push_back(kept);
+	if (!_hdLabelsKept)
+	{
+		label->blit(_countries->getSurface());
+	}
+}
+
+/**
+ * The ruleset name of the label the player pointed at, or "" when they pointed at none. The labels
+ * are searched from the last drawn backwards, so the one lying on top answers first, the same way
+ * the eye reads them.
+ */
+std::string Globe::getLabelAt(int x, int y) const
+{
+	// a couple of base pixels of slack: the letters are thin and the globe turns under the cursor
+	const int pad = 2;
+	const int lx = x - _countries->getX(), ly = y - _countries->getY();
+	for (size_t i = _labels.size(); i > 0; --i)
+	{
+		const Label &l = _labels[i - 1];
+		if (l.id.empty() || l.inkW <= 0 || l.inkH <= 0)
+		{
+			continue;
+		}
+		if (lx >= l.inkX - pad && lx < l.inkX + l.inkW + pad &&
+			ly >= l.inkY - pad && ly < l.inkY + l.inkH + pad)
+		{
+			return l.id;
+		}
+	}
+	return "";
+}
+
+/**
+ * The widget of that size the kept labels are laid out through: the globe uses three sizes, so
+ * three widgets are made once and then reused, instead of resizing one per label per frame.
+ */
+Text *Globe::hdLabelText(int w, int h)
+{
+	for (auto* text : _hdLabelText)
+	{
+		if (text->getWidth() == w && text->getHeight() == h)
+		{
+			return text;
+		}
+	}
+	Text *text = new Text(w, h, 0, 0);
+	text->setPalette(getPalette());
+	text->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
+	text->setAlign(ALIGN_CENTER);
+	_hdLabelText.push_back(text);
+	return text;
+}
+
+/**
+ * The kept labels, drawn with the TrueType fonts straight onto the world layer, at the place the
+ * classic layout put them. draw() is what lays the string out; hdDrawAt reads that layout.
+ */
+void Globe::drawHdLabels()
+{
+	for (const Label &kept : _labels)
+	{
+		Text *text = hdLabelText(kept.w, kept.h);
+		text->setColor(kept.color);
+		text->setText(kept.text);
+		text->draw();
+		text->hdDrawAt(_countries->getX() + kept.x, _countries->getY() + kept.y);
+	}
 }
 
 /**
@@ -1807,8 +2327,274 @@ void Globe::blit(SDL_Surface *surface)
 {
 	Surface::blit(surface);
 	_radars->blit(surface);
+	if (_hdRadarKept && hdRadar() && HdUi::isScreen(surface))
+	{
+		// over the paths and the other radars, under the borders, the names and the markers
+		drawHdRadar();
+	}
+	else if (_hdRadarKept != hdRadar())
+	{
+		// the option was switched: the circles come back, or go
+		invalidate();
+	}
+	if (_hdEnemyKept && hdEnemyRadar() && HdUi::isScreen(surface))
+	{
+		drawHdEnemyRadar();
+	}
+	else if (_hdEnemyKept != hdEnemyRadar())
+	{
+		invalidate();
+	}
 	_countries->blit(surface);
+	if (_hdLabelsKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		// before the markers, so that they cover a name exactly as they did when it sat in _countries
+		drawHdLabels();
+	}
+	else if (_hdLabelsKept != hdLabels())
+	{
+		// the option was switched while the globe stood still: lay the labels out the other way round
+		invalidate();
+	}
 	_markers->blit(surface);
+	if (_hdMainKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		const int k = HdUi::scale();
+		if (_hdMainShow && k > 0)
+		{
+			HdUi &ui = HdUi::instance();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			_hdRadar.drawMainBase((getX() + _hdMainX + 0.5f) * k, (getY() + _hdMainY + 0.5f) * k, k, _hdMainColor);
+			ui.clearClip();
+		}
+	}
+	else if (_hdMainKept != hdMainBase())
+	{
+		// the option was switched: the main base's square comes back, or goes
+		invalidate();
+	}
+	if (_hdMarksKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		drawHdMarks();
+	}
+	else if (_hdMarksKept != hdOutlines())
+	{
+		// the option was switched: the markers kept out of _markers come back, or go
+		invalidate();
+	}
+	if (_boxActive)
+	{
+		drawBox(surface); // OXCE-HD (oxceHdGlobeBox): over everything on the globe
+	}
+}
+
+/**
+ * Is a frame possible (oxceHdGlobeBox): the option is on, the left button is not the one that turns the globe (turning
+ * is more important), and the geoscape's own window is on top (the windows that take the globe over - the choice of a
+ * destination, a new base - have their own clicks).
+ */
+bool Globe::boxAllowed(State *state) const
+{
+	return Options::oxceHdGlobeBox && Options::geoDragScrollButton != SDL_BUTTON_LEFT && dynamic_cast<GeoscapeState*>(state) != 0;
+}
+
+/**
+ * The mouse moved with the left button down: the frame follows it once it went more than a few pixels from where it started.
+ * @param action Pointer to an action.
+ */
+void Globe::boxMove(Action *action)
+{
+	if (action->getDetails()->type != SDL_MOUSEMOTION)
+	{
+		return;
+	}
+	// the release was missed (a window took it): no frame
+	if (0 == (action->getDetails()->motion.state & SDL_BUTTON(SDL_BUTTON_LEFT)) && 0 == (SDL_GetMouseState(0, 0) & SDL_BUTTON(SDL_BUTTON_LEFT)))
+	{
+		boxCancel();
+		return;
+	}
+	const int x = (int)floor(action->getAbsoluteXMouse()), y = (int)floor(action->getAbsoluteYMouse());
+	static const int BOX_THRESHOLD = 4;
+	if (!_boxActive && std::max(std::abs(x - _boxX0), std::abs(y - _boxY0)) > BOX_THRESHOLD)
+	{
+		_boxActive = true;
+	}
+	if (_boxActive)
+	{
+		_boxX1 = x;
+		_boxY1 = y;
+	}
+}
+
+/**
+ * Takes the frame just let go; true once per frame, with its corners.
+ */
+bool Globe::takeBox(int &x0, int &y0, int &x1, int &y1)
+{
+	if (!_boxDone)
+	{
+		return false;
+	}
+	_boxDone = false;
+	x0 = _boxX0;
+	y0 = _boxY0;
+	x1 = _boxX1;
+	y1 = _boxY1;
+	return true;
+}
+
+/**
+ * Drops the frame and what could become one.
+ */
+void Globe::boxCancel()
+{
+	_boxArmed = _boxActive = _boxDone = _boxSwallow = false;
+}
+
+/**
+ * Draws the frame: a light thin outline with a faint fill. The HD layer draws it crisp at the world scale; the classic
+ * picture (and the HD layer at scale 1) gets the outline in the lightest colour of the palette.
+ * @param surface Pointer to the surface the globe is blitted onto.
+ */
+void Globe::drawBox(SDL_Surface *surface)
+{
+	int x0 = std::min(_boxX0, _boxX1), x1 = std::max(_boxX0, _boxX1);
+	int y0 = std::min(_boxY0, _boxY1), y1 = std::max(_boxY0, _boxY1);
+	x0 = std::max(x0, (int)getX());
+	y0 = std::max(y0, (int)getY());
+	x1 = std::min(x1, (int)getX() + (int)getWidth() - 1);
+	y1 = std::min(y1, (int)getY() + (int)getHeight() - 1);
+	if (x1 < x0 || y1 < y0)
+	{
+		return;
+	}
+	const SDL_Color *pal = getPalette();
+	int light = 1, dark = 1, lightSum = -1, darkSum = 1000;
+	for (int i = 1; i < 256; ++i)
+	{
+		const int sum = pal[i].r + pal[i].g + pal[i].b;
+		if (sum > lightSum) { lightSum = sum; light = i; }
+		if (sum < darkSum) { darkSum = sum; dark = i; }
+	}
+	if (HdUi::isScreen(surface) && HdUi::active())
+	{
+		const int k = HdUi::scale();
+		HdUi &ui = HdUi::instance();
+		ui.setClip(getX(), getY(), getWidth(), getHeight());
+		const float fx0 = (float)(x0 * k), fy0 = (float)(y0 * k), fx1 = (float)((x1 + 1) * k), fy1 = (float)((y1 + 1) * k);
+		const float w = std::max(1.0f, 0.45f * k);
+		ui.fillRoundRect(fx0, fy0, fx1, fy1, 0.0f, HdUi::rgba(pal[light], 0x2A), HdUi::rgba(pal[light], 0x2A));
+		ui.strokeRoundRect(fx0 - w, fy0 - w, fx1 + w, fy1 + w, 0.0f, w, HdUi::rgba(pal[dark], 0xA0));
+		ui.strokeRoundRect(fx0, fy0, fx1, fy1, 0.0f, w, HdUi::rgba(pal[light], 0xF0));
+		ui.clearClip();
+		return;
+	}
+	SDL_Rect clip = { (Sint16)getX(), (Sint16)getY(), (Uint16)getWidth(), (Uint16)getHeight() };
+	SDL_SetClipRect(surface, &clip);
+	SDL_Rect top = { (Sint16)x0, (Sint16)y0, (Uint16)(x1 - x0 + 1), 1 };
+	SDL_Rect bottom = { (Sint16)x0, (Sint16)y1, (Uint16)(x1 - x0 + 1), 1 };
+	SDL_Rect left = { (Sint16)x0, (Sint16)y0, 1, (Uint16)(y1 - y0 + 1) };
+	SDL_Rect right = { (Sint16)x1, (Sint16)y0, 1, (Uint16)(y1 - y0 + 1) };
+	SDL_FillRect(surface, &top, (Uint32)light);
+	SDL_FillRect(surface, &bottom, (Uint32)light);
+	SDL_FillRect(surface, &left, (Uint32)light);
+	SDL_FillRect(surface, &right, (Uint32)light);
+	SDL_SetClipRect(surface, 0);
+}
+
+/**
+ * The globe's own scale in the HD layer (oxceHdGlobeScale): how many world pixels one of
+ * its pixels takes - what it would be with the geoscape scale set to that, while the windows,
+ * the base and the lists around it stay at the geoscape scale. 0 when it is not finer than them.
+ */
+int Globe::hdEarthScale() const
+{
+	const int s = Options::oxceHdGlobeScale;
+	if (s < 1 || !HdUi::active())
+	{
+		return 0;
+	}
+	return s < HdUi::scale() ? s : 0;
+}
+
+/**
+ * HD interface: the ocean and land drawn anew at the globe's own scale instead of this
+ * surface's base pixels scaled up. Only the picture is finer: the radars, paths, markers
+ * and labels over it, the clicks and the classic layer keep the base grid.
+ */
+void Globe::hdMirror()
+{
+	const int s = hdEarthScale();
+	if (!s)
+	{
+		InteractiveSurface::hdMirror();
+		return;
+	}
+	const int k = HdUi::scale();
+	const double f = (double)k / s;
+	const int w = (getWidth() * k + s - 1) / s, h = (getHeight() * k + s - 1) / s;
+	if (_hdEarthDirty || !_hdEarth || _hdEarth->getWidth() != w || _hdEarth->getHeight() != h || _hdEarthFactor != f)
+	{
+		drawHdEarth(w, h, f);
+	}
+	SDL_Rect area;
+	area.x = (Sint16)(getX() * k);
+	area.y = (Sint16)(getY() * k);
+	area.w = (Uint16)(getWidth() * k);
+	area.h = (Uint16)(getHeight() * k);
+	HdUi::instance().drawSurfaceWorld(_hdEarth, getX() * k, getY() * k, s, area);
+}
+
+/**
+ * The ocean, the land and the shadow as draw() makes them, f times finer: the polygons are
+ * projected again from their coordinates (not the cached base pixels), the terminator is
+ * computed per fine pixel, in bands on the render threads. The textures keep their pixel
+ * size, as at a finer geoscape scale.
+ */
+void Globe::drawHdEarth(int w, int h, double f)
+{
+	if (!_hdEarth || _hdEarth->getWidth() != w || _hdEarth->getHeight() != h)
+	{
+		delete _hdEarth;
+		_hdEarth = new Surface(w, h);
+		_hdEarth->setPalette(getPalette());
+	}
+	_hdEarthDirty = false;
+	_hdEarthFactor = f;
+	_hdEarth->clear();
+
+	const int cx = (int)std::lround(_cenX * f), cy = (int)std::lround(_cenY * f);
+	_hdEarth->lock();
+	_hdEarth->drawCircle((Sint16)std::lround((_cenX + 1) * f), (Sint16)cy, (Sint16)std::lround((_radius + 20) * f), OCEAN_COLOR);
+	_hdEarth->unlock();
+
+	Sint16 x[4], y[4];
+	for (auto* polygon : _cacheLand)
+	{
+		for (int j = 0; j < polygon->getPoints(); ++j)
+		{
+			double px, py;
+			polarToCart(polygon->getLongitude(j), polygon->getLatitude(j), &px, &py);
+			x[j] = (Sint16)std::floor(px * f);
+			y[j] = (Sint16)std::floor(py * f);
+		}
+		_hdEarth->drawTexturedPolygon(x, y, polygon->getPoints(), _texture->getFrame(polygon->getTexture() + _zoomTexture), 0, 0);
+	}
+
+	const Cord sun = getSunDirection(_cenLon, _cenLat);
+	const int radius = (int)std::lround(_zoomRadius[_zoom] * f);
+	_hdEarth->lock();
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(h / 16, pool.threads() * 2));
+	pool.run(jobs, [&](int job)
+	{
+		ShaderMove<Uint8> dest = ShaderSurface(_hdEarth);
+		dest.setDomain(GraphSubset(std::make_pair(0, w), std::make_pair(h * job / jobs, h * (job + 1) / jobs)));
+		ShaderRepeat<Sint16> noise = ShaderRepeat<Sint16>(SurfaceRaw<Sint16>(static_data.random_noise, static_data.random_surf_size, static_data.random_surf_size));
+		ShaderDraw<CreateShadowWithoutCache>(dest, helper::Offset(cx, cy), ShaderScalar(sun), noise, ShaderScalar(radius));
+	});
+	_hdEarth->unlock();
 }
 
 /**
@@ -1820,6 +2606,11 @@ void Globe::mouseOver(Action *action, State *state)
 {
 	double lon, lat;
 	cartToPolar((Sint16)floor(action->getAbsoluteXMouse()), (Sint16)floor(action->getAbsoluteYMouse()), &lon, &lat);
+
+	if (_boxArmed)
+	{
+		boxMove(action); // OXCE-HD (oxceHdGlobeBox)
+	}
 
 	if (_isMouseScrolling && action->getDetails()->type == SDL_MOUSEMOTION)
 	{
@@ -1905,6 +2696,15 @@ void Globe::mousePress(Action *action, State *state)
 	double lon, lat;
 	cartToPolar((Sint16)floor(action->getAbsoluteXMouse()), (Sint16)floor(action->getAbsoluteYMouse()), &lon, &lat);
 
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	{
+		// OXCE-HD (oxceHdGlobeBox): the left button may start a frame (it shows only after the mouse moves)
+		_boxSwallow = _boxActive = _boxDone = false;
+		_boxArmed = boxAllowed(state);
+		_boxX0 = _boxX1 = (int)floor(action->getAbsoluteXMouse());
+		_boxY0 = _boxY1 = (int)floor(action->getAbsoluteYMouse());
+	}
+
 	if (action->getDetails()->button.button == Options::geoDragScrollButton)
 	{
 		_isMouseScrolling = true;
@@ -1932,6 +2732,22 @@ void Globe::mouseRelease(Action *action, State *state)
 {
 	double lon, lat;
 	cartToPolar((Sint16)floor(action->getAbsoluteXMouse()), (Sint16)floor(action->getAbsoluteYMouse()), &lon, &lat);
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && _boxArmed)
+	{
+		// OXCE-HD (oxceHdGlobeBox): a frame let go - the click handler takes it (takeBox) and opens the list; the click
+		// that follows this release (when it ends on the globe) is not a click on a marker
+		_boxArmed = false;
+		if (_boxActive)
+		{
+			_boxX1 = (int)floor(action->getAbsoluteXMouse());
+			_boxY1 = (int)floor(action->getAbsoluteYMouse());
+			_boxActive = false;
+			_boxDone = true;
+			_boxSwallow = true;
+			InteractiveSurface::mouseClick(action, state);
+			_boxDone = false;
+		}
+	}
 	if (action->getDetails()->button.button == Options::geoDragScrollButton)
 	{
 		stopScrolling(action);
@@ -1951,6 +2767,11 @@ void Globe::mouseRelease(Action *action, State *state)
  */
 void Globe::mouseClick(Action *action, State *state)
 {
+	if (_boxSwallow && action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	{
+		_boxSwallow = false; // OXCE-HD (oxceHdGlobeBox): the release of a frame, the list is open already
+		return;
+	}
 	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
 	{
 		zoomIn();

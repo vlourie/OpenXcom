@@ -1,0 +1,227 @@
+@model Xp.Portal.Pages.Voice.ChannelModel
+@using Xp.Portal.Voice
+@using Xp.Portal.Pages.Voice
+@{
+    var feed = Model.Feed;
+    var sum = Model.Summary;
+}
+<div class="chan">
+    @* three tabs on a phone, with no script: the radio that is ticked shows its column (site.css, narrow screens) *@
+    <input type="radio" name="chan-tab" id="tab-feed" class="chan-radio" checked>
+    <input type="radio" name="chan-tab" id="tab-list" class="chan-radio">
+    <input type="radio" name="chan-tab" id="tab-who" class="chan-radio">
+    <div class="chan-tabs">
+        <label for="tab-list">@T["chan.tab.list"]</label>
+        <label for="tab-feed">@T["chan.tab.feed"]</label>
+        <label for="tab-who">@T["chan.tab.who"]</label>
+    </div>
+
+    <aside class="chan-list" aria-label="@T["chan.tab.list"]">
+        <h2>@T["chan.channels"]</h2>
+        <ul class="chan-nav">
+            @foreach (var c in Model.Lists.Channels)
+            {
+                <li class="@(c.Room == Model.Room ? "on" : "")">
+                    <a href="@Model.ChannelPath(c.Room)">
+                        <span class="name">@c.Title</span>
+                        @if (c.State != "ok")
+                        {
+                            <span class="tag">@T["voice.state." + c.State]</span>
+                        }
+                        @if (c.Mentions > 0 && c.Room != Model.Room)
+                        {
+                            <span class="unread-count mention" title="@T["chan.mentions"]">@@@c.Mentions</span>
+                        }
+                        else if (c.Unread > 0 && c.Room != Model.Room)
+                        {
+                            <span class="unread-count">@c.Unread</span>
+                        }
+                    </a>
+                </li>
+            }
+        </ul>
+
+        <h2>@T["chan.rooms"]</h2>
+        @if (Model.Lists.Rooms.Count == 0)
+        {
+            <p class="hint">@T["voice.mine.empty"]</p>
+        }
+        else
+        {
+            <ul class="chan-nav">
+                @foreach (var c in Model.Lists.Rooms)
+                {
+                    <li class="@(c.Room == Model.Room ? "on" : "")">
+                        <a href="@Model.ChannelPath(c.Room)">
+                            <span class="name">@c.Title</span>
+                            @if (!c.Mine)
+                            {
+                                <span class="hint">@c.Owner.Name</span>
+                            }
+                            @if (c.State != "ok")
+                            {
+                                <span class="tag">@T["voice.state." + c.State]</span>
+                            }
+                            @if (c.Mentions > 0 && c.Room != Model.Room)
+                            {
+                                <span class="unread-count mention" title="@T["chan.mentions"]">@@@c.Mentions</span>
+                            }
+                            else if (c.Unread > 0 && c.Room != Model.Room)
+                            {
+                                <span class="unread-count">@c.Unread</span>
+                            }
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+        <details class="chan-new">
+            <summary>@T["chan.newroom"]</summary>
+            <form method="post" asp-page="/Voice/Index" asp-page-handler="Create">
+                <label for="title">@T["voice.create.title"]</label>
+                <input type="text" id="title" name="title" required maxlength="@VoiceLimits.TitleMax" autocomplete="off" />
+                <button type="submit" class="small">@T["voice.create"]</button>
+            </form>
+            <p class="hint">@T.Format("voice.create.hint", VoiceLimits.RoomsPerOwner)</p>
+        </details>
+
+        <h2>@T["chan.dialogues"]</h2>
+        @if (Model.Dialogues.Count == 0)
+        {
+            <p class="hint">@T["chan.nodialogues"]</p>
+        }
+        else
+        {
+            <ul class="chan-nav">
+                @foreach (var d in Model.Dialogues.Take(15))
+                {
+                    <li>
+                        <a href="/me/messages/@d.Person.Id">
+                            <span class="name">@d.Person.Name</span>
+                            @if (d.Unread > 0)
+                            {
+                                <span class="unread-count">@d.Unread</span>
+                            }
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+        <p class="chan-links">
+            <a href="/me/messages">@T["nav.messages"]</a>
+            <a href="/me/friends">@T["friends.title"]</a>
+            @if (Model.Incoming > 0)
+            {
+                <span class="tag warn">@T.Format("voice.incoming", Model.Incoming)</span>
+            }
+        </p>
+    </aside>
+
+    <section class="chan-main">
+        @if (Model.Missing)
+        {
+            <h1>@T["voice.state.no_access"]</h1>
+            <p>@T["voice.state.no_access.text"]</p>
+        }
+        else if (sum is null)
+        {
+            <h1>@T["voice.title"]</h1>
+            <p class="hint">@T["chan.none"]</p>
+        }
+        else
+        {
+            var r = sum.Room;
+            <div class="chan-head">
+                <h1>@r.Title</h1>
+                <span class="chan-actions">
+                    @if (r.State == "ok")
+                    {
+                        <a class="button small" href="@Model.LauncherLink">@T["chan.voice"]</a>
+                    }
+                    <a class="button small secondary" href="@(Model.ChannelPath(r.PublicId))/manage">@T["chan.manage"]</a>
+                </span>
+            </div>
+            <partial name="_Errors" model="Model.Errors" />
+
+            @if (r.State != "ok")
+            {
+                <div class="panel">
+                    <h2>@T["voice.state." + r.State]</h2>
+                    <p>@T["voice.state." + r.State + ".text"]</p>
+                    @if (r.State == "room_closed" && sum.ClosedByStaff)
+                    {
+                        <p class="hint">@T["voice.closed.staff"]@(sum.ClosedReason is { Length: > 0 } why ? ": " + why : "")</p>
+                    }
+                </div>
+            }
+            else if (feed is not null)
+            {
+                <p class="chan-topic" id="topic">@(string.IsNullOrEmpty(feed.Topic) ? T["chan.notopic"] : feed.Topic)</p>
+                <form method="post" id="delete-form" asp-page="/Voice/Channel" asp-route-room="@Model.Room" asp-page-handler="Delete"></form>
+                <div class="chan-lines" id="lines" tabindex="0" data-url="@Model.FeedUrl" data-after="@feed.Last" data-me="@Model.MeId"
+                     data-s-join="@T["chan.sys.join"]" data-s-part="@T["chan.sys.part"]" data-s-topic="@T["chan.sys.topic"]"
+                     data-s-kick="@T["chan.sys.kick"]" data-s-ban="@T["chan.sys.ban"]" data-s-unban="@T["chan.sys.unban"]"
+                     data-s-mute="@T["chan.sys.mute"]" data-s-unmute="@T["chan.sys.unmute"]"
+                     data-s-topic-cleared="@T["chan.sys.topic_cleared"]" data-s-notopic="@T["chan.notopic"]" data-s-silent="@T["chan.muted"]"
+                     data-can-moderate="@(feed.CanModerate ? "1" : "0")" data-s-delete="@T["chan.delete"]">
+                    @if (feed.Lines.Count == 0)
+                    {
+                        <p class="hint" id="empty">@T["chan.empty"]</p>
+                    }
+                    @foreach (var l in feed.Lines)
+                    {
+                        <div class="line @(l.Kind == "system" ? "sys" : "") @(l.Mention ? "mention" : "") @(l.Mine ? "mine" : "")" data-id="@l.Id">
+                            <time datetime="@l.At.ToString("O")">@l.At.ToString("HH:mm")</time>
+                            @switch (l.Kind)
+                            {
+                                case "system":
+                                    <span class="body">-- @Model.Sys(l)</span>
+                                    break;
+                                case "action":
+                                    <span class="body">* <b class="nick">@l.Author.Name</b> @ChatMarkup.Render(l.Body)</span>
+                                    break;
+                                default:
+                                    <span class="nick">&lt;@l.Author.Name&gt;</span> <span class="body">@ChatMarkup.Render(l.Body)</span>
+                                    break;
+                            }
+                            @if (l.Kind != "system" && (l.Mine || feed.CanModerate))
+                            {
+                                <button type="submit" form="delete-form" name="id" value="@l.Id" class="link del" title="@T["chan.delete"]" aria-label="@T["chan.delete"]">×</button>
+                            }
+                        </div>
+                    }
+                    @if (Model.Notice is { Length: > 0 } note)
+                    {
+                        <div class="line sys notice"><span class="body">-- @note</span></div>
+                    }
+                    <div id="end"></div>
+                </div>
+                <form method="post" class="chan-say" asp-page="/Voice/Channel" asp-route-room="@Model.Room" asp-page-handler="Say">
+                    <input type="text" id="say" name="line" required maxlength="@VoiceLimits.LineMax" autocomplete="off" aria-label="@T["chan.say"]" placeholder="@T["chan.say.hint"]" />
+                    <button type="submit">@T["chan.send"]</button>
+                </form>
+                <p class="hint">@T["chan.time"]</p>
+            }
+        }
+    </section>
+
+    <aside class="chan-who" aria-label="@T["chan.tab.who"]">
+        <h2>@T["chan.tab.who"]</h2>
+        <ul class="chan-people" id="people" data-s-silent="@T["chan.muted"]">
+            @if (feed is not null)
+            {
+                @foreach (var a in feed.Attendees)
+                {
+                    <li>
+                        <span class="mark">@((a.Operator ? "@" : "") + (a.Voice ? "+" : ""))</span><span class="nick">@a.Person.Name</span>
+                        @if (a.Muted)
+                        {
+                            <span class="hint"> · @T["chan.muted"]</span>
+                        }
+                    </li>
+                }
+            }
+        </ul>
+        <p class="hint">@T["chan.who.hint"]</p>
+    </aside>
+</div>

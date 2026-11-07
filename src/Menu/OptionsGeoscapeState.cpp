@@ -35,6 +35,7 @@ namespace OpenXcom
  */
 OptionsGeoscapeState::OptionsGeoscapeState(OptionsOrigin origin) : OptionsBaseState(origin)
 {
+	setHdScreen("geoscapeMenu");
 	setCategory(_btnGeoscape);
 
 	// Create objects

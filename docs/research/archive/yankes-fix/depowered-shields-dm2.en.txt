@@ -1,0 +1,27 @@
+OK, 0 it is. Then the whole thing can be simpler, and two small things still need fixing:
+
+1) The indentation. The comment lines still have to sit at the code's column, otherwise the `code: |` block ends there and the file won't parse.
+
+2) YSCRIPT_DEPOWERED_SHIELDS runs on newTurnUnit, but the remote control still sets 750 / 6 = 125 at the moment of overcharge (around line 5114). So the turret keeps a 125 shield until its next turn starts. If it should drop right away, set 0 there too.
+
+DEPOWERED_SHIELDS, whole block:
+
+      - new: YSCRIPT_DEPOWERED_SHIELDS
+        offset: 22
+        code: |
+          var int powerStatus;
+
+          unit.getTag powerStatus Tag.POWER_STATUS;                      #*** Status 1 for power off, 2 for power on, 3 for overcharge ***
+
+          # no shields while powered off (1) or overcharged (3)
+          if or eq powerStatus 1 eq powerStatus 3;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP 0;
+          end;
+          return;
+
+CYDONIA_REMOTE_CONTROL, the overcharge branch:
+Now:
+              div defaultShields 6;
+              unit.setTag Tag.UNIT_ENERGY_SHIELD_HP defaultShields;
+Change to:
+              unit.setTag Tag.UNIT_ENERGY_SHIELD_HP 0;

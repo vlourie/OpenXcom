@@ -1,0 +1,71 @@
+@page "/me/security"
+@model Xp.Portal.Pages.Me.SecurityModel
+@{
+    ViewData["Title"] = T["security.title"];
+}
+<h1>@T["security.title"]</h1>
+<partial name="_Errors" model="Model.Errors" />
+
+@if (Model.RecoveryCodes is { } codes)
+{
+    <div class="panel">
+        <h2>@T["security.recovery.title"]</h2>
+        <p>@T["security.recovery.text"]</p>
+        <ul class="secret">
+            @foreach (var c in codes)
+            {
+                <li>@c</li>
+            }
+        </ul>
+        <p class="hint">@T["security.relogin"]</p>
+        <a class="button" href="/account/login">@T["nav.login"]</a>
+    </div>
+}
+else if (Model.Enabled)
+{
+    <div class="panel">
+        <h2>@T["security.2fa"]</h2>
+        <p>@T["security.2fa.on"]</p>
+        <p class="hint">@T.Format("security.recovery.left", Model.RecoveryLeft)</p>
+        <form method="post" asp-page-handler="Recovery" class="inline">
+            <button type="submit" class="secondary">@T["security.recovery.renew"]</button>
+        </form>
+        <form method="post" asp-page-handler="Disable">
+            <label for="dcode">@T["security.disable.code"]</label>
+            <input type="text" id="dcode" name="code" required inputmode="numeric" autocomplete="one-time-code" maxlength="16" />
+            <button type="submit" class="secondary">@T["security.disable"]</button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="panel">
+        <h2>@T["security.2fa"]</h2>
+        <p>@T["security.2fa.off"]</p>
+        <ol>
+            <li>@T["security.step1"]</li>
+            <li>@T["security.step2"] <div class="secret">@Model.SharedKey</div>
+                <p class="hint"><a href="@Model.AuthenticatorUri">@T["security.open_app"]</a></p></li>
+            <li>@T["security.step3"]</li>
+        </ol>
+        <form method="post" asp-page-handler="Enable">
+            <label for="code">@T["login2fa.code"]</label>
+            <input type="text" id="code" name="code" required inputmode="numeric" autocomplete="one-time-code" maxlength="16" />
+            <button type="submit">@T["security.enable"]</button>
+        </form>
+    </div>
+}
+
+@if (Model.RecoveryCodes is null)
+{
+    <div class="panel">
+        <h2>@T["security.password"]</h2>
+        <form method="post" asp-page-handler="Password">
+            <label for="current">@T["field.password.current"]</label>
+            <input type="password" id="current" name="current" required autocomplete="current-password" />
+            <label for="password">@T["field.password.new"]</label>
+            <input type="password" id="password" name="password" required minlength="10" autocomplete="new-password" />
+            <button type="submit">@T["security.password.submit"]</button>
+        </form>
+    </div>
+}

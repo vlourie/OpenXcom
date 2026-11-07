@@ -32,6 +32,8 @@ class SavedGame;
 class Mod;
 class ModInfo;
 class FpsCounter;
+class HdUpdateNotice;
+class HdChatNotice;
 class Action;
 class GeoscapeState;
 
@@ -53,6 +55,8 @@ private:
 	Mod *_mod;
 	bool _quit, _init, _update;
 	FpsCounter *_fpsCounter;
+	HdUpdateNotice *_updateNotice;
+	HdChatNotice *_chatNotice;
 	bool _mouseActive;
 	unsigned int _timeOfLastFrame;
 	int _timeUntilNextFrame;
@@ -79,6 +83,10 @@ public:
 	Cursor *getCursor() const { return _cursor; }
 	/// Gets the FpsCounter.
 	FpsCounter *getFpsCounter() const { return _fpsCounter; }
+	/// Gets the plate "a new update is available" (Engine/HdUpdateNotice.h).
+	HdUpdateNotice *getUpdateNotice() const { return _updateNotice; }
+	/// Gets the plate "a new message" (Engine/HdChatNotice.h).
+	HdChatNotice *getChatNotice() const { return _chatNotice; }
 	/// Resets the state stack to a new state.
 	void setState(State *state);
 	/// Pushes a new state into the state stack.
@@ -105,6 +113,8 @@ public:
 	bool containsNotesState() const;
 	/// Returns the GeoscapeState from the background (if available).
 	GeoscapeState* getGeoscapeState() const;
+	/// Gets the state stack, bottom first.
+	const std::list<State*> &getStates() const { return _states; }
 	/// Returns whether the game is shutting down.
 	bool isQuitting() const;
 	/// Loads the default and current language.

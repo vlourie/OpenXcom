@@ -1,0 +1,15 @@
+# LiveKit for the voice probe (compose.voice.yaml). Keys come from LIVEKIT_KEYS, not from here.
+port: 7880
+rtc:
+  tcp_port: 7881
+  # one UDP port for all participants: one forward on the router instead of a range
+  udp_port: 7882
+  # the address LiveKit gives to clients is found through STUN at start. After the station's
+  # external IP changes, livekit has to be restarted (the probe notes it; production has a fixed IP)
+  use_external_ip: true
+room:
+  auto_create: true
+  empty_timeout: 300
+  max_participants: 16
+logging:
+  level: info

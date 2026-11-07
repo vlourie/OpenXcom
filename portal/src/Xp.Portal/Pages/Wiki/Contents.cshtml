@@ -1,0 +1,63 @@
+@page "/wiki/{mod}"
+@model Xp.Portal.Pages.Wiki.ContentsModel
+@{
+    ViewData["Title"] = Model.ModName;
+}
+<p class="crumbs"><a href="/wiki">@T["nav.wiki"]</a> / @Model.ModName</p>
+<h1>@Model.ModName</h1>
+
+<form method="get" class="row">
+    <div>
+        <label for="q">@T["wiki.search"]</label>
+        <input type="search" id="q" name="q" value="@Model.Query" maxlength="80">
+    </div>
+    <div><button type="submit" class="secondary">@T["wiki.search.do"]</button></div>
+</form>
+
+@if (Model.Groups.Count == 0)
+{
+    <p class="hint">@T["wiki.empty.mod"]</p>
+}
+else if (Model.Query.Length == 0)
+{
+    <nav class="groups">
+        @foreach (var g in Model.Groups)
+        {
+            <a class="@(g.Section == Model.Group ? "chip on" : "chip")"
+               href="/wiki/@Model.ModSlug?s=@Uri.EscapeDataString(g.Section)">@(g.Section.Length == 0 ? T["wiki.other"] : g.Section)<span>@g.Count</span></a>
+        }
+    </nav>
+}
+
+@if (Model.Pages.Count == 0)
+{
+    @if (Model.Query.Length > 0)
+    {
+        <p class="hint">@T["wiki.nothing"]</p>
+    }
+    else if (Model.Groups.Count > 0)
+    {
+        <p class="hint">@T["wiki.pick.group"]</p>
+    }
+}
+else
+{
+    <section class="panel">
+        <h2 class="title">@(Model.Query.Length > 0 ? T["wiki.search.do"] : (Model.Group.Length == 0 ? T["wiki.other"] : Model.Group))</h2>
+        <ul class="toc">
+            @foreach (var p in Model.Pages)
+            {
+                <li><a href="/wiki/@Model.ModSlug/@p.Slug">@p.Title</a></li>
+            }
+        </ul>
+    </section>
+    @if (Model.Query.Length == 0)
+    {
+        <partial name="_Pager" model="Model.Pager" />
+    }
+}
+
+@if (Model.CanEdit)
+{
+    <a class="button" href="/wiki/@Model.ModSlug/new/edit">@T["wiki.new"]</a>
+}

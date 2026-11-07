@@ -1,0 +1,29 @@
+@model PagerView
+@*
+    Page numbers for a list. The links are plain hrefs: the content security policy allows no
+    scripts of ours, and a forum that needs JavaScript to turn a page is a forum that breaks.
+*@
+@if (Model.Pages > 1)
+{
+    <nav class="pager">
+        @if (Model.Page > 1)
+        {
+            <a href="@Model.Url(Model.Page - 1)">@T["pager.prev"]</a>
+        }
+        @foreach (var n in Model.Numbers())
+        {
+            if (n == Model.Page)
+            {
+                <span class="now">@n</span>
+            }
+            else
+            {
+                <a href="@Model.Url(n)">@n</a>
+            }
+        }
+        @if (Model.Page < Model.Pages)
+        {
+            <a href="@Model.Url(Model.Page + 1)">@T["pager.next"]</a>
+        }
+    </nav>
+}

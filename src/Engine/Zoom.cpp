@@ -23,6 +23,9 @@
 #include "Logger.h"
 #include "Options.h"
 #include "Screen.h"
+#include "HdWorkers.h"
+#include <vector>
+#include <cstring>
 
 #include "OpenGL.h"
 
@@ -674,9 +677,19 @@ void Zoom::flipWithZoom(SDL_Surface *src, SDL_Surface *dst, int topBlackBand, in
 #ifndef __NO_OPENGL
 		if (glOut->buffer_surface)
 		{
-			SDL_BlitSurface(src, 0, glOut->surface.get(), 0); // TODO; this is less than ideal...
+			SDL_Surface *glSurface = glOut->surface.get();
+			if (src->w == glSurface->w && src->h == glSurface->h && src->format->BytesPerPixel == 4
+				&& src->format->Rmask == glSurface->format->Rmask && src->format->Gmask == glSurface->format->Gmask && src->format->Bmask == glSurface->format->Bmask)
+			{
+				// HD render: a 32-bit frame of the texture's size (the world layer) is uploaded as it is, no copy
+				glOut->refresh(glOut->linear, glOut->iwidth, glOut->iheight, dst->w, dst->h, topBlackBand, bottomBlackBand, leftBlackBand, rightBlackBand, src->pixels, src->pitch);
+			}
+			else
+			{
+				SDL_BlitSurface(src, 0, glSurface, 0); // TODO; this is less than ideal...
 
-			glOut->refresh(glOut->linear, glOut->iwidth, glOut->iheight, dst->w, dst->h, topBlackBand, bottomBlackBand, leftBlackBand, rightBlackBand);
+				glOut->refresh(glOut->linear, glOut->iwidth, glOut->iheight, dst->w, dst->h, topBlackBand, bottomBlackBand, leftBlackBand, rightBlackBand);
+			}
 			SDL_GL_SwapBuffers();
 		}
 #endif
@@ -774,6 +787,50 @@ int Zoom::_zoomSurfaceY(SDL_Surface * src, SDL_Surface * dst, int flipx, int fli
 				return 0;
 			}
 		}
+	}
+
+	if (src->format->BytesPerPixel == 4 && dst->format->BytesPerPixel == 4)
+	{
+		// HD render: the true-color world layer scaled to the display by nearest neighbour, rows in parallel
+		// (the generic loop below is byte-wise, for palette surfaces)
+		if (!proclaimed)
+		{
+			Log(LOG_INFO) << "Using 32-bit nearest-neighbour scaling for the world layer";
+			proclaimed = true;
+		}
+		const int sw = src->w, sh = src->h, dw = dst->w, dh = dst->h;
+		std::vector<int> xmap(dw);
+		for (int dx = 0; dx < dw; ++dx)
+		{
+			xmap[dx] = (int)((long long)dx * sw / dw);
+		}
+		const Uint8 *sp = (const Uint8*)src->pixels;
+		Uint8 *dp = (Uint8*)dst->pixels;
+		HdWorkers &pool = HdWorkers::instance();
+		const int jobs = std::max(1, std::min(dh / 16, pool.threads() * 2));
+		pool.run(jobs, [&](int job)
+		{
+			const int ya = (int)((long long)dh * job / jobs);
+			const int yb = (int)((long long)dh * (job + 1) / jobs);
+			for (int dy = ya; dy < yb; ++dy)
+			{
+				const int sy = (int)((long long)dy * sh / dh);
+				const Uint32 *srow = (const Uint32*)(sp + (size_t)sy * src->pitch);
+				Uint32 *drow = (Uint32*)(dp + (size_t)dy * dst->pitch);
+				if (dw == sw)
+				{
+					memcpy(drow, srow, (size_t)dw * 4);
+				}
+				else
+				{
+					for (int dx = 0; dx < dw; ++dx)
+					{
+						drow[dx] = srow[xmap[dx]];
+					}
+				}
+			}
+		});
+		return 0;
 	}
 
 	if (Options::useScaleFilter)

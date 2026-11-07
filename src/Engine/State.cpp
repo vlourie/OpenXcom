@@ -37,6 +37,8 @@
 #include "../Interface/ComboBox.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/FpsCounter.h"
+#include "HdUpdateNotice.h"
+#include "HdChatNotice.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleInterface.h"
 
@@ -81,6 +83,10 @@ void State::setInterface(const std::string& category, bool alterPal, SavedBattle
 	int backPal = -1;
 	std::string pal = "PAL_GEOSCAPE";
 
+	if (!_hdScreenFixed)
+	{
+		_hdScreen = category;
+	}
 	_ruleInterface = _game->getMod()->getInterface(category);
 	if (_ruleInterface)
 	{
@@ -129,8 +135,24 @@ void State::setInterface(const std::string& category, bool alterPal, SavedBattle
  */
 void State::setWindowBackground(Window *window, const std::string &s)
 {
+	if (!_hdScreenFixed && _hdScreen.empty())
+	{
+		_hdScreen = s;
+	}
 	auto& bgImageName = _game->getMod()->getInterface(s)->getBackgroundImage(_game->getMod(), _game->getSavedGame());
 	setWindowBackgroundImage(window, bgImageName);
+	window->setInterfaceName(s);
+}
+
+/**
+ * Names the screen of the theme by screen (XP-000484, HdScreenThemes) where the interface category is shared by different
+ * screens or the state has none. Fixed: a setInterface or setWindowBackground after it does not change the name.
+ * @param screen Name of the screen.
+ */
+void State::setHdScreen(const std::string &screen)
+{
+	_hdScreen = screen;
+	_hdScreenFixed = true;
 }
 
 /**
@@ -251,6 +273,24 @@ void State::add(Surface *surface, const std::string &id, const std::string &cate
 	preAdd(surface);
 }
 
+void State::remove(Surface* surface, bool del /*= true*/)
+{
+	if (!surface)
+		return;
+
+	auto it = std::find(_surfaces.begin(), _surfaces.end(), surface);
+	if (it != _surfaces.end())
+		_surfaces.erase(it);
+
+	auto it2 = std::find(_surfacesOwned.begin(), _surfacesOwned.end(), surface);
+	if (it2 != _surfacesOwned.end())
+	{
+		_surfacesOwned.erase(it2);
+		if (del)
+			delete surface;
+	}
+}
+
 /**
  * Returns whether this is a full-screen state.
  * This is used to optimize the state machine since full-screen
@@ -291,6 +331,10 @@ void State::init()
 	_game->getFpsCounter()->setPalette(_palette);
 	_game->getFpsCounter()->setColor(_cursorColor);
 	_game->getFpsCounter()->draw();
+	_game->getUpdateNotice()->setPalette(_palette);
+	_game->getUpdateNotice()->setColor(_cursorColor);
+	_game->getChatNotice()->setPalette(_palette);
+	_game->getChatNotice()->setColor(_cursorColor);
 
 	// Highest priority: custom sound set explicitly in the code
 	// Medium priority: sound defined by the interface ruleset
@@ -594,6 +638,8 @@ void State::setModPalette()
 		_game->getCursor()->draw();
 		_game->getFpsCounter()->setPalette(_palette);
 		_game->getFpsCounter()->draw();
+		_game->getUpdateNotice()->setPalette(_palette);
+		_game->getChatNotice()->setPalette(_palette);
 	}
 }
 

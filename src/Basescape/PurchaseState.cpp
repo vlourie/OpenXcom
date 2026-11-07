@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PurchaseState.h"
+#include "TradeConfirmState.h"
 #include "ItemLocationsState.h"
 #include <sstream>
 #include <climits>
@@ -51,6 +52,7 @@
 #include "../Battlescape/CannotReequipState.h"
 #include "../Savegame/Country.h"
 #include "../Mod/RuleCountry.h"
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -130,6 +132,10 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 
 	touchComponentsAdd("button2", "buyMenu", _window);
 
+	addBaseSwitch(_base, "buyMenu", "text", "button", 24, nullptr,
+		[](Base *other) { return withBaseSwitch(new PurchaseState(other)); },
+		[this]() { return std::any_of(_items.begin(), _items.end(), [](const TransferRow &row) { return row.amount > 0; }); });
+
 	centerAllSurfaces();
 
 	// Set up objects
@@ -174,6 +180,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 	_lstItems->onRightArrowRelease((ActionHandler)&PurchaseState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&PurchaseState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&PurchaseState::lstItemsMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstItems);
 
 	_cats.push_back("STR_ALL_ITEMS");
 	_cats.push_back("STR_FILTER_HIDDEN");
@@ -234,7 +241,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			}
 		}
 	}
-	if ((_game->getMod()->getHireScientistsUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireScientistsUnlockResearch(), true))
+	if ((!_game->getMod()->getHireScientistsUnlockResearch() || _game->getSavedGame()->isResearched(_game->getMod()->getHireScientistsUnlockResearch(), true))
 		&& (~providedBaseFunc & _game->getMod()->getHireScientistsRequiresBaseFunc()).none())
 	{
 		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), _game->getMod()->getHireScientistCost(), _base->getTotalScientists(), 0, 0, -3, 0, 0, 0 };
@@ -245,7 +252,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			_cats.push_back(cat);
 		}
 	}
-	if ((_game->getMod()->getHireEngineersUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireEngineersUnlockResearch(), true))
+	if ((!_game->getMod()->getHireEngineersUnlockResearch() || _game->getSavedGame()->isResearched(_game->getMod()->getHireEngineersUnlockResearch(), true))
 		&& (~providedBaseFunc & _game->getMod()->getHireEngineersRequiresBaseFunc()).none())
 	{
 		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), _game->getMod()->getHireEngineerCost(), _base->getTotalEngineers(), 0, 0, -2, 0, 0, 0 };
@@ -390,6 +397,18 @@ void PurchaseState::init()
 {
 	State::init();
 
+	if (!_keepCat.empty())
+	{
+		auto cat = std::find(_cats.begin(), _cats.end(), _keepCat);
+		if (cat != _cats.end())
+		{
+			_cbxCategory->setSelected(cat - _cats.begin());
+			updateList();
+			_lstItems->scrollTo(_keepScroll);
+		}
+		_keepCat.clear();
+	}
+
 	touchComponentsRefresh();
 }
 
@@ -398,7 +417,7 @@ void PurchaseState::init()
  */
 void PurchaseState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
@@ -776,6 +795,20 @@ void PurchaseState::btnOkClick(Action *)
 		}
 	}
 
+	if (TradeConfirmState::wanted(_items))
+	{
+		_game->pushState(new TradeConfirmState(_items, _total, "STR_TRADE_CONFIRM_BUY", "buyMenu", [this]() { purchase(); }));
+		return;
+	}
+	purchase();
+}
+
+/**
+ * Buys the chosen items. A screen opened from the basescape opens anew on the same base,
+ * category and scroll (option oxceTradeStay), so the base arrows work again; the rest closes.
+ */
+void PurchaseState::purchase()
+{
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - _total);
 	for (const auto& transferRow : _items)
 	{
@@ -864,7 +897,15 @@ void PurchaseState::btnOkClick(Action *)
 			}
 		}
 	}
+	if (_parent || !baseSwitchAllowed() || !Options::oxceTradeStay)
+	{
+		_game->popState();
+		return;
+	}
+	auto *next = withBaseSwitch(new PurchaseState(_base));
+	next->keepView(_cats[_cbxCategory->getSelected()], _lstItems->getScroll());
 	_game->popState();
+	_game->pushState(next);
 }
 
 /**
@@ -1333,6 +1374,7 @@ void PurchaseState::updateItemStrings()
 	}
 	ss5 << ":" << _base->getAvailableStores();
 	_txtSpaceUsed->setText(tr("STR_SPACE_USED").arg(ss5.str()));
+	updateBaseSwitch();
 }
 
 /**
@@ -1341,6 +1383,23 @@ void PurchaseState::updateItemStrings()
 void PurchaseState::cbxCategoryChange(Action *)
 {
 	updateList();
+}
+
+const RuleItem* PurchaseState::GetItemForTooltip()
+{
+	if (_lstItems->getSelectedRow() < 0)
+		return nullptr;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return nullptr;
+
+	return (RuleItem*)(getRow().rule);
+}
+
+const Base* PurchaseState::GetBase()
+{
+	return _base;
 }
 
 }

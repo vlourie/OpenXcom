@@ -1103,12 +1103,23 @@ void SaveConverter::loadDatSoldier()
 			if (base != 0xFFFF)
 			{
 				Base *b = dynamic_cast<Base*>(_targets[base]);
-				b->getSoldiers()->push_back(soldier);
+				if (b != 0)
+				{
+					b->getSoldiers()->push_back(soldier);
+				}
+				else
+				{
+					delete soldier;
+					continue;
+				}
 			}
 			if (craft != 0xFFFF)
 			{
 				Craft *c = dynamic_cast<Craft*>(_targets[craft]);
-				soldier->setCraft(c);
+				if (c != 0)
+				{
+					soldier->setCraft(c);
+				}
 			}
 			_soldiers.push_back(soldier);
 		}
@@ -1171,9 +1182,8 @@ void SaveConverter::loadDatUp()
 			bool discovered = load<Uint8>(rdata + 0x08) == 2;
 			if (discovered)
 			{
-				for (const auto& req : article->_requires)
+				for (const auto* research : article->_requires)
 				{
-					RuleResearch *research = _mod->getResearch(req);
 					if (research && research->getCost() == 0)
 					{
 						_save->addFinishedResearch(research, _mod, 0, false);

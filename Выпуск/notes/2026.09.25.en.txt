@@ -1,0 +1,5 @@
+﻿Extremator's Russian patch updated to 12.3.2.
+
+— Fresh text fixes across the game from the patch author.
+— Our "BY LEVEL" pages in the commendation articles (the bonus each level gives) are kept, though 12.3.2 itself does not have them.
+— For the Russian language the patch is still installed and enabled automatically.

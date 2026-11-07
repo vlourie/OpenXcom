@@ -27,6 +27,7 @@
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Transfer.h"
+#include "SoldierSortUtil.h"
 
 namespace OpenXcom
 {
@@ -80,17 +81,38 @@ TransfersState::TransfersState(Base *base) : _base(base)
 
 	_txtArrivalTime->setText(tr("STR_ARRIVAL_TIME_HOURS"));
 
-	_lstTransfers->setColumns(3, 155, 75, 46);
+	// OXCE-HD: the soldier's race picture before the name, as in the soldier lists. The list moves right
+	// for it only when a soldier is on the way, so item names keep their full width otherwise
+	int icon = 0;
+	if (Options::oxceBaseSoldierTypeIcon)
+	{
+		for (const auto* transfer : *_base->getTransfers())
+		{
+			if (transfer->getType() == TRANSFER_SOLDIER)
+			{
+				icon = 13;
+				break;
+			}
+		}
+	}
+	_lstTransfers->setIconColumn(2, icon);
+	_lstTransfers->setColumns(3, 155 - icon, 75, 46);
 	_lstTransfers->setSelectable(true);
 	_lstTransfers->setBackground(_window);
-	_lstTransfers->setMargin(2);
+	_lstTransfers->setMargin(2 + icon);
 
+	int row = 0;
 	for (const auto* transfer : *_base->getTransfers())
 	{
 		std::ostringstream ss, ss2;
 		ss << transfer->getQuantity();
 		ss2 << transfer->getHours();
 		_lstTransfers->addRow(3, transfer->getName(_game->getLanguage()).c_str(), ss.str().c_str(), ss2.str().c_str());
+		if (icon && transfer->getType() == TRANSFER_SOLDIER)
+		{
+			_lstTransfers->setRowIcon(row, soldierFlag(_game->getMod(), transfer->getSoldier()));
+		}
+		row++;
 	}
 }
 

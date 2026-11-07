@@ -1,0 +1,1 @@
+- Soldiers talk with more variety: every crew voice now has 9-12 different lines for selecting, moving, picking a weapon and repeated clicks instead of one to three. Four more voices per soldier type are coming soon.

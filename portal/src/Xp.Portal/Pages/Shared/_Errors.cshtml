@@ -1,0 +1,10 @@
+@model IEnumerable<string>
+@if (Model.Any())
+{
+    <ul class="errors">
+        @foreach (var e in Model)
+        {
+            <li>@T[e]</li>
+        }
+    </ul>
+}

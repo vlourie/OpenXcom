@@ -1,0 +1,32 @@
+Hi! Looked at your version of YSCRIPT_DEPOWERED_SHIELDS. The script logic is fine, but two things:
+
+1) The two comment lines are indented less than the code (they sit at the "- new:" level). Inside `code: |` that ends the block, so the next line `if eq powerStatus 3;` is left hanging in the middle of the script list. PyYAML refuses to parse it ("expected <block end>, but found '<scalar>'"). I didn't try it in the game, but at best the mod won't load. Just indent the comments like the code (same column as `var int powerStatus;`), or drop them.
+
+2) The comment says 0 is "the value YSCRIPT_CYDONIA_REMOTE_CONTROL sets on overcharge", but that script sets 750 / 6 = 125 (`div defaultShields 6` + setTag, around line 5114). With a cap of 0, an overcharged turret has no shield at all, same as a powered-off one, and the /6 in the remote control does nothing. If that's what you want, fine, but then the comment is wrong and simpler is:
+          if or eq powerStatus 1 eq powerStatus 3;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP 0;
+          end;
+If you want it to stay at the overcharge value, use 125:
+
+      - new: YSCRIPT_DEPOWERED_SHIELDS
+        offset: 22
+        code: |
+          var int powerStatus;
+
+          unit.getTag powerStatus Tag.POWER_STATUS;                      #*** Status 1 for power off, 2 for power on, 3 for overcharge ***
+
+          if eq powerStatus 1;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP 0;
+          end;
+
+          # Overcharged (status 3): shields stay capped at 125 = 750 / 6,
+          # the value YSCRIPT_CYDONIA_REMOTE_CONTROL sets on overcharge
+          if eq powerStatus 3;
+            var int shieldHp;
+            unit.getTag shieldHp Tag.UNIT_ENERGY_SHIELD_HP;
+            limit_upper shieldHp 125;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP shieldHp;
+          end;
+          return;
+
+(`var` right after `if` is OK, the engine allows declarations at the start of a block. Yankes does the same around line 3005.)

@@ -1,0 +1,64 @@
+Hi Dioxine! Same checker again, this time Piratez_Transformations.rul. It's clean where it counts:
+- all 83 entries have unique names, and there are no duplicate or unknown keys;
+- every reference resolves: research, items, soldier types, bonuses, medals, armors, other transformations;
+- every base function they ask for is provided by some facility;
+- the medal levels fit the medals;
+- about fifty entries match their pedia text to the point.
+What's left is below. Line numbers are from the current release. One engine detail explains #2, #3 and a question further down: when a transformation changes the soldier type and uses upperBoundAtMaxStats (upperBoundType left at 0), the bound is HARD. Any stat above the new type's maxStats is cut down to it, even a stat the transformation doesn't touch (Soldier::calculateStatChanges).
+
+1) Uberization gives Half-Uber only; the Null trait is never granted (line 759).
+The pedia says recipients "gain Half-Uber and Null traits which together give +5 Armor, +1 NV, +15 STR, +10 HP, +5 TU & MEL, -25 FRS, -5 VPWR & VSKL". HALF_UBER + NULL_TRAIT (Bonuses.rul:63 + 191) add up to exactly that, but a transformation can grant only one bonus. So the girl ends up with +10 REA, -10 VPWR, 0 VSKL and -2 morale regen from HALF_UBER alone. NULL_TRAIT isn't used anywhere else.
+Now:  soldierBonusType: STR_HALF_UBER
+Fix:  a new combined bonus, e.g. STR_UBERIZED: armor 5, NV 1, tu 5, health 10, strength 15, psiStrength -5, psiSkill -5, melee 5, mana -25 (no reactions, no morale regen). Leave STR_HALF_UBER as it is, since the Half-Uber Girl recruits use it and their pedia is correct.
+
+2) Weirdgal Transformation cuts VSKL down to 30 (line 216, upperBoundAtMaxStats at 259).
+The type changes to STR_SOLDIER_W, so the bound is hard. W maxStats psiSkill is 30, but a Gal can train to 40. A Gal with VSKL 31-40 comes out with 30, even though the entry says +3 VSKL.
+Fix:  add  upperBoundType: 1   (soft: growth stops at the bound, nothing gets taken away)
+
+3) Repentance (STR_ANG_102) cuts VSKL down to 10, but the pedia says "Set V.SKL cap at 20" (line 262, upperBoundAtMaxStats at 301).
+R maxStats psiSkill is 10, and its statCaps psiSkill is 20. Everything else the pedia lists (ACC 100, THR 80, REA 90, HP 110, BRA 100) is exactly R's statCaps, so the text was written against statCaps.
+Now:  upperBoundAtMaxStats: true
+Fix:  upperBoundAtMaxStats: false
+      upperBoundAtStatCaps: true
+I checked this against all five source types: it doesn't add any new cuts, it just matches the pedia.
+
+4) Cenobite Initiation asks for Freshness, the pedia says Bravery (line 1316).
+Pedia: "Requires 45 VPWR and 90 BRA".
+Now:  requiredMinStats: {psiStrength: 45, mana: 90}
+Fix:  requiredMinStats: {psiStrength: 45, bravery: 90}
+(Lamias are also in allowedSoldierTypes, but the pedia says "Repentias, Lokk'Naars and Damsels only".)
+
+5) Brides to the Queen: the bonus regenerates energy, the pedia says morale (Bonuses.rul:599).
+Pedia: "+1 Morale and Stun regen".
+Now:  recovery: energy +1, stun +1
+Fix:  morale instead of energy (or "Energy" in the pedia)
+
+6) Wholesome Training doesn't match its pedia (line 1471, bonus at Bonuses.rul:540).
+                 data                          pedia
+  training       HP+15 STA+25 THR+5 STR+10     HP+15 STA+20 TU+10 THR+5
+  morale regen   +1                            +2
+If the pedia is right: stamina 20, tu 10 instead of strength 10, morale flatOne 2.
+
+7) Magicienne and Workout for Catgirls only exclude each other one way.
+Magicienne (line 1171) forbids NEKO_BODYBUILDER, but Workout (line 2931) forbids only Swiftpaws and itself. A neko who did Workout can't take Magicienne, but one who did Magicienne can still take Workout (Nekomimi, _O, _W). Gladiator and Magicienne block each other both ways, so I guess this one is meant to as well.
+Fix:  add STR_MAGICIENNE_TRAINING to Workout's forbiddenPreviousTransformations
+
+8) Shade Embodiment creates a Zombie Gal that the zombie rules don't recognise (line 2632).
+She gets the STR_ZOMBIGAL bonus, but her history says STR_SHADE_EMBODIMENT, and the reset wiped everything before that. Seven entries forbid STR_ZOMBIFICATION but not STR_SHADE_EMBODIMENT: Weirdgal, Repentance, Lifeforce Focusing (Gals), Wholesome, Sun Martial Rituals, Sivalinga Resurrection and the unavailable Theban Clone. So an embodied shade can become a zombie Weirdgal, take Sun Rituals, and so on. Sivalinga can raise her too, though its pedia says "zombified can't be raised". The other way round, Zombie Revival and Body Swap require STR_ZOMBIFICATION, so she can't use them.
+Fix:  add STR_SHADE_EMBODIMENT next to STR_ZOMBIFICATION in those seven forbidden lists. For Revival and Body Swap, requiredPreviousTransformations is AND-only, so it's either copies of those two entries that require STR_SHADE_EMBODIMENT, or a line in the pedia.
+
+Questions, maybe intended:
+- Stasis pod is never used up. ASSIGN_STASIS_POD (line 2388) gives STR_STASIS_POD_ASSIGNED (Bonuses.rul:352): -5 REA, -3 HP, +3 FRS, -5 TU regen per turn, and it has no pedia text. Neither revival (lines 2428, 2468) removes it. So the -5 TU/turn stays for good after revival, and if she dies again she can be revived again without a new pod. If the pod should be consumed:  removeTransformations: [STR_ASSIGN_STASIS_POD]  on both revivals (it removes the bonus too; the engine has it since 8.6).
+- Chort Binding (line 2760) has the same hard bound. Reactions get cut to 80 (a Lokk'naar can have 140, a neko 125), and VSKL gets cut to 10, although Chort statCaps allow 20. REA 80 may be the point, but the VSKL cut looks like #3.
+- Chort Binding lists STR_SOLDIER_R but has minRank: 1 (line 2788). Repentias can't be promoted, so they never qualify.
+- Nepotism (line 2) can be repeated. The +15 bonus doesn't stack, but the flat +1 FRS does, at $100k per point. The pedia says "they will not get any extra benefit from repeated Neppings".
+- Ritual of Rebirth (709), Revolutionary Training (789) and Sadist Training (1356) have no keepSoldierArmor, so the armor goes to stores and she comes back in the default outfit. All the other entries keep it. Fine for a "rebirth", but it looks like an oversight on the other two.
+- Syn Acceptance (line 1661) takes away 75% of the Freshness she has gained (percentGainedStatChange mana -75). The pedia doesn't mention it.
+
+Small stuff, no rush:
+- Zombiefication lists STR_SOLDIER_V twice (lines 2519-2520). Maybe another type was meant for one of them.
+- Both Sleeping Beauty revivals and Sivalinga allow DOGE and BLOODOGE, and they give BOXX_ARMOR. That armor's units list doesn't include the dogs.
+- The pedia lists fewer types than the data allows: Judicial Education also takes Lamias, and Magicienne also takes Gnomes and nekos.
+- Personal Attention: the pedia mentions only "+1 Freshness", not the +3 to nine stats (line 49).
+
+That's all. It's from the ruleset and the engine code only, none of it tested in the game. The fastest way to check #2 is the transformation screen, since it shows the min/max change with the same code: take a Gal with VSKL 35 and open Weirdgal.

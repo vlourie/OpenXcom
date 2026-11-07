@@ -18,12 +18,15 @@
  */
 
 #include <locale>
+#include <algorithm>
+#include <cmath>
 #include "Ufopaedia.h"
 #include "UfopaediaSelectState.h"
 #include "../Mod/ArticleDefinition.h"
 #include "../Engine/Game.h"
 #include "../Engine/Options.h"
 #include "../Engine/LocalizedText.h"
+#include "../Engine/Unicode.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextEdit.h"
@@ -36,6 +39,64 @@
 
 namespace OpenXcom
 {
+
+namespace
+{
+
+/**
+ * How far apart two palette entries look, as plain distance in RGB.
+ */
+int colorDistance(const SDL_Color &a, const SDL_Color &b)
+{
+	const int dr = (int)a.r - (int)b.r, dg = (int)a.g - (int)b.g, db = (int)a.b - (int)b.b;
+	return (int)(std::sqrt((double)(dr * dr + dg * dg + db * db)) + 0.5);
+}
+
+/**
+ * The colour of an unread article, in a shade the eye can tell from a read one.
+ * X-Piratez paints both with neighbouring shades of the same cyan - 81 against 134, forty units
+ * of RGB apart - so opening an article changed nothing anyone could see. When the mod's two
+ * colours come out that close, the list's own palette is searched for a shade that is as far from
+ * the normal one as it gets while staying about as bright, and whose five shades still darken one
+ * after another: the font draws a letter as colour + 1 down to colour + 5, so a colour that runs
+ * off the end of its ramp gets a shadow brighter than the letter itself. Nothing suitable in the
+ * palette - the mod's own colour is kept.
+ */
+Uint8 visibleNewColor(const SDL_Color *pal, Uint8 normal, Uint8 fromMod)
+{
+	const int CLOSE = 96;
+	if (!pal || normal + 5 > 255 || fromMod + 5 > 255 || colorDistance(pal[normal + 1], pal[fromMod + 1]) >= CLOSE)
+	{
+		return fromMod;
+	}
+	auto lum = [&](int i) { return pal[i].r * 2 + pal[i].g * 5 + pal[i].b; };
+	const int want = lum(normal + 1);
+	Uint8 best = fromMod;
+	int bestDistance = colorDistance(pal[normal + 1], pal[fromMod + 1]);
+	for (int base = 0; base + 5 < 256; ++base)
+	{
+		const int face = lum(base + 1);
+		if (face < want * 3 / 4 || face > want * 5 / 4)
+		{
+			continue;
+		}
+		bool ramp = true;
+		for (int shade = 2; shade <= 5 && ramp; ++shade)
+		{
+			ramp = lum(base + shade) < lum(base + shade - 1);
+		}
+		const int d = ramp ? colorDistance(pal[normal + 1], pal[base + 1]) : 0;
+		if (ramp && d > bestDistance)
+		{
+			bestDistance = d;
+			best = (Uint8)base;
+		}
+	}
+	return best;
+}
+
+}
+
 	UfopaediaSelectState::UfopaediaSelectState(const std::string &section, int heightOffset, int windowOffset) : _section(section), _lstScroll(0)
 	{
 		_isCommendationsSection = (_section == UFOPAEDIA_COMMENDATIONS);
@@ -66,7 +127,9 @@ namespace OpenXcom
 		add(_cbxFilter, "button2", "ufopaedia");
 
 		_colorNormal = _lstSelection->getColor();
-		_colorNew = Options::oxceHighlightNewTopics ? _lstSelection->getSecondaryColor() : _colorNormal;
+		_colorNew = Options::oxceHighlightNewTopics
+			? visibleNewColor(_lstSelection->getPalette(), _colorNormal, _lstSelection->getSecondaryColor())
+			: _colorNormal;
 		_colorHidden = _game->getMod()->getInterface("ufopaedia")->getElement("listExtended")->color;
 
 		centerAllSurfaces();
@@ -94,6 +157,7 @@ namespace OpenXcom
 		filterOptions.push_back("STR_FILTER_DEFAULT");
 		filterOptions.push_back(_isCommendationsSection ? "STR_NOT_AWARDED_YET" : "STR_SHOW_ONLY_NEW");
 		filterOptions.push_back("STR_FILTER_HIDDEN");
+		filterOptions.push_back("STR_FILTER_ALPHABETICAL"); // OXCE-HD: as the default one, sorted by title
 		_cbxFilter->setOptions(filterOptions, true);
 		_cbxFilter->onChange((ActionHandler)&UfopaediaSelectState::cbxFilterChange);
 
@@ -222,6 +286,14 @@ namespace OpenXcom
 		Ufopaedia::list(_game->getSavedGame(), _game->getMod(), _section, _article_list);
 		_filtered_article_list.clear();
 		size_t selectedFilter = _cbxFilter->getSelected();
+		// OXCE-HD: the mod's listOrder groups articles by topic; "alphabetical" sorts by the title the player
+		// reads, for finding one by name in a section of two hundred entries, and otherwise shows what the default one does
+		if (selectedFilter == 3)
+		{
+			std::sort(_article_list.begin(), _article_list.end(), [&](ArticleDefinition *a, ArticleDefinition *b)
+				{ return Unicode::naturalCompare(tr(a->getMainTitle()), tr(b->getMainTitle())); });
+			selectedFilter = 0;
+		}
 
 		int row = 0;
 		bool hasUnseen = false;

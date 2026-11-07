@@ -127,6 +127,8 @@ public:
 	void btnGlobalResearchClick(Action *action);
 	/// Handler for clicking the [GlobalAlienContainment] key.
 	void btnGlobalAlienContainmentClick(Action *action);
+	/// Handler for clicking the [GlobalTransfers] key.
+	void btnGlobalTransfersClick(Action *action);
 	/// Handler for clicking the [DogfightExperience] key.
 	void btnDogfightExperienceClick(Action *action);
 	/// Handler for clicking the [Debug] key.
@@ -165,6 +167,8 @@ public:
 	void btnZoomOutLeftClick(Action *action);
 	/// Handler for right-clicking the Zoom Out icon.
 	void btnZoomOutRightClick(Action *action);
+	/// OXCE-HD (oxceHdFundsToggle): a click on the funds line shows the rating instead of the money, and back.
+	void txtFundsClick(Action *action);
 	/// Blit method - renders the state and dogfights.
 	void blit() override;
 	/// Globe zoom in effect for dogfights.
@@ -191,7 +195,7 @@ public:
 	/// Update the resolution settings, we just resized the window.
 	void resize(int &dX, int &dY) override;
 	/// Handle alien mission generation.
-	void determineAlienMissions(bool isNewMonth = true, const RuleEvent* eventRules = nullptr);
+	void determineAlienMissions(bool isNewMonth = true, const RuleEvent* p_eventRules = nullptr);
 private:
 	bool attemptAlienRaceEvolution(int month, AlienBase* ab) const;
 	/// Process each individual mission script command.

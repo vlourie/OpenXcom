@@ -1,0 +1,26 @@
+Hi Dioxine! Same checker again, this time on Piratez_Resources.rul. It's in very good shape: every file path resolves, every image is 8-bit, no frame index is out of range, no two Piratez files write the same frame, and every pedia image, event background, interface background, UFO sprite, sound and HANDOB frame referenced from the other rulesets exists. One real bug, one sleeping typo, one question. Line numbers are from the current release.
+
+1) Underwater tracers missing for 32 weapons (Piratez_Resources.rul:9803)
+UnderwaterProjectiles declares height 135, but Projectiles_DIO.png is 105x162 (54 bullet rows). The land entry right above it (line 9796) says 162. OXCE cuts the sheet by the declared size, so rows 45-53 are never loaded underwater, and the tracer is simply invisible (Map.cpp skips a missing frame without an error).
+Affected: every item with bulletSprite 45-53, and none of them is landOnly. For example: RPG / RPG_ADV / RPG_SMART, BFG, Plasma Scorcher, Battle Plasma, Elite Heavy Plasma, Recoilless Rifle, Mega Cannon, Durandal, SSRL_2, Baby Nuke, UAC Rocket Launcher, MrShan Launcher, Spore Launcher, plus tank cannons and rockets. The 15 underwater deployments (STR_SEA_*, TLETH base assault) are where it shows.
+Now:
+  - type: UnderwaterProjectiles
+    width: 105
+    height: 135
+Fix:
+    height: 162
+
+2) DEM_1.PCK (Piratez_Resources.rul:3056): height 680, but DEM_1.png is 512x720 and DEM_0/2/3 all say 720. The last row (frames 272-287: female torso dirs 5-7 and the flying legs) is dropped. It's invisible today, because DOOM_ARMOR_1 isn't a soldier armor and non-soldiers are always male. But it will crash with "Frame(s) missing" the day it goes on a soldier or learns to fly. Fix: height: 720.
+
+3) Question: `music: GMTACTIC1` (9 deployments: ATRIUM, BANDIT_CAVES, LOKNAR_ALTAR, MANSION, MONSTER_HUNT_SHAMBLER, NIGHTOSHPHERE_DELOREAN, NIGHTOSHPHERE_HARVEST, RITUAL_CAVE, SPACE_FREIGHTER; and 2 events, JACKASS_EXPANSION_NORTH_ATLANTIC and START_LOCATION_NORTH_ATLANTIC). OXCE picks a random track whose name CONTAINS the given string. So GMTACTIC1 means any of GMTACTIC1, GMTACTIC10...GMTACTIC19: 11 tracks, and the one you probably meant plays 1 time in 11. If that's intended, fine. If you wanted that one track, give it a name that isn't a prefix of others (e.g. GMTACTICA.ogg + `- type: GMTACTICA`).
+
+Small stuff, no rush:
+- GMGEO17 (line 17655) is declared in musics but there is no SOUND/GMGEO17.* file, so the engine silently skips it. Either the file is missing, or the entry can go.
+- Declared bigger than the image (harmless, just blank frames): SMU_3.PCK :4091 and PIR_135.PCK :1543 (720 vs 680), BATGLAD.PCK :5148 and FLASHBANG.PCK :5155 (1440 vs 1400).
+- BIG_CAPTAIN_YESGRAY_NOGOLD has `fileSingle` twice (13276-13277). The first one wins, so the UPed_Unavailable.gif line is dead.
+- Damaged facilities with spriteShape 1001/1002 (ARMORY_DAMAGED_2, GENERAL_STORES_DAMAGED, LIVING_QUARTERS_DAMAGED, TACTICAL_CENTER_DAMAGED, FLAK_TOWER_DAMAGED) have no "under construction" outline frame (shape+3 = BASEBITS 1004/1005 isn't defined). Harmless, since they're placed already built and need STR_UNAVAILABLE. It would crash only if one ever became buildable.
+- 22 images have their transparent colour on an index other than 0: HyperjetBase.gif (1); CAPS, TRAPS, HPLANT_*_UP, RedForge, VATS, Machinegun*_Base, MIGBase, *Dogfight (255); X35Base, *Minimised (127); Thunderbird_* (15). OXCE remaps it and logs a warning each time. None has holes. Re-saving them would only clean the log.
+- 53 files under Resources/ (~730 KB) that no .rul references. Examples: "ankha_body (1).png", "dgoodpal_normal_mdf2 - kopia.pal" and 12 other .pal files, Globe/hd7*.png, Pedia/c_017_cpal.png, witches2.png, Sounds/treasure.wav (300 KB), porn_1.png, rocket_launcher_old2.gif, Sprites/MRC_7bak.png. Looks like leftovers; they could be dropped from the release.
+- Non-PCM sounds: pig.aiff (AIFF); md_n1.wav and Piss2.wav (IMA ADPCM); CLANG.wav (MS ADPCM). SDL_mixer normally reads these, so it's just a heads-up in case someone's build doesn't.
+
+That's all. This comes from the ruleset, the files and the engine code only. I haven't checked any of it in an actual underwater fight.

@@ -17,19 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <vector>
 #include "../Engine/InteractiveSurface.h"
 
 namespace OpenXcom
 {
 
 class Base;
+class Craft;
 class SurfaceSet;
 class BaseFacility;
 class RuleBaseFacility;
+class GameTime;
 class Font;
 class Language;
+class Text;
 class Timer;
 enum BasePlacementErrors : int;
+namespace HdBaseScene { struct View; }
 
 /**
  * Interactive view of a base.
@@ -55,6 +60,32 @@ private:
 	Uint8 _redColor, _yellowColor, _greenColor;
 	bool _highContrast;
 	Uint8 _cellColor, _selectorColor;
+	int _animPhase, _animTick;
+	/// When an HD picture of a facility changes next (SDL_GetTicks), as drawHd found it.
+	Uint32 _hdNextChange;
+	/// A craft drawn in the world layer (with its HD picture or lights) instead of the classic layer.
+	/// A craft whose lights go over the view; `inWorld`: its picture is drawn in the world layer too.
+	/// `fuel`: percent for the fuel garland at (fuelX, fuelY), -1 for a craft without fuel.
+	struct HdCraft { int index, x, y, status; Uint32 seed; bool inWorld; int fuel, fuelX, fuelY; };
+	std::vector<HdCraft> _hdCrafts;
+	/// The game's clock, read for the night over the lit HD pictures (HdBaseScene); nullptr: day.
+	const GameTime *_hdTime = nullptr;
+	/// The craft the HD launch scene shows in its hangar although it is out already (CraftLaunchState).
+	const Craft *_hdDeparting = nullptr;
+	/// The numbers over the facilities (build time, ammo), laid out and kept out of the classic layer,
+	/// when the HD interface draws them with its own fonts; `_hdNumbersKept`: were they when last drawn.
+	std::vector<Text*> _hdNumbers;
+	bool _hdNumbersKept;
+	/// Is the HD interface going to draw the numbers over the facilities with its own fonts?
+	bool hdNumbers() const;
+	/// Blits a laid-out number into the classic layer, or keeps it for the HD interface.
+	void keepNumber(Text *text);
+	/// Has this facility an HD picture of its tiles (then it is not drawn on the classic layer)?
+	bool isHdFacility(const BaseFacility *facility) const;
+	/// Is this facility being built under the living base's light, its HD picture coming through a blueprint?
+	bool isHdBuilding(const BaseFacility *facility) const;
+	/// The frame whose HD picture stands for tile `num` of the facility.
+	static int hdTileIndex(const BaseFacility *facility, int num);
 	/// Updates the neighborFacility's build time. This is for internal use only (reCalcQueuedBuildings()).
 	void updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacility* neighbor);
 public:
@@ -66,6 +97,10 @@ public:
 	void initText(Font *big, Font *small, Language *lang) override;
 	/// Sets the base to display.
 	void setBase(Base *base);
+	/// Sets the game's clock the night over the lit HD pictures goes by (only read).
+	void setHdTime(const GameTime *time) { _hdTime = time; }
+	/// The HD launch scene: this craft is drawn in its hangar although it is out already.
+	void setHdDeparting(const Craft *craft) { _hdDeparting = craft; _redraw = true; }
 	/// Sets the texture for this base view.
 	void setTexture(SurfaceSet *texture);
 	/// Gets the currently selected facility.
@@ -90,6 +125,15 @@ public:
 	void blink();
 	/// Draws the base view.
 	void draw() override;
+	/// Draws the HD pictures of the facilities into the world layer (see drawHd).
+	void drawHd();
+	/// Lights the world layer of the living base (HdBaseScene): the night and the lamps of the pictures.
+	void drawHdScene(SDL_Surface *world, int k, Uint32 now);
+	/// The living base as the preview drew it (HdBaseScene::View) for the layout now and `k`, made when the
+	/// layout changes; nullptr without the pack's rock (hd/BASEBITS.PCK/ground.png).
+	const HdBaseScene::View *hdLayout(int k);
+	/// Draws the lights of the crafts over everything the view has put into the world layer.
+	void drawHdLights();
 	/// Blits the base view onto another surface.
 	void blit(SDL_Surface *surface) override;
 	/// Special handling for mouse hovers.

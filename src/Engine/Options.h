@@ -73,6 +73,30 @@ namespace Options
 #define OPT extern
 #include "Options.inc.h"
 #undef OPT
+	namespace QOL
+	{
+		enum class ItemTooltipMode
+		{
+			None,
+			Hover,
+			Hotkey
+		};
+
+		enum class HighlightLowManaSoldiersMode
+		{
+			None,
+			Name,
+			Rank
+		};
+
+		enum class DefaultSoldiersSorter
+		{
+			Original,
+			KillCount,
+			FiringAccuracy,
+			CurrentMana
+		};
+	};
 
 	/// Creates the options info.
 	void create();

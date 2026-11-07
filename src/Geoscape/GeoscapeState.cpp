@@ -26,6 +26,7 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Screen.h"
@@ -56,6 +57,7 @@
 #include "../Savegame/Transfer.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SoldierDiary.h"
+#include "../Menu/LuaScreenState.h"
 #include "../Menu/PauseState.h"
 #include "SelectMusicTrackState.h"
 #include "UfoTrackerState.h"
@@ -79,14 +81,17 @@
 #include "DogfightState.h"
 #include "UfoLostState.h"
 #include "CraftPatrolState.h"
+#include "../Engine/HdCraftRoute.h"
 #include "LowFuelState.h"
 #include "MultipleTargetsState.h"
+#include "SelectDestinationState.h"
 #include "ConfirmLandingState.h"
 #include "ItemsArrivingState.h"
 #include "CraftErrorState.h"
 #include "DogfightErrorState.h"
 #include "DogfightExperienceState.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Mod/ArticleDefinition.h"
 #include "../Savegame/ResearchProject.h"
 #include "ResearchCompleteState.h"
 #include "../Mod/RuleResearch.h"
@@ -134,9 +139,13 @@
 #include "../Mod/Texture.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
+#include "CraftLaunchState.h"
 
 namespace OpenXcom
 {
+
+/// OXCE-HD (oxceHdFundsToggle): the funds line shows the rating now; kept between loads of a game until the program is closed.
+static bool hdFundsShowRating = false;
 
 /**
  * Initializes all the elements in the Geoscape screen.
@@ -282,6 +291,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalProductionClick, Options::keyGeoGlobalProduction);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalResearchClick, Options::keyGeoGlobalResearch);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalAlienContainmentClick, Options::keyGeoGlobalAlienContainment);
+	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalTransfersClick, Options::keyGeoGlobalTransfers);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnDogfightExperienceClick, Options::keyGeoDailyPilotExperience);
 	_btnIntercept->setGeoscapeButton(true);
 
@@ -390,6 +400,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 
 	_txtFunds->setAlign(ALIGN_CENTER);
 	_txtFunds->setVisible(Options::showFundsOnGeoscape);
+	_txtFunds->onMouseClick((ActionHandler)&GeoscapeState::txtFundsClick, SDL_BUTTON_LEFT);
 
 	_txtHour->setBig();
 	_txtHour->setAlign(ALIGN_RIGHT);
@@ -546,6 +557,11 @@ void GeoscapeState::handle(Action *action)
 				Options::dogfightSpeed = 20;
 				_dogfightTimer->setInterval(Options::dogfightSpeed);
 			}
+		}
+		// the player's way to the screens of Lua mods
+		if (action->getDetails()->key.keysym.sym == Options::keyLuaMods && !buttonsDisabled() && _game->getMod()->getLuaHost() && _game->getMod()->getLuaHost()->hasMenuScreens())
+		{
+			_game->pushState(new LuaModsState());
 		}
 		// "ctrl-d" - enable debug mode
 		if (Options::debug && action->getDetails()->key.keysym.sym == SDLK_d && _game->isCtrlPressed())
@@ -712,7 +728,10 @@ void GeoscapeState::init()
 	updateSlackingIndicator();
 
 	_globe->onMouseClick((ActionHandler)&GeoscapeState::globeClick);
+	// the wheel button on a globe label opens its ufopaedia article
+	_globe->onMouseClick((ActionHandler)&GeoscapeState::globeClick, SDL_BUTTON_MIDDLE);
 	_globe->onMouseOver(0);
+	_globe->boxCancel(); // OXCE-HD (oxceHdGlobeBox): a frame left over from before another window
 	_globe->rotateStop();
 	_globe->setFocus(true);
 	_globe->draw();
@@ -721,6 +740,35 @@ void GeoscapeState::init()
 	if (_game->getSavedGame()->isIronman() && _game->getSavedGame()->getName().empty())
 	{
 		popup(new ListSaveState(OPT_GEOSCAPE));
+	}
+
+	// HD test automation: OXCE_HD_LAUNCH_TEST=<craft type>[.land] plays the launch (landing) scene of the
+	// first such craft of the save once over the geoscape (headless checks together with OXCE_HD_DUMP)
+	static const char *launchTest = getenv("OXCE_HD_LAUNCH_TEST");
+	if (launchTest && *launchTest)
+	{
+		std::string type = launchTest;
+		launchTest = nullptr;
+		const bool landing = type.size() > 5 && type.compare(type.size() - 5, 5, ".land") == 0;
+		if (landing)
+		{
+			type.resize(type.size() - 5);
+		}
+		const Craft *found = nullptr;
+		for (const auto *xbase : *_game->getSavedGame()->getBases())
+		{
+			for (const auto *xcraft : *xbase->getCrafts())
+			{
+				if (!found && xcraft->getRules()->getType() == type)
+				{
+					found = xcraft;
+				}
+			}
+		}
+		if (State *scene = found ? CraftLaunchState::create(found, landing) : CraftLaunchState::create(type, 1, landing))
+		{
+			popup(scene);
+		}
 	}
 
 	// Set music if it's not already playing
@@ -762,6 +810,15 @@ void GeoscapeState::think()
 {
 	State::think();
 
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->runQueue(_game->getSavedGame());
+		if (auto *screen = lua->nextScreen())
+		{
+			popup(screen);
+		}
+	}
+
 	_zoomInEffectTimer->think(this, 0);
 	_zoomOutEffectTimer->think(this, 0);
 	_dogfightStartTimer->think(this, 0);
@@ -770,6 +827,7 @@ void GeoscapeState::think()
 	{
 		// Handle timers
 		_gameTimer->think(this, 0);
+		_globe->hdRadarRan(); // a picture only: the HD radar's waves move while the time runs
 	}
 	else
 	{
@@ -780,6 +838,7 @@ void GeoscapeState::think()
 			{
 				_pause = false;
 				_gameTimer->think(this, 0);
+				_globe->hdRadarRan();
 			}
 			_dogfightTimer->think(this, 0);
 		}
@@ -794,6 +853,21 @@ void GeoscapeState::think()
 }
 
 /**
+ * OXCE-HD (oxceHdFundsToggle): a click on the funds line switches it between the money and the rating (the number the
+ * monthly report ends with). The choice is kept until the game is closed. Display only.
+ * @param action Pointer to an action.
+ */
+void GeoscapeState::txtFundsClick(Action *)
+{
+	if (!Options::oxceHdFundsToggle)
+	{
+		return;
+	}
+	hdFundsShowRating = !hdFundsShowRating;
+	timeDisplay();
+}
+
+/**
  * Updates the Geoscape clock with the latest
  * game time and date in human-readable format. (+Funds)
  */
@@ -801,7 +875,7 @@ void GeoscapeState::timeDisplay()
 {
 	if (Options::showFundsOnGeoscape)
 	{
-		if (Options::oxceGeoShowScoreInsteadOfFunds)
+		if (Options::oxceGeoShowScoreInsteadOfFunds || (Options::oxceHdFundsToggle && hdFundsShowRating))
 		{
 			// it's a cheat (you're not supposed to see this info in real time), for debugging only
 			_txtFunds->setText(std::to_string(_game->getSavedGame()->getCurrentScore(_game->getSavedGame()->getMonthsPassed() + 1)));
@@ -888,6 +962,8 @@ void GeoscapeState::timeAdvance()
 	{
 		timeSpan = 12 * 5 * 6 * 2 * 24;
 	}
+	// the HD radar pulses only at 5 seconds and 1 minute a step: faster, a cycle is shorter than a pulse
+	_globe->setHdRadarSlow(timeSpan <= 12);
 
 
 	for (int i = 0; i < timeSpan && !_pause; ++i)
@@ -1236,6 +1312,11 @@ void GeoscapeState::time5Seconds()
 				if (returnedToBase)
 				{
 					_game->getSavedGame()->stopHuntingXcomCraft(xcraft); // hiding in the base is good enough, obviously
+					// HD render: the scene of the craft coming back into its hangar (a picture only)
+					if (State *scene = CraftLaunchState::create(xcraft, true))
+					{
+						popup(scene);
+					}
 				}
 			}
 
@@ -1381,6 +1462,10 @@ void GeoscapeState::time5Seconds()
 					case Ufo::IGNORE_ME:
 						break;
 					}
+				}
+				else if (w != 0 && Options::oxceHdCraftRoute && HdCraftRoute::advance(xcraft, _game->getSavedGame()))
+				{
+					// OXCE-HD (oxceHdCraftRoute): a stop of the route, not the last one - on to the next, no window
 				}
 				else if (w != 0)
 				{
@@ -1884,6 +1969,9 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
  */
 void GeoscapeState::time30Minutes()
 {
+	// the HD radar pulses with the detection below (a picture only)
+	_globe->hdRadarCycle();
+
 	// Decrease mission countdowns
 	for (auto* am : _game->getSavedGame()->getAlienMissions())
 	{
@@ -2050,7 +2138,7 @@ void GeoscapeState::time30Minutes()
 		if (ge->isOver())
 		{
 			bool interrupted = false;
-			if (!ge->getRules().getInterruptResearch().empty())
+			if (ge->getRules().getInterruptResearch())
 			{
 				if (_game->getSavedGame()->isResearched(ge->getRules().getInterruptResearch(), false))
 				{
@@ -2101,7 +2189,7 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 
 	for (auto* craft : *activeCrafts)
 	{
-		detected = maskBitOr(detected, craft->detect(ufo, save, alreadyTracked));
+		detected = maskBitOr(detected, craft->detect(ufo, save, alreadyTracked, _game->getMod()->getLuaHost()));
 	}
 
 	if (!alreadyTracked)
@@ -2145,6 +2233,7 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
  */
 void GeoscapeState::time1Hour()
 {
+	_globe->hdRadarHour(); // a picture only: the HD radar's hourly waves
 	// Handle craft maintenance
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
@@ -2292,6 +2381,11 @@ void GeoscapeState::time1Hour()
 	}
 
 	updateSlackingIndicator();
+
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::NEW_HOUR, { _game->getSavedGame() });
+	}
 }
 
 /**
@@ -2851,6 +2945,11 @@ void GeoscapeState::time1Day()
 			popup(new CraftErrorState(this, msg, false));
 		}
 	}
+
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::NEW_DAY, { _game->getSavedGame() });
+	}
 }
 
 /**
@@ -2902,6 +3001,12 @@ void GeoscapeState::time1Month()
 			}
 		}
 	}
+
+	// the report of the month is already counted: what a mod changes here belongs to the new month
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->fire(LuaHost::NEW_MONTH, { _game->getSavedGame() });
+	}
 }
 
 /**
@@ -2951,12 +3056,58 @@ void GeoscapeState::globeClick(Action *action)
 	// Clicking markers on the globe
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		std::vector<Target*> v = _globe->getTargets(mouseX, mouseY, false, 0);
+		std::vector<Target*> v;
+		int bx0, by0, bx1, by1;
+		if (_globe->takeBox(bx0, by0, bx1, by1))
+		{
+			// OXCE-HD (oxceHdGlobeBox): a frame was drawn - only our craft inside it count (bases, UFOs, sites and
+			// waypoints are left out), and they go at once to the choice of a destination, as the wing of the
+			// Intercept list does (XP-000503): the same rule for who may fly (InterceptState::lstCraftsLeftClick
+			// allowStart) and the same limit (3 with Shift + the last one clicked = 4)
+			std::vector<Craft*> wing;
+			for (Target *t : _globe->getTargetsInRect(bx0, by0, bx1, by1))
+			{
+				Craft *c = dynamic_cast<Craft*>(t);
+				if (c == 0 || wing.size() >= 4)
+					continue;
+				if (c->getStatus() == "STR_READY" || (
+					(c->getStatus() == "STR_OUT" || Options::craftLaunchAlways) &&
+					!c->getLowFuel() &&
+					!c->getMissionComplete()))
+				{
+					wing.push_back(c);
+				}
+			}
+			if (!wing.empty())
+			{
+				_game->pushState(new SelectDestinationState(wing, _globe));
+			}
+		}
+		else
+		{
+			v = _globe->getTargets(mouseX, mouseY, false, 0);
+		}
 		if (!v.empty())
 		{
 			// Pass empty vector
 			std::vector<Craft*> crafts;
 			_game->pushState(new MultipleTargetsState(v, crafts, this, true));
+		}
+	}
+
+	// The wheel button on a name written on the globe: its ufopaedia article, when the mod has one
+	// and the player has earned it. Nothing happens otherwise - an article the game hides everywhere
+	// else should not be announced here either.
+	if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE && !buttonsDisabled())
+	{
+		const std::string id = _globe->getLabelAt(mouseX, mouseY);
+		if (!id.empty())
+		{
+			ArticleDefinition *article = _game->getMod()->getUfopaediaArticle(id);
+			if (article && Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
+			{
+				Ufopaedia::openArticle(_game, article);
+			}
 		}
 	}
 
@@ -3575,7 +3726,7 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 /**
  * Determine the alien missions to start this month.
  */
-void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eventRules)
+void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_eventRules)
 {
 	SavedGame *save = _game->getSavedGame();
 	AlienStrategy &strategy = save->getAlienStrategy();
@@ -3755,29 +3906,42 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 			int arcsEnabled = 0;
 			// level four condition check: check maxArcs (duplicates count, arcs enabled by other commands or in any other way count too!)
 			{
-				for (auto& seqArc : arcCommand->getSequentialArcs())
+				for (auto* seqArc : arcCommand->getSequentialArcs())
 				{
 					if (save->isResearched(seqArc))
 						++arcsEnabled;
 					else
-						disabledSeqArcs.push_back(seqArc);
+						disabledSeqArcs.push_back(seqArc->getName());
 				}
 				WeightedOptions tmp = arcCommand->getRandomArcs(); // copy for the iterator, because of getNames()
 				disabledRngArcs = tmp; // copy for us to modify
 				for (auto& rngArc : tmp.getNames())
 				{
-					if (save->isResearched(rngArc))
+					// HD: имя дуги может оказаться пустышкой - тогда темы в _research нет
+					auto* research = mod->getResearchOrPlaceholder(rngArc);
+					if (save->isResearched(research))
 					{
 						++arcsEnabled;
-						disabledRngArcs.set(rngArc, 0); // delete
+						disabledRngArcs.set(research->getName(), 0); // delete
+					}
+					else if (!mod->getResearch(rngArc))
+					{
+						// HD: пустышку открывать нельзя - она ушла бы в сейв открытым исследованием без правила
+						Log(LOG_ERROR) << "Arc script refers to research '" << rngArc << "', which no mod declares; skipping it.";
+						disabledRngArcs.set(rngArc, 0);
 					}
 				}
 			}
 			Base* hq = save->getBases()->front();
 			bool canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
-			if (canAddOneMore && !disabledSeqArcs.empty())
+			if (canAddOneMore && !disabledSeqArcs.empty() && !mod->getResearch(disabledSeqArcs.front()))
 			{
-				auto* ruleResearchSeq = mod->getResearch(disabledSeqArcs.front(), true); // take first
+				// HD: следующая по порядку дуга - пустышка: последовательность стоит на дыре, в сейв ничего не пишем
+				Log(LOG_ERROR) << "Arc script refers to research '" << disabledSeqArcs.front() << "', which no mod declares; sequence stops here.";
+			}
+			else if (canAddOneMore && !disabledSeqArcs.empty())
+			{
+				auto* ruleResearchSeq = mod->getResearchOrPlaceholder(disabledSeqArcs.front()); // take first
 				save->addFinishedResearch(ruleResearchSeq, mod, hq, true);
 				++arcsEnabled;
 				if (ruleResearchSeq)
@@ -3796,7 +3960,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 			canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
 			if (canAddOneMore && !disabledRngArcs.empty())
 			{
-				auto* ruleResearchRng = mod->getResearch(disabledRngArcs.choose(), true); // take random
+				auto* ruleResearchRng = mod->getResearchOrPlaceholder(disabledRngArcs.choose()); // take random
 				save->addFinishedResearch(ruleResearchRng, mod, hq, true);
 				++arcsEnabled; // for good measure :)
 				if (ruleResearchRng)
@@ -3824,10 +3988,10 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 		RuleMissionScript *command = isNewMonth ? mod->getMissionScript(missionScriptName) : mod->getAdhocScript(missionScriptName);
 
 		// level zero condition check: filter adhoc mission scripts by tags
-		if (!isNewMonth && eventRules)
+		if (!isNewMonth && p_eventRules)
 		{
 			bool matchFound = false;
-			for (auto& atag : eventRules->getAdhocMissionScriptTags())
+			for (auto& atag : p_eventRules->getAdhocMissionScriptTags())
 			{
 				for (auto& btag : command->getAdhocMissionScriptTags())
 				{
@@ -4277,7 +4441,7 @@ bool GeoscapeState::attemptAlienRaceEvolution(int month, AlienBase* ab) const
 {
 	for (const auto& tuple : ab->getDeployment()->getAlienRaceEvolution())
 	{
-		if (std::get<0>(tuple) <= month && std::get<1>(tuple) == ab->getAlienRace())
+		if ((int)std::get<0>(tuple) <= month && std::get<1>(tuple) == ab->getAlienRace())
 		{
 			auto* newRace = _game->getMod()->getAlienRace(std::get<2>(tuple), false);
 			if (newRace)

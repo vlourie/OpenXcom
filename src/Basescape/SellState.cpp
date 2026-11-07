@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SellState.h"
+#include "TradeConfirmState.h"
 #include "ItemLocationsState.h"
 #include "ManufactureDependenciesTreeState.h"
 #include <algorithm>
@@ -39,6 +40,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
+#include "SoldierSortUtil.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/Vehicle.h"
@@ -57,6 +59,7 @@
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Engine/Sound.h"
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -131,6 +134,15 @@ void SellState::delayedInit()
 
 	touchComponentsAdd("button2", "sellMenu", _window);
 
+	addBaseSwitch(_base, "sellMenu", "text", "button", 24, nullptr,
+		[](Base *other) { return withBaseSwitch(new SellState(other, 0)); },
+		[this]()
+		{
+			// an overfull store has to be sold down first
+			return (_debriefingState == 0 && Options::storageLimitsEnforced && _base->storesOverfull())
+				|| std::any_of(_items.begin(), _items.end(), [](const TransferRow &row) { return row.amount > 0; });
+		});
+
 	centerAllSurfaces();
 
 	// Set up objects
@@ -184,6 +196,7 @@ void SellState::delayedInit()
 	_lstItems->onRightArrowRelease((ActionHandler)&SellState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&SellState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&SellState::lstItemsMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstItems);
 
 	_cats.push_back("STR_ALL_ITEMS");
 	_cats.push_back("STR_FILTER_HIDDEN");
@@ -380,6 +393,17 @@ void SellState::init()
 		_game->popState();
 		_game->pushState(new SellState(_base, _debriefingState, _origin));
 	}
+	else if (!_keepCat.empty())
+	{
+		auto cat = std::find(_cats.begin(), _cats.end(), _keepCat);
+		if (cat != _cats.end())
+		{
+			_cbxCategory->setSelected(cat - _cats.begin());
+			updateList();
+			_lstItems->scrollTo(_keepScroll);
+		}
+		_keepCat.clear();
+	}
 
 	touchComponentsRefresh();
 }
@@ -389,7 +413,7 @@ void SellState::init()
  */
 void SellState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
@@ -537,6 +561,7 @@ void SellState::updateList()
 
 	_lstItems->clearList();
 	_rows.clear();
+	std::vector<size_t> shown;
 
 	size_t selCategory = _cbxCategory->getSelected();
 	const std::string selectedCategory = _cats[selCategory];
@@ -618,6 +643,29 @@ void SellState::updateList()
 			}
 		}
 
+		shown.push_back(i);
+	}
+
+	// OXCE-HD: the soldier's race picture before the name, as in the soldier lists. The list moves right
+	// for it only when a soldier is shown, so item names keep their full width otherwise
+	int icon = 0;
+	if (Options::oxceBaseSoldierTypeIcon)
+	{
+		for (size_t i : shown)
+		{
+			if (_items[i].type == TRANSFER_SOLDIER)
+			{
+				icon = 13;
+				break;
+			}
+		}
+	}
+	_lstItems->setIconColumn(2, icon);
+	_lstItems->setColumns(4, 156 - icon, 54, 24, 53);
+	_lstItems->setMargin(2 + icon);
+
+	for (size_t i : shown)
+	{
 		std::string name = _items[i].name;
 		bool ammo = false;
 		if (_items[i].type == TRANSFER_ITEM)
@@ -635,6 +683,10 @@ void SellState::updateList()
 		int64_t adjustedCost = _items[i].cost;
 		_lstItems->addRow(4, name.c_str(), ssQty.str().c_str(), ssAmount.str().c_str(), Unicode::formatFunding(adjustedCost).c_str());
 		_rows.push_back(i);
+		if (icon && _items[i].type == TRANSFER_SOLDIER)
+		{
+			_lstItems->setRowIcon(_rows.size() - 1, soldierFlag(_game->getMod(), (const Soldier*)_items[i].rule));
+		}
 		if (_items[i].amount > 0)
 		{
 			_lstItems->setRowColor(_rows.size() - 1, _lstItems->getSecondaryColor());
@@ -651,6 +703,20 @@ void SellState::updateList()
  * @param action Pointer to an action.
  */
 void SellState::btnOkClick(Action *)
+{
+	if (TradeConfirmState::wanted(_items))
+	{
+		_game->pushState(new TradeConfirmState(_items, _total, "STR_TRADE_CONFIRM_SELL", "sellMenu", [this]() { sell(); }));
+		return;
+	}
+	sell();
+}
+
+/**
+ * Sells the chosen items. A screen opened from the basescape opens anew on the same base,
+ * category and scroll (option oxceTradeStay), so the base arrows work again; the rest closes.
+ */
+void SellState::sell()
 {
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + _total);
 
@@ -856,7 +922,15 @@ void SellState::btnOkClick(Action *)
 	{
 		_debriefingState->hideSellTransferButtons();
 	}
+	if (_debriefingState || !baseSwitchAllowed() || !Options::oxceTradeStay)
+	{
+		_game->popState();
+		return;
+	}
+	auto *next = withBaseSwitch(new SellState(_base, 0, _origin));
+	next->keepView(_cats[_cbxCategory->getSelected()], _lstItems->getScroll());
 	_game->popState();
+	_game->pushState(next);
 }
 
 /**
@@ -1255,6 +1329,7 @@ void SellState::updateItemStrings()
 	{
 		_btnOk->setVisible(!_base->storesOverfull(_spaceChange));
 	}
+	updateBaseSwitch();
 }
 
 /**
@@ -1278,6 +1353,23 @@ void SellState::cbxCategoryChange(Action *)
 	}
 
 	updateList();
+}
+
+const RuleItem* SellState::GetItemForTooltip()
+{
+	if (_lstItems->getSelectedRow() < 0)
+		return nullptr;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return nullptr;
+
+	return (RuleItem*)(getRow().rule);
+}
+
+const Base* SellState::GetBase()
+{
+	return _base;
 }
 
 }

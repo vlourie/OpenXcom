@@ -39,6 +39,7 @@ namespace OpenXcom
  */
 NotesState::NotesState(OptionsOrigin origin) : _origin(origin), _previousSelectedRow(-1), _selectedRow(-1)
 {
+	setHdScreen("noteMenu");
 	_screen = false;
 
 	// Create objects

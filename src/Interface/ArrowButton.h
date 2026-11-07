@@ -57,6 +57,8 @@ public:
 	void scroll();
 	/// Draws the arrow button.
 	void draw() override;
+	/// HD interface, modern skin: a small button with a vector arrow.
+	void hdMirror() override;
 	/// Special handling for mouse presses.
 	void mousePress(Action *action, State *state) override;
 	/// Special handling for mouse releases.

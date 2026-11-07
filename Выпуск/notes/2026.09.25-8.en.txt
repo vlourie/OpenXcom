@@ -1,0 +1,3 @@
+﻿Craft lights where they are painted.
+
+— Craft in the hangar: on 23 craft whose picture already has lights (Fuego, Fortuna, Sabre, Hydra, Dropship and others), exactly those lights now blink, in their own colour, instead of made-up ones on top.

@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ItemContainer.h"
+#include <algorithm>
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 
@@ -227,6 +228,25 @@ double ItemContainer::getTotalSize() const
 const std::map<const RuleItem*, int> *ItemContainer::getContents() const
 {
 	return &_qty;
+}
+
+/**
+ * Returns all the items currently contained within, by list order and then by type.
+ * The map is ordered by the rules' heap addresses, a new order in every process; the battle generator
+ * creates the battle's items in this order instead, so every tie the AI breaks by the item list
+ * (BattlescapeGame::surveyItems) and every item id come out the same from run to run.
+ * @return List of contents.
+ */
+std::vector<std::pair<const RuleItem*, int>> ItemContainer::getContentsInListOrder() const
+{
+	std::vector<std::pair<const RuleItem*, int>> out(_qty.begin(), _qty.end());
+	std::sort(out.begin(), out.end(), [](const auto &a, const auto &b)
+	{
+		if (a.first->getListOrder() != b.first->getListOrder())
+			return a.first->getListOrder() < b.first->getListOrder();
+		return a.first->getType() < b.first->getType();
+	});
+	return out;
 }
 
 }

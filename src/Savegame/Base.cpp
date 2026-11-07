@@ -26,6 +26,7 @@
 #include "Craft.h"
 #include "SavedGame.h"
 #include "../Mod/RuleCraft.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "ItemContainer.h"
 #include "Soldier.h"
@@ -439,6 +440,11 @@ std::vector<Soldier*> *Base::getSoldiers()
 	return &_soldiers;
 }
 
+const std::vector<Soldier*>& Base::getSoldiers() const
+{
+	return _soldiers;
+}
+
 /**
  * Pre-calculates soldier stats with various bonuses.
  */
@@ -568,6 +574,10 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 	ModScript::DetectUfoFromBase::Worker work { target, save, distance, alreadyTracked, radar_chance, radar_max_range, hyperwave_chance, hyperwave_max_range, };
 
 	work.execute(target->getRules()->getScript<ModScript::DetectUfoFromBase>(), args);
+	if (auto *lua = _mod->getLuaHost())
+	{
+		lua->fire(LuaHost::DETECT_UFO_FROM_BASE, args.data, { target, save, distance, alreadyTracked, radar_chance, radar_max_range, hyperwave_chance, hyperwave_max_range });
+	}
 
 	return RNG::percent(args.getSecond()) ? (UfoDetection)args.getFirst() : DETECTION_NONE;
 }

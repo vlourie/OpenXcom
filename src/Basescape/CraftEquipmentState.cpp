@@ -55,6 +55,7 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Engine/HdAmmoHint.h"
 
 namespace OpenXcom
 {
@@ -96,11 +97,12 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_ammoColor = _game->getMod()->getInterface("craftEquipment")->getElement("ammoColor")->color;
 
 	add(_window, "window", "craftEquipment");
-	add(_btnQuickSearch, "button", "craftEquipment");
 	add(_btnOk, "button", "craftEquipment");
 	add(_btnClear, "button", "craftEquipment");
 	add(_btnInventory, "button", "craftEquipment");
 	add(_txtTitle, "text", "craftEquipment");
+	// after the title: a long craft name runs under the field's corner, and the field must show over it (XP-000293)
+	add(_btnQuickSearch, "button", "craftEquipment");
 	add(_txtItem, "text", "craftEquipment");
 	add(_txtStores, "text", "craftEquipment");
 	add(_txtAvailable, "text", "craftEquipment");
@@ -121,7 +123,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftEquipmentState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnOkClick, Options::keyCancel);
-	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnClearClick, Options::keyRemoveEquipmentFromCraft);
+	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnClearOrLoadAll, Options::keyRemoveEquipmentFromCraft);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnLoadClick, Options::keyCraftLoadoutLoad);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnSaveClick, Options::keyCraftLoadoutSave);
 
@@ -201,6 +203,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 		_categoryStrings.push_back("STR_UNASSIGNED");
 	}
 	_categoryStrings.push_back("STR_NOT_EQUIPPED");
+	_categoryStrings.push_back("STR_NOT_PURCHASABLE");
 
 	_cbxFilterBy->setOptions(_categoryStrings, true);
 	_cbxFilterBy->setSelected(0);
@@ -218,6 +221,9 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_lstEquipment->onRightArrowRelease((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowRelease);
 	_lstEquipment->onRightArrowClick((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowClick);
 	_lstEquipment->onMousePress((ActionHandler)&CraftEquipmentState::lstEquipmentMousePress);
+	_lstEquipment->onMouseOver((ActionHandler)&CraftEquipmentState::lstEquipmentMouseOver);
+	_lstEquipment->onMouseOut((ActionHandler)&CraftEquipmentState::lstEquipmentMouseOut);
+	ItemCountTooltipMixin::BindToSurface(_lstEquipment);
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&CraftEquipmentState::btnQuickSearchApply);
@@ -337,6 +343,7 @@ void CraftEquipmentState::initList()
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
 	bool categoryEquipped = (selectedCategory == "STR_EQUIPPED");
 	bool categoryNotEquipped = (selectedCategory == "STR_NOT_EQUIPPED");
+	bool categoryNotPurchasable = (selectedCategory == "STR_NOT_PURCHASABLE");
 	bool shareAmmoCategories = _game->getMod()->getShareAmmoCategories();
 
 	Craft *c = _base->getCrafts()->at(_craft);
@@ -346,6 +353,8 @@ void CraftEquipmentState::initList()
 	_totalItemStorageSize = 0.0;
 	_items.clear();
 	_lstEquipment->clearList();
+	_rowColors.clear();
+	_hintWeapon = nullptr;
 
 	int row = 0;
 	for (auto& itemType : _game->getMod()->getItemsList())
@@ -400,6 +409,13 @@ void CraftEquipmentState::initList()
 				else if (categoryNotEquipped)
 				{
 					if (cQty > 0)
+					{
+						continue;
+					}
+				}
+				else if (categoryNotPurchasable)
+				{
+					if (rule->getBuyCost() != 0)
 					{
 						continue;
 					}
@@ -502,6 +518,7 @@ void CraftEquipmentState::initList()
 					color = _lstEquipment->getSecondaryColor();
 			}
 			_lstEquipment->setRowColor(row, color);
+			_rowColors.push_back(color);
 
 			++row;
 		}
@@ -520,10 +537,52 @@ void CraftEquipmentState::initList()
  */
 void CraftEquipmentState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerLeft->think(this, 0);
 	_timerRight->think(this, 0);
+}
+
+/**
+ * Lights the rows of the ammunition that fits the weapon (oxceHdAmmoHint): the weapon's own list of
+ * ammunition decides, for every ammo slot it has. Everything else keeps the colour it had.
+ * @param weapon The weapon under the cursor, or nullptr for the usual colours.
+ */
+void CraftEquipmentState::showAmmoHint(const RuleItem *weapon)
+{
+	if (weapon == _hintWeapon || _rowColors.size() != _items.size())
+	{
+		return;
+	}
+	_hintWeapon = weapon;
+	for (size_t i = 0; i < _items.size(); ++i)
+	{
+		const bool lit = weapon && HdAmmoHint::fits(weapon, _game->getMod()->getItem(_items[i], false));
+		_lstEquipment->setRowColor(i, lit ? HdAmmoHint::COLOR : _rowColors[i]);
+	}
+}
+
+/**
+ * The cursor is on a row of the list: if it is a weapon, its ammunition is lit.
+ * @param action Pointer to an action.
+ */
+void CraftEquipmentState::lstEquipmentMouseOver(Action *)
+{
+	if (!HdAmmoHint::enabled())
+	{
+		return;
+	}
+	const int row = _lstEquipment->getSelectedRow();
+	showAmmoHint(row >= 0 && (size_t)row < _items.size() ? _game->getMod()->getItem(_items[row], false) : nullptr);
+}
+
+/**
+ * The cursor left the list: the usual colours.
+ * @param action Pointer to an action.
+ */
+void CraftEquipmentState::lstEquipmentMouseOut(Action *)
+{
+	showAmmoHint(nullptr);
 }
 
 
@@ -706,6 +765,10 @@ void CraftEquipmentState::updateQuantity()
 		color = _lstEquipment->getSecondaryColor();
 	}
 	_lstEquipment->setRowColor(_sel, color);
+	if (_sel < _rowColors.size())
+	{
+		_rowColors[_sel] = color;
+	}
 	_lstEquipment->setCellText(_sel, 1, ss.str());
 	_lstEquipment->setCellText(_sel, 2, ss2.str());
 
@@ -934,6 +997,43 @@ void CraftEquipmentState::moveRightByValue(int change, bool suppressErrors)
 		}
 	}
 	updateQuantity();
+}
+
+/**
+ * Moves all of the listed items to the craft, as far as space allows.
+ * Respects the current filter and quick search. Vehicles are skipped:
+ * they take crew seats and are loaded one by one on purpose.
+ */
+void CraftEquipmentState::btnLoadAllClick(Action *)
+{
+	for (_sel = 0; _sel != _items.size(); ++_sel)
+	{
+		const RuleItem *rule = _game->getMod()->getItem(_items[_sel], true);
+		if (!rule->getVehicleUnit())
+		{
+			moveRightByValue(INT_MAX, true);
+		}
+	}
+}
+
+/**
+ * The "remove equipment" hotkey: empties the listed items from the craft,
+ * or, if none of them is on board, loads them all instead.
+ */
+void CraftEquipmentState::btnClearOrLoadAll(Action *action)
+{
+	Craft *c = _base->getCrafts()->at(_craft);
+	for (const auto& itemType : _items)
+	{
+		const RuleItem *rule = _game->getMod()->getItem(itemType, true);
+		int cQty = rule->getVehicleUnit() ? c->getVehicleCount(itemType) : c->getItems()->getItem(rule);
+		if (cQty > 0)
+		{
+			btnClearClick(action);
+			return;
+		}
+	}
+	btnLoadAllClick(action);
 }
 
 /**
@@ -1168,6 +1268,20 @@ void CraftEquipmentState::btnSaveClick(Action *)
 		_game->pushState(new CraftEquipmentSaveState(this));
 		_returningFromGlobalTemplates = true;
 	}
+}
+
+const RuleItem* CraftEquipmentState::GetItemForTooltip()
+{
+	const auto row = _lstEquipment->getSelectedRow();
+	if (row < 0)
+		return nullptr;
+
+	return _game->getMod()->getItem(_items[row]);
+}
+
+const Base* CraftEquipmentState::GetBase()
+{
+	return _base;
 }
 
 }

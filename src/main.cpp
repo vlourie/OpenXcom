@@ -26,6 +26,7 @@
 #include "Engine/Game.h"
 #include "Engine/Options.h"
 #include "Engine/FileMap.h"
+#include "Engine/ModCheck.h"
 #include "Menu/StartState.h"
 
 /** @mainpage
@@ -117,6 +118,9 @@ int main(int argc, char *argv[])
 	YAML::setGlobalErrorHandler();
 	CrossPlatform::getErrorDialog();
 	CrossPlatform::processArgs(argc, argv);
+	const int modCheck = ModCheck::run(CrossPlatform::getArgs());
+	if (modCheck >= 0)
+		return modCheck;
 	if (!Options::init())
 		return EXIT_SUCCESS;
 	std::ostringstream title;

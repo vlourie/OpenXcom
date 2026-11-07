@@ -19,6 +19,7 @@
 #include "Slider.h"
 #include "../fmath.h"
 #include "../Engine/Action.h"
+#include "../Engine/HdUi.h"
 #include "TextButton.h"
 #include "Text.h"
 #include "Frame.h"
@@ -33,7 +34,7 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-Slider::Slider(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _pos(0.0), _min(0), _max(100), _pressed(false), _change(0), _offsetX(0)
+Slider::Slider(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _pos(0.0), _min(0), _max(100), _pressed(false), _contrast(false), _stepButtons(false), _change(0), _offsetX(0)
 {
 	_thickness = 5;
 	_textness = 8;
@@ -121,6 +122,7 @@ void Slider::initText(Font *big, Font *small, Language *lang)
  */
 void Slider::setHighContrast(bool contrast)
 {
+	_contrast = contrast;
 	_txtMinus->setHighContrast(contrast);
 	_txtPlus->setHighContrast(contrast);
 	_frame->setHighContrast(contrast);
@@ -255,8 +257,16 @@ void Slider::blit(SDL_Surface *surface)
 	{
 		_txtMinus->blit(surface);
 		_txtPlus->blit(surface);
+		// the modern skin draws the slider as a track with a round knob instead of the frame and button
+		const bool skin = HdUi::skin() && HdUi::isScreen(surface);
+		_frame->setHdKind(skin ? HD_SKIP : HD_NORMAL);
+		_button->setHdKind(skin ? HD_SKIP : HD_NORMAL);
 		_frame->blit(surface);
 		_button->blit(surface);
+		if (skin)
+		{
+			HdUi::instance().drawSlider(_frame->getX(), getY(), _frame->getWidth(), getHeight(), (float)_pos, _button->getColor(), _contrast ? 2 : 1, _pressed, HdUi::paletteOf(_button));
+		}
 	}
 }
 
@@ -270,8 +280,31 @@ void Slider::mousePress(Action *action, State *state)
 	InteractiveSurface::mousePress(action, state);
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		_pressed = true;
 		int cursorX = action->getAbsoluteXMouse();
+		if (_stepButtons)
+		{
+			// a click on the "-" or the "+" moves the value by one (the knob is not dragged to the end of the track)
+			int step = 0;
+			if (cursorX >= getX() && cursorX < getX() + _textness)
+			{
+				step = (_min <= _max) ? -1 : 1;
+			}
+			else if (cursorX >= getX() + getWidth() - _textness && cursorX < getX() + getWidth())
+			{
+				step = (_min <= _max) ? 1 : -1;
+			}
+			if (step != 0)
+			{
+				const int old = _value;
+				setValue(_value + step);
+				if (_change && _value != old)
+				{
+					(state->*_change)(action);
+				}
+				return;
+			}
+		}
+		_pressed = true;
 		if (cursorX >= _button->getX() && cursorX < _button->getX() + _button->getWidth())
 		{
 			_offsetX = _button->getX() - cursorX;
@@ -296,6 +329,16 @@ void Slider::mouseRelease(Action *action, State *state)
 		_pressed = false;
 		_offsetX = 0;
 	}
+}
+
+/**
+ * Makes the "-" and "+" at the ends of the slider step the value by one
+ * (by default a click there puts the knob at the end of the track).
+ * @param step True to step by one.
+ */
+void Slider::setStepButtons(bool step)
+{
+	_stepButtons = step;
 }
 
 /**

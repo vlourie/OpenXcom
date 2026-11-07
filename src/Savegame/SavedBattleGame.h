@@ -50,6 +50,14 @@ class HitLog;
 enum HitLogEntryType : int;
 struct BattlescapeTally;
 
+/// Building collapse pilot: a building found when the map was made - model name, block offset, model fingerprint.
+struct CollapsePilotEntry
+{
+	std::string model;
+	Position at;
+	std::string sig;
+};
+
 /**
  * The battlescape data that gets written to disk when the game is saved.
  * A saved game holds all the variable info in a game like mapdata,
@@ -127,6 +135,8 @@ private:
 	int _toggleBrightness;
 	bool _togglePersonalLightTemp = false, _toggleNightVisionTemp = false;
 	int _toggleBrightnessTemp = 0, _toggleNightVisionColorTemp = 0;
+	int _collapsePilotVersion = 0;
+	std::vector<CollapsePilotEntry> _collapsePilot;
 	std::string _hiddenMovementBackground;
 	HitLog *_hitLog;
 	ScriptValues<SavedBattleGame> _scriptValues;
@@ -135,6 +145,9 @@ private:
 	/// Run newTurnUnit and newTurnItem scripts
 	void newTurnUpdateScripts();
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<SavedBattleGame> &getScriptValuesRaw() const { return _scriptValues; }
+	void luaSetTag(ScriptTag<SavedBattleGame> tag, int val) { _scriptValues.set(tag, val); }
 	/// Creates a new battle save, based on the current generic save.
 	SavedBattleGame(Mod *rule, Language *lang, bool isPreview = false);
 	/// Cleans up the saved game.
@@ -418,6 +431,8 @@ public:
 	int getAnimFrame() const;
 	/// Increase animation frame.
 	void nextAnimFrame();
+	/// Sets animation frame (HD render test: deterministic frame capture).
+	void setAnimFrame(int frame) { _animFrame = frame; }
 	/// Sets debug mode.
 	void setDebugMode();
 	void revealMap();
@@ -454,6 +469,8 @@ public:
 	BattleItem *createTempItem(const RuleItem *rule);
 	/// Create new temporary unit.
 	BattleUnit *createTempUnit(const Unit *rules, UnitFaction faction, int nextUnitId = -1);
+	/// Puts a new unit on the map, the way of an item's spawnUnit. Null when it has no place there; `direction` below 0 is a random one.
+	BattleUnit *placeNewUnit(const Unit *rules, UnitFaction faction, Position position, int checkDirection, int direction, BattleUnit *owner);
 	/// Converts a unit into a unit of another type.
 	BattleUnit *convertUnit(BattleUnit *unit);
 
@@ -647,6 +664,11 @@ public:
 	int getToggleBrightness() const { return _toggleBrightness; }
 	/// sets brightness toggle
 	void setToggleBrightness(int toggleBrightness) { _toggleBrightness = toggleBrightness; }
+	/// Building collapse pilot (oxceCollapse): format of the building list, 0 - no list yet, -1 - list without a version.
+	int getCollapsePilotVersion() const { return _collapsePilotVersion; }
+	void setCollapsePilotVersion(int version) { _collapsePilotVersion = version; }
+	/// Building collapse pilot: the buildings found when the map was made.
+	std::vector<CollapsePilotEntry> &getCollapsePilot() { return _collapsePilot; }
 
 	/// sets final value for personal light toggle (for scripts)
 	void setTogglePersonalLightTemp(bool togglePersonalLight) { _togglePersonalLightTemp = togglePersonalLight; }

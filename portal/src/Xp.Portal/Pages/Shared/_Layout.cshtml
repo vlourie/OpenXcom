@@ -1,0 +1,101 @@
+@using System.Security.Claims
+@inject Xp.Portal.Messages.MessageService Messages
+@{
+    var user = Context.User;
+    var signedIn = user.Identity?.IsAuthenticated == true;
+    // the counter beside "Messages"; a database that hiccups here must not take the whole page down
+    var unread = 0;
+    if (signedIn && Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var uid))
+    {
+        try { unread = await Messages.UnreadAsync(uid, Context.RequestAborted); }
+        catch (Exception e) when (e is not OperationCanceledException) { unread = 0; }
+    }
+    var back = Context.Request.Path + Context.Request.QueryString;
+    // the guest link carries its secret in the query: never echo it into the language links
+    if (Context.Request.Query.ContainsKey("k")) back = Context.Request.Path;
+    var path = Context.Request.Path.Value ?? "/";
+    // a section stays lit while the reader is anywhere inside it
+    string On(string prefix) => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "on" : "";
+    // friends live under /me but belong to voice
+    var friends = path.StartsWith("/me/friends", StringComparison.OrdinalIgnoreCase);
+    var inMessages = path.StartsWith("/me/messages", StringComparison.OrdinalIgnoreCase);
+}
+<!DOCTYPE html>
+<html lang="@Text.Lang">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@(ViewData["Title"] is string title ? title + " — " : "")@T["site.title"]</title>
+    <link rel="stylesheet" href="~/css/palette.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+</head>
+<body>
+<header class="top">
+    @* two rows: the brand with the player's own controls, then one strip of sections that never wraps *@
+    <div class="head">
+        <a class="brand" href="/">@T["site.title"]</a>
+        <div class="side">
+            <a href="/download/launcher" class="get" download>@T["nav.download"]</a>
+            @if (signedIn)
+            {
+                var name = user.FindFirstValue("xp:name");
+                <a href="/me/messages" class="mail @On("/me/messages")" title="@T["nav.messages"]" aria-label="@T["nav.messages"]">✉@if (unread > 0) {<span class="unread-count" title="@T.Format("msg.unread", unread)">@unread</span>}</a>
+                <details class="account">
+                    <summary>@(string.IsNullOrWhiteSpace(name) ? T["nav.account"] : name)</summary>
+                    <div class="drop">
+                        <a href="/me" class="@(friends || inMessages ? "" : On("/me"))">@T["nav.my"]</a>
+                        <a href="/me/messages" class="@On("/me/messages")">@T["nav.messages"]</a>
+                        <a href="/me/devices">@T["nav.devices"]</a>
+                        <a href="/me/security">@T["nav.security"]</a>
+                        @if (user.IsInRole(Roles.Admin) || user.IsInRole(Roles.SuperAdmin))
+                        {
+                            <a href="/admin" class="@On("/admin")">@T["nav.admin"]</a>
+                        }
+                        @if (user.IsInRole(Roles.SuperAdmin))
+                        {
+                            <a href="/admin/super/users">@T["nav.super"]</a>
+                        }
+                        <form method="post" action="/account/logout" asp-antiforgery="true">
+                            <button type="submit" class="link">@T["nav.logout"]</button>
+                        </form>
+                    </div>
+                </details>
+            }
+            else
+            {
+                <a href="/account/login" class="plain">@T["nav.login"]</a>
+                <a href="/account/register" class="plain">@T["nav.register"]</a>
+            }
+            <span class="lang">
+                <a href="/lang/ru?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "ru" ? "on" : "")">RU</a>
+                <a href="/lang/en?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "en" ? "on" : "")">EN</a>
+            </span>
+        </div>
+    </div>
+    <nav class="tabs">
+        <a href="/mods" class="@On("/mods")">@T["nav.mods"]</a>
+        <a href="/releases" class="@On("/releases")">@T["nav.releases"]</a>
+        <a href="/roadmap" class="@On("/roadmap")">@T["nav.roadmap"]</a>
+        <a href="/wiki" class="@On("/wiki")">@T["nav.wiki"]</a>
+        <a href="/forum" class="@On("/forum")">@T["nav.forum"]</a>
+        @if (signedIn)
+        {
+            <a href="/voice" class="@(friends ? "on" : On("/voice"))">@T["nav.voice"]</a>
+        }
+        <a href="/tickets/new" class="@On("/tickets")">@T["nav.report"]</a>
+        <a href="/team" class="@On("/team")">@T["nav.team"]</a>
+        <a href="https://github.com/vlourie/OpenXcom" target="_blank" rel="noopener" title="@T["git.title"]">@T["nav.git"]</a>
+        <a href="/support" class="love @On("/support")">@T["nav.support"]</a>
+    </nav>
+</header>
+<main class="@(ViewData["Wide"] is true ? "wide" : "")">
+    @if (TempData["flash"] is string flash)
+    {
+        <p class="flash">@T[flash]</p>
+    }
+    @RenderBody()
+</main>
+<footer>@T["site.footer"]<br>@T["site.credit"]<br><a href="https://github.com/vlourie/OpenXcom" target="_blank" rel="noopener">@T["footer.git"]</a></footer>
+<script src="~/js/nav.js" asp-append-version="true" defer></script>
+</body>
+</html>

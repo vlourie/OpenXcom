@@ -102,10 +102,12 @@ private:
 	template<typename T, typename I>
 	void addScriptTags(std::ostringstream &ss, const ScriptValues<T, I> &vec);
 
+public:
 	void addIntegerScript(const std::string &propertyName, const int &value);
 	void addTextScript(const std::string &propertyName, const std::string &value);
 	void addTextFormat1Script(const std::string &propertyName, const std::string &format, const int &value1);
 	void addTextFormat2Script(const std::string &propertyName, const std::string &format, const int &value1, const int &value2);
+private:
 
 	void addBoolean(std::ostringstream &ss, const bool &value, const std::string &propertyName, const bool &defaultvalue = false);
 	void addFloat(std::ostringstream &ss, const float &value, const std::string &propertyName, const float &defaultvalue = 0.0f);

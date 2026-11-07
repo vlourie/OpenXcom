@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <RootNamespace>Xp.Manifest</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NSec.Cryptography" Version="25.4.0" />
+  </ItemGroup>
+</Project>
