@@ -68,7 +68,8 @@ public:
 	/// From this version a mod has luaCaps and the methods behind them (docs/portal/LUA_MODS_V2.md).
 	static const int API_WITH_CAPS = 2;
 	/// What the mod's metadata.yml may name in luaCaps; a method of API 2 needs its word there.
-	enum Cap { CAP_SPAWN = 1, CAP_SCREENS = 2, CAP_ECONOMY = 4 };
+	enum Cap { CAP_SPAWN = 1, CAP_SCREENS = 2, CAP_ECONOMY = 4, CAP_MAP = 8 };
+	enum MapOp { MAP_NONE, MAP_SET, MAP_CLEAR, MAP_DESTROY, MAP_FIRE, MAP_SMOKE };
 
 	enum Event
 	{
@@ -156,6 +157,8 @@ public:
 	std::string queueRemoveItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, BattleItem *item, int done);
 	/// The same for a new unit. `direction` below 0 is a random one.
 	std::string queueSpawnUnit(const LuaSandbox *sandbox, const SavedBattleGame *battle, const Unit *rule, int x, int y, int z, int faction, int direction, int done);
+	/// The same for a change of a tile: the tile's x, y, z; `part`, `id` of the set and `set` as Tile::setMapData has them, `value` of fire and smoke.
+	std::string queueMapOp(const LuaSandbox *sandbox, const SavedBattleGame *battle, const char *method, MapOp mapOp, int x, int y, int z, int part, int id, int set, int value, int done);
 	/// Does the mod declare this in luaCaps?
 	bool hasCap(const LuaSandbox *sandbox, Cap cap) const;
 	/// Does what the handlers asked for. Only where nothing walks the lists: the battle's idle moment, before a save.
@@ -221,7 +224,7 @@ private:
 		std::unique_ptr<LuaSandbox> sandbox;
 		bool notified = false;
 		/// Queued by the running call, and by this turn of the battle: the budget of Lua does not see the engine's work.
-		int callItems = 0, turnItems = 0, callUnits = 0, turnUnits = 0, turn = -1;
+		int callItems = 0, turnItems = 0, callUnits = 0, turnUnits = 0, callTiles = 0, turnTiles = 0, turn = -1;
 		/// The same for screens: in a battle by its turn, outside it by the day.
 		int callScreens = 0, periodScreens = 0, screenPeriod = -1;
 		/// The same for soldiers, by the day.
@@ -243,6 +246,9 @@ private:
 		/// A new unit instead of an item, at x, y, z.
 		const Unit *unitRule = nullptr;
 		int faction = 0, direction = -1;
+		/// A change of the tile at x, y, z instead of an item.
+		MapOp mapOp = MAP_NONE;
+		int part = 0, mapId = -1, mapSet = -1, mapValue = 0;
 	};
 
 	void fireOutputs(Event event, std::initializer_list<Arg> args, int *out);

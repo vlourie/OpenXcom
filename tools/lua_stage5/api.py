@@ -104,8 +104,8 @@ def call_args(kind, method, args):
 
 
 def open_methods(kind):
-    """Методы API 1: мод этой проверки luaApi: 1, разрешённые и getFunds проверяет tools/lua_api2."""
-    return {m: s for m, s in lua_api_doc.METHODS[kind].items() if "Разрешение" not in s[1] and m != "getFunds"}
+    """Методы API 1: мод этой проверки luaApi: 1, разрешённые и чтение API 2 проверяет tools/lua_api2."""
+    return {m: s for m, s in lua_api_doc.METHODS[kind].items() if "Разрешение" not in s[1] and m not in ("getFunds", "getPart", "getMapSets")}
 
 
 def probe_fn(kind):

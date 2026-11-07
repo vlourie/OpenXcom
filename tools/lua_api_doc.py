@@ -51,7 +51,7 @@ TYPES = {
 }
 
 # слова luaCaps: открытые и закрытые до своего этапа docs/portal/LUA_MODS_V2.md
-CAPS = ("screens", "economy", "spawn")
+CAPS = ("screens", "economy", "spawn", "map")
 CLOSED_CAPS = ()
 # обработчики только для luaApi: 2, в движке namesApi1 их не знает
 API2_EVENTS = ("newHour", "newDay", "newMonth", "battleStart", "battleEnd")
@@ -247,6 +247,7 @@ METHODS = {
         "spawnItem": ("type, x, y, z[, done]", "создать предмет на клетке после обработчика: done(item) или done(nil, причина). Разрешение spawn", "create an item on a tile after the handler: done(item) or done(nil, reason). Permission spawn"),
         "removeItem": ("item[, done]", "снять предмет после обработчика: done(true) или done(nil, причина). Разрешение spawn", "remove an item after the handler: done(true) or done(nil, reason). Permission spawn"),
         "spawnUnit": ("{ type, x, y, z, faction, direction, done }", "создать юнита после обработчика: done(unit) или done(nil, причина). По умолчанию враг. Разрешение spawn", "create a unit after the handler: done(unit) or done(nil, reason). An enemy by default. Permission spawn"),
+        "getMapSets": ("", "наборы карты этого боя, список { name, size }; слова не требует, только luaApi: 2", "the map sets of this battle, a list of { name, size }; takes no word, only luaApi: 2"),
         "tryConcealUnit": ("unit", "попробовать скрыть юнита от врага; итог true или false", "try to conceal a unit from the enemy; the result is true or false"),
         "getTag": ("name", "значение тега BattleGame", "the value of a BattleGame tag"),
         "setTag": ("name, value", "записать тег BattleGame", "write a BattleGame tag"),
@@ -323,6 +324,12 @@ METHODS = {
     },
     "skill": {"getType": ("", "тип из рулсета, строка", "the type from the ruleset, a string")},
     "tile": {
+        "getPart": ("part", "часть клетки, part из PART_*: имя набора и номер в нём или nil; слова не требует, только luaApi: 2", "a part of the tile, part from PART_*: the name of the set and the number in it, or nil; takes no word, only luaApi: 2"),
+        "setPart": ("part, set, id[, done]", "поставить часть после обработчика: set из battle:getMapSets(), done(tile) или done(nil, причина). Разрешение map", "put a part after the handler: set from battle:getMapSets(), done(tile) or done(nil, reason). Permission map"),
+        "clearPart": ("part[, done]", "снять часть без следа после обработчика: done(tile) или done(nil, причина). Разрешение map", "take a part away without a trace after the handler: done(tile) or done(nil, reason). Permission map"),
+        "destroyPart": ("part[, done]", "разрушить часть, как взрыв, после обработчика: done(tile) или done(nil, причина). Разрешение map", "destroy a part like an explosion after the handler: done(tile) or done(nil, reason). Permission map"),
+        "setFire": ("turns[, done]", "поджечь на turns ходов, 0..255, 0 гасит, после обработчика: done(tile) или done(nil, причина). Разрешение map", "set on fire for turns turns, 0..255, 0 puts it out, after the handler: done(tile) or done(nil, reason). Permission map"),
+        "setSmoke": ("density[, done]", "задать плотность дыма, 0..15, после обработчика: done(tile). Разрешение map", "set the smoke density, 0..15, after the handler: done(tile). Permission map"),
         "getPosition": ("", "три значения: x, y, z", "three values: x, y, z"),
         "getFire": ("", "сколько ходов горит", "for how many turns it burns"),
         "getSmoke": ("", "плотность дыма", "the smoke density"),
@@ -1033,9 +1040,34 @@ RECIPES = [
              "    end\n"
              "  end }\n"
              "end)\n"},
+    {"id": "breach", "ru": "Бой: на третьем ходу рушатся стены", "en": "Battle: walls fall on the third turn",
+     "ru_text": "На третьем ходу рушатся стены вокруг первого солдата: как от взрыва, на их месте остаются обломки, если они есть у стены. Нужны <code>luaApi: 2</code> и <code>luaCaps: [map]</code>. За один вызов можно до 64 изменений, поэтому радиус 2. В обороне базы карту менять нельзя: придёт отказ, он не ошибка мода. Снимете мод: снесённые стены в сохранённом бою останутся.",
+     "en_text": "On the third turn the walls around the first soldier fall: as from an explosion, their wreck stays if the wall has one. It takes <code>luaApi: 2</code> and <code>luaCaps: [map]</code>. One call may make up to 64 changes, so the radius is 2. In a base defense the map cannot be changed: a refusal comes, it is not the mod's error. Remove the mod: the fallen walls stay in a saved battle.",
+     "api": 2, "caps": "map",
+     "code": "local fell = false\n"
+             "local function done(tile, why)\n"
+             "  if not tile then\n"
+             "    game.log(\"the wall stays:\", why)\n"
+             "  end\n"
+             "end\n"
+             "game.on(\"newTurnUnit\", function(unit, battle, turn, side)\n"
+             "  if fell or turn ~= 3 or side ~= game.FACTION_PLAYER or unit:getFaction() ~= side then return end\n"
+             "  fell = true\n"
+             "  local ux, uy, uz = unit:getPosition()\n"
+             "  for x = ux - 2, ux + 2 do\n"
+             "    for y = uy - 2, uy + 2 do\n"
+             "      local tile = battle:getTile(x, y, uz)\n"
+             "      if tile then\n"
+             "        if tile:getPart(game.PART_WEST) then tile:destroyPart(game.PART_WEST, done) end\n"
+             "        if tile:getPart(game.PART_NORTH) then tile:destroyPart(game.PART_NORTH, done) end\n"
+             "      end\n"
+             "    end\n"
+             "  end\n"
+             "end)\n"},
 ]
 
 CONST_WORDS = {
+    "PART": ("части клетки: part", "parts of a tile: part"),
     "BODYPART": ("части тела: part", "body parts: part"),
     "SIDE": ("стороны юнита: side в обработчиках урона и в броне", "sides of a unit: side in the damage handlers and in armor"),
     "FACTION": ("стороны боя", "sides of the battle"),
@@ -1111,7 +1143,7 @@ TEXT = {
         "h_game": "Таблица game",
         "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше. С <code>luaApi: 2</code>: <code>game.getBattle()</code> и <code>game.getGeoscape()</code> дают бой и кампанию там, где обработчик их не получает, например из щелчка на экране; боя нет: nil. <code>game.getBases()</code> даёт таблицу баз игрока, в бою и в щелчке тоже. Только разрешение <code>screens</code>: <code>game.screen(имя, функция[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> объявляет экран, только пока грузится <code>main.lua</code>; <code>game.openScreen(имя)</code> открывает его из обработчика.",
         "h_caps": "Разрешения и свои экраны",
-        "caps": "<p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens, economy]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть три слова: <code>screens</code>, <code>economy</code> и <code>spawn</code>.</p>"
+        "caps": "<p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens, economy]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть четыре слова: <code>screens</code>, <code>economy</code>, <code>spawn</code> и <code>map</code>.</p>"
                 "<ul><li>Экран строится из виджетов игры в координатах 320×200, поэтому работает при любом разрешении и масштабе.</li>"
                 "<li>Открывает его игрок на экране модов, если у <code>game.screen</code> есть <code>menu</code>, или обработчик через <code>game.openScreen</code>: тогда экран откроется, когда игра закончит свой шаг, в бою это может быть после анимации или после брифинга. Пока экран открыт, игра под ним стоит.</li>"
                 "<li>Функция построения и <code>onClose</code> только читают: без случайных чисел, записи и <code>openScreen</code>. Открытый и закрытый экран не меняет игру. В щелчке можно всё, что можно в обработчике.</li>"
@@ -1140,7 +1172,20 @@ TEXT = {
                 "<li><code>battleStart</code> записывать не может и экран не открывает, зато может поставить запрос: он выполнится на первом такте после снаряжения. Обработчики только для чтения и <code>battleEnd</code> запросов не ставят. Конец боя отбрасывает очередь, журнал называет число отброшенных.</li>"
                 "<li>Случайность создания идёт от сида боя: при том же сиде те же юниты в тех же клетках. В сейве отметка <code>luaTouched</code>.</li>"
                 "<li>Мод снят: созданные предметы и юниты при загрузке сейва исчезают из боя, вещи такого юнита тоже, журнал называет каждый. Обычные предметы, выданные юниту мода, пропадают вместе с ним, а бой продолжается.</li>"
-                "<li>Потолки: 32 предмета и 4 юнита за вызов, 256 предметов и 16 юнитов за ход боя, снятие и выдача считаются предметами. Сверх потолка: ошибка мода, игра живёт.</li></ul>",
+                "<li>Потолки: 32 предмета и 4 юнита за вызов, 256 предметов и 16 юнитов за ход боя, снятие и выдача считаются предметами. Сверх потолка: ошибка мода, игра живёт.</li></ul>"
+                "<p><code>map</code>: правка карты в бою, пять методов клетки: <code>tile:setPart</code>, <code>tile:clearPart</code>, <code>tile:destroyPart</code>, <code>tile:setFire</code>, <code>tile:setSmoke</code>. Чтение <code>tile:getPart</code> и <code>battle:getMapSets</code> слова не требует, только <code>luaApi: 2</code>. Части клетки: <code>game.PART_FLOOR</code>, <code>game.PART_WEST</code>, <code>game.PART_NORTH</code>, <code>game.PART_OBJECT</code>.</p>"
+                "<ul><li><b>Это другой бой и другая карта.</b> Снесённая стена меняет обзор, укрытия и пути врага, снятый пол роняет отряд. Узлы ИИ остаются прежними: враг идёт к тем же точкам. Точки высадки и выходы мод может закрыть сам, за это отвечает автор.</li>"
+                "<li>Вызов ничего не делает на месте: запрос встаёт в ту же очередь, что и у <code>spawn</code>, и выполняется, когда игра закончила свой шаг. Все запросы одной точки идут разом, потом один раз падение, свет и обзор. Перед сохранением очередь выполняется вся.</li>"
+                "<li>Итог приходит в необязательную функцию <code>done</code>: <code>done(tile)</code> или <code>done(nil, причина)</code>. Отказ не ошибка мода. Неверная часть, чужой набор, номер вне набора или номер другой части клетки: ошибка Lua при вызове.</li>"
+                "<li><code>setPart(part, set, id[, done])</code>: ставит часть из набора этого боя, имена и размеры даёт <code>battle:getMapSets()</code>. На юнита нельзя поставить непроходимый пол или объект, на нижнем уровне нельзя поставить пустой пол. Предметы на клетке остаются где лежали.</li>"
+                "<li><code>clearPart(part[, done])</code>: снимает без следа. На нижнем уровне вместо пола появляется выжженная земля, падать там некуда.</li>"
+                "<li><code>destroyPart(part[, done])</code>: как взрыв, часть превращается в свои обломки, цель миссии засчитывается. Взрывчатая часть рванёт при следующей проверке игры: после взрыва или в конце хода. Сохранение и загрузка этот признак теряют: так и в обычной игре.</li>"
+                "<li><code>setFire(turns[, done])</code>: 0..255 ходов, 0 гасит. Без пола и объекта гореть нечему, тогда отказ. Если дыма нет, он появляется, как после взрыва: игра рисует огонь только с дымом, плотность дыма это урон огня. <code>setSmoke(density[, done])</code>: 0..15. Обычные огонь и дым живут по правилам игры: они гаснут, расходятся и наносят урон.</li>"
+                "<li>Снятый пол роняет юнита и предметы с этой клетки и с клетки над ней. При включённом обрушении зданий снятая и заменённая часть считается утраченной на следующей проверке, в конце хода или после взрыва: поставленная стена здание не держит, верх может упасть.</li>"
+                "<li>Причины отказа: <code>not in a base defense</code>, <code>the part is empty</code>, <code>a lift stays</code>, <code>the mission counts this part, only destroyPart may take it</code>, <code>the mission would not count this part</code>, <code>the lowest level needs a floor</code>, <code>occupied</code>, <code>nothing to burn on the tile</code>. В обороне базы отказ на всё: конец такого боя считает здания по карте.</li>"
+                "<li><code>battleStart</code> может поставить запрос, он выполнится на первом такте после снаряжения. Обработчики только для чтения и <code>battleEnd</code> запросов не ставят.</li>"
+                "<li>Мод снят: правка остаётся в сохранённом бою, отмены нет, части хранятся номерами набора. В сейве отметка <code>luaTouched</code>.</li>"
+                "<li>Потолки: 64 изменения за вызов, 512 за ход боя. Сверх потолка: ошибка мода, игра живёт.</li></ul>",
         "h_const": "Константы",
         "h_tags": "Теги: память между сохранениями",
         "tags": "Переменные Lua обнуляются при загрузке сейва, в новом бою и по Ctrl+F5. Долгая память — только теги. Тег объявляется в рулсете мода, например в файле <code>Ruleset/my_mod.rul</code>:"
@@ -1230,7 +1275,7 @@ TEXT = {
         "h_game": "The game table",
         "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above. With <code>luaApi: 2</code>: <code>game.getBattle()</code> and <code>game.getGeoscape()</code> give the battle and the campaign where a handler does not receive them, a click on a screen for one; no battle: nil. <code>game.getBases()</code> gives a table of the player's bases, in a battle and in a click too. Only with the permission <code>screens</code>: <code>game.screen(name, function[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> declares a screen, only while <code>main.lua</code> loads; <code>game.openScreen(name)</code> opens it from a handler.",
         "h_caps": "Permissions and screens of your own",
-        "caps": "<p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens, economy]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There are three words now: <code>screens</code>, <code>economy</code> and <code>spawn</code>.</p>"
+        "caps": "<p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens, economy]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There are four words now: <code>screens</code>, <code>economy</code>, <code>spawn</code> and <code>map</code>.</p>"
                 "<ul><li>A screen is made of the game's widgets in coordinates 320×200, so it works at any resolution and scale.</li>"
                 "<li>The player opens it on the mods' screen, if <code>game.screen</code> has <code>menu</code>, or a handler through <code>game.openScreen</code>: the screen then opens when the game has finished its step, in battle it may be after an animation or after the briefing. While a screen is open the game under it stands.</li>"
                 "<li>The building function and <code>onClose</code> only read: no random numbers, writes or <code>openScreen</code>. A screen opened and closed does not change the game. In a click you may do all a handler may.</li>"
@@ -1259,7 +1304,20 @@ TEXT = {
                 "<li><code>battleStart</code> cannot write or open a screen, but it can queue a request: it runs on the first tick after the equipping. Read-only handlers and <code>battleEnd</code> queue nothing. The end of a battle drops the queue, the log names how many were dropped.</li>"
                 "<li>The randomness of creating comes from the battle's seed: with the same seed the same units on the same tiles. The save gets the mark <code>luaTouched</code>.</li>"
                 "<li>The mod removed: created items and units disappear from the battle when the save loads, and so do the things of such a unit, the log names each. Ordinary items given to a unit of the mod go with it, and the battle goes on.</li>"
-                "<li>Ceilings: 32 items and 4 units a call, 256 items and 16 units a battle turn, removing and giving count as items. Over a ceiling: the mod's error, the game lives.</li></ul>",
+                "<li>Ceilings: 32 items and 4 units a call, 256 items and 16 units a battle turn, removing and giving count as items. Over a ceiling: the mod's error, the game lives.</li></ul>"
+                "<p><code>map</code>: changing the map in a battle, five methods of a tile: <code>tile:setPart</code>, <code>tile:clearPart</code>, <code>tile:destroyPart</code>, <code>tile:setFire</code>, <code>tile:setSmoke</code>. Reading with <code>tile:getPart</code> and <code>battle:getMapSets</code> takes no word, only <code>luaApi: 2</code>. Parts of a tile: <code>game.PART_FLOOR</code>, <code>game.PART_WEST</code>, <code>game.PART_NORTH</code>, <code>game.PART_OBJECT</code>.</p>"
+                "<ul><li><b>This is a different battle on a different map.</b> A fallen wall changes sight, cover and the enemy's paths, a removed floor drops the squad. The AI's nodes stay as they were: the enemy goes to the same points. A mod can block landing points and exits by itself, that is the author's responsibility.</li>"
+                "<li>A call does nothing on the spot: the request joins the same queue as <code>spawn</code> and runs when the game has finished its step. All the requests of one moment go together, then falling, light and sight once. Before a save the whole queue runs.</li>"
+                "<li>The result comes to an optional function <code>done</code>: <code>done(tile)</code> or <code>done(nil, reason)</code>. A refusal is not the mod's error. A wrong part, a foreign set, a number out of the set or a number of another part of a tile: a Lua error at the call.</li>"
+                "<li><code>setPart(part, set, id[, done])</code>: puts a part from a set of this battle, <code>battle:getMapSets()</code> gives the names and sizes. You cannot put an impassable floor or object on a unit, or an empty floor on the lowest level. Items on the tile stay where they lie.</li>"
+                "<li><code>clearPart(part[, done])</code>: takes it away without a trace. On the lowest level scorched earth appears instead of a floor, there is nowhere to fall.</li>"
+                "<li><code>destroyPart(part[, done])</code>: like an explosion, the part turns into its wreck, a mission objective counts. An explosive part goes off at the game's next check: after an explosion or at the end of a turn. A save and a load lose this mark, as in the ordinary game.</li>"
+                "<li><code>setFire(turns[, done])</code>: 0..255 turns, 0 puts it out. Without a floor and an object nothing can burn, then a refusal. If there is no smoke, it appears as after an explosion: the game draws fire only with smoke, the density of smoke is the damage of fire. <code>setSmoke(density[, done])</code>: 0..15. Fire and smoke then live by the game's rules: they go out, spread and do damage.</li>"
+                "<li>A removed floor drops the unit and the items of this tile and of the tile above. With the collapse of buildings on, a part taken away or replaced counts as lost at the next check, at the end of a turn or after an explosion: the new wall does not hold the building, the top may fall.</li>"
+                "<li>Reasons of a refusal: <code>not in a base defense</code>, <code>the part is empty</code>, <code>a lift stays</code>, <code>the mission counts this part, only destroyPart may take it</code>, <code>the mission would not count this part</code>, <code>the lowest level needs a floor</code>, <code>occupied</code>, <code>nothing to burn on the tile</code>. In a base defense everything is refused: the end of such a battle counts the buildings by the map.</li>"
+                "<li><code>battleStart</code> can queue a request, it runs on the first tick after the equipping. Read-only handlers and <code>battleEnd</code> queue nothing.</li>"
+                "<li>The mod removed: the change stays in a saved battle, nothing is undone, parts are stored as numbers of the set. The save gets the mark <code>luaTouched</code>.</li>"
+                "<li>Ceilings: 64 changes a call, 512 a battle turn. Over a ceiling: the mod's error, the game lives.</li></ul>",
         "h_const": "Constants",
         "h_tags": "Tags: memory between saves",
         "tags": "Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset, for example in the file <code>Ruleset/my_mod.rul</code>:"
@@ -1331,7 +1389,7 @@ def read_engine():
     if not m:
         fail(["нет таблицы API2_GEOSCAPE_REGS в LuaHost.cpp"])
     tables["geoscape"] += re.findall(r'\{\s*"(\w+)"\s*,', m.group(1))
-    for table, lua_name in (("API2_BATTLE_REGS", "battle"), ("API2_UNIT_REGS", "unit")):
+    for table, lua_name in (("API2_BATTLE_REGS", "battle"), ("API2_UNIT_REGS", "unit"), ("API2_TILE_REGS", "tile")):
         m = re.search(r"const luaL_Reg %s\[\] = \{(.*?)\n?\};" % table, src, re.S)
         if not m:
             fail([f"нет таблицы {table} в LuaHost.cpp"])

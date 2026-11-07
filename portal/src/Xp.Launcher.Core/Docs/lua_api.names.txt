@@ -77,6 +77,10 @@ const	SIDE_UNDER
 const	FACTION_PLAYER
 const	FACTION_HOSTILE
 const	FACTION_NEUTRAL
+const	PART_FLOOR
+const	PART_WEST
+const	PART_NORTH
+const	PART_OBJECT
 const	BA_NONE
 const	BA_TURN
 const	BA_WALK
@@ -212,8 +216,10 @@ method	addTextRow
 method	addTimeUnits
 method	button
 method	clearList
+method	clearPart
 method	close
 method	comboBox
+method	destroyPart
 method	difficultyLevel
 method	disableIndicators
 method	edit
@@ -314,6 +320,7 @@ method	getLookup
 method	getMana
 method	getManaMax
 method	getManaMissing
+method	getMapSets
 method	getMaxDarknessToSeeUnits
 method	getMaxViewDistance
 method	getMaxViewDistanceAtDark
@@ -335,6 +342,7 @@ method	getOverKillDamage
 method	getOwner
 method	getPact
 method	getPainKillerQuantity
+method	getPart
 method	getPersonalLight
 method	getPersonalLightHostile
 method	getPersonalLightNeutral
@@ -498,10 +506,12 @@ method	setMoveCost
 method	setMovementType
 method	setOptions
 method	setPainKillerQuantity
+method	setPart
 method	setPressed
 method	setRange
 method	setReinforcementsItemLevel
 method	setSelected
+method	setSmoke
 method	setSpawnUnit
 method	setSpawnUnitFaction
 method	setSpawnUnitInstantRespawn
@@ -537,3 +547,4 @@ game	getBases
 cap	screens
 cap	economy
 cap	spawn
+cap	map

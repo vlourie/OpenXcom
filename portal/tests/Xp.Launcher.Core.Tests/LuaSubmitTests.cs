@@ -107,7 +107,7 @@ public sealed class LuaSubmitTests : IDisposable
     public void The_events_of_api_2_and_the_word_economy_pass_with_api_2()
     {
         GoodMod("game.on(\"newDay\", print)\ngame.on(\"battleEnd\", print)\n");
-        Put("metadata.yml", "id: m\nversion: 1\nmaster: x\nluaApi: 2\nluaCaps: [screens, economy, spawn]\n");
+        Put("metadata.yml", "id: m\nversion: 1\nmaster: x\nluaApi: 2\nluaCaps: [screens, economy, spawn, map]\n");
         var p = LuaSubmit.Prepare(_dir);
         Assert.DoesNotContain(p.Errors, e => e.Code == "metadata_luacaps");
         Assert.DoesNotContain(p.Signals, s => s.Code == "api_event");
