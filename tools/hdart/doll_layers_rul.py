@@ -34,7 +34,9 @@ UBERGAL = ("STR_PIR_NUDE_UC", "STR_PIR_NUDE_SEA_UC", "STR_PIR_NUDE_DREAMLAND_UC"
            "STR_PIR_SLAVE_ARMOR_FAKE_UC", "STR_BRAINER_OUTFIT_SEA_UC", "STR_AMAZON_ARMOR_SEA_UC", "STR_THEBAN_DRESS_UC", "STR_THEBAN_DRESS_SEA_UC",
            "STR_SAVAGE_ARMOR_UC", "STR_PIR_MINX_UC", "STR_PIR_GREMRIN_UC", "STR_PIR_GREMRIN_DREAMLAND_UC", "STR_MONOKINI_SHELL_SEA_UC", "STR_RAGS_UC",
            "STR_HERMIT_UC", "STR_DEMONIC_ARMOR_UC", "STR_DEMONIC_ARMOR_SEA_UC", "STR_PIR_SWASHBUCKLER_UC")
-COVERS = "__SWASH_BRA_"                              # лежит в слоте ниже круга и закрывает его: у таких внешностей круга нет
+# GNOME: голые брони и открытая грудь, страница 07.11; слот 4 у них свободен, свой круг у внешности, tools/hdart/doll_gnome_pasties.py
+GNOME = (4, ("STR_GNOME_NUDE_UC", "STR_GNOME_NUDE_DREAMLAND_UC", "STR_GNOME_EXPERIMENT_UC", "STR_GNOME_EXPLORER_SEA_UC", "STR_GNOME_EXPLORER_UC"))
+COVERS = "__SWASH_BRA_"                             # лежит в слоте ниже круга и закрывает его: у таких внешностей круга нет
 ROOTS = [os.path.join(ROOT, "user", "mods", "hd"),
          os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods", "hd")]
 
@@ -64,7 +66,9 @@ def uber_layers(arms):
 def layer_names():
     """Имена слоёв, у которых образ в этом рулсете, - их нет в рулсетах Пираток."""
     res = {"%s__%d__%s" % (race, slot, name) for race, (slot, name, _) in EXTRA.items()}
-    res |= {"UBERGAL__%d__%s" % v for v in uber_layers(db.armor_layers()).values()}
+    arms = db.armor_layers()
+    res |= {"UBERGAL__%d__%s" % v for v in uber_layers(arms).values()}
+    res |= {"GNOME__%d__PASTIES_%s" % (GNOME[0], look) for arm in GNOME[1] for look in arms[arm]}
     return res
 
 
@@ -102,6 +106,11 @@ def ruleset():
         lines += ["  - type: %s" % arm, "    layersDefinition:"]
         for look, names in sorted(arms[arm].items()):
             row = definition(names, *uber.get((arm, look), (None, None)))
+            lines.append("      %s: [%s]" % (look, ", ".join('"%s"' % v for v in row)))
+    for arm in GNOME[1]:
+        lines += ["  - type: %s" % arm, "    layersDefinition:"]
+        for look, names in sorted(arms[arm].items()):
+            row = definition(names, GNOME[0], "PASTIES_" + look)
             lines.append("      %s: [%s]" % (look, ", ".join('"%s"' % v for v in row)))
     return ("\n".join(lines) + "\n").encode("utf-8")
 

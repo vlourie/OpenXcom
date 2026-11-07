@@ -77,6 +77,8 @@ def main():
     prefix = ns.race + "__2__"
     bodies = B.UI
     pairs = [(x, x.replace("_NUDECAMO", "_NUDE")) for x in sorted(F) if x.startswith(prefix) and x.endswith("_NUDECAMO")]
+    if ns.race == "GNOME":                          # HD-тел GNOME в моде ещё нет; тела без ареол, круги отдельным слоем
+        bodies = os.path.join(db.ROOT, "art", "doll", "pipe_pilot", "gnome", "pasties", "bodies")
     if ns.race == "NEKOMIMI":                       # у кошек камуфляж в слое тела, HD-тела в моде ещё нет
         bodies = os.path.join(db.ROOT, "art", "doll", "pipe_pilot", "nekomimi", "heads", "layers")
         pairs = [(x, x.replace("__CAMO_", "__NUDE_")) for x in sorted(F) if x.startswith("NEKOMIMI__4__CAMO_F") or x.startswith("NEKOMIMI__4__CAMO_M")]
