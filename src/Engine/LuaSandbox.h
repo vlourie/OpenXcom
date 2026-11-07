@@ -79,6 +79,10 @@ public:
 	void drop(int kept);
 	/// Calls a kept function like a handler, with the limits of one fire(), and forgets it. `what` names it in errors.
 	void callKept(int kept, const char *what, PushFn push, void *data);
+	/// The same, and the function stays kept: the buttons of a screen are pressed many times.
+	void callHeld(int kept, const char *what, PushFn push, void *data);
+	/// main.lua is running, not a handler.
+	bool isLoading() const { return _loading; }
 
 	/// The mod is off: too many errors or it failed to load.
 	bool isDisabled() const { return _disabled; }

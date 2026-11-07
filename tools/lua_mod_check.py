@@ -176,7 +176,15 @@ def parse_metadata(text):
     return values, bad
 
 
-def check_metadata(data, rep, api):
+def caps_of(text, value):
+    """Обе записи YAML: luaCaps: [a, b] и строки «- a» под ключом."""
+    if value:
+        return [w.strip(" \"'") for w in value.strip("[] ").split(",") if w.strip()]
+    m = re.search(r"(?m)^luaCaps\s*:\s*\n((?:[ \t]*-[^\n]*\n?)+)", text.replace("\r\n", "\n"))
+    return [line.strip()[1:].strip(" \"'") for line in m.group(1).splitlines()] if m else []
+
+
+def check_metadata(data, rep, api, known_caps=()):
     if "metadata.yml" not in data:
         rep.error("metadata", "metadata_missing", "нет metadata.yml в корне архива", "metadata.yml")
         return
@@ -200,6 +208,12 @@ def check_metadata(data, rep, api):
     lua_api = values.get("luaApi", "")
     if not lua_api.isdigit() or not 1 <= int(lua_api) <= api:
         rep.error("metadata", "metadata_luaapi", f"luaApi '{lua_api}': нужно целое от 1 до {api}", "metadata.yml")
+    caps = caps_of(text, values.get("luaCaps", ""))
+    for word in caps:
+        if word not in known_caps:
+            rep.error("metadata", "metadata_luacaps", f"luaCaps: слова '{word}' нет, есть: {', '.join(sorted(known_caps))}", "metadata.yml")
+    if caps and lua_api.isdigit() and int(lua_api) < 2:
+        rep.error("metadata", "metadata_luacaps", "luaCaps нужен luaApi: 2", "metadata.yml")
     engine = values.get("requiredExtendedEngine", "")
     if engine not in ENGINES:
         rep.error("metadata", "metadata_engine", f"requiredExtendedEngine '{engine}': наша сборка так не отвечает", "metadata.yml")
@@ -213,7 +227,7 @@ def check_metadata(data, rep, api):
 # ---- 3. Lua ----
 
 def load_names():
-    names = {"event": set(), "const": set(), "base": set(), "method": set()}
+    names = {"event": set(), "const": set(), "base": set(), "method": set(), "game": set(), "cap": set()}
     api = 1
     for line in NAMES.read_text(encoding="utf-8").splitlines():
         kind, name = line.split("\t")
@@ -274,7 +288,7 @@ def scan_lua(path, text, names, rep):
     if re.search(r"\bstring\s*\.\s*dump\b", code):
         rep.signal("lua", "api_escape", "string.dump: в песочнице его нет", path)
     for m in re.finditer(r"\bgame\s*\.\s*(\w+)", code):
-        if m.group(1) not in {"on", "log"} and m.group(1) not in names["const"]:
+        if m.group(1) not in names["game"] and m.group(1) not in names["const"]:
             rep.signal("lua", "api_unknown", f"game.{m.group(1)}: такого в API нет", path)
     for m in re.finditer(r":\s*([A-Za-z_]\w*)\s*[(\"'{]", code):
         if m.group(1) not in names["method"] and m.group(1) not in STRING_METHODS:
@@ -655,7 +669,7 @@ def main():
     extra = {}
     data = read_archive(a.archive, rep)
     if data is not None:
-        check_metadata(data, rep, api)
+        check_metadata(data, rep, api, names["cap"])
         for name, body in sorted(data.items()):
             if PurePosixPath(name).suffix.lower() == ".lua":
                 try:

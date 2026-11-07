@@ -26,6 +26,7 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Screen.h"
@@ -56,6 +57,7 @@
 #include "../Savegame/Transfer.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SoldierDiary.h"
+#include "../Menu/LuaScreenState.h"
 #include "../Menu/PauseState.h"
 #include "SelectMusicTrackState.h"
 #include "UfoTrackerState.h"
@@ -554,6 +556,11 @@ void GeoscapeState::handle(Action *action)
 				Options::dogfightSpeed = 20;
 				_dogfightTimer->setInterval(Options::dogfightSpeed);
 			}
+		}
+		// the player's way to the screens of Lua mods
+		if (action->getDetails()->key.keysym.sym == Options::keyLuaMods && !buttonsDisabled() && _game->getMod()->getLuaHost() && _game->getMod()->getLuaHost()->hasMenuScreens())
+		{
+			_game->pushState(new LuaModsState());
 		}
 		// "ctrl-d" - enable debug mode
 		if (Options::debug && action->getDetails()->key.keysym.sym == SDLK_d && _game->isCtrlPressed())

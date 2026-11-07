@@ -87,6 +87,11 @@ PATCH = {"weapon": ("local BONUS = { STR_PISTOL = 5, STR_RIFLE = 10 }", "local B
          "camo": ("distance > 10 * 16", "distance > 2 * 16")}
 
 
+# банк: зонд в show, каждое показанное значение в журнал
+PROBES["bank"] = ("", "")
+PATCH["bank"] = ("  local function show()\n", '  local function show()\n    say("bank", balance())\n')
+
+
 # камуфляж всем в этом бою: тег на броне настоящих юнитов сейва
 CAMO_RUL = "".join(f"  - type: {a}\n    tags:\n      MY_CAMO: 1\n" for a in ("STR_OGRE_BREECHES_UC", "STR_NEKO_STS_UC"))
 
@@ -135,7 +140,7 @@ def make(mods, rid, master, extra_rul=""):
     r = RECIPES[rid]
     d = mods / ("rcp_" + rid)
     (d / "lua").mkdir(parents=True, exist_ok=True)
-    (d / "metadata.yml").write_text(f'id: rcp_{rid}\nname: "rcp {rid}"\nversion: 0.1\nmaster: "{master}"\nluaApi: 1\n', encoding="utf-8", newline="\n")
+    (d / "metadata.yml").write_text(f'id: rcp_{rid}\nname: "rcp {rid}"\nversion: 0.1\nmaster: "{master}"\nluaApi: {r.get("api", 1)}\n' + (f'luaCaps: [{r["caps"]}]\n' if "caps" in r else ""), encoding="utf-8", newline="\n")
     code = r["code"]
     if rid in PATCH:
         assert PATCH[rid][0] in code, rid
@@ -295,6 +300,33 @@ def screens():
     check("nerds: страница открылась", bool(found), str(found[:2]))
     text = errors(name)
     check("экраны: журнал ошибок Lua пуст", not text, text[:500])
+    call("stop", "--name", name, timeout=60)
+
+
+def bank():
+    """Рецепт экрана в настоящем бою: экран модов, банк, вложить, закрыть. Геоскейп и база: tools/lua_api2/stage1.py."""
+    mods = HERE / "mods_pirates"
+    mods.mkdir(exist_ok=True)
+    for d in REAL.iterdir():
+        if d.is_dir() and not (mods / d.name).exists():
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(mods / d.name), str(d)], check=True, capture_output=True)
+    mod = make(mods, "bank", "piratez")
+    text = re.sub(r"(?:  - 'lua_\w+ ver: [^']*'\n)+", f"  - '{mod} ver: 0.1'\n", SAVE.read_text(encoding="utf-8"), count=1)
+    save = HERE / "rcp_bank.sav"
+    save.write_text(text, encoding="utf-8", newline="\n")
+    name = "rcpb"
+    a = ["start", "--name", name, "--exe", EXE, "--save", str(save), "--mods-dir", str(mods), "--mods", mod + "=true", "--timeout", "120", "--set", "oxceLuaMods=true"]
+    print(name, call(*a, timeout=140).strip().splitlines()[-1][:120], flush=True)
+    # кадр мира 480x270, окно 320x200 смещено на (80, 35); первая строка списка, вложить, закрыть
+    run(name, "wait 800; key 111; wait 400; click 230,91; wait 400; click 180,174; wait 300; click 300,174; wait 300", 40)
+    top = state(name)[0]
+    found = rows(name, "bank")
+    check("bank: показан ноль и остаток после вложения", [x[0] for x in found] == ["0", "1000"], str(found))
+    check("bank: закрылся на экран модов", top == "LuaModsState", top)
+    run(name, "key 27; wait 300", 20)
+    check("bank: вернулись в бой", state(name)[0] == "BattlescapeState", state(name)[0])
+    text = errors(name)
+    check("bank: журнал ошибок Lua пуст", not text, text[:500])
     call("stop", "--name", name, timeout=60)
 
 

@@ -23,6 +23,8 @@ OUT = ROOT / "portal/src/Xp.Launcher.Core/Docs"
 # имя таблицы в C++ -> заголовок и как метод пишется в коде мода
 TYPES = {
     "UNIT": ("unit", "Юнит", "Unit"),
+    "UI": ("ui", "Экран мода, luaCaps: screens", "A mod's screen, luaCaps: screens"),
+    "UI_WIDGET": ("uiWidget", "Виджет экрана мода", "A widget of a mod's screen"),
     "ITEM": ("item", "Предмет", "Item"),
     "BATTLE": ("battle", "Бой", "Battle"),
     "SOLDIER": ("soldier", "Солдат", "Soldier"),
@@ -46,6 +48,10 @@ TYPES = {
     "RULES": ("rules", "Все правила игры", "All the game's rules"),
     "NERDS": ("statsForNerds", "Страница для нердов", "The stats for nerds page"),
 }
+
+# слова luaCaps: открытые и закрытые до своего этапа docs/portal/LUA_MODS_V2.md
+CAPS = ("screens",)
+CLOSED_CAPS = ("spawn",)
 
 # имена характеристик для getStat, setStat, addStat, getExp
 STATS_RU = "timeUnits, stamina, health, manaPool, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee"
@@ -452,6 +458,40 @@ METHODS = {
         "getMaxDarknessToSeeUnits": ("", "до какой темноты видно юнитов", "up to what darkness units are seen"),
         "getMaxViewDistance": ("", "наибольшая дальность зрения в клетках", "the greatest view distance in tiles"),
         "getSmokeReduction": ("smoke", "сколько вокселей дальности отнимает дым такой плотности", "how many voxels of range smoke of this density takes"),
+    },
+    "ui": {
+        "window": ("{ x, y, w, h, background }", "окно: рамка и фон. Нужно раньше list и comboBox. background: картинка из игры или extraSprites мода, без него фон берётся из interface экрана", "a window: the frame and the background. Needed before list and comboBox. background: a picture of the game or the mod's extraSprites, without it the background comes from the screen's interface"),
+        "text": ("{ x, y, w, h, text, big, align, wrap, color }", "текст: ключ extraStrings или сама строка. align: left, center, right", "text: a key of extraStrings or the string itself. align: left, center, right"),
+        "button": ("{ x, y, w, h, text, color, onClick }", "кнопка. onClick(кнопка)", "a button. onClick(button)"),
+        "toggleButton": ("{ x, y, w, h, text, pressed, color, onClick }", "кнопка-переключатель. onClick(кнопка)", "a toggle button. onClick(button)"),
+        "list": ("{ x, y, w, h, columns, selectable, color, onClick }", "список: columns, ширины столбцов, от 1 до 8; до 2000 строк. onClick(список, строка), строки с единицы", "a list: columns, the widths of the columns, from 1 to 8; up to 2000 rows. onClick(list, row), rows count from one"),
+        "comboBox": ("{ x, y, w, h, options, selected, color, onChange }", "выпадающий список, до 256 пунктов. onChange(список, пункт), пункты с единицы", "a drop-down list, up to 256 options. onChange(list, option), options count from one"),
+        "edit": ("{ x, y, w, h, text, focus, color, onChange, onEnter }", "поле ввода. onChange(поле, текст), onEnter(поле, текст)", "an input field. onChange(field, text), onEnter(field, text)"),
+        "slider": ("{ x, y, w, h, min, max, value, color, onChange }", "ползунок. onChange(ползунок, значение)", "a slider. onChange(slider, value)"),
+        "image": ("{ x, y, image, onClick }", "картинка из игры или extraSprites мода, файлы из Lua не читаются. onClick(картинка)", "a picture of the game or the mod's extraSprites, Lua reads no files. onClick(picture)"),
+        "onKey": ("fn", "клавиша на этом экране: fn(имя клавиши). Esc закрывает экран всегда", "a key on this screen: fn(key name). Esc always closes the screen"),
+        "onClose": ("fn", "вызывается при закрытии. Без случайных чисел, записи и openScreen: открытый и закрытый экран ничего не меняет", "called on closing. No random numbers, writes or openScreen: a screen opened and closed changes nothing"),
+        "close": ("", "закрыть экран, только верхний и только из обработчика, не из построения", "close the screen: only the top one, only from a handler, not while it builds"),
+    },
+    "uiWidget": {
+        "setVisible": ("value", "показать или скрыть виджет", "show or hide the widget"),
+        "isVisible": ("", "виден ли виджет", "whether the widget is shown"),
+        "setText": ("text", "новый текст: text, button, toggleButton, edit", "new text: text, button, toggleButton, edit"),
+        "getText": ("", "текст: text, edit", "the text: text, edit"),
+        "setPressed": ("value", "нажать или отпустить: toggleButton", "press or release: toggleButton"),
+        "isPressed": ("", "нажата ли: toggleButton", "whether it is pressed: toggleButton"),
+        "addRow": ("cell, ...", "строка в конец: list. Ячеек не больше столбцов", "a row at the end: list. No more cells than columns"),
+        "clearList": ("", "убрать все строки: list", "remove all rows: list"),
+        "setCell": ("row, column, text", "текст ячейки: list, с единицы", "the text of a cell: list, from one"),
+        "getRowCount": ("", "сколько строк: list", "how many rows: list"),
+        "getSelected": ("", "выбранная строка или пункт, с единицы: list, comboBox. У списка без щелчка: 1", "the selected row or option, from one: list, comboBox. On a list not clicked yet: 1"),
+        "setSelected": ("index", "выбрать пункт, с единицы: comboBox", "select an option, from one: comboBox"),
+        "setOptions": ("options", "новые пункты: comboBox", "new options: comboBox"),
+        "getValue": ("", "значение: slider", "the value: slider"),
+        "setValue": ("value", "новое значение: slider. onChange не вызывается", "a new value: slider. onChange is not called"),
+        "setRange": ("low, high", "новые границы: slider", "new limits: slider"),
+        "setFocus": ("", "ввод с клавиатуры в это поле: edit. Пока фокус в поле, первый щелчок вне него только снимает фокус, а onKey молчит", "keyboard input into this field: edit. While the field has the focus, the first click outside it only takes the focus away, and onKey is silent"),
+        "setImage": ("name", "другая картинка того же размера или меньше: image", "another picture of the same size or smaller: image"),
     },
     "statsForNerds": {
         "addIntRow": ("name, value", "строка с числом", "a row with a number"),
@@ -907,6 +947,30 @@ RECIPES = [
              "if other then\n"
              "  game.log(\"found: \" .. other:getType())\n"
              "end\n"},
+    {"id": "bank", "ru": "Свой экран: пиратский банк", "en": "A screen of your own: the pirate bank",
+     "ru_text": "Экран нужно объявить и разрешить: в <code>metadata.yml</code> мода <code>luaApi: 2</code> и <code>luaCaps: [screens]</code>. Благодаря <code>menu</code> игрок найдёт его на экране модов: кнопка в меню паузы или клавиша. Деньги лежат в теге кампании и живут в сейве.",
+     "en_text": "A screen has to be declared and allowed: <code>luaApi: 2</code> and <code>luaCaps: [screens]</code> in the mod's <code>metadata.yml</code>. Thanks to <code>menu</code> the player finds it on the mods' screen: a button in the pause menu or a key. The money lies in a tag of the campaign and lives in the save.",
+     "api": 2, "caps": "screens",
+     "rul": "extended:\n  tags:\n    GeoscapeGame:\n      MY_BANK: int\nextraStrings:\n  - type: en-US\n    strings:\n      STR_MY_BANK: \"The pirate bank\"\n      STR_MY_DEPOSIT: \"Deposit 1000\"\n      STR_MY_CLOSE: \"Close\"\n",
+     "code": "local function balance()\n"
+             "  return game.getGeoscape():getTag(\"MY_BANK\")\n"
+             "end\n\n"
+             "game.screen(\"bank\", function(ui)\n"
+             "  ui:window{ x = 32, y = 20, w = 256, h = 160 }\n"
+             "  ui:text{ x = 40, y = 30, w = 240, h = 17, text = \"STR_MY_BANK\", big = true, align = \"center\" }\n"
+             "  local sum = ui:text{ x = 50, y = 60, w = 220, h = 10, text = \"\" }\n"
+             "  local function show()\n"
+             "    sum:setText(tostring(balance()))\n"
+             "  end\n"
+             "  show()\n"
+             "  ui:button{ x = 50, y = 130, w = 106, h = 18, text = \"STR_MY_DEPOSIT\", onClick = function()\n"
+             "    game.getGeoscape():setTag(\"MY_BANK\", balance() + 1000)\n"
+             "    show()\n"
+             "  end }\n"
+             "  ui:button{ x = 164, y = 130, w = 106, h = 18, text = \"STR_MY_CLOSE\", onClick = function()\n"
+             "    ui:close()\n"
+             "  end }\n"
+             "end, { menu = \"STR_MY_BANK\" })\n"},
 ]
 
 CONST_WORDS = {
@@ -959,7 +1023,7 @@ TEXT = {
                   "<ul><li>базы, наука, производство, деньги: геоскейп можно читать, а менять только теги, итог месяца для страны, обнаружение НЛО и цены;</li>"
                   "<li>создавать и двигать юнитов и предметы, менять карту;</li>"
                   "<li>спрайты и перекраску: эти обработчики Y-script идут из потоков рисования на каждый кадр, для них есть Y-script;</li>"
-                  "<li>свои экраны и выбор действий ИИ, кроме веса цели.</li></ul>"
+                  "<li>выбор действий ИИ, кроме веса цели.</li></ul>"
                   "<b>Рядом с кодом работает обычный OXCE.</b> Папка <code>Ruleset/</code> мода с файлами <code>.rul</code> подключается как у любого мода: там меняются числа предметов, брони и юнитов, исследования и всё остальное, что умеют рулсеты, в том числе Y-script. "
                   "Нужна новая возможность в Lua — напишите нам тикет с описанием, что мод должен делать.",
         "h_args": "Аргументы",
@@ -983,7 +1047,16 @@ TEXT = {
         "h_api": "Объекты",
         "th_method": "Метод", "th_what": "Что делает",
         "h_game": "Таблица game",
-        "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше.",
+        "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше. С <code>luaApi: 2</code>: <code>game.getBattle()</code> и <code>game.getGeoscape()</code> дают бой и кампанию там, где обработчик их не получает, например из щелчка на экране; боя нет: nil. Только разрешение <code>screens</code>: <code>game.screen(имя, функция[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> объявляет экран, только пока грузится <code>main.lua</code>; <code>game.openScreen(имя)</code> открывает его из обработчика.",
+        "h_caps": "Разрешения и свои экраны",
+        "caps": "<p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть одно слово: <code>screens</code>.</p>"
+                "<ul><li>Экран строится из виджетов игры в координатах 320×200, поэтому работает при любом разрешении и масштабе.</li>"
+                "<li>Открывает его игрок на экране модов, если у <code>game.screen</code> есть <code>menu</code>, или обработчик через <code>game.openScreen</code>: тогда экран откроется, когда игра закончит свой шаг, в бою это может быть после анимации или после брифинга. Пока экран открыт, игра под ним стоит.</li>"
+                "<li>Функция построения и <code>onClose</code> только читают: без случайных чисел, записи и <code>openScreen</code>. Открытый и закрытый экран не меняет игру. В щелчке можно всё, что можно в обработчике.</li>"
+                "<li>Обработчики только для чтения, в том числе все обработчики геоскейпа и страниц для нердов, экран не открывают.</li>"
+                "<li>Esc закрывает экран всегда. Ошибка в построении закрывает экран и пишется в журнал. Кадровых обработчиков и таймеров нет: только реакция на действие.</li>"
+                "<li>Ручки виджетов живут, пока экран открыт, после закрытия: ошибка Lua.</li>"
+                "<li>Потолки: 64 виджета, 2000 строк списка, 8 столбцов, 256 пунктов, 64 экрана на мод, вложенность и очередь вместе 4, один экран на вызов, 8 экранов за ход боя или день кампании. Сверх потолка: ошибка мода, игра живёт.</li></ul>",
         "h_const": "Константы",
         "h_tags": "Теги: память между сохранениями",
         "tags": "Переменные Lua обнуляются при загрузке сейва, в новом бою и по Ctrl+F5. Долгая память — только теги. Тег объявляется в рулсете мода, например в файле <code>Ruleset/my_mod.rul</code>:"
@@ -1047,7 +1120,7 @@ TEXT = {
                   "<ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li>"
                   "<li>create or move units and items, change the map;</li>"
                   "<li>touch sprites and recolouring: those Y-script handlers come from the drawing threads on every frame, the Y-script is there for them;</li>"
-                  "<li>make your own screens or choose the AI's actions, except a target's weight.</li></ul>"
+                  "<li>choose the AI's actions, except a target's weight.</li></ul>"
                   "<b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. "
                   "If you need something new in Lua, send us a ticket saying what the mod should do.",
         "h_args": "Arguments",
@@ -1071,7 +1144,16 @@ TEXT = {
         "h_api": "Objects",
         "th_method": "Method", "th_what": "What it does",
         "h_game": "The game table",
-        "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above.",
+        "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above. With <code>luaApi: 2</code>: <code>game.getBattle()</code> and <code>game.getGeoscape()</code> give the battle and the campaign where a handler does not receive them, a click on a screen for one; no battle: nil. Only with the permission <code>screens</code>: <code>game.screen(name, function[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> declares a screen, only while <code>main.lua</code> loads; <code>game.openScreen(name)</code> opens it from a handler.",
+        "h_caps": "Permissions and screens of your own",
+        "caps": "<p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There is one word now: <code>screens</code>.</p>"
+                "<ul><li>A screen is made of the game's widgets in coordinates 320×200, so it works at any resolution and scale.</li>"
+                "<li>The player opens it on the mods' screen, if <code>game.screen</code> has <code>menu</code>, or a handler through <code>game.openScreen</code>: the screen then opens when the game has finished its step, in battle it may be after an animation or after the briefing. While a screen is open the game under it stands.</li>"
+                "<li>The building function and <code>onClose</code> only read: no random numbers, writes or <code>openScreen</code>. A screen opened and closed does not change the game. In a click you may do all a handler may.</li>"
+                "<li>Read-only handlers, all handlers of the geoscape and the nerds' pages among them, do not open screens.</li>"
+                "<li>Esc always closes a screen. An error while building closes the screen and goes to the log. There are no frame handlers or timers: only a reaction to an action.</li>"
+                "<li>Widget handles live while the screen is open, after closing: a Lua error.</li>"
+                "<li>Ceilings: 64 widgets, 2000 list rows, 8 columns, 256 options, 64 screens a mod, nesting and the queue together 4, one screen a call, 8 screens a battle turn or a campaign day. Over a ceiling: the mod's error, the game lives.</li></ul>",
         "h_const": "Constants",
         "h_tags": "Tags: memory between saves",
         "tags": "Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset, for example in the file <code>Ruleset/my_mod.rul</code>:"
@@ -1179,6 +1261,19 @@ def read_engine():
     return tables, events, constants, calls, base, numbers
 
 
+def game_calls():
+    """Функции таблицы game. Слова разрешений сверяются с capOf: закрытое до своего этапа слово на страницу не идёт."""
+    src = strip_comments(HOST.read_text(encoding="utf-8-sig"))
+    m = re.search(r"const luaL_Reg API2_GAME_REGS\[\] = \{(.*?)\n?\};", src, re.S)
+    if not m:
+        fail(["нет таблицы API2_GAME_REGS в LuaHost.cpp"])
+    words = re.findall(r'word == "(\w+)"', src)
+    wrong = [c for c in CAPS if c not in words] + [w for w in words if w not in CAPS and w not in CLOSED_CAPS]
+    if wrong:
+        fail([f"разрешение {w}: в движке и на странице по-разному" for w in wrong])
+    return ["on", "log", "getRules"] + re.findall(r'\{\s*"(\w+)"\s*,', m.group(1))
+
+
 def check_words(tables, events, calls):
     problems = []
     for lua_name, names in tables.items():
@@ -1252,6 +1347,7 @@ def page(lang, tables, events, constants, base, numbers):
             out.append(f'<tr id="{lua_name}.{method}"><td><code>{lua_name}:{method}({args})</code></td><td>{html.escape(what[i])}</td></tr>')
         out.append("</table>")
     out.append(f"<h2>{t['h_game']}</h2><p>{t['game']}</p>")
+    out.append(f"<h2>{t['h_caps']}</h2>{t['caps']}")
     out.append(f"<h2>{t['h_const']}</h2>")
     groups = {}
     for c in constants:
@@ -1288,6 +1384,7 @@ def main():
     # имена для проверки заявок: лаунчер и tools/lua_mod_check.py сверяют вызовы мода с одним и тем же списком
     names = [f"api\t{numbers['api']}"] + [f"event\t{e}" for e in events] + [f"const\t{c}" for c in constants] + [f"base\t{b}" for b in base]
     names += [f"method\t{m}" for m in sorted({m for v in tables.values() for m in v})]
+    names += [f"game\t{g}" for g in game_calls()] + [f"cap\t{c}" for c in CAPS]
     text = "\n".join(names) + "\n"
     path = OUT / "lua_api.names.txt"
     if check:

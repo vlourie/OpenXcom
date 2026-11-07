@@ -147,6 +147,15 @@ std::string modsJson()
 		if (Options::oxceLuaMods && mod->getLuaApi() > 0 && CrossPlatform::fileExists(mod->getPath() + "/lua/main.lua"))
 		{
 			ss << ", \"lua\": true";
+			std::string caps;
+			for (const auto &word : mod->getLuaCaps())
+			{
+				caps += (caps.empty() ? "" : ",") + word;
+			}
+			if (!caps.empty())
+			{
+				ss << ", \"caps\": " << HdTest::jsonString(caps);
+			}
 			// the release puts the checked mods of the catalog into cm-<id> (LUA_MODS §8.4), the rest is the author's own
 			if (CrossPlatform::baseFilename(mod->getPath()).compare(0, 3, "cm-") == 0)
 			{

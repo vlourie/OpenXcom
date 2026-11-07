@@ -18,6 +18,8 @@
  */
 #include "BasescapeState.h"
 #include "../Engine/Game.h"
+#include "../Menu/LuaScreenState.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -665,6 +667,12 @@ void BasescapeState::handleKeyPress(Action *action)
 			Options::keyBaseSelect8
 		};
 		int key = action->getDetails()->key.keysym.sym;
+		// the pause menu does not open here: the key is the player's only way to the screens of Lua mods
+		if (key == Options::keyLuaMods && _game->getMod()->getLuaHost() && _game->getMod()->getLuaHost()->hasMenuScreens())
+		{
+			_game->pushState(new LuaModsState());
+			return;
+		}
 		for (size_t i = 0; i < _game->getSavedGame()->getBases()->size(); ++i)
 		{
 			if (key == baseKeys[i])

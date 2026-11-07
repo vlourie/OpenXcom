@@ -228,6 +228,10 @@ int BattlescapeGame::think()
 		if (auto *lua = getMod()->getLuaHost())
 		{
 			lua->runQueue(_save);
+			if (auto *screen = lua->nextScreen())
+			{
+				_parentState->popup(screen);
+			}
 		}
 		if (_save->getUnitsFalling())
 		{

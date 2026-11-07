@@ -74,6 +74,7 @@
 #include "../Interface/BattlescapeButton.h"
 #include "../Interface/NumberText.h"
 #include "../Menu/CutsceneState.h"
+#include "../Menu/LuaScreenState.h"
 #include "../Menu/PauseState.h"
 #include "../Menu/LoadGameState.h"
 #include "../Menu/SaveGameState.h"
@@ -3452,6 +3453,12 @@ inline void BattlescapeState::handle(Action *action)
 				if (key == SDLK_F5 && _game->isCtrlPressed() && _game->getMod()->getLuaHost())
 				{
 					warningRaw(_game->getMod()->getLuaHost()->reload());
+					return;
+				}
+				// the player's way to the screens of Lua mods
+				if (key == Options::keyLuaMods && _game->getMod()->getLuaHost() && _game->getMod()->getLuaHost()->hasMenuScreens())
+				{
+					_game->pushState(new LuaModsState());
 					return;
 				}
 				// quick save and quick load
