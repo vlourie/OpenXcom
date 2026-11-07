@@ -51,8 +51,8 @@ TYPES = {
 }
 
 # слова luaCaps: открытые и закрытые до своего этапа docs/portal/LUA_MODS_V2.md
-CAPS = ("screens", "economy")
-CLOSED_CAPS = ("spawn",)
+CAPS = ("screens", "economy", "spawn")
+CLOSED_CAPS = ()
 # обработчики только для luaApi: 2, в движке namesApi1 их не знает
 API2_EVENTS = ("newHour", "newDay", "newMonth", "battleStart", "battleEnd")
 
@@ -183,6 +183,7 @@ METHODS = {
         "setMoveCost": ("kind, time, energy", "задать надбавку к стоимости хода на этот бой", "set the move cost bonus for this battle"),
         "getInventoryItems": ("slot", "таблица предметов юнита; slot необязателен, это тип слота из рулсета", "a table of the unit's items; slot is optional, a slot type from the ruleset"),
         "getInventoryItem": ("type, slot", "первый предмет типа type или nil; slot необязателен. Тип не из рулсета: ошибка", "the first item of type type, or nil; slot is optional. A type not in the ruleset is an error"),
+        "giveItem": ("type[, done]", "выдать юниту предмет после обработчика, как автоснаряжение: done(item) или done(nil, причина). Разрешение spawn", "give the unit an item after the handler, like auto-equip: done(item) or done(nil, reason). Permission spawn"),
         "getSpecialItems": ("", "таблица особых предметов юнита: встроенное оружие", "a table of the unit's special items: built-in weapons"),
     },
     "item": {
@@ -243,6 +244,9 @@ METHODS = {
         "getDepth": ("", "глубина подводной миссии", "the depth of an underwater mission"),
         "getGlobalShade": ("", "общая темнота карты", "the darkness of the whole map"),
         "getGeoscapeGame": ("", "геоскейп", "the geoscape"),
+        "spawnItem": ("type, x, y, z[, done]", "создать предмет на клетке после обработчика: done(item) или done(nil, причина). Разрешение spawn", "create an item on a tile after the handler: done(item) or done(nil, reason). Permission spawn"),
+        "removeItem": ("item[, done]", "снять предмет после обработчика: done(true) или done(nil, причина). Разрешение spawn", "remove an item after the handler: done(true) or done(nil, reason). Permission spawn"),
+        "spawnUnit": ("{ type, x, y, z, faction, direction, done }", "создать юнита после обработчика: done(unit) или done(nil, причина). По умолчанию враг. Разрешение spawn", "create a unit after the handler: done(unit) or done(nil, reason). An enemy by default. Permission spawn"),
         "tryConcealUnit": ("unit", "попробовать скрыть юнита от врага; итог true или false", "try to conceal a unit from the enemy; the result is true or false"),
         "getTag": ("name", "значение тега BattleGame", "the value of a BattleGame tag"),
         "setTag": ("name, value", "записать тег BattleGame", "write a BattleGame tag"),
@@ -1011,6 +1015,24 @@ RECIPES = [
              "  end\n"
              "  geoscape_game:setTag(\"MY_TITHE_DAYS\", days)\n"
              "end)\n"},
+    {"id": "reinforce", "ru": "Бой: подкрепление каждый третий ход", "en": "Battle: reinforcements every third turn",
+     "ru_text": "На каждом третьем ходу рядом с первым врагом появляется такой же. Нужны <code>luaApi: 2</code> и <code>luaCaps: [spawn]</code>. Клетка рядом может быть занята: тогда придёт отказ, и подкрепления в этот ход нет. Новый юнит начинает с нулём ОВ, поэтому <code>done</code> их выдаёт. Новый враг продлевает бой: для игрока это другой баланс.",
+     "en_text": "On every third turn a copy of the first enemy appears next to it. It takes <code>luaApi: 2</code> and <code>luaCaps: [spawn]</code>. The tile next to it may be busy: then a refusal comes and there are no reinforcements this turn. A new unit starts with zero time units, so <code>done</code> gives them. A new enemy prolongs the battle: for the player this is a different balance.",
+     "api": 2, "caps": "spawn",
+     "code": "local called = 0\n"
+             "game.on(\"newTurnUnit\", function(unit, battle, turn, side)\n"
+             "  if side ~= game.FACTION_HOSTILE or unit:getFaction() ~= side then return end\n"
+             "  if turn % 3 ~= 0 or called == turn then return end\n"
+             "  called = turn\n"
+             "  local x, y, z = unit:getPosition()\n"
+             "  battle:spawnUnit{ type = unit:getType(), x = x + 1, y = y, z = z, done = function(new, why)\n"
+             "    if new then\n"
+             "      new:setTimeUnits(new:getTimeUnitsMax())\n"
+             "    else\n"
+             "      game.log(\"no reinforcements:\", why)\n"
+             "    end\n"
+             "  end }\n"
+             "end)\n"},
 ]
 
 CONST_WORDS = {
@@ -1089,7 +1111,7 @@ TEXT = {
         "h_game": "Таблица game",
         "game": "<code>game.on(имя, функция)</code> подписывает функцию на обработчик, только пока грузится <code>main.lua</code>. <code>game.log(...)</code> и <code>print(...)</code> пишут строку в журнал игры. <code>game.getRules()</code> даёт все правила игры, в том числе из других модов, таблица <code>rules</code> выше. С <code>luaApi: 2</code>: <code>game.getBattle()</code> и <code>game.getGeoscape()</code> дают бой и кампанию там, где обработчик их не получает, например из щелчка на экране; боя нет: nil. <code>game.getBases()</code> даёт таблицу баз игрока, в бою и в щелчке тоже. Только разрешение <code>screens</code>: <code>game.screen(имя, функция[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> объявляет экран, только пока грузится <code>main.lua</code>; <code>game.openScreen(имя)</code> открывает его из обработчика.",
         "h_caps": "Разрешения и свои экраны",
-        "caps": "<p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens, economy]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть два слова: <code>screens</code> и <code>economy</code>.</p>"
+        "caps": "<p>С <code>luaApi: 2</code> у мода есть разрешения: слова в <code>metadata.yml</code>, например <code>luaCaps: [screens, economy]</code>. Без слова метода для мода нет: вызов даёт ошибку Lua с названием разрешения. Неизвестное слово или <code>luaCaps</code> при <code>luaApi: 1</code> отключают Lua мода. Сейчас есть три слова: <code>screens</code>, <code>economy</code> и <code>spawn</code>.</p>"
                 "<ul><li>Экран строится из виджетов игры в координатах 320×200, поэтому работает при любом разрешении и масштабе.</li>"
                 "<li>Открывает его игрок на экране модов, если у <code>game.screen</code> есть <code>menu</code>, или обработчик через <code>game.openScreen</code>: тогда экран откроется, когда игра закончит свой шаг, в бою это может быть после анимации или после брифинга. Пока экран открыт, игра под ним стоит.</li>"
                 "<li>Функция построения и <code>onClose</code> только читают: без случайных чисел, записи и <code>openScreen</code>. Открытый и закрытый экран не меняет игру. В щелчке можно всё, что можно в обработчике.</li>"
@@ -1100,13 +1122,25 @@ TEXT = {
                 "<p><code>economy</code>: деньги, склад, персонал и наём, только вне боя.</p>"
                 "<ul><li><b>Переменные Lua обнуляются при каждом новом бою и загрузке.</b> Счётчик дней в переменной забудется после первого боя. Всё, что должно пережить бой, держите в тегах, для кампании раздел <code>GeoscapeGame</code>.</li>"
                 "<li>Читать можно без слова: <code>game.getBases()</code>, <code>geoscape:getFunds()</code>, методы чтения <code>base</code>. Менять можно только со словом и только в <code>newHour</code>, <code>newDay</code>, <code>newMonth</code>, в щелчке на экране и в функции <code>done</code> у <code>hireSoldier</code>. В бою нельзя: конец боя сам считает склад.</li>"
-                "<li>Эти три обработчика могут открыть экран: <code>game.openScreen</code>. <code>battleStart</code> и <code>battleEnd</code> только читают.</li>"
+                "<li>Эти три обработчика могут открыть экран: <code>game.openScreen</code>. <code>battleStart</code> и <code>battleEnd</code> ничего не пишут.</li>"
                 "<li>Деньги, склад и персонал меняются сразу. Ошибка Lua в том же вызове отменяет всё, что вызов успел, и наём тоже.</li>"
                 "<li><code>addFunds</code> попадает в приход или расход месяца, как обычные деньги. В <code>newMonth</code> отчёт прошлого месяца уже посчитан: деньги идут в новый месяц. Долг ниже порога даёт обычное предупреждение совета, затем обычный проигрыш.</li>"
                 "<li><code>hireSoldier(type[, done])</code> бесплатный: цену, если нужна, снимает сам мод. Солдат создаётся после обработчика и едет на базу обычной пересылкой. <code>done(soldier)</code> получает нового солдата, <code>done(nil, причина)</code> отказ: нет мест или месячный лимит. Объекты из обработчика в <code>done</code> уже мертвы, базу берите заново через <code>game.getBases()</code>.</li>"
                 "<li>Склад сверх лимита игра обрабатывает как обычно: окно продажи, которое нельзя закрыть, пока лишнее не продано. Не выдавайте игроку больше, чем вмещает склад. На Пиратках <code>getStores().used</code> бывает отрицательным: есть предметы с отрицательным размером.</li>"
                 "<li>Мод снят: деньги, предметы обычных правил и персонал остаются, отмены нет; теги теряются при новом сохранении. В сейв пишется отметка <code>luaTouched</code>, она остаётся и после снятия мода и видна в отчёте об ошибке.</li>"
-                "<li>Потолки: <code>addFunds</code> до ±1 000 000 000 за вызов, предметы и персонал до 1 000 000 000 за вызов, наём 16 за вызов и 64 в сутки. Сверх потолка: ошибка мода, игра живёт.</li></ul>",
+                "<li>Потолки: <code>addFunds</code> до ±1 000 000 000 за вызов, предметы и персонал до 1 000 000 000 за вызов, наём 16 за вызов и 64 в сутки. Сверх потолка: ошибка мода, игра живёт.</li></ul>"
+                "<p><code>spawn</code>: создание и снятие предметов и юнитов в бою, четыре метода: <code>battle:spawnItem</code>, <code>battle:removeItem</code>, <code>battle:spawnUnit</code>, <code>unit:giveItem</code>.</p>"
+                "<ul><li><b>Это деньги из воздуха и другой бой.</b> Предмет, оставшийся на поле, после победы едет на базу и продаётся. Новый враг продлевает бой: бой не кончится, пока он жив. Считайте, что мод пишет баланс игрока.</li>"
+                "<li>Вызов ничего не делает на месте: запрос встаёт в очередь и выполняется, когда игра закончила свой шаг. Предметы все сразу, юниты по одному за такт, примерно десять в секунду, порядок запросов сохраняется. Перед сохранением очередь выполняется вся.</li>"
+                "<li>Итог приходит в необязательную функцию <code>done</code>: <code>done(item)</code>, <code>done(unit)</code>, <code>done(true)</code> при снятии, <code>done(nil, причина)</code> при отказе. Отказ и его причина не ошибка мода. Ручки обработчика в <code>done</code> мертвы, бой берите заново: <code>game.getBattle()</code>. Ошибка Lua в <code>done</code> снимает то, что он получил.</li>"
+                "<li><code>spawnItem(type, x, y, z[, done])</code>: предмет падает на нижний пол, как брошенный. Нет такого правила или клетка вне карты: ошибка Lua.</li>"
+                "<li><code>removeItem(item[, done])</code>: снимает предмет откуда угодно, вместе с магазином оружия. Заряженный магазин вынимается из оружия. Нельзя снять встроенное оружие юнита и тело. Если игрок целится этим предметом, прицеливание снимается.</li>"
+                "<li><code>spawnUnit{ type, x, y, z, faction, direction, done }</code>: по умолчанию враг, направление случайное. Клетка занята или мала для юнита: <code>done(nil, причина)</code>. Солдата создать нельзя: свой юнит ведёт себя как призванный и после боя солдатом не становится. ОВ нового юнита 0 до следующего хода его стороны: нужен сразу, задайте в <code>done</code> через <code>setTimeUnits</code>.</li>"
+                "<li><code>unit:giveItem(type[, done])</code> работает как автоснаряжение: нет слота, тяжело или такой предмет уже есть, тогда отказ. Часть солдат предмет не возьмёт, проверяйте <code>done</code>.</li>"
+                "<li><code>battleStart</code> записывать не может и экран не открывает, зато может поставить запрос: он выполнится на первом такте после снаряжения. Обработчики только для чтения и <code>battleEnd</code> запросов не ставят. Конец боя отбрасывает очередь, журнал называет число отброшенных.</li>"
+                "<li>Случайность создания идёт от сида боя: при том же сиде те же юниты в тех же клетках. В сейве отметка <code>luaTouched</code>.</li>"
+                "<li>Мод снят: созданные предметы и юниты при загрузке сейва исчезают из боя, вещи такого юнита тоже, журнал называет каждый. Обычные предметы, выданные юниту мода, пропадают вместе с ним, а бой продолжается.</li>"
+                "<li>Потолки: 32 предмета и 4 юнита за вызов, 256 предметов и 16 юнитов за ход боя, снятие и выдача считаются предметами. Сверх потолка: ошибка мода, игра живёт.</li></ul>",
         "h_const": "Константы",
         "h_tags": "Теги: память между сохранениями",
         "tags": "Переменные Lua обнуляются при загрузке сейва, в новом бою и по Ctrl+F5. Долгая память — только теги. Тег объявляется в рулсете мода, например в файле <code>Ruleset/my_mod.rul</code>:"
@@ -1196,7 +1230,7 @@ TEXT = {
         "h_game": "The game table",
         "game": "<code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above. With <code>luaApi: 2</code>: <code>game.getBattle()</code> and <code>game.getGeoscape()</code> give the battle and the campaign where a handler does not receive them, a click on a screen for one; no battle: nil. <code>game.getBases()</code> gives a table of the player's bases, in a battle and in a click too. Only with the permission <code>screens</code>: <code>game.screen(name, function[, { menu = \"STR_NAME\", interface = \"pauseMenu\" }])</code> declares a screen, only while <code>main.lua</code> loads; <code>game.openScreen(name)</code> opens it from a handler.",
         "h_caps": "Permissions and screens of your own",
-        "caps": "<p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens, economy]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There are two words now: <code>screens</code> and <code>economy</code>.</p>"
+        "caps": "<p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens, economy]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There are three words now: <code>screens</code>, <code>economy</code> and <code>spawn</code>.</p>"
                 "<ul><li>A screen is made of the game's widgets in coordinates 320×200, so it works at any resolution and scale.</li>"
                 "<li>The player opens it on the mods' screen, if <code>game.screen</code> has <code>menu</code>, or a handler through <code>game.openScreen</code>: the screen then opens when the game has finished its step, in battle it may be after an animation or after the briefing. While a screen is open the game under it stands.</li>"
                 "<li>The building function and <code>onClose</code> only read: no random numbers, writes or <code>openScreen</code>. A screen opened and closed does not change the game. In a click you may do all a handler may.</li>"
@@ -1207,13 +1241,25 @@ TEXT = {
                 "<p><code>economy</code>: money, stores, personnel and hiring, only out of a battle.</p>"
                 "<ul><li><b>Lua variables are reset at every new battle and load.</b> A day counter in a variable is forgotten after the first battle. Whatever has to outlive a battle goes into tags, for the campaign the section <code>GeoscapeGame</code>.</li>"
                 "<li>Reading needs no word: <code>game.getBases()</code>, <code>geoscape:getFunds()</code>, the reading methods of <code>base</code>. Changes need the word and work only in <code>newHour</code>, <code>newDay</code>, <code>newMonth</code>, in a click on a screen and in the function <code>done</code> of <code>hireSoldier</code>. Not in a battle: its end counts the stores itself.</li>"
-                "<li>These three handlers may open a screen: <code>game.openScreen</code>. <code>battleStart</code> and <code>battleEnd</code> only read.</li>"
+                "<li>These three handlers may open a screen: <code>game.openScreen</code>. <code>battleStart</code> and <code>battleEnd</code> write nothing.</li>"
                 "<li>Money, stores and personnel change at once. A Lua error in the same call undoes everything the call did, hiring too.</li>"
                 "<li><code>addFunds</code> goes to the month's income or expenditure, like ordinary money. In <code>newMonth</code> the report of the past month is already counted: the money goes to the new month. A debt below the threshold gives the council's usual warning, then the usual defeat.</li>"
                 "<li><code>hireSoldier(type[, done])</code> is free: the mod takes the price itself if it wants one. The soldier is created after the handler and travels to the base as a usual transfer. <code>done(soldier)</code> gets the new soldier, <code>done(nil, reason)</code> a refusal: no quarters or the monthly limit. Objects of the handler are dead in <code>done</code>, take the base again with <code>game.getBases()</code>.</li>"
                 "<li>The game treats stores over the limit as usual: a sell window that does not close until the excess is sold. Do not give the player more than the stores hold. On Piratez <code>getStores().used</code> can be negative: some items have a negative size.</li>"
                 "<li>The mod removed: money, items of ordinary rules and personnel stay, nothing is undone; tags are lost at a new save. The mark <code>luaTouched</code> goes into the save, it stays after the mod is removed and shows in an error report.</li>"
-                "<li>Ceilings: <code>addFunds</code> up to ±1,000,000,000 a call, items and personnel up to 1,000,000,000 a call, hiring 16 a call and 64 a day. Over a ceiling: the mod's error, the game lives.</li></ul>",
+                "<li>Ceilings: <code>addFunds</code> up to ±1,000,000,000 a call, items and personnel up to 1,000,000,000 a call, hiring 16 a call and 64 a day. Over a ceiling: the mod's error, the game lives.</li></ul>"
+                "<p><code>spawn</code>: creating and removing items and units in a battle, four methods: <code>battle:spawnItem</code>, <code>battle:removeItem</code>, <code>battle:spawnUnit</code>, <code>unit:giveItem</code>.</p>"
+                "<ul><li><b>This is money out of thin air and a different battle.</b> An item left on the field goes to the base after a victory and gets sold. A new enemy prolongs the battle: it does not end while the enemy lives. Your mod writes the player's balance.</li>"
+                "<li>A call does nothing on the spot: the request joins a queue and runs when the game has finished its step. Items all at once, units one a tick, about ten a second, the order of requests stays. Before a save the whole queue runs.</li>"
+                "<li>The result comes to an optional function <code>done</code>: <code>done(item)</code>, <code>done(unit)</code>, <code>done(true)</code> for a removal, <code>done(nil, reason)</code> for a refusal. A refusal is not the mod's error. Objects of the handler are dead in <code>done</code>, take the battle again with <code>game.getBattle()</code>. A Lua error in <code>done</code> removes what it got.</li>"
+                "<li><code>spawnItem(type, x, y, z[, done])</code>: the item falls to the floor below, like a thrown one. No such rule or a tile out of the map: a Lua error.</li>"
+                "<li><code>removeItem(item[, done])</code>: removes an item from anywhere, a weapon with its magazine. A loaded magazine is taken out of its weapon. A unit's built-in weapon and a body cannot be removed. If the player aims with this item, the aiming is cancelled.</li>"
+                "<li><code>spawnUnit{ type, x, y, z, faction, direction, done }</code>: an enemy by default, a random direction. A busy tile or one too small for the unit: <code>done(nil, reason)</code>. You cannot create a soldier: a unit on your side behaves like a summoned one and does not become a soldier after the battle. A new unit has 0 time units until the next turn of its side: if you need them at once, set them in <code>done</code> with <code>setTimeUnits</code>.</li>"
+                "<li><code>unit:giveItem(type[, done])</code> works like auto-equip: no slot, too heavy or it has one already, then a refusal. Some soldiers will not take the item, check <code>done</code>.</li>"
+                "<li><code>battleStart</code> cannot write or open a screen, but it can queue a request: it runs on the first tick after the equipping. Read-only handlers and <code>battleEnd</code> queue nothing. The end of a battle drops the queue, the log names how many were dropped.</li>"
+                "<li>The randomness of creating comes from the battle's seed: with the same seed the same units on the same tiles. The save gets the mark <code>luaTouched</code>.</li>"
+                "<li>The mod removed: created items and units disappear from the battle when the save loads, and so do the things of such a unit, the log names each. Ordinary items given to a unit of the mod go with it, and the battle goes on.</li>"
+                "<li>Ceilings: 32 items and 4 units a call, 256 items and 16 units a battle turn, removing and giving count as items. Over a ceiling: the mod's error, the game lives.</li></ul>",
         "h_const": "Constants",
         "h_tags": "Tags: memory between saves",
         "tags": "Lua variables are reset when a save is loaded, in a new battle and by Ctrl+F5. Tags are the only long memory. A tag is declared in the mod's ruleset, for example in the file <code>Ruleset/my_mod.rul</code>:"
@@ -1285,6 +1331,11 @@ def read_engine():
     if not m:
         fail(["нет таблицы API2_GEOSCAPE_REGS в LuaHost.cpp"])
     tables["geoscape"] += re.findall(r'\{\s*"(\w+)"\s*,', m.group(1))
+    for table, lua_name in (("API2_BATTLE_REGS", "battle"), ("API2_UNIT_REGS", "unit")):
+        m = re.search(r"const luaL_Reg %s\[\] = \{(.*?)\n?\};" % table, src, re.S)
+        if not m:
+            fail([f"нет таблицы {table} в LuaHost.cpp"])
+        tables[lua_name] += re.findall(r'\{\s*"(\w+)"\s*,', m.group(1))
     m = re.search(r"const EventInfo EVENTS\[.*?\] = \{(.*?)\n\};", src, re.S)
     if not m:
         fail(["нет таблицы EVENTS в LuaHost.cpp"])

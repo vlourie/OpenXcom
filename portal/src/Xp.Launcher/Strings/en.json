@@ -257,6 +257,8 @@
  "modding.cap.screens": "screens of its own",
  "modding.cap.economy": "money and bases",
  "modding.cap.economy.warn": "This mod changes money, stores and personnel. If you remove it, all of that stays in the campaign, nothing is undone.",
+  "modding.cap.spawn": "creating in battle",
+  "modding.cap.spawn.warn": "This mod creates items and units in battle. If you remove it, they vanish from a saved battle, items already brought to a base stay.",
  "modding.on": "on in this build",
  "modding.off": "off in this build",
  "modding.turnOn": "Turn on",

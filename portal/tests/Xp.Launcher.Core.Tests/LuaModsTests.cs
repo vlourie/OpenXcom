@@ -260,9 +260,15 @@ public sealed class LuaModsTests : IDisposable
         }
         var geoscape2 = Regex.Match(host, @"const luaL_Reg API2_GEOSCAPE_REGS\[\] = \{(.*?)\n?\};", RegexOptions.Singleline);
         ids.AddRange(Regex.Matches(geoscape2.Groups[1].Value, @"\{\s*""(\w+)""\s*,").Select(m => $"geoscape.{m.Groups[1].Value}"));
+        foreach (var (table, type) in new[] { ("API2_BATTLE_REGS", "battle"), ("API2_UNIT_REGS", "unit") })
+        {
+            var body = Regex.Match(host, $@"const luaL_Reg {table}\[\] = \{{(.*?)\n?\}};", RegexOptions.Singleline);
+            Assert.True(body.Success, table);
+            ids.AddRange(Regex.Matches(body.Groups[1].Value, @"\{\s*""(\w+)""\s*,").Select(m => $"{type}.{m.Groups[1].Value}"));
+        }
         var events = Regex.Match(host, @"const EventInfo EVENTS\[.*?\] = \{(.*?)\n\};", RegexOptions.Singleline);
         ids.AddRange(Regex.Matches(events.Groups[1].Value, @"^\s*\{ ""(\w+)"",", RegexOptions.Multiline).Select(m => $"event.{m.Groups[1].Value}"));
-        Assert.Equal(461, ids.Count);
+        Assert.Equal(465, ids.Count);
 
         var page = LuaMods.WriteDocs(Paths, "ru");
         Assert.EndsWith("lua_api.ru.html", page);

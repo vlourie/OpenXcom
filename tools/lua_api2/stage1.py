@@ -593,7 +593,7 @@ def part_turn(ctx):
         check("ход продолжается: игра в бою", st.top() == "BattlescapeState", st.top())
         other = [l for l in st.errors().splitlines() if l.strip() and "in one call" not in l and "stack traceback" not in l and not l.startswith(("\t", " "))]
         check("ход: других ошибок мода нет", not other, str(other[:3])[:300])
-    with Stand(ctx, "s1do", battle, ("s1done",), OXCE_LUA_API2="1") as st:  # spawn закрыт до этапа 3
+    with Stand(ctx, "s1do", battle, ("s1done",)) as st:
         seen = end_turn(st)
         got = st.lines("S1 done battle")
         check("game.getBattle из done", got and "true" in got[-1], got[-1][-40:] if got else "")

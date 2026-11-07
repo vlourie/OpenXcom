@@ -138,12 +138,13 @@ sealed class ModdingPanel : StackPanel
         var box = new StackPanel { Spacing = 3 };
         box.Children.Add(new TextBlock { Text = m.Name + (m.Version.Length > 0 ? "  " + m.Version : ""), FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(Skin.Text) });
         var words = new List<string> { L.T("modding.label") };
-        if (m.Caps is { Count: > 0 } caps) words.Add(string.Join(", ", caps.Select(c => c is "screens" or "economy" ? L.T("modding.cap." + c) : c)));
+        if (m.Caps is { Count: > 0 } caps) words.Add(string.Join(", ", caps.Select(c => c is "screens" or "economy" or "spawn" ? L.T("modding.cap." + c) : c)));
         words.Add("user/mods/" + m.Folder);
         words.Add(L.T(m.Active ? "modding.on" : "modding.off"));
         if (m.OtherMaster is { } om) words.Add(L.T("setup.ownOtherMaster", om));
         box.Children.Add(new TextBlock { Text = string.Join("  ·  ", words), FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.WarnText) });
         if (m.Caps?.Contains("economy") == true) box.Children.Add(new TextBlock { Text = L.T("modding.cap.economy.warn"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.WarnText) });
+        if (m.Caps?.Contains("spawn") == true) box.Children.Add(new TextBlock { Text = L.T("modding.cap.spawn.warn"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.WarnText) });
         if (m.Twin) box.Children.Add(new TextBlock { Text = L.T("modding.twin", "user/mods/" + ManifestValidator.CatalogFolderPrefix + m.Id), FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.WarnText) });
         if (_offers.TryGetValue(m.Id, out var offered))
         {

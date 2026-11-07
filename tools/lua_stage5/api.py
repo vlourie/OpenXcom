@@ -103,10 +103,15 @@ def call_args(kind, method, args):
     return ", ".join(out)
 
 
+def open_methods(kind):
+    """Методы API 1: мод этой проверки luaApi: 1, разрешённые и getFunds проверяет tools/lua_api2."""
+    return {m: s for m, s in lua_api_doc.METHODS[kind].items() if "Разрешение" not in s[1] and m != "getFunds"}
+
+
 def probe_fn(kind):
     """Функция Lua: все методы типа через pcall, одна строка в журнал на метод. Первое обращение: всё, дальше молчит."""
     body = [f'probes.{kind} = function(self, u, RESEARCH)\n  if done.{kind} then return end\n  done.{kind} = true\n']
-    for method, spec in lua_api_doc.METHODS[kind].items():
+    for method, spec in open_methods(kind).items():
         args = call_args(kind, method, spec[0])
         body.append(f'  try("{kind}.{method}", function() return self:{method}({args}) end)\n')
     body.append("end\n")
@@ -561,7 +566,7 @@ def api_lines(bench, name, kinds):
 def report_methods(bench, name, kinds, may_fail=()):
     res = api_lines(bench, name, kinds)
     for kind in kinds:
-        want = list(lua_api_doc.METHODS[kind])
+        want = list(open_methods(kind))
         missed = [m for m in want if f"{kind}.{m}" not in res]
         wrong = [f"{m}: {res[f'{kind}.{m}'][1][:90]}" for m in want if f"{kind}.{m}" in res and res[f"{kind}.{m}"][0] == "ERR" and m not in may_fail]
         check(f"{kind}: все {len(want)} методов вызваны", not missed, str(missed[:12]))

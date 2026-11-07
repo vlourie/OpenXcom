@@ -113,7 +113,7 @@ const char *const OUT_KEY = "oxce.out";
 /// What a slow API call costs a handler, in C loop steps: the counter sees it as one instruction.
 const unsigned long long TAG_TICKS = 100, LIST_TICKS = 20, MESSAGE_TICKS = 20000, SPAWN_TICKS = 1000, WIDGET_TICKS = 2000, ROW_TICKS = 200;
 /// The ceilings of the queue: the engine's work behind one call is not in the mod's budget.
-const int SPAWN_ITEMS_PER_CALL = 32, SPAWN_ITEMS_PER_TURN = 256;
+const int SPAWN_ITEMS_PER_CALL = 32, SPAWN_ITEMS_PER_TURN = 256, SPAWN_UNITS_PER_CALL = 4, SPAWN_UNITS_PER_TURN = 16;
 const int SCREENS_PER_CALL = 1, SCREENS_PER_PERIOD = 8;
 const int SOLDIERS_PER_CALL = 16, SOLDIERS_PER_DAY = 64;
 const lua_Integer ECONOMY_MAX = 1000000000;
@@ -214,6 +214,8 @@ bool g_pure = false;
 bool g_screenReads = false;
 /// The running function is one of those whose moment is known: the methods of 'economy' work only there.
 bool g_mayEconomy = false;
+/// The running handler is battleStart: it only reads, and what it queues runs later, in the battle's own moment.
+bool g_battleStart = false;
 
 void checkWritable(lua_State *L)
 {
@@ -1340,7 +1342,10 @@ int battleTryConcealUnit(lua_State *L)
 /// The running handler may not change the game, or the battle has no more moments to do it in.
 void checkMayQueue(lua_State *L)
 {
-	checkWritable(L);
+	if (!g_battleStart)
+	{
+		checkWritable(L);
+	}
 	if (g_pure || g_noScreen)
 	{
 		luaL_error(L, "this handler cannot change the battle: nothing it queues would run in its place");
@@ -1370,21 +1375,59 @@ SavedGame *checkEconomy(lua_State *L, const char *method)
 	return saved;
 }
 
-/// battle:spawnItem(type, x, y, z[, done]): done(item) runs later, when the item is on the map.
-int battleSpawnItem(lua_State *L)
+/// What a method of 'spawn' asks of the moment.
+SavedBattleGame *checkSpawn(lua_State *L, const char *method)
 {
 	checkMayQueue(L);
 	auto *host = LuaHost::active();
-	auto *sandbox = LuaSandbox::from(L);
-	if (!host || !host->hasCap(sandbox, LuaHost::CAP_SPAWN))
+	if (!host || !host->hasCap(LuaSandbox::from(L), LuaHost::CAP_SPAWN))
 	{
-		return luaL_error(L, "spawnItem needs 'spawn' in luaCaps of metadata.yml");
+		luaL_error(L, "%s needs 'spawn' in luaCaps of metadata.yml", method);
 	}
-	auto *battle = checkBattle(L);
+	auto *saved = LuaScreenState::savedGame();
+	auto *battle = saved ? saved->getSavedBattle() : nullptr;
+	if (!battle)
+	{
+		luaL_error(L, "%s works only in a battle", method);
+	}
 	if (battle->isPreview())
 	{
-		return luaL_error(L, "spawnItem does not work in the craft's preview");
+		luaL_error(L, "%s does not work in the craft's preview", method);
 	}
+	return battle;
+}
+
+/// The function a method of 'spawn' got, LuaSandbox::keep() of it; 0 when there is none.
+int keepDone(lua_State *L, int index)
+{
+	if (lua_isnoneornil(L, index))
+	{
+		return 0;
+	}
+	luaL_checktype(L, index, LUA_TFUNCTION);
+	return LuaSandbox::keep(L, index);
+}
+
+int finishQueued(lua_State *L, int done, const std::string &error)
+{
+	if (!error.empty())
+	{
+		if (done)
+		{
+			LuaSandbox::from(L)->drop(done);
+		}
+		return luaL_error(L, "%s", error.c_str());
+	}
+	return 0;
+}
+
+/// battle:spawnItem(type, x, y, z[, done]): done(item) runs later, when the item is on the map.
+int battleSpawnItem(lua_State *L)
+{
+	checkSpawn(L, "spawnItem");
+	auto *host = LuaHost::active();
+	auto *sandbox = LuaSandbox::from(L);
+	auto *battle = checkBattle(L);
 	const char *type = luaL_checkstring(L, 2);
 	const RuleItem *rule = battle->getMod()->getItem(type);
 	if (!rule)
@@ -1400,16 +1443,71 @@ int battleSpawnItem(lua_State *L)
 	}
 	sandbox->charge(L, SPAWN_TICKS);
 	const int done = lua_isnoneornil(L, 6) ? 0 : LuaSandbox::keep(L, 6);
-	const std::string error = host->queueSpawnItem(sandbox, battle, rule, x, y, z, done);
-	if (!error.empty())
+	return finishQueued(L, done, host->queueSpawnItem(sandbox, battle, rule, x, y, z, done));
+}
+
+/// battle:removeItem(item[, done]): done(true) runs later, when the item is gone, or done(nil, reason).
+int battleRemoveItem(lua_State *L)
+{
+	checkSpawn(L, "removeItem");
+	auto *sandbox = LuaSandbox::from(L);
+	auto *battle = checkBattle(L);
+	auto *item = static_cast<BattleItem*>(LuaSandbox::checkObject(L, 2, TYPE_ITEM));
+	sandbox->charge(L, SPAWN_TICKS);
+	const int done = keepDone(L, 3);
+	return finishQueued(L, done, LuaHost::active()->queueRemoveItem(sandbox, battle, item, done));
+}
+
+int fieldInt(lua_State *L, const char *name, int low, int high, int fallback, bool required);
+
+/// battle:spawnUnit{ type, x, y, z, faction, direction, done }: done(unit) runs later, or done(nil, reason).
+int battleSpawnUnit(lua_State *L)
+{
+	checkSpawn(L, "spawnUnit");
+	auto *sandbox = LuaSandbox::from(L);
+	auto *battle = checkBattle(L);
+	luaL_checktype(L, 2, LUA_TTABLE);
+	lua_pushstring(L, "type");
+	lua_rawget(L, 2);
+	const char *type = lua_tostring(L, -1);
+	if (!type)
 	{
-		if (done)
-		{
-			sandbox->drop(done);
-		}
-		return luaL_error(L, "%s", error.c_str());
+		return luaL_error(L, "field 'type' is needed");
 	}
-	return 0;
+	const Unit *rule = battle->getMod()->getUnit(type);
+	if (!rule)
+	{
+		return luaL_error(L, "no unit '%s' in the rules: a soldier cannot be made here", type);
+	}
+	lua_pop(L, 1);
+	// Position keeps short numbers: one past them would wrap into the map
+	const int x = fieldInt(L, "x", 0, battle->getMapSizeX() - 1, 0, true);
+	const int y = fieldInt(L, "y", 0, battle->getMapSizeY() - 1, 0, true);
+	const int z = fieldInt(L, "z", 0, battle->getMapSizeZ() - 1, 0, true);
+	const int faction = fieldInt(L, "faction", FACTION_PLAYER, FACTION_NEUTRAL, FACTION_HOSTILE, false);
+	const int direction = fieldInt(L, "direction", 0, 7, -1, false);
+	lua_pushstring(L, "done");
+	lua_rawget(L, 2);
+	sandbox->charge(L, SPAWN_TICKS);
+	const int done = keepDone(L, lua_gettop(L));
+	return finishQueued(L, done, LuaHost::active()->queueSpawnUnit(sandbox, battle, rule, x, y, z, faction, direction, done));
+}
+
+/// unit:giveItem(type[, done]): done(item) runs later, when the item is in the inventory, or done(nil, reason).
+int unitGiveItem(lua_State *L)
+{
+	auto *battle = checkSpawn(L, "giveItem");
+	auto *sandbox = LuaSandbox::from(L);
+	auto *unit = checkUnit(L);
+	const char *type = luaL_checkstring(L, 2);
+	const RuleItem *rule = battle->getMod()->getItem(type);
+	if (!rule)
+	{
+		return luaL_error(L, "no item '%s' in the rules", type);
+	}
+	sandbox->charge(L, SPAWN_TICKS);
+	const int done = keepDone(L, 3);
+	return finishQueued(L, done, LuaHost::active()->queueGiveItem(sandbox, battle, unit, rule, done));
 }
 
 /// A handle of a screen: unlike the game's objects it outlives the call, and dies when the screen closes.
@@ -2042,6 +2140,7 @@ int gameScreen(lua_State *L)
 /// game.openScreen(name): later, from the moment nothing walks the game's lists.
 int gameOpenScreen(lua_State *L)
 {
+	checkWritable(L);
 	checkMayQueue(L);
 	auto *host = LuaHost::active();
 	auto *sandbox = LuaSandbox::from(L);
@@ -2097,6 +2196,13 @@ const luaL_Reg API2_GAME_REGS[] = {
 /// spawn is under construction: on top of the table the mod's page is built from, so not on that page.
 const luaL_Reg API2_BATTLE_REGS[] = {
 	{ "spawnItem", battleSpawnItem },
+	{ "removeItem", battleRemoveItem },
+	{ "spawnUnit", battleSpawnUnit },
+	{ nullptr, nullptr }
+};
+
+const luaL_Reg API2_UNIT_REGS[] = {
+	{ "giveItem", unitGiveItem },
 	{ nullptr, nullptr }
 };
 
@@ -3067,6 +3173,10 @@ void setupApi2(lua_State *L, void *)
 	lua_getfield(L, -1, "__index");
 	luaL_setfuncs(L, API2_BATTLE_REGS, 0);
 	lua_pop(L, 2);
+	luaL_getmetatable(L, TYPE_UNIT);
+	lua_getfield(L, -1, "__index");
+	luaL_setfuncs(L, API2_UNIT_REGS, 0);
+	lua_pop(L, 2);
 	luaL_getmetatable(L, TYPE_GEOSCAPE);
 	lua_getfield(L, -1, "__index");
 	luaL_setfuncs(L, API2_GEOSCAPE_REGS, 0);
@@ -3087,12 +3197,81 @@ int pushDone(lua_State *L, void *item)
 
 int capOf(const std::string &word)
 {
-	// spawn stays closed in a release until its stage of docs/portal/LUA_MODS_V2.md is through
-	if (word == "spawn")
+	return word == "spawn" ? LuaHost::CAP_SPAWN : word == "screens" ? LuaHost::CAP_SCREENS : word == "economy" ? LuaHost::CAP_ECONOMY : 0;
+}
+
+/// What a method of 'spawn' comes to: `done(object)`, `done(true)` for an item taken away, or `done(nil, reason)`.
+struct SpawnDone
+{
+	bool ran = false, removed = false;
+	BattleItem *item = nullptr;
+	BattleUnit *unit = nullptr;
+	const char *reason = nullptr;
+};
+
+int pushSpawnDone(lua_State *L, void *data)
+{
+	auto *done = static_cast<SpawnDone*>(data);
+	if (done->item)
 	{
-		return std::getenv("OXCE_LUA_API2") ? LuaHost::CAP_SPAWN : 0;
+		pushOrNil(L, TYPE_ITEM, done->item);
+		return 1;
 	}
-	return word == "screens" ? LuaHost::CAP_SCREENS : word == "economy" ? LuaHost::CAP_ECONOMY : 0;
+	if (done->unit)
+	{
+		pushOrNil(L, TYPE_UNIT, done->unit);
+		return 1;
+	}
+	if (done->removed)
+	{
+		lua_pushboolean(L, 1);
+		return 1;
+	}
+	lua_pushnil(L);
+	lua_pushstring(L, done->reason);
+	return 2;
+}
+
+/// Takes an item out of the battle; why not, or null. What the engine would leave half done is refused or undone first.
+const char *takeOutOfBattle(SavedBattleGame *battle, BattleItem *item)
+{
+	auto &items = *battle->getItems();
+	if (std::find(items.begin(), items.end(), item) == items.end())
+	{
+		return "the item is gone";
+	}
+	if (item->isSpecialWeapon())
+	{
+		// SavedBattleGame::removeItem leaves it silently: load() would make a new one
+		return "a unit's special weapon stays";
+	}
+	if (item->getUnit())
+	{
+		// the way back of a stunned unit goes through its body
+		return "a body stays";
+	}
+	if (auto *game = battle->getBattleGame())
+	{
+		auto *action = game->getCurrentAction();
+		while (action->targeting && action->weapon == item && game->cancelCurrentAction(true))
+		{
+		}
+	}
+	if (item->isAmmo())
+	{
+		for (auto *weapon : items)
+		{
+			for (int slot = 0; weapon != item && slot < RuleItem::AmmoSlotMax; ++slot)
+			{
+				if (weapon->getAmmoForSlot(slot) == item)
+				{
+					weapon->setAmmoForSlot(slot, nullptr);
+				}
+			}
+		}
+	}
+	battle->removeItem(item);
+	return nullptr;
 }
 
 struct HireDone
@@ -3454,7 +3633,8 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 	{
 		FireData data{ &EVENTS[event], args.begin(), args.size(), out };
 		// a method of a handler can reach a formula, and with it another mod's handler: the outer one goes on after it
-		const bool noScreen = g_noScreen, onlyReads = g_onlyReads, pure = g_pure, mayEconomy = g_mayEconomy;
+		const bool noScreen = g_noScreen, onlyReads = g_onlyReads, pure = g_pure, mayEconomy = g_mayEconomy, battleStart = g_battleStart;
+		g_battleStart = event == BATTLE_START;
 		g_noScreen = event == RETURN_FROM_MISSION_UNIT || event == BATTLE_END;
 		g_mayEconomy = event == NEW_HOUR || event == NEW_DAY || event == NEW_MONTH;
 		g_onlyReads = EVENTS[event].onlyReads;
@@ -3467,6 +3647,7 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 				const size_t queued = _queue.size(), undo = _undo.size();
 				const int errors = entry.sandbox->errorCount();
 				entry.callItems = 0;
+				entry.callUnits = 0;
 				entry.callScreens = 0;
 				entry.callHires = 0;
 				entry.sandbox->fire(EVENTS[event].name, pushArgs, &data, out ? takeOutputs : nullptr);
@@ -3487,6 +3668,7 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 		g_onlyReads = onlyReads;
 		g_pure = pure;
 		g_mayEconomy = mayEconomy;
+		g_battleStart = battleStart;
 	}
 	if (!_notice.empty() && event != RETURN_FROM_MISSION_UNIT && event != BATTLE_END)
 	{
@@ -3522,7 +3704,7 @@ bool LuaHost::hasCap(const LuaSandbox *sandbox, Cap cap) const
 	return false;
 }
 
-std::string LuaHost::queueSpawnItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, const RuleItem *rule, int x, int y, int z, int done)
+std::string LuaHost::queueBattleOp(const LuaSandbox *sandbox, const SavedBattleGame *battle, Pending op, const char *method)
 {
 	for (size_t i = 0; i < _entries.size(); ++i)
 	{
@@ -3535,21 +3717,52 @@ std::string LuaHost::queueSpawnItem(const LuaSandbox *sandbox, const SavedBattle
 		{
 			entry.turn = battle->getTurn();
 			entry.turnItems = 0;
+			entry.turnUnits = 0;
 		}
-		if (entry.callItems >= SPAWN_ITEMS_PER_CALL)
+		const bool isUnit = op.unitRule != nullptr;
+		if ((isUnit ? entry.callUnits : entry.callItems) >= (isUnit ? SPAWN_UNITS_PER_CALL : SPAWN_ITEMS_PER_CALL))
 		{
-			return "spawnItem: more than " + std::to_string(SPAWN_ITEMS_PER_CALL) + " items in one call";
+			return std::string(method) + ": more than " + std::to_string(isUnit ? SPAWN_UNITS_PER_CALL : SPAWN_ITEMS_PER_CALL) + (isUnit ? " units" : " items") + " in one call";
 		}
-		if (entry.turnItems >= SPAWN_ITEMS_PER_TURN)
+		if ((isUnit ? entry.turnUnits : entry.turnItems) >= (isUnit ? SPAWN_UNITS_PER_TURN : SPAWN_ITEMS_PER_TURN))
 		{
-			return "spawnItem: more than " + std::to_string(SPAWN_ITEMS_PER_TURN) + " items in one turn of the battle";
+			return std::string(method) + ": more than " + std::to_string(isUnit ? SPAWN_UNITS_PER_TURN : SPAWN_ITEMS_PER_TURN) + (isUnit ? " units" : " items") + " in one turn of the battle";
 		}
-		++entry.callItems;
-		++entry.turnItems;
-		_queue.push_back({ i, rule, x, y, z, done });
+		++(isUnit ? entry.callUnits : entry.callItems);
+		++(isUnit ? entry.turnUnits : entry.turnItems);
+		op.entry = i;
+		_queue.push_back(op);
 		return std::string();
 	}
-	return "spawnItem: not a running mod";
+	return std::string(method) + ": not a running mod";
+}
+
+std::string LuaHost::queueSpawnItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, const RuleItem *rule, int x, int y, int z, int done)
+{
+	return queueBattleOp(sandbox, battle, { 0, rule, x, y, z, done }, "spawnItem");
+}
+
+std::string LuaHost::queueGiveItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, BattleUnit *unit, const RuleItem *rule, int done)
+{
+	Pending op{ 0, rule, 0, 0, 0, done };
+	op.unit = unit;
+	return queueBattleOp(sandbox, battle, op, "giveItem");
+}
+
+std::string LuaHost::queueRemoveItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, BattleItem *item, int done)
+{
+	Pending op{ 0, nullptr, 0, 0, 0, done };
+	op.item = item;
+	return queueBattleOp(sandbox, battle, op, "removeItem");
+}
+
+std::string LuaHost::queueSpawnUnit(const LuaSandbox *sandbox, const SavedBattleGame *battle, const Unit *rule, int x, int y, int z, int faction, int direction, int done)
+{
+	Pending op{ 0, nullptr, x, y, z, done };
+	op.unitRule = rule;
+	op.faction = faction;
+	op.direction = direction;
+	return queueBattleOp(sandbox, battle, op, "spawnUnit");
 }
 
 std::string LuaHost::queueHire(const LuaSandbox *sandbox, Base *base, const RuleSoldier *rule, int done)
@@ -3813,6 +4026,7 @@ void LuaHost::callScreenFn(Entry &entry, int fn, const char *what, bool pure, vo
 	g_pure = pure;
 	g_screenReads = pure;
 	g_mayEconomy = !pure;
+	entry.callUnits = 0;
 	const size_t queued = _queue.size(), screens = _screens.size(), undo = _undo.size();
 	const int errors = entry.sandbox->errorCount();
 	entry.callItems = 0;
@@ -3907,18 +4121,38 @@ void LuaHost::runGeoscapeQueueNow(SavedGame *save)
 	}
 }
 
-void LuaHost::runQueueNow(SavedBattleGame *battle)
+void LuaHost::runQueueNow(SavedBattleGame *battle, bool all)
 {
 	// what the functions called here add waits for the next moment: a chain is stopped by the ceiling of the turn
 	std::vector<Pending> now;
 	now.swap(_queue);
-	std::vector<BattleItem*> items(now.size(), nullptr);
-	std::vector<BattleItem*> glowing;
+	// a unit is 11-14 ms (LUA_MODS_V2_STAGE0.md): one a moment, what stands after the first one waits in its order
+	size_t count = now.size();
+	if (!all)
+	{
+		bool unit = false;
+		for (size_t i = 0; i < now.size(); ++i)
+		{
+			if (now[i].unitRule)
+			{
+				if (unit)
+				{
+					count = i;
+					break;
+				}
+				unit = true;
+			}
+		}
+	}
+	std::vector<SpawnDone> results(count);
+	std::vector<std::pair<Position, int>> glowing;
 	auto *tileEngine = battle->getTileEngine();
-	for (size_t i = 0; i < now.size(); ++i)
+	bool newUnits = false;
+	for (size_t i = 0; i < count; ++i)
 	{
 		const auto &op = now[i];
 		auto &entry = _entries[op.entry];
+		auto &result = results[i];
 		if (!entry.sandbox)
 		{
 			continue;
@@ -3931,12 +4165,56 @@ void LuaHost::runQueueNow(SavedBattleGame *battle)
 			}
 			continue;
 		}
-		// the way of BattlescapeGame::spawnNewItem
-		items[i] = battle->createItemForTile(op.rule, battle->getTile(Position(op.x, op.y, op.z)));
-		tileEngine->applyGravity(items[i]->getTile());
-		if (items[i]->getGlow())
+		result.ran = true;
+		if (op.unitRule)
 		{
-			glowing.push_back(items[i]);
+			result.unit = battle->placeNewUnit(op.unitRule, (UnitFaction)op.faction, Position(op.x, op.y, op.z), 0, op.direction, nullptr);
+			result.reason = "no room for the unit";
+			newUnits = newUnits || result.unit;
+		}
+		else if (op.item)
+		{
+			const bool glow = op.item->getGlow();
+			const Position pos = op.item->getOwner() ? op.item->getOwner()->getPosition() : op.item->getTile() ? op.item->getTile()->getPosition() : TileEngine::invalid;
+			const int range = op.item->getVisibilityUpdateRange();
+			result.reason = takeOutOfBattle(battle, op.item);
+			result.removed = !result.reason;
+			if (glow && result.removed && pos != TileEngine::invalid)
+			{
+				glowing.push_back({ pos, range });
+			}
+		}
+		else if (op.unit)
+		{
+			const auto &units = *battle->getUnits();
+			if (std::find(units.begin(), units.end(), op.unit) == units.end() || op.unit->isOut())
+			{
+				result.reason = "the unit is gone";
+			}
+			else
+			{
+				// `true`, the way of a unit's fixed weapons: a soldier takes nothing without it, addItem leaves a soldier's kit to the player
+				result.item = battle->createItemForUnit(op.rule, op.unit, true);
+				result.reason = "the unit does not take it: no slot, too heavy or it has one already";
+				if (result.item && result.item->getGlow())
+				{
+					glowing.push_back({ op.unit->getPosition(), result.item->getVisibilityUpdateRange() });
+				}
+			}
+		}
+		else
+		{
+			// the way of BattlescapeGame::spawnNewItem
+			result.item = battle->createItemForTile(op.rule, battle->getTile(Position(op.x, op.y, op.z)));
+			tileEngine->applyGravity(result.item->getTile());
+			if (result.item->getGlow())
+			{
+				glowing.push_back({ result.item->getTile()->getPosition(), result.item->getVisibilityUpdateRange() });
+			}
+		}
+		if (result.item || result.unit || result.removed)
+		{
+			battle->getGeoscapeSave()->luaTouch(entry.id, "spawn");
 		}
 	}
 	// the light of many items at once: one pass over the map costs what a few of them do one by one (LUA_MODS_V2_STAGE0.md)
@@ -3947,23 +4225,35 @@ void LuaHost::runQueueNow(SavedBattleGame *battle)
 	}
 	else
 	{
-		for (auto *item : glowing)
+		for (const auto &glow : glowing)
 		{
-			const Position pos = item->getTile()->getPosition();
-			tileEngine->calculateLighting(LL_ITEMS, pos);
-			tileEngine->calculateFOV(pos, item->getVisibilityUpdateRange(), false);
+			tileEngine->calculateLighting(LL_ITEMS, glow.first);
+			tileEngine->calculateFOV(glow.first, glow.second, false);
 		}
 	}
-	for (size_t i = 0; i < now.size(); ++i)
+	if (newUnits && battle->getBattleState())
 	{
-		if (items[i] && now[i].done)
+		battle->getBattleState()->updateSoldierInfo(false);
+	}
+	for (size_t i = 0; i < count; ++i)
+	{
+		if (results[i].ran && now[i].done)
 		{
 			auto &entry = _entries[now[i].entry];
 			entry.callItems = 0;
+			entry.callUnits = 0;
 			entry.callScreens = 0;
-			entry.sandbox->callKept(now[i].done, "spawnItem done", pushDone, items[i]);
+			const size_t queued = _queue.size();
+			const int errors = entry.sandbox->errorCount();
+			entry.sandbox->callKept(now[i].done, now[i].unitRule ? "spawnUnit done" : now[i].unit ? "giveItem done" : now[i].item ? "removeItem done" : "spawnItem done", pushSpawnDone, &results[i]);
+			// like a handler: a call that failed asked for nothing
+			if (entry.sandbox->errorCount() != errors)
+			{
+				dropQueued(queued);
+			}
 		}
 	}
+	_queue.insert(_queue.begin(), now.begin() + count, now.end());
 	showNotice(battle);
 }
 

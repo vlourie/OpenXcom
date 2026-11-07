@@ -57,6 +57,8 @@ def call(log, *args, timeout=400):
 
 
 def start(log, name, exe, save, mods, sets="oxceLuaMods=true"):
+    for old in (Path(os.environ["TEMP"]) / f"oxce_bench_{name}" / "piratez").glob("hdtest*"):
+        old.unlink()
     a = ["start", "--name", name, "--exe", exe, "--save", str(save), "--mods-dir", str(MODS), "--mods", mods, "--timeout", "400"]
     if sets:
         a += ["--set", sets]
@@ -179,8 +181,9 @@ def k1():
     # режим 0 при k=1: кадр в начале и после хода ИИ
     def one(name, exe):
         log = open(OUT / f"{name}.txt", "w", encoding="utf-8-sig")
-        start(log, name, exe, SAVE, "", "oxceHdMode=0")
-        call(log, "run", "--name", name, "--timeout", "30", "set k=1; wait 2500; key ctrl+289; wait 2500", timeout=50)
+        # масштаб настройкой при запуске: стендовое set k=1 в бою масштаб дампа не меняет
+        start(log, name, exe, SAVE, "", "oxceHdMode=0;oxceHdScale=1")
+        call(log, "run", "--name", name, "--timeout", "30", "wait 2500; key ctrl+289; wait 2500", timeout=50)
         print(name, end_turn(log, name), flush=True)
         call(log, "run", "--name", name, "--timeout", "30", "key ctrl+289; wait 2500; key f5; wait 5000", timeout=50)
         call(log, "stop", "--name", name, timeout=60)
@@ -265,6 +268,11 @@ end)
 
 def mode0():
     identical({"s1m0base": BASE, "s1m0new": EXE}, "oxceHdMode=0")
+
+
+def v1():
+    """Приёмка № 3 ТЗ API 2: Lua включён, моды luaApi: 1, эталон против новой сборки."""
+    identical({"s1v1base": BASE, "s1v1new": EXE}, "oxceLuaMods=true")
 
 
 def identical(names=None, sets=""):

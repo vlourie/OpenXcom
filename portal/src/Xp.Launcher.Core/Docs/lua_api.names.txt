@@ -426,6 +426,7 @@ method	getWeaponReload
 method	getWeaponsMax
 method	getWeight
 method	getWoundRecovery
+method	giveItem
 method	hasCategory
 method	hireSoldier
 method	image
@@ -519,6 +520,8 @@ method	setValue
 method	setVisible
 method	setWoundRecovery
 method	slider
+method	spawnItem
+method	spawnUnit
 method	text
 method	toggleButton
 method	tryConcealUnit
@@ -533,3 +536,4 @@ game	getGeoscape
 game	getBases
 cap	screens
 cap	economy
+cap	spawn

@@ -279,7 +279,10 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			std::string armor = unitReader["genUnitArmor"].readVal<std::string>();
 			// create a new Unit.
 			if (!mod->getUnit(type) || !mod->getArmor(armor))
+			{
+				Log(LOG_ERROR) << "Failed to load unit " << type;
 				continue;
+			}
 			unit = new BattleUnit(mod, mod->getUnit(type), originalFaction, id, nullptr, mod->getArmor(armor), mod->getStatAdjustment(savedGame->getDifficulty()), _depth, nullptr);
 		}
 		unit->load(unitReader, this->getMod(), this->getMod()->getScriptGlobal());
@@ -321,6 +324,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			if (!mod->getItem(type))
 			{
 				Log(LOG_ERROR) << "Failed to load item " << type;
+				continue;
+			}
+			if (itemReader["owner"].readVal(-1) != -1 && !findUnitById(itemReader["owner"]))
+			{
+				Log(LOG_ERROR) << "Failed to load item " << type << ": its unit is gone";
 				continue;
 			}
 			int id = itemReader["id"].readVal<int>();
@@ -369,7 +377,7 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 		for (const auto& itemReader : reader[keyAndVector.first].children())
 		{
 			std::string type = itemReader["type"].readVal<std::string>();
-			if (!mod->getItem(type))
+			if (!mod->getItem(type) || !itemIndex.count(itemReader["id"].readVal<int>()))
 				continue;
 			BattleItem* item = itemIndex.at(itemReader["id"].readVal<int>());
 			// if "ammoItemSlots" node exists, then link ammo items for all slots, else try the backwards-compatibility node
@@ -2204,6 +2212,68 @@ BattleUnit *SavedBattleGame::createTempUnit(const Unit *rules, UnitFaction facti
 		newUnit->setAIModule(new AIModule(this, newUnit, 0));
 	}
 
+	return newUnit;
+}
+
+/**
+ * Puts a new unit on the map, the way of an item's spawnUnit.
+ * @param rules Unit config
+ * @param faction Faction of unit
+ * @param position Tile position to try, or one around it
+ * @param checkDirection Where the search around the position starts
+ * @param direction Where the unit looks, below 0 a random direction
+ * @param owner Who made it
+ * @return The new unit, null when it has no place there.
+ */
+BattleUnit *SavedBattleGame::placeNewUnit(const Unit *rules, UnitFaction faction, Position position, int checkDirection, int direction, BattleUnit *owner)
+{
+	// Create the unit
+	BattleUnit *newUnit = createTempUnit(rules, faction);
+
+	// Validate the position for the unit, checking if there's a surrounding tile if necessary
+	if (!getTileEngine()->isPositionValidForUnit(position, newUnit, true, checkDirection))
+	{
+		delete newUnit;
+		return nullptr;
+	}
+
+	// Place the unit and initialize it in the battlescape
+	int unitDirection = direction >= 0 ? direction : RNG::generate(0, 7);
+	// If this is a tank, arm it with its weapon
+	if (_rule->getItem(newUnit->getType()) && _rule->getItem(newUnit->getType())->isFixed())
+	{
+		const RuleItem *newUnitWeapon = _rule->getItem(newUnit->getType());
+		if (!_isPreview)
+		{
+			createItemForUnit(newUnitWeapon, newUnit, true);
+			if (newUnitWeapon->getVehicleClipAmmo())
+			{
+				const RuleItem *ammo = newUnitWeapon->getVehicleClipAmmo();
+				BattleItem *ammoItem = createItemForUnit(ammo, newUnit);
+				if (ammoItem)
+				{
+					ammoItem->setAmmoQuantity(newUnitWeapon->getVehicleClipSize());
+				}
+			}
+		}
+		newUnit->setTurretType(newUnitWeapon->getTurretType());
+	}
+
+	// Pick the item sets if the unit has builtInWeaponSets
+	size_t itemLevel = (size_t)(_rule->getAlienItemLevels().at(getAlienItemLevel()).at(RNG::generate(0,9)));
+
+	// Initialize the unit and its position
+	newUnit->setTile(getTile(position), this);
+	newUnit->setPosition(position);
+	newUnit->setDirection(unitDirection);
+	newUnit->clearTimeUnits();
+	newUnit->setPreviousOwner(owner);
+	newUnit->setVisible(faction == FACTION_PLAYER);
+	getUnits()->push_back(newUnit);
+	initUnit(newUnit, itemLevel);
+
+	getTileEngine()->applyGravity(newUnit->getTile());
+	getTileEngine()->calculateFOV(newUnit->getPosition());  //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
 	return newUnit;
 }
 

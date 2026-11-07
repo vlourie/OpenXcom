@@ -2658,55 +2658,7 @@ void BattlescapeGame::spawnNewUnit(BattleActionAttack attack, Position position)
 		return;
 	}
 
-	// Create the unit
-	BattleUnit *newUnit = _save->createTempUnit(type, faction);
-
-	// Validate the position for the unit, checking if there's a surrounding tile if necessary
-	int checkDirection = attack.attacker ? (attack.attacker->getDirection() + 4) % 8 : 0;
-	bool positionValid = getTileEngine()->isPositionValidForUnit(position, newUnit, true, checkDirection);
-	if (positionValid) // Place the unit and initialize it in the battlescape
-	{
-		int unitDirection = attack.attacker ? attack.attacker->getDirection() : RNG::generate(0, 7);
-		// If this is a tank, arm it with its weapon
-		if (getMod()->getItem(newUnit->getType()) && getMod()->getItem(newUnit->getType())->isFixed())
-		{
-			const RuleItem *newUnitWeapon = getMod()->getItem(newUnit->getType());
-			if (!_save->isPreview())
-			{
-				_save->createItemForUnit(newUnitWeapon, newUnit, true);
-				if (newUnitWeapon->getVehicleClipAmmo())
-				{
-					const RuleItem *ammo = newUnitWeapon->getVehicleClipAmmo();
-					BattleItem *ammoItem = _save->createItemForUnit(ammo, newUnit);
-					if (ammoItem)
-					{
-						ammoItem->setAmmoQuantity(newUnitWeapon->getVehicleClipSize());
-					}
-				}
-			}
-			newUnit->setTurretType(newUnitWeapon->getTurretType());
-		}
-
-		// Pick the item sets if the unit has builtInWeaponSets
-		size_t itemLevel = (size_t)(getMod()->getAlienItemLevels().at(_save->getAlienItemLevel()).at(RNG::generate(0,9)));
-
-		// Initialize the unit and its position
-		newUnit->setTile(_save->getTile(position), _save);
-		newUnit->setPosition(position);
-		newUnit->setDirection(unitDirection);
-		newUnit->clearTimeUnits();
-		newUnit->setPreviousOwner(owner);
-		newUnit->setVisible(faction == FACTION_PLAYER);
-		_save->getUnits()->push_back(newUnit);
-		_save->initUnit(newUnit, itemLevel);
-
-		getTileEngine()->applyGravity(newUnit->getTile());
-		getTileEngine()->calculateFOV(newUnit->getPosition());  //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
-	}
-	else
-	{
-		delete newUnit;
-	}
+	_save->placeNewUnit(type, faction, position, attack.attacker ? (attack.attacker->getDirection() + 4) % 8 : 0, attack.attacker ? attack.attacker->getDirection() : -1, owner);
 }
 
 /**
