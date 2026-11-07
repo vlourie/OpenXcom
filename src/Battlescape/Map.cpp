@@ -3020,6 +3020,91 @@ const Map::HdAoShape &Map::hdAoShape(const MapData *part)
 	}
 	// a low part covering the whole cell (tall grass, top layer 1) is a carpet, not a wall: it shades no neighbour (XP-000439)
 	shape.valid = shape.count > 0 && top >= 1 && !(shape.count >= FLOOR_AO_HIDDEN && top <= 1);
+	// An object's LOFT can be a full block while the picture is round (a well, XP-000528): a voxel stays only where the picture
+	// of the object has an opaque pixel at the voxel's foot, within a margin of one base pixel. The picture is the pack frame
+	// (the classic frame of a well is a full block), else the classic frame. The foot of the voxel (vx, vy) on the floor diamond
+	// (top corner at x 16, row 24 of the frame, raised by the part's Y offset) is x = 16 + vx - vy, y = 24 + (vx + vy + 1) / 2.
+	// Made once with the shape and kept with it (one per set:frame for the battle), no per-frame work.
+	const int pictureMargin = 1;
+	if (shape.valid && part->getObjectType() == O_OBJECT && part->getDataset() && part->getDataset()->getSurfaceset())
+	{
+		const SurfaceSet *frames = part->getDataset()->getSurfaceset();
+		std::vector<const Surface*> pictures;
+		for (int f = 0; f < 8; ++f)
+		{
+			const int index = part->getSprite(f);
+			const Surface *pic = index >= 0 ? frames->getFrame(index) : nullptr;
+			if (pic && pic->getBuffer() && std::find(pictures.begin(), pictures.end(), pic) == pictures.end())
+			{
+				pictures.push_back(pic);
+			}
+		}
+		if (!pictures.empty())
+		{
+			const int lift = part->getYOffset();
+			auto opaque = [&](int x, int y)
+			{
+				// The picture the canvas draws for the frame: its pack frame (the well is a round HD drawing, but a full block in the
+				// classic frame), else the classic frame. Terrain frames are scaled in place by k (MapDataSet::loadData): 32k x 40k,
+				// a base pixel is a k x k block; opaque = any pixel of the block has alpha of 128 or more.
+				if (x < 0 || y < 0 || x >= 32 || y >= 40)
+				{
+					return false;
+				}
+				for (const Surface *pic : pictures)
+				{
+					const int s = std::max(1, pic->getWidth() / 32);
+					const HdFrame *hd = HdSprites::find(pic->getBuffer());
+					if (hd && !hd->empty() && hd->width == pic->getWidth() && hd->height == pic->getHeight())
+					{
+						for (int py = y * s; py < (y + 1) * s; ++py)
+						{
+							for (int px = x * s; px < (x + 1) * s; ++px)
+							{
+								if ((hd->row(py)[px] >> 24) >= 128)
+								{
+									return true;
+								}
+							}
+						}
+					}
+					else if (y * s < pic->getHeight() && pic->getBuffer()[y * s * pic->getPitch() + x * s])
+					{
+						return true;
+					}
+				}
+				return false;
+			};
+			Uint16 kept[16] = {};
+			shape.count = 0;
+			for (int vy = 0; vy < 16; ++vy)
+			{
+				for (int vx = 0; vx < 16; ++vx)
+				{
+					if (!(shape.rows[vy] & (1 << (15 - vx))))
+					{
+						continue;
+					}
+					const int cx = 16 + vx - vy, cy = 24 + lift + (vx + vy + 1) / 2;
+					bool seen = false;
+					for (int y = cy - pictureMargin; y <= cy + pictureMargin && !seen; ++y)
+					{
+						for (int x = cx - 1 - pictureMargin; x <= cx + pictureMargin && !seen; ++x)
+						{
+							seen = opaque(x, y);
+						}
+					}
+					if (seen)
+					{
+						kept[vy] |= (Uint16)(1 << (15 - vx));
+						++shape.count;
+					}
+				}
+			}
+			std::copy(kept, kept + 16, shape.rows);
+			shape.valid = shape.count > 0;
+		}
+	}
 	shape.weight = std::min(1.0f, (top + 1) / 6.0f);
 	// a raised part a unit walks on (a hill, a ramp) is ground, not a wall: a dark line at its foot reads as a drawn border (XP-000502)
 	shape.ground = part->getTerrainLevel() < 0 && part->getTUCost(MT_WALK) < 255;

@@ -1,1 +1,2 @@
 ﻿- HD interface, paper dolls: Gnome soldiers now have HD paper dolls in all 23 armors and 48 looks, with new bodies, faces and hair.
+- Battle (HD): "HD corner shading" now follows the shape of an object's picture instead of the whole tile: trees, bushes, crates and wreckage get a truer shadow without a dark diamond, and a well has less shade along its tile edge (ticket XP-000528).
