@@ -799,6 +799,71 @@ def screens():
     bench.call("stop", "--name", name, timeout=60)
 
 
+UI_CODE = """
+local added = {}
+game.screen("all", function(ui)
+  try("ui.window", function() return ui:window{ x = 10, y = 6, w = 300, h = 188, background = "BACK01.SCR" } end)
+  local t, b, g, l, c, e, s, i
+  try("ui.text", function() t = ui:text{ x = 20, y = 12, w = 200, h = 10, text = "S5", big = false, align = "center", wrap = true, color = 133 } return t end)
+  try("ui.toggleButton", function() g = ui:toggleButton{ x = 20, y = 30, w = 100, h = 16, text = "S5", pressed = true, onClick = function() end } return g end)
+  try("ui.list", function() l = ui:list{ x = 130, y = 30, w = 160, h = 60, columns = { 80, 70 }, selectable = true, onClick = function() end } return l end)
+  try("ui.comboBox", function() c = ui:comboBox{ x = 130, y = 100, w = 160, h = 16, options = { "a", "b" }, selected = 2, onChange = function() end } return c end)
+  try("ui.edit", function() e = ui:edit{ x = 20, y = 50, w = 100, h = 10, text = "S5", focus = false, onChange = function() end, onEnter = function() end } return e end)
+  try("ui.slider", function() s = ui:slider{ x = 20, y = 70, w = 100, h = 16, min = 0, max = 10, value = 5, onChange = function() end } return s end)
+  try("ui.image", function() i = ui:image{ x = 20, y = 100, image = "BACK01.SCR", onClick = function() end } return i end)
+  try("ui.onKey", function() ui:onKey(function() end) end)
+  try("ui.onClose", function() ui:onClose(function() end) end)
+  try("uiWidget.setVisible", function() t:setVisible(true) end)
+  try("uiWidget.isVisible", function() return t:isVisible() end)
+  try("uiWidget.setText", function() t:setText("S5 2") end)
+  try("uiWidget.getText", function() return t:getText() end)
+  try("uiWidget.setPressed", function() g:setPressed(false) end)
+  try("uiWidget.isPressed", function() return g:isPressed() end)
+  try("uiWidget.addRow", function() l:addRow("a", "b") end)
+  try("uiWidget.setCell", function() l:setCell(1, 2, "c") end)
+  try("uiWidget.getRowCount", function() return l:getRowCount() end)
+  try("uiWidget.getSelected", function() return l:getSelected() end)
+  try("uiWidget.clearList", function() l:clearList() end)
+  try("uiWidget.setOptions", function() c:setOptions({ "x", "y", "z" }) end)
+  try("uiWidget.setSelected", function() c:setSelected(3) end)
+  try("uiWidget.getValue", function() return s:getValue() end)
+  try("uiWidget.setValue", function() s:setValue(3) end)
+  try("uiWidget.setRange", function() s:setRange(0, 5) end)
+  try("uiWidget.setFocus", function() e:setFocus() end)
+  try("uiWidget.setImage", function() i:setImage("BACK01.SCR") end)
+  bad("запись при построении", function() game.getGeoscape():setTag("S5_GeoscapeGame", 1) end)
+  bad("случайное число при построении", function() return math.random(1, 2) end)
+  try("ui.button", function() b = ui:button{ x = 20, y = 170, w = 280, h = 18, text = "S5", onClick = function()
+    try("ui.close", function() ui:close() end)
+    good("click_battle", game.getBattle() ~= nil)
+    good("click_geoscape", game.getGeoscape() ~= nil)
+  end } return b end)
+end, { menu = "S5 all" })
+"""
+
+
+def ui():
+    """Все методы экрана на странице автора, в настоящем бою; мод с luaApi: 2 и luaCaps: [screens]."""
+    bench, mods, out = stand("ui", HEAD + UI_CODE)
+    add_tags(mods)
+    (mods / "s5/metadata.yml").write_text('id: s5\nname: "s5"\nversion: 0.1\nmaster: "piratez"\nluaApi: 2\nluaCaps: [screens]\n', encoding="utf-8", newline="\n")
+    name = "s5ui"
+    run_stand(bench, name, mods, defects.battle_save(out))
+    # кадр мира 480x270, окно 320x200 смещено на (80, 35); первая строка списка, кнопка внизу:
+    # поле в фокусе модально, первый щелчок только снимает фокус
+    bench.run(name, "wait 800; key 111; wait 400; click 230,91; wait 500; click 180,214; wait 300; click 180,214; wait 400", 40)
+    top = bench.state(name)[0]
+    check("экран закрылся кнопкой мода", top == "LuaModsState", top)
+    report_methods(bench, name, ["ui", "uiWidget"])
+    report_bads(bench, name)
+    v = values(bench, name)
+    check("из щелчка видны бой и кампания", v.get("click_battle") == "true" and v.get("click_geoscape") == "true", str(v))
+    errors = bench.folder(name) / "lua_errors.log"
+    text = errors.read_text(encoding="utf-8", errors="replace") if errors.exists() else ""
+    check("журнал ошибок мода пуст", not text, text[:400])
+    bench.call("stop", "--name", name, timeout=60)
+
+
 def bonus():
     """applySoldierBonuses только при входе в бой: загруженный сейв боя его не вызывает, нужна посадка из кампании."""
     kinds = ["ruleSoldierBonus"]
@@ -881,7 +946,7 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     os.environ["OXCE_HIDDEN_DATA"] = str(GAME)
     os.environ["PATH"] = "C:/msys64/mingw64/bin;" + os.environ["PATH"]
-    cases = {"battle": battle, "hot": hot, "screens": screens, "geo": geo, "bonus": bonus, "cost": cost}
+    cases = {"battle": battle, "hot": hot, "screens": screens, "geo": geo, "bonus": bonus, "cost": cost, "ui": ui}
     for key in sys.argv[1:] or cases:
         cases[key]()
     print("ИТОГ:", "всё прошло" if not failed else f"провалов {len(failed)}: {failed}")

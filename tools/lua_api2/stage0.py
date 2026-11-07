@@ -199,13 +199,13 @@ def errors(bench, name):
 
 
 def closed():
-    """Без переменной окружения API 2 закрыт: заслон до открытия с этапа 1."""
+    """Без переменной окружения слова spawn нет: API 2 открыт, создание закрыто до этапа 3."""
     bench, mods, out = stand("closed")
     name = "s0closed"
     try:
         start(bench, name, mods, battle_save(out), False)
         text = errors(bench, name)
-        check("без OXCE_LUA_API2 мод luaApi: 2 не грузится", "s0cap" in text and "needs Lua API 2, this game has 1" in text)
+        check("без OXCE_LUA_API2 слово spawn неизвестно, Lua мода выключен", "s0cap" in text and "unknown word 'spawn'" in text and not lines(bench, name, "s0cap: loaded"))
         check("без OXCE_LUA_API2 мод luaApi: 1 загружен", lines(bench, name, "s0v1: loaded"))
     finally:
         bench.call("stop", "--name", name, timeout=60)

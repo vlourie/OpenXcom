@@ -273,6 +273,7 @@ public sealed class LuaCatalogTests : IDisposable
     {
         Assert.Equal("m 1 [lua local]", new ModRef { Id = "m", Version = "1", Lua = true }.Line);
         Assert.Equal("m 1 [lua catalog]", new ModRef { Id = "m", Version = "1", Lua = true, Catalog = true }.Line);
+        Assert.Equal("m 1 [lua local: screens,spawn]", new ModRef { Id = "m", Version = "1", Lua = true, Caps = "screens,spawn" }.Line);
         Assert.Equal("m 1", new ModRef { Id = "m", Version = "1" }.Line);
     }
 }

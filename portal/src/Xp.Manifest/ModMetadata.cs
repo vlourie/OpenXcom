@@ -21,6 +21,8 @@ public sealed class ModMetadata
     public bool AutoEnable { get; set; }
     /// <summary>The Lua API version the mod asks for; 0 - none, the engine runs no Lua of it.</summary>
     public int LuaApi { get; set; }
+    /// <summary>The words of luaCaps: what the mod's Lua is allowed beyond API 1.</summary>
+    public IReadOnlyList<string> LuaCaps { get; set; } = [];
 
     public static ModMetadata Parse(string text, string folder)
     {
@@ -42,12 +44,32 @@ public sealed class ModMetadata
         m.IsMaster = kv.TryGetValue("isMaster", out var im) && IsTrue(im);
         m.AutoEnable = kv.TryGetValue("autoEnable", out var ae) && IsTrue(ae);
         if (kv.TryGetValue("luaApi", out var lua) && int.TryParse(lua, out var api)) m.LuaApi = api;
+        m.LuaCaps = ReadCaps(text, kv.GetValueOrDefault("luaCaps", ""));
         if (kv.ContainsKey("requiredExtendedVersion")) m.Engine = "Extended";
         if (kv.TryGetValue("requiredExtendedEngine", out var eng)) m.Engine = eng;
         m.Master = m.IsMaster ? "" : "xcom1";
         if (kv.TryGetValue("master", out var master)) m.Master = master;
         if (m.Master == "*") { m.Master = ""; m.AnyMaster = true; }
         return m;
+    }
+
+    /// <summary>Both forms the engine reads: luaCaps: [a, b] and lines of "- a" under the key.</summary>
+    static List<string> ReadCaps(string text, string inline)
+    {
+        const StringSplitOptions Clean = StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries;
+        if (inline.Length > 0) return [.. inline.Split('#')[0].Trim('[', ']', ' ').Split(',', Clean).Select(Unquote)];
+        var caps = new List<string>();
+        var inBlock = false;
+        foreach (var raw in text.Split('\n'))
+        {
+            var line = raw.TrimEnd('\r');
+            if (line.StartsWith("luaCaps:", StringComparison.Ordinal)) { inBlock = true; continue; }
+            if (!inBlock) continue;
+            var item = line.TrimStart();
+            if (!item.StartsWith('-')) break;
+            caps.Add(Unquote(item[1..]));
+        }
+        return caps;
     }
 
     static bool IsTrue(string v) => v.Equals("true", StringComparison.OrdinalIgnoreCase) || v == "1";

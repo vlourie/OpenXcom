@@ -349,6 +349,7 @@ set ( menu_src
   Menu/ReportsState.cpp
   Menu/OptionsNoAudioState.cpp
   Menu/OptionsVideoState.cpp
+  Menu/LuaScreenState.cpp
   Menu/PauseState.cpp
   Menu/SaveGameState.cpp
   Menu/SetWindowedRootState.cpp

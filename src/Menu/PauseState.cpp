@@ -18,11 +18,13 @@
  */
 #include "PauseState.h"
 #include "../Engine/Game.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "AbandonGameState.h"
+#include "LuaScreenState.h"
 #include "ListLoadState.h"
 #include "ListSaveState.h"
 #include "../Engine/Options.h"
@@ -65,6 +67,14 @@ PauseState::PauseState(OptionsOrigin origin) : _origin(origin)
 	_btnCancel = new TextButton(180, 18, x+18, 150);
 	_txtTitle = new Text(206, 17, x+5, 32);
 	_txtVersion = new Text(216, 9, x, 11);
+	// a Lua mod declared a screen for the player; without one nothing here moves
+	TextButton *btnMods = nullptr;
+	auto *lua = _game->getMod()->getLuaHost();
+	if (lua && lua->hasMenuScreens())
+	{
+		btnMods = new TextButton(88, 18, x+110, 122);
+		_btnOptions->setWidth(88);
+	}
 
 	// Set palette
 	setInterface("pauseMenu", false, _game->getSavedGame() ? _game->getSavedGame()->getSavedBattle() : 0);
@@ -77,6 +87,10 @@ PauseState::PauseState(OptionsOrigin origin) : _origin(origin)
 	add(_btnCancel, "button", "pauseMenu");
 	add(_txtTitle, "text", "pauseMenu");
 	add(_txtVersion, "text", "pauseMenu");
+	if (btnMods)
+	{
+		add(btnMods, "button", "pauseMenu");
+	}
 
 	centerAllSurfaces();
 
@@ -94,6 +108,12 @@ PauseState::PauseState(OptionsOrigin origin) : _origin(origin)
 
 	_btnOptions->setText(tr("STR_GAME_OPTIONS"));
 	_btnOptions->onMouseClick((ActionHandler)&PauseState::btnOptionsClick);
+
+	if (btnMods)
+	{
+		btnMods->setText(tr("STR_MODS"));
+		btnMods->onMouseClick((ActionHandler)&PauseState::btnModsClick);
+	}
 
 	_btnCancel->setText(tr("STR_CANCEL_UC"));
 	_btnCancel->onMouseClick((ActionHandler)&PauseState::btnCancelClick);
@@ -173,6 +193,15 @@ PauseState::~PauseState()
 void PauseState::btnLoadClick(Action *)
 {
 	_game->pushState(new ListLoadState(_origin));
+}
+
+/**
+ * Opens the list of the screens of Lua mods.
+ * @param action Pointer to an action.
+ */
+void PauseState::btnModsClick(Action *)
+{
+	_game->pushState(new LuaModsState());
 }
 
 /**

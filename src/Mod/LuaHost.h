@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <climits>
 #include <cstddef>
 #include <initializer_list>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace OpenXcom
@@ -34,6 +36,7 @@ class BattleUnit;
 class Country;
 class Craft;
 class LuaSandbox;
+class LuaScreenState;
 class Mod;
 class RuleCraft;
 class RuleItem;
@@ -43,6 +46,7 @@ class RuleUfo;
 class SavedBattleGame;
 class SavedGame;
 class Soldier;
+class State;
 class StatsForNerdsState;
 class Tile;
 class Ufo;
@@ -56,11 +60,11 @@ class LuaHost
 {
 public:
 	/// The API version a mod names in metadata.yml as luaApi.
-	static const int API_VERSION = 1;
-	/// API 2 (docs/portal/LUA_MODS_V2.md) under construction: only with the environment variable OXCE_LUA_API2.
-	static const int NEXT_API = 2;
+	static const int API_VERSION = 2;
+	/// From this version a mod has luaCaps and the methods behind them (docs/portal/LUA_MODS_V2.md).
+	static const int API_WITH_CAPS = 2;
 	/// What the mod's metadata.yml may name in luaCaps; a method of API 2 needs its word there.
-	enum Cap { CAP_SPAWN = 1 };
+	enum Cap { CAP_SPAWN = 1, CAP_SCREENS = 2 };
 
 	enum Event
 	{
@@ -152,6 +156,24 @@ public:
 	}
 	/// The battle ended or goes on another map: what was asked for has no place to happen. The next battle's reload() and the next stage call this.
 	void dropQueue();
+	/// A screen declared in main.lua: game.screen(name, fn, options). `fn` is LuaSandbox::keep(). An error text, or empty.
+	std::string declareScreen(const LuaSandbox *sandbox, const std::string &name, int fn, const std::string &menu, const std::string &category);
+	/// game.openScreen(name): the screen is built later, where nothing runs under it. An error text, or empty.
+	std::string queueScreen(const LuaSandbox *sandbox, const std::string &name);
+	/// The next screen asked for, built, for the caller to show; null when there is none or building it failed.
+	State *nextScreen() { return _screens.empty() ? nullptr : nextScreenNow(); }
+	/// Is there anything for the player's own way in: the button of the pause menu and the key?
+	bool hasMenuScreens() const { return _menuScreens; }
+	/// What the list of the player's way in shows: the title and the mod.
+	std::vector<std::pair<std::string, std::string>> menuScreens() const;
+	/// Builds a screen of that list for the caller to show; null when building it failed.
+	State *openMenuScreen(size_t index);
+	/// Calls a function of an open screen. `pure`: it only reads, a screen opened and closed changes nothing.
+	/// `widget` -1: no widget among the arguments; `value` NO_VALUE: no number; `text` null: no text.
+	static const int NO_VALUE = INT_MIN;
+	void callScreen(LuaScreenState *screen, int fn, const char *what, bool pure, int widget, int value, const std::string *text);
+	/// Is this the sandbox of a loaded mod? A screen may outlive its Lua only in the eyes of its destructor.
+	bool isRunning(const LuaSandbox *sandbox) const;
 	/// A mod handles the damage or the power of a shot: the AI's forecast of it does not know the result.
 	bool hasDamageHandlers() const
 	{
@@ -161,6 +183,11 @@ public:
 	}
 
 private:
+	struct ScreenInfo
+	{
+		std::string name, menu, category;
+		int fn;
+	};
 	struct Entry
 	{
 		std::string id, path, capsError;
@@ -170,6 +197,9 @@ private:
 		bool notified = false;
 		/// Queued by the running call, and by this turn of the battle: the budget of Lua does not see the engine's work.
 		int callItems = 0, turnItems = 0, turn = -1;
+		/// The same for screens: in a battle by its turn, outside it by the day.
+		int callScreens = 0, periodScreens = 0, screenPeriod = -1;
+		std::vector<ScreenInfo> screens;
 	};
 	struct Pending
 	{
@@ -181,6 +211,9 @@ private:
 	void fireOutputs(Event event, std::initializer_list<Arg> args, int *out);
 	void runQueueNow(SavedBattleGame *battle);
 	void dropQueued(size_t from);
+	State *nextScreenNow();
+	State *buildScreen(size_t entry, const ScreenInfo &screen);
+	void callScreenFn(Entry &entry, int fn, const char *what, bool pure, void *call);
 	void showNotice(SavedBattleGame *battle);
 	void noteError(size_t entry, const std::string &event, const std::string &text);
 	void writeJournal(const std::string &id, const std::string &event, const std::string &text);
@@ -190,6 +223,9 @@ private:
 	Mod *_mod = nullptr;
 	std::vector<Entry> _entries;
 	std::vector<Pending> _queue;
+	/// The screens asked for: the mod and the place in its Entry::screens.
+	std::vector<std::pair<size_t, size_t>> _screens;
+	bool _menuScreens = false;
 	bool _handled[EVENT_COUNT] = { };
 	std::string _notice, _journal;
 };

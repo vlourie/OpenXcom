@@ -52,6 +52,8 @@ public:
 	void btnAbandonClick(Action *action);
 	/// Handler for clicking the Game Options button.
 	void btnOptionsClick(Action *action);
+	/// Handler for clicking the Mods button: only when a Lua mod declared a screen for the player.
+	void btnModsClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
 };

@@ -1,5 +1,5 @@
 ﻿<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lua API for OXCE-HD mods, version 1</title><style>
+<title>Lua API for OXCE-HD mods, version 2</title><style>
 :root{color-scheme:light dark;--bg:#fbfaf7;--fg:#22211e;--dim:#6c6a62;--line:#dcd9d0;--code:#efece4}
 @media (prefers-color-scheme:dark){:root{--bg:#1d1c1a;--fg:#e8e6df;--dim:#a3a095;--line:#3b3934;--code:#2b2a26}}
 *{box-sizing:border-box}body{margin:0 auto;max-width:980px;padding:28px 16px 60px;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,"Segoe UI",sans-serif}
@@ -8,7 +8,7 @@ code,pre{font-family:Consolas,monospace;font-size:13px;background:var(--code);bo
 table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:auto}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}th{color:var(--dim);font-weight:600}
 .ro{color:var(--dim)}
 </style></head><body>
-<h1>Lua API for OXCE-HD mods, version 1</h1><p>A mod is written in <code>lua/main.lua</code> in its folder, <code>metadata.yml</code> says <code>luaApi: 1</code>. Only the game runs Lua, the launcher never executes a mod's code. The API covers most of what the Y-script can do and does not go beyond it. This page describes all of it: what is not here cannot be done from Lua. The names of the handlers and of the output values are those of the Y-script.</p>
+<h1>Lua API for OXCE-HD mods, version 2</h1><p>A mod is written in <code>lua/main.lua</code> in its folder, <code>metadata.yml</code> says <code>luaApi: 2</code>. Only the game runs Lua, the launcher never executes a mod's code. The API covers most of what the Y-script can do and does not go beyond it. This page describes all of it: what is not here cannot be done from Lua. The names of the handlers and of the output values are those of the Y-script.</p>
 <h2>Where it works</h2><p>Only in our OXCE-HD build. Plain OXCE does not know the <code>luaApi</code> key and runs the mod without Lua: the mod's rulesets work and its code does not. If the mod is needed there too, write it in the Y-script.</p>
 <h2>Getting started</h2><ol><li>In the launcher: Settings, "Modding mode", "Create mod". A folder with a working example appears.</li><li>Start the game and begin a battle. Lines from <code>game.log</code> and <code>print</code> go to <code>user/openxcom.log</code>.</li><li>Change <code>main.lua</code> and press <b>Ctrl+F5</b> in battle: the code of all mods is read again, the result is on the screen. The usual quick save F5 works as before.</li></ol>
 <h2>What a mod can change</h2><table><tr><th>What</th><th>From Lua</th></tr>
@@ -25,7 +25,7 @@ table{border-collapse:collapse;width:100%;margin:8px 0;display:block;overflow-x:
 <tr><td>Other rules</td><td>find the rules of an item, armor, unit, skill, research or inventory slot by name</td></tr>
 <tr><td>The end of a mission</td><td>the recovery time, how much health and mana a soldier lacks at the base</td></tr>
 <tr><td>Service</td><td>tags of units, items, the battle, soldiers and the geoscape, the log</td></tr>
-</table><div><b>From Lua you cannot:</b><ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li><li>create or move units and items, change the map;</li><li>touch sprites and recolouring: those Y-script handlers come from the drawing threads on every frame, the Y-script is there for them;</li><li>make your own screens or choose the AI's actions, except a target's weight.</li></ul><b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. If you need something new in Lua, send us a ticket saying what the mod should do.</div>
+</table><div><b>From Lua you cannot:</b><ul><li>touch bases, research, production, money: the geoscape can be read, and only tags, a country's month, UFO detection and prices can be changed;</li><li>create or move units and items, change the map;</li><li>touch sprites and recolouring: those Y-script handlers come from the drawing threads on every frame, the Y-script is there for them;</li><li>choose the AI's actions, except a target's weight.</li></ul><b>Plain OXCE works next to the code.</b> The mod's <code>Ruleset/</code> folder with <code>.rul</code> files is loaded as for any mod: the numbers of items, armor and units, research and everything else rulesets can do are changed there, the Y-script included. If you need something new in Lua, send us a ticket saying what the mod should do.</div>
 <h2>Recipes</h2><p>Each recipe is a whole <code>lua/main.lua</code> file. All are checked in a real battle. One file can hold any number of subscriptions, several on one handler too: they run in the order they are written.</p>
 <h3>Regeneration</h3><p>Each living unit gets 1 health at the start of its own turn. <code>newTurnUnit</code> comes on the turn of each side, so <code>side</code> is compared with the unit's side.</p>
 <pre><code>game.on(&quot;newTurnUnit&quot;, function(unit, battle, turn, side)
@@ -192,6 +192,39 @@ end)
 if other then
   game.log(&quot;found: &quot; .. other:getType())
 end
+</code></pre>
+<h3>A screen of your own: the pirate bank</h3><p>A screen has to be declared and allowed: <code>luaApi: 2</code> and <code>luaCaps: [screens]</code> in the mod's <code>metadata.yml</code>. Thanks to <code>menu</code> the player finds it on the mods' screen: a button in the pause menu or a key. The money lies in a tag of the campaign and lives in the save.</p>
+<pre><code>extended:
+  tags:
+    GeoscapeGame:
+      MY_BANK: int
+extraStrings:
+  - type: en-US
+    strings:
+      STR_MY_BANK: &quot;The pirate bank&quot;
+      STR_MY_DEPOSIT: &quot;Deposit 1000&quot;
+      STR_MY_CLOSE: &quot;Close&quot;
+</code></pre>
+<pre><code>local function balance()
+  return game.getGeoscape():getTag(&quot;MY_BANK&quot;)
+end
+
+game.screen(&quot;bank&quot;, function(ui)
+  ui:window{ x = 32, y = 20, w = 256, h = 160 }
+  ui:text{ x = 40, y = 30, w = 240, h = 17, text = &quot;STR_MY_BANK&quot;, big = true, align = &quot;center&quot; }
+  local sum = ui:text{ x = 50, y = 60, w = 220, h = 10, text = &quot;&quot; }
+  local function show()
+    sum:setText(tostring(balance()))
+  end
+  show()
+  ui:button{ x = 50, y = 130, w = 106, h = 18, text = &quot;STR_MY_DEPOSIT&quot;, onClick = function()
+    game.getGeoscape():setTag(&quot;MY_BANK&quot;, balance() + 1000)
+    show()
+  end }
+  ui:button{ x = 164, y = 130, w = 106, h = 18, text = &quot;STR_MY_CLOSE&quot;, onClick = function()
+    ui:close()
+  end }
+end, { menu = &quot;STR_MY_BANK&quot; })
 </code></pre>
 <h2>Handlers</h2><p>To subscribe: <code>game.on("name", function)</code>. Arguments come in the order of the Y-script's input, the last one is the table <code>out</code> of output values, if there are any. Values in <code>out</code> are taken as whole numbers and only all at once: one bad value is an error, the others are not applied. Handlers marked "only reads" change only <code>out</code>: as in the Y-script, the objects there cannot be changed, and calling <code>set...</code> or <code>add...</code> in them is an error. On one handler the Y-script runs first, then Lua in the mods' load order.</p>
 <table><tr><th>Handler</th><th>When</th><th>out</th></tr>
@@ -554,6 +587,40 @@ end
 <tr id="unit.getInventoryItem"><td><code>unit:getInventoryItem(type, slot)</code></td><td>the first item of type type, or nil; slot is optional. A type not in the ruleset is an error</td></tr>
 <tr id="unit.getSpecialItems"><td><code>unit:getSpecialItems()</code></td><td>a table of the unit&#x27;s special items: built-in weapons</td></tr>
 </table>
+<h3>A mod's screen, luaCaps: screens: <code>ui</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="ui.window"><td><code>ui:window({ x, y, w, h, background })</code></td><td>a window: the frame and the background. Needed before list and comboBox. background: a picture of the game or the mod&#x27;s extraSprites, without it the background comes from the screen&#x27;s interface</td></tr>
+<tr id="ui.text"><td><code>ui:text({ x, y, w, h, text, big, align, wrap, color })</code></td><td>text: a key of extraStrings or the string itself. align: left, center, right</td></tr>
+<tr id="ui.button"><td><code>ui:button({ x, y, w, h, text, color, onClick })</code></td><td>a button. onClick(button)</td></tr>
+<tr id="ui.toggleButton"><td><code>ui:toggleButton({ x, y, w, h, text, pressed, color, onClick })</code></td><td>a toggle button. onClick(button)</td></tr>
+<tr id="ui.list"><td><code>ui:list({ x, y, w, h, columns, selectable, color, onClick })</code></td><td>a list: columns, the widths of the columns, from 1 to 8; up to 2000 rows. onClick(list, row), rows count from one</td></tr>
+<tr id="ui.comboBox"><td><code>ui:comboBox({ x, y, w, h, options, selected, color, onChange })</code></td><td>a drop-down list, up to 256 options. onChange(list, option), options count from one</td></tr>
+<tr id="ui.edit"><td><code>ui:edit({ x, y, w, h, text, focus, color, onChange, onEnter })</code></td><td>an input field. onChange(field, text), onEnter(field, text)</td></tr>
+<tr id="ui.slider"><td><code>ui:slider({ x, y, w, h, min, max, value, color, onChange })</code></td><td>a slider. onChange(slider, value)</td></tr>
+<tr id="ui.image"><td><code>ui:image({ x, y, image, onClick })</code></td><td>a picture of the game or the mod&#x27;s extraSprites, Lua reads no files. onClick(picture)</td></tr>
+<tr id="ui.onKey"><td><code>ui:onKey(fn)</code></td><td>a key on this screen: fn(key name). Esc always closes the screen</td></tr>
+<tr id="ui.onClose"><td><code>ui:onClose(fn)</code></td><td>called on closing. No random numbers, writes or openScreen: a screen opened and closed changes nothing</td></tr>
+<tr id="ui.close"><td><code>ui:close()</code></td><td>close the screen: only the top one, only from a handler, not while it builds</td></tr>
+</table>
+<h3>A widget of a mod's screen: <code>uiWidget</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
+<tr id="uiWidget.setVisible"><td><code>uiWidget:setVisible(value)</code></td><td>show or hide the widget</td></tr>
+<tr id="uiWidget.isVisible"><td><code>uiWidget:isVisible()</code></td><td>whether the widget is shown</td></tr>
+<tr id="uiWidget.setText"><td><code>uiWidget:setText(text)</code></td><td>new text: text, button, toggleButton, edit</td></tr>
+<tr id="uiWidget.getText"><td><code>uiWidget:getText()</code></td><td>the text: text, edit</td></tr>
+<tr id="uiWidget.setPressed"><td><code>uiWidget:setPressed(value)</code></td><td>press or release: toggleButton</td></tr>
+<tr id="uiWidget.isPressed"><td><code>uiWidget:isPressed()</code></td><td>whether it is pressed: toggleButton</td></tr>
+<tr id="uiWidget.addRow"><td><code>uiWidget:addRow(cell, ...)</code></td><td>a row at the end: list. No more cells than columns</td></tr>
+<tr id="uiWidget.clearList"><td><code>uiWidget:clearList()</code></td><td>remove all rows: list</td></tr>
+<tr id="uiWidget.setCell"><td><code>uiWidget:setCell(row, column, text)</code></td><td>the text of a cell: list, from one</td></tr>
+<tr id="uiWidget.getRowCount"><td><code>uiWidget:getRowCount()</code></td><td>how many rows: list</td></tr>
+<tr id="uiWidget.getSelected"><td><code>uiWidget:getSelected()</code></td><td>the selected row or option, from one: list, comboBox. On a list not clicked yet: 1</td></tr>
+<tr id="uiWidget.setSelected"><td><code>uiWidget:setSelected(index)</code></td><td>select an option, from one: comboBox</td></tr>
+<tr id="uiWidget.setOptions"><td><code>uiWidget:setOptions(options)</code></td><td>new options: comboBox</td></tr>
+<tr id="uiWidget.getValue"><td><code>uiWidget:getValue()</code></td><td>the value: slider</td></tr>
+<tr id="uiWidget.setValue"><td><code>uiWidget:setValue(value)</code></td><td>a new value: slider. onChange is not called</td></tr>
+<tr id="uiWidget.setRange"><td><code>uiWidget:setRange(low, high)</code></td><td>new limits: slider</td></tr>
+<tr id="uiWidget.setFocus"><td><code>uiWidget:setFocus()</code></td><td>keyboard input into this field: edit. While the field has the focus, the first click outside it only takes the focus away, and onKey is silent</td></tr>
+<tr id="uiWidget.setImage"><td><code>uiWidget:setImage(name)</code></td><td>another picture of the same size or smaller: image</td></tr>
+</table>
 <h3>Item: <code>item</code></h3><table><tr><th>Method</th><th>What it does</th></tr>
 <tr id="item.getId"><td><code>item:getId()</code></td><td>the item&#x27;s number in the battle</td></tr>
 <tr id="item.getRuleItem"><td><code>item:getRuleItem()</code></td><td>the item rules, or nil</td></tr>
@@ -835,7 +902,8 @@ end
 <tr id="statsForNerds.addTextRow"><td><code>statsForNerds:addTextRow(name, text)</code></td><td>a row with text</td></tr>
 <tr id="statsForNerds.addTextFormatRow"><td><code>statsForNerds:addTextFormatRow(name, format, a[, b])</code></td><td>a row from a template: {0} and {1} are replaced by the numbers a and b</td></tr>
 </table>
-<h2>The game table</h2><p><code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above.</p>
+<h2>The game table</h2><p><code>game.on(name, function)</code> subscribes a function to a handler, only while <code>main.lua</code> loads. <code>game.log(...)</code> and <code>print(...)</code> write a line to the game's log. <code>game.getRules()</code> gives all the game's rules, those of other mods too, the <code>rules</code> table above. With <code>luaApi: 2</code>: <code>game.getBattle()</code> and <code>game.getGeoscape()</code> give the battle and the campaign where a handler does not receive them, a click on a screen for one; no battle: nil. Only with the permission <code>screens</code>: <code>game.screen(name, function[, { menu = "STR_NAME", interface = "pauseMenu" }])</code> declares a screen, only while <code>main.lua</code> loads; <code>game.openScreen(name)</code> opens it from a handler.</p>
+<h2>Permissions and screens of your own</h2><p>With <code>luaApi: 2</code> a mod has permissions: words in <code>metadata.yml</code>, for example <code>luaCaps: [screens]</code>. Without the word there is no method for the mod: a call gives a Lua error naming the permission. An unknown word, or <code>luaCaps</code> with <code>luaApi: 1</code>, switches the mod's Lua off. There is one word now: <code>screens</code>.</p><ul><li>A screen is made of the game's widgets in coordinates 320×200, so it works at any resolution and scale.</li><li>The player opens it on the mods' screen, if <code>game.screen</code> has <code>menu</code>, or a handler through <code>game.openScreen</code>: the screen then opens when the game has finished its step, in battle it may be after an animation or after the briefing. While a screen is open the game under it stands.</li><li>The building function and <code>onClose</code> only read: no random numbers, writes or <code>openScreen</code>. A screen opened and closed does not change the game. In a click you may do all a handler may.</li><li>Read-only handlers, all handlers of the geoscape and the nerds' pages among them, do not open screens.</li><li>Esc always closes a screen. An error while building closes the screen and goes to the log. There are no frame handlers or timers: only a reaction to an action.</li><li>Widget handles live while the screen is open, after closing: a Lua error.</li><li>Ceilings: 64 widgets, 2000 list rows, 8 columns, 256 options, 64 screens a mod, nesting and the queue together 4, one screen a call, 8 screens a battle turn or a campaign day. Over a ceiling: the mod's error, the game lives.</li></ul>
 <h2>Constants</h2>
 <p>body parts: part: <code>game.BODYPART_HEAD</code> <code>game.BODYPART_TORSO</code> <code>game.BODYPART_RIGHTARM</code> <code>game.BODYPART_LEFTARM</code> <code>game.BODYPART_RIGHTLEG</code> <code>game.BODYPART_LEFTLEG</code></p>
 <p>sides of a unit: side in the damage handlers and in armor: <code>game.SIDE_FRONT</code> <code>game.SIDE_LEFT</code> <code>game.SIDE_RIGHT</code> <code>game.SIDE_REAR</code> <code>game.SIDE_UNDER</code></p>

@@ -46,7 +46,7 @@ keyBattleHdTestDump, keyBattleHdModeToggle, keyFeedback;
 // Extra hotkeys (OXCE)
 OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment, keyGeoGlobalTransfers,
 	keyGraphsZoomIn, keyGraphsZoomOut,
-	keyToggleQuickSearch, keyInstaSave,
+	keyToggleQuickSearch, keyInstaSave, keyLuaMods,
 	keyCraftLoadoutSave, keyCraftLoadoutLoad,
 	keyMarkAllAsSeen,
 	keySellAll, keySellAllButOne,

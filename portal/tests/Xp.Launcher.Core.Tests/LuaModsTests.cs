@@ -147,6 +147,9 @@ public sealed class LuaModsTests : IDisposable
     [Fact]
     public void The_setup_page_labels_a_lua_mod()
     {
+        Assert.Equal(["screens", "spawn"], ModMetadata.Parse("luaApi: 2\nluaCaps: [screens, spawn]\n", "x").LuaCaps);
+        Assert.Equal(["screens", "spawn"], ModMetadata.Parse("luaCaps:\n  - screens\n  - \"spawn\"\nname: m\n", "x").LuaCaps);
+        Assert.Empty(ModMetadata.Parse("luaApi: 2\n", "x").LuaCaps);
         Assert.True(LuaMods.IsLua("no such dir", ModMetadata.Parse("luaApi: 1\n", "x")));
         Assert.False(LuaMods.IsLua("no such dir", ModMetadata.Parse("luaApi: nonsense\n", "x")));
         Fixture.Write(f.Game, "user/mods/x/lua/main.lua", "");
@@ -249,7 +252,7 @@ public sealed class LuaModsTests : IDisposable
         var ids = new List<string>();
         foreach (var (table, type) in new[] { ("UNIT", "unit"), ("ITEM", "item"), ("BATTLE", "battle"), ("SOLDIER", "soldier"), ("RULE_ARMOR", "ruleArmor"), ("RULE_ITEM", "ruleItem"), ("SKILL", "skill"),
             ("RULE_DAMAGE", "ruleDamage"), ("RULE_UNIT", "ruleUnit"), ("RULE_SOLDIER", "ruleSoldier"), ("RULE_BONUS", "ruleSoldierBonus"), ("RULE_COUNTRY", "ruleCountry"),
-            ("RULE_UFO", "ruleUfo"), ("RULE_CRAFT", "ruleCraft"), ("TILE", "tile"), ("GEOSCAPE", "geoscape"), ("COUNTRY", "country"), ("UFO", "ufo"), ("CRAFT", "craft"), ("RULE_RESEARCH", "ruleResearch"), ("RULE_INVENTORY", "ruleInventory"), ("RULES", "rules"), ("NERDS", "statsForNerds") })
+            ("RULE_UFO", "ruleUfo"), ("RULE_CRAFT", "ruleCraft"), ("TILE", "tile"), ("GEOSCAPE", "geoscape"), ("COUNTRY", "country"), ("UFO", "ufo"), ("CRAFT", "craft"), ("RULE_RESEARCH", "ruleResearch"), ("RULE_INVENTORY", "ruleInventory"), ("RULES", "rules"), ("NERDS", "statsForNerds"), ("UI", "ui"), ("UI_WIDGET", "uiWidget") })
         {
             var body = Regex.Match(host, $@"const luaL_Reg {table}_METHODS\[\] = \{{(.*?)\n?\}};", RegexOptions.Singleline);
             Assert.True(body.Success, table);
@@ -257,7 +260,7 @@ public sealed class LuaModsTests : IDisposable
         }
         var events = Regex.Match(host, @"const EventInfo EVENTS\[.*?\] = \{(.*?)\n\};", RegexOptions.Singleline);
         ids.AddRange(Regex.Matches(events.Groups[1].Value, @"^\s*\{ ""(\w+)"",", RegexOptions.Multiline).Select(m => $"event.{m.Groups[1].Value}"));
-        Assert.Equal(411, ids.Count);
+        Assert.Equal(441, ids.Count);
 
         var page = LuaMods.WriteDocs(Paths, "ru");
         Assert.EndsWith("lua_api.ru.html", page);

@@ -65,7 +65,7 @@ public static partial class LuaSubmit
     sealed class Names
     {
         public int Api = 1;
-        public readonly HashSet<string> Event = [], Const = [], Method = [];
+        public readonly HashSet<string> Event = [], Const = [], Method = [], Game = [], Cap = [];
 
         public static readonly Lazy<Names> Embedded = new(() =>
         {
@@ -80,6 +80,8 @@ public static partial class LuaSubmit
                 else if (part[0] == "event") n.Event.Add(part[1]);
                 else if (part[0] == "const") n.Const.Add(part[1]);
                 else if (part[0] == "method") n.Method.Add(part[1]);
+                else if (part[0] == "game") n.Game.Add(part[1]);
+                else if (part[0] == "cap") n.Cap.Add(part[1]);
             }
             return n;
         });
@@ -128,6 +130,9 @@ public static partial class LuaSubmit
         else if (m.AnyMaster) p.Signals.Add(new("master_any", "metadata.yml"));
         if (m.Version.Length == 0) p.Errors.Add(new("metadata_version", "metadata.yml"));
         if (m.LuaApi < 1 || m.LuaApi > Names.Embedded.Value.Api) p.Errors.Add(new("metadata_luaapi", "metadata.yml", m.LuaApi.ToString()));
+        foreach (var word in m.LuaCaps)
+            if (!Names.Embedded.Value.Cap.Contains(word)) p.Errors.Add(new("metadata_luacaps", "metadata.yml", word));
+        if (m.LuaCaps.Count > 0 && m.LuaApi < 2) p.Errors.Add(new("metadata_luacaps_api", "metadata.yml"));
         if (!Engines.Contains(m.Engine)) p.Errors.Add(new("metadata_engine", "metadata.yml", m.Engine));
         if (m.IsMaster) p.Signals.Add(new("is_master", "metadata.yml"));
         if (!p.Files.Any(f => f.Path == "lua/main.lua")) p.Errors.Add(new("lua_main_missing", "lua/main.lua"));
@@ -193,7 +198,7 @@ public static partial class LuaSubmit
             if (EscapeCalls.Contains(m.Groups[1].Value)) found.Add(new("api_escape", path, m.Groups[1].Value));
         if (DumpRx().IsMatch(code)) found.Add(new("api_escape", path, "string.dump"));
         foreach (Match m in GameRx().Matches(code))
-            if (m.Groups[1].Value is not ("on" or "log") && !names.Const.Contains(m.Groups[1].Value)) found.Add(new("api_unknown", path, "game." + m.Groups[1].Value));
+            if (!names.Game.Contains(m.Groups[1].Value) && !names.Const.Contains(m.Groups[1].Value)) found.Add(new("api_unknown", path, "game." + m.Groups[1].Value));
         foreach (Match m in MethodRx().Matches(code))
             if (!names.Method.Contains(m.Groups[1].Value) && !StringMethods.Contains(m.Groups[1].Value)) found.Add(new("api_unknown", path, ":" + m.Groups[1].Value + "()"));
         foreach (Match m in EventRx().Matches(text))

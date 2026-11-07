@@ -56,6 +56,8 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Script.h"
 #include "../Engine/Unicode.h"
+#include "../Interface/Text.h"
+#include "../Menu/LuaScreenState.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/Country.h"
@@ -99,13 +101,17 @@ const char *const TYPE_RULES = "rules";
 const char *const TYPE_RULE_RESEARCH = "ruleResearch";
 const char *const TYPE_RULE_INVENTORY = "ruleInventory";
 const char *const TYPE_NERDS = "statsForNerds";
+const char *const TYPE_UI = "ui";
+const char *const TYPE_UI_WIDGET = "uiWidget";
 const char *const MOD_KEY = "oxce.mod";
 const char *const OUT_KEY = "oxce.out";
 
 /// What a slow API call costs a handler, in C loop steps: the counter sees it as one instruction.
-const unsigned long long TAG_TICKS = 100, LIST_TICKS = 20, MESSAGE_TICKS = 20000, SPAWN_TICKS = 1000;
+const unsigned long long TAG_TICKS = 100, LIST_TICKS = 20, MESSAGE_TICKS = 20000, SPAWN_TICKS = 1000, WIDGET_TICKS = 2000, ROW_TICKS = 200;
 /// The ceilings of the queue: the engine's work behind one call is not in the mod's budget.
 const int SPAWN_ITEMS_PER_CALL = 32, SPAWN_ITEMS_PER_TURN = 256;
+const int SCREENS_PER_CALL = 1, SCREENS_PER_PERIOD = 8;
+const size_t SCREENS_PER_MOD = 64, UI_TEXT_MAX = 2000;
 const size_t GLOW_ONE_BY_ONE = 4;
 const size_t MESSAGE_MAX = 200, JOURNAL_MAX = 256 * 1024;
 
@@ -192,12 +198,15 @@ bool g_noScreen = false;
 bool g_onlyReads = false;
 /// The running handler is one of EventInfo::pure.
 bool g_pure = false;
+/// The running function builds a screen or is its onClose: it only reads, for another reason than the Y-script's.
+bool g_screenReads = false;
 
 void checkWritable(lua_State *L)
 {
 	if (g_onlyReads)
 	{
-		luaL_error(L, "this handler only reads: the Y-script of the same name gets these objects as const");
+		luaL_error(L, g_screenReads ? "a screen's builder and onClose only read: a screen opened and closed changes nothing"
+			: "this handler only reads: the Y-script of the same name gets these objects as const");
 	}
 }
 
@@ -1365,7 +1374,677 @@ int battleSpawnItem(lua_State *L)
 	return 0;
 }
 
-/// Methods of API 2, on top of the table the mod's page is built from: under construction they are not on that page.
+/// A handle of a screen: unlike the game's objects it outlives the call, and dies when the screen closes.
+struct UiHandle
+{
+	unsigned long long screen;
+	int widget;
+};
+
+void pushUiHandle(lua_State *L, const char *type, unsigned long long screen, int widget)
+{
+	auto *handle = static_cast<UiHandle*>(lua_newuserdatauv(L, sizeof(UiHandle), 0));
+	handle->screen = screen;
+	handle->widget = widget;
+	luaL_setmetatable(L, type);
+}
+
+LuaScreenState *checkUi(lua_State *L)
+{
+	auto *handle = static_cast<UiHandle*>(luaL_checkudata(L, 1, TYPE_UI));
+	auto *screen = LuaScreenState::find(handle->screen);
+	if (!screen)
+	{
+		luaL_error(L, "this screen is closed");
+	}
+	return screen;
+}
+
+LuaScreenState *checkBuilding(lua_State *L)
+{
+	auto *screen = checkUi(L);
+	if (!screen->isBuilding())
+	{
+		luaL_error(L, "widgets are made only while the screen is being built");
+	}
+	if (screen->getWidgets() >= LuaScreenState::MAX_WIDGETS)
+	{
+		luaL_error(L, "more than %d widgets on one screen", (int)LuaScreenState::MAX_WIDGETS);
+	}
+	LuaSandbox::from(L)->charge(L, WIDGET_TICKS);
+	return screen;
+}
+
+/// `kinds` is a mask of LuaScreenState::Kind: the error names the method and what it works on.
+LuaScreenState *checkWidget(lua_State *L, int &widget, unsigned kinds, const char *what)
+{
+	auto *handle = static_cast<UiHandle*>(luaL_checkudata(L, 1, TYPE_UI_WIDGET));
+	auto *screen = LuaScreenState::find(handle->screen);
+	if (!screen)
+	{
+		luaL_error(L, "this widget's screen is closed");
+	}
+	widget = handle->widget;
+	if (!(kinds & (1u << screen->getKind(widget))))
+	{
+		luaL_error(L, "%s", what);
+	}
+	return screen;
+}
+
+const char *checkUiText(lua_State *L, int index)
+{
+	size_t len = 0;
+	const char *text = luaL_checklstring(L, index, &len);
+	luaL_argcheck(L, len <= UI_TEXT_MAX, index, "too long");
+	luaL_argcheck(L, Unicode::isValidUTF8(text), index, "not UTF-8");
+	return text;
+}
+
+/// A typo in a field would otherwise read as a field not given. `names` has spaces around every name.
+void checkFields(lua_State *L, const char *names)
+{
+	luaL_checktype(L, 2, LUA_TTABLE);
+	lua_pushnil(L);
+	while (lua_next(L, 2))
+	{
+		lua_pop(L, 1);
+		if (lua_type(L, -1) != LUA_TSTRING || !std::strstr(names, (std::string(" ") + lua_tostring(L, -1) + " ").c_str()))
+		{
+			luaL_error(L, "unknown field '%s', this widget has:%s", lua_type(L, -1) == LUA_TSTRING ? lua_tostring(L, -1) : luaL_typename(L, -1), names);
+		}
+	}
+}
+
+/// A number of the widget's table, checked both ways: it becomes a size or an index (R-777).
+int fieldInt(lua_State *L, const char *name, int low, int high, int fallback, bool required)
+{
+	lua_pushstring(L, name);
+	lua_rawget(L, 2);
+	if (lua_isnil(L, -1))
+	{
+		if (required)
+		{
+			luaL_error(L, "field '%s' is needed", name);
+		}
+		lua_pop(L, 1);
+		return fallback;
+	}
+	int isInteger = 0;
+	const lua_Integer value = lua_tointegerx(L, -1, &isInteger);
+	if (!isInteger || value < low || value > high)
+	{
+		luaL_error(L, "field '%s' must be a whole number from %d to %d", name, low, high);
+	}
+	lua_pop(L, 1);
+	return (int)value;
+}
+
+bool fieldBool(lua_State *L, const char *name)
+{
+	lua_pushstring(L, name);
+	lua_rawget(L, 2);
+	const bool value = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	return value;
+}
+
+/// The string stays alive as long as the table does, and the table is the caller's argument.
+const char *fieldText(lua_State *L, const char *name)
+{
+	lua_pushstring(L, name);
+	lua_rawget(L, 2);
+	const char *text = "";
+	if (!lua_isnil(L, -1))
+	{
+		if (lua_type(L, -1) != LUA_TSTRING)
+		{
+			luaL_error(L, "field '%s' must be a string", name);
+		}
+		size_t len = 0;
+		text = lua_tolstring(L, -1, &len);
+		if (len > UI_TEXT_MAX || !Unicode::isValidUTF8(text))
+		{
+			luaL_error(L, "field '%s': too long or not UTF-8", name);
+		}
+	}
+	lua_pop(L, 1);
+	return text;
+}
+
+/// Kept last of all: an error after this would leave the function in the registry.
+int fieldFn(lua_State *L, const char *name)
+{
+	lua_pushstring(L, name);
+	lua_rawget(L, 2);
+	int kept = 0;
+	if (lua_isfunction(L, -1))
+	{
+		kept = LuaSandbox::keep(L, -1);
+	}
+	lua_pop(L, 1);
+	return kept;
+}
+
+void checkFnField(lua_State *L, const char *name)
+{
+	lua_pushstring(L, name);
+	lua_rawget(L, 2);
+	if (!lua_isnil(L, -1) && !lua_isfunction(L, -1))
+	{
+		luaL_error(L, "field '%s' must be a function", name);
+	}
+	lua_pop(L, 1);
+}
+
+int alignOf(lua_State *L)
+{
+	const std::string align = fieldText(L, "align");
+	return align.empty() || align == "left" ? ALIGN_LEFT : align == "center" ? ALIGN_CENTER : align == "right" ? ALIGN_RIGHT
+		: luaL_error(L, "field 'align' must be left, center or right");
+}
+
+struct Box { int x, y, w, h, color; };
+
+Box fieldBox(lua_State *L, bool sized = true)
+{
+	Box box;
+	box.x = fieldInt(L, "x", 0, 319, 0, true);
+	box.y = fieldInt(L, "y", 0, 199, 0, true);
+	box.w = sized ? fieldInt(L, "w", 1, 320, 0, true) : 0;
+	box.h = sized ? fieldInt(L, "h", 1, 200, 0, true) : 0;
+	box.color = fieldInt(L, "color", 0, 255, -1, false);
+	return box;
+}
+
+int finishWidget(lua_State *L, LuaScreenState *screen, int widget, const Box &box, bool click, bool change, bool enter)
+{
+	const int onClick = click ? fieldFn(L, "onClick") : 0;
+	const int onChange = change ? fieldFn(L, "onChange") : 0;
+	const int onEnter = enter ? fieldFn(L, "onEnter") : 0;
+	screen->setHandlers(widget, onClick, onChange, onEnter, box.color);
+	pushUiHandle(L, TYPE_UI_WIDGET, screen->getId(), widget);
+	return 1;
+}
+
+int uiWindow(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h background ");
+	const Box box = fieldBox(L);
+	const char *background = fieldText(L, "background");
+	if (*background && !screen->hasSurface(background))
+	{
+		return luaL_error(L, "no picture '%s' in the game or in the mod's extraSprites", background);
+	}
+	return finishWidget(L, screen, screen->addWindow(box.x, box.y, box.w, box.h, background), { 0, 0, 0, 0, -1 }, false, false, false);
+}
+
+int uiText(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h text big align wrap color ");
+	const Box box = fieldBox(L);
+	const int align = alignOf(L);
+	return finishWidget(L, screen, screen->addText(box.x, box.y, box.w, box.h, fieldText(L, "text"), fieldBool(L, "big"), align, fieldBool(L, "wrap")), box, false, false, false);
+}
+
+int uiButton(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h text color onClick ");
+	const Box box = fieldBox(L);
+	checkFnField(L, "onClick");
+	return finishWidget(L, screen, screen->addButton(box.x, box.y, box.w, box.h, fieldText(L, "text")), box, true, false, false);
+}
+
+int uiToggleButton(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h text pressed color onClick ");
+	const Box box = fieldBox(L);
+	checkFnField(L, "onClick");
+	return finishWidget(L, screen, screen->addToggle(box.x, box.y, box.w, box.h, fieldText(L, "text"), fieldBool(L, "pressed")), box, true, false, false);
+}
+
+void checkNeedsWindow(lua_State *L, const LuaScreenState *screen)
+{
+	if (!screen->hasWindow())
+	{
+		luaL_error(L, "this widget takes its background from a window: make ui:window first");
+	}
+}
+
+int uiList(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h columns selectable color onClick ");
+	const Box box = fieldBox(L);
+	checkFnField(L, "onClick");
+	checkNeedsWindow(L, screen);
+	lua_pushstring(L, "columns");
+	lua_rawget(L, 2);
+	luaL_argcheck(L, lua_istable(L, -1), 2, "field 'columns' must be a list of widths");
+	const size_t count = lua_rawlen(L, -1);
+	luaL_argcheck(L, count >= 1 && count <= LuaScreenState::MAX_COLUMNS, 2, "field 'columns' must have from 1 to 8 widths");
+	int widths[LuaScreenState::MAX_COLUMNS] = { };
+	for (size_t i = 0; i < count; ++i)
+	{
+		lua_rawgeti(L, -1, (lua_Integer)i + 1);
+		int isInteger = 0;
+		const lua_Integer width = lua_tointegerx(L, -1, &isInteger);
+		luaL_argcheck(L, isInteger && width >= 1 && width <= 320, 2, "a width of 'columns' must be a whole number from 1 to 320");
+		widths[i] = (int)width;
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+	const bool selectable = fieldBool(L, "selectable");
+	return finishWidget(L, screen, screen->addList(box.x, box.y, box.w, box.h, std::vector<int>(widths, widths + count), selectable), box, true, false, false);
+}
+
+/// The strings of a list at `index`: they stay alive as long as the list does, and it is the caller's argument.
+std::vector<std::string> checkOptions(lua_State *L, int index)
+{
+	std::vector<const char*> checked;
+	const size_t count = lua_rawlen(L, index);
+	luaL_argcheck(L, count >= 1 && count <= LuaScreenState::MAX_OPTIONS, index, "must have from 1 to 256 options");
+	for (size_t i = 0; i < count; ++i)
+	{
+		lua_rawgeti(L, index, (lua_Integer)i + 1);
+		size_t len = 0;
+		const char *option = lua_type(L, -1) == LUA_TSTRING ? lua_tolstring(L, -1, &len) : nullptr;
+		luaL_argcheck(L, option && len <= UI_TEXT_MAX && Unicode::isValidUTF8(option), index, "an option must be a string of UTF-8");
+		checked.push_back(option);
+		lua_pop(L, 1);
+	}
+	return std::vector<std::string>(checked.begin(), checked.end());
+}
+
+int uiComboBox(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h options selected color onChange ");
+	const Box box = fieldBox(L);
+	checkFnField(L, "onChange");
+	checkNeedsWindow(L, screen);
+	lua_pushstring(L, "options");
+	lua_rawget(L, 2);
+	luaL_argcheck(L, lua_istable(L, -1), 2, "field 'options' must be a list of strings");
+	const int options = lua_gettop(L);
+	const auto list = checkOptions(L, options);
+	const int selected = fieldInt(L, "selected", 1, (int)list.size(), 1, false);
+	return finishWidget(L, screen, screen->addCombo(box.x, box.y, box.w, box.h, list, selected - 1), box, false, true, false);
+}
+
+int uiEdit(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h text focus color onChange onEnter ");
+	const Box box = fieldBox(L);
+	checkFnField(L, "onChange");
+	checkFnField(L, "onEnter");
+	return finishWidget(L, screen, screen->addEdit(box.x, box.y, box.w, box.h, fieldText(L, "text"), fieldBool(L, "focus")), box, false, true, true);
+}
+
+int uiSlider(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y w h min max value color onChange ");
+	const Box box = fieldBox(L);
+	checkFnField(L, "onChange");
+	const int low = fieldInt(L, "min", -1000000000, 1000000000, 0, true);
+	const int high = fieldInt(L, "max", -1000000000, 1000000000, 0, true);
+	luaL_argcheck(L, low < high, 2, "field 'min' must be below 'max'");
+	const int value = fieldInt(L, "value", low, high, low, false);
+	return finishWidget(L, screen, screen->addSlider(box.x, box.y, box.w, box.h, low, high, value), box, false, true, false);
+}
+
+int uiImage(lua_State *L)
+{
+	auto *screen = checkBuilding(L);
+	checkFields(L, " x y image onClick ");
+	const Box box = fieldBox(L, false);
+	checkFnField(L, "onClick");
+	const char *image = fieldText(L, "image");
+	if (!*image || !screen->hasSurface(image))
+	{
+		return luaL_error(L, "no picture '%s' in the game or in the mod's extraSprites", image);
+	}
+	return finishWidget(L, screen, screen->addImage(box.x, box.y, image), box, true, false, false);
+}
+
+int uiOnKey(lua_State *L)
+{
+	auto *screen = checkUi(L);
+	luaL_checktype(L, 2, LUA_TFUNCTION);
+	screen->setScreenHandlers(LuaSandbox::keep(L, 2), 0);
+	return 0;
+}
+
+int uiOnClose(lua_State *L)
+{
+	auto *screen = checkUi(L);
+	luaL_checktype(L, 2, LUA_TFUNCTION);
+	screen->setScreenHandlers(0, LuaSandbox::keep(L, 2));
+	return 0;
+}
+
+int uiClose(lua_State *L)
+{
+	auto *screen = checkUi(L);
+	if (screen->isBuilding())
+	{
+		return luaL_error(L, "a screen being built cannot close: raise an error to not open it");
+	}
+	if (!screen->isOnTop())
+	{
+		return luaL_error(L, "only the screen on top can close");
+	}
+	screen->askClose();
+	return 0;
+}
+
+const luaL_Reg UI_METHODS[] = {
+	{ "window", uiWindow },
+	{ "text", uiText },
+	{ "button", uiButton },
+	{ "toggleButton", uiToggleButton },
+	{ "list", uiList },
+	{ "comboBox", uiComboBox },
+	{ "edit", uiEdit },
+	{ "slider", uiSlider },
+	{ "image", uiImage },
+	{ "onKey", uiOnKey },
+	{ "onClose", uiOnClose },
+	{ "close", uiClose },
+	{ nullptr, nullptr }
+};
+
+#define UI_KIND(kind) (1u << LuaScreenState::kind)
+
+int widgetSetVisible(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, ~0u, "");
+	screen->setVisible(widget, lua_toboolean(L, 2));
+	return 0;
+}
+
+int widgetIsVisible(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, ~0u, "");
+	lua_pushboolean(L, screen->isVisible(widget));
+	return 1;
+}
+
+int widgetSetText(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(TEXT) | UI_KIND(BUTTON) | UI_KIND(TOGGLE) | UI_KIND(EDIT), "setText works on text, button, toggleButton and edit");
+	LuaSandbox::from(L)->charge(L, MESSAGE_TICKS);
+	screen->setText(widget, checkUiText(L, 2));
+	return 0;
+}
+
+int widgetGetText(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(TEXT) | UI_KIND(EDIT), "getText works on text and edit");
+	const std::string text = screen->getText(widget);
+	lua_pushlstring(L, text.data(), text.size());
+	return 1;
+}
+
+int widgetSetPressed(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(TOGGLE), "setPressed works on toggleButton");
+	screen->setPressed(widget, lua_toboolean(L, 2));
+	return 0;
+}
+
+int widgetIsPressed(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(TOGGLE), "isPressed works on toggleButton");
+	lua_pushboolean(L, screen->isPressed(widget));
+	return 1;
+}
+
+int widgetAddRow(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(LIST), "addRow works on list");
+	const int cells = lua_gettop(L) - 1;
+	luaL_argcheck(L, cells >= 1 && (size_t)cells <= screen->getColumns(widget), 2, "more cells than the list has columns, or none");
+	if (screen->getScreenRows() >= LuaScreenState::MAX_ROWS)
+	{
+		return luaL_error(L, "more than %d rows on one screen", (int)LuaScreenState::MAX_ROWS);
+	}
+	LuaSandbox::from(L)->charge(L, ROW_TICKS);
+	const char *texts[LuaScreenState::MAX_COLUMNS] = { };
+	for (int i = 0; i < cells; ++i)
+	{
+		texts[i] = checkUiText(L, i + 2);
+	}
+	screen->addRow(widget, std::vector<std::string>(texts, texts + cells));
+	return 0;
+}
+
+int widgetClearList(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(LIST), "clearList works on list");
+	LuaSandbox::from(L)->charge(L, MESSAGE_TICKS);
+	screen->clearList(widget);
+	return 0;
+}
+
+int widgetSetCell(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(LIST), "setCell works on list");
+	const int row = checkInt(L, 2), column = checkInt(L, 3);
+	luaL_argcheck(L, row >= 1 && (size_t)row <= screen->getRows(widget), 2, "no such row");
+	luaL_argcheck(L, column >= 1 && (size_t)column <= screen->getColumns(widget), 3, "no such column");
+	LuaSandbox::from(L)->charge(L, ROW_TICKS);
+	screen->setCell(widget, (size_t)row - 1, (size_t)column - 1, checkUiText(L, 4));
+	return 0;
+}
+
+int widgetGetRowCount(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(LIST), "getRowCount works on list");
+	lua_pushinteger(L, (lua_Integer)screen->getRows(widget));
+	return 1;
+}
+
+int widgetGetSelected(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(LIST) | UI_KIND(COMBO), "getSelected works on list and comboBox");
+	lua_pushinteger(L, screen->getSelected(widget) + 1);
+	return 1;
+}
+
+int widgetSetSelected(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(COMBO), "setSelected works on comboBox");
+	const int selected = checkInt(L, 2);
+	luaL_argcheck(L, selected >= 1 && (size_t)selected <= screen->getOptions(widget), 2, "no such option");
+	screen->setSelected(widget, selected - 1);
+	return 0;
+}
+
+int widgetSetOptions(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(COMBO), "setOptions works on comboBox");
+	luaL_checktype(L, 2, LUA_TTABLE);
+	LuaSandbox::from(L)->charge(L, MESSAGE_TICKS);
+	screen->setOptions(widget, checkOptions(L, 2));
+	return 0;
+}
+
+int widgetGetValue(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(SLIDER), "getValue works on slider");
+	lua_pushinteger(L, screen->getValue(widget));
+	return 1;
+}
+
+int widgetSetValue(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(SLIDER), "setValue works on slider");
+	screen->setValue(widget, checkInt(L, 2));
+	return 0;
+}
+
+int widgetSetRange(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(SLIDER), "setRange works on slider");
+	const int low = checkInt(L, 2), high = checkInt(L, 3);
+	luaL_argcheck(L, low >= -1000000000 && low < high && high <= 1000000000, 2, "the range must go up, within a billion each way");
+	screen->setRange(widget, low, high);
+	return 0;
+}
+
+int widgetSetFocus(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(EDIT), "setFocus works on edit");
+	screen->setFocus(widget);
+	return 0;
+}
+
+int widgetSetImage(lua_State *L)
+{
+	int widget;
+	auto *screen = checkWidget(L, widget, UI_KIND(IMAGE), "setImage works on image");
+	const char *image = checkUiText(L, 2);
+	if (!screen->hasSurface(image))
+	{
+		return luaL_error(L, "no picture '%s' in the game or in the mod's extraSprites", image);
+	}
+	LuaSandbox::from(L)->charge(L, MESSAGE_TICKS);
+	screen->setImage(widget, image);
+	return 0;
+}
+
+const luaL_Reg UI_WIDGET_METHODS[] = {
+	{ "setVisible", widgetSetVisible },
+	{ "isVisible", widgetIsVisible },
+	{ "setText", widgetSetText },
+	{ "getText", widgetGetText },
+	{ "setPressed", widgetSetPressed },
+	{ "isPressed", widgetIsPressed },
+	{ "addRow", widgetAddRow },
+	{ "clearList", widgetClearList },
+	{ "setCell", widgetSetCell },
+	{ "getRowCount", widgetGetRowCount },
+	{ "getSelected", widgetGetSelected },
+	{ "setSelected", widgetSetSelected },
+	{ "setOptions", widgetSetOptions },
+	{ "getValue", widgetGetValue },
+	{ "setValue", widgetSetValue },
+	{ "setRange", widgetSetRange },
+	{ "setFocus", widgetSetFocus },
+	{ "setImage", widgetSetImage },
+	{ nullptr, nullptr }
+};
+
+/// game.screen(name, fn[, { menu = "STR_NAME", interface = "pauseMenu" }]), only in main.lua.
+int gameScreen(lua_State *L)
+{
+	auto *host = LuaHost::active();
+	auto *sandbox = LuaSandbox::from(L);
+	if (!host || !host->hasCap(sandbox, LuaHost::CAP_SCREENS))
+	{
+		return luaL_error(L, "game.screen needs 'screens' in luaCaps of metadata.yml");
+	}
+	if (!sandbox->isLoading())
+	{
+		return luaL_error(L, "game.screen works only while main.lua runs");
+	}
+	const char *name = checkUiText(L, 1);
+	luaL_checktype(L, 2, LUA_TFUNCTION);
+	lua_settop(L, 3);
+	const char *menu = "", *category = "pauseMenu";
+	int function = 2;
+	if (!lua_isnil(L, 3))
+	{
+		luaL_checktype(L, 3, LUA_TTABLE);
+		// the helpers read the fields from the second place
+		lua_rotate(L, 2, 1);
+		function = 3;
+		checkFields(L, " menu interface ");
+		menu = fieldText(L, "menu");
+		const char *given = fieldText(L, "interface");
+		if (*given)
+		{
+			category = given;
+		}
+	}
+	const int fn = LuaSandbox::keep(L, function);
+	const std::string error = host->declareScreen(sandbox, name, fn, menu, category);
+	if (!error.empty())
+	{
+		sandbox->drop(fn);
+		return luaL_error(L, "%s", error.c_str());
+	}
+	return 0;
+}
+
+/// game.openScreen(name): later, from the moment nothing walks the game's lists.
+int gameOpenScreen(lua_State *L)
+{
+	checkMayQueue(L);
+	auto *host = LuaHost::active();
+	auto *sandbox = LuaSandbox::from(L);
+	if (!host || !host->hasCap(sandbox, LuaHost::CAP_SCREENS))
+	{
+		return luaL_error(L, "game.openScreen needs 'screens' in luaCaps of metadata.yml");
+	}
+	if (sandbox->isLoading())
+	{
+		return luaL_error(L, "game.openScreen works in handlers, main.lua runs before there is a game");
+	}
+	const std::string error = host->queueScreen(sandbox, checkUiText(L, 1));
+	if (!error.empty())
+	{
+		return luaL_error(L, "%s", error.c_str());
+	}
+	return 0;
+}
+
+int gameGetBattle(lua_State *L)
+{
+	auto *saved = LuaScreenState::savedGame();
+	pushOrNil(L, TYPE_BATTLE, saved ? saved->getSavedBattle() : nullptr);
+	return 1;
+}
+
+int gameGetGeoscape(lua_State *L)
+{
+	pushOrNil(L, TYPE_GEOSCAPE, LuaScreenState::savedGame());
+	return 1;
+}
+
+const luaL_Reg API2_GAME_REGS[] = {
+	{ "screen", gameScreen },
+	{ "openScreen", gameOpenScreen },
+	{ "getBattle", gameGetBattle },
+	{ "getGeoscape", gameGetGeoscape },
+	{ nullptr, nullptr }
+};
+
+/// spawn is under construction: on top of the table the mod's page is built from, so not on that page.
 const luaL_Reg API2_BATTLE_REGS[] = {
 	{ "spawnItem", battleSpawnItem },
 	{ nullptr, nullptr }
@@ -2151,6 +2830,11 @@ void setupApi2(lua_State *L, void *)
 	lua_getfield(L, -1, "__index");
 	luaL_setfuncs(L, API2_BATTLE_REGS, 0);
 	lua_pop(L, 2);
+	LuaSandbox::defineType(L, TYPE_UI, UI_METHODS);
+	LuaSandbox::defineType(L, TYPE_UI_WIDGET, UI_WIDGET_METHODS);
+	lua_getglobal(L, "game");
+	luaL_setfuncs(L, API2_GAME_REGS, 0);
+	lua_pop(L, 1);
 }
 
 int pushDone(lua_State *L, void *item)
@@ -2161,14 +2845,47 @@ int pushDone(lua_State *L, void *item)
 
 int capOf(const std::string &word)
 {
-	return word == "spawn" ? LuaHost::CAP_SPAWN : 0;
+	// spawn stays closed in a release until its stage of docs/portal/LUA_MODS_V2.md is through
+	if (word == "spawn")
+	{
+		return std::getenv("OXCE_LUA_API2") ? LuaHost::CAP_SPAWN : 0;
+	}
+	return word == "screens" ? LuaHost::CAP_SCREENS : 0;
 }
 
-/// API 2 stays closed in a release until its stages are through.
-int apiAllowed()
+struct ScreenCall
 {
-	static const int allowed = std::getenv("OXCE_LUA_API2") ? LuaHost::NEXT_API : LuaHost::API_VERSION;
-	return allowed;
+	LuaScreenState *screen;
+	int widget, value;
+	const std::string *text;
+	bool building;
+};
+
+int pushScreenCall(lua_State *L, void *data)
+{
+	auto *call = static_cast<ScreenCall*>(data);
+	int count = 0;
+	if (call->building)
+	{
+		pushUiHandle(L, TYPE_UI, call->screen->getId(), -1);
+		++count;
+	}
+	if (call->widget >= 0)
+	{
+		pushUiHandle(L, TYPE_UI_WIDGET, call->screen->getId(), call->widget);
+		++count;
+	}
+	if (call->value != LuaHost::NO_VALUE)
+	{
+		lua_pushinteger(L, call->value);
+		++count;
+	}
+	if (call->text)
+	{
+		lua_pushlstring(L, call->text->data(), call->text->size());
+		++count;
+	}
+	return count;
 }
 
 struct FireData
@@ -2320,9 +3037,9 @@ LuaHost *LuaHost::create(Mod *mod)
 				entry.capsError = "metadata.yml: luaCaps has an unknown word '" + word + "', the mod's Lua is off";
 			}
 		}
-		if (!info->getLuaCaps().empty() && entry.api < NEXT_API)
+		if (!info->getLuaCaps().empty() && entry.api < API_WITH_CAPS)
 		{
-			entry.capsError = "metadata.yml: luaCaps needs luaApi " + std::to_string(NEXT_API) + ", the mod's Lua is off";
+			entry.capsError = "metadata.yml: luaCaps needs luaApi " + std::to_string(API_WITH_CAPS) + ", the mod's Lua is off";
 		}
 	}
 	if (off > 0)
@@ -2331,8 +3048,9 @@ LuaHost *LuaHost::create(Mod *mod)
 	}
 	if (host)
 	{
-		host->reload();
+		// main.lua declares its screens through it
 		_active = host.get();
+		host->reload();
 	}
 	return host.release();
 }
@@ -2341,6 +3059,7 @@ std::string LuaHost::reload()
 {
 	int loaded = 0, failed = 0;
 	dropQueue();
+	_menuScreens = false;
 	std::fill(std::begin(_handled), std::end(_handled), false);
 	std::set<std::string> names;
 	for (const auto &event : EVENTS)
@@ -2353,10 +3072,12 @@ std::string LuaHost::reload()
 		entry.sandbox.reset();
 		entry.notified = false;
 		entry.turn = -1;
-		if (entry.api > apiAllowed())
+		entry.screenPeriod = -1;
+		entry.screens.clear();
+		if (entry.api > API_VERSION)
 		{
 			++failed;
-			noteError(i, "main.lua", "the mod needs Lua API " + std::to_string(entry.api) + ", this game has " + std::to_string(apiAllowed()) + ", the mod's Lua is off");
+			noteError(i, "main.lua", "the mod needs Lua API " + std::to_string(entry.api) + ", this game has " + std::to_string(API_VERSION) + ", the mod's Lua is off");
 			continue;
 		}
 		if (!entry.capsError.empty())
@@ -2383,7 +3104,7 @@ std::string LuaHost::reload()
 			[id](const std::string &text) { Log(LOG_INFO) << "[lua] " << id << ": " << text; },
 			[](int low, int high) { return RNG::generate(low, high); });
 		entry.sandbox->setErrorFn([this, i](const std::string &event, const std::string &text) { noteError(i, event, text); });
-		if (!entry.sandbox->setup(setupGame, _mod) || (entry.api >= NEXT_API && !entry.sandbox->setup(setupApi2, nullptr)) || !entry.sandbox->load("main.lua", code))
+		if (!entry.sandbox->setup(setupGame, _mod) || (entry.api >= API_WITH_CAPS && !entry.sandbox->setup(setupApi2, nullptr)) || !entry.sandbox->load("main.lua", code))
 		{
 			++failed;
 			Log(LOG_ERROR) << "[lua] " << id << ": main.lua failed, the mod's Lua is off";
@@ -2451,6 +3172,7 @@ void LuaHost::fireOutputs(Event event, std::initializer_list<Arg> args, int *out
 				const size_t queued = _queue.size();
 				const int errors = entry.sandbox->errorCount();
 				entry.callItems = 0;
+				entry.callScreens = 0;
 				entry.sandbox->fire(EVENTS[event].name, pushArgs, &data, out ? takeOutputs : nullptr);
 				// like the output values: a call that failed changes nothing
 				if (entry.sandbox->errorCount() != errors)
@@ -2542,11 +3264,214 @@ void LuaHost::dropQueued(size_t from)
 
 void LuaHost::dropQueue()
 {
+	_screens.clear();
 	if (!_queue.empty())
 	{
 		writeJournal("lua", "queue", std::to_string(_queue.size()) + " queued changes of the battle are dropped: the map they were for is gone");
 		dropQueued(0);
 	}
+}
+
+bool LuaHost::isRunning(const LuaSandbox *sandbox) const
+{
+	for (const auto &entry : _entries)
+	{
+		if (entry.sandbox.get() == sandbox)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+std::string LuaHost::declareScreen(const LuaSandbox *sandbox, const std::string &name, int fn, const std::string &menu, const std::string &category)
+{
+	for (auto &entry : _entries)
+	{
+		if (entry.sandbox.get() != sandbox)
+		{
+			continue;
+		}
+		if (entry.screens.size() >= SCREENS_PER_MOD)
+		{
+			return "game.screen: more than " + std::to_string(SCREENS_PER_MOD) + " screens in one mod";
+		}
+		for (const auto &screen : entry.screens)
+		{
+			if (screen.name == name)
+			{
+				return "game.screen: the mod already has a screen '" + name + "'";
+			}
+		}
+		entry.screens.push_back({ name, menu, category, fn });
+		_menuScreens = _menuScreens || !menu.empty();
+		return std::string();
+	}
+	return "game.screen: not a running mod";
+}
+
+std::string LuaHost::queueScreen(const LuaSandbox *sandbox, const std::string &name)
+{
+	for (size_t i = 0; i < _entries.size(); ++i)
+	{
+		auto &entry = _entries[i];
+		if (entry.sandbox.get() != sandbox)
+		{
+			continue;
+		}
+		for (size_t s = 0; s < entry.screens.size(); ++s)
+		{
+			if (entry.screens[s].name != name)
+			{
+				continue;
+			}
+			auto *saved = LuaScreenState::savedGame();
+			const auto *battle = saved ? saved->getSavedBattle() : nullptr;
+			const int period = battle ? battle->getTurn() : saved ? saved->getDaysPassed() : 0;
+			if (entry.screenPeriod != period)
+			{
+				entry.screenPeriod = period;
+				entry.periodScreens = 0;
+			}
+			if (entry.callScreens >= SCREENS_PER_CALL)
+			{
+				return "game.openScreen: more than " + std::to_string(SCREENS_PER_CALL) + " screen in one call";
+			}
+			if (entry.periodScreens >= SCREENS_PER_PERIOD)
+			{
+				return "game.openScreen: more than " + std::to_string(SCREENS_PER_PERIOD) + " screens in one turn or day";
+			}
+			if (LuaScreenState::openCount() + _screens.size() >= LuaScreenState::MAX_OPEN)
+			{
+				return "game.openScreen: more than " + std::to_string(LuaScreenState::MAX_OPEN) + " screens one on another";
+			}
+			++entry.callScreens;
+			++entry.periodScreens;
+			_screens.emplace_back(i, s);
+			return std::string();
+		}
+		return "game.openScreen: the mod has no screen '" + name + "', declare it with game.screen in main.lua";
+	}
+	return "game.openScreen: not a running mod";
+}
+
+State *LuaHost::nextScreenNow()
+{
+	while (!_screens.empty())
+	{
+		const auto next = _screens.front();
+		_screens.erase(_screens.begin());
+		const auto &entry = _entries[next.first];
+		if (entry.sandbox && next.second < entry.screens.size())
+		{
+			if (auto *state = buildScreen(next.first, entry.screens[next.second]))
+			{
+				return state;
+			}
+		}
+	}
+	return nullptr;
+}
+
+std::vector<std::pair<std::string, std::string>> LuaHost::menuScreens() const
+{
+	std::vector<std::pair<std::string, std::string>> list;
+	for (const auto &entry : _entries)
+	{
+		if (entry.sandbox && !entry.sandbox->isDisabled())
+		{
+			for (const auto &screen : entry.screens)
+			{
+				if (!screen.menu.empty())
+				{
+					list.emplace_back(screen.menu, entry.id);
+				}
+			}
+		}
+	}
+	return list;
+}
+
+State *LuaHost::openMenuScreen(size_t index)
+{
+	for (size_t i = 0; i < _entries.size(); ++i)
+	{
+		const auto &entry = _entries[i];
+		if (entry.sandbox && !entry.sandbox->isDisabled())
+		{
+			for (const auto &screen : entry.screens)
+			{
+				if (!screen.menu.empty() && index-- == 0)
+				{
+					return buildScreen(i, screen);
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
+State *LuaHost::buildScreen(size_t entry, const ScreenInfo &screen)
+{
+	auto &mod = _entries[entry];
+	if (mod.sandbox->isDisabled())
+	{
+		return nullptr;
+	}
+	if (!_mod->getInterface(screen.category, false))
+	{
+		noteError(entry, screen.name, "game.screen: no interface '" + screen.category + "' in the rules, the screen does not open");
+		return nullptr;
+	}
+	auto state = std::make_unique<LuaScreenState>(mod.sandbox.get(), screen.category);
+	const int errors = mod.sandbox->errorCount();
+	ScreenCall call{ state.get(), -1, NO_VALUE, nullptr, true };
+	callScreenFn(mod, screen.fn, screen.name.c_str(), true, &call);
+	if (mod.sandbox->errorCount() != errors)
+	{
+		return nullptr;
+	}
+	state->finish();
+	return state.release();
+}
+
+void LuaHost::callScreen(LuaScreenState *screen, int fn, const char *what, bool pure, int widget, int value, const std::string *text)
+{
+	for (auto &entry : _entries)
+	{
+		if (entry.sandbox.get() == screen->getSandbox())
+		{
+			ScreenCall call{ screen, widget, value, text, false };
+			callScreenFn(entry, fn, what, pure, &call);
+			return;
+		}
+	}
+}
+
+void LuaHost::callScreenFn(Entry &entry, int fn, const char *what, bool pure, void *call)
+{
+	const bool noScreen = g_noScreen, onlyReads = g_onlyReads, wasPure = g_pure, screenReads = g_screenReads;
+	const bool noRandom = entry.sandbox->setNoRandom(pure);
+	g_noScreen = false;
+	g_onlyReads = pure;
+	g_pure = pure;
+	g_screenReads = pure;
+	const size_t queued = _queue.size(), screens = _screens.size();
+	const int errors = entry.sandbox->errorCount();
+	entry.callItems = 0;
+	entry.callScreens = 0;
+	entry.sandbox->callHeld(fn, what, pushScreenCall, call);
+	// like the handlers: a call that failed changes nothing
+	if (entry.sandbox->errorCount() != errors)
+	{
+		dropQueued(queued);
+		_screens.resize(screens);
+	}
+	entry.sandbox->setNoRandom(noRandom);
+	g_noScreen = noScreen;
+	g_onlyReads = onlyReads;
+	g_pure = wasPure;
+	g_screenReads = screenReads;
 }
 
 void LuaHost::runQueueNow(SavedBattleGame *battle)
@@ -2602,6 +3527,7 @@ void LuaHost::runQueueNow(SavedBattleGame *battle)
 		{
 			auto &entry = _entries[now[i].entry];
 			entry.callItems = 0;
+			entry.callScreens = 0;
 			entry.sandbox->callKept(now[i].done, "spawnItem done", pushDone, items[i]);
 		}
 	}

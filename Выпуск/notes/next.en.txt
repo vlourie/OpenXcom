@@ -1,1 +1,2 @@
 ﻿- HD interface: the "Cruiser hull" battle panel is now a dark wine brown matching the ship, not blue-lilac.
+- For mod authors: a Lua mod can now show a screen of its own with buttons, lists, fields and pictures. The player opens such screens with the O key or a button in the pause menu; without such a mod the game does not change. It takes luaApi: 2 and luaCaps: [screens] in metadata.yml, the reference and a recipe are in the launcher.

@@ -12,7 +12,7 @@ namespace Xp.Launcher.Core;
 /// <param name="WrongEngine">the engine it asks for, when that is not ours</param>
 /// <param name="Lua">it carries Lua (<see cref="LuaMods.IsLua"/>)</param>
 public sealed record OwnMod(string Id, string Name, string Version, string Folder, bool IsMaster, bool Active,
-    string? OtherMaster, string? WrongEngine, bool Lua = false);
+    string? OtherMaster, string? WrongEngine, bool Lua = false, IReadOnlyList<string>? Caps = null);
 
 public sealed record SetupRow(ComponentInfo Component, bool Checked, bool Locked, string? Needs, string? WrongEngine)
 {
@@ -275,7 +275,7 @@ public static class Setup
             // the engine's rule (ModInfo::canActivate): a master mod, a mod for any master, or one for this very master
             var otherMaster = !md.IsMaster && !md.AnyMaster && master is not null && md.Master != master ? md.Master : null;
             result.Add(new OwnMod(md.Id, md.Name, md.Version, folder, md.IsMaster,
-                cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, EngineMismatch(m, md.Engine), LuaMods.IsLua(dir, md)));
+                cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, EngineMismatch(m, md.Engine), LuaMods.IsLua(dir, md), md.LuaCaps));
         }
         return result;
     }

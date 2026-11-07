@@ -617,6 +617,12 @@ void LuaSandbox::drop(int kept)
 
 void LuaSandbox::callKept(int kept, const char *what, PushFn push, void *data)
 {
+	callHeld(kept, what, push, data);
+	drop(kept);
+}
+
+void LuaSandbox::callHeld(int kept, const char *what, PushFn push, void *data)
+{
 	if (!_disabled && !_inFire)
 	{
 		_keptCall = kept;
@@ -625,7 +631,6 @@ void LuaSandbox::callKept(int kept, const char *what, PushFn push, void *data)
 		_fireAfter = nullptr;
 		runProtected(what, callProtected);
 	}
-	drop(kept);
 }
 
 void LuaSandbox::runProtected(const char *event, int (*body)(lua_State*))

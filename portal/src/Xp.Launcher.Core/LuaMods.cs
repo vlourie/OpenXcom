@@ -7,7 +7,7 @@ namespace Xp.Launcher.Core;
 /// <summary>A mod with Lua that the author keeps in user/mods: not from a release, not checked by us.</summary>
 /// <param name="OtherMaster">the master it is made for, when that is not the build's; the engine will not switch it on</param>
 /// <param name="Twin">the release installed a checked mod of the same id here too: the engine takes the first it finds</param>
-public sealed record LocalLuaMod(string Id, string Name, string Version, string Folder, bool Active, string? OtherMaster, bool Twin = false);
+public sealed record LocalLuaMod(string Id, string Name, string Version, string Folder, bool Active, string? OtherMaster, bool Twin = false, IReadOnlyList<string>? Caps = null);
 
 /// <summary>The folder or the id a new mod would take is someone else's: nothing was created.</summary>
 public sealed class LuaModNameTakenException(string folder) : Exception($"the name is taken: {folder}")
@@ -106,7 +106,7 @@ public static class LuaMods
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
             if (!IsLua(dir, md)) continue;
             var otherMaster = !md.IsMaster && !md.AnyMaster && master is not null && md.Master != master ? md.Master : null;
-            result.Add(new LocalLuaMod(md.Id, md.Name, md.Version, folder, cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, checkedIds.Contains(md.Id)));
+            result.Add(new LocalLuaMod(md.Id, md.Name, md.Version, folder, cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, checkedIds.Contains(md.Id), md.LuaCaps));
         }
         return result;
     }

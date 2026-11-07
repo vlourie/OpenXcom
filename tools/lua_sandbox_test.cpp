@@ -375,6 +375,21 @@ int main()
 		s->callKept(g_kept[0], "done", nullptr, nullptr);
 		report("kept: an off mod is not called", s->isDisabled() && g_lastLog.find("not called") == std::string::npos, g_lastLog.c_str(), nowMs() - t0);
 		delete s;
+		g_keptCount = 0;
+		s = make();
+		s->setup(setupKeep, nullptr);
+		s->load("main.lua", "local n = 0\ngame.on('tick', function()\n"
+			"  keepIt(function() n = n + 1; print('held', n); if n == 2 then error('held failed') end end)\nend)");
+		s->fire("tick", nullptr, nullptr);
+		s->callHeld(g_kept[0], "click", nullptr, nullptr);
+		report("held: called", g_lastLog.find("held") != std::string::npos && g_lastLog.find('1') != std::string::npos, g_lastLog.c_str(), nowMs() - t0);
+		const int heldErrors = s->errorCount();
+		s->callHeld(g_kept[0], "click", nullptr, nullptr);
+		report("held: error is the mod's error", s->errorCount() == heldErrors + 1 && !s->isDisabled(), "", nowMs() - t0);
+		s->callHeld(g_kept[0], "click", nullptr, nullptr);
+		report("held: stays after a call and an error", g_lastLog.find('3') != std::string::npos, g_lastLog.c_str(), nowMs() - t0);
+		s->drop(g_kept[0]);
+		delete s;
 		g_current = "";
 	}
 

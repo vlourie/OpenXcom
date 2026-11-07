@@ -68,6 +68,9 @@ public sealed class LuaSubmitTests : IDisposable
     [InlineData("id: m\nmaster: x\nluaApi: 1\n", "metadata_version")]
     [InlineData("id: m\nversion: 1\nmaster: x\n", "metadata_luaapi")]
     [InlineData("id: m\nversion: 1\nmaster: x\nluaApi: 99\n", "metadata_luaapi")]
+    [InlineData("id: m\nversion: 1\nmaster: x\nluaApi: 2\nluaCaps: [flight]\n", "metadata_luacaps")]
+    [InlineData("id: m\nversion: 1\nmaster: x\nluaApi: 2\nluaCaps: [spawn]\n", "metadata_luacaps")]
+    [InlineData("id: m\nversion: 1\nmaster: x\nluaApi: 1\nluaCaps: [screens]\n", "metadata_luacaps_api")]
     [InlineData("id: m\nversion: 1\nmaster: x\nluaApi: 1\nrequiredExtendedEngine: Other\n", "metadata_engine")]
     public void Metadata_is_checked(string yml, string code)
     {
