@@ -324,6 +324,9 @@ try {
         } else {
         # русское «Что нового» = notes\next.ru.txt (то, чего нет в CHANGELOG) + раздел «[Не выпущено]» CHANGELOG.md.
         # Английское - только notes\next.en.txt; без него лаунчер покажет русское
+        # R-801: пункт, дописанный в уже вышедший раздел, в «Что нового» не попадёт - такой выпуск не собираем
+        & py -3 (Join-Path $root 'tools\changelog_check.py')
+        if ($LASTEXITCODE -ne 0) { throw 'CHANGELOG.md: есть новые пункты вне «[Не выпущено]» - перенесите их туда (tools\changelog_check.py)' }
         $fromLog = Get-UnreleasedNotes (Join-Path $root 'CHANGELOG.md')
         if ($fromLog) {
             $ruFile = Join-Path $notes 'next.ru.txt'
