@@ -253,7 +253,93 @@ const char *materialOf(const MapData *data)
 	return step == 6 ? "snow" : step == 0 ? "stone" : "dirt";
 }
 
-/// What a hit unit is: the armour immunities give machines and the bloodless (docs/research/combat-fx.md, section 4).
+/// XP-000526: hd/mech.txt, "NAME" a line ('#' a comment; anything after the name is ignored), like blood.txt: the armour types (exact, or a prefix
+/// ending in '*') that are machines whatever their immunities say. A hit on them is drawn as sparks (hit_*_mech), never as blood or the green cloud:
+/// the mod gives a tank "fearImmune: false", and the immunities alone then call it a ghost. Read once (HdFx::clear forgets it with the mods).
+bool mechRead = false;
+std::unordered_map<std::string, int> mechExact;
+std::vector<std::string> mechPrefix;
+/// Whether an armour type is in the list, so the table is searched once for each type.
+std::unordered_map<std::string, int> mechOf;
+
+void readMech()
+{
+	if (mechRead)
+	{
+		return;
+	}
+	mechRead = true;
+	const std::string path = HdSprites::artPath("mech.txt");
+	std::unique_ptr<std::istream> in = FileMap::fileExists(path) ? FileMap::getIStream(path) : nullptr;
+	if (!in)
+	{
+		return;
+	}
+	std::string line;
+	while (std::getline(*in, line))
+	{
+		if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+		{
+			line.erase(0, 3);
+		}
+		std::istringstream fields(line);
+		std::string name;
+		if (!(fields >> name) || name[0] == '#')
+		{
+			continue;
+		}
+		if (name.back() == '*')
+		{
+			name.pop_back();
+			mechPrefix.push_back(name);
+		}
+		else
+		{
+			mechExact[name] = 1;
+		}
+	}
+	Log(LOG_INFO) << "HD machines: " << mechExact.size() << " names and " << mechPrefix.size() << " prefixes of " << path;
+}
+
+/// Is the armour in the machine list (hd/mech.txt)?
+bool inMachineList(const Armor *armor)
+{
+	if (!armor)
+	{
+		return false;
+	}
+	readMech();
+	const std::string &type = armor->getType();
+	auto known = mechOf.find(type);
+	if (known != mechOf.end())
+	{
+		return known->second != 0;
+	}
+	bool listed = mechExact.find(type) != mechExact.end();
+	for (const std::string &prefix : mechPrefix)
+	{
+		listed = listed || type.compare(0, prefix.size(), prefix) == 0;
+	}
+	mechOf[type] = listed ? 1 : 0;
+	return listed;
+}
+
+/// What the armour immunities alone say a hit unit is (docs/research/combat-fx.md, section 4).
+const char *byImmunities(const Armor *armor)
+{
+	const bool bleed = armor->getBleedImmune(), pain = armor->getPainImmune(), zombi = armor->getZombiImmune(), fear = armor->getFearImmune();
+	if (fear && (bleed == pain) && (pain == zombi))
+	{
+		return "mech";          // all four, or fear alone: drones, turrets, the guns of trucks and bunkers
+	}
+	if (bleed && pain && zombi)
+	{
+		return "ghost";         // skeletons, ghosts, slimes
+	}
+	return "flesh";
+}
+
+/// What a hit unit is: the machine list first, then the armour immunities give machines and the bloodless.
 const char *target(const BattleUnit *unit, bool armorHeld)
 {
 	if (armorHeld)
@@ -265,16 +351,11 @@ const char *target(const BattleUnit *unit, bool armorHeld)
 	{
 		return "flesh";
 	}
-	const bool bleed = armor->getBleedImmune(), pain = armor->getPainImmune(), zombi = armor->getZombiImmune(), fear = armor->getFearImmune();
-	if (fear && (bleed == pain) && (pain == zombi))
+	if (inMachineList(armor))
 	{
-		return "mech";          // all four, or fear alone: drones, turrets, the guns of trucks and bunkers
+		return "mech";          // XP-000526: a tank, a hovertank, a disc, a sectopod... whatever "fearImmune: false" makes of them
 	}
-	if (bleed && pain && zombi)
-	{
-		return "ghost";         // skeletons, ghosts, slimes
-	}
-	return "flesh";
+	return byImmunities(armor);
 }
 
 std::string dirName(int direction)
@@ -591,13 +672,25 @@ int bloodRgb(const Armor *armor, bool always)
 	if (rgb >= 0)
 	{
 		// what the effects see in this armour, to know whether its blood or its sparks are drawn
-		const bool bl = armor->getBleedImmune(), pa = armor->getPainImmune(), zo = armor->getZombiImmune(), fe = armor->getFearImmune();
-		const char *kind = fe && bl == pa && pa == zo ? "mech (sparks, no blood)" : bl && pa && zo ? "ghost" : "flesh (blood)";     // as target()
+		const char *how = inMachineList(armor) ? "mech" : byImmunities(armor);     // as target()
+		const char *kind = std::strcmp(how, "mech") == 0 ? "mech (sparks, no blood)" : std::strcmp(how, "ghost") == 0 ? "ghost" : "flesh (blood)";
 		Log(LOG_INFO) << "HD blood: armour " << type << " -> " << std::hex << rgb << std::dec << ", a hit on it is drawn as " << kind
 			<< " (bleed " << armor->getBleedImmune() << " pain " << armor->getPainImmune() << " zombi " << armor->getZombiImmune() << " fear " << armor->getFearImmune() << ")";
 	}
 	bloodOf[type] = rgb;
 	return rgb;
+}
+
+void noteMachine(const Armor *armor)
+{
+	if (!inMachineList(armor))
+	{
+		return;
+	}
+	const char *how = byImmunities(armor);
+	Log(LOG_INFO) << "HD blood: armour " << armor->getType() << " is in the machine list (hd/mech.txt), a hit on it is drawn as mech (sparks, no blood)"
+		<< (std::strcmp(how, "mech") == 0 ? "; its immunities say so too" : std::string("; its immunities alone would make it ") + how)
+		<< " (bleed " << armor->getBleedImmune() << " pain " << armor->getPainImmune() << " zombi " << armor->getZombiImmune() << " fear " << armor->getFearImmune() << ")";
 }
 
 Track trackKind(const Armor *armor)
@@ -1069,6 +1162,10 @@ void clear()
 	hitOf.clear();
 	swingOf.clear();
 	tracerOf.clear();
+	mechRead = false;           // XP-000526: the machine list is read again with the mods
+	mechExact.clear();
+	mechPrefix.clear();
+	mechOf.clear();
 }
 
 }

@@ -3303,6 +3303,10 @@ void Mod::loadHdUiArt()
 	HdBase::clear(masterOffset);
 	HdCraftLights::clear(masterOffset);
 	HdFx::clear();
+	for (const auto &armor : _armors)
+	{
+		HdFx::noteMachine(armor.second); // XP-000526: the log names the armours of hd/mech.txt
+	}
 	HdItems::clear();
 	HdOutline::clear();
 	// the screens' theme pictures (hd/UI/screens/screens.txt), the windows' metal frames with them
