@@ -97,23 +97,32 @@ public sealed class ReviewTests(ITestOutputHelper output)
         // first the numbers themselves, keyed by frame: an order that differs because a number
         // differs is a different fault than an order that differs on equal numbers
         var byFrame = mine.ToDictionary(m => (m.Set, m.Frame), m => m);
+        // The baseline is a snapshot of the HD pack too, and the pack gets repainted. A frame whose HD
+        // picture has a different hash than in the snapshot is no longer the one python measured, so its
+        // colour error is not compared; the frame itself and the original behind it still must be there.
         var worst = ("", 0.0);
+        var repainted = new HashSet<(string Set, int Frame)>();
         foreach (var w in want)
         {
             Assert.True(byFrame.TryGetValue((w.Set, w.Frame), out var got), $"{w.Set} #{w.Frame}: python offers it, the launcher does not");
             Assert.Equal(w.Orig, got.Orig);
-            Assert.Equal(w.Hd, got.Hd);
+            if (w.Hd != got.Hd) { repainted.Add((w.Set, w.Frame)); continue; }
             var diff = Math.Abs(w.Err - got.Err);
             if (diff > worst.Item2) worst = ($"{w.Set} #{w.Frame}: {got.Err} against python's {w.Err}", diff);
         }
-        output.WriteLine($"the widest difference in the colour error: {worst.Item1}");
+        output.WriteLine($"the widest difference in the colour error: {worst.Item1}; frames repainted since the snapshot: {repainted.Count} of {want.Count}");
         Assert.True(worst.Item2 <= 0.1, worst.Item1);
 
-        // then the order: hardest first, so that the frames worth repainting come up first
+        // then the order: hardest first, so that the frames worth repainting come up first. Python's
+        // order holds only while no frame of the set was repainted; otherwise the launcher's own order
+        // must at least be the rule itself: error falling, the lower frame first on equal errors.
         foreach (var set in want.Select(w => w.Set).Distinct())
         {
-            Assert.Equal(want.Where(w => w.Set == set).Select(x => x.Frame),
-                         mine.Where(m => m.Set == set).Select(x => x.Frame));
+            var ours = mine.Where(m => m.Set == set).ToList();
+            if (repainted.All(r => r.Set != set))
+                Assert.Equal(want.Where(w => w.Set == set).Select(x => x.Frame), ours.Select(x => x.Frame));
+            else
+                Assert.Equal(ours.OrderByDescending(x => x.Err).ThenBy(x => x.Frame).Select(x => x.Frame), ours.Select(x => x.Frame));
         }
         output.WriteLine($"frames compared with python: {mine.Count} in {want.Select(w => w.Set).Distinct().Count()} sets");
     }
