@@ -2,6 +2,7 @@
 - HD interface, paper dolls: Nekomimi soldiers now have HD paper dolls: all 41 armors and 48 looks, with new bodies, faces, hair and tails.
 - HD interface, paper dolls: Lokk'Naar soldiers now have HD paper dolls in all 18 armors.
 - HD interface, paper dolls: Ogre soldiers now have HD paper dolls in all 9 armors and 32 looks.
+- HD interface, paper dolls: Hybrid soldiers now have HD paper dolls in all 19 armors and 16 looks.
 - For mod authors: a Lua mod can now show a screen of its own with buttons, lists, fields and pictures. The player opens such screens with the O key or a button in the pause menu; without such a mod the game does not change. It takes luaApi: 2 and luaCaps: [screens] in metadata.yml, the reference and a recipe are in the launcher.
 - For mod authors: a Lua mod can now change funds, base stores and staff, hire soldiers and react to a new hour, day and month, and to the start and end of a battle. The launcher warns about such a mod, and a save remembers it was used.
 - For mod authors: a Lua mod can now create items and units in a battle, remove items and give them to units. It takes luaApi: 2 and luaCaps: [spawn], the guide and a recipe are in the launcher, and the launcher warns about such a mod. If you remove the mod, what it created vanishes from a saved battle and the battle goes on.
