@@ -135,8 +135,9 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 			}
 			return (Uint8)best;
 		};
-		// a darker green, so that it is told from the gold at a glance (XP-000532; the palette's run 51)
-		_hereOnlyColor = nearest(0x7c, 0xa8, 0x30, true);
+		// a darker green, so that it is told from the gold at a glance (XP-000532): the target is the run 51's shade that
+		// nearest() compares (colour + 2), (104,156,40); its letters' face is the next one, (124,168,48)
+		_hereOnlyColor = nearest(0x68, 0x9c, 0x28, true);
 		_thereOnlyColor = nearest(0xe0, 0xc0, 0x60, false);
 	}
 
