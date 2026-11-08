@@ -1883,7 +1883,8 @@ void Map::hdGatherFlashLights()
 		}
 		for (const auto *explosion : drawn)
 		{
-			if (explosion->getHdFx().empty() || explosion->getCurrentFrame() < 0)
+			// XP-000533: under water (depth > 0) no HD blood, so no flash of it either
+			if (explosion->getHdFx().empty() || explosion->getCurrentFrame() < 0 || (_save->getDepth() > 0 && HdFx::isBloodClip(explosion->getHdFx())))
 			{
 				continue;
 			}
@@ -5635,7 +5636,8 @@ void Map::drawTerrain(HdCanvas *surface)
 											screenPosition.y + tile->getTerrainLevel() * _k,
 											indicatorShade);
 									}
-									else if (!_woundIndicator.empty() && itemUnit->getFatalWounds() > 0)
+									// XP-000533: the HD drops of one who bleeds are not drawn under water (the classic still image stays)
+									else if (!_woundIndicator.empty() && itemUnit->getFatalWounds() > 0 && !(_save->getDepth() > 0 && !still))
 									{
 										surface->blit(phase(_woundIndicator),
 											screenPosition.x,
@@ -6624,7 +6626,10 @@ void Map::drawTerrain(HdCanvas *surface)
 			{
 				_camera->convertVoxelToScreen(explosion->getPosition(), &bulletPositionScreen);
 				// HD render: the combat effect clip in place of the classic frames, frame for frame by progress
-				if (Options::oxceHdFx && surface->getHdMode() != HD_MODE_NEAREST && !explosion->getHdFx().empty())
+				// XP-000533: under water (depth > 0) no HD blood: the hit on flesh keeps the classic animation, no spray flies on
+				const bool hdBloodless = _save->getDepth() > 0;
+				if (Options::oxceHdFx && surface->getHdMode() != HD_MODE_NEAREST && !explosion->getHdFx().empty()
+					&& !(hdBloodless && HdFx::isBloodClip(explosion->getHdFx())))
 				{
 					if (explosion->getCurrentFrame() < 0)
 					{
@@ -6634,7 +6639,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					std::string clip = HdFx::colour(explosion->getHdFx(), _game->getMod()->getSurfaceSet(setName)->getFrame(explosion->getStartFrame()), getPalette());
 					const int clipStep = explosion->getCurrentFrame() - explosion->getStartFrame();
 					const HdFrame *hd = nullptr, *stabHd = nullptr;
-					if (Options::oxceHdBloodSpray && explosion->getHdLoss() > 0)
+					if (Options::oxceHdBloodSpray && explosion->getHdLoss() > 0 && !hdBloodless)
 					{
 						// XP-000298: the blood of a bullet that took health flies on along its way (the bullet's way on the screen,
 						// from a voxel back to the hit); a mod without these clips keeps the hit's own blood

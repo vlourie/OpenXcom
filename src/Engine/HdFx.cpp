@@ -586,6 +586,11 @@ std::string hitClip(const RuleItem *damageItem, bool onUnit, const BattleUnit *t
 	return "hit_" + family + "_" + (onUnit ? target(targetUnit, armorHeld) : material(tile, voxelZ));
 }
 
+bool isBloodClip(const std::string &clip)
+{
+	return isBlood(clip);
+}
+
 std::string sprayClip(const std::string &clip, int dx, int dy, int loss, unsigned int seed)
 {
 	static const std::string FLESH = "_flesh";
