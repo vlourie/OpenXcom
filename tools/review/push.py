@@ -94,7 +94,7 @@ def prepare(a, race, vids):
     task, files, _ = voicepkg.build_task(race, vids, card_override, questions, a.card_version)
     bad = voicepkg.validate(task, files)
     hashes = {pkg: voicepkg.sha256_file(p) for pkg, p in files}
-    folder = os.path.join(OUT, race)
+    folder = os.path.join(OUT, voicepkg.safe_name(race))
     write_json(os.path.join(folder, "task.json"), task)
     with open(os.path.join(folder, "files.tsv"), "w", encoding="utf-8-sig", newline="\n") as f:
         f.write("path\tsha256\tsize\n")
@@ -224,6 +224,7 @@ def main():
     ap.add_argument("--tries", type=int, default=60, help="сколько раз повторять send при files_pending")
     ap.add_argument("--pause", type=int, default=3, help="пауза между заданиями при --all, с")
     ap.add_argument("--limit", type=int, default=0, help="при --all - первые N рас")
+    ap.add_argument("--skip", default="", help="при --all - расы через запятую, которые не слать (уже отправлены отдельно)")
     a = ap.parse_args()
 
     if a.list:
@@ -243,6 +244,8 @@ def main():
     races_map = voicepkg.races()
     if a.all:
         order = [(r, v) for r, v, _ in race_order()]
+        skip = {s.strip() for s in a.skip.split(",") if s.strip()}
+        order = [(r, v) for r, v in order if r not in skip]
         if a.limit:
             order = order[: a.limit]
     else:
@@ -253,7 +256,7 @@ def main():
             time.sleep(a.pause)
         try:
             good = push_race(a, client, race, vids)
-        except review_api.ApiError as e:
+        except (review_api.ApiError, OSError) as e:
             print(f"  ОШИБКА {race}: {e}")
             good = False
             if not a.all:

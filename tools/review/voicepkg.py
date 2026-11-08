@@ -172,8 +172,13 @@ def default_card(voices):
             "taboo": _cut(" ".join(dict.fromkeys(taboo)))}
 
 
+def safe_name(race):
+    """Имя расы как имя папки или файла: «Киллбот / Destroid» -> «Киллбот - Destroid»."""
+    return re.sub(r'\s*[\\/:*?"<>|]+\s*', " - ", race).strip(" .") or "_"
+
+
 def card_file(race):
-    return os.path.join(REVIEW, "cards", race + ".json")
+    return os.path.join(REVIEW, "cards", safe_name(race) + ".json")
 
 
 def saved_card(race):
