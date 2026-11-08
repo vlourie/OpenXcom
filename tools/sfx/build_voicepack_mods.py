@@ -106,6 +106,16 @@ def q(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+def read_excluded():
+    """Реплики, стёртые проверяющим (tools/review/apply.py): {(голос, номер)}. Файлов нет - ничего не исключено.
+    Сами ogg и voice.json не трогаются; вернуть реплику - убрать строку из art/review/excluded.tsv."""
+    p = ROOT / "art/review/excluded.tsv"
+    if not p.is_file():
+        return set()
+    with open(p, encoding="utf-8-sig") as f:
+        return {(r["voice"], r["n"]) for r in csv.DictReader(f, delimiter="\t")}
+
+
 def build(lang, hold, events, rows, states, doge_steps, rejected):
     mod = B.MODS / f"hd_voices_{lang}"
     # rmtree не должен уйти через junction или за пределы двух наших модов.
@@ -119,6 +129,7 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
     if mod.exists():
         mod.rename(old)
     used = sorted({r["voice"] for r in rows} - hold)
+    excluded = read_excluded()
     files, sets = [], {}          # sets: голос -> событие -> [номера]
     idx = FIRST
     jobs = []
@@ -126,6 +137,8 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
         chosen = {it["n"]: it for it in states[vid]["lines"] if it.get("chosen") and it["lang"] == lang}
         for ev in events.get(vid, []):
             if ev["event"] not in EVENTS:
+                continue
+            if (vid, ev["line"]) in excluded:
                 continue
             if ev["line"] not in chosen:
                 if (vid, ev['line'], lang) in rejected:
