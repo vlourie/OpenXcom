@@ -2,3 +2,4 @@
 - Battle (HD): "HD corner shading" now follows the shape of an object's picture instead of the whole tile: trees, bushes, crates and wreckage get a truer shadow without a dark diamond, and a well has less shade along its tile edge (ticket XP-000528).
 - HD interface, paper dolls: the cat-girls that have a cat muzzle in the original (panther, blue, Siamese, crested, violet) get a cat muzzle again in HD instead of a human face with lipstick (ticket XP-000531).
 - Globe: the Rustfighter and Black Bomber planes (they flew wing first) and the Kraken now fly nose first (tickets XP-000536, XP-000538).
+- Battle panel (HD), "Niello silver": the frame of the left and right hand cells is thinner, like on "Ship's brass", so the digits for charges and two-handedness lie on the cell floor and are clearly visible (ticket XP-000539).

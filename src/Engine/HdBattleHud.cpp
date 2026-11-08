@@ -1929,7 +1929,9 @@ const std::vector<Uint32> *paintedWell(int W, int H, int k, float thinEdge = 0.0
 	const Uint64 key = (3ull << 60) | ((Uint64)(W & 0xFFFF) << 16) | (Uint64)(H & 0xFFFF);
 	if (std::vector<Uint32> *hit = metalCached(key, k)) return hit;
 	// the pirate well.png's frame (the rim, the groove, the inner lip) as shares of the picture's sides
-	const float fL = 0.116f, fR = 0.122f, fT = 0.101f, fB = 0.104f;
+	// (silver and black, 6, has its own picture: its frame's shares, XP-000539)
+	const bool silver = Options::oxceHdBattleHudColor == 6;
+	const float fL = silver ? 0.118f : 0.116f, fR = silver ? 0.116f : 0.122f, fT = silver ? 0.088f : 0.101f, fB = silver ? 0.090f : 0.104f;
 	std::vector<Uint32> img = thinEdge > 0.0f
 		? resampledFramed(*face, W, H, fL * face->width, fR * face->width, fT * face->height, fB * face->height,
 			std::min(thinEdge, std::min(fL, fR) * (float)W), std::min(thinEdge, std::min(fT, fB) * (float)H))
@@ -2641,7 +2643,8 @@ void HdHudPanel::hdMirror()
 				const int ow = iw - 2 * in + 2 * fw, oh = ih - 2 * in + 2 * fw;
 				// the pirate panel's painted well (frame and floor in one) takes the place of both, under the item
 				// the ship's brass panel (4) only: its frame is thinner, the floor reaches nearer the item (ticket XP-000458)
-				const float thin = Options::oxceHdBattleHudColor == 4 ? 0.75f * ((float)fw + m - (float)in) : 0.0f;
+				// silver and black (6) the same: its frame thinner, so the digits of the counters lie on the floor (XP-000539)
+				const float thin = (Options::oxceHdBattleHudColor == 4 || Options::oxceHdBattleHudColor == 6) ? 0.75f * ((float)fw + m - (float)in) : 0.0f;
 				const std::vector<Uint32> *painted = paintedWell(ow, oh, k, thin);
 				if (painted) ui.drawImage(painted->data(), ow, oh, ix + in - fw, iy + in - fw);
 				else ui.drawImage(wellFloor(iw, ih, k, t.wellBase).data(), iw, ih, ix, iy);
