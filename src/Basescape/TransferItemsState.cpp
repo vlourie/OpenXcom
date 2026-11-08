@@ -135,7 +135,8 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 			}
 			return (Uint8)best;
 		};
-		_hereOnlyColor = nearest(0xb6, 0xe0, 0x8a, true);
+		// a darker green, so that it is told from the gold at a glance (XP-000532; the palette's run 51)
+		_hereOnlyColor = nearest(0x7c, 0xa8, 0x30, true);
 		_thereOnlyColor = nearest(0xe0, 0xc0, 0x60, false);
 	}
 
