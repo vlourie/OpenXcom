@@ -4,3 +4,4 @@
 - Globe: the Rustfighter and Black Bomber planes (they flew wing first) and the Kraken now fly nose first (tickets XP-000536, XP-000538).
 - Battle panel (HD), "Niello silver": the frame of the left and right hand cells is thinner, like on "Ship's brass", so the digits for charges and two-handedness lie on the cell floor and are clearly visible (ticket XP-000539).
 - Base exchange ("only here / only there" option): the green of the "only here" rows is darker, so it is easy to tell from the gold of "only there" (ticket XP-000532).
+- HD interface, soldier sheet: the backpack slot no longer has a black square on 42 armors (Annihilators of all races, the Flying Suit, jetpacks, oxygen, the generator) - the item sits on the inventory background (ticket XP-000537).
