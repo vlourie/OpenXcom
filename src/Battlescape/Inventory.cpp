@@ -503,6 +503,13 @@ void Inventory::drawItems()
 					(Uint16)(invItem->getRules()->getInventoryHeight() * RuleInventory::SLOT_H) });
 				continue;
 			}
+			if (backdrop && invItem->getSlot()->getType() == INV_SLOT && invItem->getRules()->isFixed() && invItem->getSlot()->getId() == "STR_BACK_PACK")
+			{
+				// a built-in item on the backpack place: no grid and no plate under it, the backdrop shows; the item itself is still drawn (XP-000540)
+				blocked.push_back(SDL_Rect{ (Sint16)x, (Sint16)y,
+					(Uint16)(invItem->getRules()->getInventoryWidth() * RuleInventory::SLOT_W),
+					(Uint16)(invItem->getRules()->getInventoryHeight() * RuleInventory::SLOT_H) });
+			}
 			const bool hand = invItem->getSlot()->getType() == INV_HAND;
 			if (hintOn)
 			{

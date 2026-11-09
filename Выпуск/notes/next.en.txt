@@ -8,3 +8,4 @@
 - Site: a Lua mod's description is read from the archive up to 64 KB of real data, whatever size the archive header claims.
 - Battle and globe (HD): an error inside one HD frame drawing job is written to the log and the frame is finished without that slice, instead of the game closing.
 - Lua mods: a mod that spends more than 100 million instructions in one turn is switched off with a line in the log instead of freezing the battle. The count starts again every turn of any side, at the start and end of a battle and every day on the globe. Game mechanics and the old per-call limits are unchanged.
+- HD interface, inventory: under built-in equipment on the backpack place (jetpack, oxygen, generator and the like) there is no longer a grid or dark plate of cells: the equipment backdrop shows instead. The item itself, clicks and weight are unchanged.
