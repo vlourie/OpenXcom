@@ -55,6 +55,8 @@ def main():
     if a.race.lower() == "syn_pasties":             # один круг на голые брони SYN, страница 09.11
         src = os.path.join("art", "doll", "pipe_pilot", "syn", "pasties")
         generator = "doll_syn.py"
+    if a.race.lower() in ("demoness", "doge"):       # FLUX.3 Klein по классике, вещи пса и круг - слоем, страница 09.11
+        generator = "doll_dd"
     if a.race.lower() == "gnome_series":          # портрет в окне шлема и глаза поверх маски, страница 07.11
         src = os.path.join("art", "doll", "pipe_pilot", "gnome", "series")
         generator = "doll_gnome_series.py"
