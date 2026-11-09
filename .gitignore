@@ -50,6 +50,7 @@ Thumbs.db
 [Rr]elease*/
 # сайт и лаунчер - отдельный ЧАСТНЫЙ репозиторий в portal/.git, в публичный Git движка не входит (Vitali 09.11)
 /portal/
+/docs/portal/
 [Tt]est[Rr]esults/
 _UpgradeReport_Files/
 _ReSharper.*/
