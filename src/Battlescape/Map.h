@@ -132,6 +132,8 @@ private:
 	/// HD light: the light field of the tile being drawn, per-frame shade cache, and whether the field is in use this frame.
 	HdLight _hdLight;
 	std::vector<Sint8> _hdShadeCache;
+	/// HD light: the light color of a tile (3 floats a tile, the first < 0 = not computed yet), per frame like the shade cache.
+	std::vector<float> _hdTintCache;
 	bool _hdLightOn = false;
 	int _selectorX, _selectorY;
 	int _mouseX, _mouseY;

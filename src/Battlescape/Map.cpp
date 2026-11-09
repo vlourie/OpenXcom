@@ -1369,6 +1369,7 @@ void Map::draw()
 	if (_hdLightOn)
 	{
 		_hdShadeCache.assign((size_t)_save->getMapSizeXYZ(), (Sint8)-1);
+		_hdTintCache.assign((size_t)_save->getMapSizeXYZ() * 3, -1.0f);
 	}
 	_canvas->setLight(nullptr);
 
@@ -1756,8 +1757,24 @@ void Map::updateHdLight(Tile *tile, int tileShade, const Position &pos)
 {
 	HdLight &light = _hdLight;
 	light.center = tileShade;
+	// the light color of a tile is the same for the nine tiles around it: computed once a frame (like hdShadeOf)
+	auto tintOf = [&](const Tile *t, float *tint)
+	{
+		const size_t index = (size_t)(t - _save->getTile(0)) * 3;
+		if (index + 2 < _hdTintCache.size())
+		{
+			float *c = &_hdTintCache[index];
+			if (c[0] < 0)
+			{
+				hdTintOf(t, c);
+			}
+			tint[0] = c[0]; tint[1] = c[1]; tint[2] = c[2];
+			return;
+		}
+		hdTintOf(t, tint);
+	};
 	float ownTint[3];
-	hdTintOf(tile, ownTint);
+	tintOf(tile, ownTint);
 	// the tiles around: [dy + 1][dx + 1], nullptr where undiscovered or black
 	Tile *around[3][3];
 	int shadeAround[3][3];
@@ -1787,7 +1804,7 @@ void Map::updateHdLight(Tile *tile, int tileShade, const Position &pos)
 			}
 			else
 			{
-				hdTintOf(t, tintAround[dy + 1][dx + 1]);
+				tintOf(t, tintAround[dy + 1][dx + 1]);
 			}
 		}
 	}
