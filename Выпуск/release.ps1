@@ -480,6 +480,25 @@ try {
         }
     }
 
+    # ---- сайт и лаунчер: два ЧАСТНЫХ репозитория внутри E:\OpenXCom (в публичный Git движка не входят, 09.11);
+    #      с каждым выпуском отправляем их на приватный GitHub (резервная копия и история); сбой выпуск не отменяет
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        Step "Приватные репозитории: portal (сайт и лаунчер) и docs/portal"
+        $ea = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        foreach ($pr in @(@{ Dir = 'portal'; Url = 'xp-portal' }, @{ Dir = 'docs\portal'; Url = 'xp-portal-docs' })) {
+            $pd = Join-Path $root $pr.Dir
+            if (-not (Test-Path (Join-Path $pd '.git'))) { Warn "$($pr.Dir): нет .git - не отправлено"; continue }
+            $pdirty = @(& git -C $pd status --porcelain 2>$null)
+            if ($pdirty.Count) { Warn "$($pr.Dir): $($pdirty.Count) незакоммиченных файлов - на GitHub уйдёт только закоммиченное" }
+            & git -C $pd rev-parse -q --verify "refs/tags/hd-$id" *> $null
+            if ($LASTEXITCODE -ne 0) { & git -C $pd tag -a "hd-$id" -m "release $id" 2>&1 | ForEach-Object { "    $_" } | Out-Host }
+            & git -C $pd push origin main "hd-$id" 2>&1 | ForEach-Object { "    $_" } | Out-Host
+            if ($LASTEXITCODE -eq 0) { Ok "https://github.com/vlourie/$($pr.Url) (приватный)" }
+            else { Warn "$($pr.Dir): git push код $LASTEXITCODE - выпуск цел, повторить: git -C $($pr.Dir) push origin main hd-$id" }
+        }
+        $ErrorActionPreference = $ea
+    }
+
     Write-Host ''
     Write-Host ("ГОТОВО за {0:hh\:mm\:ss}: {1} в канале {2}" -f $clock.Elapsed, $id, $(if ($launcherOnly) { $launcherChannel } else { $channel })) -ForegroundColor Green
     Write-Host "Архив: $($zip.FullName)"
