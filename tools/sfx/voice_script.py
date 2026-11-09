@@ -41,6 +41,7 @@ def parse(path=SCRIPT, extra=EXTRA, more=None, only=None):
     # only - голоса, которым брать «сотню» (сборка модов: pinned(), записанные целиком), None - всем
     voices = _read(path, {})
     by_id = {v["id"]: v for v in voices}
+    alts = []
     if extra and Path(extra).exists():
         alts = _read(extra, by_id)
         for v in alts:
@@ -51,6 +52,10 @@ def parse(path=SCRIPT, extra=EXTRA, more=None, only=None):
         voices += alts
     if more and Path(more).exists() and (only is None or only):
         _read(more, by_id, only)
+        # XP-000541: тон голоса («Реплики как») получает и «сотню» основы, иначе у него 42 реплики против 126
+        for v in alts:
+            if only is None or v["same_as"] in only:
+                v["lines"] = [dict(ln) for ln in by_id[v["same_as"]]["lines"]]
     return voices
 
 

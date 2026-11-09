@@ -15,6 +15,9 @@
 
 Только через очередь видеокарты, интерпретатор VoiceFactory абсолютным путём (R-097):
     py -3 tools/gpuq.py add --name voicepack-crew -- D:/VoiceFactory/runtime/venv/Scripts/python.exe tools/sfx/gen_voicepack.py --ids V001-V024
+
+XP-000541: тона голосов типов бойцов (V158-V203, карточки в voice-script-extra.md, таблица voice_tones.tsv). --refs-only -
+только опорные (design); мужским тонам полоса и цель берутся из voice_tones.tsv (столбец f0, TONE_F0), а не из BAND/SAFE.
 """
 import argparse
 import json
@@ -49,6 +52,13 @@ FEMALE_DROP = re.compile(r"\b(?:[Оо]чень )?(?:[Нн]изк|[Гг]рудн)
 SAFE = {"Ж": (215, 500), "М": (75, 115)}      # ниже 75 у pyin - скрип связок, а не тон
 TARGET = {"Ж": 225.0, "М": 105.0}
 SHIFT_MAX = 5.0
+# XP-000541 (09.11, Vitali: «мужские как в пробе, не выше 130 Гц не навязывать»): новые тона мужских типов держатся
+# около нынешнего голоса типа (V006 177-224 Гц, V007 ~193, V018 ~133), а не в полосе М 60-130. Номер -> цель, Гц;
+# полоса и безопасная полоса считаются вокруг неё. Голосам вне словаря таблицы по полу выше не меняются.
+# Словарь заполняет TONE_F0_FILE (tools/sfx/voice_tones.tsv, столбец f0), иначе мужской тон остался бы в полосе 60-130
+TONE_BAND_K, TONE_SAFE_K = (0.72, 1.35), (0.85, 1.18)
+TONE_F0 = {}
+TONE_F0_FILE = Path(__file__).resolve().parent / "voice_tones.tsv"
 DESIGN_GOOD, DESIGN_MAX = 3, 10
 LINE_GOOD, LINE_MAX = 2, 4
 FIX_MORE = 6                                     # --fix: ещё дублей реплике вне полосы
@@ -125,10 +135,28 @@ def apply_orig(v, st):
     return st
 
 
+def load_tones():
+    """Цели мужских тонов из voice_tones.tsv (столбец f0 заполнен только у мужских) в TONE_F0."""
+    if TONE_F0_FILE.exists():
+        import csv
+        with open(TONE_F0_FILE, encoding="utf-8-sig", newline="") as f:
+            for r in csv.DictReader(f, delimiter="\t"):
+                if r.get("f0"):
+                    TONE_F0[r["id"]] = float(r["f0"])
+
+
+def ranges(v):
+    """(полоса, безопасная полоса, цель) голоса: у номеров из TONE_F0 вокруг своей цели, иначе таблицы по полу."""
+    t = TONE_F0.get(v["id"])
+    if t:
+        return ((t * TONE_BAND_K[0], t * TONE_BAND_K[1]), (t * TONE_SAFE_K[0], t * TONE_SAFE_K[1]), t)
+    return BAND.get(v["reg"], (0, 10000)), SAFE.get(v["reg"], (0, 10000)), TARGET.get(v["reg"])
+
+
 def band_ok(v, f0):
     if v["id"] in ORIG:
         return True
-    lo, hi = BAND.get(v["reg"], (0, 10000))
+    lo, hi = ranges(v)[0]
     return lo <= f0 <= hi
 
 
@@ -191,15 +219,16 @@ def expr(wav, sr):
 
 
 def safe_ok(v, f0):
-    lo, hi = SAFE.get(v["reg"], (0, 10000))
+    lo, hi = ranges(v)[1]
     return lo <= f0 <= hi
 
 
 def margin(v, f0):
     """Близость к TARGET в полутонах (не середина полосы: у Ж она 340 Гц - писк, с него реплики падают)."""
-    if v["reg"] not in TARGET:
+    target = ranges(v)[2]
+    if not target:
         return 0
-    return -abs(12 * math.log2(f0 / TARGET[v["reg"]])) if f0 > 0 else -99
+    return -abs(12 * math.log2(f0 / target)) if f0 > 0 else -99
 
 
 def design_text(v):
@@ -210,17 +239,22 @@ def design_text(v):
             direction = ALT_DROP.sub("", direction)
         direction = direction[:1].upper() + direction[1:]
     reg = TIMBRE_WORD if gated(v) else REG_WORD[v["reg"]]
+    t = TONE_F0.get(v["id"])
+    if t and t >= 215:                           # мужской тон 215-255 Гц: модели нужно сказать, что голос не бас
+        reg += ", голос выше среднего"
+    elif t and t < 125:
+        reg += ", голос ниже среднего"
     return f"{reg}. Персонаж: {v['name']}. {direction}"
 
 
 def shift_into_safe(v, path, f0):
     """Опорный вне безопасной полосы - сдвиг высоты к TARGET (librosa); новый файл, f0 после сдвига."""
-    lo, hi = SAFE.get(v["reg"], (0, 10000))
-    if lo <= f0 <= hi or f0 <= 0:
+    (lo, hi), target = ranges(v)[1], ranges(v)[2]
+    if lo <= f0 <= hi or f0 <= 0 or not target:
         return None
     import librosa
     import numpy as np
-    steps = float(np.clip(12 * np.log2(TARGET[v["reg"]] / f0), -SHIFT_MAX, SHIFT_MAX))
+    steps = float(np.clip(12 * np.log2(target / f0), -SHIFT_MAX, SHIFT_MAX))
     wav, sr = sf.read(str(path), dtype="float32")
     wav = librosa.effects.pitch_shift(wav, sr=sr, n_steps=steps)
     out = path.with_name(path.stem + ".shift.wav")
@@ -519,7 +553,11 @@ def main():
                     help="движок реплик: voxcpm2 - вариант E пилота 19.10 (по умолчанию с 21.10), fish - прежний")
     ap.add_argument("--no-more", action="store_true",
                     help="без «сотни» (docs/research/voice-script-100.md): только прежний сценарий")
+    ap.add_argument("--refs-only", action="store_true",
+                    help="только опорные голоса (design, ref.d*.wav и выбор): без реплик и распознавания; "
+                         "реплики потом - тем же запуском без флага")
     a = ap.parse_args()
+    load_tones()
     global COMPILE, DESIGN_SEED_OFF, LINE_ENGINE
     COMPILE = not a.no_compile
     LINE_ENGINE = a.engine
@@ -558,6 +596,11 @@ def main():
     need_ref =[v for v in voices if not states[v["id"]].get("ref")]
     if need_ref:
         design_pass(cfg, need_ref, states)
+    if a.refs_only:
+        bad = [v["id"] for v in voices if not states[v["id"]].get("ref_band", True)]
+        log.info("опорные готовы за %.0f мин: голосов %d, нужен новый круг (вне полосы или ворот): %s",
+                 (time.time() - t0) / 60, len(voices), bad or "нет")
+        return
     need_lines = [v for v in voices if not states[v["id"]].get("lines_done")]
     if need_lines:
         lines_pass(cfg, need_lines, states)
