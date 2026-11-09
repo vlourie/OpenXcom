@@ -57,6 +57,8 @@ def main():
         generator = "doll_syn.py"
     if a.race.lower() in ("demoness", "doge"):       # FLUX.3 Klein по классике, вещи пса и круг - слоем, страница 09.11
         generator = "doll_dd"
+    if a.race.lower() == "lamia":                    # FLUX.3 Klein, головы по педии (R-869), вещи слоем, страница lm_r2 09.11
+        generator = "doll_lm"
     if a.race.lower() == "gnome_series":          # портрет в окне шлема и глаза поверх маски, страница 07.11
         src = os.path.join("art", "doll", "pipe_pilot", "gnome", "series")
         generator = "doll_gnome_series.py"
