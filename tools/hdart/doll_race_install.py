@@ -62,12 +62,18 @@ def main():
     if a.race.lower() == "gnome_series":          # портрет в окне шлема и глаза поверх маски, страница 07.11
         src = os.path.join("art", "doll", "pipe_pilot", "gnome", "series")
         generator = "doll_gnome_series.py"
+    if a.race.lower() == "vehicles":                # техника одной картинкой, FLUX.3 Klein по классике, страница veh 09.11
+        src = os.path.join("art", "doll", "pipe_pilot", "vehicles")
+        generator = "veh_flux"
     files = sorted(f for f in os.listdir(src) if f.endswith(".png"))
     clean = {"ubergal": "pasties_uber/chosen", "gnome": "gnome/pasties/chosen"}.get(a.race.lower())
     if clean:                                       # тела теперь чистые, их ставит <раса>_pasties
         clean = set(os.listdir(os.path.join("art", "doll", "pipe_pilot", *clean.split("/"))))
         files = [f for f in files if f not in clean]
     images ={k.lower() for k in set(db.sprite_files()) | dl.layer_names()}
+    if a.race.lower() == "vehicles":                # MAN_65.SPK и др. - образы extraSprites с files:, не typeSingle
+        with open(os.path.join(os.path.dirname(db.VALUES), "entries.tsv"), encoding="utf-8-sig") as f:
+            images |= {p[1].lower() for p in (ln.split("\t") for ln in f) if len(p) > 1 and p[0] == "extraSprites"}
     alien = [f for f in files if f[:-4] not in images]
     if alien:
         raise SystemExit("нет образа в рулсетах: %d, например %s" % (len(alien), alien[:5]))
