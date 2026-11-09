@@ -14,6 +14,8 @@
 $ErrorActionPreference = 'Stop'
 # ответ хука читается как UTF-8; без этого PowerShell 5.1 пишет в кодировке консоли, и кириллица приходит знаками вопроса
 try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
+# событие приходит в UTF-8; без этого PowerShell 5.1 читает его в кодовой странице консоли (437/866), "Пиратки" в пути превращается в мусор, и запрет на установку игры молча не срабатывает
+try { [Console]::InputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 try {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { exit 0 }
