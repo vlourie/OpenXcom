@@ -1,0 +1,90 @@
+--- identity
+p1_PL_L4_s1 vs scpa_D_L4_s1: identity with D0: lines 1828 / 1828, the same
+p3_PO_L4_s1 vs scpa_D_L4_s1: identity with D0: lines 1828 / 1828, the same
+p4_PL_L4_s2 vs scpa_D_L4_s2: identity with D0: lines 1315 / 1315, the same
+--- repeat and limits
+repeat: lines 1035 / 1035, the same
+hostile decisions per unit-turn: max 8, max n 2; spent over the TU at the decision: 2; patrol-mode shots: {'paid': 4}
+result lines: 1 crash markers: 0
+p4_PN_L4_s2:
+hostile decisions per unit-turn: max 14, max n 2; spent over the TU at the decision: 2; patrol-mode shots: {'paid': 1, 'no TU, not fired': 1}
+result lines: 1 crash markers: 0
+p5_PN_L4_s3:
+hostile decisions per unit-turn: max 6, max n 2; spent over the TU at the decision: 3; patrol-mode shots: {}
+result lines: 1 crash markers: 0
+p5_PL_L4_s3:
+hostile decisions per unit-turn: max 5, max n 2; spent over the TU at the decision: 2; patrol-mode shots: {}
+result lines: 1 crash markers: 0
+--- all
+== p1_PL_L4_s1: turn 10 livesoldiers 35 pdead 3 pwounded 5 phplost 537 hdead 37+0 hattacks 63 hmoves 97
+   objectives: t1 POWER_PLANT left=9 none | t3 POWER_PLANT left=9 few | t6 WELL left=1 none
+   tasks {'walk': 43} fighters in plans 9 repos 0 release {'out': 8}
+   shot orders by unit {} | walk orders by unit {}
+   module hits by plan fighters {'1000035': 1, '1000033': 1} broke {'1000035': 1, '1000033': 1} | others hits 0 broke 0 | player broke 0 | blasts 8
+   broken by source and cell: {'order 0,0': 2}
+   done [] demolished []
+   base before {'facilities': '27', 'rubble': '0', 'labs': '43', 'workshops': '80', 'psilabs': '13', 'training': '30', 'stores': '200', 'quarters': '225', 'hangars': '2'}
+   hostile deaths by turn {1: 10, 2: 11, 3: 9, 4: 1, 5: 4, 7: 1, 10: 1}
+== p3_PO_L4_s1: turn 10 livesoldiers 35 pdead 3 pwounded 5 phplost 537 hdead 37+0 hattacks 63 hmoves 97
+   objectives: -
+   tasks {} fighters in plans 0 repos 0 release {}
+   shot orders by unit {} | walk orders by unit {}
+   module hits by plan fighters {} broke {} | others hits 0 broke 0 | player broke 0 | blasts 0
+   broken by source and cell: {}
+   done [] demolished []
+   base before None
+   hostile deaths by turn {1: 10, 2: 11, 3: 9, 4: 1, 5: 4, 7: 1, 10: 1}
+== p2_PN_L4_s1: turn 5 livesoldiers 35 pdead 3 pwounded 8 phplost 541 hdead 36+1 hattacks 36 hmoves 89
+   objectives: t1 POWER_PLANT left=9 none | t3 POWER_PLANT left=8 few
+   tasks {'walk': 13, 'shoot': 12} fighters in plans 8 repos 0 release {'out': 7}
+   shot orders by unit {'1000015': 5, '1000018': 4, '1000022': 3} | walk orders by unit {'1000015': 1, '1000018': 2, '1000022': 1, '1000034': 1, '1000005': 2, '1000012': 1, '1000013': 2, '1000021': 3}
+   module hits by plan fighters {'1000015': 2, '1000022': 1} broke {'1000015': 1, '1000022': 0} | others hits 0 broke 0 | player broke 0 | blasts 13
+   broken by source and cell: {'order 2,3': 1}
+   done [] demolished []
+   base before {'facilities': '27', 'rubble': '0', 'labs': '43', 'workshops': '80', 'psilabs': '13', 'training': '30', 'stores': '200', 'quarters': '225', 'hangars': '2'}
+   hostile deaths by turn {1: 11, 2: 9, 3: 12, 4: 6, 5: 1}
+== p3_PN_L4_s1: turn 5 livesoldiers 35 pdead 3 pwounded 8 phplost 541 hdead 36+1 hattacks 36 hmoves 89
+   objectives: t1 POWER_PLANT left=9 none | t3 POWER_PLANT left=8 few
+   tasks {'walk': 13, 'shoot': 12} fighters in plans 8 repos 0 release {'out': 7}
+   shot orders by unit {'1000015': 5, '1000018': 4, '1000022': 3} | walk orders by unit {'1000015': 1, '1000018': 2, '1000022': 1, '1000034': 1, '1000005': 2, '1000012': 1, '1000013': 2, '1000021': 3}
+   module hits by plan fighters {'1000015': 2, '1000022': 1} broke {'1000015': 1, '1000022': 0} | others hits 0 broke 0 | player broke 0 | blasts 13
+   broken by source and cell: {'order 2,3': 1}
+   done [] demolished []
+   base before {'facilities': '27', 'rubble': '0', 'labs': '43', 'workshops': '80', 'psilabs': '13', 'training': '30', 'stores': '200', 'quarters': '225', 'hangars': '2'}
+   hostile deaths by turn {1: 11, 2: 9, 3: 12, 4: 6, 5: 1}
+== p4_PL_L4_s2: turn 7 livesoldiers 38 pdead 0 pwounded 4 phplost 176 hdead 34+2 hattacks 48 hmoves 86
+   objectives: t1 POWER_PLANT left=9 none | t2 POWER_PLANT left=9 few
+   tasks {'walk': 33} fighters in plans 8 repos 0 release {'out': 7}
+   shot orders by unit {} | walk orders by unit {}
+   module hits by plan fighters {'1000025': 2} broke {'1000025': 2} | others hits 0 broke 0 | player broke 0 | blasts 0
+   broken by source and cell: {'order 0,0': 2}
+   done [] demolished []
+   base before {'facilities': '27', 'rubble': '0', 'labs': '43', 'workshops': '80', 'psilabs': '13', 'training': '30', 'stores': '200', 'quarters': '225', 'hangars': '2'}
+   hostile deaths by turn {1: 18, 2: 9, 3: 5, 4: 4, 7: 2}
+== p4_PN_L4_s2: turn 5 livesoldiers 37 pdead 1 pwounded 6 phplost 213 hdead 36+0 hattacks 50 hmoves 98
+   objectives: t1 POWER_PLANT left=9 none | t2 POWER_PLANT left=9 few
+   tasks {'walk': 26, 'shoot': 1} fighters in plans 7 repos 0 release {'out': 7}
+   shot orders by unit {'1000015': 1} | walk orders by unit {'1000006': 5, '1000008': 2, '1000014': 3, '1000022': 4, '1000015': 1, '1000021': 5, '1000035': 6}
+   module hits by plan fighters {} broke {} | others hits 0 broke 0 | player broke 0 | blasts 0
+   broken by source and cell: {}
+   done [] demolished []
+   base before {'facilities': '27', 'rubble': '0', 'labs': '43', 'workshops': '80', 'psilabs': '13', 'training': '30', 'stores': '200', 'quarters': '225', 'hangars': '2'}
+   hostile deaths by turn {1: 15, 2: 13, 3: 3, 4: 6, 5: 1}
+== p5_PL_L4_s3: turn 11 livesoldiers 36 pdead 2 pwounded 4 phplost 301 hdead 34+1 hattacks 38 hmoves 79
+   objectives: t1 POWER_PLANT left=9 none | t2 POWER_PLANT left=9 few | t3 POWER_PLANT left=9 few
+   tasks {'walk': 12} fighters in plans 8 repos 0 release {'out': 7}
+   shot orders by unit {} | walk orders by unit {}
+   module hits by plan fighters {} broke {} | others hits 0 broke 0 | player broke 0 | blasts 8
+   broken by source and cell: {}
+   done [] demolished []
+   base before {'facilities': '27', 'rubble': '0', 'labs': '43', 'workshops': '80', 'psilabs': '13', 'training': '30', 'stores': '200', 'quarters': '225', 'hangars': '2'}
+   hostile deaths by turn {1: 16, 2: 9, 3: 8, 4: 2, 6: 1, 7: 1, 11: 1}
+== p5_PN_L4_s3: turn 11 livesoldiers 38 pdead 0 pwounded 1 phplost 100 hdead 35+0 hattacks 31 hmoves 78
+   objectives: t1 POWER_PLANT left=9 none | t2 POWER_PLANT left=9 few
+   tasks {'walk': 17, 'shoot': 8} fighters in plans 7 repos 0 release {'out': 7}
+   shot orders by unit {'1000021': 6, '1000024': 2} | walk orders by unit {'1000013': 1, '1000021': 2, '1000024': 3, '1000007': 5, '1000020': 2, '1000033': 4}
+   module hits by plan fighters {} broke {} | others hits 0 broke 0 | player broke 0 | blasts 6
+   broken by source and cell: {}
+   done [] demolished []
+   base before {'facilities': '27', 'rubble': '0', 'labs': '43', 'workshops': '80', 'psilabs': '13', 'training': '30', 'stores': '200', 'quarters': '225', 'hangars': '2'}
+   hostile deaths by turn {1: 17, 2: 6, 3: 8, 4: 2, 5: 1, 11: 1}

@@ -1,0 +1,69 @@
+runs ['cc3_CO_M6_s1', 'cc8_CC_M6_s1', 'ra1_AN_M6_s1']
+  ART_ESC                             0      132        0
+  ART_ESC_walk                        0        6        0
+  answer_free_attack                  0        0       18
+  answer_free_decisions               0        0      125
+  answer_free_walk                    0        0       99
+  answer_stand_decisions              0        0      143
+  attacks                            96      133      131
+  attacks_ENGAGE                      0       17       46
+  attacks_HOLD                        0       26       26
+  attacks_NONE                       96       81       56
+  attacks_REINFORCE                   0        8        3
+  attacks_SEARCH                      0        1        0
+  decisions                         548      542      475
+  esc_all                            78      189       33
+  esc_dice                           21       26       22
+  esc_kept                            4       16        4
+  esc_kept_walk                       4       16        4
+  esc_walk                           17       46       17
+  free_fallback                       0        0        5
+  free_fallback_walk                  0        0        0
+  stand_mode0                         0        3       60
+  tu_idle_end                      3292     5438     3213
+  unit_turns                        155      179      140
+  ut_art                              0       74        0
+  ut_art_ends_idle                    0       64        0
+  ut_idle_end                        28       71       52
+  walks                             391      263      249
+  reactions                          44       51       55
+  damage dealt                      458      633      766
+  friendly damage                   401      609      936
+  tu rises inside a turn              0        0        0
+  down own by turns 2,4,6,8 [15, 25, 28, 28] [16, 21, 22, 24] [15, 20, 28, 28]
+  down enemy by turns 2,4,6,8 [4, 4, 4, 4] [5, 5, 7, 8] [5, 6, 8, 8]
+closing on the objective (cells, Chebyshev, first decision of the turn to first of the next):
+  ENGAGE_away                         0       10       22
+  ENGAGE_net                          0       46       55
+  ENGAGE_toward                       0       56       77
+  ENGAGE_ut                           0       21       26
+  ENGAGE_walked                       0       91      113
+  REINFORCE_away                      0       27       55
+  REINFORCE_net                       0       54       50
+  REINFORCE_toward                    0       81      105
+  REINFORCE_ut                        0       27       26
+  REINFORCE_walked                    0      155      192
+  SEARCH_away                         0       14        0
+  SEARCH_net                          0       54        0
+  SEARCH_toward                       0       68        0
+  SEARCH_ut                           0       12        0
+  SEARCH_walked                       0       97        0
+guard's sector:
+  unit_turns                          0       72       48
+  in_radius                           0       50       43
+  moved                               0       39       16
+  cells                               0      180       69
+squads, size / standing after turn 3 / at the end:
+   cc3_CO_M6_s1 {}
+   cc8_CC_M6_s1 {'0': (6, 5, 5), '1': (6, 2, 2), '2': (3, 0, 0), '3': (3, 1, 1), '4': (5, 1, 0), '5': (4, 4, 2), '6': (5, 2, 1), '7': (3, 1, 0), '8': (6, 6, 6)}
+   ra1_AN_M6_s1 {'0': (6, 6, 3), '1': (6, 3, 1), '2': (3, 1, 0), '3': (3, 0, 0), '4': (5, 1, 0), '5': (4, 3, 3), '6': (5, 1, 0), '7': (3, 1, 0), '8': (6, 6, 6)}
+answers and where from:
+   cc3_CO_M6_s1 {}
+   cc8_CC_M6_s1 {}
+   ra1_AN_M6_s1 {'answer_STAND': 143, 'from_stay': 147, 'answer_FREE': 125, 'from_arrived': 31, 'from_pause': 3, 'from_completed': 86, 'from_replan': 1}
+results:
+   cc3_CO_M6_s1 [AIRESULT] how=timeout tac=h.rec.in:545,h.rec.out.M2:3,p.rec.in:115 seed=2018001 livesoldiers=4 livealiens=12 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=9 player=8 pdead=4 pout=0 pwounded=8 phplost
+   cc8_CC_M6_s1 [AIRESULT] how=over tac=h.rec.in:535,h.rec.out.M2:7,p.rec.in:92 seed=2018001 livesoldiers=0 livealiens=17 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=8 player=8 pdead=8 pout=0 pwounded=8 phplost=916
+   ra1_AN_M6_s1 [AIRESULT] how=over tac=h.rec.in:471,h.rec.out.M2:4,p.rec.in:80 seed=2018001 livesoldiers=0 livealiens=13 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=6 player=8 pdead=8 pout=0 pwounded=8 phplost=916
+  start TU above the first run's: cc8_CC_M6_s1 0
+  start TU above the first run's: ra1_AN_M6_s1 0

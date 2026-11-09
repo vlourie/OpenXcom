@@ -1,0 +1,349 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Battlescape/HiveCommand.h	2026-11-05 20:48:54.344244400 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/d2/tree/src/Battlescape/HiveCommand.h	2026-11-05 21:44:43.558987800 +0200
+@@ -48,12 +48,22 @@
+ 	int radius = 0, here = 0;
+ 	bool closer = false, skipVisited = false, hasVisited = false;
+ 	const std::vector<int> *reach = 0;
++	const std::vector<const Node *> *refused = 0; // HIVE D2: offers this think's own search has refused
+ 	mutable int accepted = 0;
+ 	bool accepts(const Node *n) const;
+ };
+ /// The steps of the choice, in their order, all by the unit's own kind of search: not yet visited inside the place; visited ones too; nearer the place than the unit stands, for one outside it.
+ const int FIT_RUNGS = 3;
+ 
++/// HIVE D2: what one think's tries came to. tries == freeChecked + freeNone + taken: an offer that did not end the choice is not a try.
++struct PatrolTally
++{
++	std::vector<const Node *> refused;
++	Node *free = 0;
++	bool offer = false, asked = false;
++	int tries = 0, freeChecked = 0, freeNone = 0, offers = 0, refusals = 0, taken = 0;
++};
++
+ /// The flag: 0 off, 1 shadow, 2 active.
+ int mode();
+ /// A battle is set up, all its units placed, before anyone's turn: the organization is made, or kept if a save brought it.
+@@ -76,6 +86,12 @@
+ void perfSearch(long long freeNs, long long stepsNs);
+ /// The time of one path check of a patrol's node and whether it failed. Written, nothing more.
+ void perfPath(long long ns, bool failed);
++/// HIVE D2: the soldier's own search has no path to the offered node; the try goes on with the free one.
++void offerRefused(SavedBattleGame *save, BattleUnit *unit, const Node *offer, PatrolTally &tally, int tryNo, long long ns, int expanded, bool seedMoved);
++/// HIVE D2: the soldier's own search has a path to the offered node.
++void offerTaken(PatrolTally &tally, long long ns);
++/// HIVE D2: a think's choice is over: writes what its tries came to, and whether the fields it took served an offer.
++void patrolEnded(SavedBattleGame *save, BattleUnit *unit, const PatrolTally &tally, const Node *result);
+ /// Inside setupPatrol, a node kept from before: does it go back to the choice? Once a turn for a unit, and not a node the free choice just gave it.
+ bool dropKept(SavedBattleGame *save, BattleUnit *unit, Node *kept);
+ /// After the unit's think: what it really decided.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Battlescape/HiveCommand.cpp	2026-11-05 20:48:54.344748200 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/d2/tree/src/Battlescape/HiveCommand.cpp	2026-11-05 21:44:43.559987800 +0200
+@@ -194,6 +194,7 @@
+ 	std::map<int, Choice> choices;
+ 	std::map<int, TurnStart> starts;
+ 	std::map<int, int> fellBack, dropped; // unit -> the turn
++	std::map<int, std::map<uint64_t, int> > fieldStates; // HIVE D2, only written: unit -> the state a field was made for -> the turn
+ 	std::map<std::pair<long long, int>, bool> lines; // this plan: cell and eye height, contact -> a line of fire
+ 	std::vector<int> flood, floodPrev;
+ 	int floodUnit = -1;
+@@ -203,6 +204,9 @@
+ 	// UNIFIED ARMY SAFETY: where the turn's time goes; only written
+ 	long long intentFloodNs = 0, maxFloodNs = 0, freeNs = 0, stepsNs = 0, pathNs = 0, maxChoiceNs = 0;
+ 	int intentFloods = 0, searches = 0, paths = 0, pathFails = 0;
++	// HIVE D2: offers, and the fields that repeat one or served no offer; only written
++	long long offerRefusedNs = 0, maxOfferRefusedNs = 0, offerTakenNs = 0, repeatFloodNs = 0, repeatTurnFloodNs = 0, unusedFloodNs = 0, pendingFloodNs = 0, sigNs = 0;
++	int offersMade = 0, offersRefused = 0, offersTaken = 0, seedMoved = 0, repeatFloods = 0, repeatTurnFloods = 0, unusedFloods = 0, pendingFloods = 0;
+ 	int thinks = 0, floods = 0;
+ 	int rejFar = 0, rejUnreachable = 0, rejMemo = 0, rejIllegal = 0;
+ 	int stat[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+@@ -337,6 +341,33 @@
+ 	return o.state == BLOCKED || o.state == INTERRUPTED || o.state == CANCELLED;
+ }
+ 
++/// HIVE D2, only written: all a field can depend on: the unit, where everyone is and who has been seen, the map with its fire and smoke.
++uint64_t fieldState(SavedBattleGame *save, const BattleUnit *u)
++{
++	uint64_t h = 1469598103934665603ULL;
++	const auto mix = [&h](uint64_t v) { h = (h ^ v) * 1099511628211ULL; };
++	mix(u->getId());
++	mix(u->getUnitsSpottedThisTurn().size());
++	for (auto *o : *save->getUnits())
++	{
++		const Position p = o->getPosition();
++		mix(o->getId());
++		mix(o->isOut() ? 1 : 0);
++		mix(p.x + p.y * 1000 + p.z * 1000000);
++		mix(o->getTurnsSinceSpottedByFaction(FACTION_HOSTILE) == 0 ? 1 : 0);
++	}
++	for (int i = 0; i < save->getMapSizeXYZ(); ++i)
++	{
++		Tile *t = save->getTile(i);
++		for (int part = 0; part < O_MAX; ++part)
++		{
++			mix((uint64_t)(uintptr_t)t->getMapData((TilePart)part));
++		}
++		mix(t->getFire() * 100 + t->getSmoke());
++	}
++	return h;
++}
++
+ /// The unit's field: once a turn from where it stands, or anew when something said the old one was wrong.
+ const Field &fieldOf(SavedBattleGame *save, BattleUnit *u, bool fresh = false)
+ {
+@@ -362,6 +393,24 @@
+ 	const long long floodNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+ 	hq.floodNs += floodNs;
+ 	hq.maxFloodNs = std::max(hq.maxFloodNs, floodNs);
++	{
++		const auto s0 = std::chrono::steady_clock::now();
++		auto &states = hq.fieldStates[u->getId()];
++		const uint64_t state = fieldState(save, u);
++		const auto was = states.find(state);
++		if (was != states.end())
++		{
++			hq.repeatFloods++;
++			hq.repeatFloodNs += floodNs;
++			if (was->second == save->getTurn())
++			{
++				hq.repeatTurnFloods++;
++				hq.repeatTurnFloodNs += floodNs;
++			}
++		}
++		states[state] = save->getTurn();
++		hq.sigNs += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - s0).count();
++	}
+ 	Log(LOG_INFO) << "[HIVEREACH] turn=" << save->getTurn() << " unit=" << u->getId() << " at=" << pos(f.at) << " tiles=" << f.tiles << " capped=" << (f.capped ? 1 : 0) << " tu=" << u->getTimeUnits();
+ 	return f;
+ }
+@@ -796,7 +845,9 @@
+ 	}
+ 	Log(LOG_INFO) << "[HIVEPERF] turn=" << turn << " phase=turn floods=" << hq.floods << " floodUs=" << hq.floodNs / 1000 << " maxFloodUs=" << hq.maxFloodNs / 1000
+ 		<< " intentFloods=" << hq.intentFloods << " intentFloodUs=" << hq.intentFloodNs / 1000 << " searches=" << hq.searches << " freeUs=" << hq.freeNs / 1000 << " stepsUs=" << hq.stepsNs / 1000 << " maxChoiceUs=" << hq.maxChoiceNs / 1000
+-		<< " paths=" << hq.paths << " pathFails=" << hq.pathFails << " pathUs=" << hq.pathNs / 1000 << " thinks=" << hq.thinks << " thinkUs=" << hq.thinkNs / 1000;
++		<< " paths=" << hq.paths << " pathFails=" << hq.pathFails << " pathUs=" << hq.pathNs / 1000 << " thinks=" << hq.thinks << " thinkUs=" << hq.thinkNs / 1000
++		<< " offers=" << hq.offersMade << " offersRefused=" << hq.offersRefused << " offersTaken=" << hq.offersTaken << " refusedUs=" << hq.offerRefusedNs / 1000 << " maxRefusedUs=" << hq.maxOfferRefusedNs / 1000 << " takenUs=" << hq.offerTakenNs / 1000 << " seedMoved=" << hq.seedMoved
++		<< " repeatFloods=" << hq.repeatFloods << " repeatUs=" << hq.repeatFloodNs / 1000 << " repeatTurnFloods=" << hq.repeatTurnFloods << " repeatTurnUs=" << hq.repeatTurnFloodNs / 1000 << " unusedFloods=" << hq.unusedFloods << " unusedUs=" << hq.unusedFloodNs / 1000 << " sigUs=" << hq.sigNs / 1000;
+ }
+ 
+ void initSectors(SavedBattleGame *save, const std::vector<Squad> &squads)
+@@ -1061,6 +1112,8 @@
+ 	hq.floodNs = 0;
+ 	hq.intentFloodNs = hq.maxFloodNs = hq.freeNs = hq.stepsNs = hq.pathNs = hq.maxChoiceNs = 0;
+ 	hq.intentFloods = hq.searches = hq.paths = hq.pathFails = 0;
++	hq.offerRefusedNs = hq.maxOfferRefusedNs = hq.offerTakenNs = hq.repeatFloodNs = hq.repeatTurnFloodNs = hq.unusedFloodNs = hq.pendingFloodNs = hq.sigNs = 0;
++	hq.offersMade = hq.offersRefused = hq.offersTaken = hq.seedMoved = hq.repeatFloods = hq.repeatTurnFloods = hq.unusedFloods = hq.pendingFloods = 0;
+ 	hq.rejFar = hq.rejUnreachable = hq.rejMemo = hq.rejIllegal = 0;
+ 	hq.starts.clear();
+ 	for (auto *u : *save->getUnits())
+@@ -1582,6 +1635,7 @@
+ 
+ bool NodeFit::accepts(const Node *n) const
+ {
++	if (refused && std::find(refused->begin(), refused->end(), n) != refused->end()) return false;
+ 	if (n->getID() < 0 || n->getID() >= (int)reach->size() || (*reach)[n->getID()] <= 0) return false;
+ 	const int d = dist(center, n->getPosition());
+ 	if (closer ? d >= here : d > radius) return false;
+@@ -1734,7 +1788,10 @@
+ 	if (hq.floods != before)
+ 	{
+ 		hq.intentFloods += hq.floods - before;
+-		hq.intentFloodNs += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
++		const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
++		hq.intentFloodNs += ns;
++		hq.pendingFloods += hq.floods - before;
++		hq.pendingFloodNs += ns;
+ 	}
+ 	return true;
+ }
+@@ -1800,6 +1857,52 @@
+ 	}
+ }
+ 
++void offerRefused(SavedBattleGame *save, BattleUnit *unit, const Node *offer, PatrolTally &tally, int tryNo, long long ns, int expanded, bool seedMoved)
++{
++	const int turn = save->getTurn(), id = unit->getId();
++	tally.refused.push_back(offer);
++	tally.refusals++;
++	hq.offersMade++;
++	hq.offersRefused++;
++	hq.offerRefusedNs += ns;
++	hq.maxOfferRefusedNs = std::max(hq.maxOfferRefusedNs, ns);
++	hq.seedMoved += seedMoved ? 1 : 0;
++	Log(LOG_INFO) << "[HIVEUA] event=OFFER_REFUSED turn=" << turn << " unit=" << id << " try=" << tryNo << " at=" << pos(unit->getPosition()) << " offer=" << pos(const_cast<Node *>(offer)->getPosition())
++		<< " free=" << (tally.free ? pos(tally.free->getPosition()) : std::string("(-1,-1,-1)")) << " expanded=" << expanded << " us=" << ns / 1000 << " seed_moved=" << (seedMoved ? 1 : 0);
++	hq.fellBack[id] = turn;
++	if (tally.free)
++	{
++		Choice &c = hq.choices[id];
++		c.node = tally.free->getPosition();
++		c.changed = false;
++	}
++	else
++	{
++		hq.choices.erase(id);
++	}
++}
++
++void offerTaken(PatrolTally &tally, long long ns)
++{
++	tally.taken++;
++	hq.offersMade++;
++	hq.offersTaken++;
++	hq.offerTakenNs += ns;
++}
++
++void patrolEnded(SavedBattleGame *save, BattleUnit *unit, const PatrolTally &tally, const Node *result)
++{
++	if (tally.taken == 0)
++	{
++		hq.unusedFloods += hq.pendingFloods;
++		hq.unusedFloodNs += hq.pendingFloodNs;
++	}
++	hq.pendingFloods = 0;
++	hq.pendingFloodNs = 0;
++	Log(LOG_INFO) << "[HIVEUA] event=PATROLEND turn=" << save->getTurn() << " unit=" << unit->getId() << " at=" << pos(unit->getPosition()) << " tries=" << tally.tries << " free_checked=" << tally.freeChecked << " free_none=" << tally.freeNone
++		<< " offers=" << tally.offers << " refused=" << tally.refusals << " taken=" << tally.taken << " end=" << (result ? pos(const_cast<Node *>(result)->getPosition()) : std::string("none")) << " tu=" << unit->getTimeUnits();
++}
++
+ bool dropKept(SavedBattleGame *save, BattleUnit *unit, Node *kept)
+ {
+ 	NodeFit fit;
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Battlescape/AIModule.h	2026-11-05 20:48:53.611246600 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/d2/tree/src/Battlescape/AIModule.h	2026-11-05 21:44:43.555987400 +0200
+@@ -28,6 +28,7 @@
+ namespace OpenXcom
+ {
+ 
++namespace HiveCommand { struct PatrolTally; }
+ class SavedBattleGame;
+ class BattleUnit;
+ struct BattleAction;
+@@ -274,7 +275,7 @@
+ 	/// setup a patrol objective.
+ 	void setupPatrol();
+ 	/// UNIFIED ARMY CONTROL V0 (bench): the patrol's new node; with a squad's task, its node where one fits, the free choice where none does.
+-	Node *hivePatrolNode(bool scout, int triesLeft);
++	Node *hivePatrolNode(bool scout, int triesLeft, HiveCommand::PatrolTally &tally);
+ 	/// setup an ambush objective.
+ 	void setupAmbush();
+ 	/// setup a combat objective.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Battlescape/AIModule.cpp	2026-11-05 20:48:54.344244400 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/d2/tree/src/Battlescape/AIModule.cpp	2026-11-05 21:44:43.558987800 +0200
+@@ -1946,13 +1946,10 @@
+ 			}
+ 		}
+ 	}
+-	// UNIFIED ARMY CONTROL V0 (bench): a node kept from before that no longer serves the squad's task goes back to the choice below, once a turn; with nothing else to go to, the unit keeps it
+-	Node *hiveDropped = 0;
+-	if (_toNode != 0 && HiveCommand::dropKept(_save, _unit, _toNode))
+-	{
+-		hiveDropped = _toNode;
+-		freePatrolTarget();
+-		_toNode = 0;
++	// HIVE D2 (bench): the node a soldier keeps stays its own; dropKept only writes where the task would have taken it away
++	if (_toNode != 0)
++	{
++		HiveCommand::dropKept(_save, _unit, _toNode);
+ 	}
+ 	int triesLeft = 5;
+ 	// PATROL_REUSE_PROBE (bench, passive): the node stored in an earlier think is kept without a new search
+@@ -2024,6 +2021,7 @@
+ 	// highest flags, no chance in it) picks it again and all five tries go to the same node; freed after the loop
+ 	std::vector<Node*> noPathNodes;
+ 	const bool oxceFixes = AiProbe::oxceFixes();
++	HiveCommand::PatrolTally hiveTally;
+ 
+ 	while (_toNode == 0 && triesLeft)
+ 	{
+@@ -2118,15 +2116,40 @@
+ 
+ 		if (_toNode == 0)
+ 		{
+-			_toNode = hivePatrolNode(scout, triesLeft);
++			_toNode = hivePatrolNode(scout, triesLeft, hiveTally);
+ 		}
+ 
+ 		if (_toNode != 0)
+ 		{
++			const uint64_t hiveSeed = RNG::getSeed();
+ 			const auto hiveT0 = std::chrono::steady_clock::now();
+ 			_save->getPathfinding()->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
+-			HiveCommand::perfPath(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - hiveT0).count(), _save->getPathfinding()->getStartDirection() == -1);
+-			if (_save->getPathfinding()->getStartDirection() == -1)
++			const long long hiveNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - hiveT0).count();
++			HiveCommand::perfPath(hiveNs, _save->getPathfinding()->getStartDirection() == -1);
++			// HIVE D2 (bench): an offer the soldier's own search refuses costs no try: this same try goes on with the soldier's own node, as if nothing had been offered
++			if (hiveTally.offer && _save->getPathfinding()->getStartDirection() == -1)
++			{
++				HiveCommand::offerRefused(_save, _unit, _toNode, hiveTally, 5 - triesLeft, hiveNs, _save->getPathfinding()->getExpanded(), RNG::getSeed() != hiveSeed);
++				_save->getPathfinding()->abortPath();
++				_toNode = hiveTally.free;
++				if (_toNode != 0)
++				{
++					hiveTally.freeChecked++;
++					const auto hiveT1 = std::chrono::steady_clock::now();
++					_save->getPathfinding()->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
++					HiveCommand::perfPath(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - hiveT1).count(), _save->getPathfinding()->getStartDirection() == -1);
++				}
++			}
++			else if (hiveTally.offer)
++			{
++				HiveCommand::offerTaken(hiveTally, hiveNs);
++			}
++			else if (hiveTally.asked)
++			{
++				hiveTally.freeChecked++;
++			}
++			hiveTally.offer = false;
++			if (_toNode != 0 && _save->getPathfinding()->getStartDirection() == -1)
+ 			{
+ 				if (oxceFixes && !_toNode->isAllocated())
+ 				{
+@@ -2142,10 +2165,9 @@
+ 	{
+ 		node->freeNode();
+ 	}
+-	if (_toNode == 0 && hiveDropped != 0)
++	if (hiveTally.asked)
+ 	{
+-		_toNode = hiveDropped;
+-		Log(LOG_INFO) << "[HIVEUA] event=KEPT_BACK turn=" << _save->getTurn() << " unit=" << _unit->getId();
++		HiveCommand::patrolEnded(_save, _unit, hiveTally, _toNode);
+ 	}
+ 
+ 	const bool staleCleared = staleOld.x != -1;
+@@ -2174,9 +2196,10 @@
+  * UNIFIED ARMY CONTROL V0 (bench): the patrol's new node. The soldier chooses as ever, by the engine's own getPatrolNode and its own dice, among the nodes
+  * its squad's task allows; none of them will do, and the free choice stands. The free choice is always made first and the dice go on from it, so that the
+  * only thing the task changes is the node, and the log can say what the soldier would have done without it. The last two tries of the five carry no condition.
++ * HIVE D2: what this returns in place of the free choice is an offer: setupPatrol checks it and, refused, goes on with tally.free in the same try.
+  * UNIFIED ARMY SAFETY: the condition only narrows the very search the engine gives this unit: scout=false stays among the node's links, and the engine's own fallback to the other kind of search is the free choice's alone.
+  */
+-Node *AIModule::hivePatrolNode(bool scout, int triesLeft)
++Node *AIModule::hivePatrolNode(bool scout, int triesLeft, HiveCommand::PatrolTally &tally)
+ {
+ 	const auto freeChoice = [this, scout]()
+ 	{
+@@ -2188,6 +2211,7 @@
+ 	{
+ 		return freeChoice();
+ 	}
++	fit.refused = &tally.refused;
+ 	const auto t0 = std::chrono::steady_clock::now();
+ 	const uint64_t seedBefore = RNG::getSeed();
+ 	Node *freeNode = freeChoice();
+@@ -2210,7 +2234,13 @@
+ 	}
+ 	HiveCommand::perfSearch(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count(), std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t1).count());
+ 	HiveCommand::patrolChosen(_save, _unit, fit, rung, 5 - triesLeft, freeNode, chosen, scout, _fromNode);
+-	return HiveCommand::mode() == 2 && chosen != 0 ? chosen : freeNode;
++	tally.asked = true;
++	tally.tries++;
++	tally.freeNone += freeNode == 0 ? 1 : 0;
++	tally.free = freeNode;
++	tally.offer = HiveCommand::mode() == 2 && chosen != 0 && chosen != freeNode;
++	tally.offers += tally.offer ? 1 : 0;
++	return tally.offer ? chosen : freeNode;
+ }
+ 
+ /**

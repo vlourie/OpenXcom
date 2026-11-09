@@ -1,0 +1,103 @@
+--- v1/AIModule.cpp
++++ v2/AIModule.cpp
+@@ -974,6 +974,7 @@
+ 	std::map<int, TdContact> memory;
+ 	std::vector<int> contacts;        // the contacts of the plan (seen this turn or the last), in the masks' bit order
+ 	std::map<int, unsigned> seenMask; // tile index -> the contacts that would see a body standing there
++	std::map<long long, char> fire;   // (tile, contact, shooter height) -> a line of fire from there to the contact
+ 	std::vector<TdGroup> groups;
+ 	std::map<int, std::pair<int, char>> role; // unit -> (group index, role)
+ 	std::map<int, std::pair<int, int>> waits; // target -> (turn, turns its group waited) of the last plan
+@@ -1069,6 +1070,7 @@
+ {
+ 	td.contacts.clear();
+ 	td.seenMask.clear();
++	td.fire.clear();
+ 	for (auto &m : td.memory)
+ 	{
+ 		// one the side saw this turn and that is down now: it fell in sight of the side's units (its shot or the body seen)
+@@ -1121,6 +1123,28 @@
+ 	}
+ 	td.seenMask[idx] = m;
+ 	return m;
++}
++
++/// Could the shooter fire at contact i from the tile: the engine's own test of findFirePoint (canTargetUnit from the weapon's
++/// height on that tile to the contact where the side knows it), cached per plan by tile, contact and the shooter's height.
++bool tdFire(SavedBattleGame *save, BattleUnit *shooter, Position t, size_t i)
++{
++	const TdContact &c = td.memory[td.contacts[i]];
++	const int height = shooter->getHeight() + shooter->getFloatHeight();
++	const long long key = ((long long)save->getTileIndex(t) * 32 + (long long)i) * 256 + height;
++	auto it = td.fire.find(key);
++	if (it != td.fire.end())
++		return it->second != 0;
++	Tile *tile = save->getTile(t), *at = save->getTile(c.pos);
++	bool ok = false;
++	if (tile && at)
++	{
++		Position origin = t.toVoxel() + Position(8, 8, height - tile->getTerrainLevel() - 4);
++		Position scan;
++		ok = save->getTileEngine()->canTargetUnit(&origin, at, &scan, shooter, false, at->getUnit() == c.unit ? 0 : c.unit);
++	}
++	td.fire[key] = ok ? 1 : 0;
++	return ok;
+ }
+ 
+ int tdBit(int contact)
+@@ -1190,7 +1214,8 @@
+ 		c.now.assign(n, 0);
+ 		c.near.assign(n, 0);
+ 		const BattleActionCost shot = tdShotCost(bu, w);
+-		auto scan = [&](const std::vector<int> &tiles, std::vector<char> &out)
++		// now: the engine's line of fire from the tile; within two turns: the contact would see the tile (the masks)
++		auto scan = [&](const std::vector<int> &tiles, std::vector<char> &out, bool fire)
+ 		{
+ 			for (int idx : tiles)
+ 			{
+@@ -1198,19 +1223,19 @@
+ 				for (size_t i = 0; i < n; ++i)
+ 				{
+ 					if (!out[i] && !rule->isOutOfRange(Position::distanceSq(t, td.memory[td.contacts[i]].pos))
+-						&& (tdMask(save, t) & (1u << i)))
++						&& (fire ? tdFire(save, bu, t, i) : (tdMask(save, t) & (1u << i)) != 0))
+ 						out[i] = 1;
+ 				}
+ 			}
+ 		};
+ 		if (shot.Time > 0 && bu->getTimeUnits() >= shot.Time)
+ 		{
+-			scan(save->getPathfinding()->findReachable(bu, shot), c.now);
++			scan(save->getPathfinding()->findReachable(bu, shot), c.now, true);
+ 		}
+ 		BattleActionCost two;
+ 		two.Time = -bu->getBaseStats()->tu;
+ 		two.Energy = -bu->getBaseStats()->stamina;
+-		scan(save->getPathfinding()->findReachable(bu, two), c.near);
++		scan(save->getPathfinding()->findReachable(bu, two), c.near, false);
+ 		for (size_t i = 0; i < n; ++i)
+ 			c.near[i] = c.near[i] || c.now[i];
+ 		cands.push_back(c);
+@@ -1440,8 +1465,8 @@
+ 			say(order, "shot");
+ 			return;
+ 		}
+-		// a point it reaches with a shot's time units left that the target would see (a line both ways), in the weapon's range;
+-		// the fewest other contacts on it, then the nearest
++		// a point it reaches with a shot's time units left with the engine's line of fire to the target, in the weapon's range;
++		// the fewest other contacts that would see it, then the nearest
+ 		BattleItem *w = tdRanged(_save, _unit);
+ 		Position best(-1, -1, -1);
+ 		int bestOthers = INT_MAX, bestDist = INT_MAX;
+@@ -1452,9 +1477,9 @@
+ 				const Position t = _save->getTileCoords(idx);
+ 				if (td.reserved.count(idx) || w->getRules()->isOutOfRange(Position::distanceSq(t, c.pos)))
+ 					continue;
++				if (!tdFire(_save, _unit, t, (size_t)bit))
++					continue;
+ 				const unsigned m = tdMask(_save, t);
+-				if (!(m & (1u << bit)))
+-					continue;
+ 				int others = 0;
+ 				for (unsigned x = m & ~(1u << bit); x; x &= x - 1)
+ 					++others;

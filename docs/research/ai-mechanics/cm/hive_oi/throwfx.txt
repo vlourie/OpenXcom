@@ -1,0 +1,32 @@
+==== cc3_CO_M6_s1
+-- turn 1: 5 throws: 1000006>(36,33,2) 1000010>(31,25,2) 1000017>(36,29,2) 1000025>(32,36,2) 1000027>(36,33,2)
+   444 hp 170->74 (lost 96) stun 0->0 direct 0 pos (31,29,2)
+   448 hp 171->153 (lost 18) stun 0->0 direct 0 pos (31,25,2)
+-- turn 2: 1 throws: 1000009>(31,31,0)
+   448 hp 153->149 (lost 4) stun 0->0 direct 0 pos (31,31,0)
+   470 hp 157->109 (lost 48) stun 0->0 direct 48 pos (40,23,0)
+all turns: HP lost by player's units 339 logged as direct 458
+==== scpa_D_M6_s2
+-- turn 2: 1 throws: 1000026>(22,20,0)
+   no HP or stun change
+-- turn 9: 1 throws: 1000024>(42,41,0)
+   444 hp 128->127 (lost 1) stun 0->0 direct 0 pos (23,26,0)
+   448 hp 170->158 (lost 12) stun 0->0 direct 0 pos (42,41,0)
+all turns: HP lost by player's units 378 logged as direct 352
+==== scpa_D_M3_s1
+-- turn 1: 6 throws: 1000013>(39,12,0) 1000019>(15,55,0) 1000032>(53,39,3) 1000035>(33,14,2) 1000044>(53,59,3) 1000045>(8,48,0)
+   444 hp 158->154 (lost 4) stun 0->0 direct 0 pos (33,14,2)
+   448 hp 169->163 (lost 6) stun 0->0 direct 21 pos (32,10,2)
+   470 hp 144->138 (lost 6) stun 0->0 direct 0 pos (34,12,1)
+   520 hp 37->29 (lost 8) stun 17->14 direct 0 pos (36,9,2)
+-- turn 2: 7 throws: 1000010>(44,24,0) 1000011>(44,24,0) 1000028>(32,10,2) 1000034>(52,11,3) 1000042>(37,12,2) 1000050>(19,20,0) 1000055>(32,10,2)
+   444 hp 154->146 (lost 8) stun 0->0 direct 8 pos (31,16,0)
+   470 hp 138->132 (lost 6) stun 0->0 direct 14 pos (42,23,0)
+   503 hp 85->72 (lost 13) stun 0->0 direct 0 pos (44,24,0)
+   520 hp 29->21 (lost 8) stun 14->11 direct 0 pos (25,8,0)
+-- turn 3: 1 throws: 1000055>(32,12,2)
+   444 hp 146->144 (lost 2) stun 0->0 direct 192 pos (28,22,0)
+-- turn 12: 1 throws: 1000020>(51,45,0)
+   448 hp 111->65 (lost 46) stun 0->0 direct 0 pos (42,34,0)
+   545 hp 46->44 (lost 2) stun 0->0 direct 0 pos (54,25,0)
+all turns: HP lost by player's units 285 logged as direct 257

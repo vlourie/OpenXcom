@@ -1,0 +1,347 @@
+﻿# snapshot after.sav
+== L10: fixture turn 3 units 22; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 3541180353010503619 {'h_tu': 664, 'h_moved': 13, 'modes': '0:9,2:1,3:4', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+   D0b: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 3541180353010503619 {'h_tu': 664, 'h_moved': 13, 'modes': '0:9,2:1,3:4', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+   D0n: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 3541180353010503619 {'h_tu': 664, 'h_moved': 13, 'modes': '0:9,2:1,3:4', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+   D1: turn 4 changed {'h': 15, 'n': 1, 'p': 2} rng 3568867506768377867 {'h_tu': 636, 'h_moved': 15, 'modes': '0:9,3:4', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   DH: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 9549419156499976395 {'h_tu': 664, 'h_moved': 13, 'modes': '0:12,2:1,3:1', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+   DS: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 9549419156499976395 {'h_tu': 664, 'h_moved': 13, 'modes': '0:12,2:1,3:1', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+   DSE: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 9549419156499976395 {'h_tu': 664, 'h_moved': 13, 'modes': '0:12,2:1,3:1', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+   U0: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 3541180353010503619 {'h_tu': 664, 'h_moved': 13, 'modes': '0:9,2:1,3:4', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+   U0b: turn 4 changed {'h': 14, 'n': 1, 'p': 1} rng 3541180353010503619 {'h_tu': 664, 'h_moved': 13, 'modes': '0:9,2:1,3:4', 'p_hp': 0, 'p_stun': 6, 'p_down': 0, 'h_down': 1, 'ammo': 2}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=8 (h 6) items=0 tiles=0 other=[]
+     unit 1000000h: AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+     unit 1000002h: AI: {'fromNode': 27, 'toNode': 38, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 27, 'toNode': 38, 'AIMode': 3, 'wasHitBy': []}
+     unit 1000004h: AI: {'fromNode': 29, 'toNode': 1, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 29, 'toNode': 1, 'AIMode': 0, 'wasHitBy': []}
+  DH~DS: IDENTICAL (protocol flags on top of the defaults) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== L11: fixture turn 3 units 34; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   D0b: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   D0n: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   D1: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 14815259346796574103 {'h_tu': 1405, 'h_moved': 25, 'modes': '0:12,1:8,2:1,3:5', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   DH: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   DS: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   DSE: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   U0: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+   U0b: turn 4 changed {'h': 26, 'n': 0, 'p': 2} rng 13576403021639796726 {'h_tu': 1399, 'h_moved': 25, 'modes': '0:13,1:8,2:1,3:4', 'p_hp': 0, 'p_stun': 139, 'p_down': 2, 'h_down': 0, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: IDENTICAL (stand defaults: O1-O4, O6 forced) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  DH~DS: IDENTICAL (protocol flags on top of the defaults) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== L12: fixture turn 3 units 78; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 3422596140382829409 {'h_tu': 2343, 'h_moved': 32, 'modes': '0:27,2:1,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 0}
+   D0b: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 3422596140382829409 {'h_tu': 2343, 'h_moved': 32, 'modes': '0:27,2:1,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 0}
+   D0n: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 3422596140382829409 {'h_tu': 2343, 'h_moved': 32, 'modes': '0:27,2:1,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 0}
+   D1: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 8413834022438582067 {'h_tu': 2303, 'h_moved': 32, 'modes': '0:25,2:1,3:4', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 4, 'ammo': 0}
+   DH: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 10809696209525613904 {'h_tu': 1640, 'h_moved': 30, 'modes': '0:22,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 11, 'ammo': 0}
+   DS: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 10809696209525613904 {'h_tu': 1640, 'h_moved': 30, 'modes': '0:22,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 11, 'ammo': 0}
+   DSE: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 10809696209525613904 {'h_tu': 1640, 'h_moved': 30, 'modes': '0:22,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 11, 'ammo': 0}
+   U0: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 3422596140382829409 {'h_tu': 2343, 'h_moved': 32, 'modes': '0:27,2:1,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 0}
+   U0b: turn 4 changed {'h': 37, 'n': 16, 'p': 1} rng 3422596140382829409 {'h_tu': 2343, 'h_moved': 32, 'modes': '0:27,2:1,3:1', 'p_hp': 0, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=45 (h 24) items=50 tiles=231 other=['nodes', 'totalTiles']
+     unit 1000001h: AI: {'fromNode': 123, 'toNode': 112, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 123, 'toNode': 220, 'AIMode': 0, 'wasHitBy': []}; turnsSinceSpottedByCivilian: 1 | 0
+     unit 1000002h: position: [8, 28, 7] | [8, 30, 6]; energy: 15 | 12; stunlevel: 54 | 23; morale: 99 | 94; fatalWounds: [0, 3, 0, 0, 0, 0] | [0, 8, 0, 0, 0, 0]; AI: {'fromNode': 34, 'toNode': 36, 'AIMode': 0, 'wasHitBy': [1000048]} | {'fromNode': 34, 'toNode': 36, 'AIMode': 0, 'wasHitBy': [1000068]}
+     unit 1000004h: direction: 5 | 3; directionTurret: 5 | 3
+     tiles [(22, 20, 3), (16, 21, 3), (19, 21, 3), (20, 21, 3), (21, 21, 3), (22, 21, 3)]
+  DH~DS: DIFF (protocol flags on top of the defaults) rng== units=1 (h 1) items=0 tiles=0 other=[]
+     unit 1000010h: AI: {'fromNode': 69, 'toNode': 18, 'AIMode': 0, 'wasHitBy': [1000043]} | {'fromNode': 69, 'toNode': 18, 'AIMode': 0, 'wasHitBy': [1000066, 1000043]}
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== L4: fixture turn 3 units 75; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 16, 'n': 0, 'p': 9} rng 14020774711726924416 {'h_tu': 706, 'h_moved': 11, 'modes': '0:6,2:2,3:1', 'p_hp': 60, 'p_stun': -4, 'p_down': 1, 'h_down': 7, 'ammo': 0}
+   D0b: turn 4 changed {'h': 16, 'n': 0, 'p': 9} rng 14020774711726924416 {'h_tu': 706, 'h_moved': 11, 'modes': '0:6,2:2,3:1', 'p_hp': 60, 'p_stun': -4, 'p_down': 1, 'h_down': 7, 'ammo': 0}
+   D0n: turn 4 changed {'h': 16, 'n': 0, 'p': 9} rng 14020774711726924416 {'h_tu': 706, 'h_moved': 11, 'modes': '0:6,2:2,3:1', 'p_hp': 60, 'p_stun': -4, 'p_down': 1, 'h_down': 7, 'ammo': 0}
+   D1: turn 4 changed {'h': 16, 'n': 0, 'p': 11} rng 4822318588393356322 {'h_tu': 652, 'h_moved': 10, 'modes': '0:6,2:1,3:2', 'p_hp': 177, 'p_stun': 67, 'p_down': 2, 'h_down': 7, 'ammo': 0}
+   DH: turn 4 changed {'h': 16, 'n': 0, 'p': 11} rng 4822318588393356322 {'h_tu': 652, 'h_moved': 10, 'modes': '0:6,2:1,3:2', 'p_hp': 177, 'p_stun': 67, 'p_down': 2, 'h_down': 7, 'ammo': 0}
+   DS: turn 4 changed {'h': 16, 'n': 0, 'p': 11} rng 4822318588393356322 {'h_tu': 652, 'h_moved': 10, 'modes': '0:6,2:1,3:2', 'p_hp': 177, 'p_stun': 67, 'p_down': 2, 'h_down': 7, 'ammo': 0}
+   DSE: turn 4 changed {'h': 16, 'n': 0, 'p': 11} rng 4822318588393356322 {'h_tu': 652, 'h_moved': 10, 'modes': '0:6,2:1,3:2', 'p_hp': 177, 'p_stun': 67, 'p_down': 2, 'h_down': 7, 'ammo': 0}
+   U0: turn 4 changed {'h': 16, 'n': 0, 'p': 9} rng 14020774711726924416 {'h_tu': 706, 'h_moved': 11, 'modes': '0:6,2:2,3:1', 'p_hp': 60, 'p_stun': -4, 'p_down': 1, 'h_down': 7, 'ammo': 0}
+   U0b: turn 4 changed {'h': 16, 'n': 0, 'p': 9} rng 14020774711726924416 {'h_tu': 706, 'h_moved': 11, 'modes': '0:6,2:2,3:1', 'p_hp': 60, 'p_stun': -4, 'p_down': 1, 'h_down': 7, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=20 (h 9) items=24 tiles=272 other=['moduleMap', 'nodes']
+     unit 1000004h: visible: None | True; turnsSinceSpottedByXcom: 1 | 0
+     unit 1000015h: direction: 0 | 3; tu: 5 | 33; health: 20 | 0; stunlevel: 12 | 6; morale: 97 | 98; status: 0 | 6
+     unit 1000020h: morale: 100 | 80; turnsSinceSpotted: 255 | 1; kills: 2 | 3; tempUnitStatistics: {'kills': [{'name': 'о Хора Быдлопанк', 'rank': 'STR_RANK_LOK_1', 'race': 'STR_FRIENDLY', ... | {'kills': [{'name': 'о Хора Быдлопанк', 'rank': 'STR_RANK_LOK_1', 'race': 'STR_FRIENDLY', ...
+     tiles [(35, 39, 1), (36, 39, 1), (37, 39, 1), (33, 40, 1), (35, 40, 1), (36, 40, 1)]
+  DH~DS: IDENTICAL (protocol flags on top of the defaults) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== L5: fixture turn 3 units 65; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 24, 'n': 0, 'p': 4} rng 18022711593204239699 {'h_tu': 1431, 'h_moved': 13, 'modes': '0:14,2:4,3:2', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   D0b: turn 4 changed {'h': 24, 'n': 0, 'p': 4} rng 18022711593204239699 {'h_tu': 1431, 'h_moved': 13, 'modes': '0:14,2:4,3:2', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   D0n: turn 4 changed {'h': 24, 'n': 0, 'p': 4} rng 18022711593204239699 {'h_tu': 1431, 'h_moved': 13, 'modes': '0:14,2:4,3:2', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   D1: turn 4 changed {'h': 24, 'n': 0, 'p': 3} rng 17302351770116364470 {'h_tu': 1432, 'h_moved': 15, 'modes': '0:14,2:3,3:2', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   DH: turn 4 changed {'h': 24, 'n': 0, 'p': 3} rng 16357387502277625860 {'h_tu': 1325, 'h_moved': 13, 'modes': '0:11,2:3,3:6', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   DS: turn 4 changed {'h': 24, 'n': 0, 'p': 3} rng 16357387502277625860 {'h_tu': 1325, 'h_moved': 13, 'modes': '0:11,2:3,3:6', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   DSE: turn 4 changed {'h': 24, 'n': 0, 'p': 3} rng 16357387502277625860 {'h_tu': 1325, 'h_moved': 13, 'modes': '0:11,2:3,3:6', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   U0: turn 4 changed {'h': 24, 'n': 0, 'p': 4} rng 18022711593204239699 {'h_tu': 1431, 'h_moved': 13, 'modes': '0:14,2:4,3:2', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   U0b: turn 4 changed {'h': 24, 'n': 0, 'p': 4} rng 18022711593204239699 {'h_tu': 1431, 'h_moved': 13, 'modes': '0:14,2:4,3:2', 'p_hp': -5, 'p_stun': 0, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=11 (h 9) items=4 tiles=407 other=['totalTiles']
+     unit 1000000h: AI: {'fromNode': 152, 'toNode': 268, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 152, 'toNode': 268, 'AIMode': 3, 'wasHitBy': []}
+     unit 1000019h: AI: {'fromNode': 240, 'toNode': 16, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 240, 'toNode': 16, 'AIMode': 3, 'wasHitBy': []}
+     unit 1000042h: position: [55, 37, 0] | [57, 37, 0]; direction: 4 | 7; tu: 2 | 83; energy: 86 | 84; visible: None | True; directionTurret: 4 | 7
+     tiles [(9, 11, 0), (8, 12, 0), (9, 12, 0), (10, 12, 0), (10, 13, 0), (11, 13, 0)]
+  DH~DS: IDENTICAL (protocol flags on top of the defaults) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== M1: fixture turn 3 units 101; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 34, 'n': 3, 'p': 24} rng 12020436620081528206 {'h_tu': 2711, 'h_moved': 28, 'modes': '0:22,2:3,3:4', 'p_hp': 1128, 'p_stun': 599, 'p_down': 16, 'h_down': 5, 'ammo': 0}
+   D0b: turn 4 changed {'h': 34, 'n': 3, 'p': 24} rng 12020436620081528206 {'h_tu': 2711, 'h_moved': 28, 'modes': '0:22,2:3,3:4', 'p_hp': 1128, 'p_stun': 599, 'p_down': 16, 'h_down': 5, 'ammo': 0}
+   D0n: turn 4 changed {'h': 34, 'n': 3, 'p': 24} rng 12020436620081528206 {'h_tu': 2711, 'h_moved': 28, 'modes': '0:22,2:3,3:4', 'p_hp': 1128, 'p_stun': 599, 'p_down': 16, 'h_down': 5, 'ammo': 0}
+   D1: turn 4 changed {'h': 34, 'n': 3, 'p': 22} rng 18331889252584743083 {'h_tu': 2610, 'h_moved': 29, 'modes': '0:20,2:6,3:2', 'p_hp': 1053, 'p_stun': 613, 'p_down': 15, 'h_down': 6, 'ammo': 0}
+   DH: turn 4 changed {'h': 34, 'n': 3, 'p': 22} rng 18331889252584743083 {'h_tu': 2610, 'h_moved': 29, 'modes': '0:20,2:6,3:2', 'p_hp': 1053, 'p_stun': 613, 'p_down': 15, 'h_down': 6, 'ammo': 0}
+   DS: turn 4 changed {'h': 34, 'n': 3, 'p': 22} rng 18331889252584743083 {'h_tu': 2610, 'h_moved': 29, 'modes': '0:20,2:6,3:2', 'p_hp': 1053, 'p_stun': 613, 'p_down': 15, 'h_down': 6, 'ammo': 0}
+   DSE: turn 4 changed {'h': 34, 'n': 3, 'p': 22} rng 18331889252584743083 {'h_tu': 2610, 'h_moved': 29, 'modes': '0:20,2:6,3:2', 'p_hp': 1053, 'p_stun': 613, 'p_down': 15, 'h_down': 6, 'ammo': 0}
+   U0: turn 4 changed {'h': 34, 'n': 3, 'p': 24} rng 12020436620081528206 {'h_tu': 2711, 'h_moved': 28, 'modes': '0:22,2:3,3:4', 'p_hp': 1128, 'p_stun': 599, 'p_down': 16, 'h_down': 5, 'ammo': 0}
+   U0b: turn 4 changed {'h': 34, 'n': 3, 'p': 24} rng 12020436620081528206 {'h_tu': 2711, 'h_moved': 28, 'modes': '0:22,2:3,3:4', 'p_hp': 1128, 'p_stun': 599, 'p_down': 16, 'h_down': 5, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=64 (h 26) items=59 tiles=264 other=['moduleMap', 'nodes', 'totalTiles']
+     unit 1000000h: position: [32, 27, 2] | [31, 26, 2]; direction: 2 | 3; tu: 45 | 9; energy: 80 | 77; health: 72 | 12; stunlevel: 0 | 14
+     unit 1000003h: position: [6, 14, 2] | [4, 15, 3]; direction: 2 | 5; tu: 1 | 51; energy: 74 | 45; AI: {'fromNode': 700, 'toNode': 216, 'AIMode': 2, 'wasHitBy': []} | {'fromNode': 216, 'toNode': 427, 'AIMode': 0, 'wasHitBy': []}; motionPoints: 8 | 48
+     unit 1000004h: position: [5, 11, 3] | [6, 11, 3]; direction: 5 | 2; tu: 53 | 55; energy: 33 | 32; AI: {'fromNode': 215, 'toNode': 166, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 215, 'toNode': 568, 'AIMode': 3, 'wasHitBy': []}; directionTurret: 5 | 2
+     tiles [(34, 0, 2), (35, 0, 2), (36, 0, 2), (43, 1, 2), (13, 2, 2), (11, 3, 2)]
+  DH~DS: DIFF (protocol flags on top of the defaults) rng== units=1 (h 1) items=0 tiles=0 other=[]
+     unit 1000012h: AI: {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': [178]}
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== M10: fixture turn 3 units 53; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 46, 'n': 0, 'p': 3} rng 14667806817309683893 {'h_tu': 3589, 'h_moved': 41, 'modes': '0:36,2:3,3:5', 'p_hp': 88, 'p_stun': 24, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   D0b: turn 4 changed {'h': 46, 'n': 0, 'p': 3} rng 14667806817309683893 {'h_tu': 3589, 'h_moved': 41, 'modes': '0:36,2:3,3:5', 'p_hp': 88, 'p_stun': 24, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   D0n: turn 4 changed {'h': 46, 'n': 0, 'p': 3} rng 14667806817309683893 {'h_tu': 3589, 'h_moved': 41, 'modes': '0:36,2:3,3:5', 'p_hp': 88, 'p_stun': 24, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   D1: turn 4 changed {'h': 46, 'n': 0, 'p': 3} rng 2271788827530148767 {'h_tu': 3494, 'h_moved': 43, 'modes': '0:34,2:4,3:4', 'p_hp': 59, 'p_stun': 2, 'p_down': 0, 'h_down': 4, 'ammo': 0}
+   DH: turn 4 changed {'h': 46, 'n': 0, 'p': 4} rng 15382509228650377424 {'h_tu': 3522, 'h_moved': 41, 'modes': '0:35,2:2,3:6', 'p_hp': 81, 'p_stun': 20, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   DS: turn 4 changed {'h': 46, 'n': 0, 'p': 4} rng 838384036324783440 {'h_tu': 3520, 'h_moved': 41, 'modes': '0:35,2:1,3:7', 'p_hp': 74, 'p_stun': 19, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   DSE: turn 4 changed {'h': 46, 'n': 0, 'p': 4} rng 838384036324783440 {'h_tu': 3520, 'h_moved': 41, 'modes': '0:35,2:1,3:7', 'p_hp': 74, 'p_stun': 19, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   U0: turn 4 changed {'h': 46, 'n': 0, 'p': 3} rng 14667806817309683893 {'h_tu': 3589, 'h_moved': 41, 'modes': '0:36,2:3,3:5', 'p_hp': 88, 'p_stun': 24, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   U0b: turn 4 changed {'h': 46, 'n': 0, 'p': 3} rng 14667806817309683893 {'h_tu': 3589, 'h_moved': 41, 'modes': '0:36,2:3,3:5', 'p_hp': 88, 'p_stun': 24, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=23 (h 19) items=8 tiles=130 other=['nodes', 'totalTiles']
+     unit 1000001h: position: [34, 12, 0] | [33, 14, 0]; tu: 3 | 13; energy: 47 | 52; motionPoints: 36 | 28
+     unit 1000002h: position: [37, 33, 0] | [37, 32, 0]; direction: 1 | 0; tu: 5 | 1; energy: 56 | 54; health: 17 | 36; fire: 2 | 0
+     unit 1000004h: fire: 0 | 7
+     tiles [(44, 0, 0), (45, 0, 0), (46, 0, 0), (47, 0, 0), (44, 1, 0), (45, 1, 0)]
+  DH~DS: DIFF (protocol flags on top of the defaults) rng=!= units=11 (h 7) items=0 tiles=59 other=['totalTiles']
+     unit 1000002h: fatalShotBodyPart: 1 | None
+     unit 1000004h: fire: 7 | 5
+     unit 1000010h: stunlevel: 1 | 0
+     tiles [(52, 3, 0), (53, 4, 0), (43, 5, 0), (40, 9, 0), (38, 10, 0), (39, 10, 0)]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== M11: fixture turn 3 units 33; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 22, 'n': 0, 'p': 2} rng 13799516303544783975 {'h_tu': 1379, 'h_moved': 18, 'modes': '0:18,2:1,3:2', 'p_hp': 45, 'p_stun': -10, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   D0b: turn 4 changed {'h': 22, 'n': 0, 'p': 2} rng 13799516303544783975 {'h_tu': 1379, 'h_moved': 18, 'modes': '0:18,2:1,3:2', 'p_hp': 45, 'p_stun': -10, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   D0n: turn 4 changed {'h': 22, 'n': 0, 'p': 2} rng 13799516303544783975 {'h_tu': 1379, 'h_moved': 18, 'modes': '0:18,2:1,3:2', 'p_hp': 45, 'p_stun': -10, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   D1: turn 4 changed {'h': 22, 'n': 0, 'p': 2} rng 14138354400464365916 {'h_tu': 1463, 'h_moved': 18, 'modes': '0:16,2:1,3:4', 'p_hp': 54, 'p_stun': 14, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   DH: turn 4 changed {'h': 22, 'n': 0, 'p': 2} rng 15286695943747437842 {'h_tu': 1379, 'h_moved': 18, 'modes': '0:18,2:1,3:2', 'p_hp': 45, 'p_stun': -10, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   DS: turn 4 changed {'h': 23, 'n': 0, 'p': 2} rng 4709197458987296586 {'h_tu': 1403, 'h_moved': 19, 'modes': '0:17,2:1,3:3', 'p_hp': 63, 'p_stun': 32, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   DSE: turn 4 changed {'h': 23, 'n': 0, 'p': 2} rng 4709197458987296586 {'h_tu': 1403, 'h_moved': 19, 'modes': '0:17,2:1,3:3', 'p_hp': 63, 'p_stun': 32, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   U0: turn 4 changed {'h': 22, 'n': 0, 'p': 2} rng 13799516303544783975 {'h_tu': 1379, 'h_moved': 18, 'modes': '0:18,2:1,3:2', 'p_hp': 45, 'p_stun': -10, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+   U0b: turn 4 changed {'h': 22, 'n': 0, 'p': 2} rng 13799516303544783975 {'h_tu': 1379, 'h_moved': 18, 'modes': '0:18,2:1,3:2', 'p_hp': 45, 'p_stun': -10, 'p_down': 0, 'h_down': 0, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=0 (h 0) items=0 tiles=0 other=[]
+  DH~DS: DIFF (protocol flags on top of the defaults) rng=!= units=5 (h 4) items=0 tiles=0 other=['nodes']
+     unit 1000014h: position: [44, 47, 0] | [48, 44, 0]; direction: 0 | 1; tu: 196 | 174; energy: 140 | 129; AI: {'fromNode': 113, 'toNode': -1, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 112, 'toNode': -1, 'AIMode': 3, 'wasHitBy': []}; motionPoints: 0 | 12
+     unit 1000019h: AI: {'fromNode': 10, 'toNode': 61, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 10, 'toNode': 61, 'AIMode': 3, 'wasHitBy': []}
+     unit 1000021h: position: [8, 36, 0] | [9, 37, 0]; direction: 1 | 2; tu: 4 | 2; energy: 18 | 17; AI: {'fromNode': 105, 'toNode': 2, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 105, 'toNode': 100, 'AIMode': 0, 'wasHitBy': []}; motionPoints: 100 | 104
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== M2: fixture turn 3 units 142; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 56, 'n': 37, 'p': 2} rng 9183038627453318928 {'h_tu': 4647, 'h_moved': 42, 'modes': '0:43,2:7,3:7', 'p_hp': 5, 'p_stun': 12, 'p_down': 0, 'h_down': 4, 'ammo': 1}
+   D0b: turn 4 changed {'h': 56, 'n': 37, 'p': 2} rng 9183038627453318928 {'h_tu': 4647, 'h_moved': 42, 'modes': '0:43,2:7,3:7', 'p_hp': 5, 'p_stun': 12, 'p_down': 0, 'h_down': 4, 'ammo': 1}
+   D0n: turn 4 changed {'h': 56, 'n': 37, 'p': 2} rng 9183038627453318928 {'h_tu': 4647, 'h_moved': 42, 'modes': '0:43,2:7,3:7', 'p_hp': 5, 'p_stun': 12, 'p_down': 0, 'h_down': 4, 'ammo': 1}
+   D1: turn 4 changed {'h': 59, 'n': 37, 'p': 2} rng 4715546652143579153 {'h_tu': 5140, 'h_moved': 44, 'modes': '0:38,2:7,3:14', 'p_hp': 30, 'p_stun': 48, 'p_down': 0, 'h_down': 2, 'ammo': 0}
+   DH: turn 4 changed {'h': 56, 'n': 37, 'p': 2} rng 6215538349999004248 {'h_tu': 4938, 'h_moved': 41, 'modes': '0:46,2:8,3:5', 'p_hp': 5, 'p_stun': 18, 'p_down': 0, 'h_down': 2, 'ammo': 1}
+   DS: turn 4 changed {'h': 57, 'n': 37, 'p': 2} rng 17116199999048206149 {'h_tu': 5254, 'h_moved': 44, 'modes': '0:46,2:5,3:8', 'p_hp': 5, 'p_stun': 17, 'p_down': 0, 'h_down': 2, 'ammo': 1}
+   DSE: turn 4 changed {'h': 57, 'n': 37, 'p': 2} rng 17116199999048206149 {'h_tu': 5254, 'h_moved': 44, 'modes': '0:46,2:5,3:8', 'p_hp': 5, 'p_stun': 17, 'p_down': 0, 'h_down': 2, 'ammo': 1}
+   U0: turn 4 changed {'h': 56, 'n': 37, 'p': 2} rng 9183038627453318928 {'h_tu': 4647, 'h_moved': 42, 'modes': '0:43,2:7,3:7', 'p_hp': 5, 'p_stun': 12, 'p_down': 0, 'h_down': 4, 'ammo': 1}
+   U0b: turn 4 changed {'h': 56, 'n': 37, 'p': 2} rng 9183038627453318928 {'h_tu': 4647, 'h_moved': 42, 'modes': '0:43,2:7,3:7', 'p_hp': 5, 'p_stun': 12, 'p_down': 0, 'h_down': 4, 'ammo': 1}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=83 (h 54) items=55 tiles=417 other=['nodes', 'totalTiles']
+     unit 1000000h: position: [20, 27, 1] | [12, 35, 4]; direction: 2 | 3; tu: 50 | 13; energy: 46 | 61; morale: 90 | 92; AI: {'fromNode': 397, 'toNode': 3, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 397, 'toNode': 160, 'AIMode': 2, 'wasHitBy': []}
+     unit 1000001h: position: [19, 37, 0] | [27, 31, 1]; direction: 4 | 2; tu: 50 | 126; energy: 46 | 80; morale: 92 | 94; motionPoints: 68 | 0
+     unit 1000002h: position: [36, 22, 0] | [33, 28, 0]; tu: 84 | 3; energy: 59 | 50; stunlevel: 15 | 34; morale: 4 | 55; fatalWounds: [0, 12, 0, 0, 0, 0] | [0, 0, 2, 0, 0, 0]
+     tiles [(15, 4, 0), (16, 4, 0), (17, 5, 0), (18, 6, 0), (19, 6, 0), (18, 7, 0)]
+  DH~DS: DIFF (protocol flags on top of the defaults) rng=!= units=65 (h 38) items=51 tiles=296 other=['nodes', 'totalTiles']
+     unit 1000000h: position: [12, 35, 4] | [13, 31, 4]; direction: 3 | 1; tu: 13 | 50; energy: 61 | 52; stunlevel: 0 | 2; AI: {'fromNode': 397, 'toNode': 160, 'AIMode': 2, 'wasHitBy': []} | {'fromNode': 397, 'toNode': 20, 'AIMode': 0, 'wasHitBy': []}
+     unit 1000001h: position: [27, 31, 1] | [13, 26, 1]; direction: 2 | 7; tu: 126 | 52; energy: 80 | 45; motionPoints: 0 | 64; directionTurret: 2 | 7
+     unit 1000002h: position: [33, 28, 0] | [37, 28, 0]; direction: 3 | 0; tu: 3 | 4; health: 0 | 72; stunlevel: 34 | 1; morale: 55 | 92
+     tiles [(15, 4, 0), (16, 4, 0), (17, 5, 0), (18, 6, 0), (19, 6, 0), (18, 7, 0)]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== M3: fixture turn 3 units 91; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 53, 'n': 12, 'p': 4} rng 1431211641155286735 {'h_tu': 2472, 'h_moved': 43, 'modes': '0:31,2:8,3:1', 'p_hp': 191, 'p_stun': -4, 'p_down': 0, 'h_down': 7, 'ammo': 0}
+   D0b: turn 4 changed {'h': 53, 'n': 12, 'p': 4} rng 1431211641155286735 {'h_tu': 2472, 'h_moved': 43, 'modes': '0:31,2:8,3:1', 'p_hp': 191, 'p_stun': -4, 'p_down': 0, 'h_down': 7, 'ammo': 0}
+   D0n: turn 4 changed {'h': 53, 'n': 12, 'p': 4} rng 1431211641155286735 {'h_tu': 2472, 'h_moved': 43, 'modes': '0:31,2:8,3:1', 'p_hp': 191, 'p_stun': -4, 'p_down': 0, 'h_down': 7, 'ammo': 0}
+   D1: turn 4 changed {'h': 53, 'n': 12, 'p': 3} rng 1049006580530957373 {'h_tu': 2747, 'h_moved': 43, 'modes': '0:33,2:8,3:3', 'p_hp': 43, 'p_stun': -6, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   DH: turn 4 changed {'h': 53, 'n': 12, 'p': 5} rng 11710534529944454380 {'h_tu': 2387, 'h_moved': 41, 'modes': '0:27,2:5,3:5', 'p_hp': 182, 'p_stun': -5, 'p_down': 1, 'h_down': 10, 'ammo': 0}
+   DS: turn 4 changed {'h': 53, 'n': 12, 'p': 5} rng 11710534529944454380 {'h_tu': 2387, 'h_moved': 41, 'modes': '0:27,2:5,3:5', 'p_hp': 182, 'p_stun': -5, 'p_down': 1, 'h_down': 10, 'ammo': 0}
+   DSE: turn 4 changed {'h': 53, 'n': 12, 'p': 5} rng 11710534529944454380 {'h_tu': 2387, 'h_moved': 41, 'modes': '0:27,2:5,3:5', 'p_hp': 182, 'p_stun': -5, 'p_down': 1, 'h_down': 10, 'ammo': 0}
+   U0: turn 4 changed {'h': 53, 'n': 12, 'p': 4} rng 1431211641155286735 {'h_tu': 2472, 'h_moved': 43, 'modes': '0:31,2:8,3:1', 'p_hp': 191, 'p_stun': -4, 'p_down': 0, 'h_down': 7, 'ammo': 0}
+   U0b: turn 4 changed {'h': 53, 'n': 12, 'p': 4} rng 1431211641155286735 {'h_tu': 2472, 'h_moved': 43, 'modes': '0:31,2:8,3:1', 'p_hp': 191, 'p_stun': -4, 'p_down': 0, 'h_down': 7, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=63 (h 45) items=120 tiles=2534 other=['itemsSpecial', 'nodes', 'totalTiles']
+     unit 1000000h: stunlevel: 21 | 32; morale: 74 | 40; armor: [14, 32, 34, 34, 34] | [0, 34, 34, 34, 34]
+     unit 1000001h: position: [23, 65, 0] | [17, 53, 0]; direction: 3 | 0; tu: 71 | 1; energy: 58 | 23; AI: {'fromNode': 235, 'toNode': 358, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 358, 'toNode': 188, 'AIMode': 0, 'wasHitBy': []}; motionPoints: 84 | 148
+     unit 1000005h: position: [41, 54, 0] | [48, 36, 0]; direction: 0 | 1; tu: 95 | 2; energy: 97 | 58; motionPoints: 80 | 144; directionTurret: 0 | 1
+     tiles [(36, 1, 0), (37, 1, 0), (38, 1, 0), (35, 2, 0), (36, 2, 0), (37, 2, 0)]
+  DH~DS: IDENTICAL (protocol flags on top of the defaults) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== M5: fixture turn 3 units 64; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 38, 'n': 0, 'p': 4} rng 10497822141260876970 {'h_tu': 3130, 'h_moved': 31, 'modes': '0:26,2:6,3:5', 'p_hp': 151, 'p_stun': 70, 'p_down': 1, 'h_down': 5, 'ammo': 1}
+   D0b: turn 4 changed {'h': 38, 'n': 0, 'p': 4} rng 10497822141260876970 {'h_tu': 3130, 'h_moved': 31, 'modes': '0:26,2:6,3:5', 'p_hp': 151, 'p_stun': 70, 'p_down': 1, 'h_down': 5, 'ammo': 1}
+   D0n: turn 4 changed {'h': 38, 'n': 0, 'p': 4} rng 10497822141260876970 {'h_tu': 3130, 'h_moved': 31, 'modes': '0:26,2:6,3:5', 'p_hp': 151, 'p_stun': 70, 'p_down': 1, 'h_down': 5, 'ammo': 1}
+   D1: turn 4 changed {'h': 40, 'n': 0, 'p': 2} rng 16678569044998896966 {'h_tu': 3273, 'h_moved': 34, 'modes': '0:21,2:5,3:12', 'p_hp': -1, 'p_stun': 0, 'p_down': 0, 'h_down': 4, 'ammo': 2}
+   DH: turn 4 changed {'h': 38, 'n': 0, 'p': 3} rng 16940009407363574130 {'h_tu': 2841, 'h_moved': 35, 'modes': '0:21,2:9,3:7', 'p_hp': -1, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 1}
+   DS: turn 4 changed {'h': 37, 'n': 0, 'p': 3} rng 10801344876237886294 {'h_tu': 2929, 'h_moved': 30, 'modes': '0:20,2:6,3:11', 'p_hp': 9, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 1}
+   DSE: turn 4 changed {'h': 37, 'n': 0, 'p': 3} rng 10801344876237886294 {'h_tu': 2929, 'h_moved': 30, 'modes': '0:20,2:6,3:11', 'p_hp': 9, 'p_stun': 0, 'p_down': 0, 'h_down': 5, 'ammo': 1}
+   U0: turn 4 changed {'h': 38, 'n': 0, 'p': 4} rng 10497822141260876970 {'h_tu': 3130, 'h_moved': 31, 'modes': '0:26,2:6,3:5', 'p_hp': 151, 'p_stun': 70, 'p_down': 1, 'h_down': 5, 'ammo': 1}
+   U0b: turn 4 changed {'h': 38, 'n': 0, 'p': 4} rng 10497822141260876970 {'h_tu': 3130, 'h_moved': 31, 'modes': '0:26,2:6,3:5', 'p_hp': 151, 'p_stun': 70, 'p_down': 1, 'h_down': 5, 'ammo': 1}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=48 (h 41) items=70 tiles=447 other=['nodes', 'totalTiles']
+     unit 1000000h: health: 0 | 33; stunlevel: 72 | 38; status: 6 | 7; fatalWounds: [0, 5, 0, 0, 0, 0] | [0, 3, 0, 0, 0, 0]; armor: [15, 10, 10, 12, 4] | [15, 10, 10, 12, 8]; fatalShotSide: 4 | 3
+     unit 1000001h: position: [46, 9, 0] | [48, 10, 0]; direction: 6 | 4; tu: 40 | 22; energy: 63 | 54; morale: 70 | 67; motionPoints: 28 | 40
+     unit 1000002h: morale: 70 | 67
+     tiles [(49, 34, 0), (52, 35, 0), (59, 36, 0), (51, 43, 0), (42, 44, 0), (50, 44, 0)]
+  DH~DS: DIFF (protocol flags on top of the defaults) rng=!= units=46 (h 39) items=32 tiles=559 other=['nodes', 'totalTiles']
+     unit 1000001h: morale: 67 | 70
+     unit 1000002h: morale: 67 | 70
+     unit 1000003h: position: [48, 18, 0] | [53, 21, 0]; tu: 26 | 23; energy: 56 | 55; health: 60 | 0; stunlevel: 0 | 32; morale: 67 | 12
+     tiles [(52, 35, 0), (51, 43, 0), (50, 44, 0), (51, 44, 0), (52, 44, 0), (48, 45, 0)]
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+== M8: fixture turn 3 units 47; runs: D0 D0b D0n D1 DH DS DSE U0 U0b
+   D0: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 7237598299061336032 {'h_tu': 1222, 'h_moved': 13, 'modes': '0:12,1:3,3:4', 'p_hp': 2, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   D0b: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 7237598299061336032 {'h_tu': 1222, 'h_moved': 13, 'modes': '0:12,1:3,3:4', 'p_hp': 2, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   D0n: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 7237598299061336032 {'h_tu': 1222, 'h_moved': 13, 'modes': '0:12,1:3,3:4', 'p_hp': 2, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   D1: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 15545886002347231561 {'h_tu': 1209, 'h_moved': 13, 'modes': '0:13,1:3,3:3', 'p_hp': 1, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   DH: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 15545886002347231561 {'h_tu': 1210, 'h_moved': 13, 'modes': '0:13,1:3,3:3', 'p_hp': 1, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   DS: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 15545886002347231561 {'h_tu': 1209, 'h_moved': 13, 'modes': '0:13,1:3,3:3', 'p_hp': 1, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   DSE: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 15545886002347231561 {'h_tu': 1209, 'h_moved': 13, 'modes': '0:13,1:3,3:3', 'p_hp': 1, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   U0: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 7237598299061336032 {'h_tu': 1222, 'h_moved': 13, 'modes': '0:12,1:3,3:4', 'p_hp': 2, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+   U0b: turn 4 changed {'h': 26, 'n': 0, 'p': 1} rng 7237598299061336032 {'h_tu': 1222, 'h_moved': 13, 'modes': '0:12,1:3,3:4', 'p_hp': 2, 'p_stun': 0, 'p_down': 0, 'h_down': 3, 'ammo': 0}
+  P0~P0b: n/a (noise of the player exe)
+  D0~D0b: IDENTICAL (noise of the stand) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  U0~U0b: IDENTICAL (noise of v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~D0: n/a (B: the stand reproduces the player's AI)
+  D0~D0n: IDENTICAL (stand accelerators off) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~U0: n/a (A: the player's AI against v8.7.1)
+  P0~P1: n/a (C: BetterAI on, the player exe)
+  P1~D1: n/a (B': the stand reproduces BetterAI)
+  P1~P1A: n/a (BetterAI + AI3)
+  D0~DH: DIFF (stand defaults: O1-O4, O6 forced) rng=!= units=6 (h 3) items=0 tiles=36 other=['totalTiles']
+     unit 1000029h: position: [26, 47, 0] | [28, 47, 0]; direction: 6 | 0; tu: 3 | 15; energy: 57 | 63; AI: {'fromNode': 130, 'toNode': 142, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 130, 'toNode': 142, 'AIMode': 0, 'wasHitBy': []}; visible: None | True
+     unit 1000032h: visible: True | None; turnsSinceSpottedByXcom: 0 | 1
+     unit 1000035h: stunlevel: 12 | 6
+     tiles [(5, 8, 0), (1, 9, 0), (5, 9, 0), (0, 10, 0), (1, 10, 0), (8, 12, 0)]
+  DH~DS: DIFF (protocol flags on top of the defaults) rng== units=2 (h 2) items=0 tiles=0 other=['nodes']
+     unit 1000006h: position: [14, 50, 0] | [19, 48, 1]; direction: 2 | 4; tu: 77 | 78; energy: 0 | 1; AI: {'fromNode': 134, 'toNode': 135, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 135, 'toNode': 147, 'AIMode': 0, 'wasHitBy': []}; motionPoints: 48 | 42
+     unit 1000033h: AI: {'fromNode': 141, 'toNode': 123, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 141, 'toNode': 124, 'AIMode': 0, 'wasHitBy': []}
+  DS~DSE: IDENTICAL (inertness of the 0B switches (AL against E)) rng== units=0 (h 0) items=0 tiles=0 other=[]
+  P0~DS: n/a (D: the protocol stand against the player's AI)
+  D0~U0: IDENTICAL (A': the stand (release base) against v8.7.1) rng== units=0 (h 0) items=0 tiles=0 other=[]

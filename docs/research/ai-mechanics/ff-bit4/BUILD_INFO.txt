@@ -1,0 +1,4 @@
+build_label=c1run-FH
+git_commit=4ee3d1d3724465fff02dfa45aed8b8eecc6b4b31
+note=DEV (OXCE_AI_DEV=ON, Release) HEAD + OXCE_AI_FF_RISK bit 16 in ffLineRisk (hostile side only), fh.diff
+exe_sha256=5a4cc6e3a2a414118cdc2549a136064308f1271bf2361a440d0d2caf8297f1a7

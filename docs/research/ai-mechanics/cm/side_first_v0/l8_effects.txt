@@ -1,0 +1,109 @@
+   ход 1 psi -> 229: до ('aistart', 1, '0', 100, '119/119', '1') после ('pstart', 2, '0', 57, '119/119', '109')
+   ход 1 mc -> 229: до ('aistart', 1, '0', 100, '119/119', '1') после ('pstart', 2, '0', 57, '119/119', '109')
+   ход 1 mc -> 229: до ('aistart', 1, '0', 100, '119/119', '1') после ('pstart', 2, '0', 57, '119/119', '109')
+   ход 2 mc -> 229: до ('aistart', 2, '0', 71, '119/119', '1') после ('pstart', 3, '1', 40, '119/119', '109')
+   ход 2 psi -> 229: до ('aistart', 2, '0', 71, '119/119', '1') после ('pstart', 3, '1', 40, '119/119', '109')
+   ход 3 mc -> 229: до ('aistart', 3, '0', 66, '119/119', '109') после ('pstart', 4, '0', 22, '119/119', '109')
+   ход 3 mc -> 229: до ('aistart', 3, '0', 66, '119/119', '109') после ('pstart', 4, '0', 22, '119/119', '109')
+   ход 4 mc -> 229: до ('aistart', 4, '0', 39, '119/119', '0') после ('pstart', 5, '1', 7, '119/119', '1')
+   ход 4 mc -> 229: до ('aistart', 4, '0', 39, '119/119', '0') после ('pstart', 5, '1', 7, '119/119', '1')
+   ход 4 psi -> 229: до ('aistart', 4, '0', 39, '119/119', '0') после ('pstart', 5, '1', 7, '119/119', '1')
+   ход 4 mc -> 91: до ('aistart', 4, '0', 37, '13/113', '285') после ('pstart', 5, '0', 28, '18/113', '285')
+   ход 5 mc -> 229: до ('aistart', 5, '0', 9, '119/119', '1') после ('pstart', 6, '1', 18, '119/119', '1')
+   ход 5 psi -> 229: до ('aistart', 5, '0', 9, '119/119', '1') после ('pstart', 6, '1', 18, '119/119', '1')
+   ход 6 mc -> 229: до ('aistart', 6, '0', 32, '119/119', '1') после ('pstart', 7, '1', 37, '119/119', '109')
+   ход 6 psi -> 229: до ('aistart', 6, '0', 32, '119/119', '1') после ('pstart', 7, '1', 37, '119/119', '109')
+   ход 7 mc -> 229: до ('aistart', 7, '0', 39, '119/119', '109') после ('pstart', 8, '1', 7, '119/119', '1')
+   ход 7 mc -> 229: до ('aistart', 7, '0', 39, '119/119', '109') после ('pstart', 8, '1', 7, '119/119', '1')
+   ход 7 mc -> 229: до ('aistart', 7, '0', 39, '119/119', '109') после ('pstart', 8, '1', 7, '119/119', '1')
+   ход 7 psi -> 229: до ('aistart', 7, '0', 39, '119/119', '109') после ('pstart', 8, '1', 7, '119/119', '1')
+   ход 8 psi -> 229: до ('aistart', 8, '0', 9, '119/119', '1') после ('pstart', 9, '1', 34, '119/119', '2')
+   ход 8 mc -> 91: до ('aistart', 8, '0', 100, '31/113', '246') после ('pstart', 9, '0', 58, '37/113', '285')
+   ход 9 mc -> 229: до ('aistart', 9, '0', 36, '119/119', '2') после ('pstart', 10, '0', 30, '119/119', '109')
+   ход 10 mc -> 229: до ('aistart', 10, '0', 32, '119/119', '1') после ('end', 10, '1', 8, '119/119', '109')
+   ход 10 psi -> 229: до ('aistart', 10, '0', 32, '119/119', '1') после ('end', 10, '1', 8, '119/119', '109')
+  sfF_D_L8_s1: юнитов с пси-кандидатом 27; их решений 425, с видимой целью 419, пси применено 24; решений врага бойцами игрока 10, таких бойцов 1
+   ход 1 mc -> 301: до ('aistart', 1, '0', 100, '104/104', '6') после ('pstart', 2, '0', 100, '104/104', '108')
+   ход 1 mc -> 229: до ('aistart', 1, '0', 100, '119/119', '61') после -
+   ход 1 mc -> 229: до ('aistart', 1, '0', 100, '119/119', '61') после -
+  sfF_D_L8_s2: юнитов с пси-кандидатом 32; их решений 383, с видимой целью 383, пси применено 3; решений врага бойцами игрока 0, таких бойцов 0
+  sfF_D_L8_s3: юнитов с пси-кандидатом 28; их решений 188, с видимой целью 184, пси применено 0; решений врага бойцами игрока 0, таких бойцов 0
+   ход 1 mc -> 301: до ('aistart', 1, '0', 99, '104/104', '6') после ('pstart', 2, '0', 87, '102/104', '108')
+  sfF_D_L8_s4: юнитов с пси-кандидатом 31; их решений 140, с видимой целью 126, пси применено 1; решений врага бойцами игрока 0, таких бойцов 0
+   ход 1 psi -> 301: до ('aistart', 1, '0', 100, '99/104', '5') после ('pstart', 2, '0', 81, '92/104', '108')
+   ход 1 mc -> 301: до ('aistart', 1, '0', 100, '99/104', '5') после ('pstart', 2, '0', 81, '92/104', '108')
+   ход 2 mc -> 301: до ('aistart', 2, '0', 81, '92/104', '2') после ('pstart', 3, '0', 74, '71/104', '108')
+  sfF_XN_L8_s1: юнитов с пси-кандидатом 27; их решений 183, с видимой целью 130, пси применено 3; решений врага бойцами игрока 0, таких бойцов 0
+     ход 1: consults 3 special 0 thinks 49
+     ход 2: consults 2 special 0 thinks 35
+   ход 1 mc -> 301: до ('aistart', 1, '0', 100, '104/104', '6') после ('pstart', 2, '0', 88, '104/104', '108')
+   ход 1 mc -> 301: до ('aistart', 1, '0', 100, '104/104', '6') после ('pstart', 2, '0', 88, '104/104', '108')
+  sfF_XN_L8_s2: юнитов с пси-кандидатом 32; их решений 151, с видимой целью 89, пси применено 2; решений врага бойцами игрока 0, таких бойцов 0
+     ход 1: consults 9 special 1 thinks 48
+  sfF_XN_L8_s3: юнитов с пси-кандидатом 28; их решений 316, с видимой целью 274, пси применено 0; решений врага бойцами игрока 0, таких бойцов 0
+     ход 1: consults 5 special 1 thinks 46
+     ход 2: consults 5 special 1 thinks 43
+     ход 3: consults 9 special 0 thinks 31
+     ход 4: consults 11 special 0 thinks 33
+   ход 4 psi -> 91: до ('aistart', 4, '0', 45, '36/113', '233') после ('pstart', 5, '1', 35, '35/113', '148')
+  sfF_XN_L8_s4: юнитов с пси-кандидатом 31; их решений 391, с видимой целью 335, пси применено 1; решений врага бойцами игрока 2, таких бойцов 1
+     ход 1: consults 2 special 0 thinks 61
+     ход 2: consults 4 special 0 thinks 32
+     ход 3: consults 3 special 0 thinks 41
+     ход 4: consults 4 special 1 thinks 41
+     ход 5: consults 1 special 0 thinks 34
+цель attack_on_out, 157 в s4:
+    [AISTATE] before turn=1 unit=157 type=SOLDIER faction=0 status=0 pos=(2,30,1) dir=0 tu=255 hp=91/91 stun=0 morale=90 kneel=0 
+    [AISTATE] aistart turn=1 unit=157 type=SOLDIER faction=0 status=0 pos=(6,30,0) dir=3 tu=229 hp=91/91 stun=0 morale=71 kneel=0
+    [AISTATE] pstart turn=2 unit=157 type=SOLDIER faction=0 status=8 pos=(6,30,0) dir=3 tu=255 hp=91/91 stun=0 morale=25 kneel=0 
+    [AISTATE] aistart turn=2 unit=157 type=SOLDIER faction=0 status=0 pos=(7,26,0) dir=0 tu=0 hp=91/91 stun=0 morale=54 kneel=0 w
+    {"turn":2,"ev":"result","kind":"A","actor":1000026,"spent":40,"moved":0,"actorOut":0,"at":[36,47,2],"target":157,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":14.9097,"ff":0}
+    {"turn":2,"ev":"result","kind":"A","actor":1000009,"spent":31,"moved":0,"actorOut":0,"at":[12,44,1],"target":157,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":6.51798,"ff":0}
+    {"turn":2,"ev":"result","kind":"A","actor":1000009,"spent":31,"moved":0,"actorOut":0,"at":[12,44,1],"target":157,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":6.51798,"ff":0}
+    {"turn":2,"ev":"result","kind":"A","actor":1000009,"spent":31,"moved":0,"actorOut":0,"at":[12,44,1],"target":157,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":6.51798,"ff":0}
+    {"turn":2,"ev":"result","kind":"A","actor":1000022,"spent":25,"moved":0,"actorOut":0,"at":[32,30,0],"target":157,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":3.01339,"ff":0}
+    {"turn":2,"ev":"result","kind":"A","actor":1000022,"spent":25,"moved":0,"actorOut":0,"at":[32,30,0],"target":157,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":3.01339,"ff":0}
+    [AISTATE] pstart turn=3 unit=157 type=SOLDIER faction=0 status=0 pos=(7,26,0) dir=0 tu=255 hp=91/91 stun=0 morale=52 kneel=0 
+    [AISTATE] aistart turn=3 unit=157 type=SOLDIER faction=0 status=0 pos=(19,18,0) dir=2 tu=179 hp=91/91 stun=0 morale=42 kneel=
+    [AICASUALTY] turn=3 side=1 victim=157 vfaction=0 type=SOLDIER how=stun pos=(19,18,0) tu=179 kneel=0 seenby=1 killer=1000034 kfaction=1 ktype=STR_SECTOPOD_TERRORIST dist=1
+    {"turn":3,"ev":"result","kind":"A","actor":1000034,"spent":33,"moved":0,"actorOut":1,"at":[20,18,0],"target":157,"tOut":1,"tHit":1,"tDmg":90,"tStun":13,"ownLoss":116,"ownDown":1,"eff":186.311,"ff":0}
+    [AISTATE] pstart turn=4 unit=157 type=SOLDIER faction=0 status=7 pos=(19,18,0) dir=3 tu=179 hp=1/91 stun=5 morale=0 kneel=0 w
+    [AISTATE] aistart turn=4 unit=157 type=SOLDIER faction=0 status=7 pos=(19,18,0) dir=3 tu=179 hp=1/91 stun=5 morale=0 kneel=0 
+    [AISTATE] pstart turn=5 unit=157 type=SOLDIER faction=0 status=0 pos=(19,18,0) dir=3 tu=255 hp=4/91 stun=0 morale=0 kneel=0 w
+    [AISTATE] aistart turn=5 unit=157 type=SOLDIER faction=0 status=0 pos=(19,18,0) dir=3 tu=255 hp=4/91 stun=0 morale=0 kneel=0 
+    {"turn":5,"ev":"result","kind":"A","actor":1000026,"spent":41,"moved":0,"actorOut":0,"at":[27,25,1],"target":157,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":16.6174,"ff":0}
+    [AICASUALTY] turn=5 side=1 victim=157 vfaction=0 type=SOLDIER how=dead pos=(19,18,0) tu=255 kneel=0 seenby=5 killer=1000026 kfaction=1 ktype=STR_ETHEREAL_SOLDIER dist=11 
+    {"turn":5,"ev":"result","kind":"A","actor":1000026,"spent":39,"moved":0,"actorOut":0,"at":[27,25,1],"target":157,"tOut":1,"tHit":1,"tDmg":22,"tStun":2,"ownLoss":0,"ownDown":0,"eff":16.6174,"ff":0}
+  sfI_XN_L8_s1: юнитов с пси-кандидатом 27; их решений 186, с видимой целью 85, пси применено 0; решений врага бойцами игрока 0, таких бойцов 0
+     ход 1: consults 23 special 0 thinks 64
+   ход 1 mc -> 301: до ('aistart', 1, '0', 100, '104/104', '6') после ('pstart', 2, '0', 79, '104/104', '108')
+   ход 1 mc -> 301: до ('aistart', 1, '0', 100, '104/104', '6') после ('pstart', 2, '0', 79, '104/104', '108')
+  sfI_XN_L8_s2: юнитов с пси-кандидатом 32; их решений 228, с видимой целью 104, пси применено 2; решений врага бойцами игрока 0, таких бойцов 0
+     ход 1: consults 28 special 1 thinks 66
+  sfI_XN_L8_s3: юнитов с пси-кандидатом 28; их решений 251, с видимой целью 166, пси применено 0; решений врага бойцами игрока 0, таких бойцов 0
+     ход 1: consults 21 special 1 thinks 57
+     ход 2: consults 19 special 0 thinks 62
+   ход 2 mc -> 301: до ('aistart', 2, '0', 100, '104/104', '2') после ('pstart', 3, '0', 48, '21/104', '108')
+   ход 2 mc -> 301: до ('aistart', 2, '0', 100, '104/104', '2') после ('pstart', 3, '0', 48, '21/104', '108')
+  sfI_XN_L8_s4: юнитов с пси-кандидатом 31; их решений 272, с видимой целью 152, пси применено 2; решений врага бойцами игрока 0, таких бойцов 0
+     ход 1: consults 27 special 1 thinks 47
+     ход 2: consults 22 special 1 thinks 55
+цель attack_on_out, 91 в s4:
+    [AISTATE] before turn=1 unit=91 type=SOLDIER faction=0 status=0 pos=(4,31,1) dir=0 tu=285 hp=113/113 stun=0 morale=90 kneel=0
+    [AISTATE] aistart turn=1 unit=91 type=SOLDIER faction=0 status=0 pos=(9,29,0) dir=3 tu=253 hp=113/113 stun=0 morale=77 kneel=
+    {"turn":1,"ev":"result","kind":"A","actor":1000035,"spent":34,"moved":0,"actorOut":0,"at":[11,23,0],"target":91,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":98.3463,"ff":0}
+    {"turn":1,"ev":"result","kind":"A","actor":1000033,"spent":27,"moved":0,"actorOut":0,"at":[1,12,0],"target":91,"tOut":0,"tHit":1,"tDmg":12,"tStun":2,"ownLoss":0,"ownDown":0,"eff":40.8699,"ff":14.3298}
+    {"turn":1,"ev":"result","kind":"A","actor":1000033,"spent":27,"moved":0,"actorOut":0,"at":[1,12,0],"target":91,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":47.0004,"ff":14.3298}
+    {"turn":1,"ev":"result","kind":"A","actor":1000033,"spent":27,"moved":0,"actorOut":0,"at":[1,12,0],"target":91,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":47.0004,"ff":14.3298}
+    {"turn":1,"ev":"result","kind":"A","actor":1000034,"spent":35,"moved":0,"actorOut":0,"at":[19,11,0],"target":91,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":58.1165,"ff":6.59445}
+    [AISTATE] pstart turn=2 unit=91 type=SOLDIER faction=0 status=0 pos=(9,29,0) dir=3 tu=285 hp=105/113 stun=0 morale=59 kneel=0
+    [AISTATE] aistart turn=2 unit=91 type=SOLDIER faction=0 status=0 pos=(8,26,0) dir=0 tu=259 hp=104/113 stun=0 morale=90 kneel=
+    {"turn":2,"ev":"result","kind":"A","actor":1000032,"spent":27,"moved":0,"actorOut":0,"at":[35,5,0],"target":91,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":30.1042,"ff":7.16559}
+    {"turn":2,"ev":"result","kind":"A","actor":1000032,"spent":55,"moved":0,"actorOut":0,"at":[35,5,0],"target":91,"tOut":0,"tHit":1,"tDmg":92,"tStun":7,"ownLoss":0,"ownDown":0,"eff":52.05,"ff":2.51303}
+    {"turn":2,"ev":"result","kind":"A","actor":1000009,"spent":31,"moved":0,"actorOut":0,"at":[12,44,1],"target":91,"tOut":0,"tHit":0,"tDmg":0,"tStun":0,"ownLoss":0,"ownDown":0,"eff":7.58118,"ff":0}
+    [AICASUALTY] turn=2 side=1 victim=91 vfaction=0 type=SOLDIER how=stun pos=(8,26,0) tu=259 kneel=0 seenby=7 killer=1000009 kfaction=1 ktype=STR_ETHEREAL_SOLDIER dist=18 we
+    {"turn":2,"ev":"result","kind":"A","actor":1000009,"spent":31,"moved":0,"actorOut":0,"at":[12,44,1],"target":91,"tOut":1,"tHit":1,"tDmg":7,"tStun":3,"ownLoss":0,"ownDown":0,"eff":7.58118,"ff":0}
+    [AISTATE] pstart turn=3 unit=91 type=SOLDIER faction=0 status=0 pos=(8,26,0) dir=3 tu=285 hp=11/113 stun=0 morale=3 kneel=0 w
+    [AISTATE] aistart turn=3 unit=91 type=SOLDIER faction=0 status=0 pos=(8,26,0) dir=3 tu=285 hp=11/113 stun=0 morale=15 kneel=0
+    [AICASUALTY] turn=3 side=1 victim=91 vfaction=0 type=SOLDIER how=dead pos=(8,26,0) tu=285 kneel=0 seenby=3 killer=1000034 kfaction=1 ktype=STR_SECTOPOD_TERRORIST dist=19 
+    {"turn":3,"ev":"result","kind":"A","actor":1000034,"spent":28,"moved":0,"actorOut":0,"at":[19,11,0],"target":91,"tOut":1,"tHit":1,"tDmg":89,"tStun":7,"ownLoss":0,"ownDown":0,"eff":38.5478,"ff":0}

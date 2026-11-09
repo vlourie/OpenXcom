@@ -1,0 +1,20 @@
+runs 18 jobs 18
+1/18 c2_A_L7 code=0 56s total=56s
+2/18 c2_E_M10 code=0 56s total=56s
+3/18 c2_B_M10 code=0 57s total=57s
+4/18 c2_E_L7 code=0 58s total=58s
+5/18 c2_A_M10 code=0 58s total=58s
+6/18 c2_B_L7 code=0 72s total=72s
+7/18 c2_B_L2 code=0 101s total=101s
+8/18 c2_E_L2 code=0 108s total=109s
+9/18 c2_A_L2 code=0 110s total=110s
+10/18 c2_A_M1 code=0 127s total=127s
+11/18 c2_E_M1 code=0 129s total=129s
+12/18 c2_B_M1 code=0 135s total=135s
+13/18 c2_E_M3 code=0 155s total=155s
+14/18 c2_A_M3 code=0 159s total=159s
+15/18 c2_B_M3 code=0 163s total=163s
+16/18 c2_A_M2 code=0 240s total=240s
+17/18 c2_E_M2 code=0 241s total=241s
+18/18 c2_B_M2 code=0 270s total=270s
+ALL DONE

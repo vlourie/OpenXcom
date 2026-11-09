@@ -1,0 +1,173 @@
+﻿battles 48
+
+== Attacks by target class: n, %effect, dmg, downed, TU
+player   n=  3716 eff= 14.3% dmg=  18952 down=  181 tu= 149210
+pos      n=  1621 eff= 10.2% dmg=   4149 down=   55 tu=  55918
+civ      n=   609 eff= 41.5% dmg=  10073 down=  160 tu=  28717
+
+== Mode by distance, player targets: n, %effect, dmg/attack, down/100attacks, TU/attack, dmg/100TU, down/1000TU
+aimed|00-03      n=   31 eff= 16.1% d/a=  3.39 down%=  3.2 tu/a= 44.5 d/100tu=  7.61 down/1000tu= 0.73
+aimed|04-06      n=   25 eff= 16.0% d/a=  4.68 down%=  4.0 tu/a= 46.1 d/100tu= 10.15 down/1000tu= 0.87
+aimed|07-10      n=   23 eff= 43.5% d/a= 17.39 down%= 21.7 tu/a= 53.6 d/100tu= 32.44 down/1000tu= 4.06
+aimed|11-15      n=   34 eff= 20.6% d/a=  4.24 down%=  8.8 tu/a= 52.1 d/100tu=  8.13 down/1000tu= 1.69
+aimed|16-20      n=   63 eff= 15.9% d/a=  2.59 down%=  4.8 tu/a= 58.2 d/100tu=  4.45 down/1000tu= 0.82
+aimed|21-30      n=  221 eff=  9.5% d/a=  2.69 down%=  1.8 tu/a= 53.5 d/100tu=  5.03 down/1000tu= 0.34
+aimed|31+        n=  200 eff=  6.5% d/a=  2.25 down%=  1.5 tu/a= 49.3 d/100tu=  4.57 down/1000tu= 0.30
+auto|00-03       n=  105 eff= 36.2% d/a= 12.97 down%= 11.4 tu/a= 39.5 d/100tu= 32.86 down/1000tu= 2.90
+auto|04-06       n=   92 eff= 31.5% d/a= 17.89 down%= 16.3 tu/a= 39.2 d/100tu= 45.67 down/1000tu= 4.16
+auto|07-10       n=  123 eff= 33.3% d/a= 23.33 down%= 18.7 tu/a= 42.3 d/100tu= 55.10 down/1000tu= 4.42
+auto|11-15       n=  125 eff= 35.2% d/a= 17.90 down%= 17.6 tu/a= 41.5 d/100tu= 43.12 down/1000tu= 4.24
+auto|16-20       n=  158 eff= 21.5% d/a=  7.26 down%=  6.3 tu/a= 41.5 d/100tu= 17.51 down/1000tu= 1.53
+auto|21-30       n=  149 eff= 15.4% d/a=  5.46 down%=  3.4 tu/a= 41.0 d/100tu= 13.30 down/1000tu= 0.82
+auto|31+         n=   20 eff= 20.0% d/a= 12.60 down%=  5.0 tu/a= 59.4 d/100tu= 21.23 down/1000tu= 0.84
+melee|00-03      n=   90 eff= 32.2% d/a= 11.58 down%= 17.8 tu/a= 64.7 d/100tu= 17.89 down/1000tu= 2.75
+mindctl|07-10    n=    3 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 75.0 d/100tu=  0.00 down/1000tu= 0.00
+mindctl|11-15    n=    1 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 62.0 d/100tu=  0.00 down/1000tu= 0.00
+mindctl|16-20    n=    2 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 68.5 d/100tu=  0.00 down/1000tu= 0.00
+mindctl|21-30    n=    2 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 62.0 d/100tu=  0.00 down/1000tu= 0.00
+panic|00-03      n=    2 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 31.0 d/100tu=  0.00 down/1000tu= 0.00
+panic|04-06      n=    6 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 35.0 d/100tu=  0.00 down/1000tu= 0.00
+panic|07-10      n=    1 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 31.0 d/100tu=  0.00 down/1000tu= 0.00
+panic|11-15      n=    2 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 31.0 d/100tu=  0.00 down/1000tu= 0.00
+panic|21-30      n=    4 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 34.0 d/100tu=  0.00 down/1000tu= 0.00
+panic|31+        n=    2 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 31.0 d/100tu=  0.00 down/1000tu= 0.00
+snap|00-03       n=  175 eff=  9.1% d/a=  1.99 down%=  1.7 tu/a= 36.8 d/100tu=  5.43 down/1000tu= 0.47
+snap|04-06       n=  135 eff= 11.9% d/a=  2.76 down%=  3.0 tu/a= 30.1 d/100tu=  9.18 down/1000tu= 0.98
+snap|07-10       n=  241 eff= 13.7% d/a=  2.73 down%=  3.7 tu/a= 32.5 d/100tu=  8.41 down/1000tu= 1.15
+snap|11-15       n=  364 eff= 16.8% d/a=  3.73 down%=  4.1 tu/a= 30.8 d/100tu= 12.10 down/1000tu= 1.34
+snap|16-20       n=  339 eff= 12.7% d/a=  3.50 down%=  3.8 tu/a= 28.8 d/100tu= 12.17 down/1000tu= 1.33
+snap|21-30       n=  544 eff=  7.5% d/a=  2.29 down%=  2.0 tu/a= 29.5 d/100tu=  7.76 down/1000tu= 0.68
+snap|31+         n=  200 eff=  5.0% d/a=  2.19 down%=  1.0 tu/a= 26.7 d/100tu=  8.18 down/1000tu= 0.37
+throw|00-03      n=   18 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 80.3 d/100tu=  0.00 down/1000tu= 0.00
+throw|04-06      n=   12 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 73.8 d/100tu=  0.00 down/1000tu= 0.00
+throw|07-10      n=   14 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 80.4 d/100tu=  0.00 down/1000tu= 0.00
+throw|11-15      n=   32 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 76.8 d/100tu=  0.00 down/1000tu= 0.00
+throw|16-20      n=   29 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 84.7 d/100tu=  0.00 down/1000tu= 0.00
+throw|21-30      n=   71 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 80.9 d/100tu=  0.00 down/1000tu= 0.00
+throw|31+        n=   58 eff=  0.0% d/a=  0.00 down%=  0.0 tu/a= 79.0 d/100tu=  0.00 down/1000tu= 0.00
+
+== Fire mode when auto with the same weapon and target was/was not affordable
+autoOK|aimed|00-03         n=    1 eff=  0.0% d/a=  0.00 tu/a= 22.0 d/100tu=  0.00
+autoOK|aimed|11-15         n=    1 eff=  0.0% d/a=  0.00 tu/a= 89.0 d/100tu=  0.00
+autoOK|aimed|16-20         n=   13 eff= 15.4% d/a=  4.00 tu/a= 58.6 d/100tu=  6.82
+autoOK|aimed|21-30         n=   59 eff=  8.5% d/a=  2.07 tu/a= 55.3 d/100tu=  3.74
+autoOK|aimed|31+           n=   75 eff=  8.0% d/a=  3.08 tu/a= 47.4 d/100tu=  6.50
+autoOK|auto|00-03          n=  105 eff= 36.2% d/a= 12.97 tu/a= 39.5 d/100tu= 32.86
+autoOK|auto|04-06          n=   92 eff= 31.5% d/a= 17.89 tu/a= 39.2 d/100tu= 45.67
+autoOK|auto|07-10          n=  123 eff= 33.3% d/a= 23.33 tu/a= 42.3 d/100tu= 55.10
+autoOK|auto|11-15          n=  125 eff= 35.2% d/a= 17.90 tu/a= 41.5 d/100tu= 43.12
+autoOK|auto|16-20          n=  158 eff= 21.5% d/a=  7.26 tu/a= 41.5 d/100tu= 17.51
+autoOK|auto|21-30          n=  149 eff= 15.4% d/a=  5.46 tu/a= 41.0 d/100tu= 13.30
+autoOK|auto|31+            n=   20 eff= 20.0% d/a= 12.60 tu/a= 59.4 d/100tu= 21.23
+autoOK|snap|00-03          n=    9 eff= 22.2% d/a= 10.00 tu/a= 21.2 d/100tu= 47.12
+autoOK|snap|04-06          n=   10 eff= 20.0% d/a= 12.50 tu/a= 24.6 d/100tu= 50.81
+autoOK|snap|07-10          n=    9 eff= 11.1% d/a=  2.89 tu/a= 23.4 d/100tu= 12.32
+autoOK|snap|11-15          n=   23 eff= 21.7% d/a= 19.43 tu/a= 29.3 d/100tu= 66.22
+autoOK|snap|16-20          n=   60 eff= 15.0% d/a=  6.48 tu/a= 24.1 d/100tu= 26.86
+autoOK|snap|21-30          n=  109 eff=  9.2% d/a=  3.97 tu/a= 25.6 d/100tu= 15.55
+autoOK|snap|31+            n=   64 eff=  9.4% d/a=  5.45 tu/a= 23.0 d/100tu= 23.69
+noAuto|aimed|00-03         n=   30 eff= 16.7% d/a=  3.50 tu/a= 45.2 d/100tu=  7.74
+noAuto|aimed|04-06         n=   25 eff= 16.0% d/a=  4.68 tu/a= 46.1 d/100tu= 10.15
+noAuto|aimed|07-10         n=   23 eff= 43.5% d/a= 17.39 tu/a= 53.6 d/100tu= 32.44
+noAuto|aimed|11-15         n=   33 eff= 21.2% d/a=  4.36 tu/a= 51.0 d/100tu=  8.56
+noAuto|aimed|16-20         n=   50 eff= 16.0% d/a=  2.22 tu/a= 58.1 d/100tu=  3.82
+noAuto|aimed|21-30         n=  162 eff=  9.9% d/a=  2.91 tu/a= 52.8 d/100tu=  5.52
+noAuto|aimed|31+           n=  125 eff=  5.6% d/a=  1.75 tu/a= 50.4 d/100tu=  3.48
+noAuto|snap|00-03          n=  166 eff=  8.4% d/a=  1.56 tu/a= 37.6 d/100tu=  4.15
+noAuto|snap|04-06          n=  125 eff= 11.2% d/a=  1.98 tu/a= 30.5 d/100tu=  6.50
+noAuto|snap|07-10          n=  232 eff= 13.8% d/a=  2.72 tu/a= 32.8 d/100tu=  8.30
+noAuto|snap|11-15          n=  341 eff= 16.4% d/a=  2.67 tu/a= 30.9 d/100tu=  8.64
+noAuto|snap|16-20          n=  279 eff= 12.2% d/a=  2.86 tu/a= 29.8 d/100tu=  9.61
+noAuto|snap|21-30          n=  435 eff=  7.1% d/a=  1.87 tu/a= 30.5 d/100tu=  6.13
+noAuto|snap|31+            n=  136 eff=  2.9% d/a=  0.65 tu/a= 28.5 d/100tu=  2.27
+
+== Result by decision source: n, dmg, stun, down, friendly dmg, TU, dmg/100TU, down/1000TU
+patrol.node            n= 24812 dmg=    300 stun=   205 down=    3 fdmg=   952 tu= 414032 d/100=  0.07 dn/1000= 0.01
+shot                   n=  3250 dmg=  19410 stun=  4400 down=  226 fdmg=  9660 tu= 118557 d/100= 16.37 dn/1000= 1.91
+sniper                 n=  2149 dmg=  11218 stun=  2032 down=  133 fdmg=  2990 tu=  90664 d/100= 12.37 dn/1000= 1.47
+escape.known           n=  1819 dmg=     13 stun=     4 down=    0 fdmg=   227 tu=   3480 d/100=  0.37 dn/1000= 0.00
+firepoint.random       n=  1437 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=  26483 d/100=  0.00 dn/1000= 0.00
+ambush                 n=  1292 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=  20404 d/100=  0.00 dn/1000= 0.00
+firepoint              n=  1171 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=  14192 d/100=  0.00 dn/1000= 0.00
+firepoint.fallback     n=  1043 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=  15689 d/100=  0.00 dn/1000= 0.00
+escape                 n=   956 dmg=     11 stun=     0 down=    0 fdmg=    68 tu=  16496 d/100=  0.07 dn/1000= 0.00
+melee                  n=   871 dmg=   7061 stun=  4142 down=  117 fdmg=   564 tu=  35998 d/100= 19.61 dn/1000= 3.25
+leeroy                 n=   323 dmg=    811 stun=   116 down=    7 fdmg=     0 tu=   7689 d/100= 10.55 dn/1000= 0.91
+patrol.module          n=   231 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=   6501 d/100=  0.00 dn/1000= 0.00
+grenade                n=   102 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=   8297 d/100=  0.00 dn/1000= 0.00
+psi                    n=    28 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=   1204 d/100=  0.00 dn/1000= 0.00
+rethink                n=    16 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=      0 d/100=  0.00 dn/1000= 0.00
+grenade.node           n=     4 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=    573 d/100=  0.00 dn/1000= 0.00
+waypoint               n=     3 dmg=    536 stun=   280 down=    5 fdmg=     0 tu=    241 d/100=222.41 dn/1000=20.75
+none                   n=     1 dmg=      0 stun=     0 down=    0 fdmg=     0 tu=      0 d/100=  0.00 dn/1000= 0.00
+
+== Target choice among 2+ visible legal player targets with the chosen weapon and mode {'attacks_with_ff': 248, 'target_choice_decisions': 377, 'picked_best_p': 377, 'picked_nearest': 287, 'sum_p_chosen': 23659, 'sum_p_best': 23659, 'sum_options': 989, 'picked_lowest_hp': 137}
+  picked best p 100.0%, nearest 76.1%, lowest hp 36.3%, mean p chosen 62.8 vs best 62.8, mean options 2.62
+
+== What does a unit do by information state (near bucket): top sources in %
+known|00-03        n=  1243 patrol.node=60% shot=9% melee=7% escape=5% sniper=4% escape.known=4%
+known|04-06        n=  2498 patrol.node=66% shot=7% escape.known=5% sniper=4% ambush=4% escape=3%
+known|07-10        n=  3469 patrol.node=66% shot=7% escape.known=5% ambush=4% sniper=4% firepoint.random=3%
+known|11-15        n=  4033 patrol.node=66% shot=7% sniper=5% escape.known=4% escape=4% ambush=4%
+known|16-20        n=  4189 patrol.node=65% shot=6% sniper=5% escape.known=5% firepoint.random=4% firepoint=4%
+known|21-30        n=  7921 patrol.node=67% shot=6% escape.known=5% sniper=5% firepoint.random=4% firepoint.fallback=4%
+known|31+          n=  6908 patrol.node=73% escape.known=5% firepoint.fallback=5% firepoint.random=4% ambush=4% sniper=3%
+noinfo|-           n=  2796 patrol.node=83% ambush=7% escape.known=3% patrol.module=2% shot=1% firepoint=1%
+seesEnemy|00-03    n=   860 shot=22% patrol.node=22% leeroy=13% melee=11% escape=9% sniper=7%
+seesEnemy|04-06    n=   665 patrol.node=30% shot=22% sniper=10% escape=8% melee=8% firepoint.random=7%
+seesEnemy|07-10    n=   815 patrol.node=33% shot=24% sniper=14% melee=7% firepoint=6% escape=5%
+seesEnemy|11-15    n=  1035 patrol.node=32% shot=24% sniper=14% escape=9% firepoint=7% melee=6%
+seesEnemy|16-20    n=  1099 patrol.node=29% shot=26% sniper=13% firepoint=9% escape=8% firepoint.random=4%
+seesEnemy|21-30    n=  1690 patrol.node=40% shot=21% sniper=15% firepoint.fallback=6% escape.known=6% firepoint.random=4%
+seesEnemy|31+      n=   287 patrol.node=38% shot=22% firepoint.fallback=10% escape.known=9% sniper=8% firepoint=6%
+  totals {'known': 30261, 'noinfo': 2796, 'seesEnemy': 6451}
+
+== Walk exposure: moved n, TU, reaction stops, hp lost, downs, spotted stops, hp lost/100TU, downs/1000TU
+patrol.node            n= 12098 tu= 414032 react=   89 hp=  5247 down=  46 spot= 1001 hp/100= 1.27 dn/1000= 0.11
+melee                  n=   761 tu=  28740 react=   50 hp=  5152 down=  60 spot=  403 hp/100=17.93 dn/1000= 2.09
+firepoint.random       n=  1426 tu=  26483 react=   21 hp=   881 down=  10 spot=  283 hp/100= 3.33 dn/1000= 0.38
+ambush                 n=  1288 tu=  20404 react=    5 hp=   242 down=   4 spot=   41 hp/100= 1.19 dn/1000= 0.20
+escape                 n=   884 tu=  16496 react=   27 hp=  1136 down=  12 spot=    1 hp/100= 6.89 dn/1000= 0.73
+firepoint.fallback     n=  1042 tu=  15689 react=    5 hp=   485 down=   3 spot=  126 hp/100= 3.09 dn/1000= 0.19
+firepoint              n=  1162 tu=  14192 react=    9 hp=   616 down=   3 spot=  119 hp/100= 4.34 dn/1000= 0.21
+leeroy                 n=   240 tu=   6759 react=   22 hp=  3677 down=  16 spot=  115 hp/100=54.40 dn/1000= 2.37
+escape.known           n=   211 tu=   3387 react=    5 hp=   333 down=   3 spot=    0 hp/100= 9.83 dn/1000= 0.89
+grenade                n=     5 tu=    347 react=    0 hp=     0 down=   0 spot=    0 hp/100= 0.00 dn/1000= 0.00
+sniper                 n=     1 tu=     33 react=    0 hp=     0 down=   0 spot=    0 hp/100= 0.00 dn/1000= 0.00
+
+== Zero-TU decisions: reason
+patrol.node {'walk.stop.reserve': 8380, 'notrail': 2345, 'walk.stop.energy': 1827, 'walk.stop.tu': 144, 'kr.dec': 11, 'walk.stop.unit': 7}
+escape.known {'none': 1603}
+escape {'none': 63, 'notrail': 5, 'walk.stop.invalid': 2, 'walk.stop.tu': 1, 'walk.stop.unit': 1}
+leeroy {'notrail': 54, 'walk.stop.tu': 8}
+shot {'notrail': 49}
+patrol.module {'notrail': 46}
+rethink {'notrail': 16}
+firepoint.random {'notrail': 10, 'walk.stop.tu': 1}
+firepoint {'notrail': 8, 'walk.stop.tu': 1}
+ambush {'notrail': 4}
+sniper {'notrail': 2}
+none {'none': 1}
+firepoint.fallback {'walk.stop.energy': 1}
+
+== HP/TU flows {'f0_lost_in_hostile_phase': 23026, 'f1_lost_in_hostile_phase': 41117, 'f2_lost_in_hostile_phase': 13760, 'f0_tu_at_aistart': 377327, 'f1_tu_at_aistart': 1335561, 'f2_tu_at_aistart': 22025, 'f0_tu_at_next_pstart': 698263, 'f1_tu_at_next_pstart': 497460, 'f2_tu_at_next_pstart': 10597, 'f0_lost_in_player_phase': 1655, 'f1_lost_in_player_phase': 58199, 'f2_lost_in_player_phase': 200}
+
+== hostile killers of player: weapon [('STR_PIR_HEAVY_PLASMA', 63), ('STR_PIR_PLASMA_RIFLE', 53), ('AUX_XTURRET_14MMCHAINGUN_WEAPON', 17), ('AUX_SECTOPOD_WEAPON', 16), ('STR_PLASMA_SCORCHER', 15), ('STR_PIR_PLASMA_PISTOL', 13), ('STR_KUNG_FU_ALT', 13), ('STR_EMP_GRENADE', 12), ('AUX_ZOMBIE_WEAPON', 9), ('AUX_CHRYSSALID_WEAPON', 9), ('AUX_XTANK_GAUSS_WEAPON', 8), ('AUX_VAMPIRE_WEAPON', 8), ('STR_PIR_ALIEN_GRENADE', 8), ('STR_CD_RIFLE', 7), ('STR_CD_CANNON', 6), ('STR_HEAVY_LASER_PIR', 6), ('STR_LASER_RIFLE_PIR', 6), ('STR_GAUSS_RIFLE', 6), ('AUX_AQUAMAN_WEAPON', 6), ('STR_UAC_ROCKET_LAUNCHER', 5), ('STR_HEAVY_CANNON', 5), ('STR_PIR_BLASTER_LAUNCHER', 5), ('STR_ABC_GUN', 4), ('STR_GAS_GRENADE', 4), ('STR_CD_PISTOL', 4), ('AUX_CYBERDISC_WEAPON', 4), ('AUX_FORCE_LANCE', 4), ('STR_AQUA_HATCHET', 4), ('STR_JAVELINS', 4), ('STR_GRENADE_FRAG', 3), ('AUX_HDRONE_WEAPON', 3), ('STR_PIR_SMALL_LAUNCHER', 3), ('STR_COOKER', 3), ('STR_UAC_RIFLE', 2), ('STR_RAYGUN', 2), ('AUX_VAMPBAT_WEAPON', 2), ('STR_WEAPON_UNKNOWN', 2), ('AUX_ADRONE_WEAPON', 2), ('STR_OLD_REVOLVER', 1), ('STR_FLINTLOCK_PISTOL', 1)]
+
+== hostile killing hostile: weapon [('STR_WEAPON_UNKNOWN', 56), ('STR_PIR_PLASMA_RIFLE', 15), ('STR_UAC_ROCKET_LAUNCHER', 15), ('AUX_DOOM_IMP_WEAPON', 14), ('STR_SATCHEL_CHARGE', 12), ('STR_CHAINGUN', 12), ('STR_PIR_ALIEN_GRENADE', 11), ('STR_UAC_HEAVY_NAILGUN', 11), ('STR_PIR_HEAVY_PLASMA', 8), ('STR_UAC_RIFLE', 7), ('STR_NINJA_SMG', 6), ('STR_HIGH_EXPLOSIVE', 5), ('STR_GAS_GRENADE', 5), ('STR_CD_RIFLE', 5), ('STR_ABC_GUN', 5), ('AUX_TANK_LIGHT_MINIGUN_WEAPON', 5), ('STR_INCENDIARY_GRENADE', 5), ('STR_GRENADE_FRAG', 4), ('STR_HEAVY_LASER_PIR', 4), ('STR_SHOTGUN_PA', 4), ('STR_UAC_PLASMAGUN', 4), ('STR_ATG_RIFLE', 4), ('STR_PLASMA_SCORCHER', 3), ('STR_LUGER', 3), ('STR_RPG', 3)]
+
+== FF dmg by weapon|mode [('STR_LUGER|snap', 1178), ('STR_CANISTER_GUN|snap', 1098), ('STR_CD_RIFLE|auto', 677), ('STR_CHAINGUN|auto', 637), ('STR_MACHINEGUN_LIGHT|auto', 606), ('STR_PIR_PLASMA_RIFLE|auto', 589), ('STR_CANISTER_GUN|aimed', 559), ('STR_PIR_HEAVY_PLASMA|auto', 547), ('AUX_CHRYSSALID_WEAPON|melee', 432), ('STR_UAC_ROCKET_LAUNCHER|snap', 392), ('STR_CD_PISTOL|snap', 377), ('STR_UAC_HEAVY_NAILGUN|auto', 372), ('STR_FLECHETTE_GUN|snap', 366), ('AUX_SILACOID_WEAPON|snap', 324), ('STR_UAC_RIFLE|snap', 278), ('STR_PIR_PLASMA_PISTOL|aimed', 265), ('AUX_DOOM_IMP_WEAPON|snap', 257), ('STR_PLASMA_SCORCHER|auto', 194), ('STR_ABC_GUN|snap', 190), ('STR_UAC_PLASMAGUN|auto', 184), ('STR_TOXIGUN|auto', 174), ('STR_HEAVY_LASER_PIR|snap', 170), ('STR_NINJA_SMG|snap', 156), ('STR_NINJA_SMG|aimed', 132), ('STR_DB_SHOTGUN|auto', 119)]
+
+== explosion events 2147 attacks with FF 248
+
+== Psi by type: decisions with option, psi chosen, other attack chosen
+STR_ETHEREAL_SOLDIER                   516    0   67
+STR_VAMPIRE_DUDE                       235    1    7
+STR_AQUATOID_MEDIC                     126    0   29
+STR_ETHEREAL_LEADER                     70   15    1
+STR_ETHEREAL_NOVICE                     67    0   11
+STR_CHURCH_ENGINEER                     42    0    4
+STR_ETHEREAL_COMMANDER                  27   10    0
+STR_CHURCH_LEADER                       19    0    2
+STR_VAMPIRE_GAL                         17    0    1
+STR_SECTOID_LEADER                      10    0    0

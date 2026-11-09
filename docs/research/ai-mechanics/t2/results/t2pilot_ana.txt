@@ -1,0 +1,9 @@
+judged shots and switches: {'judged': 2432, 'not_useless_model_executed': 37, 'not_useless_model_no_attack': 579, 'not_useless_special_executed': 743, 'not_useless_special_no_attack': 279, 'switch_attack': 2, 'switch_none': 0, 'switch_set_act_rethink': 0, 'switch_shot_new': 2, 'switched': 2, 'switched_new_target_executed': 2, 'useless': 794, 'useless_alt_fac-1': 0, 'useless_alt_fac0': 2, 'useless_any_other_target': 321, 'useless_kept_executed': 548, 'useless_kept_no_attack': 244, 'useless_with_alt': 2}
+why not useless: {'modelled_ev>=0.5': 616, 'armor_wear': 611, 'area': 357, 'shield_armor': 54}
+real effect of the executed attack, by class (now = before the turn ended):
+  not_useless_model        now 16/36 with effect (44%), status 11, hp lost 844; later 0/0
+  not_useless_special      now 337/728 with effect (46%), status 67, hp lost 6815; later 5/5
+  other_attack             now 140/390 with effect (36%), status 58, hp lost 5318; later 1/2
+  switched_new_target      now 0/2 with effect (0%), status 0, hp lost 0; later 0/0
+  useless_kept             now 44/545 with effect (8%), status 0, hp lost 0; later 3/3
+decision right after a switch (act): {8: 2}

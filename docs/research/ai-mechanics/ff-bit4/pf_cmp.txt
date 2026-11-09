@@ -1,0 +1,128 @@
+== PE vs PF (must play the same); the F column below is PF
+M1: DIFF table turn: 15 | 12
+M2: DIFF table turn: 13 | 22
+M3: DIFF table turn: 27 | 25
+M4: DIFF table turn: 3 | 7
+M5: DIFF .rec.gz line 1: seed=2017001 want=STR_NINJA_BASE_OUTPOST_ASSAULT [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"5cd8f06b67f5d306","seed":2017001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_ | seed=2017001 want=STR_NINJA_BASE_OUTPOST_ASSAULT [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"b289e7f2ad7912d7","seed":2017001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_
+M6: DIFF .rec.gz line 1: seed=2018001 want=STR_VESSEL_FRIGATE [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"ec08c7c6f7a36b49","seed":2018001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER | seed=2018001 want=STR_VESSEL_FRIGATE [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"f6a5e0f0f7b92018","seed":2018001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER
+M7: DIFF .rec.gz line 1: seed=2019001 want=STR_VESSEL_GUNSHIP [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"85ec326ed48c8f94","seed":2019001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER | seed=2019001 want=STR_VESSEL_GUNSHIP [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"3e1cce66a74a6e25","seed":2019001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER
+M8: DIFF .rec.gz line 1: seed=2020001 want=STR_LOC_HUMANIST_VILLA [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"5c49cb6104cd","seed":2020001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER | seed=2020001 want=STR_LOC_HUMANIST_VILLA [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"c65b33ec07d3401c","seed":2020001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COU
+M9: DIFF table turn: 2 | 1
+M10: DIFF .rec.gz line 1: seed=2022001 want=STR_LOC_DOOMED_FARM2 [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"b2d3d589c54074cd","seed":2022001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNT | seed=2022001 want=STR_LOC_DOOMED_FARM2 [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"d999eea5cb5de87c","seed":2022001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNT
+M11: DIFF .rec.gz line 1: seed=2023001 want=STR_LOC_CATACOMBS_UNDERGROUND_PRESS [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"9f3eb61f640b934a","seed":2023001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"A | seed=2023001 want=STR_LOC_CATACOMBS_UNDERGROUND_PRESS [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"8ea37f50c0792db","seed":2023001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"AS
+M12: DIFF .rec.gz line 1: seed=2024001 want=STR_VESSEL_NIN_APC [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"5cd8f06b67f5d306","seed":2024001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER | seed=2024001 want=STR_VESSEL_NIN_APC [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"b289e7f2ad7912d7","seed":2024001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER
+L1: DIFF table turn: 27 | 19
+L2: DIFF table turn: 41 | 35
+L3: DIFF .rec.gz line 1: seed=2027001 want=STR_SUPPLY_SHIP [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"12859373a6c2c203","seed":2027001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER,ES | seed=2027001 want=STR_SUPPLY_SHIP [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"3f780c90e16f992","seed":2027001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTER,ESC
+L4: DIFF table turn: 9 | 4
+L5: DIFF table turn: 7 | 12
+L6: DIFF .rec.gz line 1: seed=2030001 want=STR_VESSEL_HEAVY_GUNSHIP [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"ec08c7c6f7a36b49","seed":2030001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,C | seed=2030001 want=STR_VESSEL_HEAVY_GUNSHIP [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"f6a5e0f0f7b92018","seed":2030001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,C
+L7: DIFF table turn: 13 | 26
+L8: DIFF table turn: 9 | 10
+L9: DIFF .rec.gz line 1: seed=2033001 want=STR_VESSEL_USO_HEAVY_CRUISER [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"ee62ab95084f612b","seed":2033001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_CO | seed=2033001 want=STR_VESSEL_USO_HEAVY_CRUISER [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"f3fd79c522c29d1a","seed":2033001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_CO
+L10: DIFF .rec.gz line 1: seed=2034001 want=STR_LOC_RITUAL_CAVE [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"bf26efacda560345","seed":2034001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTE | seed=2034001 want=STR_LOC_RITUAL_CAVE [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"ee2d2ab5e538a1b4","seed":2034001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNTE
+L11: DIFF .rec.gz line 1: seed=2035001 want=STR_LOC_SMUGGLER_LAIR [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"3de08efd35b8254","seed":2035001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUNT | seed=2035001 want=STR_LOC_SMUGGLER_LAIR [AIRECHEAD] {"v":1,"gen":"base_v2","cfg":"4d9fb12ce79384e5","seed":2035001,"env":{"OXCE_AI_BOT":"1","OXCE_AI_CAREFUL":"","OXCE_AI_CLEAN2_FIXES":"ASTAR_COST,COUN
+L12: DIFF table turn: 15 | 14
+identical 0/24
+
+== per battle, E -> F (HOSTILE)
+battle	group	outcome	turns	own KO sec	own KO all blasts	sec blasts own hit	cas own	useful att	dmg to player	player dead+out	enemy dead+out	veto ff.sec/sniper/react
+M1	target	loss->loss	15->12	0->2	6->6	4->5	13->9	88->84	7663->7182	60->60	22->15	15/13/0
+M2	target	loss->loss	13->22	0->0	0->2	0->0	5->9	123->142	8177->7046	8->8	36->37	67/69/0
+M3	target	win->win	27->25	0->0	0->1	1->2	0->1	44->38	2078->1173	6->5	63->61	68/81/0
+M4	target	loss->loss	3->7	0->0	1->4	0->0	1->5	14->16	732->720	5->5	5->7	1/1/0
+M5	target	win->win	12->12	0->0	2->2	0->0	3->3	4->4	336->336	2->2	54->54	0/0/0
+M6	target	win->win	35->35	0->0	0->0	0->0	0->0	20->20	2441->2441	6->6	41->41	0/0/0
+M7	target	loss->loss	2->2	0->0	0->0	0->0	0->0	3->3	128->128	5->5	1->1	0/0/0
+M8	target	win->win	5->5	0->0	0->0	0->0	0->0	0->0	90->90	0->0	33->33	0/0/0
+M9	target	loss->loss	2->1	0->0	0->0	0->0	0->0	10->10	437->595	8->8	0->0	1/0/0
+M10	target	loss->loss	20->20	0->0	10->10	0->0	34->34	55->55	495->495	5->5	39->39	0/0/0
+M11	target	draw->draw	61->61	0->0	0->0	0->0	0->0	16->16	443->443	7->7	22->22	0/0/0
+M12	target	win->win	3->3	0->0	0->0	0->0	0->0	2->2	137->137	0->0	10->10	0/0/0
+L1	target	win->win	27->19	0->0	0->0	0->0	0->0	3->3	338->402	1->0	24->24	1/0/0
+L2	target	loss->loss	41->35	0->0	4->7	1->0	7->11	28->26	4449->3718	8->8	61->61	6/29/0
+L3	target	win->win	2->2	0->0	0->0	0->0	0->0	0->0	0->0	0->0	15->15	0/0/0
+L4	target	win->win	9->4	1->1	2->2	5->4	5->8	15->11	2669->1401	6->2	37->37	3/0/0
+L5	target	win->win	7->12	21->9	21->10	22->20	22->16	3->2	234->806	0->0	53->74	19/9/0
+L6	target	draw->draw	61->61	0->0	0->0	0->0	0->0	6->6	2182->2182	1->1	30->30	0/0/0
+L7	target	loss->win	13->26	0->0	0->1	0->0	0->1	24->14	749->871	6->2	21->31	30/48/0
+L8	target	loss->loss	9->10	0->0	0->0	0->0	0->0	17->20	942->823	8->8	11->11	0/1/0
+L9	target	win->win	6->6	1->1	1->1	2->2	1->1	0->0	1135->1135	0->0	34->34	0/0/0
+L10	target	win->win	9->9	0->0	0->0	0->0	0->0	2->2	34->34	2->2	15->15	0/0/0
+L11	target	win->win	5->5	0->0	0->0	0->0	0->0	4->4	237->237	2->2	24->24	0/0/0
+L12	target	win->win	15->14	0->0	0->0	0->0	0->0	6->3	264->120	0->0	41->41	4/0/0
+
+== totals E | F
+-- target
+hdead	666	693
+hout	26	24
+how.over	22	22
+how.timeout	2	2
+outcome.draw	2	2
+outcome.loss	9	8
+outcome.win	13	14
+pdead	133	121
+phplost	14044	13005
+pout	13	15
+recs	23886	26150
+s0_att	1017	1100
+s0_cas_ff	0	1
+s0_cyc	378	400
+s0_edmg	44689	44356
+s0_esec_dmg	392	630
+s0_esec_ko	0	1
+s0_eshot_dmg	8498	6404
+s0_eshot_ko	25	20
+s0_fdmg_exec	18	12
+s0_fsec_dmg	0	51
+s0_fshot_dmg	6661	4305
+s0_fshot_ko	0	1
+s0_thr	7	8
+s0_useful	560	574
+s1_att	2740	3017
+s1_cas_ff	91	98
+s1_cyc	1576	1794
+s1_edmg	36390	32515
+s1_egren_dmg	14838	13638
+s1_egren_ko	7	10
+s1_elaunch_dmg	0	1112
+s1_elaunch_ko	0	4
+s1_eother_dmg	25	25
+s1_esec_dmg	319	1064
+s1_eshot_dmg	14616	8692
+s1_eshot_ko	18	9
+s1_fdmg_exec	6351	5733
+s1_fgren_dmg	4108	6337
+s1_fgren_ko	7	18
+s1_flaunch_dmg	259	137
+s1_flaunch_ko	2	1
+s1_fsec_dmg	2790	2002
+s1_fsec_ko	23	13
+s1_fshot_dmg	3856	3106
+s1_fshot_ko	15	14
+s1_lch	1	3
+s1_n_sec	0	215
+s1_n_secsn	0	251
+s1_thr	191	231
+s1_useful	487	481
+sec_blasts	126	140
+sec_blasts_own_hit	35	33
+sec_blasts_own_ko	14	13
+t_hattacks	2735	3012
+t_hdead	666	693
+t_hout	26	24
+t_pdead	133	121
+t_phplost	14044	13005
+t_pout	13	15
+t_pwounded	170	159
+t_turn	402	408
+turn	402	408
+-- control
+
+== per-battle signs F vs E (less / same / more), target battles
+s1_fsec_ko	1 / 22 / 1
+s1_cas_ff	2 / 16 / 6
+s1_useful	7 / 14 / 3
+s1_edmg	8 / 12 / 4
+t_phplost	9 / 13 / 2
+t_pdead	6 / 17 / 1

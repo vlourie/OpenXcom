@@ -1,0 +1,213 @@
+﻿scenario	seed	turn	side	phase	victim	type	how	pos	tu_at_loss	killer	kfaction	dist	weapon	why	win	own_decisions	last_mode	last_act	last_from	last_to	killer_seen_at_last	killer_seen_before	k_sees	cat	cat_final	reason
+L4	s1	1	0	player_turn	1000010	DOOM_SOLDIER	dead	34,44,2	81	1000024	1	4	STR_PLASMA_SCORCHER	friend	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s1	1	0	player_turn	1000023	DOOM_SARGE	dead	34,48,2	68	1000019	1	3	STR_PIR_PLASMA_RIFLE	friend	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s1	1	0	player_turn	1000031	DOOM_IMP_TERRORIST	dead	31,44,2	83	96	0	4	AUX_TANK_LASER_CANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s1	1	0	player_turn	1000019	DOOM_SARGE	dead	34,51,2	26	393	0	8	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s1	1	0	player_turn	1000029	DOOM_IMP_TERRORIST	dead	31,54,2	114	393	0	10	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s1	1	0	player_turn	1000030	DOOM_IMP_TERRORIST	dead	24,51,2	83	363	0	22	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s1	1	0	player_turn	1000002	DOOM_DEMON_TERRORIST	dead	28,54,2	131	393	0	13	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s1	1	0	player_turn	1000036	DOOM_HELL_BARON_TERRORIST	dead	24,44,2	30	472	0	23	AUX_ACAR_WEAPON_XGAUSS	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s1	1	1	inside_own_turn	1000017	DOOM_SARGE	dead	21,57,3	59	363	0	25	AUX_ACAR_WEAPON_LASCANNON	reaction	1	2	2	8	21,57,3	41,54,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	1	1	inside_own_turn	1000032	DOOM_IMP_TERRORIST	dead	24,51,2	44	363	0	22	AUX_ACAR_WEAPON_LASCANNON	reaction	1	3	2	2	24,49,2	25,54,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	2	0	player_turn	1000024	DOOM_SARGE	dead	28,51,2	40	184	0	25	AUX_TANK_LASER	player_turn_fire	1	2	3	2	31,47,2	28,51,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	2	0	player_turn	1000011	DOOM_SOLDIER	dead	24,54,2	0	393	0	17	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	4	2	7	24,54,2	41,54,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	2	0	player_turn	1000001	DOOM_CACODEMON_TERRORIST	dead	27,46,2	0	472	0	19	AUX_ACAR_WEAPON_XGAUSS	player_turn_fire	1	1	3	2	28,44,2	27,46,2	1	1	1	Bc	B	flight into the killer's known line, a safe cell within its TU
+L4	s1	2	0	player_turn	1000034	DOOM_SARGE	dead	16,30,2	1	471	0	7	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	3	0	2	16,28,2	35,21,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	2	0	player_turn	1000026	DOOM_GUNNER	dead	21,35,2	0	471	0	14	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	1	0	2	7,34,2	31,24,4	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	2	0	player_turn	1000020	DOOM_SARGE	dead	23,39,2	1	363	0	18	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	2	0	2	21,40,2	43,15,0	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	2	0	player_turn	1000006	DOOM_SOLDIER	dead	20,44,4	6	363	0	20	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	6	0	2	20,44,4	12,25,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	2	0	player_turn	1000007	DOOM_SOLDIER	dead	24,33,2	0	394	0	6	STR_XG_HEAVY	player_turn_fire	1	3	0	2	24,40,4	7,6,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	2	0	player_turn	1000003	DOOM_DEMON_TERRORIST	dead	22,33,2	1	394	0	8	STR_XG_HEAVY	player_turn_fire	1	4	0	2	16,30,2	19,23,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	2	1	inside_own_turn	1000015	DOOM_SARGE	dead	20,40,4	61	472	0	27	AUX_ACAR_WEAPON_XGAUSS	reaction	0	4	2	7	20,40,4	40,44,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	2	1	inside_own_turn	1000025	DOOM_GUNNER	dead	25,35,2	16	1000027	1	25	STR_PIR_ALIEN_GRENADE	friend	0	6	3	2	21,33,2	25,35,2	0	0	0	C	C	a friend's shot (the direction is closed)
+L4	s1	3	0	player_turn	1000009	DOOM_SOLDIER	dead	13,46,2	1	363	0	27	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	6	0	2	13,51,2	54,5,1	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	3	0	player_turn	1000004	DOOM_SOLDIER	dead	18,33,2	3	67	0	8	STR_GATLING_LASER	player_turn_fire	0	5	2	8	18,33,2	22,35,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	3	0	player_turn	1000013	DOOM_SOLDIER	dead	15,51,2	0	394	0	16	STR_XG_HEAVY	player_turn_fire	0	9	2	7	15,51,2	24,38,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	3	0	player_turn	1000018	DOOM_SARGE	dead	10,49,2	71	394	0	18	STR_XG_HEAVY	player_turn_fire	0	3	3	2	14,48,2	10,49,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	3	0	player_turn	1000028	DOOM_IMP_TERRORIST	dead	4,5,2	4	255	0	30	STR_PIR_HEAVY_PLASMA	player_turn_fire	0	2	0	2	5,28,2	3,3,0	0	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	3	0	player_turn	1000014	DOOM_SARGE	dead	3,5,2	3	255	0	31	STR_PIR_HEAVY_PLASMA	player_turn_fire	0	2	0	2	1,25,2	1,7,2	0	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	3	0	player_turn	1000000	DOOM_CACODEMON_TERRORIST	dead	8,43,2	4	363	0	32	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	5	2	8	8,43,2	40,44,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	3	0	player_turn	1000027	DOOM_GUNNER	dead	7,52,2	4	67	0	23	STR_GATLING_LASER	player_turn_fire	0	5	2	6	7,52,2	24,38,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	3	1	inside_own_turn	1000021	DOOM_SARGE	dead	3,31,4	57	472	0	2	AUX_ACAR_WEAPON_XGAUSS	reaction	0	5	2	7	3,31,4	4,33,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s1	4	0	player_turn	1000022	DOOM_SARGE	dead	22,12,2	5	366	0	8	AUX_TANK_LASER	player_turn_fire	0	4	0	2	13,24,2	22,10,3	0	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	5	0	player_turn	1000012	DOOM_SOLDIER	dead	13,17,2	5	67	0	15	STR_GATLING_LASER	player_turn_fire	0	9	2	8	13,17,2	14,10,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	5	0	player_turn	1000016	DOOM_SARGE	dead	23,7,2	1	255	0	1	STR_PIR_HEAVY_PLASMA	player_turn_fire	0	10	0	2	23,9,2	24,4,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	5	0	player_turn	1000008	DOOM_SOLDIER	dead	14,14,2	3	102	0	6	STR_XG_HEAVY	player_turn_fire	0	6	0	2	11,14,2	57,14,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	5	0	player_turn	1000005	DOOM_SOLDIER	dead	11,27,2	1	340	0	7	AUX_TANK_PSI_CANNON	player_turn_fire	0	14	2	7	11,27,2	11,20,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s1	7	1	inside_own_turn	1000033	DOOM_SARGE	dead	7,3,2	18	1000035	1	2	STR_PIR_HEAVY_PLASMA	friend	0	21	0	2	3,5,3	47,28,4	0	0	0	C	C	a friend's shot (the direction is closed)
+L4	s1	10	0	player_turn	1000035	DOOM_SARGE	dead	9,5,2	41	418	0	6	STR_PIR_HEAVY_PLASMA	player_turn_fire	0	28	3	2	13,8,2	9,5,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	1	0	player_turn	1000019	DOOM_SARGE	dead	24,49,2	89	340	0	22	AUX_TANK_PSI_CANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s2	1	0	player_turn	1000009	DOOM_SOLDIER	dead	14,44,2	24	366	0	4	AUX_TANK_LASER	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s2	1	0	player_turn	1000000	DOOM_CACODEMON_TERRORIST	dead	34,54,2	42	363	0	7	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s2	1	0	player_turn	1000011	DOOM_SOLDIER	stun	34,51,2	67	363	0	8	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s2	1	0	player_turn	1000012	DOOM_SOLDIER	dead	11,44,2	81	393	0	4	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s2	1	0	player_turn	1000002	DOOM_DEMON_TERRORIST	dead	11,47,2	131	393	0	7	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s2	1	0	player_turn	1000029	DOOM_IMP_TERRORIST	dead	34,44,2	83	427	0	3	AUX_MECHA_GRABBER	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s2	1	1	inside_own_turn	1000008	DOOM_SOLDIER	dead	24,41,2	77	340	0	14	AUX_TANK_PSI_CANNON	reaction	1	1	3	2	24,40,4	21,35,4	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000004	DOOM_DEMON_TERRORIST	dead	24,40,2	104	340	0	13	AUX_TANK_PSI_CANNON	reaction	1	3	0	2	25,41,2	33,38,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000005	DOOM_SOLDIER	dead	10,43,2	38	393	0	4	AUX_ACAR_WEAPON_LASCANNON	reaction	1	3	2	2	1,44,2	13,42,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000010	DOOM_SOLDIER	dead	14,50,2	77	393	0	9	AUX_ACAR_WEAPON_LASCANNON	reaction	1	1	2	2	14,51,2	13,43,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000013	DOOM_SOLDIER	dead	22,49,2	51	340	0	22	AUX_TANK_PSI_CANNON	reaction	1	2	2	7	22,49,2	40,43,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000017	DOOM_SARGE	dead	33,49,2	13	96	0	9	AUX_TANK_LASER_CANNON	reaction	1	2	3	2	31,47,2	35,52,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000031	DOOM_IMP_TERRORIST	dead	21,57,3	42	340	0	30	AUX_TANK_PSI_CANNON	reaction	1	3	2	8	21,57,3	41,54,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000014	DOOM_SARGE	dead	23,40,2	2	340	0	13	AUX_TANK_PSI_CANNON	reaction	1	5	0	2	20,41,4	57,9,1	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	1	1	inside_own_turn	1000023	DOOM_SARGE	dead	22,45,2	9	340	0	18	AUX_TANK_PSI_CANNON	reaction	1	4	0	2	19,45,2	41,54,4	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	1	1	inside_own_turn	1000030	DOOM_IMP_TERRORIST	dead	34,48,2	17	96	0	8	AUX_TANK_LASER_CANNON	reaction	1	3	2	8	34,48,2	34,41,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	2	0	player_turn	1000006	DOOM_SOLDIER	dead	20,44,4	3	38	0	6	STR_FND	player_turn_fire	1	4	2	8	20,44,4	40,43,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	2	0	player_turn	1000016	DOOM_SARGE	dead	23,7,2	3	61	0	3	STR_XG_HEAVY	player_turn_fire	1	3	3	2	24,4,2	26,4,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	2	0	player_turn	1000018	DOOM_SARGE	dead	32,51,2	2	184	0	11	AUX_TANK_LASER	player_turn_fire	1	3	0	2	31,54,2	51,57,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	2	0	player_turn	1000022	DOOM_SARGE	dead	28,45,2	4	184	0	12	AUX_TANK_LASER	player_turn_fire	1	3	3	2	31,44,2	28,45,2	1	1	0	C	B	flight into the killer's known line, a safe cell within its TU
+L4	s2	2	0	player_turn	1000035	DOOM_HELL_BARON_TERRORIST	stun	27,51,2	28	363	0	14	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	3	3	2	26,52,2	27,51,2	1	1	1	Bc	B	flight into the killer's known line, a safe cell within its TU
+L4	s2	2	0	player_turn	1000033	DOOM_SARGE	dead	5,44,2	2	393	0	9	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	5	0	2	5,45,2	3,5,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	2	0	player_turn	1000026	DOOM_GUNNER	dead	2,45,2	2	393	0	13	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	3	3	2	2,49,2	2,45,2	1	1	0	C	B	flight into the killer's known line, a safe cell within its TU
+L4	s2	2	0	player_turn	1000020	DOOM_SARGE	dead	4,51,2	3	393	0	14	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	3	2	7	4,51,2	12,40,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	2	0	player_turn	1000027	DOOM_IMP_TERRORIST	dead	9,55,2	92	393	0	15	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	1	3	2	14,54,2	9,55,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	3	0	player_turn	1000028	DOOM_IMP_TERRORIST	dead	7,55,2	5	393	0	16	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	8	0	2	4,57,2	34,18,4	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	3	0	player_turn	1000021	DOOM_SARGE	dead	4,56,2	75	393	0	18	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	4	3	2	7,57,2	4,56,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	3	0	player_turn	1000003	DOOM_DEMON_TERRORIST	dead	26,32,2	3	472	0	8	AUX_ACAR_WEAPON_XGAUSS	player_turn_fire	0	20	0	2	23,32,2	26,32,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	3	0	player_turn	1000032	DOOM_SARGE	dead	23,17,2	5	424	0	4	STR_PPSH_4	player_turn_fire	0	3	2	2	19,15,2	23,17,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s2	3	0	player_turn	1000015	DOOM_SARGE	dead	18,25,2	5	363	0	13	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	3	0	2	12,35,3	21,24,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	4	0	player_turn	1000034	DOOM_SARGE	dead	16,15,2	2	184	0	9	AUX_TANK_LASER	player_turn_fire	0	6	0	2	15,15,2	38,10,0	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	4	0	player_turn	1000024	DOOM_GUNNER	dead	14,19,2	1	96	0	9	AUX_TANK_LASER_CANNON	player_turn_fire	0	6	0	2	13,18,2	57,44,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	4	0	player_turn	1000001	DOOM_CACODEMON_TERRORIST	stun	13,20,2	0	424	0	6	STR_PPSH_4	player_turn_fire	0	13	0	2	13,18,2	24,7,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	4	0	player_turn	1000007	DOOM_SOLDIER	dead	7,15,2	2	424	0	6	STR_PPSH_4	player_turn_fire	0	9	0	2	5,15,2	32,1,1	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s2	7	0	player_turn	1000025	DOOM_GUNNER	stun	18,13,2	2	184	0	9	AUX_TANK_LASER	player_turn_fire	0	13	0	2	3,9,2	43,33,0	0	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s3	1	0	player_turn	1000019	DOOM_SARGE	dead	34,51,2	89	366	0	12	AUX_TANK_LASER	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000025	DOOM_GUNNER	dead	24,44,2	74	366	0	24	AUX_TANK_LASER	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000026	DOOM_IMP_TERRORIST	dead	34,54,2	114	471	0	7	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000004	DOOM_DEMON_TERRORIST	dead	31,54,2	131	471	0	10	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000032	DOOM_SARGE	dead	4,30,2	89	2	0	17	STR_SMARTGUN	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000015	DOOM_SARGE	dead	24,4,3	89	61	0	5	STR_XG_HEAVY	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000027	DOOM_IMP_TERRORIST	dead	24,49,2	114	340	0	22	AUX_TANK_PSI_CANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000030	DOOM_IMP_TERRORIST	dead	24,51,2	83	340	0	24	AUX_TANK_PSI_CANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000003	DOOM_DEMON_TERRORIST	dead	34,44,2	131	393	0	6	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000018	DOOM_SARGE	dead	31,44,2	89	393	0	9	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	0	player_turn	1000006	DOOM_SOLDIER	dead	20,44,4	81	471	0	23	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	0	-	-	-	-	0	0	1	A	A	fell before any decision of its own
+L4	s3	1	1	inside_own_turn	1000005	DOOM_SOLDIER	dead	24,40,4	19	393	0	16	AUX_ACAR_WEAPON_LASCANNON	reaction	1	1	2	6	24,40,4	40,44,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	1	1	inside_own_turn	1000001	DOOM_CACODEMON_TERRORIST	dead	22,53,2	7	340	0	26	AUX_TANK_PSI_CANNON	reaction	1	3	0	2	21,54,2	20,48,4	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	1	1	inside_own_turn	1000010	DOOM_SOLDIER	dead	14,44,2	81	1000009	1	6	STR_PIR_PLASMA_RIFLE	friend	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+L4	s3	1	1	inside_own_turn	1000009	DOOM_SOLDIER	dead	8,44,2	45	393	0	32	AUX_ACAR_WEAPON_LASCANNON	reaction	1	1	2	9	8,44,2	40,43,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	1	1	inside_own_turn	1000022	DOOM_SARGE	dead	23,57,2	26	340	0	30	AUX_TANK_PSI_CANNON	reaction	1	3	2	8	23,57,2	41,54,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	2	0	player_turn	1000013	DOOM_SARGE	dead	23,40,2	4	340	0	13	AUX_TANK_PSI_CANNON	player_turn_fire	1	2	0	2	20,40,4	28,8,3	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	2	0	player_turn	1000033	DOOM_SARGE	dead	18,33,2	3	184	0	18	AUX_TANK_LASER	player_turn_fire	1	2	0	2	13,31,2	35,21,3	0	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s3	2	0	player_turn	1000029	DOOM_IMP_TERRORIST	dead	21,44,2	4	393	0	19	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	4	0	2	20,44,2	52,23,0	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	2	0	player_turn	1000028	DOOM_IMP_TERRORIST	dead	19,45,2	57	393	0	21	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	3	2	8	19,45,2	40,43,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	2	0	player_turn	1000007	DOOM_SOLDIER	dead	2,43,2	2	393	0	38	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	1	3	2	9	2,43,2	40,43,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	2	1	inside_own_turn	1000021	DOOM_SARGE	stun	11,47,2	89	1000016	1	8	STR_PLASMA_SCORCHER	friend	0	2	3	0	11,47,2	11,47,2	0	0	0	C	C	a friend's shot (the direction is closed)
+L4	s3	2	1	inside_own_turn	1000020	DOOM_SARGE	dead	14,51,2	89	1000016	1	9	STR_PLASMA_SCORCHER	friend	0	2	3	0	14,51,2	14,51,2	0	0	0	C	C	a friend's shot (the direction is closed)
+L4	s3	2	1	inside_own_turn	1000012	DOOM_SOLDIER	stun	5,15,2	24	1000023	1	2	STR_PIR_PLASMA_PISTOL	friend	0	3	2	7	5,15,2	16,15,2	0	0	0	C	C	a friend's shot (the direction is closed)
+L4	s3	3	0	player_turn	1000000	DOOM_CACODEMON_TERRORIST	dead	33,46,2	30	184	0	5	AUX_TANK_LASER	player_turn_fire	0	6	3	2	32,47,2	33,46,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	3	0	player_turn	1000024	DOOM_GUNNER	dead	11,22,2	5	472	0	20	AUX_ACAR_WEAPON_XGAUSS	player_turn_fire	0	4	2	8	11,22,2	17,13,2	0	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	3	0	player_turn	1000031	DOOM_SARGE	dead	8,4,2	1	321	0	31	STR_ELITE_HEAVY_PLASMA	player_turn_fire	0	4	3	2	7,3,2	8,4,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	3	0	player_turn	1000014	DOOM_SARGE	dead	5,14,2	4	274	0	12	STR_SONIC_PISTOL	player_turn_fire	0	4	2	8	5,14,2	16,15,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	3	0	player_turn	1000023	DOOM_GUNNER	stun	3,15,2	5	274	0	14	STR_SONIC_PISTOL	player_turn_fire	0	4	2	7	3,15,2	16,15,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	3	0	player_turn	1000017	DOOM_SARGE	dead	14,29,2	0	197	0	24	STR_FLECHETTE_GUN	player_turn_fire	0	4	2	8	14,29,2	28,23,2	0	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+L4	s3	3	0	player_turn	1000016	DOOM_SARGE	dead	17,41,2	7	393	0	16	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	8	0	2	17,41,2	11,54,0	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s3	4	0	player_turn	1000011	DOOM_SOLDIER	dead	18,32,2	1	471	0	5	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	8	3	2	14,29,2	18,32,2	0	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s3	6	0	player_turn	1000008	DOOM_SOLDIER	dead	22,37,2	3	184	0	22	AUX_TANK_LASER	player_turn_fire	0	11	2	7	22,37,2	23,36,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s3	7	0	player_turn	1000002	DOOM_CACODEMON_TERRORIST	dead	3,34,2	4	471	0	2	AUX_ACAR_WEAPON_LASCANNON	player_turn_fire	0	11	3	2	3,33,2	4,35,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+L4	s3	11	0	player_turn	1000034	DOOM_HELL_BARON_TERRORIST	stun	23,30,4	3	394	0	6	STR_XG_HEAVY	player_turn_fire	0	30	0	2	20,34,4	48,8,4	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s1	1	0	player_turn	1000011	NINJA_GAL	dead	54,48,2	126	206	0	18	AUX_ACAR_WEAPON_14MM	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+M1	s1	1	1	inside_own_turn	1000007	NINJA_GAL	dead	12,35,2	38	1000016	1	9	STR_PIR_HEAVY_PLASMA	friend	1	2	2	7	12,35,2	12,34,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	1	1	inside_own_turn	1000026	NINJA_ASSAULT	stun	11,33,2	0	1000034	1	9	STR_PIR_PLASMA_RIFLE	friend	1	2	2	2	3,32,2	11,33,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	1	1	inside_own_turn	1000013	NINJA_GAL	stun	7,35,2	3	1000003	1	7	STR_PIR_PLASMA_RIFLE	friend	1	3	2	8	7,35,2	10,33,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	1	1	inside_own_turn	1000035	NINJA_ASSASSIN	stun	11,33,2	11	1000016	1	12	STR_PIR_HEAVY_PLASMA	friend	1	2	2	2	4,35,2	11,33,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	2	1	own_turn_start	1000027	NINJA_ASSAULT	stun	11,34,2	186	1000009	1	3	STR_PIR_PLASMA_RIFLE	friend	0	2	2	2	3,32,2	11,34,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	2	1	own_turn_start	1000033	SKYFORGE_ENGINEER	stun	36,42,2	59	1000024	1	15	STR_PIR_PLASMA_RIFLE	friend	0	3	3	2	35,42,2	36,42,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	3	0	player_turn	1000019	NINJA_WARRIOR	stun	38,25,2	9	205	0	5	STR_MINIGUN	player_turn_fire	0	8	0	2	38,25,2	55,0,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s1	3	1	own_turn_start	1000037	NINJA_MEDIC	stun	36,26,2	149	205	0	8	STR_MINIGUN	wounds_status	0	8	0	2	36,26,2	46,17,3	1	1	1	C	C	wounds or status
+M1	s1	3	1	inside_own_turn	1000001	NINJA_GAL	dead	42,36,2	63	1000005	1	9	STR_WEAPON_UNKNOWN	friend	0	10	2	7	42,36,2	43,23,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	3	1	inside_own_turn	1000014	NINJA_WARRIOR	dead	44,38,2	134	1000005	1	7	STR_WEAPON_UNKNOWN	friend	0	7	3	2	42,35,2	45,39,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	3	1	inside_own_turn	1000034	NINJA_ASSASSIN	stun	18,15,2	163	1000018	1	13	STR_PIR_HEAVY_PLASMA	friend	0	7	2	7	18,15,2	35,13,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	4	1	inside_own_turn	1000021	NINJA_WARRIOR	dead	12,22,2	134	1000016	1	3	STR_PIR_HEAVY_PLASMA	friend	0	12	0	2	12,22,2	13,5,3	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s1	4	1	inside_own_turn	1000028	NINJA_ASSAULT	stun	51,34,4	5	172	0	5	STR_OLD_PISTOL_2	reaction	0	14	0	2	50,34,4	51,24,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+M1	s1	6	1	own_turn_start	1000000	NINJA_GAL	stun	27,22,2	114	43	0	18	STR_ASG12	wounds_status	0	12	0	2	27,22,2	25,20,3	0	1	0	C	C	wounds or status
+M1	s1	8	0	player_turn	1000005	NINJA_GAL	stun	41,40,2	7	173	0	2	STR_OLD_PISTOL_2	player_turn_fire	0	30	0	2	41,40,2	58,48,4	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s1	9	1	own_turn_start	1000032	SKYFORGE_ENGINEER	stun	53,39,2	59	173	0	10	STR_OLD_PISTOL_2	wounds_status	0	25	0	2	53,37,2	54,40,4	0	1	0	C	C	wounds or status
+M1	s1	10	1	inside_own_turn	1000016	NINJA_WARRIOR	dead	24,12,2	134	1000008	1	8	STR_PIR_PLASMA_RIFLE	friend	0	55	0	2	24,12,2	11,57,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s2	1	0	player_turn	1000019	NINJA_WARRIOR	dead	14,48,2	38	226	0	8	AUX_ACAR_WEAPON_HMG	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+M1	s2	1	0	player_turn	1000030	SKYFORGE_ENGINEER	dead	14,54,2	42	226	0	14	AUX_ACAR_WEAPON_HMG	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+M1	s2	1	0	player_turn	1000029	SKYFORGE_ENGINEER	dead	44,44,2	36	203	0	8	STR_MINIGUN	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+M1	s2	1	0	player_turn	1000011	NINJA_GAL	dead	34,44,2	126	1000014	1	15	STR_PLASMA_SCORCHER	friend	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+M1	s2	1	0	player_turn	1000008	NINJA_GAL	dead	28,44,2	126	206	0	12	AUX_ACAR_WEAPON_14MM	player_turn_fire	1	0	-	-	-	-	0	0	0	A	A	fell before any decision of its own
+M1	s2	1	1	inside_own_turn	1000002	NINJA_GAL	dead	35,36,2	10	206	0	1	AUX_ACAR_WEAPON_14MM	reaction	1	3	2	2	20,46,4	35,36,2	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+M1	s2	2	0	player_turn	1000026	NINJA_ASSAULT	dead	18,15,2	2	76	0	29	STR_HEAVY_LASER_PIR	player_turn_fire	1	3	0	2	11,22,2	28,3,0	0	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	3	0	player_turn	1000009	NINJA_GAL	stun	55,32,2	0	178	0	2	STR_LASER_RIFLE_PIR	player_turn_fire	0	8	3	2	54,27,2	55,32,2	0	0	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	3	0	player_turn	1000004	NINJA_GAL	stun	42,35,2	16	76	0	20	STR_HEAVY_LASER_PIR	player_turn_fire	0	6	0	2	42,35,2	45,10,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	3	0	player_turn	1000034	NINJA_ASSASSIN	stun	23,17,2	7	212	0	4	STR_MINIGUN	player_turn_fire	0	8	3	2	18,15,2	23,17,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	3	1	inside_own_turn	1000025	NINJA_ASSAULT	dead	34,29,2	186	1000017	1	4	STR_PIR_HEAVY_PLASMA	friend	0	7	0	2	36,26,2	53,41,3	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s2	3	1	inside_own_turn	1000001	NINJA_GAL	dead	15,29,2	8	1000023	1	7	STR_PIR_PLASMA_RIFLE	friend	0	10	2	2	12,31,2	15,29,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s2	4	0	player_turn	1000012	NINJA_GAL	dead	36,21,2	52	34	0	3	STR_HEAVY_LASER_PIR	player_turn_fire	0	13	0	2	36,21,2	35,1,3	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	4	0	player_turn	1000027	NINJA_ASSAULT	dead	34,13,2	20	176	0	9	STR_LASER_RIFLE_PIR	player_turn_fire	0	12	2	10	34,13,2	35,13,2	1	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	4	1	inside_own_turn	1000017	NINJA_WARRIOR	dead	31,32,2	134	1000005	1	4	STR_PIR_PLASMA_RIFLE	friend	0	11	2	7	31,32,2	36,25,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s2	5	0	player_turn	1000013	NINJA_GAL	stun	11,6,2	6	165	0	2	STR_OLD_PISTOL_2	player_turn_fire	0	17	0	2	11,6,2	11,7,2	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+M1	s2	6	1	own_turn_start	1000018	NINJA_WARRIOR	stun	3,5,3	134	1000013	1	8	STR_PIR_PLASMA_RIFLE	friend	0	18	0	8	3,5,3	0,3,1	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s2	6	1	inside_own_turn	1000032	SKYFORGE_ENGINEER	dead	31,25,2	59	1000022	1	3	STR_COOKER	friend	0	19	2	8	31,25,2	34,16,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M1	s2	11	1	own_turn_start	1000005	NINJA_GAL	stun	33,7,2	126	1000045	2	30	STR_GRENADE_LAUNCHER_ADV	explosive	0	35	0	2	33,7,2	33,7,0	0	1	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	14	2	inside_own_turn	1000010	NINJA_GAL	stun	35,33,2	44	1000074	2	5	STR_ASG12	player_turn_fire	0	52	0	2	35,33,2	37,34,2	0	0	0	C	C	the killer unknown, or it had to come or turn to see the unit
+M1	s2	17	1	own_turn_start	1000014	NINJA_WARRIOR	dead	47,21,0	134	1000033	1	26	STR_PIR_PLASMA_RIFLE	friend	0	64	0	2	47,21,0	20,53,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	2	1	inside_own_turn	1000004	DOOM_SOLDIER	stun	48,2,0	15	46	0	1	STR_UNARMED_GAUNTLET	own_turn_other	1	5	2	8	48,2,0	48,3,0	1	1	1	C	C	the killer unknown, or it had to come or turn to see the unit
+M10	s1	3	1	inside_own_turn	1000005	DOOM_SOLDIER	stun	42,5,0	10	1000024	1	26	STR_GRENADE_LAUNCHER	friend	0	9	2	8	42,5,0	42,4,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	3	1	inside_own_turn	1000014	DOOM_SOLDIER	dead	35,9,0	39	1000038	1	20	STR_UAC_HEAVY_NAILGUN	friend	0	9	2	8	35,9,0	37,8,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	4	1	own_turn_start	1000027	DOOM_SARGE	stun	35,10,0	89	114	0	1	STR_UNARMED_GAUNTLET	wounds_status	0	11	0	2	36,8,0	48,27,0	1	1	1	C	C	wounds or status
+M10	s1	4	1	inside_own_turn	1000007	DOOM_SOLDIER	dead	32,10,0	12	1000011	1	18	STR_SHOTGUN_PA	friend	0	8	2	9	32,10,0	36,9,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	4	1	inside_own_turn	1000009	DOOM_SOLDIER	stun	33,13,0	59	1000013	1	14	STR_DB_SHOTGUN	friend	0	8	3	2	28,12,0	33,13,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	4	1	inside_own_turn	1000032	DOOM_GUNNER	dead	39,11,0	28	1000037	1	15	STR_UAC_HEAVY_NAILGUN	friend	0	8	2	7	39,11,0	36,9,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	4	1	inside_own_turn	1000001	DOOM_SOLDIER	dead	30,10,0	17	1000038	1	14	STR_UAC_HEAVY_NAILGUN	friend	0	13	2	8	30,10,0	36,9,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	4	1	inside_own_turn	1000040	DOOM_IMP_TERRORIST	dead	33,22,0	50	1000026	1	13	STR_CHAINGUN	friend	0	12	2	8	33,22,0	36,9,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	4	1	inside_own_turn	1000002	DOOM_SOLDIER	dead	27,31,0	27	1000026	1	2	STR_CHAINGUN	friend	0	14	2	2	26,30,0	27,31,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	5	1	own_turn_start	1000003	DOOM_SOLDIER	dead	21,37,0	81	1000045	1	6	AUX_DOOM_IMP_WEAPON	friend	0	12	0	2	22,36,0	33,48,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	5	1	inside_own_turn	1000041	DOOM_IMP_TERRORIST	dead	45,2,0	114	1000033	1	28	STR_UAC_ROCKET_LAUNCHER	friend	0	11	0	2	43,1,0	45,2,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	7	1	own_turn_start	1000017	DOOM_SARGE	dead	33,1,0	89	1000045	1	30	AUX_DOOM_IMP_WEAPON	friend	0	13	0	2	22,15,0	36,5,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	7	1	own_turn_start	1000020	DOOM_SARGE	dead	6,17,0	89	1000044	1	29	AUX_DOOM_IMP_WEAPON	friend	0	14	0	2	6,21,0	34,53,1	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	7	1	inside_own_turn	1000010	DOOM_SOLDIER	dead	38,12,0	14	1000013	1	7	STR_DB_SHOTGUN	friend	0	21	2	8	38,12,0	39,11,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	7	1	inside_own_turn	1000026	DOOM_SARGE	dead	35,16,0	33	1000028	1	17	STR_CHAINGUN	friend	0	20	2	7	35,16,0	39,11,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	8	0	player_turn	1000023	DOOM_SARGE	stun	57,22,0	71	46	0	1	STR_UNARMED_GAUNTLET	player_turn_fire	0	20	3	2	58,18,0	57,22,0	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+M10	s1	8	1	own_turn_start	1000012	DOOM_SOLDIER	dead	36,37,0	81	1000046	1	39	AUX_DOOM_IMP_WEAPON	friend	0	23	0	2	30,31,0	51,58,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	8	1	own_turn_start	1000013	DOOM_SOLDIER	dead	36,17,0	81	1000039	1	16	AUX_DOOM_IMP_WEAPON	friend	0	21	0	2	37,19,0	35,16,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	8	1	inside_own_turn	1000011	DOOM_SOLDIER	dead	30,7,0	3	1000022	1	33	STR_CHAINGUN	friend	0	26	0	2	33,5,0	22,3,2	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	8	1	inside_own_turn	1000042	DOOM_IMP_TERRORIST	dead	22,18,0	114	1000028	1	7	STR_CHAINGUN	friend	0	26	2	2	22,21,0	22,18,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	8	1	inside_own_turn	1000000	DOOM_SOLDIER	dead	22,27,0	1	1000036	1	4	STR_CHAINGUN	friend	0	27	0	2	23,32,0	18,7,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	9	1	own_turn_start	1000024	DOOM_SARGE	dead	36,27,0	89	1000046	1	30	AUX_DOOM_IMP_WEAPON	friend	0	16	3	2	35,26,0	39,30,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	9	1	inside_own_turn	1000033	DOOM_GUNNER	stun	29,19,0	47	1000033	1	0	STR_UAC_ROCKET_LAUNCHER	friend_self	0	25	2	8	29,19,0	33,18,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	10	1	own_turn_start	1000019	DOOM_SARGE	stun	29,24,0	89	1000037	1	12	STR_UAC_HEAVY_NAILGUN	friend	0	35	0	2	35,24,0	10,32,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	11	1	own_turn_start	1000035	DOOM_GUNNER	stun	36,32,0	74	1000022	1	5	STR_CHAINGUN	friend	0	30	3	2	36,28,0	36,32,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	11	1	inside_own_turn	1000044	DOOM_IMP_TERRORIST	dead	48,32,0	114	1000038	1	14	STR_UAC_HEAVY_NAILGUN	friend	0	30	2	2	46,40,0	48,32,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	12	0	player_turn	1000039	DOOM_IMP_TERRORIST	stun	49,37,0	5	46	0	1	STR_UNARMED_GAUNTLET	player_turn_fire	0	37	3	2	51,34,0	47,39,0	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+M10	s1	12	1	inside_own_turn	1000022	DOOM_SARGE	dead	42,39,0	5	1000038	1	13	STR_UAC_HEAVY_NAILGUN	friend	0	34	2	2	36,27,0	42,39,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	13	1	inside_own_turn	1000045	DOOM_IMP_TERRORIST	dead	41,31,0	114	1000038	1	5	STR_UAC_HEAVY_NAILGUN	friend	0	35	3	2	41,26,0	41,31,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	14	1	inside_own_turn	1000016	DOOM_SARGE	dead	40,38,0	89	1000006	1	12	STR_SHOTGUN_PA	friend	0	46	0	2	41,39,0	52,21,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	14	1	inside_own_turn	1000046	DOOM_IMP_TERRORIST	dead	46,20,0	114	1000028	1	16	STR_CHAINGUN	friend	0	44	0	2	31,12,0	46,20,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	16	1	inside_own_turn	1000043	DOOM_IMP_TERRORIST	stun	48,19,0	4	1000038	1	1	STR_UAC_HEAVY_NAILGUN	friend	0	55	2	2	50,21,0	48,19,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	19	1	inside_own_turn	1000015	DOOM_SOLDIER	stun	46,18,0	13	1	0	1	STR_UNARMED_GAUNTLET	reaction	0	62	2	2	38,9,0	46,18,0	1	1	0	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+M10	s1	21	1	inside_own_turn	1000028	DOOM_SARGE	dead	48,18,0	5	1000030	1	24	STR_CHAINGUN	friend	0	59	2	2	47,18,0	48,18,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	22	1	inside_own_turn	1000021	DOOM_SARGE	dead	46,18,0	5	1000031	1	17	STR_HEAVY_CANNON	friend	0	64	2	10	46,18,0	47,19,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	23	1	inside_own_turn	1000025	DOOM_SARGE	dead	47,18,0	3	1000031	1	19	STR_HEAVY_CANNON	friend	0	59	2	2	48,19,0	47,18,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	24	0	player_turn	1000038	DOOM_GUNNER	stun	47,17,0	2	1000006	1	10	STR_SHOTGUN_PA	friend	0	69	2	2	49,16,0	46,18,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s1	24	1	inside_own_turn	1000006	DOOM_SOLDIER	stun	45,27,0	48	1	0	1	STR_UNARMED_GAUNTLET	reaction	0	64	2	8	45,27,0	44,26,0	1	1	1	Bc	C	the killer known and had a line, but no alternative proven (or it would cancel an attack or an approach)
+M10	s1	24	1	inside_own_turn	1000018	DOOM_SARGE	dead	44,25,0	5	1000030	1	22	STR_CHAINGUN	friend	0	72	2	2	43,25,0	45,27,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	1	1	inside_own_turn	1000016	DOOM_SOLDIER	dead	12,27,1	39	1000023	1	4	STR_UAC_RIFLE	friend	0	2	2	7	12,27,1	11,42,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	1	1	inside_own_turn	1000025	DOOM_SARGE	dead	10,43,0	3	1000024	1	5	STR_UAC_RIFLE	friend	0	4	0	2	10,41,0	24,44,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	2	1	inside_own_turn	1000000	DOOM_SOLDIER	dead	26,13,0	2	1000010	1	8	STR_UAC_RIFLE	friend	0	9	0	2	26,12,0	55,38,1	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	2	1	inside_own_turn	1000036	DOOM_SARGE	stun	27,11,0	0	1000010	1	5	STR_UAC_RIFLE	friend	0	5	2	8	27,11,0	15,34,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	2	1	inside_own_turn	1000046	DOOM_GUNNER	stun	19,21,0	1	1000046	1	0	STR_UAC_ROCKET_LAUNCHER	friend_self	0	5	2	8	19,21,0	9,37,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	3	1	own_turn_start	1000041	DOOM_GUNNER	stun	18,25,0	74	1000046	1	4	STR_UAC_ROCKET_LAUNCHER	friend	0	5	0	2	15,21,0	36,19,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	3	1	inside_own_turn	1000031	DOOM_SARGE	dead	11,44,0	89	1000021	1	17	STR_SHOTGUN_PA	friend	0	4	3	2	11,39,0	11,44,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	3	1	inside_own_turn	1000019	DOOM_SARGE	dead	15,27,0	17	1000038	1	5	STR_UAC_PLASMAGUN	friend	0	11	2	2	16,24,0	15,27,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	3	1	inside_own_turn	1000029	DOOM_SARGE	dead	9,41,0	83	1000040	1	23	STR_UAC_ROCKET_LAUNCHER	friend	0	8	3	2	10,40,0	9,41,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	3	1	inside_own_turn	1000030	DOOM_SARGE	dead	9,44,0	0	1000052	1	33	AUX_DOOM_IMP_WEAPON	friend	0	6	2	8	9,44,0	10,43,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	4	1	inside_own_turn	1000048	DOOM_GUNNER	dead	15,26,0	74	1000038	1	5	STR_UAC_PLASMAGUN	friend	0	3	3	2	13,23,0	15,26,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	4	1	inside_own_turn	1000018	DOOM_SARGE	dead	15,27,0	38	1000038	1	6	STR_UAC_PLASMAGUN	friend	0	15	2	8	15,27,0	7,39,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	4	1	inside_own_turn	1000017	DOOM_SOLDIER	dead	3,37,0	4	1000040	1	19	STR_UAC_ROCKET_LAUNCHER	friend	0	11	2	10	3,37,0	4,36,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	4	1	inside_own_turn	1000014	DOOM_SOLDIER	stun	5,41,1	36	1000040	1	23	STR_UAC_ROCKET_LAUNCHER	friend	0	11	2	8	5,41,1	4,42,1	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	5	1	inside_own_turn	1000026	DOOM_SARGE	stun	7,31,0	16	1000038	1	18	STR_UAC_PLASMAGUN	friend	0	11	2	8	7,31,0	7,32,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	6	1	inside_own_turn	1000040	DOOM_GUNNER	dead	4,23,0	24	1000040	1	0	STR_UAC_ROCKET_LAUNCHER	friend_self	0	14	2	8	4,23,0	4,24,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	7	1	own_turn_start	1000035	DOOM_SARGE	stun	13,53,0	89	1000049	1	1	AUX_DOOM_IMP_WEAPON	friend	0	17	2	2	14,50,0	13,53,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	7	1	inside_own_turn	1000004	DOOM_SOLDIER	dead	14,19,0	19	1000007	1	4	STR_UAC_CARBINE	friend	0	14	2	2	26,18,0	14,19,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	8	1	inside_own_turn	1000052	DOOM_IMP_TERRORIST	stun	13,24,0	114	1000023	1	6	STR_UAC_RIFLE	friend	0	18	2	2	21,28,0	13,24,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	8	1	inside_own_turn	1000013	DOOM_SOLDIER	dead	13,25,0	39	1000023	1	7	STR_UAC_RIFLE	friend	0	18	2	7	13,25,0	12,24,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	8	1	inside_own_turn	1000044	DOOM_GUNNER	stun	13,23,0	0	1000053	1	18	AUX_DOOM_IMP_WEAPON	friend	0	17	2	2	21,19,0	13,23,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	9	1	inside_own_turn	1000033	DOOM_SARGE	dead	19,19,0	89	1000008	1	28	STR_UAC_RIFLE	friend	0	20	2	8	19,19,0	12,24,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	9	1	inside_own_turn	1000007	DOOM_SOLDIER	dead	17,21,0	12	1000042	1	11	STR_UAC_HEAVY_NAILGUN	friend	0	19	2	10	17,21,0	18,20,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	10	0	player_turn	1000023	DOOM_SARGE	stun	19,21,0	5	1000006	1	4	STR_DB_SHOTGUN	friend	0	31	2	10	19,21,0	18,20,0	0	0	0	C	C	a friend's shot (the direction is closed)
+M10	s2	10	1	inside_own_turn	1000006	DOOM_SOLDIER	dead	19,19,0	22	1000042	1	9	STR_UAC_HEAVY_NAILGUN	friend	0	26	2	2	20,17,0	19,19,0	0	0	0	C	C	a friend's shot (the direction is closed)

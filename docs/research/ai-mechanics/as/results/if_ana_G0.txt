@@ -1,0 +1,9 @@
+totals: {'hostile_attacks': 285}
+recorded but no matching shot (act): {}
+primary class (cheapest useful alternative): {}
+flags (non-exclusive): {}
+grenade on the belt but no use: {}
+no alternative: {}
+executed shot's real effect: {}
+by weapon:
+by battle:

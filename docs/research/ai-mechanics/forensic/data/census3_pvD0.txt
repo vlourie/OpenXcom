@@ -1,0 +1,72 @@
+﻿battles 48
+
+== Who can hurt the squad {'units_attacked': 0, 'units_hurt_player': 0, 'attack_tu': 0, 'attack_tu_units_never_hurt_player': 0, 'attack_tu_weapons_never_hurt_player': 0, 'attacks': 0, 'attacks_weapons_never_hurt_player': 0, 'player_dmg_stun': 0, 'top3_share_x1000': 0}
+  attack TU by units that never hurt a player unit in the battle: 0.0%
+  attack TU by weapons that never hurt a player unit in the battle: 0.0%; attacks 0.0%
+
+== Unit turns: hurter = unit that hurt a player unit at least once in this battle {'bound_fire_dmg': 0}
+  hurter: unit-turns 0, attack 0.0%, legal but no attack 0.0%, no target 0.0% (known 0.0%, known within 15: 0.0%), TU unused on no target 0
+  nonhurter: unit-turns 0, attack 0.0%, legal but no attack 0.0%, no target 0.0% (known 0.0%, known within 15: 0.0%), TU unused on no target 0
+  legal (side spotted + LOF) no attack, by distance: {}
+  of them own vision at the start of the turn: hurter 0 nonhurter 0
+  upper bound of the 'fire instead of not firing' lever: 0 HP against 0 HP+stun dealt to players by aimed attacks
+
+== End-of-turn exposure (hostile at player phase start): units, hp, hp lost, dead; loss %, death %
+  unseen  units=10274 hp=719603 lost=28096 dead=405 loss=3.9% death=3.9%
+  seen    units=1358 hp=100065 lost=30265 dead=344 loss=30.2% death=25.3%
+ Seen at player phase start, by last own decision: n, lost, dead, lost/unit, death%
+  none                   n=  1358 lost= 30265 dead=  344 lost/unit=  22.3 death= 25.3%
+
+== Life and chance of the dead {'dead': 1330, 'dead_never_decided': 1330}
+
+== Per battle: hostiles attacked / hurt players, TU share of useless units, top3 share
+D0_L10_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L10_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L11_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L11_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L12_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L12_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L1_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L1_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L2_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L2_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L3_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L3_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L4_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L4_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L5_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L5_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L6_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L6_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L7_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L7_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L8_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L8_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L9_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_L9_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M10_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M10_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M11_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M11_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M12_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M12_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M1_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M1_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M2_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M2_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M3_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M3_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M4_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M4_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M5_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M5_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M6_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M6_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M7_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M7_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M8_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M8_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M9_s1 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+D0_M9_s2 attacked 0 hurt 0 uselessTU% 0 dmg 0 top3% 0
+
+== Examples

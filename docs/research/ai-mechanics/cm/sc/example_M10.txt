@@ -1,0 +1,19 @@
+first pick out of the engine's order: turn 1 pick 1 pass 1 site first left -1
+  C (engine's next, no immediate attack) = 1000000; A (chosen, sees 16) = 1000005; between them (B, none with an immediate attack) 4: 1000001 1000002 1000003 1000004
+  control activation order, turn 1: 1000000 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 1000010 1000011 1000012 1000013 ...
+  S       activation order, turn 1: 1000005 1000029 1000043 1000000 1000001 1000002 1000003 1000004 1000006 1000007 1000008 1000009 1000010 1000011 ...
+  A 1000005 control: #6 snap->16 tu81 spent32; snap->16 tu49 spent32 | #54 walk tu17 spent14 walk
+  A 1000005 S      : #1 snap->16 tu81 spent32; snap->16 tu49 spent32 | #60 walk tu17 spent14 walk
+  C 1000000 control: #1 walk tu81 spent2 walk; walk tu79 spent4 walk; walk tu75 spent8 walk; walk tu67 spent12 walk | #49 walk tu55 spent20 walk; walk tu35 spent32 walk
+  C 1000000 S      : #4 walk tu81 spent2 walk; walk tu79 spent16 walk | #49 walk tu63 spent14 walk
+  B1 1000001 control: #2 walk tu81 spent72 walk; walk tu9 spent0 walk | #50 walk tu9 spent0 walk; walk tu9 spent0 walk
+  B1 1000001 S      : #5 walk tu81 spent80 walk
+  B2 1000002 control: #3 walk tu81 spent74 walk; walk tu7 spent0 walk | #51 walk tu7 spent0 walk; none tu7 spent0
+  B2 1000002 S      : #6 walk tu81 spent4 walk; aimed->114 tu77 spent48; walk tu29 spent26 walk
+  B3 1000003 control: #4 walk tu81 spent72 walk; walk tu9 spent0 walk | #52 walk tu9 spent0 walk; walk tu9 spent0 walk
+  B3 1000003 S      : #7 walk tu81 spent10 walk; walk tu71 spent62 walk | #58 walk tu9 spent0 walk; walk tu9 spent0 walk
+  B4 1000004 control: #5 walk tu81 spent18 walk; snap->115 tu63 spent33 | #53 walk tu30 spent20 walk
+  B4 1000004 S      : #8 walk tu81 spent18 walk; snap->115 tu63 spent33; walk tu30 spent4 walk | #59 walk tu26 spent26 walk
+  B units that in the control walked and attacked within one activation this turn: 1 1000004
+  units active in the control's turn 48, in S's 48; active in the control but never in S: 0 
+  activations this turn: control 77, S 76; attack decisions: control 20, S 28

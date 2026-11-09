@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2016001	STR_VESSEL_LABSHIP	over	STR_VESSEL_LABSHIP	STR_UFO_CRASH_RECOVERY	20	5	URBAN_WASTE	STR_SECTOID_NONCOM	STR_AIRTRUCK#1	5	3	5	5	0	5	539	49	5	0	44	0	44	0	7	62	h.rec.in:437,h.rec.out.a8:1,p.rec.in:39	39	0	0	0	0	7	438	0	0	3	0	0	22		loss

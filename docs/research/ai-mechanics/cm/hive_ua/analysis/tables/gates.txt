@@ -1,0 +1,164 @@
+﻿===== M6 s1 OFF ua4_UO_M6_s1 SHADOW ua5_US_M6_s1 ON ua1_UN_M6_s1
+  F1 hostile 41 managed 41 apart 0 squads 9 sectors 9; org {'SEARCH': 6, 'SECURE': 3}
+  F2 turns with all three kinds at once: [1, 2, 3, 4, 5]; by turn {1: {'SEARCH': 3, 'RESPOND': 2, 'SECURE': 3}, 2: {'SEARCH': 2, 'RESPOND': 2, 'SECURE': 2}, 3: {'RESPOND': 2, 'SECURE': 1, 'SEARCH': 1}, 4: {'RESPOND': 2, 'SECURE': 1, 'SEARCH': 1}, 5: {'RESPOND': 1, 'SECURE': 1, 'SEARCH': 1}, 6: {'SECURE': 1, 'RESPOND': 1}, 7: {'SECURE': 1, 'RESPOND': 1}, 8: {'SECURE': 1, 'RESPOND': 1}}
+  F3 unit-turns walking on a changed node 96, of them moved and ending inside or closer 57, squads 7, by kind {'SEARCH': 25, 'RESPOND': 19, 'SECURE': 13}
+  choices 95, first tries 95: changed 78, nothing fits 2; chosen inside 93 against free inside 36; KEPT_DROP 11 KEPT_BACK 0
+  walk decisions on a changed node 246
+  in place at turn's end, shadow (free soldiers, same rules of tasks): {'RESPOND': '5/50=10%', 'SEARCH': '50/73=68%', 'SECURE': '7/26=26%'}
+  in place at turn's end, ON: {'RESPOND': '1/49=2%', 'SEARCH': '36/44=81%', 'SECURE': '23/39=58%'}
+  nodes visited by turn, shadow: {1: '47/207', 2: '51/207', 3: '51/207', 4: '51/207', 5: '51/207', 6: '55/207', 7: '58/207', 8: '59/207'}
+  nodes visited by turn, ON:     {1: '59/207', 2: '72/207', 3: '77/207', 4: '80/207', 5: '85/207', 6: '85/207', 7: '85/207', 8: '85/207'}
+  measure: OFF -> ON
+    decisions: 548 -> 509
+    unit_turns: 155 -> 141
+    mode0: 352 -> 276
+    mode1: 0 -> 0
+    mode2: 118 -> 197
+    mode3: 78 -> 36
+    walk: 391 -> 352
+    attack: 96 -> 145
+    attack_dmg: 10 -> 16
+    dmg: 458 -> 470
+    downed: 1 -> 4
+    fdmg: 401 -> 543
+    fdowned: 2 -> 2
+    ut_attacked: 49 -> 80
+    ut_moved: 112 -> 117
+    ut_nothing: 25 -> 1
+    idle_tu: 3292 -> 292
+    empty_walk: 84 -> 149
+    spent: 8471 -> 11230
+    rolled3: 21 -> 31
+    rolled3_kept: 21 -> 31
+    mode3_not_rolled: 57 -> 5
+    seen_dec: 160 -> 255
+    seen_combat: 102 -> 168
+    seen_escape: 4 -> 7
+    seen_patrol: 54 -> 80
+    seen_attack: 82 -> 127
+    p_to_c: 31 -> 51
+    c_to_p: 29 -> 47
+    to_esc: 22 -> 30
+    lost_hostile: 28 -> 35
+    lost_player: 4 -> 6
+    lost_civil: 0 -> 0
+  T6
+  first difference at journal line 273 of 2852
+   OFF [AIDECIDE] turn=1 side=1 unit=1000001 n=0 from=(42,42,0) tu=96 mode=2 act=2 to=(39,39,0) run=0 kneel=0 aim=520 weapon=STR_GAUSS_RIFLE seen=448,470,444,545,520,543,503 hu=2a141af5a0ca1fcb hi=
+   ON  [AIDECIDE] turn=1 side=1 unit=1000001 n=0 from=(42,42,0) tu=96 mode=2 act=2 to=(39,39,0) run=0 kneel=0 aim=520 weapon=STR_GAUSS_RIFLE seen=448,470,444,545,520,543,503 hu=2a141af5a0ca1fcb hi=
+   HQ  [HIVEUA] event=CHOICE turn=1 unit=1000001 squad=4 kind=SECURE try=1 at=(42,42,0) center=(37,42,2) radius=8 free=(30,4,0) chosen=(35,34,2) changed=1 fit=6 rung=2 inside=1 closer=1 free_inside=0 free_closer=0 fallback=0 tu=96
+  F6 RESULT spent = [AIEXEC] spent: 130 equal, 2 differ
+  F6 commanders changed 10, all down 2; task kind the same at the next review 4, other 1; merges 5
+  F5 returns:
+  T9 plan us ON max 98709 sum 102758; flood us per side's turn max 375649 sum 760750; RA plan us max 152391 sum 413105
+  T7 lines with crash words: 0
+===== M3 s1 OFF ua6_UO_M3_s1 SHADOW ua7_US_M3_s1 ON ua2_UN_M3_s1
+  F1 hostile 58 managed 58 apart 0 squads 12 sectors 12; org {'SEARCH': 8, 'SECURE': 4}
+  F2 turns with all three kinds at once: [1, 2, 3, 4, 5, 6, 7, 8]; by turn {1: {'RESPOND': 2, 'SECURE': 4, 'SEARCH': 6}, 2: {'SECURE': 4, 'RESPOND': 4, 'SEARCH': 2}, 3: {'SECURE': 3, 'RESPOND': 4, 'SEARCH': 2}, 4: {'SECURE': 3, 'RESPOND': 3, 'SEARCH': 2}, 5: {'SECURE': 3, 'RESPOND': 3, 'SEARCH': 2}, 6: {'SECURE': 3, 'RESPOND': 2, 'SEARCH': 2}, 7: {'SECURE': 3, 'RESPOND': 2, 'SEARCH': 2}, 8: {'SECURE': 3, 'RESPOND': 2, 'SEARCH': 1}}
+  F3 unit-turns walking on a changed node 256, of them moved and ending inside or closer 202, squads 10, by kind {'SECURE': 103, 'SEARCH': 51, 'RESPOND': 48}
+  choices 215, first tries 199: changed 194, nothing fits 4; chosen inside 180 against free inside 14; KEPT_DROP 45 KEPT_BACK 0
+  walk decisions on a changed node 520
+  in place at turn's end, shadow (free soldiers, same rules of tasks): {'RESPOND': '2/57=3%', 'SEARCH': '33/60=55%', 'SECURE': '10/105=9%'}
+  in place at turn's end, ON: {'RESPOND': '15/99=15%', 'SEARCH': '51/83=61%', 'SECURE': '97/142=68%'}
+  nodes visited by turn, shadow: {1: '100/431', 2: '117/431', 3: '126/431', 4: '128/431', 5: '134/431', 6: '134/431', 7: '134/431', 8: '134/431'}
+  nodes visited by turn, ON:     {1: '110/431', 2: '115/431', 3: '126/431', 4: '138/431', 5: '148/431', 6: '158/431', 7: '159/431', 8: '176/431'}
+  measure: OFF -> ON
+    decisions: 741 -> 1012
+    unit_turns: 267 -> 342
+    mode0: 345 -> 531
+    mode1: 0 -> 0
+    mode2: 362 -> 436
+    mode3: 34 -> 45
+    walk: 568 -> 822
+    attack: 163 -> 168
+    attack_dmg: 35 -> 39
+    dmg: 1466 -> 1294
+    downed: 20 -> 22
+    fdmg: 1218 -> 150
+    fdowned: 10 -> 0
+    ut_attacked: 119 -> 118
+    ut_moved: 251 -> 320
+    ut_nothing: 0 -> 3
+    idle_tu: 146 -> 304
+    empty_walk: 76 -> 126
+    spent: 16241 -> 20731
+    rolled3: 22 -> 34
+    rolled3_kept: 22 -> 34
+    mode3_not_rolled: 12 -> 11
+    seen_dec: 305 -> 341
+    seen_combat: 197 -> 230
+    seen_escape: 7 -> 8
+    seen_patrol: 101 -> 103
+    seen_attack: 81 -> 108
+    p_to_c: 111 -> 140
+    c_to_p: 111 -> 143
+    to_esc: 22 -> 32
+    lost_hostile: 45 -> 36
+    lost_player: 5 -> 4
+    lost_civil: 24 -> 24
+  T6
+  first difference at journal line 332 of 5120
+   OFF [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(45,55,3) tu=181 mode=2 act=2 to=(41,55,3) run=0 kneel=0 aim=444 weapon=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,543,503,1000060,1000061,
+   ON  [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(45,55,3) tu=181 mode=2 act=2 to=(41,55,3) run=0 kneel=0 aim=444 weapon=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,543,503,1000060,1000061,
+   HQ  [HIVEUA] event=CHOICE turn=1 unit=1000000 squad=7 kind=SEARCH try=1 at=(45,55,3) center=(37,64,0) radius=10 free=(48,3,0) chosen=(38,65,3) changed=1 fit=33 rung=1 inside=1 closer=1 free_inside=0 free_closer=0 fallback=0 tu=181
+  F6 RESULT spent = [AIEXEC] spent: 323 equal, 1 differ
+  F6 commanders changed 4, all down 0; task kind the same at the next review 0, other 0; merges 6
+  F5 returns:
+    turn 5 squad 7 RESPOND:(45,31,0) contact 503 since 2 -> SEARCH (37,61,1); then walking on the task: 13 unit-turns, 10 inside or closer; objective events []
+    turn 6 squad 6 RESPOND:(21,29,0) contact 444 since 2 -> SEARCH (19,36,0); then walking on the task: 4 unit-turns, 3 inside or closer; objective events [('7', 'SEARCH:(25,24,0)', 'reached'), ('7', 'SEARCH:(29,19,0)', 'reached'), ('8', 'RESPOND:(38,16,0)', 'contact')]
+  T9 plan us ON max 79753 sum 80533; flood us per side's turn max 188804 sum 647293; RA plan us max None sum 0
+  T7 lines with crash words: 0
+===== M8 s1 OFF ua8_UO_M8_s1 SHADOW ua9_US_M8_s1 ON ua3_UN_M8_s1
+  F1 hostile 39 managed 39 apart 0 squads 8 sectors 8; org {'SECURE': 3, 'SEARCH': 5}
+  F2 turns with all three kinds at once: [2]; by turn {1: {'SECURE': 3, 'SEARCH': 4}, 2: {'SECURE': 3, 'RESPOND': 1, 'SEARCH': 1}, 3: {'SECURE': 3, 'RESPOND': 2}, 4: {'SECURE': 1, 'RESPOND': 2}, 5: {'RESPOND': 2}}
+  F3 unit-turns walking on a changed node 38, of them moved and ending inside or closer 28, squads 6, by kind {'SECURE': 15, 'SEARCH': 6, 'RESPOND': 7}
+  choices 171, first tries 127: changed 58, nothing fits 12; chosen inside 107 against free inside 69; KEPT_DROP 10 KEPT_BACK 0
+  walk decisions on a changed node 118
+  in place at turn's end, shadow (free soldiers, same rules of tasks): {'RESPOND': '0/4=0%', 'SEARCH': '23/41=56%', 'SECURE': '19/39=48%'}
+  in place at turn's end, ON: {'RESPOND': '0/19=0%', 'SEARCH': '11/21=52%', 'SECURE': '40/47=85%'}
+  nodes visited by turn, shadow: {1: '38/212', 2: '39/212', 3: '41/212', 4: '41/212', 5: '41/212', 6: '42/212', 7: '42/212', 8: '42/212'}
+  nodes visited by turn, ON:     {1: '42/212', 2: '45/212', 3: '45/212', 4: '45/212', 5: '45/212'}
+  measure: OFF -> ON
+    decisions: 313 -> 284
+    unit_turns: 79 -> 83
+    mode0: 222 -> 191
+    mode1: 16 -> 18
+    mode2: 57 -> 58
+    mode3: 18 -> 17
+    walk: 278 -> 247
+    attack: 21 -> 26
+    attack_dmg: 1 -> 4
+    dmg: 7 -> 190
+    downed: 0 -> 1
+    fdmg: 120 -> 116
+    fdowned: 2 -> 2
+    ut_attacked: 16 -> 16
+    ut_moved: 74 -> 79
+    ut_nothing: 4 -> 2
+    idle_tu: 1341 -> 399
+    empty_walk: 97 -> 69
+    spent: 5084 -> 5744
+    rolled3: 8 -> 11
+    rolled3_kept: 8 -> 11
+    mode3_not_rolled: 10 -> 6
+    seen_dec: 75 -> 85
+    seen_combat: 45 -> 49
+    seen_escape: 1 -> 2
+    seen_patrol: 27 -> 32
+    seen_attack: 19 -> 22
+    p_to_c: 20 -> 19
+    c_to_p: 10 -> 13
+    to_esc: 10 -> 8
+    lost_hostile: 37 -> 36
+    lost_player: 0 -> 1
+    lost_civil: 0 -> 0
+  T6
+  first difference at journal line 211 of 2257
+   OFF [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(52,34,0) tu=298 mode=0 act=2 to=(39,4,0) run=0 kneel=0 aim=-1 weapon=AUX_TANK_TURRETED_AC25MM_WEAPON seen=268,261,153,4 hu=952403701c64de7f hi
+   ON  [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(52,34,0) tu=298 mode=0 act=2 to=(28,38,0) run=0 kneel=0 aim=-1 weapon=AUX_TANK_TURRETED_AC25MM_WEAPON seen=268,261,153,4 hu=952403701c64de7f h
+   HQ  [HIVEUA] event=CHOICE turn=1 unit=1000000 squad=0 kind=SECURE try=1 at=(52,34,0) center=(33,48,2) radius=8 free=(39,4,0) chosen=(28,38,0) changed=1 fit=9 rung=4 inside=0 closer=1 free_inside=0 free_closer=0 fallback=0 tu=298
+  F6 RESULT spent = [AIEXEC] spent: 74 equal, 13 differ
+  F6 commanders changed 5, all down 0; task kind the same at the next review 1, other 0; merges 6
+  F5 returns:
+  T9 plan us ON max 36480 sum 36812; flood us per side's turn max 155512 sum 331784; RA plan us max None sum 0
+  T7 lines with crash words: 0

@@ -1,0 +1,42 @@
+===== d21_DO_M3_s1
+  line 774 t1 1000016 from (2,11,0) tu 65 mode 0 act 2 to (45,11,0)
+     rec 47 src patrol.node odds [{'p': 33, 'a': 0, 'c': 39, 'e': 1, 'roll': 41, 'mode': 0}] roll None keys ['trail', 'odds', 'props']
+  line 778 crosses or ends on the exit: unit 1000016 rec 47 walk 1 end [4, 18, 0] spent 40
+  line 779 t1 1000016 from (4,18,0) tu 25 mode 3 act 2 to (1,20,0)
+     rec 48 src escape.known odds [{'p': 16, 'a': 0, 'c': 36, 'e': 4, 'roll': 3, 'mode': 3}] roll None keys ['trail', 'odds', 'props']
+  line 916 crosses or ends on the exit: unit 1000027 rec 70 walk 1 end [4, 18, 0] spent 4
+  line 1154 crosses or ends on the exit: unit 1000050 rec 108 walk 1 end [4, 18, 0] spent 4
+  line 1444 crosses or ends on the exit: unit 1000050 rec 159 walk None end [4, 18, 0] spent 24
+  line 2108 t2 1000016 from (1,20,0) tu 65 mode 2 act 2 to (6,18,0)
+     rec 230 src firepoint.random odds [{'p': 30, 'a': 0, 'c': 39, 'e': 1, 'roll': 33, 'mode': 2}] roll None keys ['trail', 'odds', 'props']
+  line 2113 t2 1000016 from (3,19,0) tu 55 mode 2 act 2 to (7,18,0)
+     rec 231 src firepoint.random odds [{'p': 15, 'a': 0, 'c': 46, 'e': 1, 'roll': 14, 'mode': 2}] roll None keys ['trail', 'odds', 'props']
+  line 2118 t2 1000016 from (4,19,0) tu 51 mode 2 act 2 to (9,17,0)
+     rec 232 src firepoint.random odds [{'p': 30, 'a': 0, 'c': 42, 'e': 1, 'roll': 16, 'mode': 2}] roll None keys ['trail', 'odds', 'props']
+  line 2499 crosses or ends on the exit: unit 1000050 rec 297 walk None end [4, 18, 0] spent 39
+  line 2504 crosses or ends on the exit: unit 1000050 rec 298 walk None end [4, 18, 0] spent 0
+  line 2707 t2 1000016 from (9,17,0) tu 27 mode 0 act 2 to (45,11,0)
+     rec 323 src patrol.node odds [{'p': 30, 'a': 0, 'c': 42, 'e': 3, 'roll': 47, 'mode': 0}] roll None keys ['trail', 'odds', 'props']
+===== d23_DN_M3_s1
+  line 1000 t1 1000016 from (2,11,0) tu 65 mode 0 act 2 to (8,19,0)
+     rec 49 src patrol.node odds [{'p': 33, 'a': 0, 'c': 39, 'e': 1, 'roll': 56, 'mode': 0}] roll None keys ['trail', 'odds', 'props']
+  line 1005 crosses or ends on the exit: unit 1000016 rec 49 walk 1 end [4, 18, 0] spent 40
+  line 1006 t1 1000016 from (4,18,0) tu 25 mode 2 act 8 to (25,24,0)
+     rec 50 src shot odds [{'p': 16, 'a': 0, 'c': 36, 'e': 4, 'roll': 23, 'mode': 2}] roll None keys ['trail', 'odds', 'props']
+  line 1012 crosses or ends on the exit: unit 1000016 rec 50 walk None end [4, 18, 0] spent 22
+  line 2932 t2 1000016 from (4,18,0) tu 65 mode 2 act 2 to (1,21,0)
+     rec 252 src melee odds [] roll None keys ['trail', 'odds', 'props']
+  line 2938 t2 1000016 from (3,19,0) tu 57 mode 2 act 9 to (0,22,0)
+     rec 253 src shot odds [] roll None keys ['trail', 'odds', 'props']
+  line 3242 t2 1000016 from (3,19,0) tu 15 mode 0 act 2 to (8,19,0)
+     rec 277 src patrol.node odds [{'p': 30, 'a': 0, 'c': 42, 'e': 3, 'roll': 55, 'mode': 0}] roll None keys ['trail', 'odds', 'props']
+  line 3248 t2 1000016 from (5,19,0) tu 7 mode 0 act 2 to (8,19,0)
+     rec 278 src patrol.node odds [{'p': 0, 'a': 0, 'c': 39, 'e': 10, 'roll': 39, 'mode': 2}] roll None keys ['trail', 'odds', 'props']
+  line 3412 crosses or ends on the exit: unit 1000027 rec 300 walk 1 end [4, 18, 0] spent 32
+  line 3420 crosses or ends on the exit: unit 1000027 rec 301 walk None end [4, 18, 0] spent 23
+  line 1187 NO NODE t1 unit 1000027 at (6,14,0) tries 5 checked 5 refused 3 tu 65
+  line 1475 NO NODE t1 unit 1000045 at (3,37,0) tries 5 checked 5 refused 0 tu 45
+  line 1696 NO NODE t1 unit 1000027 at (6,14,0) tries 5 checked 5 refused 3 tu 65
+  line 1726 NO NODE t1 unit 1000033 at (32,66,2) tries 5 checked 5 refused 0 tu 41
+  line 1808 NO NODE t1 unit 1000050 at (6,16,3) tries 5 checked 5 refused 3 tu 65
+  line 2134 NO NODE t1 unit 1000050 at (6,16,3) tries 5 checked 5 refused 3 tu 65

@@ -1,0 +1,49 @@
+A. shadow = D0: what the would-be shots would have replaced
+  would-be shots                                                 155
+  replaces act2 mode0                                            155
+  D0: no attack later in the turn (additional)                   90
+  D0: attacks later in the turn anyway (not additional)          65
+    of them TU for the shot still unused at the end of the walks 35
+    of them a useful attack, which the order could cost          20
+  the replaced walk: unit went down                              1
+  the D0 attacks later in those unit-turns dealt in all         453
+  the replaced walks: TU spent 3585, unit hp lost 300, reactions 2
+  allowed by class and shot ok, all decisions: act2 mode0=329
+
+B. the battles with the order on
+  orders: 1 shots by order=25, 2 shots by order=14, 3+ shots by order=8, orders=47
+  order shots 81: useful 10 (12.3%), damage 272 (3.4 per shot), TU 4414 (54.5 per shot, 16.2 per hp)
+  estimate by the rules in all 807 against damage 272
+  friendly damage 175, friendly downed 2; reactions 3, shooters' hp lost 160
+  infantry target=73, vehicle target=8
+  by estimate: 2-5: shots 21 useful 2 dmg 49 est 70; 5-15: shots 27 useful 3 dmg 70 est 258; <2: shots 15 useful 0 dmg 0 est 17; >=15: shots 18 useful 5 dmg 153 est 463
+  spent minus cost (turning): 0:40, 1:23, 2:8, 3:4, 4:6
+  next decision is not the ordered shot: 0
+  decision's TU differs from the check's: 0
+  spent below the cost: 0
+  TU after differs from TU before minus spent: 0
+  error lines on: 983
+  error lines D0: 983
+  FAIR, independent of the code's own check: target on the seen list of a hostile decision of that turn 81, not found there 0
+  other attacks, on: 2318, useful 431 (18.6%), damage 10499 (4.5 per attack), TU 44.7 per attack, 9.9 per hp, reactions 492 (21.2%), hp lost 5842, friendly 4706; decisions 12589, spent nothing 5023 (39.9%)
+  attacks, D0: 2562, useful 458 (17.9%), damage 10844 (4.2 per attack), TU 44.7 per attack, 10.6 per hp, reactions 421 (16.4%), hp lost 4756, friendly 3907; decisions 12879, spent nothing 4629 (35.9%)
+  order shots that downed someone: 
+    svn_SN_L6_s2 t5 u1000012 target538 -> 538:stun
+    svn_SN_M2_s1 t9 u1000052 target257 -> 257:dead
+    svn_SN_M3_s2 t3 u1000040 target520 -> 520:stun
+    svn_SN_M7_s2 t5 u1000015 target46 -> 46:dead
+    svn_SN_M9_s2 t1 u1000063 target470 -> 470:dead
+  most decisions in one unit-turn: L1_s1 on 8; L1_s1 D0 8; L2_s1 on 15; L2_s1 D0 15; L2_s2 on 12; L2_s2 D0 14; L6_s2 on 8; L6_s2 D0 8; L7_s1 on 8; L7_s1 D0 8; L7_s2 on 6; L7_s2 D0 6; M2_s1 on 13; M2_s1 D0 13; M2_s2 on 12; M2_s2 D0 11; M3_s2 on 12; M3_s2 D0 10; M7_s2 on 17; M7_s2 D0 10; M9_s2 on 10; M9_s2 D0 10
+  battle results D0 -> on
+    L1_s1      pdead 0->1 phplost 57->229 hdead 24->25 hattacks 79->125 hmoves 266->337 turn 15->18
+    L2_s1      pdead 7->2 phplost 777->690 hdead 55->37 hattacks 255->209 hmoves 1032->837 turn 10->6
+    L2_s2      pdead 5->7 phplost 696->628 hdead 60->60 hattacks 387->376 hmoves 2019->1317 turn 25->18
+    L6_s2      pdead 8->7 phplost 612->611 hdead 27->22 hattacks 126->84 hmoves 725->316 turn 24->7
+    L7_s1      pdead 5->3 phplost 539->363 hdead 21->30 hattacks 309->193 hmoves 714->456 turn 22->17
+    L7_s2      pdead 4->2 phplost 519->290 hdead 16->33 hattacks 194->127 hmoves 456->394 turn 8->16
+    M2_s1      pdead 8->8 phplost 993->968 hdead 46->47 hattacks 496->579 hmoves 1390->2641 turn 15->24
+    M2_s2      pdead 8->7 phplost 984->941 hdead 67->65 hattacks 524->485 hmoves 1742->2126 turn 38->50
+    M3_s2      pdead 8->8 phplost 916->916 hdead 39->40 hattacks 134->152 hmoves 612->616 turn 6->7
+    M7_s2      pdead 3->5 phplost 469->539 hdead 2->1 hattacks 47->58 hmoves 345->344 turn 5->5
+    M9_s2      pdead 7->6 phplost 545->536 hdead 0->0 hattacks 14->14 hmoves 490->251 turn 2->1
+    together   pdead 63->56 phplost 7107->6711 hdead 357->360 hattacks 2565->2402 hmoves 9791->9635 turn 170->169

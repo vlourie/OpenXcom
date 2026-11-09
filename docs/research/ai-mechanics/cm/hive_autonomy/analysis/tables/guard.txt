@@ -1,0 +1,12 @@
+cc8_CC_M6_s1 tu {'lines': 434, 'above_tumax': 0}
+   free on guard_sector {}
+   sample []
+ra1_AN_M6_s1 tu {'lines': 339, 'above_tumax': 0}
+   free on guard_sector {'hold_event=entered squad_task=SEARCH order_turn_same=False from=stay': 11}
+   sample [('2', '1000022', '7', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD'), ('2', '1000022', '7', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD'), ('2', '1000023', '7', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD')]
+ra2_AN_M6_s2 tu {'lines': 418, 'above_tumax': 0}
+   free on guard_sector {'hold_event=entered squad_task=SEARCH order_turn_same=False from=stay': 53}
+   sample [('2', '1000005', '1', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD'), ('2', '1000011', '2', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD'), ('2', '1000011', '2', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD')]
+ra3_AV_M3_s1 tu {'lines': 671, 'above_tumax': 0}
+   free on guard_sector {'hold_event=entered squad_task=SEARCH order_turn_same=False from=stay': 16}
+   sample [('2', '1000035', '1', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD'), ('2', '1000035', '1', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD'), ('2', '1000042', '1', ('entered', 'guard_sector', '0'), ('SEARCH', 'contact', '2', 'ENGAGE'), '1', 'COMPLETED', 'HOLD')]

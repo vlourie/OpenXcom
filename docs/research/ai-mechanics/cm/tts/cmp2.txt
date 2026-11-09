@@ -1,0 +1,12 @@
+[AIDECIDE] 924 924 identical
+[AIEXEC] 924 924 identical
+[AIAFTER] 308 308 identical
+[AICASUALTY] 36 36 identical
+[AISTATE] 723 723 identical
+a_worth_more {'turn': 1, 'A': {'id': 1000007, 'pos': [34, 7, 1], 'tu': 37, 'hp': 36}, 'B': {'id': 1000027, 'pos': [33, 6, 1], 'tu': 39, 'hp': 48}, 'T': {'id': 114, 'pos': [40, 11, 0], 'tu': 36, 'hp': 109}, 'valueA': 0, 'valueB': 0, 'us': 668192} fired at T
+a_worth_more {'turn': 8, 'A': {'id': 1000016, 'pos': [24, 28, 0], 'tu': 44, 'hp': 48}, 'B': {'id': 1000034, 'pos': [11, 31, 0], 'tu': 26, 'hp': 66}, 'T': {'id': 46, 'pos': [34, 25, 0], 'tu': 57, 'hp': 59}, 'valueA': 0, 'valueB': 0, 'us': 91258} attacked another
+[(('a_worth_more', 'attacked another'), 1), (('a_worth_more', 'fired at T'), 1), (('b_own_cell', 'attacked another'), 15), (('b_own_cell', 'fired at T'), 6), (('b_own_cell', 'only walked'), 5)]
+distance B-T in candidates Counter({15: 9, 20: 7, 25: 5, 5: 4, 30: 2, 10: 1})
+turn_end calls 1110 us 6545501 max us of a side turn 2286403 max us per call 11722.066666666668
+chain_s1.txt 16
+chain_s2.txt 20

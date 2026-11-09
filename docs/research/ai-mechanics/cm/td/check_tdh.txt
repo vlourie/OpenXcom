@@ -1,0 +1,15 @@
+pairs 4: ['L2_s1', 'L8_s1', 'M10_s1', 'M3_s1']; turns <= 9
+== A d0p: useful 92 wasted 336 exposed 94 hidden 644; dmg by hostile attacks 2682; player hp lost 1803, player down 29, hostile down 337; decisions 3558 (max 15 per unit-turn); unit-turns with an effective attack on a player unit 72
+== B tdh: useful 115 wasted 376 exposed 89 hidden 439; dmg by hostile attacks 2516; player hp lost 2467, player down 37, hostile down 345; decisions 3281 (max 12 per unit-turn); unit-turns with an effective attack on a player unit 97
+   planned joint on the target: L2_s1 t=2 group 12 STRIKE target 344 members [('1000052', 'A'), ('1000024', 'A'), ('1000019', 'A'), ('1000036', 'A')] hit it ['1000024', '1000036'] ordered ['1000024', '1000036'] sent before []
+   planned joint on the target: L2_s1 t=3 group 14 STRIKE target 191 members [('1000015', 'A'), ('1000018', 'A'), ('1000054', 'A'), ('1000020', 'A')] hit it ['1000018', '1000020'] ordered ['1000020'] sent before ['1000020']
+   planned joint on the target: L8_s1 t=5 group 19 STRIKE target 157 members [('1000011', 'A'), ('1000002', 'A'), ('1000015', 'A'), ('1000016', 'A')] hit it ['1000002', '1000011'] ordered ['1000002'] sent before []
+   planned joint on the target: L8_s1 t=5 group 20 STRIKE target 191 members [('1000014', 'A'), ('1000009', 'A'), ('1000032', 'A'), ('1000010', 'A')] hit it ['1000009', '1000010', '1000014'] ordered ['1000009', '1000010', '1000014'] sent before ['1000014']
+== plans 27, with groups 27; groups by phase {'STRIKE': 82, 'APPROACH': 25, 'LIMIT': 1}; roles {'A': 322, 'M': 78, 'S': 22, '-': 4}; group targets older than a turn 0
+   orders: {'KEEP': 797, 'FREE': 319, 'FIREWALK': 137, 'MANEUVER': 126, 'WAIT': 99, 'HOLD': 50, 'FIRE': 12, 'JOINWALK': 3, 'JOIN': 1, 'SUPPORT': 1}
+   FREE why: {'exposed': 214, 'escape': 80, 'limit': 17, 'lost': 8}
+   own choice > order: {'p/2>FIREWALK': 111, 'p/2>MANEUVER': 111, 'p/2>WAIT': 94, 'p/2>HOLD': 33, 'a/2>FIREWALK': 26, 'a/2>HOLD': 16, 'a/2>MANEUVER': 15, 'p/2>FIRE': 11, 'a/2>WAIT': 5, 'p/2>JOINWALK': 3, 'x/2>HOLD': 1, 'p/2>JOIN': 1, 'a/2>FIRE': 1, 'p/2>SUPPORT': 1}
+   carried out: {'FIRE.nouse': 7, 'FIRE.paid': 12, 'FIRE.useful': 5, 'FIREWALK.moved': 136, 'FIREWALK.stuck': 1, 'FIREWALK.turn_exposed': 6, 'FIREWALK.turn_hidden': 31, 'FIREWALK.turn_useful': 24, 'FIREWALK.turn_wasted': 76, 'HOLD.hidden': 45, 'HOLD.seen': 5, 'JOIN.nouse': 1, 'JOIN.paid': 1, 'JOINWALK.moved': 3, 'JOINWALK.turn_hidden': 2, 'JOINWALK.turn_wasted': 1, 'MANEUVER.hidden': 106, 'MANEUVER.seen': 20, 'SUPPORT.hidden': 1, 'WAIT.hidden': 92, 'WAIT.seen': 7}
+   support: {'reactions_all_hostile': 76, 'kept_tu': 1, 'orders': 1}
+   engagement: {'members': 422, 'members_attacked': 307, 'members_exposed_noattack': 15, 'joint_on_player': 12, 'planned_on_player': 5, 'joint': 17, 'planned': 11, 'planned_useful_attacks': 28, 'joint_on_target': 5, 'planned_on_target': 4, 'approach': 25, 'approach_sent_hidden': 53, 'approach_sent_exposed': 0, 'approach_followed': 10, 'approach_next_attackers': 7, 'approach_next_useful': 0}
+   orders replacing an attack the unit chose 0 (need 0); most changing orders in one unit-turn 4

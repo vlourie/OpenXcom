@@ -1,0 +1,21 @@
+plain shots of the side, 48 battles: {'acts': 5385, 'wounding': 898, 'own_fire': 247}
+
+same-turn openings that pass the conditions, accuracy with the range drop at the blocked cell:
+L9_s2 t 2 B 1000014 [9, 41, 0] tu 86 T 571 [12, 38, 0] d 5 STR_SONIC_PISTOL m 8 25 TU p 89 p_d 89 shots 3 walked 2 then t 2 u None dmg 0 f 0
+L7_s1 t 11 B 1000019 [46, 30, 0] tu 23 T 471 [20, 22, 1] d 28 STR_LASER_RIFLE_PIR m 8 16 TU p 86 p_d 66 shots 1 walked 2 then t 8 u 471 dmg 0 f 0
+M10_s1 t 22 B 1000047 [20, 33, 0] tu 42 T 1 [47, 19, 0] d 31 AUX_DOOM_IMP_WEAPON m 8 31 TU p 38 p_d 6 shots 1 walked 1 then t 8 u 1 dmg 0 f 9
+M3_s1 t 2 B 1000008 [33, 59, 0] tu 21 T 444 [31, 16, 0] d 44 AUX_SILACOID_WEAPON m 8 17 TU p 54 p_d -4 shots 1 walked 2 then t 2 u None dmg 0 f 0
+M3_s2 t 4 B 1000039 [32, 57, 0] tu 65 T 444 [20, 9, 0] d 50 STR_CANISTER_GUN m 8 23 TU p 41 p_d -64 shots 2 walked 1 then t 2 u None dmg 0 f 0
+ 12    flat: own move costs at least a shot
+  3    flat: own move costs no shot
+  7    no flat cell in the moves, cost unknown
+ 23  blocked
+ 22  blocked, own cell by the engine
+  5  not blocked
+  2  why a_worth_more
+ 26  why b_own_cell
+
+no. 19 at the side's turn start:
+115 (33,9,0) tu 73 hp 101/107 weapon - sees 1000011,1000019,1000020,1000021,1000032,1000039,1000043,1000047 known 23
+1000034 (9,23,0) tu 74 hp 66/66 weapon STR_HEAVY_CANNON sees - known 4
+1000047 (14,20,0) tu 114 hp 79/79 weapon AUX_DOOM_IMP_WEAPON sees - known 4

@@ -1,0 +1,18 @@
+F2_M10_s2: the switch and the decisions after it
+[AIT2] turn=1 unit=1000024 tu=89 weapon=STR_UAC_RIFLE target=114 tfac=0 modes=2 ev10=0 why=- useless=1 n=1 best=16 bfac=0 bev10=142 switch=1 alts=16:0:15:142:-;
+[AIT2SET] turn=1 unit=1000024 from=114 to=16 act=8
+[AIDECIDE] turn=1 side=1 unit=1000024 n=1 from=(5,44,2) tu=89 mode=2 act=8 to=(15,34,0) run=0 kneel=0 aim=16 weapon=STR_UAC_RIFLE seen=16,46,114,1,115 hu=43e1d9df5dae1a59 hi=48be65b517df3453 ho=72491d03c1353c95 hou=ca8d62f2b82f6181 hm=da8e1d0800f5aba9 hr=ab4a172382a8ad61 hr0=f1f2603f2ba277ce ha0=7fbe9af89898f60e ha=eadac0e05f02c
+[AIEVENT] turn=1 side=1 what=view unit=1000024 pos=(2,1,0)
+[AIT2] turn=1 unit=1000024 tu=67 weapon=STR_UAC_RIFLE target=114 tfac=0 modes=2 ev10=0 why=- useless=1 n=1 best=16 bfac=0 bev10=107 switch=1 alts=16:0:15:107:-;
+[AIT2SET] turn=1 unit=1000024 from=114 to=16 act=8
+[AIT2FX] turn=1 unit=1000024 act=8 target=16 later=0 st=0>0 d=0,0,0,0,0,0,0,0,0,0,0,0
+[AIDECIDE] turn=1 side=1 unit=1000024 n=2 from=(5,44,2) tu=67 mode=2 act=8 to=(15,34,0) run=0 kneel=0 aim=16 weapon=STR_UAC_RIFLE seen=16,46,114,1,115 hu=505b2616a04f82b0 hi=9d84f318902763be ho=af35baec7113e4a2 hou=792769ad29f0ed8e hm=da8e1d0800f5aba9 hr=de8b47a87fade9fd hr0=d91ae7b93b278a4a ha0=eadac0e05f02c3 ha=2f8cac5a0f21db7
+
+AIRESULT F2 / D0:
+[AIRESULT] how=over tac=- seed=2022002 livesoldiers=0 livealiens=26 aborted=0 mission=STR_LOC_DOOMED_FARM2 turn=16 player=5 pdead=4 pout=1 pwounded=5 phplost=533 hostile=56 hdead=28 hout=2 hleft=26 pmoves=111 pattacks=53 hmoves=1331 hattacks=326 ms=60208 vms=964800
+[AIRESULT] how=over tac=- seed=2022002 livesoldiers=0 livealiens=31 aborted=0 mission=STR_LOC_DOOMED_FARM2 turn=11 player=5 pdead=3 pout=2 pwounded=5 phplost=518 hostile=56 hdead=23 hout=2 hleft=31 pmoves=78 pattacks=38 hmoves=1031 hattacks=226 ms=39804 vms=632920
+
+repeats F2 / D0:
+F2_M10_s2: turns 15 repeats 125 (8.3/turn) by act {'8': 6, '0': 4, '2': 115} right after a switch {'8': 0, '0': 0, '2': 0}
+D0_M10_s2: turns 11 repeats 108 (9.8/turn) by act {'0': 5, '8': 1, '2': 102} right after a switch {'0': 0, '8': 0, '2': 0}
+hostile decisions / act=0: F2 1693 / 36, D0 1279 / 22

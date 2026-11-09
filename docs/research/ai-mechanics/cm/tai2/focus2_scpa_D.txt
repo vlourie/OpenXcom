@@ -1,0 +1,9 @@
+possible-shooter unit-turns 1937
+  hit     252 (13.0%)  of them with a 'capable' weapon   235; went down in own turn 12
+  miss    939 (48.5%)  of them with a 'capable' weapon   480; went down in own turn 75
+  none    746 (38.5%)  of them with a 'capable' weapon   433; went down in own turn 26
+first-decision mode x outcome:
+  ambush  hit=6 (capable 6) miss=11 (capable 2) none=77 (capable 47)
+  combat  hit=218 (capable 204) miss=816 (capable 427) none=161 (capable 106)
+  escape  hit=1 (capable 0) miss=2 (capable 1) none=273 (capable 151)
+  patrol  hit=27 (capable 25) miss=110 (capable 50) none=235 (capable 129)

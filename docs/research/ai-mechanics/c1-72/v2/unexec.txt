@@ -1,0 +1,9 @@
+unexec	135
+unexec_next_cover_step	0
+unexec_next_k_-	34
+unexec_next_k_M	1
+unexec_next_k_a	46
+unexec_next_k_e	1
+unexec_next_k_m	53
+unexec_next_same_turn	101
+unexec_spent	85

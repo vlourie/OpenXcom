@@ -1,0 +1,158 @@
+battles 48, hostile attacks executed 5767, with player reactions 312, with >=1 hostile loss to the player in the window 117, with >=2 7
+
+== attacks with >= 2 hostile losses in their window
+scpa_D_M3_s1 t3 1000030 n=1 aimed STR_CANISTER_GUN -> 444 (VEHICLE) dist=6 near3=3 pre_spotted=None post_spotted=1 dmg=74 downed=1 reactions=444
+    lost 3: 1000027(dead by 444 AUX_TANK_CANNON d1), 1000030(dead by 444 AUX_TANK_CANNON d0), 1000016(dead by 444 STR_WEAPON_UNKNO d13)
+scpa_D_M3_s1 t3 1000006 n=2 snap AUX_SILACOID_WEA -> 444 (VEHICLE) dist=11 near3=0 pre_spotted=0 post_spotted=1 dmg=118 downed=0 reactions=444,444
+    lost 4: 1000001(stun by 444 AUX_TANK_CANNON d10), 1000009(dead by 444 AUX_TANK_CANNON d6), 1000012(dead by 444 AUX_TANK_CANNON d15), 1000045(stun by 444 AUX_TANK_CANNON d8)
+scpa_D_M3_s1 t12 1000020 n=2 snap STR_CANISTER_GUN -> 444 (VEHICLE) dist=3 near3=1 pre_spotted=0 post_spotted=0 dmg=12 downed=0 reactions=444,444,444,444
+    lost 2: 1000020(dead by 444 AUX_TANK_CANNON d0), 1000039(stun by 444 AUX_TANK_CANNON d12)
+scpa_D_M3_s2 t2 1000044 n=2 snap STR_CANISTER_GUN -> 444 (VEHICLE) dist=12 near3=1 pre_spotted=1 post_spotted=1 dmg=0 downed=0 reactions=444,444
+    lost 5: 1000024(dead by 444 AUX_TANK_CANNON d3), 1000044(dead by 444 AUX_TANK_CANNON d2), 1000046(dead by 444 AUX_TANK_CANNON d1), 1000049(stun by 444 AUX_TANK_CANNON d9), 1000056(stun by 444 AUX_TANK_CANNON d5)
+scpa_D_M3_s2 t4 1000003 n=2 melee AUX_CHRYSSALID_W -> 444 (VEHICLE) dist=2 near3=2 pre_spotted=0 post_spotted=0 dmg=167 downed=0 reactions=444
+    lost 4: 1000003(dead by 444 AUX_TANK_CANNON d1), 1000095(dead by 444 AUX_TANK_CANNON d1), 1000097(dead by 444 STR_WEAPON_UNKNO d6), 1000096(dead by 444 STR_WEAPON_UNKNO d1)
+scpa_D_M6_s1 t1 1000019 n=1 snap STR_FLECHETTE_GU -> 470 (VEHICLE) dist=16 near3=1 pre_spotted=2 post_spotted=2 dmg=239 downed=1 reactions=444,444,448
+    lost 3: 1000018(stun by 444 AUX_TANK_CANNON d3), 1000026(stun by 444 AUX_TANK_CANNON d11), 1000019(dead by 448 AUX_TANK_LASER_C d6)
+scpa_D_M6_s2 t25 1000007 n=2 snap STR_GAUSS_PISTOL -> 444 (VEHICLE) dist=13 near3=5 pre_spotted=2 post_spotted=2 dmg=0 downed=0 reactions=444,444,444
+    lost 2: 1000013(stun by 444 AUX_TANK_CANNON d13), 1000007(dead by 444 AUX_TANK_CANNON d11)
+all executed: 5767; at a vehicle 1210 (21%); own units within 3 cells avg 2.22; target not downed 5382 (93%)
+>=1 loss: 117; at a vehicle 49 (42%); own units within 3 cells avg 2.32; target not downed 113 (97%)
+>=2 losses: 7; at a vehicle 7 (100%); own units within 3 cells avg 1.86; target not downed 5 (71%)
+
+== by the target's main weapon (attacks, with reactions, with >=1 loss, losses, losses per 100 attacks)
+  player soldier                3677   211    64    64    1.7   dmg/attack   5.0 no-dmg  85% enemies downed 187
+  AUX_TANK_LASER                 942    58    39    41    4.4   dmg/attack   1.6 no-dmg  92% enemies downed 10
+  other/none                     880    26     4     4    0.5   dmg/attack  12.8 no-dmg  69% enemies downed 184
+  AUX_TANK_MG                    110    11     9    23   20.9   dmg/attack   5.3 no-dmg  86% enemies downed 2
+  AUX_WOLVERIN_WEAPON_MINIGUN     60     1     0     0    0.0   dmg/attack   3.0 no-dmg  87% enemies downed 3
+  AUX_TANK_HMG_WEAPON             32     1     0     0    0.0   dmg/attack   4.3 no-dmg  72% enemies downed 1
+  AUX_XTURRET_CANNON_WEAPON       29     1     0     0    0.0   dmg/attack   6.9 no-dmg  69% enemies downed 1
+  AUX_DOGE_BARK                    8     0     0     0    0.0   dmg/attack  69.0 no-dmg  25% enemies downed 6
+  AUX_MECHA_GRABBER                7     1     1     1   14.3   dmg/attack   5.4 no-dmg  43% enemies downed 0
+  AUX_ACAR_WEAPON_14MM             6     0     0     0    0.0   dmg/attack  11.2 no-dmg  33% enemies downed 0
+  AUX_TANK_PSI_CANNON              3     0     0     0    0.0   dmg/attack   0.0 no-dmg 100% enemies downed 0
+  AUX_POWER_TAIL                   3     0     0     0    0.0   dmg/attack   0.0 no-dmg 100% enemies downed 0
+  AUX_ACAR_WEAPON_TANK_FLAK        3     0     0     0    0.0   dmg/attack  67.3 no-dmg   0% enemies downed 2
+  AUX_TANK_AC25MM_WEAPON           3     2     0     0    0.0   dmg/attack   3.3 no-dmg  33% enemies downed 0
+  AUX_ACAR_WEAPON_HMG              2     0     0     0    0.0   dmg/attack  18.0 no-dmg  50% enemies downed 0
+  AUX_TANK_WEAPON_GRENADES         2     0     0     0    0.0   dmg/attack   0.0 no-dmg 100% enemies downed 0
+
+== all 110 attacks at AUX_TANK_MG
+  M12_s1   t1   1000003 aimed  STR_SLUGGA       dist=24  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M12_s1   t1   1000003 aimed  STR_SLUGGA       dist=24  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M12_s1   t1   1000003 snap   STR_SLUGGA       dist=24  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t1   1000030 snap   STR_CANISTER_GUN dist=8   near3=5 pre=None post=2 dmg=0    react=0 lost=0
+  M3_s1    t1   1000035 throw  STR_GRENADE_BUG  dist=11  near3=3 pre=None post=2 dmg=0    react=0 lost=0
+  M3_s1    t2   1000036 aimed  STR_CANISTER_GUN dist=5   near3=2 pre=0 post=2 dmg=8    react=2 lost=1
+  M3_s1    t2   1000028 snap   STR_SR_RIFLE     dist=25  near3=1 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t3   1000009 aimed  STR_CANISTER_GUN dist=19  near3=1 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s1    t3   1000017 snap   STR_SR_RIFLE     dist=22  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t3   1000017 snap   STR_SR_RIFLE     dist=22  near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  M3_s1    t3   1000030 aimed  STR_CANISTER_GUN dist=6   near3=3 pre=None post=1 dmg=74   react=1 lost=3
+  M3_s1    t3   1000055 snap   STR_SR_RIFLE     dist=26  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t3   1000006 snap   AUX_SILACOID_WEA dist=11  near3=0 pre=0 post=1 dmg=118  react=2 lost=4
+  M3_s1    t4   1000014 snap   STR_CANISTER_GUN dist=17  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t5   1000010 snap   STR_SR_RIFLE     dist=28  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t5   1000017 snap   STR_SR_RIFLE     dist=28  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t5   1000018 aimed  STR_SR_RIFLE     dist=32  near3=4 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t6   1000010 snap   STR_SR_RIFLE     dist=18  near3=4 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t6   1000011 snap   STR_CANISTER_GUN dist=17  near3=2 pre=None post=1 dmg=4    react=0 lost=0
+  M3_s1    t6   1000038 aimed  STR_CANISTER_GUN dist=9   near3=0 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s1    t6   1000039 snap   STR_CANISTER_GUN dist=18  near3=1 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t6   1000052 snap   STR_PIR_SMALL_LA dist=20  near3=1 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t6   1000055 snap   STR_SR_RIFLE     dist=31  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t7   1000010 aimed  STR_SR_RIFLE     dist=16  near3=1 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s1    t7   1000010 snap   STR_SR_RIFLE     dist=16  near3=1 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t7   1000023 aimed  STR_CANISTER_GUN dist=27  near3=0 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s1    t7   1000033 snap   STR_CANISTER_GUN dist=24  near3=4 pre=1 post=1 dmg=0    react=0 lost=0
+  M3_s1    t7   1000055 snap   STR_SR_RIFLE     dist=31  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t7   1000041 aimed  STR_SR_RIFLE     dist=22  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t7   1000054 snap   STR_SR_RIFLE     dist=20  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t8   1000011 aimed  STR_CANISTER_GUN dist=7   near3=0 pre=None post=2 dmg=2    react=0 lost=0
+  M3_s1    t8   1000033 snap   STR_CANISTER_GUN dist=19  near3=5 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t8   1000054 snap   STR_SR_RIFLE     dist=26  near3=3 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t9   1000023 snap   STR_CANISTER_GUN dist=15  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s1    t11  1000054 snap   STR_SR_RIFLE     dist=19  near3=2 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s1    t12  1000020 throw  STR_GRENADE_BUG  dist=3   near3=1 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s1    t12  1000020 snap   STR_CANISTER_GUN dist=3   near3=1 pre=0 post=0 dmg=12   react=4 lost=2
+  M3_s1    t12  1000087 melee  AUX_CHRYSSALID_W dist=1   near3=1 pre=None post=0 dmg=48   react=0 lost=0
+  M3_s2    t1   1000020 snap   STR_CANISTER_GUN dist=13  near3=0 pre=3 post=3 dmg=4    react=0 lost=0
+  M3_s2    t1   1000018 snap   STR_SR_RIFLE     dist=21  near3=0 pre=0 post=1 dmg=0    react=0 lost=0
+  M3_s2    t1   1000029 snap   STR_SR_RIFLE     dist=15  near3=0 pre=1 post=1 dmg=0    react=1 lost=0
+  M3_s2    t1   1000051 auto   STR_TOXIGUN      dist=9   near3=1 pre=None post=1 dmg=28   react=0 lost=0
+  M3_s2    t2   1000034 snap   STR_CANISTER_GUN dist=7   near3=0 pre=1 post=1 dmg=0    react=1 lost=0
+  M3_s2    t2   1000044 snap   STR_CANISTER_GUN dist=14  near3=2 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s2    t2   1000044 snap   STR_CANISTER_GUN dist=12  near3=1 pre=1 post=1 dmg=0    react=2 lost=5
+  M3_s2    t2   1000050 aimed  STR_CANISTER_GUN dist=32  near3=1 pre=None post=0 dmg=0    react=0 lost=0
+  M3_s2    t2   1000055 aimed  STR_PIR_PLASMA_P dist=36  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s2    t2   1000057 auto   STR_PIR_PLASMA_R dist=10  near3=1 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s2    t3   1000057 snap   STR_PIR_PLASMA_R dist=18  near3=0 pre=1 post=1 dmg=0    react=0 lost=0
+  M3_s2    t4   1000003 melee  AUX_CHRYSSALID_W dist=2   near3=2 pre=0 post=0 dmg=167  react=1 lost=4
+  M3_s2    t4   1000021 snap   STR_CANISTER_GUN dist=14  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s2    t4   1000041 aimed  STR_CANISTER_GUN dist=20  near3=0 pre=0 post=0 dmg=4    react=0 lost=0
+  M3_s2    t4   1000055 aimed  STR_PIR_PLASMA_P dist=51  near3=1 pre=0 post=0 dmg=0    react=0 lost=0
+  M3_s2    t5   1000021 snap   STR_CANISTER_GUN dist=10  near3=0 pre=None post=0 dmg=0    react=0 lost=0
+  M6_s1    t1   1000029 snap   STR_GAUSS_RIFLE  dist=13  near3=0 pre=2 post=2 dmg=0    react=0 lost=0
+  M6_s1    t1   1000040 snap   STR_GAUSS_PISTOL dist=22  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s1    t1   1000040 snap   STR_GAUSS_PISTOL dist=23  near3=1 pre=0 post=2 dmg=0    react=0 lost=0
+  M6_s1    t2   1000002 snap   STR_FLECHETTE_GU dist=9   near3=0 pre=None post=1 dmg=0    react=0 lost=0
+  M6_s1    t2   1000002 snap   STR_FLECHETTE_GU dist=9   near3=0 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s1    t2   1000002 snap   STR_FLECHETTE_GU dist=9   near3=0 pre=1 post=1 dmg=0    react=2 lost=1
+  M6_s1    t3   1000017 snap   STR_GAUSS_RIFLE  dist=16  near3=1 pre=None post=1 dmg=0    react=0 lost=0
+  M6_s1    t3   1000017 snap   STR_GAUSS_RIFLE  dist=16  near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s1    t3   1000017 snap   STR_GAUSS_RIFLE  dist=16  near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s1    t6   1000031 snap   STR_GAUSS_PISTOL dist=3   near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s1    t6   1000031 snap   STR_GAUSS_PISTOL dist=3   near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s1    t6   1000031 snap   STR_GAUSS_PISTOL dist=3   near3=1 pre=1 post=2 dmg=0    react=0 lost=0
+  M6_s1    t24  1000021 snap   STR_GAUSS_RIFLE  dist=23  near3=7 pre=2 post=2 dmg=0    react=0 lost=0
+  M6_s1    t24  1000021 snap   STR_GAUSS_RIFLE  dist=23  near3=7 pre=2 post=2 dmg=0    react=0 lost=0
+  M6_s1    t24  1000034 aimed  STR_GAUSS_SNIPER dist=18  near3=4 pre=None post=1 dmg=0    react=0 lost=0
+  M6_s1    t24  1000038 snap   STR_GAUSS_PISTOL dist=20  near3=6 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s1    t25  1000015 snap   STR_GAUSS_RIFLE  dist=17  near3=4 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t1   1000020 snap   STR_FLECHETTE_GU dist=7   near3=2 pre=None post=0 dmg=0    react=0 lost=0
+  M6_s2    t1   1000020 snap   STR_FLECHETTE_GU dist=7   near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t1   1000011 snap   STR_FLECHETTE_GU dist=12  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t1   1000017 snap   STR_GAUSS_RIFLE  dist=6   near3=1 pre=2 post=2 dmg=0    react=0 lost=0
+  M6_s2    t1   1000018 snap   STR_HEAVY_GAUSS  dist=5   near3=3 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t1   1000020 snap   STR_FLECHETTE_GU dist=7   near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t1   1000020 snap   STR_FLECHETTE_GU dist=7   near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t1   1000026 snap   STR_FLECHETTE_GU dist=16  near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t2   1000011 snap   STR_FLECHETTE_GU dist=13  near3=0 pre=None post=0 dmg=0    react=0 lost=0
+  M6_s2    t2   1000011 snap   STR_FLECHETTE_GU dist=13  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t2   1000010 snap   STR_GAUSS_RIFLE  dist=15  near3=3 pre=1 post=0 dmg=0    react=0 lost=0
+  M6_s2    t2   1000011 snap   STR_FLECHETTE_GU dist=13  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t2   1000011 snap   STR_FLECHETTE_GU dist=13  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t2   1000036 snap   STR_GAUSS_RIFLE  dist=12  near3=1 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t5   1000018 snap   STR_HEAVY_GAUSS  dist=19  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t5   1000022 aimed  STR_GAUSS_SNIPER dist=13  near3=0 pre=None post=0 dmg=34   react=0 lost=0
+  M6_s2    t5   1000032 snap   STR_HEAVY_GAUSS  dist=23  near3=2 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t5   1000036 snap   STR_GAUSS_RIFLE  dist=10  near3=0 pre=None post=0 dmg=7    react=0 lost=0
+  M6_s2    t5   1000036 snap   STR_GAUSS_RIFLE  dist=10  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t5   1000036 snap   STR_GAUSS_RIFLE  dist=10  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t6   1000018 snap   STR_HEAVY_GAUSS  dist=13  near3=0 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t10  1000030 snap   STR_FLECHETTE_GU dist=21  near3=2 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t11  1000024 aimed  STR_GAUSS_SNIPER dist=17  near3=2 pre=None post=0 dmg=0    react=0 lost=0
+  M6_s2    t11  1000030 snap   STR_FLECHETTE_GU dist=15  near3=2 pre=None post=0 dmg=0    react=0 lost=0
+  M6_s2    t11  1000030 snap   STR_FLECHETTE_GU dist=15  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t11  1000030 snap   STR_FLECHETTE_GU dist=15  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t12  1000030 snap   STR_FLECHETTE_GU dist=12  near3=2 pre=None post=0 dmg=0    react=0 lost=0
+  M6_s2    t12  1000030 snap   STR_FLECHETTE_GU dist=12  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t13  1000003 snap   STR_GAUSS_PISTOL dist=2   near3=3 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t13  1000030 snap   STR_FLECHETTE_GU dist=3   near3=3 pre=None post=1 dmg=0    react=0 lost=0
+  M6_s2    t13  1000030 snap   STR_FLECHETTE_GU dist=3   near3=3 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t13  1000003 snap   STR_GAUSS_PISTOL dist=2   near3=3 pre=1 post=1 dmg=22   react=0 lost=0
+  M6_s2    t17  1000033 aimed  STR_GAUSS_SNIPER dist=26  near3=2 pre=0 post=0 dmg=0    react=0 lost=0
+  M6_s2    t17  1000033 snap   STR_GAUSS_SNIPER dist=26  near3=2 pre=0 post=0 dmg=47   react=0 lost=0
+  M6_s2    t23  1000013 auto   STR_HEAVY_GAUSS  dist=25  near3=2 pre=None post=0 dmg=0    react=0 lost=0
+  M6_s2    t25  1000007 snap   STR_GAUSS_PISTOL dist=13  near3=5 pre=2 post=2 dmg=0    react=3 lost=2
+  M6_s2    t28  1000001 snap   STR_GAUSS_PISTOL dist=22  near3=0 pre=1 post=1 dmg=0    react=2 lost=1
+  M6_s2    t28  1000005 snap   STR_FLECHETTE_GU dist=21  near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  M6_s2    t28  1000005 snap   STR_FLECHETTE_GU dist=21  near3=1 pre=1 post=1 dmg=0    react=0 lost=0
+  near3>=1     attacks  73  with loss  6  losses 17  per 100 23
+  near3==0     attacks  37  with loss  3  losses  6  per 100 16
+  dist<=6      attacks  15  with loss  4  losses 10  per 100 67
+  dist>6       attacks  95  with loss  5  losses 13  per 100 14
+  melee/throw  attacks   4  with loss  1  losses  4  per 100 100
+  fire         attacks 106  with loss  8  losses 19  per 100 18
+
+== who killed in those windows (weapon): AUX_TANK_CANNON 24, AUX_TANK_LASER_C 20, AUX_ACAR_WEAPON_ 19, STR_CD_PISTOL 15, STR_SWORD 12, AUX_TANK_LASER 7, STR_POLICE_SHIEL 6, STR_GAUNTLET_CLA 6

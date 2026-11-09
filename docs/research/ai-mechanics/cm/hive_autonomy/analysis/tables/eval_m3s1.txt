@@ -1,0 +1,69 @@
+runs ['scpa_D_M3_s1', 'cc6_CV_M3_s1', 'ra3_AV_M3_s1']
+  ART_ESC                             0      317        0
+  ART_ESC_walk                        0       20        0
+  answer_free_attack                  0        0       56
+  answer_free_decisions               0        0      205
+  answer_free_walk                    0        0      141
+  answer_stand_decisions              0        0      176
+  attacks                           163      143      170
+  attacks_ENGAGE                      0       57       74
+  attacks_HOLD                        0       16       10
+  attacks_NONE                      163       50       62
+  attacks_REINFORCE                   0       17       20
+  attacks_SEARCH                      0        3        4
+  decisions                         741      921      788
+  esc_all                            34      396       49
+  esc_dice                           22       28       36
+  esc_kept                            8       24        6
+  esc_kept_walk                       8       23        6
+  esc_walk                           24       65       32
+  free_fallback                       0        0        3
+  free_fallback_walk                  0        0        0
+  stand_mode0                         0        0      125
+  tu_idle_end                       146     6930     3710
+  unit_turns                        267      335      291
+  ut_art                              0      154        0
+  ut_art_ends_idle                    0      129        0
+  ut_idle_end                         3      132       68
+  walks                             568      447      467
+  reactions                          25       44       25
+  damage dealt                     1260      660     1309
+  friendly damage                  1150      562      436
+  tu rises inside a turn              0        0        0
+  down own by turns 2,4,6,8 [16, 29, 38, 45] [10, 26, 38, 46] [9, 29, 36, 44]
+  down enemy by turns 2,4,6,8 [2, 4, 4, 5] [3, 3, 5, 6] [1, 3, 5, 5]
+closing on the objective (cells, Chebyshev, first decision of the turn to first of the next):
+  ENGAGE_away                         0       59       43
+  ENGAGE_net                          0       96      147
+  ENGAGE_toward                       0      155      190
+  ENGAGE_ut                           0       85       76
+  ENGAGE_walked                       0      306      305
+  REINFORCE_away                      0       14       18
+  REINFORCE_net                       0       64       54
+  REINFORCE_toward                    0       78       72
+  REINFORCE_ut                        0       30       29
+  REINFORCE_walked                    0      123      122
+  SEARCH_away                         0       26       54
+  SEARCH_net                          0       32       32
+  SEARCH_toward                       0       58       86
+  SEARCH_ut                           0       38       33
+  SEARCH_walked                       0      168      240
+guard's sector:
+  unit_turns                          0      110       78
+  in_radius                           0       80       58
+  moved                               0       43       26
+  cells                               0      233      145
+squads, size / standing after turn 3 / at the end:
+   scpa_D_M3_s1 {}
+   cc6_CV_M3_s1 {'0': (3, 2, 2), '1': (5, 2, 1), '2': (6, 4, 1), '3': (5, 5, 1), '4': (6, 6, 4), '5': (3, 3, 3), '6': (6, 5, 2), '7': (6, 6, 4), '8': (3, 3, 2), '9': (6, 6, 5), '10': (5, 2, 2), '11': (4, 3, 3)}
+   ra3_AV_M3_s1 {'0': (3, 2, 0), '1': (5, 3, 2), '2': (6, 4, 4), '3': (5, 3, 1), '4': (6, 6, 5), '5': (3, 2, 0), '6': (6, 3, 1), '7': (6, 6, 3), '8': (3, 2, 0), '9': (6, 6, 6), '10': (5, 3, 1), '11': (4, 4, 1)}
+answers and where from:
+   scpa_D_M3_s1 {}
+   cc6_CV_M3_s1 {}
+   ra3_AV_M3_s1 {'answer_STAND': 176, 'from_stay': 246, 'answer_FREE': 205, 'from_arrived': 43, 'from_completed': 89, 'from_pause': 3}
+results:
+   scpa_D_M3_s1 [AIRESULT] how=over tac=h.rec.in:908,h.rec.out.M2:11,h.rec.out.a8:1,h.rec.out.a9:2,p.rec.in:201,p.rec.out.a9:1 seed=2015001 livesoldiers=2 livealiens=0 aborted=0 mission=STR_ERIDIAN_TERROR turn=21 pla
+   cc6_CV_M3_s1 [AIRESULT] how=timeout tac=h.rec.in:938,h.rec.out.M2:18,h.rec.out.a8:1,h.rec.out.a9:2,p.rec.in:130,p.rec.out.a8:1 seed=2015001 livesoldiers=2 livealiens=24 aborted=0 mission=STR_ERIDIAN_TERROR turn=9 
+   ra3_AV_M3_s1 [AIRESULT] how=timeout tac=h.rec.in:833,h.rec.out.M2:12,h.rec.out.a8:2,p.rec.in:139,p.rec.out.a7:1 seed=2015001 livesoldiers=3 livealiens=21 aborted=0 mission=STR_ERIDIAN_TERROR turn=9 player=8 pdead=
+  start TU above the first run's: cc6_CV_M3_s1 2
+  start TU above the first run's: ra3_AV_M3_s1 2

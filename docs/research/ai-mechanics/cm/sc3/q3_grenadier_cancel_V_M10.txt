@@ -1,0 +1,4 @@
+[30-10-2026_03-05-46]	[INFO]	[AISHOTCANCEL] turn=4 unit=1000024 type=9 why=notrajectory pos=(9,23,0) dir=1 target=(39,7,0) tu=86 distSq=1156 origin=(158,369,18) onTarget=115 engine=000 ai=0
+[30-10-2026_03-05-46]	[INFO]	[AISHOTCANCEL] turn=4 unit=1000024 type=9 why=notrajectory pos=(9,23,0) dir=1 target=(39,7,0) tu=86 distSq=1156 origin=(158,369,18) onTarget=115 engine=000 ai=0
+[30-10-2026_03-05-46]	[INFO]	[AISHOTCANCEL] turn=4 unit=1000024 type=9 why=notrajectory pos=(9,23,0) dir=1 target=(39,7,0) tu=86 distSq=1156 origin=(158,369,18) onTarget=115 engine=000 ai=0
+[30-10-2026_03-05-46]	[INFO]	[AISHOTCANCEL] turn=4 unit=1000024 type=9 why=notrajectory pos=(9,23,0) dir=1 target=(39,7,0) tu=86 distSq=1156 origin=(158,369,18) onTarget=115 engine=000 ai=0

@@ -1,0 +1,789 @@
+﻿run	turn	unit	n	tu	mode	act	rolled	hold	label	task	why	has_p	prepared	src	shot_now	shot_tu	nmoves	frm	to	aim	trail	cls
+ra3_AV_M3_s1	1	1000000	1	181	2	2	2		SEARCH	SEARCH	sweep_sector	1	0	firepoint.random	0	-1	3437	(45,55,3)	(40,55,3)	444		combat_walk
+ra3_AV_M3_s1	1	1000000	2	165	2	2	2		SEARCH	SEARCH	sweep_sector	1	0	firepoint.random	0	-1	3153	(42,55,3)	(41,54,3)	444		combat_walk
+ra3_AV_M3_s1	1	1000001	1	181	2	2	-		SEARCH	SEARCH	sweep_sector	1	0	melee	0	-1	3705	(22,38,3)	(16,34,0)	1000077		combat_walk
+ra3_AV_M3_s1	1	1000001	2	167	2	2	-		NONE			0	0	melee	0	-1	3502	(23,39,0)	(16,34,0)	1000077		combat_walk
+ra3_AV_M3_s1	1	1000003	1	181	2	2	-	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	melee	0	-1	3526	(45,39,0)	(54,24,0)	1000075		combat_walk
+ra3_AV_M3_s1	1	1000003	2	177	2	2	-		NONE			0	0	melee	0	-1	3354	(46,39,0)	(54,24,0)	1000075		combat_walk
+ra3_AV_M3_s1	1	1000005	1	181	2	2	-		SEARCH	SEARCH	sweep_sector	1	0	melee	0	-1	3471	(43,57,0)	(56,52,3)	1000066		combat_walk
+ra3_AV_M3_s1	1	1000005	2	125	2	2	-		NONE			0	0	melee	0	-1	1753	(47,54,3)	(52,58,3)	1000076		combat_walk
+ra3_AV_M3_s1	1	1000006	1	59	0	2	0	stay:at_node	SEARCH	SEARCH	at_node	1	1	patrol.node	8	17	874	(22,38,0)	(48,3,0)	1000077		patrol_walk
+ra3_AV_M3_s1	1	1000006	2	58	2	8	2		NONE			0	1	shot	8	17	874	(22,38,0)	(15,35,0)	1000077		attack
+ra3_AV_M3_s1	1	1000008	1	59	2	2	2		SEARCH	SEARCH	sweep_sector	1	0	firepoint.random	5	17	727	(30,56,0)	(33,55,0)	444		combat_walk
+ra3_AV_M3_s1	1	1000008	1	45	2	2	-		NONE			0	0	firepoint	7	17	605	(33,55,0)	(32,59,0)	444		combat_walk
+ra3_AV_M3_s1	1	1000008	2	27	2	8	-		NONE			0	1	shot	4	17	517	(32,59,0)	(15,55,0)	1000062		attack
+ra3_AV_M3_s1	1	1000009	1	65	2	8	2		SEARCH	SEARCH	sweep_sector	1	1	shot	14	23	836	(21,44,0)	(15,55,0)	1000062		attack
+ra3_AV_M3_s1	1	1000009	2	27	2	6	-		NONE			0	1	sniper	8	23	606	(21,44,0)	(15,65,0)	1000069		attack
+ra3_AV_M3_s1	1	1000010	1	65	0	2	2	stay:at_node	SEARCH	SEARCH	at_node	1	0	patrol.node	0	-1	533	(38,61,0)	(47,10,0)	444		patrol_walk
+ra3_AV_M3_s1	1	1000011	1	65	0	2	0	stay:no_closer_node	SEARCH	SEARCH	no_closer_node	1	0	patrol.node	0	-1	552	(32,61,0)	(41,18,0)	-1		patrol_walk
+ra3_AV_M3_s1	1	1000012	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	537	(8,51,0)	(-1,-1,-1)	444		held_patrol_stand
+ra3_AV_M3_s1	1	1000013	1	52	2	6	2		NONE			1	1	sniper	2	26	691	(50,3,0)	(39,12,0)	-1		attack
+ra3_AV_M3_s1	1	1000013	2	25	0	2	0		NONE			0	0	patrol.node	0	-1	480	(50,3,0)	(4,64,0)	-1		patrol_walk
+ra3_AV_M3_s1	1	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	554	(35,66,2)	(-1,-1,-1)	444		held_patrol_stand
+ra3_AV_M3_s1	1	1000016	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	510	(2,11,0)	(7,13,0)	-1		patrol_walk
+ra3_AV_M3_s1	1	1000016	2	25	2	8	2		SEARCH	SEARCH	sweep_sector	0	1	shot	2	20	490	(4,18,0)	(25,24,0)	1000065		attack
+ra3_AV_M3_s1	1	1000017	1	65	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	shot	6	20	558	(52,37,0)	(53,39,3)	1000079		attack
+ra3_AV_M3_s1	1	1000017	2	44	2	8	-		NONE			0	1	shot	6	20	496	(52,37,0)	(53,39,3)	1000079		attack
+ra3_AV_M3_s1	1	1000018	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		2	20	558	(37,67,0)	(-1,-1,-1)	444		held_patrol_stand
+ra3_AV_M3_s1	1	1000019	1	52	2	6	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	3	26	684	(35,65,3)	(15,55,0)	-1		attack
+ra3_AV_M3_s1	1	1000019	2	23	0	0	0		NONE			0	0		0	-1	492	(35,65,3)	(-1,-1,-1)	-1		patrol_stand
+ra3_AV_M3_s1	1	1000020	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	493	(1,50,0)	(-1,-1,-1)	543		held_patrol_stand
+ra3_AV_M3_s1	1	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	571	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000022	1	65	0	2	2		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	540	(6,36,3)	(9,31,0)	543		patrol_walk
+ra3_AV_M3_s1	1	1000022	2	19	0	2	2		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	474	(4,38,0)	(9,31,0)	543		patrol_walk
+ra3_AV_M3_s1	1	1000023	0	65	2	2	2		ENGAGE	SEARCH	contact_fire	1	0	firepoint.random	1	26	665	(49,8,0)	(51,6,0)	545		combat_walk
+ra3_AV_M3_s1	1	1000023	0	62	2	2	2		NONE			0	0	firepoint.random	1	26	650	(49,8,0)	(52,9,0)	545		combat_walk
+ra3_AV_M3_s1	1	1000023	1	48	2	8	-		NONE			0	1	sniper	11	23	546	(52,9,0)	(34,12,1)	470		attack
+ra3_AV_M3_s1	1	1000023	2	25	2	8	-		NONE			0	1	shot	4	23	469	(52,9,0)	(53,5,0)	1000072		attack
+ra3_AV_M3_s1	1	1000024	1	65	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	shot	7	23	571	(56,54,0)	(57,52,3)	1000066		attack
+ra3_AV_M3_s1	1	1000024	2	40	2	8	-		NONE			0	1	shot	5	23	512	(56,54,0)	(57,52,3)	1000066		attack
+ra3_AV_M3_s1	1	1000025	1	65	0	2	0	stay:no_closer_node	SEARCH	SEARCH	no_closer_node	1	0	patrol.node	0	-1	547	(32,67,0)	(58,39,3)	-1		patrol_walk
+ra3_AV_M3_s1	1	1000026	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		1	26	545	(68,33,0)	(-1,-1,-1)	545		held_patrol_stand
+ra3_AV_M3_s1	1	1000027	1	65	3	0	2	stay:at_node	SEARCH	SEARCH	at_node	0	0	escape.known	0	-1	470	(6,14,0)	(6,14,0)	543	walk.self	art_esc_stand
+ra3_AV_M3_s1	1	1000028	1	65	0	2	0		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	527	(3,4,0)	(2,8,0)	-1		patrol_walk
+ra3_AV_M3_s1	1	1000028	2	39	2	8	2	arrived	REINFORCE	SEARCH	contact_fire	1	1	shot	5	20	515	(2,8,0)	(16,5,3)	543		attack
+ra3_AV_M3_s1	1	1000029	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	556	(66,4,0)	(-1,-1,-1)	545		held_patrol_stand
+ra3_AV_M3_s1	1	1000030	1	52	2	6	2		NONE			1	1	grenade	21	23	1029	(25,16,2)	(33,14,2)	444		attack
+ra3_AV_M3_s1	1	1000030	2	26	2	8	2		NONE			0	1	shot	8	23	566	(25,16,2)	(32,10,2)	448		attack
+ra3_AV_M3_s1	1	1000031	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	622	(28,11,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000032	1	65	2	9	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	2	23	604	(67,38,0)	(63,39,3)	-1		attack
+ra3_AV_M3_s1	1	1000032	2	18	0	0	2		NONE			0	0		0	-1	450	(67,38,0)	(-1,-1,-1)	545		patrol_stand
+ra3_AV_M3_s1	1	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	533	(32,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000034	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	1	patrol.node	6	23	571	(56,34,0)	(52,32,3)	1000067		patrol_walk
+ra3_AV_M3_s1	1	1000034	2	9	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	442	(52,32,3)	(25,18,3)	545		patrol_walk
+ra3_AV_M3_s1	1	1000035	1	65	3	2	3	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	escape	15	23	977	(22,16,2)	(27,18,2)	470		esc_dice_walk
+ra3_AV_M3_s1	1	1000035	2	30	2	6	2		NONE			0	1	sniper	17	23	705	(26,18,2)	(49,13,3)	1000081		attack
+ra3_AV_M3_s1	1	1000036	1	65	2	9	2		ENGAGE	SEARCH	contact_approach	1	1	shot	9	23	880	(27,17,0)	(25,24,0)	1000065		attack
+ra3_AV_M3_s1	1	1000036	2	17	0	2	0		NONE			0	0	patrol.node	0	-1	454	(27,17,0)	(27,11,1)	1000065		patrol_walk
+ra3_AV_M3_s1	1	1000037	1	65	0	2	2		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	535	(45,62,0)	(19,46,0)	545		patrol_walk
+ra3_AV_M3_s1	1	1000038	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	467	(2,31,0)	(9,11,0)	-1		patrol_walk
+ra3_AV_M3_s1	1	1000039	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	1		4	23	590	(56,58,0)	(-1,-1,-1)	1000071		held_patrol_stand
+ra3_AV_M3_s1	1	1000040	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	531	(48,61,0)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000041	1	65	3	0	3		ENGAGE	SEARCH	contact_approach	1	0	escape.known	1	26	545	(68,53,0)	(68,53,0)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	1	1000042	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	534	(22,18,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000043	1	52	2	6	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	3	23	590	(56,38,0)	(63,39,3)	1000073		attack
+ra3_AV_M3_s1	1	1000043	2	25	2	8	-		NONE			0	1	shot	1	23	469	(56,38,0)	(63,39,3)	1000073		attack
+ra3_AV_M3_s1	1	1000044	1	65	3	2	3	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	escape.known	6	23	557	(52,57,0)	(54,56,0)	1000076		esc_dice_walk
+ra3_AV_M3_s1	1	1000045	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	469	(6,34,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000046	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	514	(32,68,1)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000047	1	65	0	2	2		SEARCH	SEARCH	advance	1	0	patrol.node	0	-1	502	(41,60,0)	(42,42,0)	470		patrol_walk
+ra3_AV_M3_s1	1	1000048	1	65	2	8	2		NONE			1	1	shot	17	23	897	(27,16,1)	(32,10,2)	448		attack
+ra3_AV_M3_s1	1	1000048	2	23	2	8	2		NONE			0	1	shot	0	-1	600	(27,16,1)	(32,10,2)	448		attack
+ra3_AV_M3_s1	1	1000049	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	535	(66,6,3)	(-1,-1,-1)	545		held_patrol_stand
+ra3_AV_M3_s1	1	1000050	1	65	3	0	2		NONE			0	0	escape.known	0	-1	491	(6,16,3)	(6,16,3)	543	walk.self	natural_fallback_stand
+ra3_AV_M3_s1	1	1000051	1	71	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	602	(22,17,0)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	1	1000052	0	71	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.fallback	0	-1	588	(5,52,0)	(9,56,0)	543		combat_walk
+ra3_AV_M3_s1	1	1000052	0	53	2	2	2		NONE			0	0	firepoint.random	2	28	588	(6,55,0)	(9,57,0)	543		combat_walk
+ra3_AV_M3_s1	1	1000052	1	43	2	8	-		NONE			0	1	sniper	4	28	582	(7,57,0)	(15,45,0)	1000061		attack
+ra3_AV_M3_s1	1	1000052	2	14	0	2	2		NONE			1	0	patrol.node	0	-1	461	(7,57,0)	(49,3,3)	470		patrol_walk
+ra3_AV_M3_s1	1	1000053	1	71	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	532	(62,1,0)	(-1,-1,-1)	545		held_patrol_stand
+ra3_AV_M3_s1	1	1000054	1	71	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	1		5	22	633	(67,58,0)	(-1,-1,-1)	1000076		held_patrol_stand
+ra3_AV_M3_s1	1	1000055	1	71	0	2	2		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	680	(6,4,4)	(6,6,2)	543		patrol_walk
+ra3_AV_M3_s1	1	1000055	2	45	2	8	2	arrived	REINFORCE	SEARCH	contact_fire	0	1	shot	14	22	671	(6,5,2)	(15,15,0)	1000060		attack
+ra3_AV_M3_s1	1	1000056	0	71	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.fallback	0	-1	610	(22,11,0)	(24,10,0)	543		combat_walk
+ra3_AV_M3_s1	1	1000056	1	21	0	2	2		NONE			0	0	patrol.node	0	-1	474	(24,10,0)	(22,11,1)	448		patrol_walk
+ra3_AV_M3_s1	1	1000056	2	21	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	474	(24,10,0)	(22,11,1)	448		patrol_walk
+ra3_AV_M3_s1	1	1000057	1	62	2	6	2		NONE			1	1	sniper	30	18	919	(15,5,0)	(37,12,2)	545		attack
+ra3_AV_M3_s1	1	1000057	2	32	2	8	-		NONE			0	1	sniper	18	18	560	(15,5,0)	(15,45,0)	1000061		attack
+ra3_AV_M3_s1	1	1000000	1	164	2	2	-		SEARCH	SEARCH	sweep_sector	1	0	firepoint	0	-1	3103	(42,55,3)	(41,54,3)	470		combat_walk
+ra3_AV_M3_s1	1	1000000	2	158	2	2	-		NONE			0	0	melee	0	-1	2911	(41,54,3)	(54,59,3)	1000076		combat_walk
+ra3_AV_M3_s1	1	1000001	1	163	2	2	-		NONE			0	0	melee	0	-1	3323	(22,39,0)	(16,35,0)	1000077		combat_walk
+ra3_AV_M3_s1	1	1000001	2	157	2	2	-		NONE			0	0	melee	0	-1	3185	(21,38,0)	(16,35,0)	1000077		combat_walk
+ra3_AV_M3_s1	1	1000003	1	155	2	2	2		NONE			0	0	firepoint.random	0	-1	2457	(49,35,0)	(49,33,0)	470		combat_walk
+ra3_AV_M3_s1	1	1000003	2	147	2	2	-		NONE			0	0	melee	0	-1	2281	(49,33,0)	(54,24,0)	1000075		combat_walk
+ra3_AV_M3_s1	1	1000005	1	103	2	2	-		NONE			0	0	melee	0	-1	1191	(51,55,3)	(52,58,3)	1000076		combat_walk
+ra3_AV_M3_s1	1	1000005	2	74	2	2	-		NONE			0	0	melee	0	-1	745	(52,58,3)	(62,58,3)	1000071		combat_walk
+ra3_AV_M3_s1	1	1000006	1	40	2	8	-		NONE			0	1	shot	7	17	642	(22,38,0)	(15,45,0)	1000061		attack
+ra3_AV_M3_s1	1	1000006	2	21	2	8	-		NONE			0	1	shot	7	17	482	(22,38,0)	(15,45,0)	1000061		attack
+ra3_AV_M3_s1	1	1000008	1	8	0	2	2		NONE			0	0	patrol.node	0	-1	447	(32,59,0)	(32,64,1)	470		patrol_walk
+ra3_AV_M3_s1	1	1000008	2	8	3	2	3		SEARCH	SEARCH	sweep_sector	0	0	escape.known	0	-1	447	(32,59,0)	(32,60,0)	-1		esc_dice_walk
+ra3_AV_M3_s1	1	1000012	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	618	(8,51,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000013	1	21	2	8	2		NONE			0	1	shot	3	20	467	(49,3,0)	(45,6,0)	1000063		attack
+ra3_AV_M3_s1	1	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	554	(35,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000017	1	24	2	8	-		NONE			0	1	sniper	2	20	465	(52,37,0)	(63,39,3)	1000073		attack
+ra3_AV_M3_s1	1	1000018	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	545	(37,67,0)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000019	1	23	3	0	3	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	escape.known	0	-1	492	(35,65,3)	(35,65,3)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	1	1000020	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		3	23	534	(1,50,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	565	(37,66,1)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000022	1	18	0	2	2		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	474	(4,38,0)	(9,31,0)	543		patrol_walk
+ra3_AV_M3_s1	1	1000024	1	17	0	0	2		NONE			0	0		0	-1	455	(56,54,0)	(-1,-1,-1)	470		patrol_stand
+ra3_AV_M3_s1	1	1000026	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	545	(68,33,0)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000027	1	65	3	0	0	stay:at_node	SEARCH	SEARCH	at_node	0	0	escape.known	0	-1	470	(6,14,0)	(6,14,0)	-1	walk.self	art_esc_stand
+ra3_AV_M3_s1	1	1000028	1	17	0	2	2	arrived	REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	465	(2,8,0)	(23,52,0)	543		patrol_walk
+ra3_AV_M3_s1	1	1000029	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	556	(66,4,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000031	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	582	(28,11,0)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	1	1000032	1	18	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	450	(67,38,0)	(-1,-1,-1)	1000067		held_patrol_stand
+ra3_AV_M3_s1	1	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	533	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000034	1	8	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	442	(52,32,3)	(25,18,3)	470		patrol_walk
+ra3_AV_M3_s1	1	1000036	1	11	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	443	(28,16,0)	(27,11,1)	448		patrol_walk
+ra3_AV_M3_s1	1	1000039	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		3	23	589	(56,58,0)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000040	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	529	(48,61,0)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000041	1	52	2	6	2		ENGAGE	SEARCH	contact_approach	0	1	sniper	1	26	544	(68,53,0)	(63,59,3)	1000071		attack
+ra3_AV_M3_s1	1	1000041	2	49	0	2	2		NONE			0	0	patrol.node	1	26	497	(68,53,0)	(57,52,0)	470		patrol_walk
+ra3_AV_M3_s1	1	1000042	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	534	(22,18,1)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	1	1000045	0	65	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.fallback	0	-1	576	(6,34,0)	(8,39,0)	543		combat_walk
+ra3_AV_M3_s1	1	1000045	1	49	2	9	-		NONE			0	1	shot	4	20	576	(4,37,0)	(8,48,0)	1000080		attack
+ra3_AV_M3_s1	1	1000045	2	8	0	0	2		NONE			0	0		0	-1	443	(4,37,0)	(-1,-1,-1)	543		patrol_stand
+ra3_AV_M3_s1	1	1000046	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	514	(32,68,1)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000049	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	535	(66,6,3)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000050	1	65	3	0	0		NONE			0	0	escape.known	0	-1	491	(6,16,3)	(6,16,3)	-1	walk.self	natural_fallback_stand
+ra3_AV_M3_s1	1	1000051	1	71	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	576	(22,17,0)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	1	1000052	1	6	0	2	0		NONE			0	0	patrol.node	0	-1	442	(9,57,0)	(49,3,3)	-1		patrol_walk
+ra3_AV_M3_s1	1	1000053	1	71	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	532	(62,1,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	1	1000054	1	71	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		2	22	635	(67,58,0)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	1	1000055	1	22	2	8	-	arrived	REINFORCE	SEARCH	contact_fire	0	1	sniper	5	22	520	(6,5,2)	(25,24,0)	1000065		attack
+ra3_AV_M3_s1	1	1000056	1	21	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	474	(24,10,0)	(22,11,1)	448		patrol_walk
+ra3_AV_M3_s1	1	1000056	2	21	0	2	2	pause	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	474	(24,10,0)	(22,11,1)	448		patrol_walk
+ra3_AV_M3_s1	1	1000057	1	12	0	2	2		NONE			0	0	patrol.node	0	-1	463	(15,5,0)	(3,6,2)	543		patrol_walk
+ra3_AV_M3_s1	1	1000057	2	12	0	2	2		NONE			0	0	patrol.node	0	-1	463	(15,5,0)	(3,6,2)	543		patrol_walk
+ra3_AV_M3_s1	2	1000000	1	181	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	0	-1	2536	(47,64,3)	(49,64,3)	503		combat_walk
+ra3_AV_M3_s1	2	1000000	2	173	2	2	2		NONE			0	0	firepoint.fallback	0	-1	2189	(49,64,3)	(51,64,3)	503		combat_walk
+ra3_AV_M3_s1	2	1000001	1	181	2	2	-		ENGAGE	SEARCH	contact_approach	1	0	melee	0	-1	2386	(16,35,0)	(21,29,0)	444		combat_walk
+ra3_AV_M3_s1	2	1000001	2	175	2	2	-		NONE			0	0	melee	0	-1	3414	(17,36,0)	(21,29,0)	444		combat_walk
+ra3_AV_M3_s1	2	1000005	1	181	2	10	-		ENGAGE	SEARCH	contact_approach	1	1	melee	1	15	1628	(62,58,3)	(63,59,3)	1000071		attack
+ra3_AV_M3_s1	2	1000005	2	166	2	2	2		NONE			0	0	firepoint.fallback	0	-1	1361	(62,58,3)	(61,59,3)	503		combat_walk
+ra3_AV_M3_s1	2	1000006	1	59	2	8	-	stay:at_node	ENGAGE	SEARCH	at_node	0	1	shot	6	17	861	(22,38,0)	(14,46,0)	1000061		attack
+ra3_AV_M3_s1	2	1000006	2	42	2	8	-	stay:at_node	ENGAGE	SEARCH	at_node	0	1	shot	6	17	665	(22,38,0)	(14,46,0)	1000061		attack
+ra3_AV_M3_s1	2	1000008	1	59	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	2	17	762	(32,60,0)	(31,60,0)	503		combat_walk
+ra3_AV_M3_s1	2	1000008	2	58	2	2	2		NONE			0	0	firepoint.random	2	17	760	(32,60,0)	(29,59,0)	503		combat_walk
+ra3_AV_M3_s1	2	1000009	1	65	2	9	-		ENGAGE	SEARCH	sweep_sector	0	1	sniper	12	23	841	(21,44,0)	(22,27,0)	444		attack
+ra3_AV_M3_s1	2	1000009	2	16	0	2	2		ENGAGE	SEARCH	sweep_sector	0	0	patrol.node	0	-1	472	(21,44,0)	(19,36,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000010	1	65	2	8	2		ENGAGE	SEARCH	at_node	0	1	shot	10	20	780	(38,57,0)	(45,31,0)	503		attack
+ra3_AV_M3_s1	2	1000010	2	44	2	8	-		ENGAGE	SEARCH	at_node	0	1	shot	10	20	592	(38,57,0)	(45,31,0)	503		attack
+ra3_AV_M3_s1	2	1000011	1	65	2	9	2		ENGAGE	SEARCH	no_closer_node	0	1	shot	15	23	784	(36,58,0)	(45,31,0)	503		attack
+ra3_AV_M3_s1	2	1000011	2	19	0	2	2		ENGAGE	SEARCH	no_closer_node	0	0	patrol.node	0	-1	486	(36,58,0)	(41,18,0)	503		patrol_walk
+ra3_AV_M3_s1	2	1000012	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	680	(8,51,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000013	1	65	2	8	-		NONE			0	1	sniper	6	20	681	(49,3,0)	(53,5,0)	1000072		attack
+ra3_AV_M3_s1	2	1000013	2	43	2	8	-		NONE			0	1	shot	8	20	566	(49,3,0)	(47,4,0)	1000063		attack
+ra3_AV_M3_s1	2	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	565	(35,66,2)	(-1,-1,-1)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000016	1	65	2	8	-		ENGAGE	SEARCH	sweep_sector	0	1	shot	11	20	725	(4,18,0)	(22,27,0)	444		attack
+ra3_AV_M3_s1	2	1000016	2	44	2	8	-		ENGAGE	SEARCH	sweep_sector	0	1	shot	11	20	577	(4,18,0)	(22,27,0)	444		attack
+ra3_AV_M3_s1	2	1000017	1	65	0	2	0		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	683	(52,37,0)	(69,61,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000018	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	557	(37,67,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000019	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	695	(35,65,3)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000020	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	549	(1,50,0)	(-1,-1,-1)	444		held_patrol_stand
+ra3_AV_M3_s1	2	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	576	(37,66,1)	(-1,-1,-1)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000022	1	65	2	8	2		ENGAGE	SEARCH	sweep_sector	0	1	shot	11	23	742	(8,37,0)	(14,46,0)	1000061		attack
+ra3_AV_M3_s1	2	1000022	2	40	2	8	-		ENGAGE	SEARCH	sweep_sector	0	1	shot	7	23	569	(8,37,0)	(14,46,0)	1000061		attack
+ra3_AV_M3_s1	2	1000024	1	65	0	2	2		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	582	(56,54,0)	(66,55,0)	503		patrol_walk
+ra3_AV_M3_s1	2	1000024	2	23	0	0	2	arrived	GUARD	HOLD	take_post	0	0		0	-1	483	(66,55,0)	(66,55,0)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000025	1	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	15	23	744	(38,60,0)	(42,56,0)	503		combat_walk
+ra3_AV_M3_s1	2	1000025	2	64	2	9	-		NONE			0	1	shot	15	23	744	(38,60,0)	(45,31,0)	503		attack
+ra3_AV_M3_s1	2	1000026	1	65	0	2	0		GUARD	HOLD	advance_post	1	0	patrol.node	0	-1	564	(68,33,0)	(53,11,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000027	1	65	0	2	0		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	0	-1	481	(6,14,0)	(3,17,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000027	2	45	3	0	0	arrived	ENGAGE	SEARCH	contact_fire	0	0	escape.known	0	-1	481	(3,17,0)	(3,17,0)	-1	walk.self	art_esc_stand
+ra3_AV_M3_s1	2	1000028	1	65	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	0	1	patrol.node	7	20	748	(5,8,0)	(23,52,0)	543		patrol_walk
+ra3_AV_M3_s1	2	1000028	2	57	2	8	2	arrived	ENGAGE	SEARCH	contact_fire	0	1	sniper	14	20	727	(7,8,0)	(22,27,0)	543		attack
+ra3_AV_M3_s1	2	1000029	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	566	(66,4,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000030	1	47	2	2	2		NONE			0	0	firepoint.random	0	-1	1039	(25,16,2)	(23,13,2)	470		combat_walk
+ra3_AV_M3_s1	2	1000030	2	29	0	2	2		NONE			0	0	patrol.node	0	-1	488	(23,13,1)	(42,42,0)	543		patrol_walk
+ra3_AV_M3_s1	2	1000031	1	65	0	2	2		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	0	-1	646	(28,11,0)	(29,19,0)	520		patrol_walk
+ra3_AV_M3_s1	2	1000031	2	53	0	2	0		ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	646	(27,13,0)	(29,19,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000032	1	65	0	2	0		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	634	(67,38,0)	(66,63,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	544	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000034	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	740	(52,34,3)	(45,35,3)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000034	2	51	2	9	2		ENGAGE	SEARCH	contact_approach	0	1	shot	9	23	592	(50,35,3)	(45,31,0)	503		attack
+ra3_AV_M3_s1	2	1000035	1	65	2	8	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	1	1	sniper	10	23	1069	(26,18,2)	(35,8,2)	520		attack
+ra3_AV_M3_s1	2	1000035	2	23	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	718	(26,18,2)	(37,8,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000036	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	0	-1	827	(27,15,0)	(28,20,0)	470		combat_walk
+ra3_AV_M3_s1	2	1000036	1	46	2	6	-		NONE			0	1	sniper	9	23	772	(28,16,0)	(36,15,2)	470		attack
+ra3_AV_M3_s1	2	1000036	2	44	2	2	-		NONE			0	0	firepoint	6	23	613	(28,16,0)	(26,21,0)	470		combat_walk
+ra3_AV_M3_s1	2	1000037	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	2	23	685	(39,63,0)	(38,54,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000037	2	49	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	14	23	631	(39,59,0)	(38,54,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000038	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.fallback	0	-1	528	(5,37,3)	(4,41,3)	444		combat_walk
+ra3_AV_M3_s1	2	1000038	1	39	2	8	-		NONE			0	1	shot	5	23	498	(4,41,3)	(7,47,0)	1000080		attack
+ra3_AV_M3_s1	2	1000038	2	14	0	2	2		NONE			0	0	patrol.node	0	-1	459	(4,41,3)	(6,37,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000039	1	65	0	2	0		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	600	(56,58,0)	(62,57,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000039	2	35	0	0	2	arrived	GUARD	HOLD	take_post	0	0		0	-1	537	(62,57,0)	(62,57,0)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000040	1	65	0	2	2		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	531	(48,61,0)	(37,64,2)	503		patrol_walk
+ra3_AV_M3_s1	2	1000041	1	65	0	2	2		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	565	(67,54,0)	(62,54,0)	503		patrol_walk
+ra3_AV_M3_s1	2	1000041	2	35	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	516	(62,54,0)	(9,52,0)	503		patrol_walk
+ra3_AV_M3_s1	2	1000042	0	65	2	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	1	0	firepoint.fallback	0	-1	545	(22,18,1)	(23,14,1)	444		combat_walk
+ra3_AV_M3_s1	2	1000042	1	47	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	539	(23,14,1)	(67,3,0)	543		patrol_walk
+ra3_AV_M3_s1	2	1000042	2	8	3	2	3	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	escape	0	-1	458	(28,11,2)	(29,11,2)	520		esc_dice_walk
+ra3_AV_M3_s1	2	1000043	1	65	0	2	0		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	644	(56,38,0)	(60,1,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000043	2	25	2	8	2		GUARD	HOLD	take_post	0	1	sniper	2	23	494	(51,33,0)	(54,20,3)	1000075		attack
+ra3_AV_M3_s1	2	1000044	1	65	0	2	2		GUARD	HOLD	advance_post	1	0	patrol.node	0	-1	591	(54,56,0)	(27,62,0)	503		patrol_walk
+ra3_AV_M3_s1	2	1000044	2	7	0	2	2		GUARD	HOLD	advance_post	0	0	patrol.node	0	-1	451	(51,55,3)	(27,62,0)	503		patrol_walk
+ra3_AV_M3_s1	2	1000045	1	65	2	9	2		GUARD	HOLD	take_post	1	1	sniper	3	20	680	(4,37,0)	(7,47,0)	1000080		attack
+ra3_AV_M3_s1	2	1000045	2	24	0	2	0		NONE			0	1	patrol.node	1	20	498	(4,37,0)	(5,52,0)	1000080		patrol_walk
+ra3_AV_M3_s1	2	1000046	1	65	0	2	0		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	525	(32,68,1)	(8,54,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000047	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.fallback	0	-1	726	(49,63,0)	(47,58,0)	503		combat_walk
+ra3_AV_M3_s1	2	1000047	1	39	2	2	2		NONE			0	0	firepoint.fallback	4	20	567	(47,58,0)	(48,59,0)	503		combat_walk
+ra3_AV_M3_s1	2	1000047	2	33	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	4	20	526	(48,59,0)	(50,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000049	0	65	2	2	2		GUARD	HOLD	take_post	1	0	firepoint.fallback	0	-1	546	(66,6,3)	(65,9,3)	448		combat_walk
+ra3_AV_M3_s1	2	1000049	0	47	2	2	-		NONE			0	0	firepoint	0	-1	518	(65,8,3)	(65,9,3)	448		combat_walk
+ra3_AV_M3_s1	2	1000049	1	30	2	6	-		NONE			0	1	sniper	8	20	511	(65,9,3)	(54,20,3)	1000081		attack
+ra3_AV_M3_s1	2	1000050	1	65	3	0	0		NONE			0	0	escape.known	0	-1	505	(6,16,3)	(6,16,3)	-1	walk.self	natural_fallback_stand
+ra3_AV_M3_s1	2	1000051	1	71	2	9	2		ENGAGE	SEARCH	contact_fire	1	1	sniper	2	28	597	(22,17,0)	(14,46,0)	1000061		attack
+ra3_AV_M3_s1	2	1000051	2	1	0	2	2		NONE			0	0	patrol.node	0	-1	483	(22,17,0)	(25,15,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000052	1	53	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	972	(10,57,0)	(49,3,3)	1000069		held_patrol_stand
+ra3_AV_M3_s1	2	1000053	1	71	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.fallback	0	-1	543	(62,1,0)	(61,6,0)	448		combat_walk
+ra3_AV_M3_s1	2	1000053	2	19	2	2	-		NONE			0	0	firepoint	0	-1	471	(63,8,0)	(62,8,0)	448		combat_walk
+ra3_AV_M3_s1	2	1000054	1	71	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	633	(67,58,0)	(-1,-1,-1)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000055	1	71	2	2	-	arrived	ENGAGE	SEARCH	contact_fire	0	0	melee	11	22	859	(6,5,2)	(15,4,3)	543		combat_walk
+ra3_AV_M3_s1	2	1000055	2	50	2	8	-	arrived	ENGAGE	SEARCH	contact_fire	0	1	shot	12	22	739	(8,4,3)	(16,5,3)	543		attack
+ra3_AV_M3_s1	2	1000056	1	71	2	9	2		ENGAGE	SEARCH	contact_approach	0	1	sniper	6	28	1016	(24,10,0)	(22,27,0)	444		attack
+ra3_AV_M3_s1	2	1000056	2	1	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	481	(24,10,0)	(22,11,1)	543		patrol_walk
+ra3_AV_M3_s1	2	1000057	1	77	2	8	2		NONE			0	1	sniper	18	18	969	(15,5,0)	(6,29,0)	1000058		attack
+ra3_AV_M3_s1	2	1000057	2	59	2	7	-		NONE			0	1	sniper	18	18	773	(15,5,0)	(35,8,2)	520		attack
+ra3_AV_M3_s1	2	1000082	1	59	0	2	-		NONE			0	0	leeroy	0	-1	454	(15,35,0)	(21,29,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000082	2	53	0	2	-		NONE			0	0	leeroy	0	-1	467	(16,34,0)	(21,29,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000000	1	165	2	2	-		NONE			0	0	firepoint	0	-1	1909	(51,64,3)	(49,64,3)	503		combat_walk
+ra3_AV_M3_s1	2	1000000	2	157	2	2	-		NONE			0	0	firepoint	0	-1	1846	(49,64,3)	(50,64,3)	503		combat_walk
+ra3_AV_M3_s1	2	1000001	1	157	2	2	-		NONE			0	0	melee	0	-1	3246	(19,36,0)	(21,29,0)	444		combat_walk
+ra3_AV_M3_s1	2	1000001	2	151	2	2	-		NONE			0	0	melee	0	-1	3046	(20,35,0)	(21,29,0)	444		combat_walk
+ra3_AV_M3_s1	2	1000005	1	160	0	2	2		NONE			0	0	patrol.node	0	-1	1105	(61,59,3)	(51,35,3)	503		patrol_walk
+ra3_AV_M3_s1	2	1000005	2	84	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	761	(54,51,3)	(51,35,3)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000006	1	25	2	8	2	stay:at_node	ENGAGE	SEARCH	at_node	0	1	shot	7	17	518	(22,38,0)	(22,27,0)	444		attack
+ra3_AV_M3_s1	2	1000008	0	44	2	2	-		NONE			0	0	firepoint	2	17	643	(29,59,0)	(26,61,0)	444		combat_walk
+ra3_AV_M3_s1	2	1000008	1	26	2	8	-		NONE			0	1	shot	7	17	528	(26,61,0)	(14,56,0)	1000069		attack
+ra3_AV_M3_s1	2	1000008	2	8	0	2	2		NONE			0	0	patrol.node	0	-1	455	(26,61,0)	(30,56,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000009	1	16	0	2	2		ENGAGE	SEARCH	sweep_sector	0	0	patrol.node	0	-1	471	(21,44,0)	(19,36,0)	444		patrol_walk
+ra3_AV_M3_s1	2	1000010	1	24	2	8	-		ENGAGE	SEARCH	at_node	0	1	sniper	3	20	506	(38,57,0)	(55,16,3)	1000074		attack
+ra3_AV_M3_s1	2	1000011	1	13	0	2	0		ENGAGE	SEARCH	no_closer_node	0	0	patrol.node	0	-1	466	(37,57,0)	(41,18,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000012	0	65	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	0	-1	650	(8,51,0)	(10,51,0)	444		combat_walk
+ra3_AV_M3_s1	2	1000012	1	37	2	8	-		NONE			0	1	sniper	9	23	563	(9,53,0)	(14,46,0)	1000061		attack
+ra3_AV_M3_s1	2	1000012	2	13	0	0	2		NONE			0	0		0	-1	456	(9,53,0)	(-1,-1,-1)	444		patrol_stand
+ra3_AV_M3_s1	2	1000013	1	21	2	8	-		NONE			0	1	sniper	4	20	473	(49,3,0)	(53,5,0)	1000072		attack
+ra3_AV_M3_s1	2	1000013	2	19	0	2	2		NONE			0	0	patrol.node	0	-1	470	(49,3,0)	(4,64,0)	448		patrol_walk
+ra3_AV_M3_s1	2	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	563	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000016	1	24	2	8	-		ENGAGE	SEARCH	sweep_sector	0	1	shot	5	20	499	(4,18,0)	(22,27,0)	444		attack
+ra3_AV_M3_s1	2	1000018	0	65	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	0	-1	549	(37,67,0)	(34,64,0)	503		combat_walk
+ra3_AV_M3_s1	2	1000018	1	39	2	8	-		NONE			0	1	sniper	1	20	528	(34,64,0)	(45,31,0)	503		attack
+ra3_AV_M3_s1	2	1000018	2	19	0	0	2		NONE			0	0		0	-1	469	(34,64,0)	(-1,-1,-1)	503		patrol_stand
+ra3_AV_M3_s1	2	1000019	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	691	(35,65,3)	(-1,-1,-1)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000020	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	528	(1,50,0)	(-1,-1,-1)	444		held_patrol_stand
+ra3_AV_M3_s1	2	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	559	(37,66,1)	(-1,-1,-1)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000024	1	23	0	0	2	arrived	GUARD	HOLD	take_post	0	0		0	-1	482	(66,55,0)	(66,55,0)	503		held_patrol_stand
+ra3_AV_M3_s1	2	1000025	1	18	3	0	3		NONE			0	0	escape.known	0	-1	474	(38,60,0)	(38,60,0)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	2	1000027	1	45	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	1	0	patrol.node	0	-1	479	(3,17,0)	(6,17,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000027	2	43	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	478	(3,17,0)	(6,17,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000028	1	37	2	8	-	arrived	ENGAGE	SEARCH	contact_fire	0	1	shot	9	20	566	(7,8,0)	(16,5,3)	543		attack
+ra3_AV_M3_s1	2	1000028	2	16	0	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	482	(7,8,0)	(23,52,0)	543		patrol_walk
+ra3_AV_M3_s1	2	1000029	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	559	(66,4,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000031	1	30	2	6	2		ENGAGE	SEARCH	contact_fire	0	1	sniper	3	23	587	(28,15,0)	(45,31,0)	503		attack
+ra3_AV_M3_s1	2	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	542	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000035	1	19	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	517	(27,18,2)	(37,8,0)	470		patrol_walk
+ra3_AV_M3_s1	2	1000035	2	15	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	466	(28,18,0)	(37,8,0)	470		patrol_walk
+ra3_AV_M3_s1	2	1000036	1	30	3	2	3		NONE			0	1	escape	14	23	559	(27,19,0)	(28,19,0)	444		esc_dice_walk
+ra3_AV_M3_s1	2	1000037	1	31	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	7	23	530	(38,55,0)	(38,54,0)	1000075		patrol_walk
+ra3_AV_M3_s1	2	1000037	2	27	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	11	23	509	(38,54,0)	(34,60,0)	1000075		patrol_walk
+ra3_AV_M3_s1	2	1000039	1	35	0	0	0	arrived	GUARD	HOLD	take_post	0	0		0	-1	546	(62,57,0)	(62,57,0)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000041	1	9	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	457	(63,59,0)	(9,52,0)	448		patrol_walk
+ra3_AV_M3_s1	2	1000044	1	7	0	2	0		GUARD	HOLD	advance_post	0	0	patrol.node	0	-1	450	(51,55,3)	(27,62,0)	-1		patrol_walk
+ra3_AV_M3_s1	2	1000047	1	23	2	8	2	arrived	ENGAGE	SEARCH	contact_approach	1	1	sniper	3	20	488	(50,60,0)	(36,7,2)	-1		attack
+ra3_AV_M3_s1	2	1000050	1	65	3	0	0		NONE			0	0	escape.known	0	-1	503	(6,16,3)	(6,16,3)	-1	walk.self	natural_fallback_stand
+ra3_AV_M3_s1	2	1000052	1	53	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	8	28	696	(10,57,0)	(14,46,0)	1000061		attack
+ra3_AV_M3_s1	2	1000052	2	5	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	508	(10,57,0)	(49,3,3)	444		held_patrol_stand
+ra3_AV_M3_s1	2	1000053	1	15	2	2	-		NONE			0	0	firepoint	0	-1	459	(62,8,0)	(62,9,0)	448		combat_walk
+ra3_AV_M3_s1	2	1000053	2	11	2	2	-		NONE			0	0	firepoint	0	-1	454	(62,9,0)	(62,8,0)	448		combat_walk
+ra3_AV_M3_s1	2	1000054	1	71	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	650	(67,58,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	2	1000055	1	28	2	8	-	arrived	ENGAGE	SEARCH	contact_fire	0	1	shot	6	22	535	(8,4,3)	(16,5,3)	543		attack
+ra3_AV_M3_s1	2	1000055	2	6	0	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	448	(8,4,3)	(6,6,2)	543		patrol_walk
+ra3_AV_M3_s1	2	1000057	1	33	2	7	-		NONE			0	1	shot	15	18	569	(15,5,0)	(16,5,3)	543		attack
+ra3_AV_M3_s1	2	1000057	2	9	0	2	2		NONE			0	0	patrol.node	0	-1	456	(15,5,0)	(3,6,2)	543		patrol_walk
+ra3_AV_M3_s1	2	1000083	1	59	0	2	-		NONE			1	0	patrol.node	0	-1	571	(53,59,3)	(9,31,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000000	1	181	2	2	2		ENGAGE	SEARCH	contact_approach	0	0	firepoint.random	0	-1	2261	(50,64,3)	(49,64,3)	503		combat_walk
+ra3_AV_M3_s1	3	1000000	2	180	2	2	2		ENGAGE	SEARCH	contact_approach	0	0	firepoint.random	0	-1	2261	(50,64,3)	(50,65,3)	503		combat_walk
+ra3_AV_M3_s1	3	1000001	1	181	2	2	-		REINFORCE	SEARCH	contact_approach	1	0	melee	0	-1	3978	(20,34,0)	(15,46,0)	444		combat_walk
+ra3_AV_M3_s1	3	1000001	2	167	2	2	-		NONE			0	0	melee	0	-1	3571	(21,37,0)	(15,46,0)	444		combat_walk
+ra3_AV_M3_s1	3	1000005	1	181	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	melee	0	-1	2829	(53,39,3)	(47,33,0)	503		combat_walk
+ra3_AV_M3_s1	3	1000005	2	155	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	melee	0	-1	2418	(52,33,3)	(47,33,0)	503		combat_walk
+ra3_AV_M3_s1	3	1000006	1	59	2	8	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	1	shot	8	17	911	(22,38,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000006	2	39	2	8	2		NONE			0	1	shot	8	17	639	(22,38,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000008	1	59	2	8	2		ENGAGE	SEARCH	contact_approach	0	1	shot	5	17	771	(26,61,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000008	2	42	2	8	-		ENGAGE	SEARCH	contact_approach	0	1	shot	5	17	630	(26,61,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000009	1	65	2	2	-		REINFORCE	SEARCH	contact_fire	1	0	melee	16	23	929	(21,40,0)	(12,44,0)	1000061		combat_walk
+ra3_AV_M3_s1	3	1000009	2	61	2	8	-		NONE			0	1	shot	16	23	875	(20,40,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000010	1	65	2	8	-		ENGAGE	SEARCH	at_node	0	1	sniper	16	20	793	(38,57,0)	(48,34,0)	503		attack
+ra3_AV_M3_s1	3	1000010	2	45	2	2	2		ENGAGE	SEARCH	at_node	0	0	firepoint.fallback	16	20	608	(38,57,0)	(43,53,0)	444		combat_walk
+ra3_AV_M3_s1	3	1000011	1	65	2	9	2		ENGAGE	SEARCH	contact_fire	1	1	shot	17	23	793	(39,56,0)	(48,34,0)	503		attack
+ra3_AV_M3_s1	3	1000011	2	18	0	2	2		NONE			0	0	patrol.node	0	-1	490	(39,56,0)	(43,49,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000012	1	52	2	6	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	1	1	grenade	7	23	825	(9,53,0)	(13,45,0)	1000061		attack
+ra3_AV_M3_s1	3	1000012	2	26	2	8	-	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	1	sniper	3	23	509	(9,53,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000013	1	65	0	2	0		ENGAGE	SEARCH	contact_fire	1	1	patrol.node	0	-1	733	(49,5,0)	(45,11,0)	1000072		patrol_walk
+ra3_AV_M3_s1	3	1000013	2	31	3	2	3	arrived	ENGAGE	SEARCH	contact_fire	0	1	escape	4	20	533	(46,10,0)	(41,13,0)	545		esc_dice_walk
+ra3_AV_M3_s1	3	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	564	(35,66,2)	(-1,-1,-1)	444		held_patrol_stand
+ra3_AV_M3_s1	3	1000016	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	10	20	831	(4,18,0)	(15,15,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000016	2	15	3	2	3	arrived	ENGAGE	SEARCH	contact_approach	1	0	escape	0	-1	482	(15,15,0)	(14,16,0)	543		esc_dice_walk
+ra3_AV_M3_s1	3	1000017	1	65	0	2	2		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	739	(62,43,0)	(62,62,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000018	1	65	2	9	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	4	20	699	(34,64,0)	(51,22,0)	-1		attack
+ra3_AV_M3_s1	3	1000018	2	24	2	8	-		NONE			0	1	sniper	2	20	490	(34,64,0)	(51,22,0)	1000075		attack
+ra3_AV_M3_s1	3	1000019	0	65	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	2	23	692	(35,65,3)	(33,66,3)	444		combat_walk
+ra3_AV_M3_s1	3	1000019	0	55	2	2	2		NONE			0	0	firepoint.fallback	4	23	610	(33,66,3)	(32,67,3)	444		combat_walk
+ra3_AV_M3_s1	3	1000019	0	49	2	2	2		NONE			0	0	firepoint.fallback	2	23	561	(32,67,3)	(28,64,3)	444		combat_walk
+ra3_AV_M3_s1	3	1000019	1	25	0	0	2		NONE			0	0		0	-1	488	(28,64,3)	(-1,-1,-1)	444		patrol_stand
+ra3_AV_M3_s1	3	1000020	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	546	(1,50,0)	(8,51,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000020	2	35	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	500	(8,51,0)	(39,64,0)	444		patrol_walk
+ra3_AV_M3_s1	3	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	568	(37,66,1)	(-1,-1,-1)	444		held_patrol_stand
+ra3_AV_M3_s1	3	1000024	1	65	0	2	0	stay:no_closer_node	SEARCH	SEARCH	no_closer_node	1	0	patrol.node	0	-1	605	(66,55,0)	(66,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000024	2	7	0	2	2		NONE			0	0	patrol.node	0	-1	450	(52,54,0)	(66,6,3)	503		patrol_walk
+ra3_AV_M3_s1	3	1000025	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	0	1	patrol.node	16	23	757	(38,60,0)	(43,57,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000025	2	39	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	4	23	581	(43,57,0)	(45,55,3)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000026	1	65	0	2	2		GUARD	HOLD	advance_post	0	0	patrol.node	0	-1	581	(54,35,0)	(53,11,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000027	1	65	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	1	0	patrol.node	0	-1	707	(6,17,0)	(63,39,3)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000027	2	47	0	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	16	23	683	(5,19,0)	(63,39,3)	543		patrol_walk
+ra3_AV_M3_s1	3	1000028	1	65	2	8	2		ENGAGE	SEARCH	contact_approach	1	1	sniper	5	20	850	(7,12,0)	(5,4,3)	543		attack
+ra3_AV_M3_s1	3	1000028	2	41	2	2	-		NONE			0	0	firepoint	5	20	578	(7,12,0)	(7,10,0)	543		combat_walk
+ra3_AV_M3_s1	3	1000029	0	65	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	0	-1	566	(66,4,0)	(63,8,0)	448		combat_walk
+ra3_AV_M3_s1	3	1000029	1	25	2	2	-		NONE			0	0	firepoint	1	20	491	(63,8,0)	(64,9,0)	448		combat_walk
+ra3_AV_M3_s1	3	1000029	2	19	0	0	2		NONE			0	0		0	-1	473	(64,9,0)	(-1,-1,-1)	448		patrol_stand
+ra3_AV_M3_s1	3	1000030	1	65	3	2	3		REINFORCE	SEARCH	contact_fire	1	1	escape	12	23	1145	(25,16,2)	(22,15,2)	520		esc_dice_walk
+ra3_AV_M3_s1	3	1000031	1	65	0	2	0		ENGAGE	SEARCH	contact_fire	0	0	patrol.node	6	23	891	(28,15,0)	(29,19,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000031	2	57	2	9	2		ENGAGE	SEARCH	contact_fire	0	1	sniper	8	23	819	(28,17,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000032	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	2	23	645	(66,48,0)	(60,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000032	2	19	3	2	3		SEARCH	SEARCH	sweep_sector	0	0	escape.known	0	-1	487	(55,49,0)	(54,51,0)	503		esc_dice_walk
+ra3_AV_M3_s1	3	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	544	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	3	1000034	1	46	2	9	-		ENGAGE	SEARCH	contact_approach	0	1	shot	9	23	549	(50,35,3)	(48,34,0)	503		attack
+ra3_AV_M3_s1	3	1000036	1	65	2	9	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	1	shot	28	23	1028	(28,19,0)	(46,18,0)	545		attack
+ra3_AV_M3_s1	3	1000036	2	16	3	2	3		NONE			0	0	escape	0	-1	480	(28,19,0)	(33,24,0)	520		esc_dice_walk
+ra3_AV_M3_s1	3	1000037	0	65	2	2	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	0	firepoint.random	14	23	784	(35,59,0)	(35,57,0)	444		combat_walk
+ra3_AV_M3_s1	3	1000037	0	57	2	2	2		NONE			0	0	firepoint.fallback	12	23	705	(35,57,0)	(36,52,0)	444		combat_walk
+ra3_AV_M3_s1	3	1000037	0	51	2	2	2		NONE			0	0	firepoint.random	14	23	643	(36,56,0)	(35,61,0)	444		combat_walk
+ra3_AV_M3_s1	3	1000037	1	29	2	8	-		NONE			0	1	sniper	8	23	513	(35,61,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000037	2	6	0	2	0		NONE			0	0	patrol.node	0	-1	449	(35,61,0)	(34,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000038	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	5	23	815	(5,38,3)	(7,36,3)	444		combat_walk
+ra3_AV_M3_s1	3	1000038	1	49	3	0	3	arrived	ENGAGE	SEARCH	contact_approach	0	0	escape.known	9	23	717	(7,36,0)	(7,36,0)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	3	1000039	1	65	0	2	2	stay:no_closer_node	SEARCH	SEARCH	no_closer_node	1	0	patrol.node	0	-1	651	(62,57,0)	(6,17,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000040	1	65	0	2	0		GUARD	HOLD	take_post	0	0	patrol.node	0	-1	636	(38,69,0)	(37,64,2)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000041	1	65	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	694	(62,60,0)	(57,52,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000041	2	21	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	464	(57,52,0)	(53,39,3)	503		patrol_walk
+ra3_AV_M3_s1	3	1000042	1	65	3	2	-	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	1	escape	13	23	821	(29,11,0)	(27,10,0)	520		esc_kept_walk
+ra3_AV_M3_s1	3	1000043	1	65	3	2	3		GUARD	HOLD	take_post	0	0	escape	6	23	548	(51,33,0)	(52,38,0)	503		esc_dice_walk
+ra3_AV_M3_s1	3	1000044	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	1	patrol.node	7	23	635	(50,55,3)	(45,55,3)	503		patrol_walk
+ra3_AV_M3_s1	3	1000044	2	37	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	1	26	557	(45,55,3)	(43,57,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000045	1	65	3	2	3		ENGAGE	SEARCH	contact_fire	1	1	escape.known	12	20	738	(5,42,0)	(4,43,0)	1000080		esc_dice_walk
+ra3_AV_M3_s1	3	1000046	1	65	0	2	0		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	7	23	712	(34,61,0)	(30,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000046	2	35	2	2	2	arrived	ENGAGE	SEARCH	contact_fire	1	0	firepoint.random	7	23	559	(30,60,0)	(30,58,0)	444		combat_walk
+ra3_AV_M3_s1	3	1000047	1	65	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	8	20	777	(50,60,0)	(42,8,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000047	2	49	2	8	2	arrived	ENGAGE	SEARCH	contact_approach	0	1	sniper	11	20	619	(50,56,0)	(48,34,0)	503		attack
+ra3_AV_M3_s1	3	1000050	1	65	0	2	2		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	558	(6,16,3)	(6,14,0)	543		patrol_walk
+ra3_AV_M3_s1	3	1000050	2	15	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	453	(6,14,0)	(42,42,0)	543		patrol_walk
+ra3_AV_M3_s1	3	1000051	1	71	2	9	2		ENGAGE	SEARCH	contact_approach	1	1	sniper	10	28	1242	(22,17,0)	(2,47,0)	-1		attack
+ra3_AV_M3_s1	3	1000051	2	3	0	2	2		NONE			0	0	patrol.node	0	-1	498	(22,17,0)	(32,8,0)	520		patrol_walk
+ra3_AV_M3_s1	3	1000052	1	71	2	8	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	1	1	shot	8	28	795	(10,57,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000052	2	23	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	606	(10,57,0)	(61,65,0)	444		patrol_walk
+ra3_AV_M3_s1	3	1000054	1	71	0	2	0	stay:at_node	SEARCH	SEARCH	at_node	1	0	patrol.node	0	-1	653	(67,58,0)	(37,67,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000054	2	23	3	0	3		NONE			0	0	escape.known	0	-1	471	(56,60,0)	(56,60,0)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	3	1000056	1	71	2	8	2		REINFORCE	SEARCH	contact_fire	1	1	sniper	4	28	1045	(24,10,0)	(31,8,2)	520		attack
+ra3_AV_M3_s1	3	1000056	2	23	3	2	3		NONE			0	0	escape	0	-1	639	(24,10,0)	(22,15,0)	520		esc_dice_walk
+ra3_AV_M3_s1	3	1000083	1	59	0	2	-		NONE			0	0	patrol.node	0	-1	588	(54,47,3)	(9,31,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000083	2	51	0	2	-		NONE			0	0	patrol.node	0	-1	562	(54,45,3)	(9,31,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000084	1	59	0	2	-		NONE			1	0	patrol.node	0	-1	551	(63,59,3)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000084	2	7	0	2	-		NONE			0	0	patrol.node	0	-1	450	(64,52,3)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000000	1	176	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	firepoint	0	-1	1988	(50,65,3)	(49,64,3)	503		combat_walk
+ra3_AV_M3_s1	3	1000000	2	170	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	1940	(49,64,3)	(55,42,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000001	1	92	2	10	-		NONE			0	1	melee	1	15	633	(15,46,0)	(16,47,0)	444		attack
+ra3_AV_M3_s1	3	1000005	2	119	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	melee	0	-1	1901	(51,31,0)	(48,33,0)	503		combat_walk
+ra3_AV_M3_s1	3	1000008	0	25	2	2	2		ENGAGE	SEARCH	contact_approach	0	0	firepoint.random	3	17	513	(26,61,0)	(25,62,0)	470		combat_walk
+ra3_AV_M3_s1	3	1000008	1	19	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	17	483	(25,62,0)	(30,56,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000008	2	19	3	2	3		ENGAGE	SEARCH	contact_approach	0	0	escape.known	2	17	483	(25,62,0)	(23,59,0)	-1		esc_dice_walk
+ra3_AV_M3_s1	3	1000009	1	19	0	2	0		NONE			0	0	patrol.node	0	-1	587	(20,40,0)	(21,44,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000010	1	35	2	8	-		ENGAGE	SEARCH	at_node	0	1	sniper	8	20	554	(40,56,0)	(40,13,0)	1000063		attack
+ra3_AV_M3_s1	3	1000010	2	14	0	2	2		ENGAGE	SEARCH	at_node	0	0	patrol.node	0	-1	470	(40,56,0)	(47,10,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	557	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	3	1000019	1	25	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	484	(28,64,3)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	3	1000020	1	19	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	483	(8,55,0)	(39,64,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	561	(37,66,1)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	3	1000024	1	7	0	2	2		NONE			0	0	patrol.node	0	-1	446	(52,54,0)	(66,6,3)	503		patrol_walk
+ra3_AV_M3_s1	3	1000024	2	7	0	2	2		NONE			0	0	patrol.node	0	-1	446	(52,54,0)	(66,6,3)	503		patrol_walk
+ra3_AV_M3_s1	3	1000027	1	17	0	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	489	(7,25,0)	(63,39,3)	543		patrol_walk
+ra3_AV_M3_s1	3	1000028	1	33	2	2	-	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint	4	20	538	(7,10,0)	(7,11,0)	543		combat_walk
+ra3_AV_M3_s1	3	1000028	2	32	2	8	-	arrived	ENGAGE	SEARCH	contact_approach	0	1	shot	4	20	538	(7,10,0)	(5,4,3)	543		attack
+ra3_AV_M3_s1	3	1000029	1	19	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	469	(64,9,0)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	3	1000031	1	12	0	2	2		ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	455	(28,17,0)	(29,19,0)	520		patrol_walk
+ra3_AV_M3_s1	3	1000031	2	8	3	2	3		ENGAGE	SEARCH	contact_fire	0	0	escape	0	-1	451	(28,18,0)	(27,19,0)	520		esc_dice_walk
+ra3_AV_M3_s1	3	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	539	(32,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	3	1000038	1	36	2	6	2	arrived	ENGAGE	SEARCH	contact_approach	0	1	sniper	5	23	686	(7,36,0)	(37,32,0)	470		attack
+ra3_AV_M3_s1	3	1000038	2	9	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	453	(7,36,0)	(6,34,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000044	1	15	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	465	(43,57,0)	(45,55,3)	503		patrol_walk
+ra3_AV_M3_s1	3	1000044	2	7	3	0	3	arrived	ENGAGE	SEARCH	contact_approach	0	0	escape.known	0	-1	447	(43,56,0)	(43,56,0)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	3	1000046	0	34	2	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	firepoint.random	5	23	551	(30,60,0)	(30,62,0)	470		combat_walk
+ra3_AV_M3_s1	3	1000046	1	26	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	4	23	498	(30,62,0)	(41,5,3)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000047	1	29	2	8	-	arrived	ENGAGE	SEARCH	contact_approach	0	1	sniper	6	20	502	(50,56,0)	(46,18,0)	545		attack
+ra3_AV_M3_s1	3	1000047	2	9	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	451	(50,56,0)	(42,8,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000052	1	23	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	510	(10,57,0)	(61,65,0)	470		patrol_walk
+ra3_AV_M3_s1	3	1000052	2	23	0	2	0	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	510	(10,57,0)	(61,65,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000054	1	23	0	2	0	stay:at_node	SEARCH	SEARCH	at_node	0	0	patrol.node	0	-1	468	(56,60,0)	(37,67,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000054	2	23	0	2	0		NONE			0	0	patrol.node	0	-1	468	(56,60,0)	(37,67,0)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000056	1	19	0	2	2		NONE			0	0	patrol.node	0	-1	473	(24,11,0)	(20,16,0)	520		patrol_walk
+ra3_AV_M3_s1	3	1000056	2	19	0	2	2		REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	473	(24,11,0)	(20,16,0)	520		patrol_walk
+ra3_AV_M3_s1	3	1000083	1	9	0	2	-		NONE			0	0	leeroy	0	-1	450	(45,43,3)	(47,33,0)	503		patrol_walk
+ra3_AV_M3_s1	3	1000084	1	7	0	2	-		NONE			0	0	patrol.node	0	-1	447	(64,52,3)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	3	1000084	2	7	0	2	-		NONE			0	0	patrol.node	0	-1	447	(64,52,3)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000000	1	181	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	0	-1	2402	(47,64,3)	(48,64,3)	503		combat_walk
+ra3_AV_M3_s1	4	1000000	2	179	2	2	-		NONE			0	0	firepoint	0	-1	2342	(47,64,3)	(50,64,3)	503		combat_walk
+ra3_AV_M3_s1	4	1000008	0	59	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	0	-1	868	(23,59,0)	(21,55,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000008	0	39	2	2	2		NONE			0	0	firepoint.fallback	5	17	658	(21,55,0)	(19,58,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000008	0	23	2	2	-		NONE			0	0	firepoint	3	17	516	(19,58,0)	(19,57,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000008	1	19	0	2	2		NONE			0	0	patrol.node	2	17	494	(19,57,0)	(30,60,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000008	2	19	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	17	494	(19,57,0)	(30,60,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000009	0	65	2	2	2	arrived	REINFORCE	SEARCH	contact_fire	1	0	firepoint.random	8	23	927	(21,44,0)	(23,40,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000009	1	45	2	9	2	arrived	REINFORCE	SEARCH	contact_fire	0	1	sniper	12	23	677	(23,40,0)	(49,35,0)	-1		attack
+ra3_AV_M3_s1	4	1000009	1	44	2	2	2	arrived	REINFORCE	SEARCH	contact_fire	0	0	firepoint.fallback	6	23	677	(23,40,0)	(26,41,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000009	2	30	2	8	2	arrived	REINFORCE	SEARCH	contact_fire	0	1	sniper	7	23	534	(26,41,0)	(37,34,0)	470		attack
+ra3_AV_M3_s1	4	1000010	1	65	2	2	2		ENGAGE	SEARCH	at_node	0	0	firepoint.random	11	20	710	(42,55,0)	(42,56,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000010	2	61	2	8	-		ENGAGE	SEARCH	at_node	0	1	shot	12	20	673	(42,56,0)	(49,35,0)	503		attack
+ra3_AV_M3_s1	4	1000011	1	65	2	9	2		ENGAGE	SEARCH	contact_fire	0	1	sniper	17	23	701	(42,53,0)	(37,34,0)	470		attack
+ra3_AV_M3_s1	4	1000011	2	1	3	2	3		ENGAGE	SEARCH	contact_fire	0	0	escape	0	-1	473	(42,53,0)	(47,54,0)	470		esc_dice_walk
+ra3_AV_M3_s1	4	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	556	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	4	1000016	1	65	3	2	-		ENGAGE	SEARCH	contact_approach	1	1	escape	11	20	1053	(14,16,0)	(12,15,0)	470		esc_kept_walk
+ra3_AV_M3_s1	4	1000017	1	65	0	2	2		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	628	(69,55,0)	(62,62,0)	503		patrol_walk
+ra3_AV_M3_s1	4	1000017	2	13	0	2	2	arrived	SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	464	(62,62,0)	(21,44,0)	503		patrol_walk
+ra3_AV_M3_s1	4	1000018	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		8	20	684	(34,64,0)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	4	1000019	0	65	2	2	2		GUARD	HOLD	take_post	1	0	firepoint.fallback	0	-1	739	(28,64,3)	(24,68,3)	470		combat_walk
+ra3_AV_M3_s1	4	1000019	1	37	0	2	0		NONE			0	0	patrol.node	3	23	483	(24,68,3)	(34,64,2)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000020	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	10	23	919	(11,52,0)	(8,52,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000020	0	53	2	2	2		NONE			0	0	firepoint.fallback	14	23	727	(8,52,0)	(5,52,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000020	0	41	2	2	2		NONE			0	0	firepoint.fallback	5	23	595	(5,52,0)	(5,50,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000020	1	33	0	2	0		NONE			0	0	patrol.node	6	23	547	(5,50,0)	(21,62,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	554	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	4	1000024	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	573	(52,54,0)	(66,63,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000025	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	0	-1	801	(44,56,3)	(44,52,3)	503		combat_walk
+ra3_AV_M3_s1	4	1000025	1	32	2	6	-		NONE			0	1	sniper	5	23	566	(44,52,3)	(52,25,0)	1000074		attack
+ra3_AV_M3_s1	4	1000025	2	32	2	2	-		NONE			0	0	firepoint	5	23	507	(44,52,3)	(44,50,3)	503		combat_walk
+ra3_AV_M3_s1	4	1000027	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	1	patrol.node	13	23	1008	(11,25,0)	(15,35,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000027	2	17	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	488	(15,35,0)	(45,24,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000028	1	65	2	8	-	arrived	ENGAGE	SEARCH	contact_approach	0	1	shot	6	20	828	(7,10,0)	(6,5,2)	543		attack
+ra3_AV_M3_s1	4	1000000	2	167	0	2	0		NONE			0	0	patrol.node	0	-1	1978	(50,64,3)	(52,43,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000008	1	19	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	17	494	(19,57,0)	(30,60,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000008	2	19	0	2	0	pause	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	17	494	(19,57,0)	(30,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000009	1	7	0	2	2	arrived	REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	449	(26,41,0)	(22,11,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000010	1	41	2	8	-		ENGAGE	SEARCH	at_node	0	1	shot	12	20	564	(42,56,0)	(37,34,0)	470		attack
+ra3_AV_M3_s1	4	1000010	2	21	2	8	-		ENGAGE	SEARCH	at_node	0	1	shot	5	20	487	(42,56,0)	(37,34,0)	470		attack
+ra3_AV_M3_s1	4	1000008	1	19	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	17	494	(19,57,0)	(30,60,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000008	2	19	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	17	494	(19,57,0)	(30,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	556	(35,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	4	1000018	0	65	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	8	20	685	(34,64,0)	(39,59,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000018	1	29	2	8	-		NONE			0	1	sniper	7	20	516	(39,59,0)	(52,25,0)	1000074		attack
+ra3_AV_M3_s1	4	1000018	2	8	0	0	2		NONE			0	0		0	-1	452	(39,59,0)	(-1,-1,-1)	470		patrol_stand
+ra3_AV_M3_s1	4	1000021	1	65	3	0	3	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	escape.known	0	-1	567	(37,66,1)	(37,66,1)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	4	1000025	1	24	2	8	-		ENGAGE	SEARCH	contact_approach	0	1	sniper	2	23	469	(44,50,3)	(52,25,0)	1000074		attack
+ra3_AV_M3_s1	4	1000029	1	65	2	8	2		REINFORCE	SEARCH	contact_approach	1	1	shot	0	-1	684	(64,9,0)	(63,14,0)	1000081		attack
+ra3_AV_M3_s1	4	1000030	2	65	0	2	0		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	6	23	1145	(22,15,2)	(27,14,2)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000031	1	65	2	9	2		ENGAGE	SEARCH	contact_fire	0	1	sniper	12	23	1068	(27,19,0)	(52,25,0)	1000074		attack
+ra3_AV_M3_s1	4	1000031	2	19	0	2	2		ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	484	(27,19,0)	(29,19,0)	520		patrol_walk
+ra3_AV_M3_s1	4	1000032	1	65	2	9	2		SEARCH	SEARCH	sweep_sector	0	1	shot	6	23	741	(54,51,0)	(37,34,0)	470		attack
+ra3_AV_M3_s1	4	1000032	2	18	0	2	2		NONE			0	0	patrol.node	0	-1	471	(54,51,0)	(60,60,0)	503		patrol_walk
+ra3_AV_M3_s1	4	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	537	(32,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	4	1000036	1	52	2	6	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	grenade	22	23	1038	(30,21,0)	(40,13,0)	1000072		attack
+ra3_AV_M3_s1	4	1000036	2	24	2	8	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	shot	9	23	534	(30,21,0)	(37,34,0)	470		attack
+ra3_AV_M3_s1	4	1000037	0	65	2	2	2		REINFORCE	SEARCH	contact_approach	1	0	firepoint.random	6	23	783	(34,60,0)	(36,59,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000037	1	61	2	2	2		NONE			0	0	firepoint.random	12	23	735	(35,60,0)	(35,65,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000037	1	41	2	2	2		NONE			0	0	firepoint.fallback	1	23	535	(35,65,0)	(35,67,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000037	1	33	2	2	2		NONE			0	0	firepoint.fallback	1	23	481	(35,67,0)	(34,66,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000037	1	27	2	2	2		NONE			0	0	firepoint.fallback	4	23	465	(34,66,0)	(35,66,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000037	2	23	0	2	2		NONE			0	0	patrol.node	1	23	461	(35,66,0)	(43,57,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000038	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	8	23	910	(7,35,0)	(19,36,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000038	2	11	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	456	(19,36,0)	(45,39,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000039	0	65	2	2	2		SEARCH	SEARCH	sweep_sector	1	0	firepoint.random	0	-1	712	(53,60,0)	(49,57,0)	503		combat_walk
+ra3_AV_M3_s1	4	1000039	1	53	0	2	0		NONE			0	0	patrol.node	9	23	628	(50,60,0)	(62,57,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000040	1	65	0	2	0		GUARD	HOLD	take_post	0	0	patrol.node	0	-1	597	(36,62,0)	(37,64,2)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000040	2	31	0	0	2	arrived	GUARD	HOLD	take_post	0	0		0	-1	504	(37,64,2)	(37,64,2)	470		held_patrol_stand
+ra3_AV_M3_s1	4	1000041	1	65	0	2	2		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	612	(59,55,0)	(57,52,0)	503		patrol_walk
+ra3_AV_M3_s1	4	1000041	2	47	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	520	(57,52,0)	(53,39,3)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000042	1	65	2	9	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	1	shot	5	23	907	(27,10,0)	(31,8,2)	520		attack
+ra3_AV_M3_s1	4	1000042	2	2	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	487	(27,10,0)	(67,3,0)	520		patrol_walk
+ra3_AV_M3_s1	4	1000043	1	65	2	8	2		REINFORCE	SEARCH	contact_fire	1	1	shot	8	23	602	(52,38,0)	(52,25,0)	1000074		attack
+ra3_AV_M3_s1	4	1000043	2	24	2	8	-		NONE			0	1	sniper	0	-1	487	(52,38,0)	(50,22,0)	1000075		attack
+ra3_AV_M3_s1	4	1000044	1	65	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	11	23	718	(43,56,0)	(45,55,3)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000046	0	65	2	2	2		ENGAGE	SEARCH	contact_fire	1	0	firepoint.random	9	23	780	(34,59,0)	(38,56,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000046	0	64	2	2	2		NONE			0	0	firepoint.random	9	23	778	(34,59,0)	(29,62,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000046	0	36	2	2	2		NONE			0	0	firepoint.fallback	7	23	561	(29,62,0)	(30,62,0)	470		combat_walk
+ra3_AV_M3_s1	4	1000046	1	32	0	2	0		NONE			0	0	patrol.node	4	23	535	(30,62,0)	(38,54,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000047	1	52	2	6	2	arrived	ENGAGE	SEARCH	contact_approach	0	1	sniper	14	20	753	(50,54,0)	(49,35,0)	503		attack
+ra3_AV_M3_s1	4	1000047	1	26	2	2	-	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint	6	20	488	(50,54,0)	(49,55,0)	503		combat_walk
+ra3_AV_M3_s1	4	1000047	2	20	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	7	20	475	(49,55,0)	(42,8,0)	503		patrol_walk
+ra3_AV_M3_s1	4	1000050	1	65	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	722	(5,16,0)	(42,42,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000000	2	95	3	0	3		ENGAGE	SEARCH	contact_approach	0	0	escape.known	0	-1	1359	(43,56,2)	(43,56,2)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	4	1000008	1	19	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	3	17	492	(19,57,0)	(30,60,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000008	2	19	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	3	17	492	(19,57,0)	(30,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	552	(35,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	4	1000018	1	8	3	2	3		NONE			0	0	escape.known	0	-1	450	(39,59,0)	(40,58,0)	470		esc_dice_walk
+ra3_AV_M3_s1	4	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	509	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	4	1000030	1	53	2	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	firepoint.random	4	23	939	(25,15,2)	(26,18,2)	520		combat_walk
+ra3_AV_M3_s1	4	1000030	2	36	2	8	2	arrived	ENGAGE	SEARCH	contact_fire	0	1	sniper	4	23	719	(26,18,2)	(37,34,0)	470		attack
+ra3_AV_M3_s1	4	1000031	1	11	3	2	3		ENGAGE	SEARCH	contact_fire	1	0	escape	0	-1	456	(29,19,0)	(30,19,0)	520		esc_dice_walk
+ra3_AV_M3_s1	4	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	536	(32,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	4	1000036	1	22	3	2	3	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	0	escape	0	-1	517	(30,21,0)	(30,16,0)	520		esc_dice_walk
+ra3_AV_M3_s1	4	1000040	1	31	0	0	2	arrived	GUARD	HOLD	take_post	0	0		0	-1	502	(37,64,2)	(37,64,2)	470		held_patrol_stand
+ra3_AV_M3_s1	4	1000052	1	71	2	9	2		ENGAGE	SEARCH	contact_approach	1	1	sniper	12	28	929	(10,57,0)	(31,8,2)	-1		attack
+ra3_AV_M3_s1	4	1000052	2	3	0	2	0		NONE			0	0	patrol.node	0	-1	517	(10,57,0)	(22,57,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000054	1	71	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	731	(56,60,0)	(58,55,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000054	2	23	0	2	0		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	487	(62,58,0)	(58,55,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000056	1	71	2	9	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	sniper	2	28	1066	(24,11,0)	(31,8,2)	520		attack
+ra3_AV_M3_s1	4	1000056	2	0	0	2	0		NONE			0	0	patrol.node	0	-1	469	(24,11,0)	(20,16,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000084	1	59	0	2	-		NONE			0	0	patrol.node	0	-1	547	(64,52,3)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000084	2	51	0	2	-		NONE			0	0	leeroy	0	-1	526	(64,51,3)	(66,43,0)	1000068		patrol_walk
+ra3_AV_M3_s1	4	1000000	1	95	2	2	2		ENGAGE	SEARCH	contact_approach	0	0	firepoint.random	0	-1	1363	(43,56,2)	(43,55,2)	503		combat_walk
+ra3_AV_M3_s1	4	1000000	2	91	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	1136	(43,55,0)	(52,43,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000008	1	19	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	3	17	491	(19,57,0)	(30,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000008	2	19	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	3	17	491	(19,57,0)	(30,60,0)	470		patrol_walk
+ra3_AV_M3_s1	4	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	551	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	4	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	508	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	4	1000030	1	11	0	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	473	(26,18,2)	(27,14,2)	448		patrol_walk
+ra3_AV_M3_s1	4	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	535	(32,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	4	1000040	1	31	0	0	0	arrived	GUARD	HOLD	take_post	0	0		0	-1	501	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	4	1000054	1	23	0	2	0		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	486	(62,58,0)	(58,55,0)	-1		patrol_walk
+ra3_AV_M3_s1	4	1000054	2	23	0	2	2		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	486	(62,58,0)	(58,55,0)	503		patrol_walk
+ra3_AV_M3_s1	5	1000000	1	181	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	melee	0	-1	3745	(44,53,0)	(48,40,0)	503		combat_walk
+ra3_AV_M3_s1	5	1000000	2	177	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	melee	0	-1	3610	(44,52,0)	(48,40,0)	503		combat_walk
+ra3_AV_M3_s1	5	1000008	1	59	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	2	17	948	(19,57,0)	(27,62,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000008	2	23	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	3	17	500	(26,61,0)	(27,62,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	550	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	5	1000017	1	65	0	2	0		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	680	(60,61,0)	(50,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000017	2	23	0	2	0	arrived	REINFORCE	SEARCH	contact_fire	1	0	patrol.node	3	20	481	(50,60,0)	(58,43,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000018	1	65	2	8	2		GUARD	HOLD	take_post	1	1	shot	11	20	783	(40,58,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	5	1000018	2	42	2	8	-		NONE			0	1	sniper	11	20	599	(40,58,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	5	1000019	0	65	2	2	2		GUARD	HOLD	take_post	0	0	firepoint.random	2	23	703	(30,65,3)	(29,64,3)	470		combat_walk
+ra3_AV_M3_s1	5	1000019	1	59	0	2	0		NONE			0	0	patrol.node	0	-1	637	(29,64,3)	(34,64,2)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000019	2	6	0	0	0	arrived	GUARD	HOLD	take_post	0	0		0	-1	442	(34,64,2)	(34,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	5	1000020	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint.random	9	23	991	(11,52,0)	(7,57,0)	470		combat_walk
+ra3_AV_M3_s1	5	1000020	0	37	2	2	2		NONE			0	0	firepoint.fallback	2	23	610	(7,57,0)	(9,59,0)	470		combat_walk
+ra3_AV_M3_s1	5	1000020	1	23	0	2	2		NONE			0	0	patrol.node	4	23	511	(9,59,0)	(15,55,0)	470		patrol_walk
+ra3_AV_M3_s1	5	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	509	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	5	1000024	1	65	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	691	(62,61,0)	(62,54,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000024	2	29	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	492	(62,54,0)	(49,67,0)	503		patrol_walk
+ra3_AV_M3_s1	5	1000027	1	65	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	1078	(18,34,0)	(45,24,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000027	2	51	2	9	2	arrived	ENGAGE	SEARCH	contact_approach	0	1	sniper	9	23	831	(21,33,0)	(46,18,0)	545		attack
+ra3_AV_M3_s1	5	1000030	0	65	2	2	2		ENGAGE	SEARCH	contact_fire	1	0	firepoint.fallback	0	-1	1136	(27,16,2)	(27,11,2)	543		combat_walk
+ra3_AV_M3_s1	5	1000030	1	47	2	9	-		NONE			0	1	sniper	4	23	830	(27,12,2)	(52,30,0)	1000075		attack
+ra3_AV_M3_s1	5	1000030	2	44	2	2	2		NONE			0	0	firepoint.random	2	23	796	(27,12,2)	(29,15,2)	543		combat_walk
+ra3_AV_M3_s1	5	1000032	1	65	2	2	-	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	0	melee	8	23	805	(50,51,0)	(48,40,0)	503		combat_walk
+ra3_AV_M3_s1	5	1000032	2	61	2	9	-		NONE			0	1	sniper	12	23	767	(50,50,0)	(46,18,0)	545		attack
+ra3_AV_M3_s1	5	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	536	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	5	1000037	1	65	0	2	0		REINFORCE	SEARCH	contact_approach	0	1	patrol.node	9	23	745	(35,61,0)	(43,57,0)	470		patrol_walk
+ra3_AV_M3_s1	5	1000037	2	29	3	2	3		REINFORCE	SEARCH	contact_approach	0	1	escape	7	23	517	(42,58,0)	(39,54,0)	470		esc_dice_walk
+ra3_AV_M3_s1	5	1000038	1	65	2	9	2	arrived	ENGAGE	SEARCH	contact_approach	0	1	shot	8	23	1054	(21,35,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	5	1000038	2	20	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	486	(21,35,0)	(45,39,0)	470		patrol_walk
+ra3_AV_M3_s1	5	1000039	1	65	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	698	(62,60,0)	(56,54,0)	503		patrol_walk
+ra3_AV_M3_s1	5	1000039	2	25	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	476	(56,54,0)	(59,13,0)	503		patrol_walk
+ra3_AV_M3_s1	5	1000040	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	620	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	5	1000041	1	65	0	2	2		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	600	(52,53,1)	(55,45,3)	503		patrol_walk
+ra3_AV_M3_s1	5	1000041	1	31	2	2	2		ENGAGE	SEARCH	contact_approach	0	0	firepoint	2	26	484	(54,51,3)	(55,51,3)	503		combat_walk
+ra3_AV_M3_s1	5	1000041	2	27	2	8	-		NONE			0	1	sniper	3	20	467	(55,51,3)	(49,40,0)	503		attack
+ra3_AV_M3_s1	5	1000042	1	65	2	8	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	shot	3	23	902	(27,10,0)	(25,2,0)	543		attack
+ra3_AV_M3_s1	5	1000042	2	41	2	8	-		NONE			0	1	shot	2	23	615	(27,10,0)	(25,2,0)	543		attack
+ra3_AV_M3_s1	5	1000043	1	65	2	8	-		REINFORCE	SEARCH	contact_fire	0	1	shot	6	23	880	(52,38,0)	(52,30,0)	1000075		attack
+ra3_AV_M3_s1	5	1000043	2	42	2	2	-		REINFORCE	SEARCH	contact_fire	0	0	melee	3	23	567	(52,38,0)	(49,39,0)	503		combat_walk
+ra3_AV_M3_s1	5	1000044	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	2	23	726	(35,64,0)	(32,61,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000044	2	35	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	471	(32,61,0)	(37,62,3)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000046	1	65	2	9	2		ENGAGE	SEARCH	contact_fire	0	1	shot	9	23	805	(34,58,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	5	1000046	2	19	0	2	2		ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	484	(34,58,0)	(38,54,0)	470		patrol_walk
+ra3_AV_M3_s1	5	1000047	1	65	2	2	-	arrived	ENGAGE	SEARCH	contact_approach	0	0	melee	10	20	797	(49,50,0)	(48,40,0)	503		combat_walk
+ra3_AV_M3_s1	5	1000047	2	27	2	8	-	arrived	ENGAGE	SEARCH	contact_approach	0	1	shot	6	16	518	(48,41,0)	(49,40,0)	503		attack
+ra3_AV_M3_s1	5	1000052	1	71	2	9	2		ENGAGE	SEARCH	contact_fire	1	1	sniper	8	28	991	(10,57,0)	(46,18,0)	-1		attack
+ra3_AV_M3_s1	5	1000052	2	3	0	2	2		NONE			0	0	patrol.node	0	-1	515	(10,57,0)	(19,56,0)	470		patrol_walk
+ra3_AV_M3_s1	5	1000054	1	71	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	1	28	694	(62,58,0)	(57,52,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000054	2	33	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	484	(57,52,0)	(6,4,4)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000056	0	71	2	2	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	0	firepoint.random	0	-1	1059	(24,11,0)	(27,9,0)	543		combat_walk
+ra3_AV_M3_s1	5	1000056	1	55	2	8	-	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	shot	2	28	742	(27,9,0)	(25,2,0)	543		attack
+ra3_AV_M3_s1	5	1000056	2	8	0	2	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	0	patrol.node	0	-1	517	(27,9,0)	(20,16,0)	448		patrol_walk
+ra3_AV_M3_s1	5	1000084	1	59	0	2	-		NONE			0	0	leeroy	0	-1	670	(65,40,3)	(64,40,0)	1000068		patrol_walk
+ra3_AV_M3_s1	5	1000084	2	19	0	10	-		NONE			0	1	leeroy	1	15	464	(64,40,0)	(65,40,0)	1000068		attack
+ra3_AV_M3_s1	5	1000000	1	127	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	melee	0	-1	1826	(47,41,0)	(48,39,0)	503		combat_walk
+ra3_AV_M3_s1	5	1000000	2	102	2	2	-		ENGAGE	SEARCH	contact_approach	0	0	melee	0	-1	1362	(48,39,0)	(41,37,0)	470		combat_walk
+ra3_AV_M3_s1	5	1000008	1	23	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	17	498	(26,61,0)	(27,62,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000008	1	23	2	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint	2	17	498	(26,61,0)	(26,62,0)	470		combat_walk
+ra3_AV_M3_s1	5	1000008	2	19	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	1	17	479	(26,62,0)	(27,62,0)	470		patrol_walk
+ra3_AV_M3_s1	5	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	567	(35,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	5	1000018	1	22	2	8	-		NONE			0	1	sniper	4	20	491	(40,58,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	5	1000019	1	6	0	0	2	arrived	GUARD	HOLD	take_post	0	0		0	-1	440	(34,64,2)	(34,64,2)	470		held_patrol_stand
+ra3_AV_M3_s1	5	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	572	(37,66,1)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	5	1000030	1	28	2	8	-		NONE			0	1	shot	3	23	495	(29,15,0)	(46,18,0)	545		attack
+ra3_AV_M3_s1	5	1000032	1	16	2	2	-		NONE			0	0	firepoint	0	-1	473	(50,50,0)	(50,51,0)	470		combat_walk
+ra3_AV_M3_s1	5	1000032	2	12	2	2	-		NONE			0	0	firepoint	0	-1	458	(50,51,0)	(51,51,0)	470		combat_walk
+ra3_AV_M3_s1	5	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	533	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	5	1000040	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	659	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	5	1000041	1	7	0	2	2		NONE			0	0	patrol.node	0	-1	438	(55,51,3)	(55,45,3)	470		patrol_walk
+ra3_AV_M3_s1	5	1000042	1	18	0	2	0		NONE			0	0	patrol.node	0	-1	472	(27,10,0)	(67,3,0)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000043	1	30	2	8	-		REINFORCE	SEARCH	contact_fire	0	1	shot	2	23	529	(51,40,0)	(65,40,0)	1000068		attack
+ra3_AV_M3_s1	5	1000047	1	6	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	442	(48,41,0)	(42,8,0)	470		patrol_walk
+ra3_AV_M3_s1	5	1000054	1	23	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	466	(56,54,0)	(6,4,4)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000054	2	23	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	466	(56,54,0)	(6,4,4)	-1		patrol_walk
+ra3_AV_M3_s1	5	1000056	1	8	0	2	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	0	patrol.node	0	-1	445	(27,9,0)	(20,16,0)	448		patrol_walk
+ra3_AV_M3_s1	5	1000056	2	8	0	2	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	0	patrol.node	0	-1	445	(27,9,0)	(20,16,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000008	1	59	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	1	17	764	(26,62,0)	(48,64,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000008	2	23	3	2	3		SEARCH	SEARCH	sweep_sector	0	0	escape.known	0	-1	462	(30,69,0)	(30,64,0)	-1		esc_dice_walk
+ra3_AV_M3_s1	6	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	565	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	6	1000017	1	65	2	8	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	1	sniper	7	20	772	(50,55,0)	(39,38,0)	-1		attack
+ra3_AV_M3_s1	6	1000017	2	44	2	8	-		NONE			0	1	sniper	7	20	591	(50,55,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	6	1000018	1	65	2	2	2		GUARD	HOLD	take_post	0	0	firepoint.fallback	5	20	795	(40,58,0)	(38,54,0)	470		combat_walk
+ra3_AV_M3_s1	6	1000018	2	45	2	8	-		NONE			0	1	shot	6	20	585	(38,54,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	6	1000019	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	626	(34,64,2)	(34,64,2)	470		held_patrol_stand
+ra3_AV_M3_s1	6	1000020	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	1	1	patrol.node	6	23	1009	(13,56,0)	(1,61,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000020	2	7	3	0	3	arrived	SEARCH	SEARCH	sweep_sector	1	0	escape.known	0	-1	441	(1,61,0)	(1,61,0)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	6	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	570	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	6	1000024	1	65	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	683	(63,60,0)	(57,52,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000024	2	13	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	441	(57,52,0)	(41,18,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000027	0	65	2	2	-	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint	5	23	1120	(21,33,0)	(20,28,0)	470		combat_walk
+ra3_AV_M3_s1	6	1000027	1	30	2	6	-	arrived	ENGAGE	SEARCH	contact_approach	0	1	sniper	3	23	719	(20,28,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	6	1000030	0	65	2	2	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	0	firepoint.random	4	23	907	(29,15,0)	(30,16,0)	545		combat_walk
+ra3_AV_M3_s1	6	1000030	0	59	2	2	-		NONE			0	0	firepoint	4	23	831	(30,16,0)	(33,18,0)	545		combat_walk
+ra3_AV_M3_s1	6	1000030	1	53	2	2	-		NONE			0	0	firepoint	6	23	765	(31,17,0)	(29,18,0)	545		combat_walk
+ra3_AV_M3_s1	6	1000030	2	43	0	2	0		NONE			0	0	patrol.node	4	23	672	(29,18,0)	(27,14,1)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000032	1	47	2	2	-	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	0	firepoint	1	26	786	(51,51,0)	(47,49,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000032	1	43	2	2	-	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	0	firepoint	3	23	608	(50,51,0)	(46,49,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000032	2	23	0	2	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	0	patrol.node	3	23	500	(46,49,0)	(60,60,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	531	(32,66,2)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	6	1000037	1	65	3	2	-		SEARCH	SEARCH	sweep_sector	1	0	escape	8	23	780	(39,54,0)	(43,52,0)	448		esc_kept_walk
+ra3_AV_M3_s1	6	1000038	0	65	2	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint.random	8	23	1076	(25,33,0)	(22,34,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000038	0	51	2	2	-	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint	4	23	843	(22,34,0)	(25,38,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000038	0	39	2	2	-	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint	4	23	643	(24,36,0)	(25,39,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000038	1	25	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	3	23	520	(25,39,0)	(45,39,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000039	1	65	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	646	(60,56,0)	(52,57,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000039	2	31	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	469	(52,57,0)	(48,3,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000040	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	657	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	6	1000041	1	65	2	8	2		REINFORCE	SEARCH	contact_approach	1	1	sniper	5	20	606	(55,50,3)	(49,38,0)	1000075		attack
+ra3_AV_M3_s1	6	1000041	2	44	0	2	2		NONE			0	0	patrol.node	2	20	514	(55,50,3)	(53,39,3)	448		patrol_walk
+ra3_AV_M3_s1	6	1000042	1	65	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	789	(30,7,0)	(28,11,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000042	2	45	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	609	(28,11,0)	(8,4,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000043	0	47	2	2	-		REINFORCE	SEARCH	contact_fire	0	0	firepoint	0	-1	876	(51,40,0)	(54,36,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000043	0	35	2	2	-		REINFORCE	SEARCH	contact_fire	0	0	firepoint	1	23	514	(52,38,0)	(53,37,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000043	1	29	2	8	-		REINFORCE	SEARCH	contact_fire	0	1	sniper	2	23	478	(53,37,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	6	1000043	2	6	0	2	2		REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	438	(53,37,0)	(52,34,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000044	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	617	(32,63,1)	(6,57,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000046	1	65	3	2	3		SEARCH	SEARCH	sweep_sector	1	0	escape	6	23	758	(36,55,0)	(32,52,0)	448		esc_dice_walk
+ra3_AV_M3_s1	6	1000047	1	65	2	8	2	arrived	ENGAGE	SEARCH	contact_approach	0	1	shot	4	20	802	(48,40,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	6	1000047	2	45	2	8	-	arrived	ENGAGE	SEARCH	contact_approach	0	1	shot	4	20	619	(48,40,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	6	1000052	0	71	2	2	2		SEARCH	SEARCH	sweep_sector	1	0	firepoint.random	6	28	998	(10,57,0)	(7,53,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000052	1	49	2	9	-		NONE			0	1	sniper	6	28	711	(7,53,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	6	1000054	1	71	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	584	(56,54,0)	(52,54,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000054	2	51	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	495	(52,54,0)	(25,5,3)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000056	1	71	0	2	0		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	967	(27,9,0)	(29,14,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000056	1	45	2	2	2	arrived	REINFORCE	SEARCH	contact_fire	1	0	firepoint.random	2	28	616	(29,14,0)	(31,15,0)	545		combat_walk
+ra3_AV_M3_s1	6	1000056	2	35	2	8	-	arrived	REINFORCE	SEARCH	contact_fire	0	1	shot	3	28	542	(31,15,0)	(49,19,0)	545		attack
+ra3_AV_M3_s1	6	1000084	1	59	0	2	-		NONE			0	0	patrol.node	0	-1	480	(64,40,0)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000086	1	59	0	2	-		NONE			0	0	leeroy	0	-1	742	(49,40,0)	(47,33,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000086	2	55	0	2	-		NONE			0	0	leeroy	0	-1	688	(49,39,0)	(47,33,0)	448		patrol_walk
+ra3_AV_M3_s1	6	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	568	(35,66,2)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	6	1000017	1	23	0	2	0		NONE			0	0	patrol.node	2	20	469	(50,55,0)	(58,43,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000018	0	25	2	2	-		NONE			0	0	firepoint	3	20	488	(38,54,0)	(39,54,0)	448		combat_walk
+ra3_AV_M3_s1	6	1000018	1	21	3	2	3		NONE			0	0	escape	3	20	474	(39,54,0)	(41,55,0)	448		esc_dice_walk
+ra3_AV_M3_s1	6	1000019	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	637	(34,64,2)	(34,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	6	1000020	1	7	0	2	0	arrived	SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	440	(1,61,0)	(66,63,0)	-1		patrol_walk
+ra3_AV_M3_s1	6	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	570	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	6	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	533	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	6	1000040	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	657	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	6	1000047	1	25	2	8	-	arrived	ENGAGE	SEARCH	contact_approach	0	1	sniper	2	20	504	(48,40,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	6	1000054	1	25	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	478	(58,55,0)	(25,5,3)	448		patrol_walk
+ra3_AV_M3_s1	6	1000054	2	25	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	478	(58,55,0)	(25,5,3)	448		patrol_walk
+ra3_AV_M3_s1	6	1000056	1	6	2	2	-	arrived	REINFORCE	SEARCH	contact_fire	0	0	firepoint	0	-1	440	(31,15,0)	(32,14,2)	545		combat_walk
+ra3_AV_M3_s1	6	1000086	1	12	0	10	-		NONE			0	1	leeroy	0	-1	444	(47,33,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	6	1000086	2	12	0	10	-		NONE			0	1	leeroy	0	-1	444	(47,33,0)	(48,31,0)	448		attack
+ra3_AV_M3_s1	7	1000008	0	59	2	2	2		REINFORCE	SEARCH	contact_fire	1	0	firepoint.random	0	-1	675	(30,64,0)	(25,63,0)	470		combat_walk
+ra3_AV_M3_s1	7	1000008	1	37	0	2	0		NONE			0	0	patrol.node	1	17	575	(25,63,0)	(30,56,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000008	1	23	2	2	2		REINFORCE	SEARCH	contact_fire	0	0	firepoint.random	1	17	497	(26,60,0)	(26,61,0)	470		combat_walk
+ra3_AV_M3_s1	7	1000008	2	19	0	2	2		NONE			0	0	patrol.node	1	17	476	(26,61,0)	(30,56,0)	470		patrol_walk
+ra3_AV_M3_s1	7	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	569	(35,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	7	1000017	1	65	2	8	2		ENGAGE	SEARCH	contact_in_place	0	1	shot	6	20	793	(50,50,0)	(49,37,0)	448		attack
+ra3_AV_M3_s1	7	1000017	2	45	2	9	-		ENGAGE	SEARCH	contact_in_place	0	1	sniper	6	20	632	(50,50,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	7	1000018	1	65	3	2	-		GUARD	HOLD	take_post	0	0	escape	6	20	781	(41,55,0)	(37,54,0)	470		esc_kept_walk
+ra3_AV_M3_s1	7	1000019	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	638	(34,64,2)	(34,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000020	1	65	0	2	0	stay:no_closer_node	SEARCH	SEARCH	no_closer_node	0	0	patrol.node	6	23	648	(2,61,0)	(66,63,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	571	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000024	1	65	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	560	(57,54,0)	(41,18,0)	448		patrol_walk
+ra3_AV_M3_s1	7	1000027	1	65	2	9	-	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	shot	4	23	1098	(20,28,0)	(34,18,0)	545		attack
+ra3_AV_M3_s1	7	1000027	2	18	0	2	2		NONE			0	0	patrol.node	0	-1	492	(20,28,0)	(45,24,0)	545		patrol_walk
+ra3_AV_M3_s1	7	1000030	1	65	2	9	2		REINFORCE	SEARCH	contact_approach	1	1	shot	4	23	973	(26,12,0)	(34,18,0)	545		attack
+ra3_AV_M3_s1	7	1000030	2	17	2	2	-		NONE			0	0	firepoint	0	-1	465	(26,12,0)	(32,9,1)	545		combat_walk
+ra3_AV_M3_s1	7	1000032	1	65	2	8	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	sniper	6	23	787	(48,53,0)	(49,37,0)	448		attack
+ra3_AV_M3_s1	7	1000032	2	38	2	8	-		NONE			0	1	sniper	3	23	581	(48,53,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	7	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	534	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000038	1	65	2	9	2	arrived	ENGAGE	SEARCH	contact_approach	0	1	shot	4	23	960	(31,39,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	7	1000038	2	2	3	2	3	arrived	ENGAGE	SEARCH	contact_approach	0	0	escape	0	-1	505	(31,39,0)	(29,43,0)	470		esc_dice_walk
+ra3_AV_M3_s1	7	1000039	1	65	0	2	2		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	599	(52,53,1)	(55,45,3)	448		patrol_walk
+ra3_AV_M3_s1	7	1000039	2	11	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	445	(54,46,3)	(55,45,3)	448		patrol_walk
+ra3_AV_M3_s1	7	1000040	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	658	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000041	0	65	2	2	2		REINFORCE	SEARCH	contact_fire	1	0	firepoint.random	0	-1	680	(55,40,3)	(51,44,3)	448		combat_walk
+ra3_AV_M3_s1	7	1000041	0	35	2	2	-		NONE			0	0	firepoint	1	26	487	(51,44,3)	(48,45,3)	448		combat_walk
+ra3_AV_M3_s1	7	1000041	0	25	2	2	-		NONE			0	0	firepoint	0	-1	460	(49,45,3)	(48,45,3)	448		combat_walk
+ra3_AV_M3_s1	7	1000041	1	21	2	8	-		NONE			0	1	sniper	2	20	456	(48,45,3)	(49,37,0)	448		attack
+ra3_AV_M3_s1	7	1000008	2	19	0	2	2		NONE			0	0	patrol.node	1	17	476	(26,61,0)	(30,56,0)	470		patrol_walk
+ra3_AV_M3_s1	7	1000014	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	569	(35,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	7	1000019	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	638	(34,64,2)	(34,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	571	(37,66,1)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	7	1000032	1	14	0	2	2		NONE			0	0	patrol.node	0	-1	459	(48,53,0)	(60,60,0)	448		patrol_walk
+ra3_AV_M3_s1	7	1000033	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	534	(32,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000040	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	658	(37,64,2)	(37,64,2)	470		held_patrol_stand
+ra3_AV_M3_s1	7	1000042	1	65	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	1	26	830	(21,4,0)	(27,14,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000042	2	23	2	2	2		REINFORCE	SEARCH	contact_approach	0	0	firepoint	3	23	487	(24,13,0)	(24,14,0)	545		combat_walk
+ra3_AV_M3_s1	7	1000043	1	65	2	9	2		REINFORCE	SEARCH	contact_fire	1	1	sniper	2	23	892	(53,36,0)	(34,18,0)	-1		attack
+ra3_AV_M3_s1	7	1000043	2	19	0	2	2		NONE			0	0	patrol.node	0	-1	461	(53,36,0)	(50,40,0)	448		patrol_walk
+ra3_AV_M3_s1	7	1000044	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	0	-1	825	(28,60,0)	(6,57,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000046	1	65	3	2	-		SEARCH	SEARCH	sweep_sector	0	1	escape	6	23	808	(32,52,0)	(32,57,0)	545		esc_kept_walk
+ra3_AV_M3_s1	7	1000050	0	51	2	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint.random	0	-1	953	(8,19,0)	(9,20,0)	545		combat_walk
+ra3_AV_M3_s1	7	1000050	2	45	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	1	patrol.node	6	23	723	(9,20,0)	(42,42,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000052	1	71	2	2	2		NONE			0	0	firepoint.fallback	0	-1	880	(7,53,0)	(9,53,0)	470		combat_walk
+ra3_AV_M3_s1	7	1000052	2	63	2	2	-		NONE			0	0	firepoint	0	-1	848	(9,53,0)	(9,52,0)	470		combat_walk
+ra3_AV_M3_s1	7	1000054	1	71	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	641	(58,55,0)	(57,52,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000054	2	57	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	537	(57,52,0)	(32,61,0)	448		patrol_walk
+ra3_AV_M3_s1	7	1000084	1	59	0	2	-		NONE			0	0	patrol.node	0	-1	586	(69,39,0)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000086	1	59	0	2	-		NONE			0	0	leeroy	0	-1	755	(47,33,0)	(48,36,0)	448		patrol_walk
+ra3_AV_M3_s1	7	1000086	2	55	0	2	-		NONE			0	0	leeroy	0	-1	659	(47,34,0)	(48,36,0)	448		patrol_walk
+ra3_AV_M3_s1	7	1000008	1	19	0	2	2		NONE			0	0	patrol.node	1	17	477	(26,61,0)	(30,56,0)	470		patrol_walk
+ra3_AV_M3_s1	7	1000008	2	19	0	2	2	pause	REINFORCE	SEARCH	contact_fire	0	0	patrol.node	1	17	477	(26,61,0)	(30,56,0)	470		patrol_walk
+ra3_AV_M3_s1	7	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	569	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000019	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	638	(34,64,2)	(34,64,2)	470		held_patrol_stand
+ra3_AV_M3_s1	7	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	570	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	7	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	534	(32,66,2)	(-1,-1,-1)	470		held_patrol_stand
+ra3_AV_M3_s1	7	1000040	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	657	(37,64,2)	(37,64,2)	470		held_patrol_stand
+ra3_AV_M3_s1	7	1000042	1	19	0	2	2		NONE			0	0	patrol.node	0	-1	475	(24,14,0)	(27,14,0)	545		patrol_walk
+ra3_AV_M3_s1	7	1000042	2	7	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	439	(27,14,0)	(48,12,0)	545		patrol_walk
+ra3_AV_M3_s1	7	1000050	1	39	3	0	3	arrived	ENGAGE	SEARCH	contact_approach	0	1	escape.known	3	23	660	(10,21,0)	(10,21,0)	-1	walk.self	esc_dice_stand
+ra3_AV_M3_s1	7	1000052	1	59	2	2	-		NONE			0	0	firepoint	0	-1	808	(9,52,0)	(9,53,0)	470		combat_walk
+ra3_AV_M3_s1	7	1000052	2	55	2	2	2		NONE			0	0	firepoint.fallback	0	-1	763	(9,53,0)	(7,51,0)	470		combat_walk
+ra3_AV_M3_s1	7	1000054	1	23	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	488	(61,58,0)	(32,61,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000054	2	23	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	488	(61,58,0)	(32,61,0)	-1		patrol_walk
+ra3_AV_M3_s1	7	1000086	1	9	0	10	-		NONE			0	1	leeroy	0	-1	439	(48,36,0)	(49,37,0)	448		attack
+ra3_AV_M3_s1	7	1000086	2	9	0	10	-		NONE			0	1	leeroy	0	-1	439	(48,36,0)	(49,37,0)	448		attack
+ra3_AV_M3_s1	8	1000008	1	59	0	2	0		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	1	17	780	(26,61,0)	(34,60,0)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000008	2	25	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	1	0	patrol.node	2	17	492	(34,60,0)	(8,39,0)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	569	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	8	1000018	1	65	3	2	-		GUARD	HOLD	take_post	1	0	escape	6	20	731	(37,54,0)	(33,54,0)	448		esc_kept_walk
+ra3_AV_M3_s1	8	1000019	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	632	(34,64,2)	(34,64,2)	448		held_patrol_stand
+ra3_AV_M3_s1	8	1000020	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	6	23	992	(17,60,0)	(1,61,0)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000021	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	564	(37,66,1)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	8	1000024	1	65	0	2	2		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	708	(57,60,0)	(50,60,0)	448		patrol_walk
+ra3_AV_M3_s1	8	1000024	2	37	2	8	2	arrived	REINFORCE	SEARCH	contact_fire	1	1	sniper	1	23	530	(50,60,0)	(49,44,0)	448		attack
+ra3_AV_M3_s1	8	1000027	1	65	2	9	2		ENGAGE	SEARCH	contact_in_place	0	1	sniper	4	23	1067	(24,27,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	8	1000027	2	0	0	2	2		ENGAGE	SEARCH	contact_in_place	0	0	patrol.node	0	-1	488	(24,27,0)	(45,24,0)	545		patrol_walk
+ra3_AV_M3_s1	8	1000032	1	65	2	8	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	1	shot	6	23	782	(48,56,0)	(49,44,0)	448		attack
+ra3_AV_M3_s1	8	1000032	2	20	0	2	2		NONE			0	0	patrol.node	0	-1	546	(48,56,0)	(60,60,0)	448		patrol_walk
+ra3_AV_M3_s1	8	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	534	(32,66,2)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	8	1000039	0	65	2	2	2		REINFORCE	SEARCH	contact_fire	1	0	firepoint.random	3	23	616	(55,45,3)	(53,45,3)	448		combat_walk
+ra3_AV_M3_s1	8	1000039	1	50	2	6	-		NONE			0	1	sniper	3	23	604	(55,45,3)	(49,44,0)	448		attack
+ra3_AV_M3_s1	8	1000039	2	23	0	2	2		NONE			0	0	patrol.node	1	23	471	(55,45,3)	(45,45,3)	448		patrol_walk
+ra3_AV_M3_s1	8	1000040	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	651	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	8	1000042	0	65	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint	6	23	991	(27,15,0)	(31,12,0)	545		combat_walk
+ra3_AV_M3_s1	8	1000042	1	50	2	6	-		NONE			0	1	sniper	6	23	949	(27,15,0)	(39,38,0)	470		attack
+ra3_AV_M3_s1	8	1000042	2	23	0	2	2		NONE			0	0	patrol.node	2	23	492	(27,15,0)	(25,24,0)	545		patrol_walk
+ra3_AV_M3_s1	8	1000043	1	65	2	8	2	arrived	ENGAGE	SEARCH	contact_fire	0	1	shot	4	23	890	(52,40,0)	(49,44,0)	448		attack
+ra3_AV_M3_s1	8	1000043	2	23	2	2	-	arrived	ENGAGE	SEARCH	contact_fire	0	0	firepoint	0	-1	637	(52,40,0)	(51,41,0)	448		combat_walk
+ra3_AV_M3_s1	8	1000044	1	65	2	9	2		SEARCH	SEARCH	sweep_sector	0	1	sniper	4	23	975	(13,59,0)	(39,38,0)	-1		attack
+ra3_AV_M3_s1	8	1000044	2	17	0	2	2		NONE			0	0	patrol.node	0	-1	482	(13,59,0)	(6,57,0)	470		patrol_walk
+ra3_AV_M3_s1	8	1000046	1	65	0	2	0		SEARCH	SEARCH	sweep_sector	0	0	patrol.node	4	23	772	(32,57,0)	(5,52,0)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000050	1	65	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	2	23	996	(10,21,0)	(25,19,0)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000050	2	35	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	2	23	629	(17,20,0)	(25,19,0)	545		patrol_walk
+ra3_AV_M3_s1	8	1000052	1	71	2	2	2		NONE			0	0	firepoint.fallback	0	-1	987	(7,51,0)	(9,53,0)	470		combat_walk
+ra3_AV_M3_s1	8	1000052	2	59	0	2	0		NONE			0	0	patrol.node	0	-1	865	(9,53,0)	(1,57,0)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000054	1	71	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	673	(61,58,0)	(57,52,0)	448		patrol_walk
+ra3_AV_M3_s1	8	1000054	2	37	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	492	(57,52,0)	(61,65,0)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000084	1	59	0	2	-		NONE			0	0	patrol.node	0	-1	677	(63,30,0)	(62,6,3)	-1		patrol_walk
+ra3_AV_M3_s1	8	1000087	1	181	2	2	-		NONE			1	0	melee	0	-1	3983	(48,36,0)	(48,43,0)	448		combat_walk
+ra3_AV_M3_s1	8	1000087	2	14	3	2	3		NONE			0	0	escape	0	-1	462	(48,43,0)	(50,41,0)	448		esc_dice_walk
+ra3_AV_M3_s1	8	1000008	1	19	3	2	3	arrived	ENGAGE	SEARCH	contact_fire	0	0	escape.known	3	17	476	(33,59,0)	(36,60,0)	-1		esc_dice_walk
+ra3_AV_M3_s1	8	1000014	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	569	(35,66,2)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	8	1000019	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	611	(34,64,2)	(34,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	8	1000021	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	538	(37,66,1)	(-1,-1,-1)	-1		held_patrol_stand
+ra3_AV_M3_s1	8	1000024	1	12	2	2	-	arrived	REINFORCE	SEARCH	contact_fire	0	0	firepoint	0	-1	451	(50,60,0)	(50,59,0)	448		combat_walk
+ra3_AV_M3_s1	8	1000024	2	8	2	2	-	arrived	REINFORCE	SEARCH	contact_fire	0	0	firepoint	0	-1	441	(50,59,0)	(53,59,3)	448		combat_walk
+ra3_AV_M3_s1	8	1000033	1	65	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	534	(32,66,2)	(-1,-1,-1)	448		held_patrol_stand
+ra3_AV_M3_s1	8	1000039	1	19	0	2	2		REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	464	(54,45,3)	(45,45,3)	448		patrol_walk
+ra3_AV_M3_s1	8	1000040	1	65	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	625	(37,64,2)	(37,64,2)	-1		held_patrol_stand
+ra3_AV_M3_s1	8	1000043	1	17	0	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	470	(51,41,0)	(50,40,0)	448		patrol_walk
+ra3_AV_M3_s1	8	1000043	2	16	0	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	470	(51,41,0)	(50,40,0)	448		patrol_walk
+ra3_AV_M3_s1	8	1000052	1	19	2	2	2		SEARCH	SEARCH	sweep_sector	1	0	firepoint.fallback	0	-1	455	(1,57,0)	(5,57,0)	470		combat_walk
+ra3_AV_M3_s1	8	1000054	1	23	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	474	(58,55,0)	(61,65,0)	448		patrol_walk
+ra3_AV_M3_s1	8	1000054	2	23	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	474	(58,55,0)	(61,65,0)	448		patrol_walk

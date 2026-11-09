@@ -1,0 +1,39 @@
+== cc3_CO_M6_s1 decisions 548 unit-turns 155
+  classes {'patrol_walk': 352, 'attack': 96, 'natural_fallback_stand': 53, 'combat_walk': 22, 'esc_dice_walk': 13, 'esc_dice_stand': 8, 'esc_kept_walk': 4}
+  held decisions 0 with a patrol proposal (must be 0) 0 not held without one 296
+  rolled -> final when held / when not held
+    rolled 0: held {} | free {0: 177, 3: 17}
+    rolled 1: held {} | free {}
+    rolled 2: held {} | free {0: 175, 2: 56, 3: 36}
+    rolled 3: held {} | free {3: 21}
+    rolled -: held {} | free {2: 62, 3: 4}
+  by role: decisions art_stand art_walk held_patrol_stand esc_dice attack
+    NONE 548 0 0 0 21 96
+  artificial by hold kind {}
+  unit turns {} tu at the end {}
+== scpa_D_M6_s2 decisions 680 unit-turns 170
+  classes {'patrol_walk': 474, 'attack': 111, 'combat_walk': 41, 'natural_fallback_stand': 29, 'esc_dice_walk': 13, 'esc_dice_stand': 9, 'esc_kept_walk': 3}
+  held decisions 0 with a patrol proposal (must be 0) 0 not held without one 407
+  rolled -> final when held / when not held
+    rolled 0: held {} | free {0: 233, 3: 20}
+    rolled 1: held {} | free {}
+    rolled 2: held {} | free {0: 241, 2: 74, 3: 9}
+    rolled 3: held {} | free {3: 22}
+    rolled -: held {} | free {2: 78, 3: 3}
+  by role: decisions art_stand art_walk held_patrol_stand esc_dice attack
+    NONE 680 0 0 0 22 111
+  artificial by hold kind {}
+  unit turns {} tu at the end {}
+== scpa_D_M3_s1 decisions 741 unit-turns 267
+  classes {'patrol_walk': 345, 'combat_walk': 199, 'attack': 163, 'esc_dice_walk': 16, 'esc_kept_walk': 8, 'esc_dice_stand': 6, 'natural_fallback_stand': 4}
+  held decisions 0 with a patrol proposal (must be 0) 0 not held without one 662
+  rolled -> final when held / when not held
+    rolled 0: held {} | free {0: 173, 3: 3}
+    rolled 1: held {} | free {}
+    rolled 2: held {} | free {0: 140, 2: 177, 3: 1}
+    rolled 3: held {} | free {3: 22}
+    rolled -: held {} | free {0: 32, 2: 185, 3: 8}
+  by role: decisions art_stand art_walk held_patrol_stand esc_dice attack
+    NONE 741 0 0 0 22 163
+  artificial by hold kind {}
+  unit turns {} tu at the end {}

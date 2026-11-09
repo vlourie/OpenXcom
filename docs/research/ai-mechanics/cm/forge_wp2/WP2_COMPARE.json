@@ -1,0 +1,1612 @@
+﻿{
+ "plan": {
+  "A1": [
+   "WA",
+   "A: D0, the diagnostic replay: what D0 proposes at N, the dump there"
+  ],
+  "A2": [
+   "WA",
+   "A: the same again: control A/A"
+  ],
+  "W1": [
+   "WO",
+   "OFF: no arena variable at all, against the archived D0"
+  ],
+  "S1": [
+   "WS",
+   "A under another start of the auxiliary generator"
+  ],
+  "B1": [
+   "WB",
+   "B: the legal alternative at N in place of think()"
+  ],
+  "B2": [
+   "WB",
+   "B again: control B/B"
+  ],
+  "C1": [
+   "WC",
+   "C: D0's own action at N in place of think(): what skipping think() does by itself"
+  ],
+  "P1": [
+   "WP",
+   "replay to decision N and stop: the cost of the prefix"
+  ]
+ },
+ "branch_point": {
+  "decision": 49,
+  "unit": 1000006,
+  "to": "12.17.0",
+  "weapon": "STR_PIR_PLASMA_RIFLE",
+  "D0_type": 7,
+  "alternative_type": 8
+ },
+ "ledger": [
+  [
+   "A1",
+   "2026-11-06T16:13:02",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WA",
+   "L8",
+   "A: D0, the diagnostic replay: what D0 proposes at N, the dump there",
+   "turns=60"
+  ],
+  [
+   "A2",
+   "2026-11-06T16:13:58",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WA",
+   "L8",
+   "A: the same again: control A/A",
+   "turns=60"
+  ],
+  [
+   "W1",
+   "2026-11-06T16:14:44",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WO",
+   "L8",
+   "OFF: no arena variable at all, against the archived D0",
+   "turns=60"
+  ],
+  [
+   "S1",
+   "2026-11-06T16:15:22",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WS",
+   "L8",
+   "A under another start of the auxiliary generator",
+   "turns=60"
+  ],
+  [
+   "B1",
+   "2026-11-06T16:16:44",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WB",
+   "L8",
+   "B: the legal alternative at N in place of think()",
+   "turns=60"
+  ],
+  [
+   "B2",
+   "2026-11-06T16:19:28",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WB",
+   "L8",
+   "B again: control B/B",
+   "turns=60"
+  ],
+  [
+   "C1",
+   "2026-11-06T16:22:07",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WC",
+   "L8",
+   "C: D0's own action at N in place of think(): what skipping think() does by itself",
+   "turns=60"
+  ],
+  [
+   "P1",
+   "2026-11-06T16:22:52",
+   "dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a",
+   "WP",
+   "L8",
+   "replay to decision N and stop: the cost of the prefix",
+   "turns=60"
+  ]
+ ],
+ "AA": {
+  "a": "A1",
+  "b": "A2",
+  "forge_events": [
+   6748,
+   6748
+  ],
+  "game_lines": [
+   4366,
+   4366
+  ],
+  "chain_identical": true,
+  "chain_first_difference": null,
+  "game_identical": true,
+  "game_first_difference": null,
+  "dumps_compared": 20,
+  "dumps_only_one": [],
+  "dump_first_difference": null,
+  "branch_lines_equal": true,
+  "actions": {
+   "counts": [
+    600,
+    600
+   ],
+   "identical": true
+  },
+  "tu_changes": {
+   "counts": [
+    2162,
+    2162
+   ],
+   "identical": true
+  },
+  "fingerprints": {
+   "counts": [
+    630,
+    630
+   ],
+   "identical": true
+  },
+  "casualties": {
+   "counts": [
+    24,
+    24
+   ],
+   "identical": true
+  },
+  "rng_identical": true,
+  "last_section_values": {
+   "S": "7a56d1bc0cd97d1d",
+   "U": "5a51690df6abf8dd",
+   "A": "d006a824008b63bd",
+   "I": "ea615e70bbf0dbe6",
+   "O": "770b24eab914b4c2",
+   "M": "7ffdb476082062bc",
+   "N": "2bb5cd89d10360ba",
+   "B": "c226b8e13fa85b3e",
+   "J": "69c33cb90a0eec76",
+   "R": "3e14fc1ad7835aea",
+   "C": "320920",
+   "L": "e654799969502ea7",
+   "V": "b57165e511ac4e95"
+  },
+  "verdict": "IDENTICAL",
+  "verdict_plan_list": "IDENTICAL",
+  "plan_list_first_difference": null,
+  "normalised": {
+   "[AIRESULT] ms=": 1,
+   "[AIREUSE] fallback_us=": 1
+  }
+ },
+ "BB": {
+  "a": "B1",
+  "b": "B2",
+  "forge_events": [
+   10702,
+   10702
+  ],
+  "game_lines": [
+   6940,
+   6940
+  ],
+  "chain_identical": true,
+  "chain_first_difference": null,
+  "game_identical": true,
+  "game_first_difference": null,
+  "dumps_compared": 20,
+  "dumps_only_one": [],
+  "dump_first_difference": null,
+  "branch_lines_equal": true,
+  "actions": {
+   "counts": [
+    955,
+    955
+   ],
+   "identical": true
+  },
+  "tu_changes": {
+   "counts": [
+    3500,
+    3500
+   ],
+   "identical": true
+  },
+  "fingerprints": {
+   "counts": [
+    1018,
+    1018
+   ],
+   "identical": true
+  },
+  "casualties": {
+   "counts": [
+    38,
+    38
+   ],
+   "identical": true
+  },
+  "rng_identical": true,
+  "last_section_values": {
+   "S": "15019cffcefff08d",
+   "U": "6ad8b912ab6fe4f0",
+   "A": "7b54293e674c7ebf",
+   "I": "746a4dc837e85246",
+   "O": "960a09ec6b3baff5",
+   "M": "7bf29a7dd03288d3",
+   "N": "8d7e51ef0a3be865",
+   "B": "3d75872ef577d214",
+   "J": "d71f4ff77fbe6bd4",
+   "R": "b4820668a3279500",
+   "C": "549320",
+   "L": "a56f85b7b6a8c076",
+   "V": "40ac9b7c9c3f9da8"
+  },
+  "verdict": "IDENTICAL",
+  "verdict_plan_list": "DIFFERENT",
+  "plan_list_first_difference": {
+   "index": 6935,
+   "a": "[AIREUSE] reuse=1 taken=952 own=3 abort=0 reload=0 medikit=3 fallback=1 tudiff=0 fallback_us=13842",
+   "b": "[AIREUSE] reuse=1 taken=952 own=3 abort=0 reload=0 medikit=3 fallback=1 tudiff=0 fallback_us=20400"
+  },
+  "normalised": {
+   "[AIRESULT] ms=": 1,
+   "[AIREUSE] fallback_us=": 1
+  }
+ },
+ "off": [
+  {
+   "a": "W1",
+   "b": "arch:D0",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null
+  },
+  {
+   "a": "W1",
+   "b": "A1",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null
+  },
+  {
+   "a": "A1",
+   "b": "arch:R5",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null
+  }
+ ],
+ "seedless": {
+  "a": "A1",
+  "b": "S1",
+  "events": [
+   6748,
+   6748
+  ],
+  "events_identical_without_L_V": true,
+  "first_difference": null,
+  "game_identical": true,
+  "game_first_difference": null,
+  "fingerprints": [
+   630,
+   630
+  ],
+  "L_differs": 630,
+  "V_differs": 0,
+  "L_first": [
+   "aafe8518bd5730a3",
+   "4b85720466d0a956"
+  ],
+  "dumps_identical_without_L_V": true,
+  "dumps_compared": 20
+ },
+ "AB": {
+  "a": "A1",
+  "b": "B1",
+  "prefix_events": [
+   611,
+   611
+  ],
+  "prefix_chain_identical": true,
+  "prefix_first_difference": null,
+  "prefix_game_lines": [
+   368,
+   368
+  ],
+  "prefix_game_identical": true,
+  "fingerprint_at_N": {
+   "a": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "b": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "chain": [
+    "867d455d5479b994",
+    "867d455d5479b994"
+   ],
+   "rng": [
+    "d24c268811448687",
+    "d24c268811448687"
+   ]
+  },
+  "dump_at_N_lines": [
+   50,
+   50
+  ],
+  "dump_at_N_identical": true,
+  "actor_at_N": "u=1000006 type=STR_ETHEREAL_SOLDIER fac=1 st=0 pos=29,9,1 dir=5 tu=98 en=96 hp=66 stun=0 mor=100 mana=40 fire=0 wounds=0 noresel=0 hide=0 charge=-1 seen=5 uh=54b3e793803749b4 ai=997eca429aceff40 inv=d45605970fd9519d right=STR_PIR_PLASMA_RIFLE ammo=24",
+  "what_a_did": [
+   "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+   "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0",
+   "rng=f949d7aa3d034f22 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=2 ai=5262a6b8841b1b5d",
+   "rng=75373baa18abc447 t=1 s=1 ev=tu kind=cost was=67 now=44 unit=1000006 fac=1 st=4 tu=67 noresel=0 hide=0",
+   "rng=9d335aa28b0a7dc9 t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=33,44,1 weapon=STR_PIR_PLASMA_PISTOL fa=0 run=0 number=1 ai=c1bf9534d13fe957",
+   "rng=9d335aa28b0a7dc9 t=1 s=1 ev=tu kind=spend was=98 now=94 unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0",
+   "rng=9d335aa28b0a7dc9 t=1 s=1 ev=tu kind=spend was=94 now=90 unit=1000007 fac=1 st=0 tu=94 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0 type=2 to=40,47,2 weapon=STR_PIR_PLASMA_PISTOL fa=1 run=0 number=2 ai=22aa3a9cbfd3a9e9",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=90 now=86 unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=86 now=82 unit=1000007 fac=1 st=0 tu=86 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=82 now=78 unit=1000007 fac=1 st=0 tu=82 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=78 now=74 unit=1000007 fac=1 st=0 tu=78 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=74 now=70 unit=1000007 fac=1 st=0 tu=74 noresel=0 hide=0",
+   "rng=dd6cfc6682b5bcab t=1 s=1 ev=act unit=1000008 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=4,46,2 weapon=STR_PIR_HEAVY_PLASMA fa=0 run=0 number=1 ai=9e393bbed5cc1e63"
+  ],
+  "what_b_did": [
+   "rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=23 kneel=0",
+   "rng=d24c268811448687 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=997eca429aceff40",
+   "rng=fd7d2341dd7221e6 t=1 s=1 ev=tu kind=cost was=98 now=75 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0",
+   "rng=552b10eb29fb2276 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=75 noresel=0 hide=0 type=8 to=22,36,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=2 ai=ab18b6777365d6ea",
+   "rng=552b10eb29fb2276 t=1 s=1 ev=tu kind=spend was=75 now=74 unit=1000006 fac=1 st=3 tu=75 noresel=0 hide=0",
+   "rng=dc3e980288c71ebf t=1 s=1 ev=tu kind=cost was=74 now=51 unit=1000006 fac=1 st=4 tu=74 noresel=0 hide=0",
+   "rng=6c063f1229980841 t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=40,47,2 weapon=STR_PIR_PLASMA_PISTOL fa=1 run=0 number=1 ai=6fa758250bd4d805",
+   "rng=6c063f1229980841 t=1 s=1 ev=tu kind=spend was=98 now=94 unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0",
+   "rng=6c063f1229980841 t=1 s=1 ev=tu kind=spend was=94 now=90 unit=1000007 fac=1 st=0 tu=94 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0 type=2 to=40,47,2 weapon=STR_PIR_PLASMA_PISTOL fa=1 run=0 number=2 ai=c2554e89089d023e",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=90 now=86 unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=86 now=82 unit=1000007 fac=1 st=0 tu=86 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=82 now=78 unit=1000007 fac=1 st=0 tu=82 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=78 now=74 unit=1000007 fac=1 st=0 tu=78 noresel=0 hide=0"
+  ],
+  "first_difference": {
+   "index": 0,
+   "a": "[FORGE] n=612 h=e18b14930c49aa8 rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+   "b": "[FORGE] n=612 h=2b603b123ec34f0e rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=23 kneel=0"
+  },
+  "first_difference_event": [
+   612,
+   612
+  ],
+  "first_section_difference": {
+   "U": {
+    "section": "units",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "A": {
+    "section": "AI modules",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "I": {
+    "section": "items",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "O": {
+    "section": "inventory order",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "M": {
+    "section": "map",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "N": {
+    "section": "nodes",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "R": {
+    "section": "RNG",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "C": {
+    "section": "virtual clock from its first reading",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "V": {
+    "section": "what the auxiliary generator gave units and tiles",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "S": {
+    "section": "scheduler",
+    "event_a": 676,
+    "event_b": 683,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "B": {
+    "section": "bot",
+    "event_a": 676,
+    "event_b": 683,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "J": {
+    "section": "item ids",
+    "event_a": 956,
+    "event_b": 965,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "L": {
+    "section": "auxiliary generator",
+    "event_a": 1246,
+    "event_b": 1254,
+    "turn": [
+     "2",
+     "1"
+    ]
+   }
+  },
+  "after_decision_dump_events": [
+   617,
+   618
+  ],
+  "after_decision_units": [
+   {
+    "unit": "324",
+    "type": "SOLDIER",
+    "fields": {
+     "uh": [
+      "96316cbdc47ec1e6",
+      "7e34ceb6a4231faf"
+     ]
+    }
+   },
+   {
+    "unit": "1000006",
+    "type": "STR_ETHEREAL_SOLDIER",
+    "fields": {
+     "ai": [
+      "6ae4bc3348f79612",
+      "997eca429aceff40"
+     ],
+     "ammo": [
+      "21",
+      "23"
+     ],
+     "inv": [
+      "4f3863a706d9842",
+      "6645556f0101dfc7"
+     ],
+     "tu": [
+      "67",
+      "75"
+     ],
+     "uh": [
+      "45f40e0bb2a66171",
+      "ba92b33cdc67cc22"
+     ]
+    }
+   }
+  ],
+  "after_decision_first_floor": "floor=0",
+  "end": {
+   "a": {
+    "result": {
+     "how": "over",
+     "turn": "10",
+     "ms": "20352",
+     "vms": "320920"
+    },
+    "casualties": 24,
+    "dead": 22,
+    "decisions": 600,
+    "last_fp": {
+     "S": "7a56d1bc0cd97d1d",
+     "U": "5a51690df6abf8dd",
+     "A": "d006a824008b63bd",
+     "I": "ea615e70bbf0dbe6",
+     "O": "770b24eab914b4c2",
+     "M": "7ffdb476082062bc",
+     "N": "2bb5cd89d10360ba",
+     "B": "c226b8e13fa85b3e",
+     "J": "69c33cb90a0eec76",
+     "R": "3e14fc1ad7835aea",
+     "C": "320920",
+     "L": "e654799969502ea7",
+     "V": "b57165e511ac4e95"
+    }
+   },
+   "b": {
+    "result": {
+     "how": "over",
+     "turn": "21",
+     "ms": "39334",
+     "vms": "549320"
+    },
+    "casualties": 38,
+    "dead": 34,
+    "decisions": 955,
+    "last_fp": {
+     "S": "15019cffcefff08d",
+     "U": "6ad8b912ab6fe4f0",
+     "A": "7b54293e674c7ebf",
+     "I": "746a4dc837e85246",
+     "O": "960a09ec6b3baff5",
+     "M": "7bf29a7dd03288d3",
+     "N": "8d7e51ef0a3be865",
+     "B": "3d75872ef577d214",
+     "J": "d71f4ff77fbe6bd4",
+     "R": "b4820668a3279500",
+     "C": "549320",
+     "L": "a56f85b7b6a8c076",
+     "V": "40ac9b7c9c3f9da8"
+    }
+   }
+  },
+  "casualties_first_difference": {
+   "index": 4,
+   "a": "2/0/1000030/0",
+   "b": "1/1/344/1"
+  },
+  "monitor": {
+   "A1": {
+    "events": 6748,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 138,
+     "tu.recover": 229,
+     "tu.script": 4,
+     "tu.spend": 1789,
+     "tu_marked_reaction": 32
+    }
+   },
+   "B1": {
+    "events": 10702,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 3,
+     "tu.cost": 292,
+     "tu.recover": 366,
+     "tu.script": 13,
+     "tu.spend": 2826,
+     "tu_marked_reaction": 26
+    }
+   }
+  }
+ },
+ "AC": {
+  "a": "A1",
+  "b": "C1",
+  "prefix_events": [
+   611,
+   611
+  ],
+  "prefix_chain_identical": true,
+  "prefix_first_difference": null,
+  "prefix_game_lines": [
+   368,
+   368
+  ],
+  "prefix_game_identical": true,
+  "fingerprint_at_N": {
+   "a": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "b": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "chain": [
+    "867d455d5479b994",
+    "867d455d5479b994"
+   ],
+   "rng": [
+    "d24c268811448687",
+    "d24c268811448687"
+   ]
+  },
+  "dump_at_N_lines": [
+   50,
+   50
+  ],
+  "dump_at_N_identical": true,
+  "actor_at_N": "u=1000006 type=STR_ETHEREAL_SOLDIER fac=1 st=0 pos=29,9,1 dir=5 tu=98 en=96 hp=66 stun=0 mor=100 mana=40 fire=0 wounds=0 noresel=0 hide=0 charge=-1 seen=5 uh=54b3e793803749b4 ai=997eca429aceff40 inv=d45605970fd9519d right=STR_PIR_PLASMA_RIFLE ammo=24",
+  "what_a_did": [
+   "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+   "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0",
+   "rng=f949d7aa3d034f22 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=2 ai=5262a6b8841b1b5d",
+   "rng=75373baa18abc447 t=1 s=1 ev=tu kind=cost was=67 now=44 unit=1000006 fac=1 st=4 tu=67 noresel=0 hide=0",
+   "rng=9d335aa28b0a7dc9 t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=33,44,1 weapon=STR_PIR_PLASMA_PISTOL fa=0 run=0 number=1 ai=c1bf9534d13fe957",
+   "rng=9d335aa28b0a7dc9 t=1 s=1 ev=tu kind=spend was=98 now=94 unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0",
+   "rng=9d335aa28b0a7dc9 t=1 s=1 ev=tu kind=spend was=94 now=90 unit=1000007 fac=1 st=0 tu=94 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0 type=2 to=40,47,2 weapon=STR_PIR_PLASMA_PISTOL fa=1 run=0 number=2 ai=22aa3a9cbfd3a9e9",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=90 now=86 unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=86 now=82 unit=1000007 fac=1 st=0 tu=86 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=82 now=78 unit=1000007 fac=1 st=0 tu=82 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=78 now=74 unit=1000007 fac=1 st=0 tu=78 noresel=0 hide=0",
+   "rng=3fb489754303655b t=1 s=1 ev=tu kind=spend was=74 now=70 unit=1000007 fac=1 st=0 tu=74 noresel=0 hide=0",
+   "rng=dd6cfc6682b5bcab t=1 s=1 ev=act unit=1000008 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=4,46,2 weapon=STR_PIR_HEAVY_PLASMA fa=0 run=0 number=1 ai=9e393bbed5cc1e63"
+  ],
+  "what_b_did": [
+   "rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=31 kneel=0",
+   "rng=d24c268811448687 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=997eca429aceff40",
+   "rng=fd7d2341dd7221e6 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0",
+   "rng=fb73fc4ee24fe0b4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 type=8 to=42,49,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=2 ai=2893b53128143da5",
+   "rng=fb73fc4ee24fe0b4 t=1 s=1 ev=tu kind=spend was=67 now=66 unit=1000006 fac=1 st=3 tu=67 noresel=0 hide=0",
+   "rng=7f6d00c674d007d5 t=1 s=1 ev=tu kind=cost was=66 now=43 unit=1000006 fac=1 st=4 tu=66 noresel=0 hide=0",
+   "rng=3faa0b1daceab5cc t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=33,44,1 weapon=STR_PIR_PLASMA_PISTOL fa=0 run=0 number=1 ai=c1bf9534d13fe957",
+   "rng=3faa0b1daceab5cc t=1 s=1 ev=tu kind=spend was=98 now=94 unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0",
+   "rng=3faa0b1daceab5cc t=1 s=1 ev=tu kind=spend was=94 now=90 unit=1000007 fac=1 st=0 tu=94 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0 type=2 to=33,44,1 weapon=STR_PIR_PLASMA_PISTOL fa=0 run=0 number=2 ai=579d26277ad95f5b",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=90 now=86 unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=86 now=82 unit=1000007 fac=1 st=0 tu=86 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=82 now=78 unit=1000007 fac=1 st=0 tu=82 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=78 now=74 unit=1000007 fac=1 st=0 tu=78 noresel=0 hide=0"
+  ],
+  "first_difference": {
+   "index": 0,
+   "a": "[FORGE] n=612 h=e18b14930c49aa8 rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+   "b": "[FORGE] n=612 h=37f5d47be17928f8 rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=31 kneel=0"
+  },
+  "first_difference_event": [
+   612,
+   612
+  ],
+  "first_section_difference": {
+   "U": {
+    "section": "units",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "A": {
+    "section": "AI modules",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "M": {
+    "section": "map",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "N": {
+    "section": "nodes",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "R": {
+    "section": "RNG",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "C": {
+    "section": "virtual clock from its first reading",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "V": {
+    "section": "what the auxiliary generator gave units and tiles",
+    "event_a": 617,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "S": {
+    "section": "scheduler",
+    "event_a": 676,
+    "event_b": 686,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "B": {
+    "section": "bot",
+    "event_a": 676,
+    "event_b": 686,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "I": {
+    "section": "items",
+    "event_a": 939,
+    "event_b": 957,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "O": {
+    "section": "inventory order",
+    "event_a": 939,
+    "event_b": 957,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "J": {
+    "section": "item ids",
+    "event_a": 939,
+    "event_b": 957,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "L": {
+    "section": "auxiliary generator",
+    "event_a": 1246,
+    "event_b": 1255,
+    "turn": [
+     "2",
+     "1"
+    ]
+   }
+  },
+  "after_decision_dump_events": [
+   617,
+   618
+  ],
+  "after_decision_units": [
+   {
+    "unit": "324",
+    "type": "SOLDIER",
+    "fields": {
+     "uh": [
+      "96316cbdc47ec1e6",
+      "b5846f0633f631e6"
+     ]
+    }
+   },
+   {
+    "unit": "1000006",
+    "type": "STR_ETHEREAL_SOLDIER",
+    "fields": {
+     "ai": [
+      "6ae4bc3348f79612",
+      "997eca429aceff40"
+     ],
+     "uh": [
+      "45f40e0bb2a66171",
+      "65f2e9076dac91df"
+     ]
+    }
+   }
+  ],
+  "after_decision_first_floor": "floor=0",
+  "end": {
+   "a": {
+    "result": {
+     "how": "over",
+     "turn": "10",
+     "ms": "20352",
+     "vms": "320920"
+    },
+    "casualties": 24,
+    "dead": 22,
+    "decisions": 600,
+    "last_fp": {
+     "S": "7a56d1bc0cd97d1d",
+     "U": "5a51690df6abf8dd",
+     "A": "d006a824008b63bd",
+     "I": "ea615e70bbf0dbe6",
+     "O": "770b24eab914b4c2",
+     "M": "7ffdb476082062bc",
+     "N": "2bb5cd89d10360ba",
+     "B": "c226b8e13fa85b3e",
+     "J": "69c33cb90a0eec76",
+     "R": "3e14fc1ad7835aea",
+     "C": "320920",
+     "L": "e654799969502ea7",
+     "V": "b57165e511ac4e95"
+    }
+   },
+   "b": {
+    "result": {
+     "how": "over",
+     "turn": "4",
+     "ms": "15468",
+     "vms": "202040"
+    },
+    "casualties": 16,
+    "dead": 13,
+    "decisions": 301,
+    "last_fp": {
+     "S": "7772134c77f2f17e",
+     "U": "2cf36c79747a4ac8",
+     "A": "68ace2681db3ee2c",
+     "I": "41ea73326825ae73",
+     "O": "9627932167fd636e",
+     "M": "b05a4d7e5b062b5",
+     "N": "b662724d8ffe776",
+     "B": "c86d478266ad5519",
+     "J": "99f80ce8b094e369",
+     "R": "cee005ed1c1b019a",
+     "C": "202040",
+     "L": "8a199d3dedc93601",
+     "V": "9fc6bfdb150630ae"
+    }
+   }
+  },
+  "casualties_first_difference": {
+   "index": 4,
+   "a": "2/0/1000030/0",
+   "b": "1/1/344/1"
+  },
+  "monitor": {
+   "A1": {
+    "events": 6748,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 138,
+     "tu.recover": 229,
+     "tu.script": 4,
+     "tu.spend": 1789,
+     "tu_marked_reaction": 32
+    }
+   },
+   "C1": {
+    "events": 3410,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 103,
+     "tu.recover": 97,
+     "tu.script": 9,
+     "tu.spend": 900,
+     "tu_marked_reaction": 7
+    }
+   }
+  }
+ },
+ "CB": {
+  "a": "C1",
+  "b": "B1",
+  "prefix_events": [
+   611,
+   611
+  ],
+  "prefix_chain_identical": true,
+  "prefix_first_difference": null,
+  "prefix_game_lines": [
+   368,
+   368
+  ],
+  "prefix_game_identical": true,
+  "fingerprint_at_N": {
+   "a": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "b": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "chain": [
+    "867d455d5479b994",
+    "867d455d5479b994"
+   ],
+   "rng": [
+    "d24c268811448687",
+    "d24c268811448687"
+   ]
+  },
+  "dump_at_N_lines": [
+   50,
+   50
+  ],
+  "dump_at_N_identical": true,
+  "actor_at_N": "u=1000006 type=STR_ETHEREAL_SOLDIER fac=1 st=0 pos=29,9,1 dir=5 tu=98 en=96 hp=66 stun=0 mor=100 mana=40 fire=0 wounds=0 noresel=0 hide=0 charge=-1 seen=5 uh=54b3e793803749b4 ai=997eca429aceff40 inv=d45605970fd9519d right=STR_PIR_PLASMA_RIFLE ammo=24",
+  "what_a_did": [
+   "rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=31 kneel=0",
+   "rng=d24c268811448687 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=997eca429aceff40",
+   "rng=fd7d2341dd7221e6 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0",
+   "rng=fb73fc4ee24fe0b4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 type=8 to=42,49,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=2 ai=2893b53128143da5",
+   "rng=fb73fc4ee24fe0b4 t=1 s=1 ev=tu kind=spend was=67 now=66 unit=1000006 fac=1 st=3 tu=67 noresel=0 hide=0",
+   "rng=7f6d00c674d007d5 t=1 s=1 ev=tu kind=cost was=66 now=43 unit=1000006 fac=1 st=4 tu=66 noresel=0 hide=0",
+   "rng=3faa0b1daceab5cc t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=33,44,1 weapon=STR_PIR_PLASMA_PISTOL fa=0 run=0 number=1 ai=c1bf9534d13fe957",
+   "rng=3faa0b1daceab5cc t=1 s=1 ev=tu kind=spend was=98 now=94 unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0",
+   "rng=3faa0b1daceab5cc t=1 s=1 ev=tu kind=spend was=94 now=90 unit=1000007 fac=1 st=0 tu=94 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0 type=2 to=33,44,1 weapon=STR_PIR_PLASMA_PISTOL fa=0 run=0 number=2 ai=579d26277ad95f5b",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=90 now=86 unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=86 now=82 unit=1000007 fac=1 st=0 tu=86 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=82 now=78 unit=1000007 fac=1 st=0 tu=82 noresel=0 hide=0",
+   "rng=2d5c4a6b973600a4 t=1 s=1 ev=tu kind=spend was=78 now=74 unit=1000007 fac=1 st=0 tu=78 noresel=0 hide=0"
+  ],
+  "what_b_did": [
+   "rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=23 kneel=0",
+   "rng=d24c268811448687 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=997eca429aceff40",
+   "rng=fd7d2341dd7221e6 t=1 s=1 ev=tu kind=cost was=98 now=75 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0",
+   "rng=552b10eb29fb2276 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=75 noresel=0 hide=0 type=8 to=22,36,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=2 ai=ab18b6777365d6ea",
+   "rng=552b10eb29fb2276 t=1 s=1 ev=tu kind=spend was=75 now=74 unit=1000006 fac=1 st=3 tu=75 noresel=0 hide=0",
+   "rng=dc3e980288c71ebf t=1 s=1 ev=tu kind=cost was=74 now=51 unit=1000006 fac=1 st=4 tu=74 noresel=0 hide=0",
+   "rng=6c063f1229980841 t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0 type=2 to=40,47,2 weapon=STR_PIR_PLASMA_PISTOL fa=1 run=0 number=1 ai=6fa758250bd4d805",
+   "rng=6c063f1229980841 t=1 s=1 ev=tu kind=spend was=98 now=94 unit=1000007 fac=1 st=0 tu=98 noresel=0 hide=0",
+   "rng=6c063f1229980841 t=1 s=1 ev=tu kind=spend was=94 now=90 unit=1000007 fac=1 st=0 tu=94 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=act unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0 type=2 to=40,47,2 weapon=STR_PIR_PLASMA_PISTOL fa=1 run=0 number=2 ai=c2554e89089d023e",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=90 now=86 unit=1000007 fac=1 st=0 tu=90 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=86 now=82 unit=1000007 fac=1 st=0 tu=86 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=82 now=78 unit=1000007 fac=1 st=0 tu=82 noresel=0 hide=0",
+   "rng=4f4eb88dce9af2bd t=1 s=1 ev=tu kind=spend was=78 now=74 unit=1000007 fac=1 st=0 tu=78 noresel=0 hide=0"
+  ],
+  "first_difference": {
+   "index": 0,
+   "a": "[FORGE] n=612 h=37f5d47be17928f8 rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=31 kneel=0",
+   "b": "[FORGE] n=612 h=2b603b123ec34f0e rng=d24c268811448687 t=1 s=1 ev=branch unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE target=324 fair=seen time=23 kneel=0"
+  },
+  "first_difference_event": [
+   612,
+   612
+  ],
+  "first_section_difference": {
+   "U": {
+    "section": "units",
+    "event_a": 618,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "I": {
+    "section": "items",
+    "event_a": 618,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "O": {
+    "section": "inventory order",
+    "event_a": 618,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "R": {
+    "section": "RNG",
+    "event_a": 618,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "C": {
+    "section": "virtual clock from its first reading",
+    "event_a": 618,
+    "event_b": 618,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "A": {
+    "section": "AI modules",
+    "event_a": 627,
+    "event_b": 627,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "M": {
+    "section": "map",
+    "event_a": 627,
+    "event_b": 627,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "N": {
+    "section": "nodes",
+    "event_a": 627,
+    "event_b": 627,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "V": {
+    "section": "what the auxiliary generator gave units and tiles",
+    "event_a": 627,
+    "event_b": 627,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "S": {
+    "section": "scheduler",
+    "event_a": 712,
+    "event_b": 717,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "B": {
+    "section": "bot",
+    "event_a": 712,
+    "event_b": 717,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "J": {
+    "section": "item ids",
+    "event_a": 957,
+    "event_b": 951,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "L": {
+    "section": "auxiliary generator",
+    "event_a": 1311,
+    "event_b": 1300,
+    "turn": [
+     "2",
+     "1"
+    ]
+   }
+  },
+  "after_decision_dump_events": [
+   618,
+   618
+  ],
+  "after_decision_units": [
+   {
+    "unit": "324",
+    "type": "SOLDIER",
+    "fields": {
+     "uh": [
+      "b5846f0633f631e6",
+      "7e34ceb6a4231faf"
+     ]
+    }
+   },
+   {
+    "unit": "1000006",
+    "type": "STR_ETHEREAL_SOLDIER",
+    "fields": {
+     "ammo": [
+      "21",
+      "23"
+     ],
+     "inv": [
+      "4f3863a706d9842",
+      "6645556f0101dfc7"
+     ],
+     "tu": [
+      "67",
+      "75"
+     ],
+     "uh": [
+      "65f2e9076dac91df",
+      "ba92b33cdc67cc22"
+     ]
+    }
+   }
+  ],
+  "after_decision_first_floor": null,
+  "end": {
+   "a": {
+    "result": {
+     "how": "over",
+     "turn": "4",
+     "ms": "15468",
+     "vms": "202040"
+    },
+    "casualties": 16,
+    "dead": 13,
+    "decisions": 301,
+    "last_fp": {
+     "S": "7772134c77f2f17e",
+     "U": "2cf36c79747a4ac8",
+     "A": "68ace2681db3ee2c",
+     "I": "41ea73326825ae73",
+     "O": "9627932167fd636e",
+     "M": "b05a4d7e5b062b5",
+     "N": "b662724d8ffe776",
+     "B": "c86d478266ad5519",
+     "J": "99f80ce8b094e369",
+     "R": "cee005ed1c1b019a",
+     "C": "202040",
+     "L": "8a199d3dedc93601",
+     "V": "9fc6bfdb150630ae"
+    }
+   },
+   "b": {
+    "result": {
+     "how": "over",
+     "turn": "21",
+     "ms": "39334",
+     "vms": "549320"
+    },
+    "casualties": 38,
+    "dead": 34,
+    "decisions": 955,
+    "last_fp": {
+     "S": "15019cffcefff08d",
+     "U": "6ad8b912ab6fe4f0",
+     "A": "7b54293e674c7ebf",
+     "I": "746a4dc837e85246",
+     "O": "960a09ec6b3baff5",
+     "M": "7bf29a7dd03288d3",
+     "N": "8d7e51ef0a3be865",
+     "B": "3d75872ef577d214",
+     "J": "d71f4ff77fbe6bd4",
+     "R": "b4820668a3279500",
+     "C": "549320",
+     "L": "a56f85b7b6a8c076",
+     "V": "40ac9b7c9c3f9da8"
+    }
+   }
+  },
+  "casualties_first_difference": {
+   "index": 5,
+   "a": "2/0/1000007/1",
+   "b": "2/0/1000030/1"
+  },
+  "monitor": {
+   "C1": {
+    "events": 3410,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 103,
+     "tu.recover": 97,
+     "tu.script": 9,
+     "tu.spend": 900,
+     "tu_marked_reaction": 7
+    }
+   },
+   "B1": {
+    "events": 10702,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 3,
+     "tu.cost": 292,
+     "tu.recover": 366,
+     "tu.script": 13,
+     "tu.spend": 2826,
+     "tu_marked_reaction": 26
+    }
+   }
+  }
+ },
+ "replay_to_N": {
+  "events": [
+   6748,
+   611
+  ],
+  "same_prefix": true,
+  "last": "[FORGE] n=611 h=867d455d5479b994 rng=d24c268811448687 t=1 s=1 ev=fp at=decide S=22d53303792949c U=1535366346b76d39 A=a23514aeb5d1851 I=f92dc4edda191644 O=c882d97d505f3c4f M=aa6ca908503699c1 N=5be68925",
+  "dump_identical": true
+ },
+ "costs": [
+  {
+   "run": "A1",
+   "time": [
+    "[FORGETIME] at=first clock0=13870 real_ms=2298",
+    "[FORGETIME] at=branch d=49 real_ms=5887 battle_real_ms=3589 clock0=13870",
+    "[FORGETIME] at=end real_ms=22650 battle_real_ms=20352 clock=320920 clock0=13870"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "20352",
+    "vms": "320920"
+   },
+   "wall_text": "24",
+   "log_bytes": 10818176,
+   "forge_events": 6748,
+   "dump_lines": 1000
+  },
+  {
+   "run": "A2",
+   "time": [
+    "[FORGETIME] at=first clock0=6850 real_ms=1349",
+    "[FORGETIME] at=branch d=49 real_ms=4313 battle_real_ms=2964 clock0=6850",
+    "[FORGETIME] at=end real_ms=26702 battle_real_ms=25353 clock=320920 clock0=6850"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "25353",
+    "vms": "320920"
+   },
+   "wall_text": "28",
+   "log_bytes": 10820958,
+   "forge_events": 6748,
+   "dump_lines": 1000
+  },
+  {
+   "run": "W1",
+   "time": [],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "17878",
+    "vms": "320920"
+   },
+   "wall_text": "21",
+   "log_bytes": 9247800,
+   "forge_events": 0,
+   "dump_lines": 0
+  },
+  {
+   "run": "S1",
+   "time": [
+    "[FORGETIME] at=first clock0=7950 real_ms=1335",
+    "[FORGETIME] at=branch d=49 real_ms=3883 battle_real_ms=2548 clock0=7950",
+    "[FORGETIME] at=end real_ms=21007 battle_real_ms=19672 clock=320920 clock0=7950"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "19672",
+    "vms": "320920"
+   },
+   "wall_text": "23",
+   "log_bytes": 10818242,
+   "forge_events": 6748,
+   "dump_lines": 1000
+  },
+  {
+   "run": "B1",
+   "time": [
+    "[FORGETIME] at=first clock0=6980 real_ms=1350",
+    "[FORGETIME] at=branch d=49 real_ms=4199 battle_real_ms=2849 clock0=6980",
+    "[FORGETIME] at=end real_ms=40684 battle_real_ms=39334 clock=549320 clock0=6980"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "21",
+    "ms": "39334",
+    "vms": "549320"
+   },
+   "wall_text": "43",
+   "log_bytes": 23277220,
+   "forge_events": 10702,
+   "dump_lines": 1000
+  },
+  {
+   "run": "B2",
+   "time": [
+    "[FORGETIME] at=first clock0=8290 real_ms=1367",
+    "[FORGETIME] at=branch d=49 real_ms=4069 battle_real_ms=2702 clock0=8290",
+    "[FORGETIME] at=end real_ms=39856 battle_real_ms=38489 clock=549320 clock0=8290"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "21",
+    "ms": "38489",
+    "vms": "549320"
+   },
+   "wall_text": "42",
+   "log_bytes": 23277105,
+   "forge_events": 10702,
+   "dump_lines": 1000
+  },
+  {
+   "run": "C1",
+   "time": [
+    "[FORGETIME] at=first clock0=9010 real_ms=1335",
+    "[FORGETIME] at=branch d=49 real_ms=4064 battle_real_ms=2729 clock0=9010",
+    "[FORGETIME] at=end real_ms=16803 battle_real_ms=15468 clock=202040 clock0=9010"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "4",
+    "ms": "15468",
+    "vms": "202040"
+   },
+   "wall_text": "19",
+   "log_bytes": 6747515,
+   "forge_events": 3410,
+   "dump_lines": 950
+  },
+  {
+   "run": "P1",
+   "time": [
+    "[FORGETIME] at=first clock0=6030 real_ms=1318",
+    "[FORGETIME] at=branch d=49 real_ms=3796 battle_real_ms=2478 clock0=6030",
+    "[FORGETIME] at=end real_ms=3843 battle_real_ms=2525 clock=41280 clock0=6030"
+   ],
+   "result": {
+    "how": "timeout",
+    "turn": "1",
+    "ms": "2525",
+    "vms": "41280"
+   },
+   "wall_text": "5",
+   "log_bytes": 1525107,
+   "forge_events": 611,
+   "dump_lines": 550
+  }
+ ],
+ "monitor": {
+  "A1": {
+   "events": 6748,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 138,
+    "tu.recover": 229,
+    "tu.script": 4,
+    "tu.spend": 1789,
+    "tu_marked_reaction": 32
+   }
+  },
+  "A2": {
+   "events": 6748,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 138,
+    "tu.recover": 229,
+    "tu.script": 4,
+    "tu.spend": 1789,
+    "tu_marked_reaction": 32
+   }
+  },
+  "S1": {
+   "events": 6748,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 138,
+    "tu.recover": 229,
+    "tu.script": 4,
+    "tu.spend": 1789,
+    "tu_marked_reaction": 32
+   }
+  },
+  "B1": {
+   "events": 10702,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 3,
+    "tu.cost": 292,
+    "tu.recover": 366,
+    "tu.script": 13,
+    "tu.spend": 2826,
+    "tu_marked_reaction": 26
+   }
+  },
+  "B2": {
+   "events": 10702,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 3,
+    "tu.cost": 292,
+    "tu.recover": 366,
+    "tu.script": 13,
+    "tu.spend": 2826,
+    "tu_marked_reaction": 26
+   }
+  },
+  "C1": {
+   "events": 3410,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 103,
+    "tu.recover": 97,
+    "tu.script": 9,
+    "tu.spend": 900,
+    "tu_marked_reaction": 7
+   }
+  },
+  "P1": {
+   "events": 611,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.cost": 18,
+    "tu.recover": 2,
+    "tu.script": 2,
+    "tu.spend": 264
+   }
+  }
+ }
+}

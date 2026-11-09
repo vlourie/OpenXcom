@@ -1,0 +1,14 @@
+===== d23_DN_M3_s1 us2_QN_M3_s1 decisions 948 1007
+first differing decision no 234 new line 2790 ['2', '1000003', '(65,26,0)', '116', '2', '2', '(63,23,0)']
+                         old line 2708 ['2', '1000003', '(65,26,0)', '116', '2', '2', '(64,27,0)']
+drops in SAFETY before it: 3
+   line 2663 t 2 unit 1000000 node (48,3,0)
+   line 2680 t 2 unit 1000001 node (9,11,0)
+   line 2698 t 2 unit 1000003 node (33,62,3)
+all decisions of turn 1 the same: True ; turn 1 decisions: 207 207
+===== d26_DN_M6_s1 us1_QN_M6_s1 decisions 658 717
+first differing decision no 195 new line 2198 ['2', '1000017', '(44,12,0)', '30', '3', '2', '(40,11,0)']
+                         old line 2129 ['2', '1000017', '(44,12,0)', '30', '0', '2', '(32,12,0)']
+drops in SAFETY before it: 1
+   line 2118 t 2 unit 1000017 node (42,17,0)
+all decisions of turn 1 the same: True ; turn 1 decisions: 159 159

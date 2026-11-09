@@ -1,0 +1,96 @@
+--- d0/src/Battlescape/BattlescapeGame.cpp
++++ sfc/src/Battlescape/BattlescapeGame.cpp
+@@ -18,6 +18,7 @@
+  */
+ #include <sstream>
+ #include "BattlescapeGame.h"
++#include "SideCombatDirector.h"
+ #include "BattlescapeState.h"
+ #include "AiProbe.h"
+ #include "AiCoverMap.h"
+@@ -397,7 +398,24 @@
+ 	{
+ 		_AIActionCounter = 0;
+ 	}
+-	if (_AIActionCounter >= AiProbe::maxActions(unit) || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
++	// SIDE-FIRST COMBAT (bench, OXCE_AI_SCD): one choice over the whole side - who acts next and what it does - before any unit thinks for itself
++	BattleAction scdAction;
++	BattleUnit *scdOther = 0;
++	const SideCombatDirector::Result scd = SideCombatDirector::step(_save, unit, &scdAction, &scdOther);
++	if (scd == SideCombatDirector::SWITCH)
++	{
++		_AIActionCounter = 0;
++		_save->setSelectedUnit(scdOther);
++		_parentState->updateSoldierInfo();
++		getMap()->getCamera()->focusOn(scdOther->getPosition());
++		return;
++	}
++	const bool scdLeads = scd == SideCombatDirector::ACT || scd == SideCombatDirector::CONSULT;
++	if (scdLeads)
++	{
++		_AIActionCounter = 0;
++	}
++	if (!scdLeads && (_AIActionCounter >= AiProbe::maxActions(unit) || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0)) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
+ 	{
+ 		if (carefulGuard(unit))
+ 		{
+@@ -474,7 +492,17 @@
+ 	{
+ 		ai->retryBegin();
+ 	}
+-	unit->think(&action);
++	if (scd == SideCombatDirector::ACT)
++	{
++		const int number = action.number;
++		action = scdAction;
++		action.number = number;
++		ai->clearReserve();
++	}
++	else
++	{
++		unit->think(&action);
++	}
+ 
+ 	if (action.type == BA_RETHINK)
+ 	{
+@@ -489,7 +517,7 @@
+ 	bool pickUpWeaponsMoreActively = unit->getPickUpWeaponsMoreActively() || botArms;
+ 	bool weaponPickedUp = false;
+ 	bool walkToItem = false;
+-	if (!weapon || !weapon->haveAnyAmmo())
++	if (!scdLeads && (!weapon || !weapon->haveAnyAmmo()))
+ 	{
+ 		if (unit->getOriginalFaction() != FACTION_PLAYER)
+ 		{
+@@ -546,6 +574,10 @@
+ 			action.type = BA_NONE;
+ 		}
+ 	}
++	if (scd != SideCombatDirector::ACT && SideCombatDirector::afterThink(_save, unit, &action, scd, scdAction))
++	{
++		ai->clearReserve();
++	}
+ 	AiProbe::logDecision(_save, unit, action);
+ 	AiProbe::blockedStepDecide(_save, unit);
+ 	if (AiProbe::knownOccupantPath())
+--- d0/src/Battlescape/AIModule.h
++++ sfc/src/Battlescape/AIModule.h
+@@ -380,6 +380,8 @@
+ 
+ 	/// Checks the alien's TU reservation setting.
+ 	BattleActionType getReserveMode();
++	/// SIDE-FIRST COMBAT (bench): the director's action follows no reservation of an earlier think.
++	void clearReserve() { _reserve = BA_NONE; }
+ 	/// Assuming we have both a ranged and a melee weapon, we have to select one.
+ 	void selectMeleeOrRanged();
+ 	/// Gets the current targetted unit.
+--- d0/src/CMakeLists.txt
++++ sfc/src/CMakeLists.txt
+@@ -83,6 +83,7 @@
+   Battlescape/AiCandidates.cpp
+   Battlescape/AiCoverMap.cpp
+   Battlescape/AiProbe.cpp
++  Battlescape/SideCombatDirector.cpp
+   Battlescape/AlienInventory.cpp
+   Battlescape/AlienInventoryState.cpp
+   Battlescape/AliensCrashState.cpp

@@ -1,0 +1,4 @@
+D0 attacks at the nearest with expected effect 0: {'useless_attacks': 570, 'target_out_anyway': 1, 'with_other_target_lof': 211}
+alternatives (another seen target with a line of fire, expected HP this turn): {'alt_ev>=1': 47, 'alt_ev>=1_player': 19, 'alt_ev>=1_civilian_only': 28, 'alt_ev>=3': 44, 'alt_ev>=3_player': 16, 'alt_ev>=3_civilian_only': 28, 'alt_ev>=5': 40, 'alt_ev>=5_player': 12, 'alt_ev>=5_civilian_only': 28, 'alt_ev>=10': 33, 'alt_ev>=10_player': 9, 'alt_ev>=10_civilian_only': 24}
+faction of the best alternative with ev>=1 (0 player, 2 civilian): {0: 18, 2: 29}
+weapons: {'STR_CD_PISTOL': 54, 'STR_UAC_RIFLE': 52, 'STR_SHOTGUN_PA': 31, 'STR_NINJA_SMG': 28, 'STR_LUGER': 25, 'STR_CHAINGUN': 23, 'STR_NINJA_CARBINE': 22, 'STR_CD_RIFLE': 20, 'STR_UAC_HEAVY_NAILGUN': 19, 'STR_BLUNDERBUSS': 18, 'STR_UAC_SHOTGUN': 18, 'STR_MP40': 17}

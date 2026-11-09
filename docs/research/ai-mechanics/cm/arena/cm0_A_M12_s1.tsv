@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2024001	STR_VESSEL_NIN_APC	over	STR_VESSEL_NIN_APC	STR_UFO_CRASH_RECOVERY	46	8	RURAL	STR_NINJA	STR_DROPSHIP#2	7	3	8	0	0	4	81	11	10	0	1	8	0	0	12	13	h.rec.in:24,h.rec.out.a8:1,h.rec.out.a9:1,p.rec.in:63	63	0	0	0	0	0	26	0	0	2	0	0	16		win

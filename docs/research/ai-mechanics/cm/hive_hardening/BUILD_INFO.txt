@@ -1,0 +1,5 @@
+build_label=cmrun-HH
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + HIVE COMMAND CORE hardening (OXCE_AI_HIVE=0 off, 1 shadow, 2 active)
+patch_sha256=729a65ff0cecace54dcaa78e930f9767793a811c42a65def69ab51e426a34da4
+exe_sha256=9f289a4252951250bb2c07a6adcdcc94fc9e976127a0a07eb1e349714a5e48c7

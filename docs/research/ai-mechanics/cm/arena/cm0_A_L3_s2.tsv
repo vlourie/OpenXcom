@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2027002	STR_SUPPLY_SHIP	over	STR_SUPPLY_SHIP	STR_UFO_CRASH_RECOVERY	108	8	JUNGLE	STR_FLOATER	STR_DROPSHIP#3	9	4	8	0	0	0	0	21	19	0	2	8	0	0	23	4	h.rec.in:36,p.rec.in:88	88	0	0	0	0	0	36	0	0	1	0	0	9		win

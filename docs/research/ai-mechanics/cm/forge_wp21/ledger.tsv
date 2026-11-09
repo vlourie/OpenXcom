@@ -1,0 +1,7 @@
+STRAY	2026-11-06T22:02:17	not_FX_arm_XO_env_SD	XO	L8	a stray run: the arm name XO was taken, see WP2_1_PLAN_ADDENDUM.md; counted in the budget	turns=60
+A1	2026-11-06T22:04:41	3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1	YA	L8	A: full think(), the action through the arena unchanged	turns=60
+A2	2026-11-06T22:05:18	3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1	YA	L8	A again: control A/A	turns=60
+B1	2026-11-06T22:06:06	3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1	YB	L8	B: the same full think(), the mode of the shot changed before it is carried out	turns=60
+B2	2026-11-06T22:06:44	3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1	YB	L8	B again: control B/B	turns=60
+C1	2026-11-06T22:07:22	3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1	YC	L8	C: passive interception: the state and the action written, nothing changed	turns=60
+OFF	2026-11-06T22:22:19	3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1	YO	L8	no arena variable at all, against the archived D0	turns=60

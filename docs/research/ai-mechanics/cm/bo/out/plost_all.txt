@@ -1,0 +1,15 @@
+== A
+  470 (42,23,0) hp 138/168 -> 132/168 status 0  lost 6
+  444 (31,16,0) hp 154/170 -> 146/170 status 0  lost 8
+  520 (25,8,0) hp 29/84 -> 21/84 status 0  lost 8
+  503 (44,24,0) hp 85/85 -> 72/85 status 0  lost 13
+  total 35
+== B1
+  520 (25,8,0) hp 29/84 -> 1/84 status 7  lost 28
+  503 (44,24,0) hp 85/85 -> 76/85 status 0  lost 9
+  total 37
+== B
+  448 (32,10,2) hp 163/171 -> 40/171 status 0  lost 123
+  444 (31,16,0) hp 154/170 -> 148/170 status 0  lost 6
+  520 (25,8,0) hp 29/84 -> gone  lost 29
+  total 158

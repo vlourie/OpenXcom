@@ -1,0 +1,714 @@
+##### ledger.py hh4_JA_M6_s2 hh6_JV_M3_s1
+== hh4_JA_M6_s2 walking orders 121
+ reasons [(('ARRIVED', 'arrived'), 42), (('MOVED_CLOSER', 'replaced'), 17), (('MOVED_NOT_CLOSER', 'replaced'), 12), (('NOT_MOVED', 'replaced'), 11), (('MOVED_CLOSER', 'unit_out'), 10), (('NOT_MOVED', 'no_path_now'), 9), (('OPEN', 'open'), 6), (('MOVED_NOT_CLOSER', 'unit_out'), 4), (('MOVED_CLOSER', 'too_long'), 4), (('NOT_MOVED', 'unit_out'), 3), (('MOVED_CLOSER', 'no_path_now'), 1), (('MOVED_NOT_CLOSER', 'too_long'), 1), (('MOVED_NOT_CLOSER', 'no_path_now'), 1)]
+ stops of walks on order [('reserve', 182), ('spotted', 21), ('turnspot', 19), ('tu', 9), ('invalid', 1)]
+ side decisions 702 modes [(0, 263), (3, 232), (2, 207)] acts [(2, 376), (0, 192), (8, 107), (9, 16), (7, 7), (6, 4)]
+ all walks stop [('reserve', 182), (None, 126), ('spotted', 31), ('turnspot', 22), ('tu', 13), ('invalid', 2)]
+  sample too_long 72 1000036 (1, 49, 0) (11, 21, 0) {'path_tu': 150, 'turns': 2, 'reach': 'partial', 'end': '(10,24,0)', 'tiles': 2680} walk_tu 101 own_tu 290 [(3, 2, 8, (8, 23, 0), 41, None), (3, 2, 2, (0, 49, 0), 4, None), (3, 2, 8, (8, 23, 0), 40, None), (3, 2, 8, (8, 23, 0), 40, None), (4, 0, 2, (11, 21, 0), 36, 'spotted'), (4, 0, 2, (11, 21, 0), 16, 'spotted'), (4, 2, 2, (3, 35, 0), 35, None), (4, 2, 8, (24, 15, 0), 40, None), (4, 0, 2, (11, 21, 0), 5, 'tu'), (5, 2, 2, (4, 35, 0), 2, 'turnspot'), (5, 0, 2, (11, 21, 0), 10, 'turnspot'), (5, 2, 2, (6, 32, 0), 15, None), (5, 2, 2, (2, 37, 0), 33, None), (5, 2, 8, (21, 16, 0), 40, None), (5, 0, 2, (11, 21, 0), 34, 'tu')]
+  sample too_long 73 1000026 (9, 38, 0) (12, 28, 0) {'path_tu': 46, 'turns': 1, 'reach': 'full', 'end': '(12,28,0)', 'tiles': 16664} walk_tu 6 own_tu 209 [(3, 2, 8, (8, 23, 0), 29, None), (3, 3, 2, (4, 42, 0), 28, None), (4, 0, 2, (12, 28, 0), 6, 'spotted'), (4, 2, 8, (8, 22, 0), 26, None), (4, 2, 2, (1, 36, 0), 28, None), (4, 3, 2, (6, 34, 0), 24, None), (5, 2, 2, (4, 33, 0), 10, None), (5, 2, 8, (21, 16, 0), 25, None), (5, 2, 8, (21, 16, 0), 25, None), (5, 3, 2, (5, 36, 0), 14, None)]
+  sample too_long 74 1000029 (13, 39, 0) (12, 24, 1) {'path_tu': 110, 'turns': 2, 'reach': 'partial', 'end': '(13,27,1)', 'tiles': 2629} walk_tu 34 own_tu 185 [(3, 2, 8, (8, 23, 0), 31, None), (3, 3, 2, (14, 44, 0), 23, None), (4, 2, 8, (8, 22, 0), 28, None), (4, 2, 8, (8, 22, 0), 28, None), (4, 3, 2, (15, 48, 0), 18, None), (5, 0, 2, (12, 24, 1), 24, 'spotted'), (5, 2, 8, (21, 16, 0), 29, None), (5, 0, 2, (12, 24, 1), 10, 'reserve'), (5, 2, 8, (21, 16, 0), 28, None)]
+== hh6_JV_M3_s1 walking orders 117
+ reasons [(('MOVED_CLOSER', 'unit_out'), 27), (('MOVED_CLOSER', 'replaced'), 25), (('ARRIVED', 'arrived'), 18), (('MOVED_CLOSER', 'too_long'), 15), (('MOVED_NOT_CLOSER', 'replaced'), 10), (('NOT_MOVED', 'replaced'), 7), (('MOVED_NOT_CLOSER', 'unit_out'), 7), (('OPEN', 'open'), 3), (('NOT_MOVED', 'unit_out'), 2), (('NOT_MOVED', 'no_path_now'), 1), (('MOVED_CLOSER', 'no_path_now'), 1), (('MOVED_NOT_CLOSER', 'too_long'), 1)]
+ stops of walks on order [('tu', 88), ('reserve', 53), ('spotted', 49), ('turnspot', 24), ('reaction', 10)]
+ side decisions 815 modes [(2, 333), (3, 277), (0, 205)] acts [(2, 419), (0, 226), (8, 95), (9, 52), (6, 14), (7, 9)]
+ all walks stop [(None, 159), ('tu', 98), ('spotted', 62), ('reserve', 56), ('turnspot', 33), ('reaction', 11)]
+  sample too_long 26 1000028 (3, 4, 0) (9, 11, 3) {'path_tu': 194, 'turns': 3, 'reach': 'partial', 'end': '(10,11,0)', 'tiles': 1737} walk_tu 20 own_tu 167 [(1, 2, 2, (4, 6, 0), 22, 'turnspot'), (1, 2, 2, (3, 8, 0), 6, None), (1, 2, 8, (16, 5, 3), 20, None), (1, 0, 2, (9, 11, 3), 4, 'spotted'), (1, 0, 2, (9, 11, 3), 4, 'spotted'), (1, 0, 2, (9, 11, 3), 8, 'tu'), (2, 2, 9, (20, 10, 0), 41, None), (2, 2, 8, (20, 10, 0), 20, None), (3, 2, 2, (11, 7, 0), 38, None), (3, 2, 8, (21, 35, 0), 20, None), (3, 0, 2, (9, 11, 3), 4, 'tu')]
+  sample too_long 36 1000008 (30, 56, 0) (23, 45, 3) {'path_tu': 118, 'turns': 2, 'reach': 'partial', 'end': '(20,48,0)', 'tiles': 3104} walk_tu 24 own_tu 103 [(1, 2, 2, (32, 54, 0), 12, None), (1, 0, 2, (23, 45, 3), 24, 'spotted'), (1, 2, 8, (15, 45, 0), 18, None), (2, 2, 2, (23, 54, 0), 20, None), (2, 2, 8, (8, 48, 0), 19, None), (2, 2, 2, (23, 53, 0), 4, None), (2, 0, 2, (23, 45, 3), 0, 'reserve'), (2, 3, 2, (24, 50, 0), 14, None), (3, 3, 2, (21, 48, 0), 16, None)]
+  sample too_long 37 1000011 (32, 61, 0) (23, 52, 0) {'path_tu': 102, 'turns': 2, 'reach': 'partial', 'end': '(30,57,0)', 'tiles': 2346} walk_tu 98 own_tu 93 [(1, 0, 2, (23, 52, 0), 50, 'turnspot'), (1, 0, 2, (23, 52, 0), 14, 'tu'), (2, 2, 9, (21, 28, 0), 46, None), (2, 0, 2, (23, 52, 0), 16, 'tu'), (3, 2, 9, (41, 41, 0), 47, None), (3, 0, 2, (23, 52, 0), 18, 'tu')]
+##### classify.py hh4_JA_M6_s2 hh6_JV_M3_s1 hh3_JA_M6_s1
+== hh4_JA_M6_s2 приказов 121 не дошли, закрыты 73
+  выполнен                       42   34.7% всех    0.0% незавершённых
+  погиб или выбыл                17   14.0% всех   23.3% незавершённых
+  переключился на бой            19   15.7% всех   26.0% незавершённых
+  задача изменилась              26   21.5% всех   35.6% незавершённых
+  закончились TU                  0    0.0% всех    0.0% незавершённых
+  приблизился, не дошёл           0    0.0% всех    0.0% незавершённых
+  союзник закрыл проход           8    6.6% всех   11.0% незавершённых
+  маршрут стал недоступен         3    2.5% всех    4.1% незавершённых
+  не получил хода                 0    0.0% всех    0.0% незавершённых
+  открыт на срезе боя             6    5.0% всех    0.0% незавершённых
+  по причине закрытия у 'переключился на бой': [('replaced', 14), ('too_long', 5)]
+  причины смены задачи (все replaced): [('contact', 28), ('слияние подразделений', 6), ('узел сектора', 4), ('из HOLD в SEARCH', 2)]
+  задача изменилась, сместились ближе: 12 не сдвинулись: 7
+  доля TU на приказ / своё по всем закрытым: 4848 4980
+  ходов до закрытия: [(1, 54), (0, 49), (2, 7), (3, 5)]
+  запас: приказ на 1 ход (reach=full) 65 на 2+ (partial) 56 из partial дошли 5 из full дошли 37
+  ходов бойца с приказом на ходьбу: 141 первое решение: [('патруль по приказу', 92), ('режим 2 act 2', 19), ('режим 2 act 8', 17), ('режим 2 act 9', 4), ('режим 3 act 2', 4), ('режим 2 act 6', 3), ('режим 3 act 0', 1), ('режим 2 act 7', 1)]
+  из них приказу досталось больше TU: 84 своему решению: 57 ни то ни другое: 0
+== hh6_JV_M3_s1 приказов 117 не дошли, закрыты 96
+  выполнен                       18   15.4% всех    0.0% незавершённых
+  погиб или выбыл                36   30.8% всех   37.5% незавершённых
+  переключился на бой            24   20.5% всех   25.0% незавершённых
+  задача изменилась              25   21.4% всех   26.0% незавершённых
+  закончились TU                  8    6.8% всех    8.3% незавершённых
+  приблизился, не дошёл           1    0.9% всех    1.0% незавершённых
+  союзник закрыл проход           1    0.9% всех    1.0% незавершённых
+  маршрут стал недоступен         1    0.9% всех    1.0% незавершённых
+  не получил хода                 0    0.0% всех    0.0% незавершённых
+  открыт на срезе боя             3    2.6% всех    0.0% незавершённых
+  по причине закрытия у 'переключился на бой': [('replaced', 17), ('too_long', 7)]
+  причины смены задачи (все replaced): [('contact', 31), ('слияние подразделений', 8), ('узел сектора', 3)]
+  задача изменилась, сместились ближе: 18 не сдвинулись: 3
+  доля TU на приказ / своё по всем закрытым: 4844 6003
+  ходов до закрытия: [(1, 52), (2, 23), (0, 21), (3, 18)]
+  запас: приказ на 1 ход (reach=full) 33 на 2+ (partial) 84 из partial дошли 4 из full дошли 14
+  ходов бойца с приказом на ходьбу: 188 первое решение: [('патруль по приказу', 75), ('режим 2 act 2', 41), ('режим 2 act 9', 26), ('режим 3 act 2', 22), ('режим 2 act 8', 13), ('режим 2 act 6', 6), ('режим 2 act 7', 3), ('режим 3 act 0', 2)]
+  из них приказу досталось больше TU: 75 своему решению: 113 ни то ни другое: 0
+== hh3_JA_M6_s1 приказов 68 не дошли, закрыты 47
+  выполнен                       15   22.1% всех    0.0% незавершённых
+  погиб или выбыл                24   35.3% всех   51.1% незавершённых
+  переключился на бой            10   14.7% всех   21.3% незавершённых
+  задача изменилась               8   11.8% всех   17.0% незавершённых
+  закончились TU                  0    0.0% всех    0.0% незавершённых
+  приблизился, не дошёл           0    0.0% всех    0.0% незавершённых
+  союзник закрыл проход           4    5.9% всех    8.5% незавершённых
+  маршрут стал недоступен         1    1.5% всех    2.1% незавершённых
+  не получил хода                 0    0.0% всех    0.0% незавершённых
+  открыт на срезе боя             6    8.8% всех    0.0% незавершённых
+  по причине закрытия у 'переключился на бой': [('replaced', 10)]
+  причины смены задачи (все replaced): [('contact', 11), ('слияние подразделений', 7)]
+  задача изменилась, сместились ближе: 3 не сдвинулись: 0
+  доля TU на приказ / своё по всем закрытым: 2632 3246
+  ходов до закрытия: [(1, 28), (0, 19), (2, 14), (3, 1)]
+  запас: приказ на 1 ход (reach=full) 35 на 2+ (partial) 33 из partial дошли 1 из full дошли 14
+  ходов бойца с приказом на ходьбу: 85 первое решение: [('патруль по приказу', 48), ('режим 2 act 8', 11), ('режим 3 act 2', 11), ('режим 2 act 2', 7), ('режим 2 act 9', 4), ('режим 2 act 6', 2), ('режим 3 act 0', 2)]
+  из них приказу досталось больше TU: 40 своему решению: 45 ни то ни другое: 0
+##### drops.py
+== hh3_JA_M6_s1 lines 5554
+  line 1838->2150 turn 2 unit 1000035 at (21,23,0) tiles 2520 capped 0 -> 373 capped 0 tu 96
+  line 1798->2175 turn 2 unit 1000037 at (23,21,0) tiles 2520 capped 0 -> 373 capped 0 tu 96
+  line 4298->4467 turn 6 unit 1000039 at (10,19,2) tiles 3057 capped 1 -> 191 capped 0 tu 134
+  line 4748->4828 turn 7 unit 1000032 at (4,20,0) tiles 2855 capped 1 -> 393 capped 0 tu 96
+  changes 4
+  uncapped sizes (places): [(172, 3), (177, 6), (182, 2), (187, 5), (190, 4), (191, 1), (192, 1), (272, 2), (373, 2), (393, 1), (2466, 1), (2470, 5), (2516, 1), (2520, 3), (2570, 1), (2701, 1), (2790, 1), (2791, 3), (2842, 1), (2843, 1), (2853, 1), (2855, 3), (2860, 1), (2864, 1), (2871, 2), (3047, 1), (3058, 3), (3060, 1), (15575, 6), (16018, 6), (16266, 1), (16293, 1), (16318, 1), (16498, 1), (16523, 1)]
+== hh4_JA_M6_s2 lines 7555
+  line 666->963 turn 1 unit 1000021 at (28,11,2) tiles 10945 capped 1 -> 182 capped 0 tu 111
+  line 2684->2877 turn 3 unit 1000019 at (40,13,0) tiles 16729 capped 0 -> 389 capped 0 tu 111
+  line 2688->2916 turn 3 unit 1000021 at (37,13,2) tiles 13086 capped 1 -> 389 capped 0 tu 111
+  line 2692->2948 turn 3 unit 1000023 at (30,6,2) tiles 15550 capped 1 -> 178 capped 0 tu 111
+  line 2634->3020 turn 3 unit 1000031 at (38,10,0) tiles 2743 capped 1 -> 212 capped 0 tu 96
+  line 2605->3053 turn 3 unit 1000033 at (31,9,0) tiles 2623 capped 1 -> 212 capped 0 tu 96
+  line 4242->4604 turn 5 unit 1000030 at (30,15,1) tiles 2741 capped 1 -> 270 capped 0 tu 96
+  line 5088->5245 turn 6 unit 1000023 at (40,7,2) tiles 16665 capped 1 -> 641 capped 0 tu 111
+  changes 8
+  uncapped sizes (places): [(9, 1), (22, 1), (178, 5), (179, 4), (182, 2), (187, 1), (212, 2), (215, 1), (269, 8), (270, 7), (389, 2), (481, 11), (484, 1), (641, 1), (658, 1), (2361, 1), (2555, 2), (2579, 1), (2580, 1), (2588, 1), (2750, 1), (2754, 1), (2797, 1), (2841, 1), (3022, 1), (3023, 1), (3029, 2), (3048, 1), (3049, 1), (3053, 3), (3054, 3), (3060, 1), (16489, 6), (16568, 1), (16569, 1), (16729, 2), (17005, 1), (17010, 1), (17039, 2), (17044, 1), (17046, 1), (17051, 1)]
+== hh6_JV_M3_s1 lines 10600
+  line 825->1730 turn 1 unit 1000050 at (6,16,3) tiles 1526 capped 1 -> 65 capped 0 tu 65
+  changes 1
+  uncapped sizes (places): [(65, 1), (6327, 1), (6333, 1), (6363, 1), (6364, 1), (6397, 1), (6437, 1), (6450, 1)]
+== hh7_HL_M3_s1 lines 3904
+  changes 0
+  uncapped sizes (places): []
+== hh8_HL_M3_s1 lines 4206
+  changes 0
+  uncapped sizes (places): []
+##### closers.py
+== hh4_JA_M6_s2
+ line 963 turn 1 unit 1000021 move 1 at (28, 11, 2) 10945->182 union 123 complete=False lists_inside 41 exits 8 free_exits 5 [(39, 5, 2), (39, 14, 2), (40, 9, 2), (42, 6, 2), (42, 8, 2)]
+   units on exits {(30, 9, 2): 1000023, (26, 9, 2): 1000015, (27, 7, 2): 1000013}
+   with cells behind {(30, 9, 2): 1000023, (26, 9, 2): 1000015, (27, 7, 2): 1000013}; already there at the big flood {(30, 9, 2): 1000023, (26, 9, 2): 1000015, (27, 7, 2): 1000013}; players []
+ line 2877 turn 3 unit 1000019 move 1 at (40, 13, 0) 16729->389 union 289 complete=False lists_inside 42 exits 10 free_exits 2 [(31, 5, 2), (43, 13, 2)]
+   units on exits {(38, 10, 0): 1000031, (35, 7, 2): 1000015, (40, 14, 0): 1000004, (31, 9, 0): 1000033, (25, 12, 0): 1000034, (28, 15, 0): 1000032, (34, 11, 0): 1000024, (28, 5, 1): 1000035}
+   with cells behind {(38, 10, 0): 1000031, (35, 7, 2): 1000015, (40, 14, 0): 1000004, (31, 9, 0): 1000033, (25, 12, 0): 1000034, (28, 15, 0): 1000032, (34, 11, 0): 1000024, (28, 5, 1): 1000035}; already there at the big flood {(38, 10, 0): 1000031, (31, 9, 0): 1000033, (25, 12, 0): 1000034, (28, 15, 0): 1000032, (34, 11, 0): 1000024, (28, 5, 1): 1000035}; players []
+     came after the big flood: 1000015 at (35, 7, 2): turn 3 mode 0 act 2 to (34,7,0) tu_left 37 stop reserve
+     came after the big flood: 1000004 at (40, 14, 0): turn 3 mode 0 act 2 to (42,28,0) tu_left 40 stop reserve
+ line 2916 turn 3 unit 1000021 move 1 at (37, 13, 2) 13086->389 union 204 complete=False lists_inside 37 exits 11 free_exits 7 [(29, 5, 2), (30, 10, 2), (37, 5, 0), (37, 6, 0), (39, 7, 0), (43, 5, 0), (43, 6, 0)]
+   units on exits {(27, 13, 2): 1000001, (35, 7, 2): 1000015, (28, 11, 2): 1000013, (30, 6, 2): 1000023}
+   with cells behind {(35, 7, 2): 1000015, (28, 11, 2): 1000013, (30, 6, 2): 1000023}; already there at the big flood {(30, 6, 2): 1000023}; players []
+     came after the big flood: 1000015 at (35, 7, 2): turn 3 mode 0 act 2 to (34,7,0) tu_left 37 stop reserve
+     came after the big flood: 1000013 at (28, 11, 2): turn 3 mode 3 act 0 to (28,11,2) tu_left 83 stop None
+ line 2948 turn 3 unit 1000023 move 1 at (30, 6, 2) 15550->178 union 178 complete=True lists_inside 31 exits 4 free_exits 0 []
+   units on exits {(27, 13, 2): 1000001, (35, 7, 2): 1000015, (40, 7, 2): 1000021, (28, 11, 2): 1000013}
+   with cells behind {(40, 7, 2): 1000021}; already there at the big flood {}; players []
+     came after the big flood: 1000021 at (40, 7, 2): turn 3 mode 0 act 2 to (43,12,0) tu_left 39 stop reserve
+ line 3020 turn 3 unit 1000031 move 0 at (38, 10, 0) 2743->212 union 212 complete=True lists_inside 70 exits 9 free_exits 1 [(27, 15, 0)]
+   units on exits {(28, 15, 0): 1000032, (25, 12, 0): 1000034, (31, 9, 0): 1000033, (40, 13, 0): 1000019, (34, 11, 0): 1000024, (40, 14, 0): 1000004, (40, 7, 2): 1000021, (28, 5, 1): 1000035}
+   with cells behind {(28, 15, 0): 1000032, (25, 12, 0): 1000034, (31, 9, 0): 1000033, (40, 13, 0): 1000019, (34, 11, 0): 1000024, (40, 14, 0): 1000004, (40, 7, 2): 1000021, (28, 5, 1): 1000035}; already there at the big flood {(28, 15, 0): 1000032, (25, 12, 0): 1000034, (31, 9, 0): 1000033, (40, 13, 0): 1000019, (34, 11, 0): 1000024, (28, 5, 1): 1000035}; players []
+     came after the big flood: 1000004 at (40, 14, 0): turn 3 mode 0 act 2 to (42,28,0) tu_left 40 stop reserve
+     came after the big flood: 1000021 at (40, 7, 2): turn 3 mode 0 act 2 to (43,12,0) tu_left 39 stop reserve
+ line 3053 turn 3 unit 1000033 move 0 at (31, 9, 0) 2623->212 union 212 complete=True lists_inside 78 exits 9 free_exits 1 [(27, 15, 0)]
+   units on exits {(28, 15, 0): 1000032, (25, 12, 0): 1000034, (26, 6, 0): 1000031, (40, 13, 0): 1000019, (34, 11, 0): 1000024, (40, 14, 0): 1000004, (40, 7, 2): 1000021, (28, 5, 1): 1000035}
+   with cells behind {(28, 15, 0): 1000032, (25, 12, 0): 1000034, (26, 6, 0): 1000031, (40, 13, 0): 1000019, (34, 11, 0): 1000024, (40, 14, 0): 1000004, (40, 7, 2): 1000021, (28, 5, 1): 1000035}; already there at the big flood {(28, 15, 0): 1000032, (25, 12, 0): 1000034, (40, 13, 0): 1000019, (34, 11, 0): 1000024, (28, 5, 1): 1000035}; players []
+     came after the big flood: 1000031 at (26, 6, 0): turn 3 mode 3 act 0 to (26,6,0) tu_left 38 stop None
+     came after the big flood: 1000004 at (40, 14, 0): turn 3 mode 0 act 2 to (42,28,0) tu_left 40 stop reserve
+     came after the big flood: 1000021 at (40, 7, 2): turn 3 mode 0 act 2 to (43,12,0) tu_left 39 stop reserve
+ line 4604 turn 5 unit 1000030 move 0 at (30, 15, 1) 2741->270 union 270 complete=True lists_inside 73 exits 5 free_exits 0 []
+   units on exits {(31, 12, 1): 1000031, (27, 10, 1): 1000033, (28, 7, 1): 1000003, (26, 15, 1): 1000007, (28, 5, 0): 1000005}
+   with cells behind {(31, 12, 1): 1000031, (27, 10, 1): 1000033, (28, 7, 1): 1000003, (26, 15, 1): 1000007, (28, 5, 0): 1000005}; already there at the big flood {(31, 12, 1): 1000031, (27, 10, 1): 1000033, (26, 15, 1): 1000007}; players []
+     came after the big flood: 1000003 at (28, 7, 1): turn 5 mode 0 act 2 to (36,40,0) tu_left 34 stop None
+     came after the big flood: 1000005 at (28, 5, 0): turn 5 mode 0 act 2 to (34,11,0) tu_left 36 stop reserve
+ line 5245 turn 6 unit 1000023 move 1 at (40, 7, 2) 16665->641 union 379 complete=False lists_inside 52 exits 18 free_exits 12 [(23, 10, 0), (24, 12, 0), (26, 3, 1), (26, 7, 1), (28, 9, 0), (28, 9, 1), (28, 13, 2), (28, 14, 2)]
+   units on exits {(24, 9, 2): 1000001, (27, 13, 2): 1000015, (40, 15, 0): 1000021, (28, 14, 0): 1000035, (25, 12, 0): 1000002, (28, 13, 0): 1000005}
+   with cells behind {(24, 9, 2): 1000001, (27, 13, 2): 1000015, (40, 15, 0): 1000021, (28, 14, 0): 1000035, (25, 12, 0): 1000002, (28, 13, 0): 1000005}; already there at the big flood {(27, 13, 2): 1000015, (28, 14, 0): 1000035}; players []
+     came after the big flood: 1000001 at (24, 9, 2): turn 6 mode 3 act 0 to (24,9,2) tu_left 60 stop None
+     came after the big flood: 1000021 at (40, 15, 0): turn 6 mode 0 act 2 to (42,31,0) tu_left 26 stop reserve
+     came after the big flood: 1000002 at (25, 12, 0): turn 6 mode 3 act 0 to (25,12,0) tu_left 68 stop None
+     came after the big flood: 1000005 at (28, 13, 0): turn 6 mode 3 act 0 to (28,13,0) tu_left 56 stop None
+== hh3_JA_M6_s1
+ line 2150 turn 2 unit 1000035 move 0 at (21, 23, 0) 2520->373 union 222 complete=False lists_inside 48 exits 16 free_exits 12 [(5, 15, 0), (6, 16, 0), (9, 16, 0), (10, 14, 0), (16, 16, 2), (16, 18, 2), (17, 15, 2), (19, 20, 2)]
+   units on exits {(20, 24, 0): 1000033, (23, 21, 0): 1000037, (16, 17, 2): 1000015, (8, 24, 0): 1000009}
+   with cells behind {(20, 24, 0): 1000033, (16, 17, 2): 1000015, (8, 24, 0): 1000009}; already there at the big flood {}; players []
+     came after the big flood: 1000033 at (20, 24, 0): turn 2 mode 0 act 2 to (45,21,0) tu_left 38 stop reserve
+     came after the big flood: 1000015 at (16, 17, 2): turn 2 mode 0 act 2 to (20,15,2) tu_left 37 stop reserve
+     came after the big flood: 1000009 at (8, 24, 0): turn 2 mode 0 act 2 to (2,25,0) tu_left 38 stop reserve
+ line 2175 turn 2 unit 1000037 move 0 at (23, 21, 0) 2520->373 union 268 complete=False lists_inside 43 exits 10 free_exits 4 [(3, 18, 0), (4, 17, 0), (5, 15, 0), (12, 17, 2)]
+   units on exits {(21, 23, 0): 1000035, (20, 24, 0): 1000033, (23, 20, 2): 1000038, (16, 17, 2): 1000015, (8, 24, 0): 1000009, (8, 15, 0): 1000034}
+   with cells behind {(20, 24, 0): 1000033, (23, 20, 2): 1000038, (16, 17, 2): 1000015, (8, 24, 0): 1000009, (8, 15, 0): 1000034}; already there at the big flood {(23, 20, 2): 1000038, (8, 15, 0): 1000009}; players []
+     came after the big flood: 1000033 at (20, 24, 0): turn 2 mode 0 act 2 to (45,21,0) tu_left 38 stop reserve
+     came after the big flood: 1000015 at (16, 17, 2): turn 2 mode 0 act 2 to (20,15,2) tu_left 37 stop reserve
+     came after the big flood: 1000009 at (8, 24, 0): turn 2 mode 0 act 2 to (2,25,0) tu_left 38 stop reserve
+ line 4467 turn 6 unit 1000039 move 0 at (10, 19, 2) 3057->191 union 167 complete=False lists_inside 12 exits 8 free_exits 7 [(17, 19, 2), (18, 21, 2), (20, 22, 2), (22, 21, 2), (22, 24, 2), (23, 19, 2), (25, 18, 2)]
+   units on exits {(20, 15, 1): 1000028}
+   with cells behind {(20, 15, 1): 1000028}; already there at the big flood {}; players []
+     came after the big flood: 1000028 at (20, 15, 1): turn 6 mode 0 act 2 to (27,19,0) tu_left 43 stop reserve
+ line 4828 turn 7 unit 1000032 move 0 at (4, 20, 0) 2855->393 union 182 complete=False lists_inside 53 exits 11 free_exits 7 [(19, 15, 1), (20, 14, 1), (20, 16, 1), (21, 15, 1), (22, 14, 0), (23, 16, 0), (25, 20, 0)]
+   units on exits {(9, 16, 0): 1000021, (20, 25, 0): 1000015, (23, 19, 0): 1000004, (8, 25, 0): 1000038}
+   with cells behind {(9, 16, 0): 1000021, (20, 25, 0): 1000015, (23, 19, 0): 1000004, (8, 25, 0): 1000038}; already there at the big flood {(8, 25, 0): 1000038}; players []
+     came after the big flood: 1000021 at (9, 16, 0): turn 7 mode 0 act 2 to (32,28,0) tu_left 41 stop reserve
+     came after the big flood: 1000015 at (20, 25, 0): turn 7 mode 2 act 8 to (19,37,0) tu_left 7 stop None
+     came after the big flood: 1000004 at (23, 19, 0): turn 7 mode 3 act 0 to (23,19,0) tu_left 84 stop None
+== hh6_JV_M3_s1
+ line 1730 turn 1 unit 1000050 move 2 at (6, 16, 3) 1526->65 union 63 complete=False lists_inside 9 exits 6 free_exits 4 [(7, 15, 2), (7, 15, 3), (7, 16, 2), (7, 16, 3)]
+   units on exits {(4, 18, 0): 1000016, (6, 14, 0): 1000027}
+   with cells behind {(4, 18, 0): 1000016, (6, 14, 0): 1000027}; already there at the big flood {(6, 14, 0): 1000027}; players []
+     came after the big flood: 1000016 at (4, 18, 0): turn 1 mode 0 act 2 to (7,13,0) tu_left 24 stop turnspot
+##### mapsame.py
+== hh4_JA_M6_s2
+ 666->963 turn 1 unit 1000021 10945->182 decisions 36 map fingerprints 8 same_ends False allies moved 10 fell 1 player moved 0
+ 2684->2877 turn 3 unit 1000019 16729->389 decisions 22 map fingerprints 4 same_ends False allies moved 10 fell 0 player moved 0
+ 2688->2916 turn 3 unit 1000021 13086->389 decisions 27 map fingerprints 4 same_ends False allies moved 11 fell 0 player moved 0
+ 2692->2948 turn 3 unit 1000023 15550->178 decisions 31 map fingerprints 6 same_ends False allies moved 13 fell 0 player moved 0
+ 2634->3020 turn 3 unit 1000031 2743->212 decisions 40 map fingerprints 7 same_ends False allies moved 17 fell 0 player moved 0
+ 2605->3053 turn 3 unit 1000033 2623->212 decisions 44 map fingerprints 8 same_ends False allies moved 18 fell 0 player moved 0
+ 4242->4604 turn 5 unit 1000030 2741->270 decisions 51 map fingerprints 7 same_ends False allies moved 13 fell 1 player moved 0
+ 5088->5245 turn 6 unit 1000023 16665->641 decisions 21 map fingerprints 2 same_ends False allies moved 9 fell 0 player moved 0
+== hh3_JA_M6_s1
+ 1838->2150 turn 2 unit 1000035 2520->373 decisions 36 map fingerprints 7 same_ends False allies moved 14 fell 1 player moved 0
+ 1798->2175 turn 2 unit 1000037 2520->373 decisions 39 map fingerprints 7 same_ends False allies moved 14 fell 1 player moved 0
+ 4298->4467 turn 6 unit 1000039 3057->191 decisions 23 map fingerprints 5 same_ends False allies moved 9 fell 0 player moved 0
+ 4748->4828 turn 7 unit 1000032 2855->393 decisions 11 map fingerprints 2 same_ends False allies moved 5 fell 0 player moved 0
+== hh6_JV_M3_s1
+ 825->1730 turn 1 unit 1000050 1526->65 decisions 113 map fingerprints 25 same_ends False allies moved 26 fell 6 player moved 0
+##### rest.py
+== hh4_JA_M6_s2 orders 121
+ replaced 40 [('тот же контакт, сдвинулся', 14), ('другой контакт', 13), ('слияние подразделений', 6), ('узел сектора', 4), ('из HOLD в SEARCH', 2), ('первый контакт подразделения', 1)]
+ new target from the old: median 17 <=5: 3 <=10: 12 <=20: 26 >20: 13 of 39 ; new nearer the unit: 8
+ cause=task changed, would the old target be in reach: [('всего', 26), ('хватило бы на ход', 12), ('дальше двух ходов', 7), ('хватило бы на два', 7)]
+ walks on order 263 stopped by reserve 182 of them spent 0: 137 spent>0: 45 ; all spent 0 of any stop: 147
+ stops on order [('reserve', 182), (None, 48), ('spotted', 15), ('turnspot', 11), ('tu', 6), ('invalid', 1)]
+ reach=full 65 arrived 37 causes [('выполнен', 37), ('переключился на бой', 13), ('задача изменилась', 7), ('погиб или выбыл', 6), ('союзник закрыл проход', 1), ('маршрут стал недоступен', 1)]
+ reach=full, lost, with a reserve stop on the way: 14 [('переключился на бой', 6), ('задача изменилась', 4), ('погиб или выбыл', 4)]
+ all closed not arrived with a reserve stop as the last walk: [('задача изменилась', 19), ('переключился на бой', 9), ('погиб или выбыл', 8), ('маршрут стал недоступен', 2)]
+ TU left after the last walk of a turn on order: median 37 n 122 >=20: 100 >=40: 54
+ orders closed by death 17 [('ход игрока', 14), ('свой ход', 3)] [('dead', 13), ('stun', 4)] last decision: [('шёл по приказу', 8), ('режим 2', 6), ('режим 3', 3)]
+ of those, already walked on the order: 7 gain>0: 10 turns alive after issue: [(1, 13), (2, 3), (0, 1)]
+ first decision of a unit's turn while an order stands, sees/mode: [(('видит врага', 'бой'), 44), (('видит врага', 'патруль'), 92), (('видит врага', 'побег'), 5)]
+ ally closed 8 [(22, 1000021, 1, 10945), (65, 1000033, 3, 2623), (71, 1000031, 3, 2743), (80, 1000019, 3, 16729), (81, 1000021, 3, 13086), (82, 1000023, 3, 15550), (111, 1000030, 5, 2741), (140, 1000023, 6, 16665)] route 3
+ STAY orders by why (unique creation lines): [('locked', 56), ('guard_sector', 52), ('no_closer_node', 24), ('at_contact', 12)]
+== hh6_JV_M3_s1 orders 117
+ replaced 42 [('тот же контакт, сдвинулся', 26), ('слияние подразделений', 8), ('первый контакт подразделения', 4), ('узел сектора', 3), ('другой контакт', 1)]
+ new target from the old: median 17 <=5: 2 <=10: 11 <=20: 26 >20: 15 of 41 ; new nearer the unit: 11
+ cause=task changed, would the old target be in reach: [('всего', 25), ('хватило бы на два', 12), ('дальше двух ходов', 7), ('хватило бы на ход', 6)]
+ walks on order 201 stopped by reserve 53 of them spent 0: 39 spent>0: 14 ; all spent 0 of any stop: 41
+ stops on order [('tu', 85), ('reserve', 53), ('spotted', 26), ('turnspot', 17), (None, 12), ('reaction', 8)]
+ reach=full 33 arrived 14 causes [('выполнен', 14), ('погиб или выбыл', 13), ('переключился на бой', 6)]
+ reach=full, lost, with a reserve stop on the way: 2 [('переключился на бой', 1), ('погиб или выбыл', 1)]
+ all closed not arrived with a reserve stop as the last walk: [('задача изменилась', 6), ('переключился на бой', 5), ('погиб или выбыл', 3)]
+ TU left after the last walk of a turn on order: median 3 n 136 >=20: 32 >=40: 8
+ orders closed by death 36 [('ход игрока', 23), ('свой ход', 13)] [('dead', 30), ('stun', 6)] last decision: [('шёл по приказу', 15), ('режим 2', 13), ('режим 3', 8)]
+ of those, already walked on the order: 25 gain>0: 27 turns alive after issue: [(1, 19), (2, 10), (0, 5), (3, 2)]
+ first decision of a unit's turn while an order stands, sees/mode: [(('видит врага', 'бой'), 89), (('видит врага', 'патруль'), 75), (('видит врага', 'побег'), 24)]
+ ally closed 1 [(27, 1000050, 1, 1526)] route 1
+ STAY orders by why (unique creation lines): [('guard_sector', 208), ('no_closer_node', 14), ('at_node', 4), ('at_contact', 4), ('locked', 2)]
+##### rest2.py
+== hh4_JA_M6_s2
+ replaced, kind and cause: [(('contact:448', 'задача изменилась'), 1), (('другой контакт', 'задача изменилась'), 12), (('другой контакт', 'переключился на бой'), 1), (('из HOLD в SEARCH', 'задача изменилась'), 1), (('из HOLD в SEARCH', 'переключился на бой'), 1), (('слияние подразделений', 'задача изменилась'), 2), (('слияние подразделений', 'переключился на бой'), 4), (('тот же контакт', 'задача изменилась'), 7), (('тот же контакт', 'переключился на бой'), 7), (('узел сектора', 'задача изменилась'), 3), (('узел сектора', 'переключился на бой'), 1)]
+ task changed, kind and how far the old target was: [(('contact:448', 'один ход'), 1), (('другой контакт', 'дальше'), 1), (('другой контакт', 'два хода'), 4), (('другой контакт', 'один ход'), 7), (('из HOLD в SEARCH', 'один ход'), 1), (('слияние подразделений', 'два хода'), 1), (('слияние подразделений', 'один ход'), 1), (('тот же контакт', 'дальше'), 4), (('тот же контакт', 'два хода'), 1), (('тот же контакт', 'один ход'), 2), (('узел сектора', 'дальше'), 2), (('узел сектора', 'два хода'), 1)]
+ same contact: contact moved median 0 (min 0 max 0), the unit's target moved median 19, n 14; the new target is nearer the contact in 1; contact moved <=10: 14; target moved more than the contact: 14 (independently sorted, for scale)
+ walking orders per unit in the battle: [(1, 8), (2, 8), (3, 3), (4, 4), (5, 3), (6, 1), (7, 1), (8, 1), (9, 4)]
+ STAY locked by turn and own earlier field: [(('поле было вдвое больше', 3), 2), (('поле было вдвое больше', 4), 4), (('поле было вдвое больше', 6), 6), (('поле было вдвое больше', 7), 1), (('поле всегда такое', 1), 2), (('поле всегда такое', 2), 1), (('поле всегда такое', 3), 1), (('поле всегда такое', 4), 6), (('поле всегда такое', 5), 2), (('поле всегда такое', 6), 2), (('поле всегда такое', 8), 1)]
+== hh6_JV_M3_s1
+ replaced, kind and cause: [(('contact:444', 'задача изменилась'), 1), (('contact:444', 'переключился на бой'), 1), (('contact:520', 'задача изменилась'), 2), (('другой контакт', 'задача изменилась'), 1), (('слияние подразделений', 'задача изменилась'), 3), (('слияние подразделений', 'переключился на бой'), 5), (('тот же контакт', 'задача изменилась'), 15), (('тот же контакт', 'переключился на бой'), 11), (('узел сектора', 'задача изменилась'), 3)]
+ task changed, kind and how far the old target was: [(('contact:444', 'два хода'), 1), (('contact:520', 'дальше'), 2), (('другой контакт', 'дальше'), 1), (('слияние подразделений', 'два хода'), 1), (('слияние подразделений', 'один ход'), 2), (('тот же контакт', 'дальше'), 4), (('тот же контакт', 'два хода'), 9), (('тот же контакт', 'один ход'), 2), (('узел сектора', 'два хода'), 1), (('узел сектора', 'один ход'), 2)]
+ same contact: contact moved median 0 (min 0 max 4), the unit's target moved median 15, n 25; the new target is nearer the contact in 2; contact moved <=10: 25; target moved more than the contact: 25 (independently sorted, for scale)
+ walking orders per unit in the battle: [(1, 16), (2, 16), (3, 5), (4, 5), (5, 3), (6, 2), (7, 1)]
+ STAY locked by turn and own earlier field: [(('поле было вдвое больше', 1), 1)]
+== longer windows for the partial parts
+  hh3_JA_M6_s1 window 140 [(2150, 373, 222, False), (2175, 373, 268, False), (4467, 191, 167, False), (4828, 393, 182, False)]
+  hh3_JA_M6_s1 window 300 [(2150, 373, 222, False), (2175, 373, 268, False), (4467, 191, 167, False), (4828, 393, 182, False)]
+  hh3_JA_M6_s1 window 600 [(2150, 373, 222, False), (2175, 373, 268, False), (4467, 191, 167, False), (4828, 393, 182, False)]
+  hh4_JA_M6_s2 window 140 [(963, 182, 123, False), (2877, 389, 289, False), (2916, 389, 204, False), (2948, 178, 178, True), (3020, 212, 212, True), (3053, 212, 212, True), (4604, 270, 270, True), (5245, 641, 379, False)]
+  hh4_JA_M6_s2 window 300 [(963, 182, 123, False), (2877, 389, 289, False), (2916, 389, 204, False), (2948, 178, 178, True), (3020, 212, 212, True), (3053, 212, 212, True), (4604, 270, 270, True), (5245, 641, 379, False)]
+  hh4_JA_M6_s2 window 600 [(963, 182, 123, False), (2877, 389, 289, False), (2916, 389, 204, False), (2948, 178, 178, True), (3020, 212, 212, True), (3053, 212, 212, True), (4604, 270, 270, True), (5245, 641, 379, False)]
+  hh6_JV_M3_s1 window 140 [(1730, 65, 63, False)]
+  hh6_JV_M3_s1 window 300 [(1730, 65, 63, False)]
+  hh6_JV_M3_s1 window 600 [(1730, 65, 63, False)]
+== (27,15,0) at line 3053: units nearby {1000001: (27, 13, 2), 1000007: (26, 15, 1), 1000030: (30, 15, 1), 1000032: (28, 15, 0), 1000034: (25, 12, 0)}
+   gone nearby {503: (26, 18, 0), 454: (28, 15, 0)}
+== decisions 14..17 of the two loads
+   hive 14 line 392 side 0 unit 545 mode 3 act 0 to (-1,-1,-1) ha0 4effdc39 hr0 e1634414 hr 7aff5850
+   none 14 line 464 side 0 unit 545 mode 3 act 0 to (-1,-1,-1) ha0 4effdc39 hr0 e1634414 hr 7aff5850
+   hive 15 line 600 side 1 unit 1000012 mode 2 act 2 to (7,62,0) ha0 117d7fc6 hr0 d8cda96e hr a0885345
+   none 15 line 645 side 1 unit 1000012 mode 2 act 2 to (7,62,0) ha0 117d7fc6 hr0 d8cda96e hr a0885345
+   hive 16 line 608 side 1 unit 1000012 mode 0 act 2 to (5,52,0) ha0 7a6a75b5 hr0 a0885345 hr ef8f119e
+   none 16 line 653 side 1 unit 1000012 mode 3 act 0 to (7,62,0) ha0 6ae5571c hr0 a0885345 hr ef8f119e
+   hive 17 line 615 side 1 unit 1000014 mode 3 act 0 to (35,66,2) ha0 36e74dc3 hr0 ef8f119e hr 1be6aaa2
+   none 17 line 660 side 1 unit 1000014 mode 3 act 0 to (35,66,2) ha0 36e74dc3 hr0 ef8f119e hr 1be6aaa2
+players' decisions before the first enemy one: 15
+hive before the first enemy decision: [('[HIVEORD]', 26), ('[HIVEREACH]', 7), ('[HIVEFATE]', 3), ('[HIVEREVIEW]', 2), ('[HIVETASK]', 1), ('[HIVEPERF]', 1)]
+   orders for it: ['[HIVEORD] turn=5 id=147 squad=2 unit=1000012 task=HOLD kind=GO state=ASSIGNED target=(5,52,0) at=(4,63,0) tu=65 why=take_post overrides=0 note=', '[HIVEORD] turn=5 id=147 squad=2 unit=1000012 task=HOLD kind=GO state=VALIDATED target=(5,52,0) at=(4,63,0) tu=65 why=take_post overrides=0 note=path_t', '[HIVEORD] turn=5 id=147 squad=2 unit=1000012 task=HOLD kind=GO state=VALIDATED target=(5,52,0) at=(4,63,0) tu=65 why=take_post overrides=0 note=path_n']
+none before the first enemy decision: [('[HIVEORD]', 38), ('[HIVEREACH]', 1), ('[HIVEPERF]', 1)]
+   orders for it: ['[HIVEORD] turn=5 id=23 squad=5 unit=1000012 task=HOLD kind=STAY state=CREATED target=(4,63,0) at=(4,63,0) tu=65 why=guard_sector overrides=0 note=expe', '[HIVEORD] turn=5 id=23 squad=5 unit=1000012 task=HOLD kind=STAY state=ASSIGNED target=(4,63,0) at=(4,63,0) tu=65 why=guard_sector overrides=0 note=', '[HIVEORD] turn=5 id=23 squad=5 unit=1000012 task=HOLD kind=STAY state=VALIDATED target=(4,63,0) at=(4,63,0) tu=65 why=guard_sector overrides=0 note=no']
+##### shift.py
+== hh4_JA_M6_s2
+  sample [HIVETASK] turn=1 squad=3 task=SEARCH commander=1000032 key=1 objective=(33,18,0) kind=contact contact=470 ttl=6
+  sample [HIVETASK] turn=1 squad=6 task=SEARCH commander=1000012 key=2 objective=(33,18,0) kind=contact contact=470 ttl=5
+  sample [HIVETASK] turn=2 squad=6 task=SEARCH commander=1000033 kept=1 key=2 objective=(33,18,0)
+  sample [HIVETASK] turn=2 squad=0 task=SEARCH commander=1000034 key=3 objective=(26,18,0) kind=contact contact=503 ttl=6
+ replaced 40 same contact, with both objectives and a next order 19
+ contact moved: median 18 [(20, 9), (15, 5), (5, 5)]
+ target moved: median 19
+ old target to the new objective: median 16 ; new target to the new objective: median 6
+ old target nearer or equal to the new objective than the new target: 5 of 19
+ kinds of the next order: [('seek_contact', 18), ('advance', 1)] ; of the replaced: [('seek_contact', 18), ('advance', 1)]
+ unit closer to new target than to old: 5 further or same: 14
+ 'task changed' by kind and turns left: [(('другой контакт', '1'), 8), (('другой контакт', '2'), 5), (('другой контакт', '3+'), 3), (('из HOLD в SEARCH', '1'), 1), (('слияние подразделений', '1'), 1), (('тот же контакт', '1'), 2), (('тот же контакт', '2'), 2), (('тот же контакт', '3+'), 4)]
+ 'task changed', same contact: 8 other contact: 16 the rest: 2
+ replaced in one squad in one turn: median 2 max 7 turns 16
+ arrived: by reach [('full', 37), ('partial', 5)] ; turns to arrive [(0, 31), (1, 10), (2, 1)]
+== hh6_JV_M3_s1
+ replaced 42 same contact, with both objectives and a next order 29
+ contact moved: median 19 [(10, 10), (20, 6), (25, 5), (15, 5), (5, 3)]
+ target moved: median 15
+ old target to the new objective: median 18 ; new target to the new objective: median 6
+ old target nearer or equal to the new objective than the new target: 6 of 29
+ kinds of the next order: [('seek_contact', 20), ('advance', 8), ('sweep_sector', 1)] ; of the replaced: [('seek_contact', 21), ('advance', 6), ('sweep_sector', 2)]
+ unit closer to new target than to old: 9 further or same: 20
+ 'task changed' by kind and turns left: [(('другой контакт', '2'), 1), (('другой контакт', '3+'), 3), (('слияние подразделений', '1'), 2), (('слияние подразделений', '2'), 1), (('тот же контакт', '1'), 4), (('тот же контакт', '2'), 10), (('тот же контакт', '3+'), 4)]
+ 'task changed', same contact: 18 other contact: 4 the rest: 3
+ replaced in one squad in one turn: median 2 max 5 turns 17
+ arrived: by reach [('full', 14), ('partial', 4)] ; turns to arrive [(0, 11), (1, 4), (2, 3)]
+##### legs.py
+== hh4_JA_M6_s2
+  full: 65: [('выполнен', 37), ('переключился на бой', 13), ('задача изменилась', 7), ('погиб или выбыл', 6), ('союзник закрыл проход', 1), ('маршрут стал недоступен', 1)]
+  partial: 56: [('задача изменилась', 19), ('погиб или выбыл', 11), ('союзник закрыл проход', 7), ('переключился на бой', 6), ('открыт на срезе боя', 6), ('выполнен', 5), ('маршрут стал недоступен', 2)]
+  ?: 0: []
+    ('full', 'дошёл до конца хода по плану') 34
+    ('full', 'шёл, недошёл: стоп reserve') 19
+    ('full', 'по приказу не ходил: режим 2') 6
+    ('full', 'не получил решения в этот ход') 3
+    ('full', 'по приказу не ходил: режим 3') 2
+    ('full', 'шёл, недошёл: стоп tu') 1
+    ('partial', 'шёл, недошёл: стоп reserve') 28
+    ('partial', 'не получил решения в этот ход') 10
+    ('partial', 'дошёл до конца хода по плану') 6
+    ('partial', 'шёл, недошёл: стоп None') 4
+    ('partial', 'по приказу не ходил: режим 2') 4
+    ('partial', 'шёл, недошёл: стоп turnspot') 2
+    ('partial', 'шёл, недошёл: стоп spotted') 2
+  short of the plan by cells: median 8 n 68
+  TU walked on order in its first turn / planned: median 0.65 n 108 ; >=0.9: 29 ; 0: 29
+  stopped by reserve after walking: 45 TU left median 37
+  empty reserve walks: n>=2 in the turn: 91 n=1: 46
+== hh4_JA_M6_s2
+ replaced 40 same contact, with both objectives and a next order 19
+ contact moved: median 18 [(20, 9), (15, 5), (5, 5)]
+ target moved: median 19
+ old target to the new objective: median 16 ; new target to the new objective: median 6
+ old target nearer or equal to the new objective than the new target: 5 of 19
+ kinds of the next order: [('seek_contact', 18), ('advance', 1)] ; of the replaced: [('seek_contact', 18), ('advance', 1)]
+ unit closer to new target than to old: 5 further or same: 14
+ 'task changed' by kind and turns left: [(('другой контакт', '1'), 8), (('другой контакт', '2'), 5), (('другой контакт', '3+'), 3), (('из HOLD в SEARCH', '1'), 1), (('слияние подразделений', '1'), 1), (('тот же контакт', '1'), 2), (('тот же контакт', '2'), 2), (('тот же контакт', '3+'), 4)]
+ 'task changed', same contact: 8 other contact: 16 the rest: 2
+ replaced in one squad in one turn: median 2 max 7 turns 16
+ arrived: by reach [('full', 37), ('partial', 5)] ; turns to arrive [(0, 31), (1, 10), (2, 1)]
+  keep rule: old target within 6 of the new objective and at most 1 turns left: 4 orders counted 'task changed'
+  keep rule: old target within 6 of the new objective and at most 2 turns left: 5 orders counted 'task changed'
+  keep rule: old target within 8 of the new objective and at most 1 turns left: 4 orders counted 'task changed'
+  keep rule: old target within 8 of the new objective and at most 2 turns left: 6 orders counted 'task changed'
+  keep rule: old target within 10 of the new objective and at most 1 turns left: 6 orders counted 'task changed'
+  keep rule: old target within 10 of the new objective and at most 2 turns left: 8 orders counted 'task changed'
+  keep rule: old target within 15 of the new objective and at most 1 turns left: 7 orders counted 'task changed'
+  keep rule: old target within 15 of the new objective and at most 2 turns left: 10 orders counted 'task changed'
+== hh6_JV_M3_s1
+  full: 33: [('выполнен', 14), ('погиб или выбыл', 13), ('переключился на бой', 6)]
+  partial: 84: [('задача изменилась', 25), ('погиб или выбыл', 23), ('переключился на бой', 18), ('закончились TU', 8), ('выполнен', 4), ('открыт на срезе боя', 3), ('союзник закрыл проход', 1), ('маршрут стал недоступен', 1), ('приблизился, не дошёл', 1)]
+  ?: 0: []
+    ('full', 'дошёл до конца хода по плану') 13
+    ('full', 'по приказу не ходил: режим 3') 7
+    ('full', 'по приказу не ходил: режим 2') 6
+    ('full', 'шёл, недошёл: стоп tu') 4
+    ('full', 'шёл, недошёл: стоп reaction') 1
+    ('full', 'шёл, недошёл: стоп reserve') 1
+    ('full', 'шёл, недошёл: стоп turnspot') 1
+    ('partial', 'дошёл до конца хода по плану') 28
+    ('partial', 'шёл, недошёл: стоп tu') 20
+    ('partial', 'шёл, недошёл: стоп reserve') 9
+    ('partial', 'по приказу не ходил: режим 2') 7
+    ('partial', 'по приказу не ходил: режим 3') 7
+    ('partial', 'не получил решения в этот ход') 6
+    ('partial', 'шёл, недошёл: стоп spotted') 5
+    ('partial', 'шёл, недошёл: стоп turnspot') 2
+  short of the plan by cells: median 7 n 70
+  TU walked on order in its first turn / planned: median 0.48 n 111 ; >=0.9: 31 ; 0: 33
+  stopped by reserve after walking: 14 TU left median 25
+  empty reserve walks: n>=2 in the turn: 23 n=1: 16
+== hh6_JV_M3_s1
+ replaced 42 same contact, with both objectives and a next order 29
+ contact moved: median 19 [(10, 10), (20, 6), (25, 5), (15, 5), (5, 3)]
+ target moved: median 15
+ old target to the new objective: median 18 ; new target to the new objective: median 6
+ old target nearer or equal to the new objective than the new target: 6 of 29
+ kinds of the next order: [('seek_contact', 20), ('advance', 8), ('sweep_sector', 1)] ; of the replaced: [('seek_contact', 21), ('advance', 6), ('sweep_sector', 2)]
+ unit closer to new target than to old: 9 further or same: 20
+ 'task changed' by kind and turns left: [(('другой контакт', '2'), 1), (('другой контакт', '3+'), 3), (('слияние подразделений', '1'), 2), (('слияние подразделений', '2'), 1), (('тот же контакт', '1'), 4), (('тот же контакт', '2'), 10), (('тот же контакт', '3+'), 4)]
+ 'task changed', same contact: 18 other contact: 4 the rest: 3
+ replaced in one squad in one turn: median 2 max 5 turns 17
+ arrived: by reach [('full', 14), ('partial', 4)] ; turns to arrive [(0, 11), (1, 4), (2, 3)]
+  keep rule: old target within 6 of the new objective and at most 1 turns left: 1 orders counted 'task changed'
+  keep rule: old target within 6 of the new objective and at most 2 turns left: 3 orders counted 'task changed'
+  keep rule: old target within 8 of the new objective and at most 1 turns left: 2 orders counted 'task changed'
+  keep rule: old target within 8 of the new objective and at most 2 turns left: 5 orders counted 'task changed'
+  keep rule: old target within 10 of the new objective and at most 1 turns left: 2 orders counted 'task changed'
+  keep rule: old target within 10 of the new objective and at most 2 turns left: 6 orders counted 'task changed'
+  keep rule: old target within 15 of the new objective and at most 1 turns left: 3 orders counted 'task changed'
+  keep rule: old target within 15 of the new objective and at most 2 turns left: 11 orders counted 'task changed'
+== hh3_JA_M6_s1
+  full: 35: [('выполнен', 14), ('погиб или выбыл', 11), ('переключился на бой', 5), ('союзник закрыл проход', 2), ('открыт на срезе боя', 2), ('маршрут стал недоступен', 1)]
+  partial: 33: [('погиб или выбыл', 13), ('задача изменилась', 8), ('переключился на бой', 5), ('открыт на срезе боя', 4), ('союзник закрыл проход', 2), ('выполнен', 1)]
+  ?: 0: []
+    ('full', 'дошёл до конца хода по плану') 12
+    ('full', 'по приказу не ходил: режим 3') 8
+    ('full', 'по приказу не ходил: режим 2') 5
+    ('full', 'шёл, недошёл: стоп reserve') 5
+    ('full', 'не получил решения в этот ход') 3
+    ('full', 'шёл, недошёл: стоп None') 1
+    ('full', 'шёл, недошёл: стоп spotted') 1
+    ('partial', 'шёл, недошёл: стоп reserve') 15
+    ('partial', 'по приказу не ходил: режим 2') 5
+    ('partial', 'шёл, недошёл: стоп spotted') 4
+    ('partial', 'не получил решения в этот ход') 4
+    ('partial', 'дошёл до конца хода по плану') 2
+    ('partial', 'шёл, недошёл: стоп turnspot') 1
+    ('partial', 'по приказу не ходил: режим 3') 1
+    ('partial', 'шёл, недошёл: стоп tu') 1
+  short of the plan by cells: median 12 n 47
+  TU walked on order in its first turn / planned: median 0.33 n 61 ; >=0.9: 12 ; 0: 24
+  stopped by reserve after walking: 22 TU left median 38
+  empty reserve walks: n>=2 in the turn: 44 n=1: 18
+== hh3_JA_M6_s1
+ replaced 18 same contact, with both objectives and a next order 14
+ contact moved: median 14 [(15, 6), (5, 5), (10, 3)]
+ target moved: median 16
+ old target to the new objective: median 13 ; new target to the new objective: median 6
+ old target nearer or equal to the new objective than the new target: 4 of 14
+ kinds of the next order: [('seek_contact', 14)] ; of the replaced: [('seek_contact', 14)]
+ unit closer to new target than to old: 8 further or same: 6
+ 'task changed' by kind and turns left: [(('слияние подразделений', '2'), 1), (('тот же контакт', '1'), 5), (('тот же контакт', '2'), 2)]
+ 'task changed', same contact: 7 other contact: 0 the rest: 1
+ replaced in one squad in one turn: median 2 max 4 turns 10
+ arrived: by reach [('full', 14), ('partial', 1)] ; turns to arrive [(0, 11), (2, 2), (1, 2)]
+  keep rule: old target within 6 of the new objective and at most 1 turns left: 2 orders counted 'task changed'
+  keep rule: old target within 6 of the new objective and at most 2 turns left: 3 orders counted 'task changed'
+  keep rule: old target within 8 of the new objective and at most 1 turns left: 2 orders counted 'task changed'
+  keep rule: old target within 8 of the new objective and at most 2 turns left: 4 orders counted 'task changed'
+  keep rule: old target within 10 of the new objective and at most 1 turns left: 2 orders counted 'task changed'
+  keep rule: old target within 10 of the new objective and at most 2 turns left: 4 orders counted 'task changed'
+  keep rule: old target within 15 of the new objective and at most 1 turns left: 3 orders counted 'task changed'
+  keep rule: old target within 15 of the new objective and at most 2 turns left: 5 orders counted 'task changed'
+['const int ARRIVE_RADIUS = 2, OBJECTIVE_NODE_RADIUS = 10, VISIT_RADIUS = 3, ANY_RADIUS = 100000;']
+['const int ARRIVE_RADIUS = 2, OBJECTIVE_NODE_RADIUS = 10, VISIT_RADIUS = 3, ANY_RADIUS = 100000;']
+##### loadcmp.py
+save line in the continuous run 6524 [HIVESAVE] turn=5 side=0 hash=17378189459083406690 bytes=9551 text=HIVE1;H,4,1,0,146,16,1,
+B head
+   216 [HIVELOAD] parsed=1 same=1 turn=5 hash=17378189459083406690 bytes=9551 text=HIVE1;H,4,1,0,146,16,1,145,145,145,106,78,2,18,27;N,0,18.25.26.29.30.31.32.33.34.35.50.73.74.7
+   217 [HIVEINIT] origin=restored turn=5 side=0 squads=12 orders=55 contacts=7
+   219 [AIPROBE] start: turn 5, mission STR_ERIDIAN_TERROR, bot plays the player, turn cap 9
+C head
+   289 [HIVEINIT] origin=load_no_hive turn=5 side=0 mission=STR_ERIDIAN_TERROR manages=1 hostile=63 managed=34 apart=29 nodes=431 rank0=421 sectors=7 squads=7 us=306
+   291 [AIPROBE] start: turn 5, mission STR_ERIDIAN_TERROR, bot plays the player, turn cap 9
+   516 [HIVEFIRST] turn=5 squads=7 fallen_since_spawn=2 commanders_fallen=1
+decisions after the save: continuous 423 hive 367 no hive 409
+continuous vs load with hive: first decision difference at #0 lines 6527/317: ['to']
+    {'turn': '5', 'side': '0', 'unit': '448', 'n': '1', 'from': '(54,16,0)', 'tu': '182', 'mode': '0', 'act': '2', 'to': '(49,67,0)', 'aim': '-1', 'weapon': 'AUX_TANK_LASER_CANNON', 'seen': '1000011'}
+    {'turn': '5', 'side': '0', 'unit': '448', 'n': '1', 'from': '(54,16,0)', 'tu': '182', 'mode': '0', 'act': '2', 'to': '(48,18,0)', 'aim': '-1', 'weapon': 'AUX_TANK_LASER_CANNON', 'seen': '1000011'}
+    hashes {'ho': ('f3e14fab4b65227d', 'aff93667c57b4d99'), 'hr': ('a51d6cedc7c0d3b9', 'd305047e01bc2338'), 'ha0': ('2ad8869c0fe1ca09', '5db94b7a5606622d'), 'ha': ('41d6f1a213242d59', '2d3049c8775ea0f7')}
+continuous vs load without hive: first decision difference at #0 lines 6527/389: ['to']
+    {'turn': '5', 'side': '0', 'unit': '448', 'n': '1', 'from': '(54,16,0)', 'tu': '182', 'mode': '0', 'act': '2', 'to': '(49,67,0)', 'aim': '-1', 'weapon': 'AUX_TANK_LASER_CANNON', 'seen': '1000011'}
+    {'turn': '5', 'side': '0', 'unit': '448', 'n': '1', 'from': '(54,16,0)', 'tu': '182', 'mode': '0', 'act': '2', 'to': '(48,18,0)', 'aim': '-1', 'weapon': 'AUX_TANK_LASER_CANNON', 'seen': '1000011'}
+    hashes {'ho': ('f3e14fab4b65227d', 'aff93667c57b4d99'), 'hr': ('a51d6cedc7c0d3b9', 'd305047e01bc2338'), 'ha0': ('2ad8869c0fe1ca09', '5db94b7a5606622d'), 'ha': ('41d6f1a213242d59', '2d3049c8775ea0f7')}
+load with hive vs load without hive: first decision difference at #16 lines 608/653: ['mode', 'act', 'to']
+    {'turn': '5', 'side': '1', 'unit': '1000012', 'n': '1', 'from': '(7,62,0)', 'tu': '51', 'mode': '0', 'act': '2', 'to': '(5,52,0)', 'aim': '-1', 'weapon': 'STR_CANISTER_GUN', 'seen': '448,470,444,545,1000068,1000070'}
+    {'turn': '5', 'side': '1', 'unit': '1000012', 'n': '1', 'from': '(7,62,0)', 'tu': '51', 'mode': '3', 'act': '0', 'to': '(7,62,0)', 'aim': '-1', 'weapon': 'STR_CANISTER_GUN', 'seen': '448,470,444,545,1000068,1000070'}
+    hashes {'ha0': ('7a6a75b5648fae27', '6ae5571cd99df747'), 'ha': ('410c254202e4527d', '8d2e0039a839273b')}
+continuous vs load with hive first 6 decisions, hash differences
+    5 0 448 1 act 2 2 hash differs ['ho', 'hr', 'ha0', 'ha']
+    5 0 448 2 act 0 2 hash differs ['hu', 'ho', 'hr', 'hr0', 'ha0', 'ha']
+    5 0 470 1 act 2 2 hash differs ['hu', 'ho', 'hr', 'hr0', 'ha0', 'ha']
+    5 0 470 2 act 2 2 hash differs ['hu', 'ho', 'hr', 'hr0', 'ha0', 'ha']
+    5 0 444 1 act 0 2 hash differs ['hu', 'ho', 'hr', 'hr0', 'ha0', 'ha']
+    5 0 545 1 act 7 0 hash differs ['hu', 'ho', 'hou', 'hr', 'hr0', 'ha0', 'ha']
+load with hive vs load without hive first 6 decisions, hash differences
+    5 0 448 1 act 2 2 hash differs []
+    5 0 448 2 act 2 2 hash differs []
+    5 0 470 1 act 2 2 hash differs []
+    5 0 470 2 act 2 2 hash differs []
+    5 0 444 1 act 2 2 hash differs []
+    5 0 444 2 act 0 0 hash differs []
+hash fields per record sample: ['hu', 'hi', 'ho', 'hou', 'hm', 'hr', 'hr0', 'ha0', 'ha']
+A ['[AIRESULT] how=timeout tac=h.rec.in:864,h.rec.out.M2:8,h.rec.out.a7:1,h.rec.out.a8:2,h.rec.out.a9:3,p.rec.in:174 seed=2015001 livesoldiers=2 livealien']
+B ['[AIRESULT] how=timeout tac=h.rec.in:293,h.rec.out.M2:3,h.rec.out.a8:2,p.rec.in:68,p.rec.out.a7:1 seed=-1 livesoldiers=4 livealiens=15 aborted=0 missio']
+C ['[AIRESULT] how=timeout tac=h.rec.in:324,h.rec.out.M2:8,h.rec.out.a8:4,h.rec.out.a9:3,p.rec.in:70 seed=-1 livesoldiers=4 livealiens=15 aborted=0 missio']
+##### life.py
+== hh4_JA_M6_s2 lines 7555
+  tags before the first decision: [('[AISTATE]', 45), ('[HIVEUNIT]', 37), ('[HIVESQUAD]', 8), ('[HIVEHOLD]', 4), ('[AIPROBE]', 2), ('[AICASUALTY]', 1), ('[HIVEINIT]', 1), ('[AIPANIC]', 1)]
+   [AIPROBE] [(248, '[AIPROBE] battle seed=2018002 campaign=campaign.sav month=46 mission=STR_VESSEL_FRIGATE craft=STR_DROPSHIP#2 units=8 terrain=WESTOWN_MUD race=STR_MUTON shade=8 diff=4 tech=0')]
+   [HIVEINIT] [(299, '[HIVEINIT] origin=spawn turn=0 side=0 mission=STR_UFO_CRASH_RECOVERY manages=1 hostile=37 managed=37 apart=0 nodes=161 rank0=105 sectors=8 squads=8 us=179')]
+   [AICASUALTY] [(249, '[AICASUALTY] turn=0 side=0 victim=1000025 vfaction=1 type=STR_MUTON_NAVIGATOR how=stun pos=(31,9,0) tu=111 kneel=0 seenby=0 killer=-1 kfaction=-1 ktype=- dist=-1 weapon=STR_WEAPON_UNKNOWN hit=left ter')]
+   [HIVEUNIT] [(250, '[HIVEUNIT] id=1000000 type=STR_MUTON_SOLDIER pos=(9,8,0) status=0 tu=96 energy=90 hp=133/133 rank=STR_LIVE_NAVIGATOR int=4 aggr=2 role=S weapon=STR_GAUSS_PISTOL armor=MUTON_ARMOR_P1 size=1 move=0 mana')]
+   [HIVETURN] [(1355, '[HIVETURN] turn=1 alive=34 squads=6 hold=4 search=2 holdUnits=23 holdTuPct=61 searchUnits=11 searchTuPct=38 created=35 validated=35 executing=26 completed=26 blocked=1 interrupted=0 cancelled=0 thinks')]
+   [AIDECIDE] [(349, '[AIDECIDE] turn=1 side=0 unit=448 n=1 from=(13,24,2) tu=182 mode=0 act=2 to=(14,29,1) run=0 kneel=0 aim=-1 weapon=AUX_TANK_LASER_CANNON seen=1000009,1000028 hu=1776c71dbd85e2e6 hi=d75ea9d36e8208ba ho=')]
+   [HIVEFIRST] [(590, '[HIVEFIRST] turn=1 squads=8 fallen_since_spawn=3 commanders_fallen=1')]
+   [HIVEPLAN] []
+   [HIVEGO] []
+   [HIVEORDER] []
+   first decision side 0 turn 1 unit 448
+   first enemy decision line 715 turn 1 unit 1000000
+   casualties before the first enemy decision: ['[AICASUALTY] turn=0 side=0 victim=1000025 vfaction=1 type=STR_MUTON_NAVIGATOR how=stun pos=(31,9,0) tu=111 kneel=0 seenb', '[AICASUALTY] turn=1 side=0 victim=1000009 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(23,33,0) tu=12 kneel=0 seenb', '[AICASUALTY] turn=1 side=0 victim=1000028 vfaction=1 type=STR_MUTON_SOLDIER how=dead pos=(30,22,0) tu=12 kneel=0 seenby=']
+== hh6_JV_M3_s1 lines 10600
+  tags before the first decision: [('[AISTATE]', 90), ('[HIVEUNIT]', 58), ('[HIVESQUAD]', 12), ('[HIVEHOLD]', 6), ('[AIPROBE]', 2), ('[HIVEINIT]', 1), ('[AIPANIC]', 1)]
+   [AIPROBE] [(251, '[AIPROBE] battle seed=2015001 campaign=campaign.sav month=46 mission=STR_ERIDIAN_TERROR craft=STR_DROPSHIP#2 units=8 terrain=CHEMTOWN_OPENROADS race=STR_ERIDIAN shade=4 diff=4 tech=0')]
+   [HIVEINIT] [(328, '[HIVEINIT] origin=spawn turn=0 side=0 mission=STR_ERIDIAN_TERROR manages=1 hostile=58 managed=58 apart=0 nodes=431 rank0=421 sectors=12 squads=12 us=351')]
+   [AICASUALTY] [(429, '[AICASUALTY] turn=1 side=0 victim=1000002 vfaction=1 type=STR_CHRYSSALID_TERRORIST how=dead pos=(35,34,3) tu=181 kneel=0 seenby=2 killer=448 kfaction=0 ktype=SOLDIER dist=30 weapon=AUX_TANK_LASER_CANN')]
+   [HIVEUNIT] [(252, '[HIVEUNIT] id=1000000 type=STR_CHRYSSALID_TERRORIST pos=(45,55,3) status=0 tu=181 energy=140 hp=116/116 rank=STR_LIVE_SOLDIER int=4 aggr=1 role=M weapon=AUX_CHRYSSALID_WEAPON armor=CHRYSSALID_ARMOR si')]
+   [HIVETURN] [(2137, '[HIVETURN] turn=1 alive=53 squads=12 hold=6 search=6 holdUnits=29 holdTuPct=60 searchUnits=24 searchTuPct=21 created=58 validated=58 executing=41 completed=34 blocked=1 interrupted=2 cancelled=3 think')]
+   [AIDECIDE] [(422, '[AIDECIDE] turn=1 side=0 unit=448 n=1 from=(33,4,2) tu=182 mode=2 act=9 to=(35,34,3) run=0 kneel=0 aim=1000002 weapon=AUX_TANK_LASER_CANNON seen=1000002,1000015,1000030,1000036,1000057,1000061,1000065')]
+   [HIVEFIRST] [(725, '[HIVEFIRST] turn=1 squads=12 fallen_since_spawn=4 commanders_fallen=1')]
+   [HIVEPLAN] []
+   [HIVEGO] []
+   [HIVEORDER] []
+   first decision side 0 turn 1 unit 448
+   first enemy decision line 950 turn 1 unit 1000000
+   casualties before the first enemy decision: ['[AICASUALTY] turn=1 side=0 victim=1000002 vfaction=1 type=STR_CHRYSSALID_TERRORIST how=dead pos=(35,34,3) tu=181 kneel=0', '[AICASUALTY] turn=1 side=0 victim=1000015 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(25,15,3) tu=19 kneel=0 seenb', '[AICASUALTY] turn=1 side=0 victim=1000007 vfaction=1 type=STR_SILACOID_TERRORIST how=dead pos=(30,35,0) tu=59 kneel=0 se', '[AICASUALTY] turn=1 side=0 victim=1000064 vfaction=2 type=FEMALE_CIVILIAN how=dead pos=(35,24,0) tu=55 kneel=0 seenby=2 ', '[AICASUALTY] turn=1 side=0 victim=454 vfaction=0 type=SOLDIER how=stun pos=(32,14,2) tu=102 kneel=0 seenby=3 killer=444 ', '[AICASUALTY] turn=1 side=0 victim=1000059 vfaction=2 type=CIVILIAN_DORF how=dead pos=(45,24,0) tu=45 kneel=0 seenby=0 ki']
+== hh1_JO_M6_s1 lines 5569
+  tags before the first decision: [('[AISTATE]', 49), ('[AIPROBE]', 2), ('[AIPANIC]', 1)]
+   [AIPROBE] [(248, '[AIPROBE] battle seed=2018001 campaign=campaign.sav month=46 mission=STR_VESSEL_FRIGATE craft=STR_DROPSHIP#2 units=8 terrain=FOREST race=STR_MUTON shade=12 diff=4 tech=0')]
+   [HIVEINIT] []
+   [AICASUALTY] [(439, '[AICASUALTY] turn=1 side=0 victim=1000013 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(38,17,0) tu=12 kneel=0 seenby=2 killer=470 kfaction=0 ktype=SOLDIER dist=7 weapon=AUX_TANK_LASER_CANNON hit=')]
+   [HIVEUNIT] []
+   [HIVETURN] []
+   [AIDECIDE] [(301, '[AIDECIDE] turn=1 side=0 unit=448 n=1 from=(33,24,2) tu=182 mode=0 act=2 to=(31,41,0) run=0 kneel=0 aim=1000013 weapon=AUX_TANK_LASER_CANNON seen=1000006,1000011,1000013,1000019,1000026 hu=c30fa9589a0')]
+   [HIVEFIRST] []
+   [HIVEPLAN] []
+   [HIVEGO] []
+   [HIVEORDER] []
+   first decision side 0 turn 1 unit 448
+   first enemy decision line 585 turn 1 unit 1000001
+   casualties before the first enemy decision: ['[AICASUALTY] turn=1 side=0 victim=1000013 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(38,17,0) tu=12 kneel=0 seenb', '[AICASUALTY] turn=1 side=0 victim=1000020 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(37,41,0) tu=12 kneel=0 seenb', '[AICASUALTY] turn=1 side=0 victim=1000011 vfaction=1 type=STR_MUTON_SOLDIER how=stun pos=(41,34,0) tu=8 kneel=0 seenby=2', '[AICASUALTY] turn=1 side=0 victim=454 vfaction=0 type=SOLDIER how=dead pos=(31,33,0) tu=68 kneel=0 seenby=3 killer=10000']
+== hh2_JS_M6_s1 lines 7254
+  tags before the first decision: [('[AISTATE]', 49), ('[HIVEUNIT]', 41), ('[HIVESQUAD]', 9), ('[HIVEHOLD]', 4), ('[AIPROBE]', 2), ('[HIVEINIT]', 1), ('[AIPANIC]', 1)]
+   [AIPROBE] [(248, '[AIPROBE] battle seed=2018001 campaign=campaign.sav month=46 mission=STR_VESSEL_FRIGATE craft=STR_DROPSHIP#2 units=8 terrain=FOREST race=STR_MUTON shade=12 diff=4 tech=0')]
+   [HIVEINIT] [(303, '[HIVEINIT] origin=spawn turn=0 side=0 mission=STR_UFO_GROUND_ASSAULT manages=1 hostile=41 managed=41 apart=0 nodes=207 rank0=140 sectors=9 squads=9 us=204')]
+   [AICASUALTY] [(494, '[AICASUALTY] turn=1 side=0 victim=1000013 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(38,17,0) tu=12 kneel=0 seenby=2 killer=470 kfaction=0 ktype=SOLDIER dist=7 weapon=AUX_TANK_LASER_CANNON hit=')]
+   [HIVEUNIT] [(249, '[HIVEUNIT] id=1000000 type=STR_MUTON_SOLDIER pos=(45,48,0) status=0 tu=96 energy=90 hp=133/133 rank=STR_LIVE_NAVIGATOR int=4 aggr=2 role=L weapon=STR_GAUSS_RIFLE armor=MUTON_ARMOR_P1 size=1 move=0 man')]
+   [HIVETURN] [(1738, '[HIVETURN] turn=1 alive=33 squads=8 hold=4 search=4 holdUnits=17 holdTuPct=34 searchUnits=16 searchTuPct=40 created=38 validated=38 executing=0 completed=0 blocked=0 interrupted=5 cancelled=0 thinks=1')]
+   [AIDECIDE] [(356, '[AIDECIDE] turn=1 side=0 unit=448 n=1 from=(33,24,2) tu=182 mode=0 act=2 to=(31,41,0) run=0 kneel=0 aim=1000013 weapon=AUX_TANK_LASER_CANNON seen=1000006,1000011,1000013,1000019,1000026 hu=c30fa9589a0')]
+   [HIVEFIRST] [(640, '[HIVEFIRST] turn=1 squads=9 fallen_since_spawn=3 commanders_fallen=1')]
+   [HIVEPLAN] []
+   [HIVEGO] []
+   [HIVEORDER] []
+   first decision side 0 turn 1 unit 448
+   first enemy decision line 800 turn 1 unit 1000001
+   casualties before the first enemy decision: ['[AICASUALTY] turn=1 side=0 victim=1000013 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(38,17,0) tu=12 kneel=0 seenb', '[AICASUALTY] turn=1 side=0 victim=1000020 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(37,41,0) tu=12 kneel=0 seenb', '[AICASUALTY] turn=1 side=0 victim=1000011 vfaction=1 type=STR_MUTON_SOLDIER how=stun pos=(41,34,0) tu=8 kneel=0 seenby=2', '[AICASUALTY] turn=1 side=0 victim=454 vfaction=0 type=SOLDIER how=dead pos=(31,33,0) tu=68 kneel=0 seenby=3 killer=10000']
+== hive text same in save and load: True 9551 9551
+   record kinds: [('O', 55), ('L', 36), ('N', 12), ('S', 12), ('C', 7), ('B', 2), ('HIVE1', 1), ('H', 1), ('X', 1)]
+   sample: ['HIVE1', 'H,4,1,0,146,16,1,145,145,145,106,78,2,18,27', 'N,0,18.25.26.29.30.31.32.33.34.35.50.73.74.75.76.77.78.79.80.81.82.83.84.175.178.262.263.264.265.266.267.268.269.270.271', 'N,1,126.128.129.131.132.133.134.135.136.140.141.142.147.152.153.154,126.128.129.131.132.133.134.135.136.142.152.153.154', 'N,2,85.86.87.164.165.166.167.169.170.172.177.179.181.183.184.185.186.187.191.204.207.208.209.210.211.212.213.214.215.216', 'N,3,37.38.39.40.49.88.89.90.91.92.93.94.95.96.97.98.99.100.101.102.103.168.171,', 'N,4,301.302.303.304.305.306.307.308.312.313.314.315.316.317.318.319.320.321.322.323.324.325.326.327.328.329.338.339.343,', 'N,5,0.1.2.3.4.5.6.7.8.9.10.11.12.13.14.15.16.17.19.20.21.22.23.120.121.122,0.1.2.3.4.6.13.14.17.19.22.23.120.121.122']
+   [HIVESAVE] A 1 B 0
+   [HIVELOAD] A 0 B 1
+   [HIVEDUMP] A 0 B 0
+   [HIVECHECK] A 0 B 0
+   [HIVERESTORE] A 0 B 0
+tags in B around the load:
+    OpenXcom started successfully!
+    Loading saved game passed as parameter
+    [HIVELOAD] parsed=1 same=1 turn=5 hash=17378189459083406690 bytes=9551 text=HIVE1;H,4,1,0,146,16,1,145,145,145,106,78,2,18,27;N,0,18.25.26.29.30.31.32.33.34.35.50.73.74.7
+    [HIVEINIT] origin=restored turn=5 side=0 squads=12 orders=55 contacts=7
+    HD stall: 186 ms on N8OpenXcom16BattlescapeStateE | free 0 init 0 event 0 think 186 blit 0 flip 0 | HD UI 0 ms over 0 surfaces, worst 0 ms on 0x0 (-) | packs read 0 fr in
+    [AIPROBE] start: turn 5, mission STR_ERIDIAN_TERROR, bot plays the player, turn cap 9
+    [AISTATE] before turn=5 unit=448 type=SOLDIER faction=0 status=0 pos=(54,16,0) dir=3 tu=182 hp=161/171 stun=0 morale=94 kneel=0 weapon=AUX_TANK_LASER spotted=0 sniped=1 s
+    [AISTATE] before turn=5 unit=470 type=SOLDIER faction=0 status=0 pos=(49,37,0) dir=4 tu=195 hp=136/168 stun=0 morale=94 kneel=0 weapon=AUX_TANK_LASER spotted=0 sniped=1 s
+first hive lines of B after the load:
+    444 [HIVEFAIR] turn=5 observer=1000018 target=444 pos=(36,38,0)
+    445 [HIVEFAIR] turn=5 observer=1000026 target=470 pos=(63,24,0)
+    446 [HIVEFAIR] turn=5 observer=1000031 target=448 pos=(42,18,0)
+    447 [HIVECONTACT] turn=5 target=-1000009 pos=(30,35,0) cls=INFERRED event=expired ttl=3
+    448 [HIVECONTACT] turn=5 target=444 pos=(36,38,0) cls=KNOWN age=0 observer=1000018
+    449 [HIVECONTACT] turn=5 target=448 pos=(42,18,0) cls=KNOWN age=0 observer=1000042
+    450 [HIVECONTACT] turn=5 target=470 pos=(63,24,0) cls=KNOWN age=0 observer=1000053
+    451 [HIVECONTACT] turn=5 target=503 pos=(41,41,0) cls=LAST_KNOWN age=2 observer=1000000
+    452 [HIVECONTACT] turn=5 target=520 pos=(32,30,0) cls=LAST_KNOWN age=2 observer=1000005
+    453 [HIVECONTACT] turn=5 target=545 pos=(37,36,0) cls=LAST_KNOWN age=1 observer=1000040
+    454 [HIVEORD] turn=5 id=135 squad=7 unit=1000011 task=SEARCH kind=GO state=INTERRUPTED target=(45,39,0) at=(28,49,0) tu=7 why=seek_contact overrides=1 note=unit_out
+    455 [HIVEFATE] turn=5 id=135 squad=7 unit=1000011 task=SEARCH issued=4 fate=MOVED_CLOSER reason=unit_out why=seek_contact start=(26,53,0) end=(28,49,0) target=(45,39,0) path_tu=138 gain=2 decide
+    456 [HIVEORD] turn=5 id=120 squad=11 unit=1000016 task=SEARCH kind=GO state=INTERRUPTED target=(41,18,0) at=(26,14,0) tu=3 why=advance overrides=1 note=unit_out
+    457 [HIVEFATE] turn=5 id=120 squad=11 unit=1000016 task=SEARCH issued=3 fate=MOVED_CLOSER reason=unit_out why=advance start=(8,16,0) end=(26,14,0) target=(41,18,0) path_tu=168 gain=18 decided_wa
+    458 [HIVEORD] turn=5 id=75 squad=4 unit=1000017 task=HOLD kind=GO state=CANCELLED target=(69,61,0) at=(50,51,0) tu=65 why=take_post overrides=2 note=too_long
+hive tags in B [('[HIVEORD]', 688), ('[HIVEREACH]', 67), ('[HIVEFATE]', 65), ('[HIVECONTACT]', 29), ('[HIVEREVIEW]', 26), ('[HIVESQUADTURN]', 26), ('[HIVEFAIR]', 15), ('[HIVETASK]', 14), ('[HIVECMD]', 5), ('[HIVESQUAD]', 5), ('[HIVEPERF]', 5), ('[HIVETURN]', 5), ('[HIVESAVECHECK]', 5), ('[HIVELOAD]', 1), ('[HIVEINIT]', 1), ('[HIVEREACT]', 1)]
+save turn hash lines in A: [(6524, '[HIVESAVE] turn=5 side=0 hash=17378189459083406690 bytes=9551 text=HIVE1;H,4,1,0,146,16,1,145,145,14')]
+[]
+##### saved.py
+H record H,4,1,0,146,16,1,145,145,145,106,78,2,18,27
+X record X,1000000.1000001.1000002.1000003.1000004.1000005.1000006.1000007.1000009.1000010.1000013.1000015.1000023.1000027.1000030.1000036.1000043.1000047.1000048.1000049.1000082.1000083.1000085.1000086
+B records ['B,1000005,207,3672,6327', 'B,1000050,26,15826,65']
+first order records ['O,34,7,1000000,1,0,178,35,24,0,6,advance,4,1,13,0,0,-1,41,55,3,41,55,3,45,55,3,2,3,-1,166,1,1', 'O,29,6,1000001,1,0,206,19,36,0,4,advance,3,1,3,0,0,-1,0,0,0,0,0,0,22,38,3,-1,1,1,42,0,1', 'O,20,4,1000003,0,1,-1,45,39,0,6,guard_sector,0,1,6,0,0,-1,0,0,0,0,0,0,45,39,0,-1,-1,-1,-1,0,1']
+orders in the save 55 ids 2 .. 145 unique 55
+states (field 6 guess) [('0', 36), ('1', 19)] [('1', 30), ('0', 25)]
+after the save: continuous ids with lines 108 fates 62 ; loaded ids with lines 121 fates 65
+max id before the save in the continuous log: 145
+first new ids after the save: continuous [146, 147, 148, 149, 150, 151] loaded [146, 147, 148, 149, 150, 151]
+ids after the load that are neither saved nor new: []
+orders with more than one fate in the loaded run: 0 []
+orders with more than one fate in the continuous run: 0
+saved orders closed already before the save (history records): 16 still live 39
+live with a fate later: continuous 20 loaded 20 live never closed: continuous [20, 30, 126, 138, 139, 140, 127, 141, 132, 137, 130, 48] loaded [20, 30, 126, 138, 139, 140, 127, 141, 132, 137, 130, 48]
+fate of the live orders by reason: continuous [('too_long', 11), ('unit_out', 5), ('replaced', 3), ('arrived', 1)] loaded [('too_long', 8), ('replaced', 6), ('unit_out', 5), ('arrived', 1)]
+live orders with the same fate and reason in both: 10 of 20
+A save checks [(('1', '1'), 8)]
+A turn records ['[HIVETURN] turn=5 alive=29 squads=8 hold=4 search=4 holdUnits=16 holdTuPct=57 searchUnits=13 searchTuPct=14 created=165 validated=165 executing=125 completed=91 bloc', '[HIVETURN] turn=6 alive=24 squads=6 hold=3 search=3 holdUnits=12 holdTuPct=72 searchUnits=12 searchTuPct=18 created=186 validated=186 executing=139 completed=103 blo']
+B save checks [(('1', '1'), 5)]
+B turn records ['[HIVETURN] turn=5 alive=33 squads=8 hold=4 search=4 holdUnits=18 holdTuPct=44 searchUnits=15 searchTuPct=9 created=172 validated=172 executing=124 completed=93 block', '[HIVETURN] turn=6 alive=26 squads=6 hold=3 search=3 holdUnits=15 holdTuPct=68 searchUnits=11 searchTuPct=3 created=196 validated=196 executing=147 completed=106 bloc']
+C save checks [(('1', '1'), 5)]
+C turn records ['[HIVETURN] turn=5 alive=31 squads=6 hold=3 search=3 holdUnits=16 holdTuPct=53 searchUnits=15 searchTuPct=7 created=32 validated=32 executing=22 completed=17 blocked=', '[HIVETURN] turn=6 alive=26 squads=6 hold=3 search=3 holdUnits=12 holdTuPct=53 searchUnits=14 searchTuPct=6 created=53 validated=53 executing=40 completed=27 blocked=']
+the first line of each squad review after the load, the count of reviews vs continuous: 26 31
+squads kept in the load vs reorganised: squads in B {'5', '9', '2', '4', '3', '10', '1', '11'} in C {'5', '2', '4', '6', '1', '0'}
+B first turn 5 squad turn: [HIVESQUADTURN] turn=5 squad=1 commander=1000051 task=SEARCH hold=none since=0 end=3 idle=0 alive=4 tuPct=3 shots=5 saw=5 key=11 objective=(32,30,0)
+C first turn 5 squad turn: [HIVESQUADTURN] turn=5 squad=0 commander=1000057 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=5 tuPct=6 shots=2 saw=0 key=1 objective=(36,38,0)
+A first turn 5 squad turn: [HIVESQUADTURN] turn=5 squad=1 commander=1000051 task=SEARCH hold=none since=0 end=3 idle=0 alive=3 tuPct=27 shots=2 saw=1 key=11 objective=(32,30,0)
+C birth: ['[HIVESQUAD] id=0 commander=1000057 rank=STR_LIVE_LEADER int=4 at=(18,17,0) size=5 members=1000057L,1000022L,1000028L,1000038L,1000046L sector=0 sectorNodes=14 task=SEARCH anchor=(19,16,0) hold=none holdEnd=-1', '[HIVESQUAD] id=1 commander=1000053 rank=STR_LIVE_MEDIC int=3 at=(63,6,0) size=4 members=1000053A,1000026L,1000029L,1000041L sector=1 sectorNodes=109 task=SEARCH anchor=(63,7,0) hold=none holdEnd=-1', '[HIVESQUAD] id=2 commander=1000054 rank=STR_LIVE_MEDIC int=3 at=(67,58,0) size=6 members=1000054L,1000017L,1000024L,1000032L,1000034L,1000039L sector=2 sectorNodes=29 task=HOLD anchor=(67,58,0) hold=guard_secto']
+units of C with HQ task from the start: squads 13 apart [HIVEINIT] origin=load_no_hive turn=5 side=0 mission=STR_ERIDIAN_TERROR manages=1 hostile=63 managed=34 apart=29 nodes=431 rank0=421 sectors=7 squads=7 us=306
+##### final_checks.py
+live 39 never closed: same set True 19 ; kinds of them [('0/1', 17), ('1/1', 2)]
+RNG before each decision the same in the two loads for 30 decisions of 367 ; first different decision 5 1 1000020 / 1000020
+  decisions where the action differs before that: 1
+  the last 2 before it: [('1000020', '2', '2', '(0,52,0)', '1000020', '2', '2', '(0,52,0)'), ('1000020', '2', '9', '(36,38,0)', '1000020', '2', '9', '(36,38,0)')]
+== hh4_JA_M6_s2
+ line 963 turn 1 10945->182 union 123 complete=False free [(39, 5, 2), (39, 14, 2), (40, 9, 2), (42, 6, 2)] players []
+ line 2877 turn 3 16729->389 union 289 complete=False free [(31, 5, 2), (43, 13, 2)] players []
+    came after the big flood: 1000015 at (35, 7, 2): turn 3 mode 0 act 2 to (34,7,0) tu_left 37 stop reserve
+    came after the big flood: 1000004 at (40, 14, 0): turn 3 mode 0 act 2 to (42,28,0) tu_left 40 stop reserve
+ line 2916 turn 3 13086->389 union 204 complete=False free [(29, 5, 2), (30, 10, 2), (37, 5, 0), (37, 6, 0)] players []
+    came after the big flood: 1000015 at (35, 7, 2): turn 3 mode 0 act 2 to (34,7,0) tu_left 37 stop reserve
+    came after the big flood: 1000013 at (28, 11, 2): turn 3 mode 3 act 0 to (28,11,2) tu_left 83 stop None
+ line 2948 turn 3 15550->178 union 178 complete=True free [] players []
+    came after the big flood: 1000021 at (40, 7, 2): turn 3 mode 0 act 2 to (43,12,0) tu_left 39 stop reserve
+ line 3020 turn 3 2743->212 union 212 complete=True free [(27, 15, 0)] players []
+    came after the big flood: 1000004 at (40, 14, 0): turn 3 mode 0 act 2 to (42,28,0) tu_left 40 stop reserve
+    came after the big flood: 1000021 at (40, 7, 2): turn 3 mode 0 act 2 to (43,12,0) tu_left 39 stop reserve
+ line 3053 turn 3 2623->212 union 212 complete=True free [(27, 15, 0)] players []
+    came after the big flood: 1000031 at (26, 6, 0): turn 3 mode 3 act 0 to (26,6,0) tu_left 38 stop None
+    came after the big flood: 1000004 at (40, 14, 0): turn 3 mode 0 act 2 to (42,28,0) tu_left 40 stop reserve
+    came after the big flood: 1000021 at (40, 7, 2): turn 3 mode 0 act 2 to (43,12,0) tu_left 39 stop reserve
+ line 4604 turn 5 2741->270 union 270 complete=True free [] players []
+    came after the big flood: 1000003 at (28, 7, 1): turn 5 mode 0 act 2 to (36,40,0) tu_left 34 stop None
+    came after the big flood: 1000005 at (28, 5, 0): turn 5 mode 0 act 2 to (34,11,0) tu_left 36 stop reserve
+ line 5245 turn 6 16665->641 union 379 complete=False free [(23, 10, 0), (24, 12, 0), (26, 3, 1), (26, 7, 1)] players []
+    came after the big flood: 1000001 at (24, 9, 2): turn 6 mode 3 act 0 to (24,9,2) tu_left 60 stop None
+    came after the big flood: 1000021 at (40, 15, 0): turn 6 mode 0 act 2 to (42,31,0) tu_left 26 stop reserve
+    came after the big flood: 1000002 at (25, 12, 0): turn 6 mode 3 act 0 to (25,12,0) tu_left 68 stop None
+    came after the big flood: 1000005 at (28, 13, 0): turn 6 mode 3 act 0 to (28,13,0) tu_left 56 stop None
+== hh3_JA_M6_s1
+ line 2150 turn 2 2520->373 union 222 complete=False free [(5, 15, 0), (6, 16, 0), (9, 16, 0), (10, 14, 0)] players []
+    came after the big flood: 1000033 at (20, 24, 0): turn 2 mode 0 act 2 to (45,21,0) tu_left 38 stop reserve
+    came after the big flood: 1000015 at (16, 17, 2): turn 2 mode 0 act 2 to (20,15,2) tu_left 37 stop reserve
+    came after the big flood: 1000009 at (8, 24, 0): turn 2 mode 0 act 2 to (2,25,0) tu_left 38 stop reserve
+ line 2175 turn 2 2520->373 union 268 complete=False free [(3, 18, 0), (4, 17, 0), (5, 15, 0), (12, 17, 2)] players []
+    came after the big flood: 1000033 at (20, 24, 0): turn 2 mode 0 act 2 to (45,21,0) tu_left 38 stop reserve
+    came after the big flood: 1000015 at (16, 17, 2): turn 2 mode 0 act 2 to (20,15,2) tu_left 37 stop reserve
+    came after the big flood: 1000009 at (8, 24, 0): turn 2 mode 0 act 2 to (2,25,0) tu_left 38 stop reserve
+ line 4467 turn 6 3057->191 union 167 complete=False free [(17, 19, 2), (18, 21, 2), (20, 22, 2), (22, 21, 2)] players []
+    came after the big flood: 1000028 at (20, 15, 1): turn 6 mode 0 act 2 to (27,19,0) tu_left 43 stop reserve
+ line 4828 turn 7 2855->393 union 182 complete=False free [(19, 15, 1), (20, 14, 1), (20, 16, 1), (21, 15, 1)] players []
+    came after the big flood: 1000021 at (9, 16, 0): turn 7 mode 0 act 2 to (32,28,0) tu_left 41 stop reserve
+    came after the big flood: 1000015 at (20, 25, 0): turn 7 mode 2 act 8 to (19,37,0) tu_left 7 stop None
+    came after the big flood: 1000004 at (23, 19, 0): turn 7 mode 3 act 0 to (23,19,0) tu_left 84 stop None
+== hh6_JV_M3_s1
+ line 1730 turn 1 1526->65 union 63 complete=False free [(7, 15, 2), (7, 15, 3), (7, 16, 2), (7, 16, 3)] players []
+    came after the big flood: 1000016 at (4, 18, 0): turn 1 mode 0 act 2 to (7,13,0) tu_left 24 stop turnspot
+[('всего', 238), ('выполнен', 60), ('погиб или выбыл', 53), ('задача изменилась', 51), ('переключился на бой', 43), ('союзник закрыл проход', 9), ('открыт на срезе боя', 9), ('закончились TU', 8), ('маршрут стал недоступен', 4), ('приблизился, не дошёл', 1)]
+##### check_hash.py
+first hash difference at decision 15 unit 1000012 ['ha']
+##### room.py hh4_JA_M6_s2 2948 18 50 0 22
+[HIVEREACH] turn=3 unit=1000023 at=(30,6,2) tiles=178 capped=0 tu=111 move 1 list 177 known cells 16424
+z 0 x from 18
+  0 ++++++++++++++++++++ +++++++++++ 
+  1 ++++++++++++++++++++++++++++++++ 
+  2 ++++++++++++++++++++++++++++++++ 
+  3 ++++++++++++++++++++++++++++ +++ 
+  4 +++++++ +++++ +++++ +++++ ++++++ 
+  5 ++++ + +++++++ +++ +++++++ +++++ 
+  6 ++A++ +++++++++ + +++++++++ ++++ 
+  7 ++++++++++++++++++++++++++++++++ 
+  8 ++++++++++++++++++++++++++++++++ 
+  9 +++++++++++++B++++++++++++++++++ 
+ 10 ++++++++++++++++++++C+++++++++++ 
+ 11 ++++++++++++++++D+++++++++++++++ 
+ 12 +++++ +E+++++++ + +++++++++ ++++ 
+ 13 ++++++ +++++++ +++ +++F+++ +++++ 
+ 14 +++++++ +++++ +++++ ++G++ + ++++ 
+ 15 ++++++++++H+++++++++++++++++++++ 
+ 16 +++++++++++++++ ++++++++++++++++ 
+ 17 ++++++++++++++++++++++++++++++++ 
+ 18 ++++++++++++++++++++++++++++++++ 
+ 19  +++++++++++++++++++++++++++++++ 
+ 20 ++++++++++++++++++++++++++++++++ 
+ 21 ++++++++++++++++++++++++++ +++++ 
+ 22 ++++++++++++++++++++++++     +++ 
+z 1 x from 18
+  0 ++++++++++++++++++    ++++++++++ 
+  1 ++++++++++++++++++    ++++++++++ 
+  2 +++++++ +++++ +++++ ++    ++++++ 
+  3 ++++++ +++++++ +++ ++++    +++++ 
+  4 +++++ +++++++++ + ++++++    ++++ 
+  5 ++++ ++ ++I+++++++++++++     +++ 
+  6 ++++++++++++++++++++++++     +++ 
+  7 +++++ + ++++++++++++++++     +++ 
+  8 +++++++++++++++ +++++++      +++ 
+  9 +++++ + + + +++++++++ +      +++ 
+ 10 ++++++J+++K++++ +++++        +++ 
+ 11 +++++ + +++++++++++++        +++ 
+ 12 +++++++++++++L+++++++        +++ 
+ 13 ++++ ++ +++++++++++++        +++ 
+ 14 +++++ +++++++++ + ++        ++++ 
+ 15 ++++++ +M+++++ +++ +N      +++++ 
+ 16 +++++++ +++++ +++++       ++++++ 
+ 17 ++++++++++++++++++++++++++++++++ 
+ 18 ++++++++++++++++++++++++++++++++ 
+ 19 ++++++++++++++++++++++++++++++++ 
+ 20 ++++++++++++++++++++++++++++++++ 
+ 21 ++++++++++++++++++++++++++++++++ 
+ 22 +++++++++++++++++++++++++  +++++ 
+z 2 x from 18
+  0 ++++++++++++++++          +++++  
+  1 +++++++++++++++++       ++++++++ 
+  2 +++++++++++++++++++     ++++++++ 
+  3 +++++++++++++++++++  +++++++++++ 
+  4 +++++++ ##### +++++ #+++# ++++++ 
+  5 ++++++ ####### +++ ##+++## +++++ 
+  6 +++++ ######O## + ###+++### ++++ 
+  7 +++++############P####Q#####++++ 
+  8 +++++####  #################++++ 
+  9 +++++####   ################++++ 
+ 10 +++++####   ################++++ 
+ 11 +++++#####R#################++++ 
+ 12 +++++ ######### + ######### ++++ 
+ 13 ++++++ ##S#### +++ ####### +++++ 
+ 14 +++++++ ##### +++++ ##### ++++++ 
+ 15 ++++++++++++++++++++++++++++++++ 
+ 16 ++++++++++++++++++++++++++++++++ 
+ 17 ++++++++++++++++++++++++++++++++ 
+ 18 ++++++++++++++++++++++++++++++++ 
+ 19 ++++++++++++++++++++++++++++++++ 
+ 20 ++++++++++++++++++++++++++++++++ 
+ 21 ++++++++++++++++++++++++++++++++ 
+ 22 ++++++++++++++++++++++++++++++++ 
+{'A': (448, (20, 6, 0)), 'S': (1000001, (27, 13, 2)), 'K': (1000002, (28, 10, 1)), 'N': (1000003, (38, 15, 1)), 'G': (1000004, (40, 14, 0)), 'J': (1000005, (24, 10, 1)), 'M': (1000007, (26, 15, 1)), 'R': (1000013, (28, 11, 2)), 'P': (1000015, (35, 7, 2)), 'F': (1000019, (40, 13, 0)), 'Q': (1000021, (40, 7, 2)), 'O': (1000023, (30, 6, 2)), 'D': (1000024, (34, 11, 0)), 'L': (1000030, (31, 12, 1)), 'C': (1000031, (38, 10, 0)), 'H': (1000032, (28, 15, 0)), 'B': (1000033, (31, 9, 0)), 'E': (1000034, (25, 12, 0)), 'I': (1000035, (28, 5, 1))}

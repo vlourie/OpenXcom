@@ -1,0 +1,48 @@
+== cc8_CC_M6_s1 against cc3_CO_M6_s1
+== stand with a line (kind=in_place): what it came to, TU first->last, the same unit-turn in the baseline
+   t1 ENGAGE 1000036 attacked tu 96->11 modes {'2': 1, '3': 1}; baseline attacked
+   t2 REINFORCE 1000018 walked tu 111->111 modes {'3': 1}; baseline no decision
+   t5 ENGAGE 1000037 attacked tu 96->12 modes {'2': 2, '3': 1}; baseline attacked
+   t6 ENGAGE 1000002 stood mode 3 tu 96->96 modes {'3': 2}; baseline no decision
+   t7 REINFORCE 1000021 walked tu 111->111 modes {'3': 1}; baseline stood mode 3
+   t7 REINFORCE 1000037 attacked tu 96->28 modes {'2': 2, '3': 1}; baseline walked
+   t8 ENGAGE 1000021 stood mode 3 tu 111->111 modes {'3': 2}; baseline stood mode 3
+   t8 ENGAGE 1000035 stood mode 3 tu 96->96 modes {'3': 2}; baseline walked
+   sum [(('ENGAGE', 'stood mode 3'), 3), (('ENGAGE', 'attacked'), 2), (('REINFORCE', 'walked'), 2), (('REINFORCE', 'attacked'), 1)]
+== REINFORCE unit-turns, by kind: on and the same unit-turn in the baseline
+   ('approach', 'walked', 'attacked') 1
+   ('approach', 'walked', 'no decision') 1
+   ('approach', 'walked', 'stood mode 3') 2
+   ('approach', 'walked', 'walked') 7
+   ('fire', 'attacked', 'no decision') 1
+   ('fire', 'attacked', 'stood mode 3') 1
+   ('fire', 'attacked', 'walked') 3
+   ('fire', 'walked', 'no decision') 1
+   ('fire', 'walked', 'walked') 3
+   ('in_place', 'attacked', 'walked') 1
+   ('in_place', 'walked', 'no decision') 1
+   ('in_place', 'walked', 'stood mode 3') 1
+   ('no_node', 'stood mode 3', 'stood mode 3') 2
+   ('no_node', 'stood mode 3', 'walked') 2
+   ('no_node', 'walked', 'stood mode 3') 2
+   ('no_node', 'walked', 'walked') 2
+   all on  [('walked', 21), ('attacked', 6), ('stood mode 3', 4)]
+   all off [('walked', 18), ('stood mode 3', 8), ('no decision', 4), ('attacked', 1)]
+   attacks on 11 off 4 damage on {'dmg': 49, 'downed': 0, 'stunned': 0, 'fdmg': 0} off {'dmg': 0, 'downed': 0, 'stunned': 0, 'fdmg': 0}
+== REINFORCE spells
+   squad 0 t1-3 contacts ['444', '470'] units 6 kinds {'approach': 8, 'no_node': 6, 'fire': 2} attacks 0 (on a role contact 0) damage 0 downed 0 own lost 2 end contact_not_in_sight
+   squad 1 t2-3 contacts ['545', '448'] units 5 kinds {'approach': 2, 'no_node': 2, 'fire': 4, 'in_place': 1} attacks 6 (on a role contact 4) damage 0 downed 0 own lost 1 end reinforce_now_sees
+   squad 0 t7-7 contacts ['470'] units 6 kinds {'fire': 3, 'in_place': 2, 'approach': 1} attacks 5 (on a role contact 5) damage 49 downed 0 own lost 0 end reinforce_now_sees
+== guards: from the headquarters' records
+   squad 4 anchor (37, 42, 2) why guard_sector roles by turn E units 5 attacks 19 farthest from anchor 28 hold exits []
+   squad 5 anchor (8, 47, 0) why guard_sector roles by turn MMMMMMM units 4 attacks 31 farthest from anchor 17 hold exits []
+   squad 7 anchor (34, 4, 0) why guard_sector roles by turn MMM units 6 attacks 26 farthest from anchor 45 hold exits []
+   squad 8 anchor (2, 25, 0) why guard_sector roles by turn MMMMMMMM units 5 attacks 26 farthest from anchor 19 hold exits []
+== side, turns 1 to 8
+   on  attacks 133 damage by the side 633 casualties {'enemy': 30, 'player': 9} units deciding at the last turn 17
+   off attacks 96 damage by the side 458 casualties {'enemy': 36, 'player': 6} units deciding at the last turn 12
+   attacks by aim kinds in run on the side's own: friendly damage 609 off 401
+   ['[AIRESULT] how=over tac=h.rec.in:535,h.rec.out.M2:7,p.rec.in:92 seed=2018001 livesoldiers=0 livealiens=17 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=8 player=8 pdead=8 pout=0 pwounded=8 p']
+== orders in all
+   [(('ENGAGE', 'own_fight'), 22), (('ENGAGE', 'fire'), 12), (('REINFORCE', 'approach'), 11), (('ENGAGE', 'approach'), 9), (('REINFORCE', 'fire'), 9), (('REINFORCE', 'no_node'), 8), (('ENGAGE', 'no_node'), 6), (('ENGAGE', 'in_place'), 5), (('REINFORCE', 'in_place'), 3)]
+   roles in one decision by turn [(1, 'EMR'), (2, 'MR'), (3, 'MR'), (4, 'EM'), (5, 'EM'), (6, 'EM'), (7, 'EMR'), (8, 'EM')]

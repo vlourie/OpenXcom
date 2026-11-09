@@ -1,0 +1,85 @@
+﻿scen	pair	verdict	rng	units	h_units	items	tiles	other	first
+L10	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L10	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L10	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L10	D0~DH	DIFF	0	8	6	0	0		unit 1000000h AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+L10	DH~DS	IDENTICAL	1	0	0	0	0		-
+L10	DS~DSE	IDENTICAL	1	0	0	0	0		-
+L10	D0~U0	IDENTICAL	1	0	0	0	0		-
+L11	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L11	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L11	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L11	D0~DH	IDENTICAL	1	0	0	0	0		-
+L11	DH~DS	IDENTICAL	1	0	0	0	0		-
+L11	DS~DSE	IDENTICAL	1	0	0	0	0		-
+L11	D0~U0	IDENTICAL	1	0	0	0	0		-
+L12	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L12	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L12	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L12	D0~DH	DIFF	0	45	24	50	231	nodes,totalTiles	unit 1000001h AI: {'fromNode': 123, 'toNode': 112, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 123, 'toNode': 220, 'AIMode': 0, 'wasHitBy': []...; turnsSinceSpottedByCivilian: 1 | 0
+L12	DH~DS	DIFF	1	1	1	0	0		unit 1000010h AI: {'fromNode': 69, 'toNode': 18, 'AIMode': 0, 'wasHitBy': [100... | {'fromNode': 69, 'toNode': 18, 'AIMode': 0, 'wasHitBy': [100...
+L12	DS~DSE	IDENTICAL	1	0	0	0	0		-
+L12	D0~U0	IDENTICAL	1	0	0	0	0		-
+L4	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L4	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L4	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L4	D0~DH	DIFF	0	20	9	24	272	moduleMap,nodes	unit 1000004h visible: None | True; turnsSinceSpottedByXcom: 1 | 0
+L4	DH~DS	IDENTICAL	1	0	0	0	0		-
+L4	DS~DSE	IDENTICAL	1	0	0	0	0		-
+L4	D0~U0	IDENTICAL	1	0	0	0	0		-
+L5	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L5	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L5	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L5	D0~DH	DIFF	0	11	9	4	407	totalTiles	unit 1000000h AI: {'fromNode': 152, 'toNode': 268, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 152, 'toNode': 268, 'AIMode': 3, 'wasHitBy': []...
+L5	DH~DS	IDENTICAL	1	0	0	0	0		-
+L5	DS~DSE	IDENTICAL	1	0	0	0	0		-
+L5	D0~U0	IDENTICAL	1	0	0	0	0		-
+M1	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M1	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M1	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M1	D0~DH	DIFF	0	64	26	59	264	moduleMap,nodes,totalTiles	unit 1000000h position: [32, 27, 2] | [31, 26, 2]; direction: 2 | 3; tu: 45 | 9; energy: 80 | 77
+M1	DH~DS	DIFF	1	1	1	0	0		unit 1000012h AI: {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': [17...
+M1	DS~DSE	IDENTICAL	1	0	0	0	0		-
+M1	D0~U0	IDENTICAL	1	0	0	0	0		-
+M10	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M10	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M10	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M10	D0~DH	DIFF	0	23	19	8	130	nodes,totalTiles	unit 1000001h position: [34, 12, 0] | [33, 14, 0]; tu: 3 | 13; energy: 47 | 52; motionPoints: 36 | 28
+M10	DH~DS	DIFF	0	11	7	0	59	totalTiles	unit 1000002h fatalShotBodyPart: 1 | None
+M10	DS~DSE	IDENTICAL	1	0	0	0	0		-
+M10	D0~U0	IDENTICAL	1	0	0	0	0		-
+M11	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M11	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M11	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M11	D0~DH	DIFF	0	0	0	0	0		-
+M11	DH~DS	DIFF	0	5	4	0	0	nodes	unit 1000014h position: [44, 47, 0] | [48, 44, 0]; direction: 0 | 1; tu: 196 | 174; energy: 140 | 129
+M11	DS~DSE	IDENTICAL	1	0	0	0	0		-
+M11	D0~U0	IDENTICAL	1	0	0	0	0		-
+M2	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M2	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M2	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M2	D0~DH	DIFF	0	83	54	55	417	nodes,totalTiles	unit 1000000h position: [20, 27, 1] | [12, 35, 4]; direction: 2 | 3; tu: 50 | 13; energy: 46 | 61
+M2	DH~DS	DIFF	0	65	38	51	296	nodes,totalTiles	unit 1000000h position: [12, 35, 4] | [13, 31, 4]; direction: 3 | 1; tu: 13 | 50; energy: 61 | 52
+M2	DS~DSE	IDENTICAL	1	0	0	0	0		-
+M2	D0~U0	IDENTICAL	1	0	0	0	0		-
+M3	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M3	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M3	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M3	D0~DH	DIFF	0	63	45	120	2534	itemsSpecial,nodes,totalTiles	unit 1000000h stunlevel: 21 | 32; morale: 74 | 40; armor: [14, 32, 34, 34, 34] | [0, 34, 34, 34, 34]
+M3	DH~DS	IDENTICAL	1	0	0	0	0		-
+M3	DS~DSE	IDENTICAL	1	0	0	0	0		-
+M3	D0~U0	IDENTICAL	1	0	0	0	0		-
+M5	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M5	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M5	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M5	D0~DH	DIFF	0	48	41	70	447	nodes,totalTiles	unit 1000000h health: 0 | 33; stunlevel: 72 | 38; status: 6 | 7; fatalWounds: [0, 5, 0, 0, 0, 0] | [0, 3, 0, 0, 0, 0]
+M5	DH~DS	DIFF	0	46	39	32	559	nodes,totalTiles	unit 1000001h morale: 67 | 70
+M5	DS~DSE	IDENTICAL	1	0	0	0	0		-
+M5	D0~U0	IDENTICAL	1	0	0	0	0		-
+M8	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M8	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M8	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M8	D0~DH	DIFF	0	6	3	0	36	totalTiles	unit 1000029h position: [26, 47, 0] | [28, 47, 0]; direction: 6 | 0; tu: 3 | 15; energy: 57 | 63
+M8	DH~DS	DIFF	1	2	2	0	0	nodes	unit 1000006h position: [14, 50, 0] | [19, 48, 1]; direction: 2 | 4; tu: 77 | 78; energy: 0 | 1
+M8	DS~DSE	IDENTICAL	1	0	0	0	0		-
+M8	D0~U0	IDENTICAL	1	0	0	0	0		-

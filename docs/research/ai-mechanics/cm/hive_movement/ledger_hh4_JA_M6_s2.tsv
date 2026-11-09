@@ -1,0 +1,122 @@
+﻿id	unit	squad	task	why	turn0	turn1	start	target	end	path_tu	reach	tiles	fate	reason	gain	walk_tu	own_tu	n_walk	n_ownwalk	n_attack	last_stop	cause	trigger
+18	1000032	3	SEARCH	seek_contact	1	3	(34, 7, 0)	(34, 16, 0)	(28, 15, 0)	87	full	2767	MOVED_CLOSER	replaced	3	54	132	3	1	3	tu	переключился на бой	contact:470
+19	1000003	3	SEARCH	seek_contact	1	1	(31, 6, 1)	(28, 13, 1)	(28, 13, 1)	38	full	269	ARRIVED	arrived	7	38	0	1	0	0	None	выполнен	
+21	1000019	3	SEARCH	seek_contact	1	2	(28, 5, 2)	(40, 13, 0)	(40, 13, 0)	120	partial	15446	ARRIVED	arrived	16	132	0	5	0	0	reserve	выполнен	
+22	1000021	3	SEARCH	seek_contact	1	1	(28, 11, 2)	(40, 16, 0)	(28, 11, 2)	186	partial	10945	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+30	1000012	6	SEARCH	seek_contact	1	2	(6, 8, 1)	(40, 21, 0)	(12, 10, 0)	182	partial	16578	MOVED_CLOSER	unit_out	8	48	50	2	0	2	reserve	погиб или выбыл	
+31	1000000	6	SEARCH	seek_contact	1	2	(9, 8, 0)	(25, 12, 0)	(9, 8, 0)	130	partial	2712	NOT_MOVED	unit_out	0	0	78	2	0	2	None	погиб или выбыл	
+32	1000014	6	SEARCH	seek_contact	1	2	(6, 4, 0)	(25, 9, 0)	(5, 7, 0)	166	partial	16568	MOVED_NOT_CLOSER	unit_out	-1	22	67	2	0	2	turnspot	погиб или выбыл	
+33	1000027	6	SEARCH	seek_contact	1	2	(9, 4, 1)	(31, 9, 0)	(11, 12, 0)	178	partial	2604	MOVED_CLOSER	unit_out	4	56	36	1	1	1	turnspot	погиб или выбыл	
+34	1000033	6	SEARCH	seek_contact	1	2	(28, 5, 0)	(43, 9, 0)	(40, 8, 0)	74	full	2771	MOVED_CLOSER	replaced	12	56	0	4	0	0	reserve	задача изменилась	слияние подразделений
+35	1000021	3	SEARCH	seek_contact	1	2	(28, 11, 2)	(37, 13, 2)	(37, 13, 2)	102	full	182	ARRIVED	arrived	9	98	0	3	0	0	reserve	выполнен	
+36	1000034	0	SEARCH	seek_contact	2	2	(43, 12, 0)	(25, 12, 0)	(25, 12, 0)	80	full	2555	ARRIVED	arrived	18	84	0	1	0	0	None	выполнен	
+37	1000001	0	SEARCH	seek_contact	2	3	(43, 13, 2)	(27, 13, 2)	(27, 13, 2)	82	full	182	ARRIVED	arrived	16	82	0	5	0	0	reserve	выполнен	
+38	1000007	0	SEARCH	seek_contact	2	3	(37, 6, 1)	(26, 15, 1)	(26, 15, 1)	70	full	269	ARRIVED	arrived	11	74	0	5	0	0	reserve	выполнен	
+39	1000024	0	SEARCH	seek_contact	2	2	(37, 9, 0)	(34, 11, 0)	(34, 11, 0)	18	full	16489	ARRIVED	arrived	3	18	0	1	0	0	None	выполнен	
+40	1000030	0	SEARCH	seek_contact	2	2	(42, 11, 1)	(31, 12, 1)	(31, 12, 1)	46	full	269	ARRIVED	arrived	11	46	0	1	0	0	None	выполнен	
+41	1000033	0	SEARCH	seek_contact	2	2	(40, 8, 0)	(31, 9, 0)	(31, 9, 0)	38	full	2450	ARRIVED	arrived	9	38	0	1	0	0	None	выполнен	
+43	1000002	1	HOLD	take_post	2	3	(38, 15, 1)	(28, 3, 1)	(31, 5, 1)	80	full	269	MOVED_CLOSER	replaced	9	62	0	2	0	0	reserve	задача изменилась	из HOLD в SEARCH
+44	1000005	1	HOLD	take_post	2	2	(30, 15, 1)	(31, 6, 1)	(31, 6, 1)	38	full	269	ARRIVED	arrived	9	38	0	1	0	0	None	выполнен	
+47	1000031	1	HOLD	take_post	2	3	(39, 12, 0)	(28, 5, 0)	(38, 10, 0)	64	full	2552	MOVED_CLOSER	replaced	1	0	74	0	2	1	None	переключился на бой	из HOLD в SEARCH
+48	1000036	2	SEARCH	seek_contact	2	2	(4, 43, 1)	(6, 46, 0)	(6, 46, 0)	16	full	2555	ARRIVED	arrived	5	16	0	1	0	0	None	выполнен	
+49	1000011	2	SEARCH	seek_contact	2	3	(1, 43, 0)	(6, 43, 0)	(7, 46, 0)	30	full	16489	MOVED_CLOSER	unit_out	2	0	100	3	2	0	reserve	погиб или выбыл	
+50	1000026	2	SEARCH	seek_contact	2	2	(2, 42, 0)	(10, 42, 0)	(9, 41, 0)	38	full	16489	ARRIVED	arrived	7	32	0	1	0	0	turnspot	выполнен	
+51	1000029	2	SEARCH	seek_contact	2	3	(14, 43, 0)	(11, 48, 0)	(13, 39, 0)	26	full	2528	MOVED_NOT_CLOSER	replaced	-4	0	34	0	1	0	None	переключился на бой	contact:444
+52	1000016	2	SEARCH	seek_contact	2	3	(49, 39, 0)	(6, 40, 0)	(49, 39, 0)	174	partial	16489	NOT_MOVED	replaced	0	0	86	3	0	1	reserve	переключился на бой	contact:444
+53	1000022	2	SEARCH	seek_contact	2	3	(36, 45, 0)	(5, 47, 1)	(16, 47, 1)	146	partial	16489	MOVED_CLOSER	replaced	22	74	22	3	1	0	reserve	задача изменилась	contact:444
+56	1000023	3	SEARCH	advance	2	3	(30, 9, 2)	(40, 10, 2)	(30, 6, 2)	130	partial	187	MOVED_NOT_CLOSER	replaced	0	74	0	4	0	0	reserve	задача изменилась	contact:470
+57	1000008	4	SEARCH	seek_contact	2	3	(15, 47, 1)	(5, 39, 0)	(15, 47, 0)	64	full	16489	MOVED_CLOSER	unit_out	2	0	84	3	0	1	reserve	погиб или выбыл	
+58	1000006	4	SEARCH	seek_contact	2	3	(24, 44, 0)	(11, 38, 0)	(27, 49, 0)	73	full	2547	MOVED_NOT_CLOSER	replaced	-3	0	31	0	1	0	None	переключился на бой	contact:444
+59	1000010	4	SEARCH	seek_contact	2	3	(22, 43, 1)	(1, 48, 0)	(25, 46, 1)	102	full	16489	MOVED_NOT_CLOSER	replaced	-3	0	88	1	2	2	reserve	переключился на бой	contact:444
+60	1000018	4	SEARCH	seek_contact	2	3	(20, 47, 0)	(16, 46, 0)	(20, 47, 0)	18	full	16489	NOT_MOVED	unit_out	0	0	106	0	0	2	None	погиб или выбыл	
+61	1000020	4	SEARCH	seek_contact	2	3	(19, 47, 0)	(16, 43, 0)	(19, 47, 0)	22	full	16489	NOT_MOVED	replaced	0	0	102	0	0	4	None	переключился на бой	contact:444
+62	1000034	0	SEARCH	seek_contact	3	3	(25, 12, 0)	(28, 13, 0)	(28, 13, 0)	14	full	2754	ARRIVED	arrived	3	14	0	1	0	0	None	выполнен	
+64	1000030	0	SEARCH	seek_contact	3	3	(31, 12, 1)	(30, 15, 1)	(30, 15, 1)	14	full	269	ARRIVED	arrived	3	14	0	1	0	0	None	выполнен	
+65	1000033	0	SEARCH	seek_contact	3	3	(31, 9, 0)	(18, 21, 0)	(31, 9, 0)	179	partial	2623	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+66	1000035	1	SEARCH	seek_contact	3	3	(28, 5, 1)	(25, 9, 0)	(25, 9, 0)	34	full	3022	ARRIVED	arrived	6	34	0	1	0	0	None	выполнен	
+67	1000002	1	SEARCH	seek_contact	3	3	(31, 5, 1)	(28, 10, 1)	(28, 10, 1)	26	full	269	ARRIVED	arrived	5	26	0	1	0	0	None	выполнен	
+68	1000005	1	SEARCH	seek_contact	3	3	(31, 6, 1)	(24, 10, 1)	(24, 10, 1)	36	full	269	ARRIVED	arrived	7	36	0	1	0	0	None	выполнен	
+69	1000013	1	SEARCH	seek_contact	3	3	(27, 7, 2)	(28, 11, 2)	(28, 11, 2)	28	full	9915	ARRIVED	arrived	4	28	0	1	0	0	None	выполнен	
+70	1000015	1	SEARCH	seek_contact	3	4	(26, 9, 2)	(34, 7, 0)	(35, 7, 2)	150	partial	10799	MOVED_CLOSER	no_path_now	7	74	0	4	0	0	reserve	маршрут стал недоступен	
+71	1000031	1	SEARCH	seek_contact	3	3	(38, 10, 0)	(20, 9, 0)	(38, 10, 0)	154	partial	2743	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+72	1000036	2	SEARCH	seek_contact	3	6	(1, 49, 0)	(11, 21, 0)	(4, 31, 0)	150	partial	2680	MOVED_CLOSER	too_long	18	101	290	5	5	5	tu	переключился на бой	
+73	1000026	2	SEARCH	seek_contact	3	6	(9, 38, 0)	(12, 28, 0)	(5, 36, 0)	46	full	16664	MOVED_CLOSER	too_long	2	6	209	1	5	4	spotted	переключился на бой	
+74	1000029	2	SEARCH	seek_contact	3	6	(13, 39, 0)	(12, 24, 1)	(18, 41, 0)	110	partial	2629	MOVED_NOT_CLOSER	too_long	-2	34	185	2	2	5	reserve	переключился на бой	
+75	1000016	2	SEARCH	seek_contact	3	5	(49, 39, 0)	(2, 21, 0)	(46, 39, 0)	224	partial	16713	MOVED_CLOSER	unit_out	3	0	199	2	2	4	reserve	погиб или выбыл	
+76	1000022	2	SEARCH	seek_contact	3	6	(16, 47, 1)	(6, 30, 0)	(8, 23, 1)	96	full	16657	MOVED_CLOSER	too_long	10	70	205	7	3	2	reserve	переключился на бой	
+77	1000032	3	SEARCH	seek_contact	3	5	(28, 15, 0)	(35, 34, 0)	(28, 15, 0)	104	partial	2750	NOT_MOVED	unit_out	0	0	133	4	0	4	reserve	погиб или выбыл	
+78	1000003	3	SEARCH	advance	3	3	(28, 13, 1)	(38, 15, 1)	(38, 15, 1)	62	full	269	ARRIVED	arrived	10	62	0	1	0	0	None	выполнен	
+79	1000004	3	SEARCH	seek_contact	3	6	(30, 12, 0)	(42, 28, 0)	(41, 18, 0)	134	partial	2549	MOVED_CLOSER	too_long	6	75	195	5	4	6	spotted	переключился на бой	
+80	1000019	3	SEARCH	seek_contact	3	3	(40, 13, 0)	(42, 31, 0)	(40, 13, 0)	80	full	16729	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+81	1000021	3	SEARCH	seek_contact	3	3	(37, 13, 2)	(36, 40, 0)	(37, 13, 2)	260	partial	13086	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+82	1000023	3	SEARCH	seek_contact	3	3	(30, 6, 2)	(32, 32, 2)	(30, 6, 2)	222	partial	15550	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+83	1000010	4	SEARCH	seek_contact	3	4	(25, 46, 1)	(11, 21, 2)	(28, 47, 0)	136	partial	16663	MOVED_NOT_CLOSER	unit_out	-3	0	106	0	1	1	None	погиб или выбыл	
+84	1000006	4	SEARCH	seek_contact	3	5	(27, 49, 0)	(15, 17, 0)	(22, 45, 0)	180	partial	2591	MOVED_CLOSER	replaced	4	8	133	3	2	4	reserve	переключился на бой	слияние подразделений
+85	1000020	4	SEARCH	seek_contact	3	5	(19, 47, 0)	(14, 29, 1)	(19, 44, 0)	96	full	16664	MOVED_CLOSER	replaced	3	0	141	2	3	3	reserve	переключился на бой	слияние подразделений
+87	1000021	3	SEARCH	advance	3	4	(37, 13, 2)	(43, 12, 0)	(43, 12, 0)	138	partial	389	ARRIVED	arrived	10	138	0	5	0	0	reserve	выполнен	
+88	1000023	3	SEARCH	advance	3	3	(30, 6, 2)	(43, 13, 2)	(44, 12, 2)	80	full	178	ARRIVED	arrived	12	74	0	1	0	0	reserve	выполнен	
+89	1000031	1	SEARCH	seek_contact	3	3	(38, 10, 0)	(25, 6, 0)	(26, 6, 0)	62	full	212	ARRIVED	arrived	12	58	0	1	0	0	reserve	выполнен	
+94	1000024	0	SEARCH	seek_contact	4	4	(34, 11, 0)	(25, 12, 0)	(25, 12, 0)	38	full	481	ARRIVED	arrived	9	38	0	1	0	0	None	выполнен	
+96	1000033	0	SEARCH	seek_contact	4	5	(31, 9, 0)	(28, 13, 1)	(27, 10, 1)	76	full	481	MOVED_CLOSER	replaced	3	54	0	4	0	0	reserve	задача изменилась	contact:448
+97	1000035	1	SEARCH	seek_contact	4	4	(25, 9, 0)	(31, 12, 1)	(25, 9, 0)	72	full	481	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	маршрут стал недоступен	
+101	1000031	1	SEARCH	seek_contact	4	5	(26, 6, 0)	(34, 12, 1)	(34, 12, 1)	68	full	481	ARRIVED	arrived	10	68	0	4	0	0	reserve	выполнен	
+104	1000023	3	SEARCH	advance	4	4	(44, 12, 2)	(37, 13, 2)	(37, 13, 2)	30	full	178	ARRIVED	arrived	7	30	0	1	0	0	None	выполнен	
+105	1000015	1	SEARCH	seek_contact	4	5	(35, 7, 2)	(32, 10, 2)	(32, 10, 2)	108	full	178	ARRIVED	arrived	3	108	0	5	0	0	reserve	выполнен	
+108	1000001	0	SEARCH	seek_contact	5	6	(27, 13, 2)	(20, 9, 0)	(30, 6, 2)	268	partial	1329	MOVED_NOT_CLOSER	no_path_now	-3	62	0	4	0	0	reserve	маршрут стал недоступен	
+111	1000030	0	SEARCH	seek_contact	5	5	(30, 15, 1)	(18, 21, 0)	(30, 15, 1)	171	partial	2741	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+114	1000002	1	SEARCH	seek_contact	5	5	(28, 10, 1)	(31, 9, 0)	(31, 9, 0)	56	full	2939	ARRIVED	arrived	5	56	0	1	0	0	None	выполнен	
+115	1000005	1	SEARCH	seek_contact	5	5	(24, 10, 1)	(34, 11, 0)	(28, 5, 0)	84	full	2893	MOVED_CLOSER	replaced	6	60	0	4	0	0	reserve	задача изменилась	contact:448
+117	1000006	2	SEARCH	seek_contact	5	7	(22, 45, 0)	(6, 17, 0)	(8, 22, 0)	171	partial	2834	MOVED_CLOSER	unit_out	23	154	36	2	1	1	tu	погиб или выбыл	
+118	1000020	2	SEARCH	seek_contact	5	6	(19, 44, 0)	(2, 21, 0)	(2, 21, 0)	126	partial	16959	ARRIVED	arrived	23	128	0	5	0	0	reserve	выполнен	
+119	1000021	3	SEARCH	seek_contact	5	6	(43, 12, 0)	(35, 34, 0)	(36, 11, 0)	110	full	17010	MOVED_NOT_CLOSER	replaced	-1	24	81	4	1	1	reserve	переключился на бой	contact:470
+120	1000003	3	SEARCH	seek_contact	5	6	(38, 15, 1)	(36, 40, 0)	(28, 7, 1)	279	partial	2247	MOVED_NOT_CLOSER	replaced	-8	62	0	4	0	0	reserve	задача изменилась	contact:470
+121	1000023	3	SEARCH	seek_contact	5	6	(37, 13, 2)	(40, 42, 0)	(40, 7, 2)	264	partial	14227	MOVED_NOT_CLOSER	replaced	-6	72	0	4	0	0	reserve	задача изменилась	contact:470
+122	1000030	0	SEARCH	seek_contact	5	5	(30, 15, 1)	(28, 10, 1)	(28, 10, 1)	26	full	270	ARRIVED	arrived	5	26	0	1	0	0	None	выполнен	
+123	1000002	1	SEARCH	seek_contact	5	6	(31, 9, 0)	(25, 12, 0)	(25, 12, 0)	34	full	215	ARRIVED	arrived	6	34	0	3	0	0	reserve	выполнен	
+124	1000005	1	SEARCH	seek_contact	5	6	(28, 5, 0)	(28, 13, 0)	(28, 13, 0)	40	partial	484	ARRIVED	arrived	8	40	0	3	0	0	reserve	выполнен	
+125	1000015	1	SEARCH	seek_contact	5	5	(32, 10, 2)	(27, 13, 2)	(27, 13, 2)	28	full	179	ARRIVED	arrived	5	28	0	1	0	0	None	выполнен	
+126	1000031	1	SEARCH	seek_contact	5	5	(34, 12, 1)	(28, 13, 1)	(28, 13, 1)	38	full	270	ARRIVED	arrived	6	38	0	1	0	0	None	выполнен	
+134	1000036	2	SEARCH	seek_contact	6	6	(4, 31, 0)	(2, 21, 0)	(3, 22, 0)	58	full	2580	ARRIVED	arrived	9	51	80	1	0	2	tu	выполнен	
+135	1000026	2	SEARCH	seek_contact	6	7	(5, 36, 0)	(11, 21, 2)	(5, 36, 0)	88	full	16569	NOT_MOVED	replaced	0	0	83	3	0	1	reserve	переключился на бой	слияние подразделений
+136	1000029	2	SEARCH	seek_contact	6	7	(18, 41, 0)	(15, 17, 0)	(19, 34, 0)	130	partial	2580	MOVED_CLOSER	unit_out	7	37	32	2	0	2	spotted	погиб или выбыл	
+138	1000021	3	SEARCH	seek_contact	6	7	(36, 11, 0)	(42, 31, 0)	(40, 15, 0)	102	full	16568	MOVED_CLOSER	unit_out	4	0	181	1	3	3	reserve	погиб или выбыл	
+139	1000003	3	SEARCH	advance	6	6	(28, 7, 1)	(30, 15, 1)	(30, 15, 1)	36	full	270	ARRIVED	arrived	8	36	0	1	0	0	None	выполнен	
+140	1000023	3	SEARCH	seek_contact	6	6	(40, 7, 2)	(35, 34, 0)	(40, 7, 2)	166	partial	16665	NOT_MOVED	no_path_now	0	0	0	0	0	0	None	союзник закрыл проход	
+141	1000001	0	SEARCH	seek_contact	6	6	(30, 6, 2)	(24, 9, 2)	(24, 9, 2)	36	full	179	ARRIVED	arrived	6	36	0	1	0	0	None	выполнен	
+142	1000023	3	SEARCH	advance	6	6	(40, 7, 2)	(40, 13, 0)	(40, 13, 0)	68	full	641	ARRIVED	arrived	10	68	0	2	0	0	turnspot	выполнен	
+143	1000033	0	SEARCH	seek_contact	7	7	(27, 10, 1)	(31, 9, 0)	(31, 9, 0)	58	full	2683	ARRIVED	arrived	6	54	0	1	0	0	None	выполнен	
+144	1000001	0	SEARCH	seek_contact	7	8	(24, 9, 2)	(25, 9, 0)	(36, 6, 0)	180	partial	1514	MOVED_NOT_CLOSER	replaced	-6	124	0	4	0	0	reserve	задача изменилась	contact:545
+146	1000030	0	SEARCH	seek_contact	7	7	(28, 10, 1)	(20, 9, 0)	(29, 12, 0)	169	partial	2712	MOVED_CLOSER	unit_out	1	56	28	1	1	1	spotted	погиб или выбыл	
+147	1000036	0	SEARCH	seek_contact	7	8	(3, 22, 0)	(18, 21, 0)	(2, 21, 0)	85	full	3023	MOVED_NOT_CLOSER	replaced	-1	0	110	0	2	1	None	переключился на бой	contact:545
+148	1000026	0	SEARCH	seek_contact	7	8	(5, 36, 0)	(34, 16, 0)	(7, 26, 0)	166	partial	16816	MOVED_CLOSER	unit_out	2	42	34	2	2	0	reserve	погиб или выбыл	
+155	1000003	3	SEARCH	seek_contact	7	8	(30, 15, 1)	(42, 28, 0)	(30, 5, 0)	204	partial	2264	MOVED_NOT_CLOSER	replaced	-8	64	0	4	0	0	reserve	задача изменилась	слияние подразделений
+156	1000023	3	SEARCH	seek_contact	7	8	(36, 10, 0)	(35, 34, 0)	(36, 10, 0)	122	partial	17005	NOT_MOVED	replaced	0	0	101	3	0	3	reserve	переключился на бой	слияние подразделений
+157	1000033	0	SEARCH	seek_contact	8	8	(31, 9, 0)	(25, 12, 0)	(25, 12, 0)	38	full	3048	MOVED_CLOSER	replaced	6	34	0	1	0	0	None	задача изменилась	contact:545
+159	1000003	0	SEARCH	seek_contact	8	8	(30, 5, 0)	(30, 15, 1)	(30, 15, 1)	64	full	3018	ARRIVED	arrived	12	64	0	1	0	0	None	выполнен	
+160	1000023	0	SEARCH	seek_contact	8	8	(36, 10, 0)	(20, 9, 0)	(27, 15, 0)	126	partial	17039	MOVED_CLOSER	replaced	9	52	34	1	0	1	spotted	задача изменилась	contact:545
+164	1000013	1	SEARCH	seek_contact	8	9	(28, 11, 2)	(28, 10, 1)	(33, 7, 2)	222	partial	9798	MOVED_NOT_CLOSER	replaced	-4	74	0	2	0	0	reserve	задача изменилась	узел сектора
+167	1000001	0	SEARCH	seek_contact	8	8	(36, 6, 0)	(24, 10, 1)	(36, 6, 0)	76	partial	3001	NOT_MOVED	replaced	0	0	0	0	0	0	None	задача изменилась	contact:543
+168	1000036	0	SEARCH	seek_contact	8	8	(2, 21, 0)	(16, 9, 0)	(2, 21, 0)	92	full	3048	NOT_MOVED	replaced	0	0	0	0	0	0	None	задача изменилась	contact:543
+169	1000003	0	SEARCH	seek_contact	8	8	(30, 15, 1)	(22, 8, 1)	(30, 15, 1)	54	partial	2354	NOT_MOVED	replaced	0	0	0	0	0	0	None	задача изменилась	contact:543
+171	1000001	0	SEARCH	seek_contact	8	9	(36, 6, 0)	(17, 28, 0)	(36, 6, 0)	190	partial	3001	NOT_MOVED	replaced	0	0	0	2	0	0	reserve	задача изменилась	узел сектора
+172	1000036	0	SEARCH	seek_contact	8	9	(2, 21, 0)	(19, 32, 0)	(4, 21, 0)	125	full	3048	MOVED_CLOSER	replaced	2	10	120	1	0	3	tu	переключился на бой	узел сектора
+173	1000003	0	SEARCH	seek_contact	8	9	(30, 15, 1)	(16, 31, 1)	(30, 15, 1)	257	partial	2354	NOT_MOVED	replaced	0	0	0	2	0	0	reserve	задача изменилась	узел сектора
+174	1000033	0	SEARCH	sweep_sector	9	9	(25, 12, 0)	(34, 16, 0)	(34, 16, 0)	87	full	3054	MOVED_CLOSER	replaced	9	55	0	1	0	0	None	задача изменилась	contact:545
+175	1000001	0	SEARCH	sweep_sector	9	9	(36, 6, 0)	(34, 11, 0)	(34, 11, 0)	28	full	3015	ARRIVED	arrived	5	28	0	1	0	0	None	выполнен	
+176	1000007	0	SEARCH	sweep_sector	9	9	(26, 15, 1)	(31, 12, 1)	(31, 12, 1)	36	full	2342	ARRIVED	arrived	5	36	0	1	0	0	None	выполнен	
+177	1000036	0	SEARCH	sweep_sector	9	9	(4, 21, 0)	(40, 21, 0)	(4, 21, 0)	191	partial	3054	NOT_MOVED	replaced	0	0	0	0	0	0	None	задача изменилась	contact:545
+179	1000031	1	SEARCH	sweep_sector	9	10	(28, 13, 1)	(22, 3, 0)	(29, 6, 0)	215	partial	2501	MOVED_CLOSER	replaced	5	54	0	4	0	0	reserve	задача изменилась	contact:545
+180	1000002	1	SEARCH	sweep_sector	9	10	(28, 10, 0)	(25, 6, 0)	(21, 16, 0)	30	full	3054	MOVED_NOT_CLOSER	unit_out	-6	0	86	3	2	1	reserve	погиб или выбыл	
+181	1000013	1	SEARCH	sweep_sector	9	10	(33, 7, 2)	(28, 5, 0)	(36, 6, 0)	112	partial	16478	MOVED_CLOSER	replaced	1	74	0	2	0	0	reserve	задача изменилась	contact:545
+182	1000015	1	SEARCH	sweep_sector	9	10	(27, 13, 2)	(25, 9, 0)	(32, 6, 2)	210	partial	9598	MOVED_NOT_CLOSER	replaced	-3	70	0	4	0	0	reserve	задача изменилась	contact:545
+183	1000033	0	SEARCH	seek_contact	9	10	(34, 16, 0)	(16, 9, 0)	(34, 16, 0)	107	partial	3054	NOT_MOVED	replaced	0	0	0	3	0	0	reserve	задача изменилась	contact:545
+184	1000001	0	SEARCH	seek_contact	9	10	(34, 11, 0)	(13, 1, 0)	(28, 14, 0)	177	partial	3051	MOVED_CLOSER	replaced	6	30	0	2	0	0	reserve	задача изменилась	contact:545
+185	1000007	0	SEARCH	seek_contact	9	10	(31, 12, 1)	(20, 9, 0)	(28, 7, 1)	183	partial	2550	MOVED_CLOSER	replaced	3	26	0	2	0	0	reserve	задача изменилась	contact:545
+186	1000036	0	SEARCH	seek_contact	9	10	(4, 21, 0)	(7, 14, 0)	(16, 19, 0)	38	full	3054	MOVED_NOT_CLOSER	unit_out	-2	0	113	0	5	1	None	погиб или выбыл	
+187	1000033	0	SEARCH	seek_contact	10		(34, 16, 0)	(12, 28, 0)		146	partial	3053	OPEN	open		27	181	6	3	2	reserve	открыт на срезе боя	
+188	1000001	0	SEARCH	seek_contact	10	12	(28, 14, 0)	(11, 21, 0)	(13, 19, 0)	103	partial	3049	ARRIVED	arrived	15	63	170	3	1	6	reserve	выполнен	
+189	1000007	0	SEARCH	seek_contact	10		(28, 7, 1)	(12, 24, 1)		182	partial	3026	OPEN	open		94	147	7	2	4	reserve	открыт на срезе боя	
+190	1000003	0	SEARCH	seek_contact	10		(30, 15, 1)	(6, 30, 0)		272	partial	2442	OPEN	open		183	35	9	1	1	reserve	открыт на срезе боя	
+191	1000031	1	SEARCH	seek_contact	10		(29, 6, 0)	(14, 29, 1)		160	partial	3053	OPEN	open		54	155	3	2	4	reserve	открыт на срезе боя	
+192	1000013	1	SEARCH	seek_contact	10		(36, 6, 0)	(2, 21, 0)		178	partial	17044	OPEN	open		32	189	5	5	2	reserve	открыт на срезе боя	
+193	1000015	1	SEARCH	seek_contact	10		(32, 6, 2)	(15, 17, 0)		196	partial	16591	OPEN	open		144	98	11	0	1	reserve	открыт на срезе боя	

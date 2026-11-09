@@ -1,0 +1,47 @@
+== us1_QN_M6_s1
+668 field 1000038 t 1 tiles 190
+671 field 1000021 t 1 tiles 192
+693 field 1000039 t 1 tiles 9
+1174 t 1 unit 1000033 (20,15,0) -> (23,16,0) m0 a2
+1182 t 1 unit 1000033 (23,16,0) -> (20,15,0) m0 a2
+1572 t 1 unit 1000033 (20,15,0) -> (23,16,0) m0 a2
+1580 t 1 unit 1000033 (23,16,0) -> (20,15,0) m0 a2
+2148 field 1000021 t 2 tiles 192
+2236 t 2 unit 1000033 (20,15,0) -> (23,16,0) m0 a2
+2244 t 2 unit 1000033 (23,16,0) -> (20,15,0) m0 a2
+2306 field 1000038 t 2 tiles 190
+2317 field 1000039 t 2 tiles 9
+2512 t 2 unit 1000033 (20,15,0) -> (23,16,0) m0 a2
+2519 t 2 unit 1000033 (23,16,0) -> (20,15,0) m0 a2
+2982 field 1000021 t 3 tiles 192
+3059 t 3 unit 1000033 (20,15,0) -> (23,16,0) m0 a2
+3121 field 1000038 t 3 tiles 3031
+3132 field 1000039 t 3 tiles 3036
+3140 field 1000039 t 3 tiles 3036
+3261 field 1000021 t 3 tiles 14205
+3367 field 1000039 t 3 tiles 3035
+3375 field 1000039 t 3 tiles 3037
+  choice 1000033 t3 at (20,15,0) free (23,16,0) chosen (23,16,0) changed 0 scout 0 linked 1
+  choice 1000033 t3 at (23,16,0) free (20,15,0) chosen (22,17,1) changed 1 scout 0 linked 1
+== us5_QS_M6_s1
+666 field 1000038 t 1 tiles 190
+669 field 1000021 t 1 tiles 192
+691 field 1000039 t 1 tiles 9
+1307 t 1 unit 1000033 (20,15,0) -> (20,15,2) m0 a2
+1317 t 1 unit 1000033 (20,15,2) -> (20,17,2) m0 a2
+2254 field 1000021 t 2 tiles 173
+2460 field 1000038 t 2 tiles 161
+2471 field 1000039 t 2 tiles 9
+2499 t 2 unit 1000007 (14,17,0) -> (20,15,0) m0 a2
+2507 t 2 unit 1000007 (20,15,0) -> (14,17,0) m0 a2
+3025 t 3 unit 1000007 (20,15,0) -> (14,17,0) m0 a2
+3033 t 3 unit 1000007 (14,17,0) -> (20,15,0) m0 a2
+3094 field 1000021 t 3 tiles 152
+3271 field 1000038 t 3 tiles 171
+3282 field 1000039 t 3 tiles 9
+3311 t 3 unit 1000007 (20,15,0) -> (14,17,0) m0 a2
+3508 t 3 unit 1000035 (23,16,0) -> (20,15,0) m0 a2
+  choice 1000033 t3 at (20,17,2) free (20,20,2) chosen (-1,-1,-1) changed 0 scout 0 linked 0
+  choice 1000033 t3 at (20,20,2) free (20,17,2) chosen (20,17,2) changed 0 scout 0 linked 1
+  choice 1000033 t3 at (20,17,2) free (20,20,2) chosen (-1,-1,-1) changed 0 scout 0 linked 0
+  choice 1000033 t3 at (20,20,2) free (20,17,2) chosen (20,17,2) changed 0 scout 0 linked 1

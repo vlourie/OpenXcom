@@ -1,0 +1,8 @@
+A1	2026-11-06T16:13:02	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WA	L8	A: D0, the diagnostic replay: what D0 proposes at N, the dump there	turns=60
+A2	2026-11-06T16:13:58	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WA	L8	A: the same again: control A/A	turns=60
+W1	2026-11-06T16:14:44	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WO	L8	OFF: no arena variable at all, against the archived D0	turns=60
+S1	2026-11-06T16:15:22	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WS	L8	A under another start of the auxiliary generator	turns=60
+B1	2026-11-06T16:16:44	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WB	L8	B: the legal alternative at N in place of think()	turns=60
+B2	2026-11-06T16:19:28	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WB	L8	B again: control B/B	turns=60
+C1	2026-11-06T16:22:07	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WC	L8	C: D0's own action at N in place of think(): what skipping think() does by itself	turns=60
+P1	2026-11-06T16:22:52	dd0a801f347942ede377125676fadb857d39f6959a117e2a1ba25f6448b2dc4a	WP	L8	replay to decision N and stop: the cost of the prefix	turns=60

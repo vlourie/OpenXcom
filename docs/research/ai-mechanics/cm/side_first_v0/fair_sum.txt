@@ -1,0 +1,1 @@
+{'battles': 16, 'act': 1936, 'attack': 944, 'attack_tu_over': 10, 'result': 1934, 'special': 44, 'walk': 946, 'walk_not_moved': 59, 'walk_stopped_short': 320, 'act_without_result': 1, 'walk_tu_over': 1, 'attack_on_out': 2}

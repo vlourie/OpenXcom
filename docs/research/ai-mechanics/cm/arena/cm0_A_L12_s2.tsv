@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2036002	STR_LOC_PIRATE_CRUISE	over	STR_LOC_PIRATE_CRUISE	STR_LOC_PIRATE_CRUISE	108	8	CARGO_LINER	STR_DEEP_ONE	STR_DROPSHIP#3	2	15	8	0	0	0	0	45	40	4	1	8	0	0	43	34	h.rec.in:991,h.rec.out.M2:5,h.rec.out.a8:2,h.rec.out.a9:2,p.rec.in:380,p.rec.out.a8:2	382	0	0	0	0	1	807	0	0	0	0	9	54		win

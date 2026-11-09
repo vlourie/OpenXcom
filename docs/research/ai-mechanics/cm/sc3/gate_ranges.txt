@@ -1,0 +1,2 @@
+sc7k_K_M10_s1: B score 32-44; mover score all 26-89, at the score gate 43-89
+sc7k_K_L2_s1: B score 86-89; mover score all 11-176, at the score gate 89-176

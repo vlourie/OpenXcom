@@ -1,0 +1,41 @@
+new hostile losses to AUX_TANK_CANNON in hostile turns: 34
+  attack at the carrier: 20
+  walk: 9
+  attack at another: 4
+  no hostile decision: 1
+per battle: M3_s1 11, M3_s2 15, M6_s1 4, M6_s2 4
+
+scpa_D_M3_s1 t2 1000036 dead | during 1000036 act=9 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t2 1000042 dead | during 1000042 act=2 aim=444 -> walk
+scpa_D_M3_s1 t2 1000051 dead | during 1000042 act=2 aim=444 -> walk
+scpa_D_M3_s1 t3 1000027 dead | during 1000030 act=9 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t3 1000030 dead | during 1000030 act=9 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t3 1000001 stun | during 1000006 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t3 1000009 dead | during 1000006 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t3 1000012 dead | during 1000006 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t3 1000045 stun | during 1000006 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t12 1000020 dead | during 1000020 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s1 t12 1000039 stun | during 1000020 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t1 1000016 dead | during 1000016 act=2 aim=444 -> walk
+scpa_D_M3_s2 t1 1000020 dead | during 1000020 act=8 aim=503 -> attack at another
+scpa_D_M3_s2 t2 1000024 dead | during 1000044 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t2 1000044 dead | during 1000044 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t2 1000046 dead | during 1000044 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t2 1000049 stun | during 1000044 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t2 1000056 stun | during 1000044 act=8 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t4 1000003 dead | during 1000003 act=10 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t4 1000095 dead | during 1000003 act=10 aim=444 -> attack at the carrier
+scpa_D_M3_s2 t5 1000021 dead | during 1000021 act=2 aim=470 -> walk
+scpa_D_M3_s2 t5 1000025 dead | during 1000025 act=2 aim=-1 -> walk
+scpa_D_M3_s2 t5 1000104 dead | during 1000025 act=2 aim=-1 -> walk
+scpa_D_M3_s2 t5 1000105 dead | during 1000105 act=2 aim=444 -> walk
+scpa_D_M3_s2 t6 1000006 dead | during 1000006 act=2 aim=444 -> walk
+scpa_D_M3_s2 t6 1000098 dead | during 1000006 act=2 aim=444 -> walk
+scpa_D_M6_s1 t1 1000018 stun | during 1000019 act=8 aim=470 -> attack at another
+scpa_D_M6_s1 t1 1000026 stun | during 1000019 act=8 aim=470 -> attack at another
+scpa_D_M6_s1 t2 1000002 dead | during 1000002 act=8 aim=444 -> attack at the carrier
+scpa_D_M6_s1 t26 1000015 stun | during - act=- aim=- -> no hostile decision
+scpa_D_M6_s2 t4 1000011 stun | during 1000022 act=9 aim=470 -> attack at another
+scpa_D_M6_s2 t25 1000013 stun | during 1000007 act=8 aim=444 -> attack at the carrier
+scpa_D_M6_s2 t25 1000007 dead | during 1000007 act=8 aim=444 -> attack at the carrier
+scpa_D_M6_s2 t28 1000001 dead | during 1000001 act=8 aim=444 -> attack at the carrier

@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2034002	STR_LOC_RITUAL_CAVE	over	STR_LOC_RITUAL_CAVE	STR_LOC_RITUAL_CAVE	60	6	CAVES_RITUAL_C	STR_RATMEN	STR_DRAKKAR#1	10	15	6	2	0	2	114	13	11	2	0	4	0	0	10	25	h.rec.in:343,h.rec.out.a8:1,p.rec.in:232	232	0	0	0	0	1	344	0	0	0	0	2	5		win

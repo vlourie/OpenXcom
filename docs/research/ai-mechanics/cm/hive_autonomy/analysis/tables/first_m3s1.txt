@@ -1,0 +1,25 @@
+lines 6018 5594
+first differing line 363 same before it
+ A [AIDECIDE] turn=1 side=1 unit=1000006 n=1 from=(22,38,0) tu=59 mode=3 act=2 to=(21,38,0) run=0 kneel=0 aim=1000077 weapon=AUX_SILACOID_WEAPON seen=448
+ B [AIDECIDE] turn=1 side=1 unit=1000006 n=1 from=(22,38,0) tu=59 mode=0 act=2 to=(48,3,0) run=0 kneel=0 aim=1000077 weapon=AUX_SILACOID_WEAPON seen=448,
+ fields that differ {'ha': ('bd7c0e966ca81f1d', '7d190e8136d97a7a'), 'to': ('(21,38,0)', '(48,3,0)'), 'hr': ('9dc354bbae8f0eb6', '8000e35269298e0b'), 'mode': ('3', '0')}
+ first differing action, A {'turn': '1', 'unit': '1000006', 'n': '1', 'tu': '59', 'mode': '3', 'act': '2', 'from': '(22,38,0)', 'to': '(21,38,0)', 'aim': '1000077'}
+ first differing action, B {'turn': '1', 'unit': '1000006', 'n': '1', 'tu': '59', 'mode': '0', 'act': '2', 'from': '(22,38,0)', 'to': '(48,3,0)', 'aim': '1000077'}
+ next decision A {'turn': '1', 'unit': '1000006', 'n': '1', 'tu': '59', 'mode': '3', 'act': '2', 'from': '(22,38,0)', 'to': '(21,38,0)'}
+ next decision B {'turn': '1', 'unit': '1000006', 'n': '1', 'tu': '59', 'mode': '0', 'act': '2', 'from': '(22,38,0)', 'to': '(48,3,0)'}
+ last decision before {'turn': '1', 'unit': '1000006', 'n': '1', 'tu': '59', 'mode': '3', 'act': '2'}
+ base class of that decision: art_esc_walk hold: stay:at_node label: SEARCH task: SEARCH rolled: 0
+ answers in the fixed run, that unit-turn: ['FREE:stay:at_node', 'FREE:stay:at_node', 'FREE:stay:at_node', 'FREE:stay:at_node']
+  cc6_CV_M3_s1 turn 1: n1 art_esc_walk tu=59 mode=3 act=2 (22,38,0)->(21,38,0) rolled=0
+  cc6_CV_M3_s1 turn 2: n1 esc_kept_walk tu=59 mode=3 act=2 (21,38,0)->(19,38,0) rolled=-
+  cc6_CV_M3_s1 fell: [AICASUALTY] turn=4 side=0 victim=1000006 vfaction=1 type=STR_SILACOID_TERRORIST how=dead 
+  ra3_AV_M3_s1 turn 1: n1 patrol_walk tu=59 mode=0 act=2 (22,38,0)->(48,3,0) rolled=0; n2 attack tu=58 mode=2 act=8 (22,38,0)->(15,35,0) rolled=2; n1 attack tu=40 mode=2 act=8 (22,38,0)->(15,45,0) rolled=-; n2 attack tu=21 mode=2 act=8 (22,38,0)->(15,45,0) rolled=-
+  ra3_AV_M3_s1 turn 2: n1 attack tu=59 mode=2 act=8 (22,38,0)->(14,46,0) rolled=-; n2 attack tu=42 mode=2 act=8 (22,38,0)->(14,46,0) rolled=-; n1 attack tu=25 mode=2 act=8 (22,38,0)->(22,27,0) rolled=2
+  ra3_AV_M3_s1 fell: [AICASUALTY] turn=3 side=1 victim=1000006 vfaction=1 type=STR_SILACOID_TERRORIST how=dead 
+ first FREE answer: {'turn': '1', 'unit': '1000006', 'from': 'stay', 'why': 'at_node'} decided {'n': '1', 'tu': '59', 'mode': '0', 'act': '2', 'from': '(22,38,0)', 'to': '(48,3,0)'}
+  cc6_CV_M3_s1 turn 1: n1 art_esc_walk tu=59 mode=3 act=2 (22,38,0)->(21,38,0) rolled=0
+  cc6_CV_M3_s1 turn 2: n1 esc_kept_walk tu=59 mode=3 act=2 (21,38,0)->(19,38,0) rolled=-
+  cc6_CV_M3_s1 fell: [AICASUALTY] turn=4 side=0 victim=1000006 vfaction=1 type=STR_SILACOID_TERRORIST how=dead 
+  ra3_AV_M3_s1 turn 1: n1 patrol_walk tu=59 mode=0 act=2 (22,38,0)->(48,3,0) rolled=0; n2 attack tu=58 mode=2 act=8 (22,38,0)->(15,35,0) rolled=2; n1 attack tu=40 mode=2 act=8 (22,38,0)->(15,45,0) rolled=-; n2 attack tu=21 mode=2 act=8 (22,38,0)->(15,45,0) rolled=-
+  ra3_AV_M3_s1 turn 2: n1 attack tu=59 mode=2 act=8 (22,38,0)->(14,46,0) rolled=-; n2 attack tu=42 mode=2 act=8 (22,38,0)->(14,46,0) rolled=-; n1 attack tu=25 mode=2 act=8 (22,38,0)->(22,27,0) rolled=2
+  ra3_AV_M3_s1 fell: [AICASUALTY] turn=3 side=1 victim=1000006 vfaction=1 type=STR_SILACOID_TERRORIST how=dead 

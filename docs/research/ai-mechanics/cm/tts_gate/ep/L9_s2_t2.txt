@@ -1,0 +1,76 @@
+== timeline turn 2
+940 T [AISTATE] pstart turn=2 unit=571 type=SOLDIER faction=0 status=0 pos=(18,16,2) dir=3 tu=177 hp=75/75 stun=0 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=1 sniped=1 sees=1000007 seenby=0 known=3 near=10 shade=10 tumax=177 wounds=0 th
+948 A [AISTATE] pstart turn=2 unit=1000005 type=STR_LOBSTERMAN_TERRORIST faction=1 status=0 pos=(9,40,0) dir=2 tu=26 hp=108/108 stun=0 morale=95 kneel=0 weapon=STR_SONIC_RIFLE spotted=255 sniped=0 sees=- seenby=0 known=3 near=9 shade=11 tuma
+955 B [AISTATE] pstart turn=2 unit=1000014 type=STR_AQUATOID_MEDIC faction=1 status=0 pos=(9,41,0) dir=6 tu=52 hp=42/42 stun=0 morale=84 kneel=0 weapon=STR_SONIC_PISTOL spotted=255 sniped=0 sees=- seenby=0 known=3 near=9 shade=11 tumax=86 wo
+1019 T [AIDECIDE] turn=2 side=0 unit=571 n=1 from=(18,16,2) tu=177 mode=0 act=2 to=(12,41,1) run=0 kneel=0 aim=-1 weapon=STR_CD_PISTOL seen=1000007,1000021,1000027 hu=3189219e10992f2a hi=c9e31fb779654333 ho=4b886ab410001d6a hou=17908e5d99b783
+1027 T [AIDECIDE] turn=2 side=0 unit=571 n=2 from=(17,40,0) tu=67 mode=3 act=0 to=(-1,-1,-1) run=0 kneel=0 aim=1000000 weapon=STR_CD_PISTOL seen=1000000,1000007,1000009,1000015,1000021,1000027 hu=19c9b2c459d4cc2 hi=c9e31fb779654333 ho=4b886ab
+1115 T [AIDECIDE] turn=2 side=0 unit=571 n=1 from=(17,40,0) tu=67 mode=0 act=2 to=(12,41,1) run=0 kneel=0 aim=1000009 weapon=STR_CD_PISTOL seen=1000003,1000009,1000013,1000015 hu=2a61994abf1ee6e0 hi=57a9c86bc2a36577 ho=e9d6906d91e96934 hou=17
+1120 T [AIDECIDE] turn=2 side=0 unit=571 n=2 from=(13,38,0) tu=47 mode=0 act=2 to=(12,41,1) run=0 kneel=0 aim=1000009 weapon=STR_CD_PISTOL seen=1000003,1000009,1000013,1000015 hu=afecdbdda5211daa hi=57a9c86bc2a36577 ho=e9d6906d91e96934 hou=17
+1186 T [AISTATE] aistart turn=2 unit=571 type=SOLDIER faction=0 status=0 pos=(12,38,0) dir=6 tu=43 hp=75/75 stun=0 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=0 sniped=2 sees=1000003,1000005 seenby=1 known=5 near=1 shade=10 tumax=177 woun
+1193 A [AISTATE] aistart turn=2 unit=1000005 type=STR_LOBSTERMAN_TERRORIST faction=1 status=0 pos=(9,40,0) dir=2 tu=74 hp=108/108 stun=0 morale=94 kneel=0 weapon=STR_SONIC_RIFLE spotted=255 sniped=0 sees=571 seenby=1 known=7 near=4 shade=11 t
+1198 B [AISTATE] aistart turn=2 unit=1000014 type=STR_AQUATOID_MEDIC faction=1 status=0 pos=(9,41,0) dir=6 tu=86 hp=42/42 stun=0 morale=72 kneel=0 weapon=STR_SONIC_PISTOL spotted=255 sniped=0 sees=- seenby=0 known=7 near=4 shade=11 tumax=86 w
+1236 A [AIDECIDE] turn=2 side=1 unit=1000005 n=1 from=(9,40,0) tu=74 mode=2 act=2 to=(11,39,0) run=0 kneel=0 aim=571 weapon=LOBSTER_CLAWS seen=575,538,582,571,297,307,581 hu=2a147e3f9dc8f019 hi=38af0162b7b41b56 ho=cfe76021feb1c437 hou=a146d45
+      exec {'pos': [11, 39, 0], 'tu': 14, 'spent': 60, 'seen': 1, 'spotted': 1, 'dmg': 64, 'stunned': 5, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 108}
+1242 A [AIDECIDE] turn=2 side=1 unit=1000005 n=2 from=(11,39,0) tu=14 mode=0 act=2 to=(40,40,0) run=0 kneel=0 aim=571 weapon=STR_SONIC_RIFLE seen=575,538,582,571,297,307,581 hu=6ad829d94ed228d3 hi=38af0162b7b41b56 ho=cfe76021feb1c437 hou=a146
+      exec {'pos': [11, 39, 0], 'tu': 14, 'spent': 0, 'seen': 1, 'spotted': 1, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 108}
+1298 B [AIDECIDE] turn=2 side=1 unit=1000014 n=1 from=(9,41,0) tu=86 mode=3 act=0 to=(9,41,0) run=0 kneel=0 aim=-1 weapon=STR_SONIC_PISTOL seen=575,538,582,571,297,307,581 hu=3fc9a173001fa04 hi=fab97350a1d58714 ho=2bac40c135f262de hou=e66ee53
+      exec {'pos': [9, 41, 0], 'tu': 86, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 42}
+1383 A [AIDECIDE] turn=2 side=1 unit=1000005 n=1 from=(11,39,0) tu=14 mode=3 act=2 to=(10,42,0) run=0 kneel=0 aim=571 weapon=STR_SONIC_RIFLE seen=575,538,582,571,297,307,581 hu=3d6db2702550ea16 hi=ccd6287059192391 ho=dd197a3c7921d56d hou=a146
+      exec {'pos': [10, 42, 0], 'tu': 0, 'spent': 14, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 108}
+1416 B [AIDECIDE] turn=2 side=1 unit=1000014 n=1 from=(9,41,0) tu=86 mode=1 act=2 to=(14,41,0) run=0 kneel=0 aim=571 weapon=STR_SONIC_PISTOL seen=575,538,582,571,297,307,581 hu=c829beba063a2f9a hi=ebd0ef7964086db2 ho=6fe392e2f52680d5 hou=e66e
+      exec {'pos': [9, 41, 0], 'tu': 84, 'spent': 2, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 42}
+1421 B [AIDECIDE] turn=2 side=1 unit=1000014 n=2 from=(9,41,0) tu=84 mode=1 act=2 to=(11,39,0) run=0 kneel=0 aim=571 weapon=STR_SONIC_PISTOL seen=575,538,582,571,297,307,581 hu=c726633303fec334 hi=ebd0ef7964086db2 ho=6fe392e2f52680d5 hou=e66e
+      exec {'pos': [11, 39, 0], 'tu': 70, 'spent': 14, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 42}
+
+== first list of B in the turn with T
+rec 153 n 1 pos (9, 41, 0) tu 86 kneel 0 src escape.known t 0 to (9, 41, 0)
+    {'id': '96a8aaa77c5ead79', 'k': 'a', 't': 8, 'to': [12, 38, 0], 'tu': 25, 'u': 571, 'w': 'STR_SONIC_PISTOL', 'p': 89, 'lof': 0, 'd': 5}
+    {'id': '5fd20ed5fbf2cab8', 'k': 'a', 't': 9, 'to': [12, 38, 0], 'tu': 38, 'u': 571, 'w': 'STR_SONIC_PISTOL', 'p': 120, 'lof': 0, 'd': 5}
+    {'id': 'c60bbbfb0c02f3cc', 'k': 'a', 't': 14, 'to': [12, 38, 0], 'tu': 25, 'u': 571, 'w': 'ALIEN_PSI_WEAPON', 'p': 0, 'lof': 1, 'd': 5}
+    {'id': '303c151f2f6cc8bf', 'k': 'a', 't': 13, 'to': [12, 38, 0], 'tu': 51, 'u': 571, 'w': 'ALIEN_PSI_WEAPON', 'p': 0, 'lof': 1, 'd': 5}
+    {'id': '69bbcfb8623fd4b5', 'k': 'a', 't': 6, 'to': [12, 38, 0], 'tu': 34, 'u': 571, 'w': 'STR_SONIC_PULSER', 'p': 78, 'lof': 0, 'd': 5}
+   lof 1 targets: []
+   near cells: [((10, 41, 0), 4), ((9, 42, 0), 4), ((10, 42, 0), 6), ((11, 41, 0), 8), ((10, 40, 0), 10), ((10, 43, 0), 10), ((11, 40, 0), 10), ((11, 42, 0), 10), ((12, 41, 0), 12), ((11, 43, 0), 14), ((12, 42, 0), 14), ((10, 39, 0), 16), ((9, 40, 0), 16), ((11, 38, 0), 22), ((12, 38, 0), 26), ((9, 38, 0), 34)]
+   who stands near the lane: [(1000003, (10, 38, 0), 29, 1.41), (1000005, (11, 39, 0), 14, 0.0), (1000006, (9, 39, 0), 30, 1.41)]
+
+== all lists of A on its cell in the turn
+rec 142 n 1 pos (9, 40, 0) tu 74 t 2 to (11, 39, 0) src melee T: {'to': (12, 38, 0), 'lof': 1, 'tu': 29, 'p': 73, 'w': 'STR_SONIC_RIFLE', 'd': 4, 'mode': 8} with a line: [(571, 29, 73, 4)]
+rec 143 n 2 pos (11, 39, 0) tu 14 t 2 to (40, 40, 0) src patrol.node T: {'to': (12, 38, 0), 'lof': 1, 'tu': 29, 'p': 73, 'w': 'STR_SONIC_RIFLE', 'd': 2, 'mode': 8} with a line: [(571, 29, 73, 2)]
+rec 168 n 1 pos (11, 39, 0) tu 14 t 2 to (10, 42, 0) src escape T: {'to': (12, 38, 0), 'lof': 1, 'tu': 29, 'p': 73, 'w': 'STR_SONIC_RIFLE', 'd': 2, 'mode': 8} with a line: [(571, 29, 73, 2)]
+
+== B's own list through the battle around the turn: did the line to T ever exist from this cell
+ turn 1 n 1 pos (6, 40, 1) tu 86 T at (18, 16, 2) lof 0 d 27 w STR_SONIC_PISTOL tu 25 did t 2 to (9, 41, 0) dmg 0
+ turn 1 n 2 pos (9, 41, 0) tu 52 T at (18, 16, 2) lof 0 d 27 w STR_SONIC_PISTOL tu 25 did t 0 to (9, 41, 0) dmg 0
+ turn 1 n 1 pos (9, 41, 0) tu 52 T at (18, 16, 2) lof 0 d 27 w STR_SONIC_PISTOL tu 25 did t 0 to (9, 41, 0) dmg 0
+ turn 2 n 1 pos (9, 41, 0) tu 86 T at (12, 38, 0) lof 0 d 5 w STR_SONIC_PISTOL tu 25 did t 0 to (9, 41, 0) dmg 0
+ turn 2 n 1 pos (9, 41, 0) tu 86 T at (12, 38, 0) lof 1 d 5 w STR_SONIC_PISTOL tu 25 did t 2 to (14, 41, 0) dmg 0
+ turn 2 n 2 pos (9, 41, 0) tu 84 T at (12, 38, 0) lof 1 d 5 w STR_SONIC_PISTOL tu 25 did t 2 to (11, 39, 0) dmg 0
+ turn 3 n 1 pos (11, 39, 0) tu 86 T at (12, 41, 1) lof 0 d 3 w STR_SONIC_PISTOL tu 25 did t 2 to (9, 41, 0) dmg 0
+
+== shots at T in the battle by this side
+ turn 2 unit 1000003 from (9, 38, 0) mode 8 STR_SONIC_CANNON dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000009 from (15, 40, 0) mode 9 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000009 from (15, 40, 0) mode 8 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000015 from (7, 41, 1) mode 8 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000018 from (10, 37, 0) mode 9 STR_SONIC_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000018 from (10, 37, 0) mode 8 STR_SONIC_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000019 from (9, 37, 0) mode 8 STR_SONIC_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000019 from (9, 37, 0) mode 8 STR_SONIC_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000006 from (9, 39, 0) mode 8 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000026 from (7, 40, 1) mode 8 STR_SONIC_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000026 from (7, 40, 1) mode 8 STR_SONIC_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000006 from (9, 39, 0) mode 8 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000006 from (9, 39, 0) mode 9 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000009 from (15, 40, 0) mode 9 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000009 from (15, 40, 0) mode 8 STR_SONIC_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000026 from (7, 40, 1) mode 8 STR_SONIC_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000026 from (7, 40, 1) mode 9 STR_SONIC_PISTOL dmg 14 stun 0 fdmg 0 downed 1
+
+== T state
+[AISTATE] before turn=1 unit=571 type=SOLDIER faction=0 status=0 pos=(18,16,2) dir=2 tu=177 hp=75/75 stun=0 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=0 sniped=2 sees=1000002,1000010,1000013,1000020,100002
+[AISTATE] aistart turn=1 unit=571 type=SOLDIER faction=0 status=0 pos=(18,16,2) dir=3 tu=43 hp=75/75 stun=0 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=0 sniped=2 sees=- seenby=0 known=9 near=13 shade=10 tu
+[AISTATE] pstart turn=2 unit=571 type=SOLDIER faction=0 status=0 pos=(18,16,2) dir=3 tu=177 hp=75/75 stun=0 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=1 sniped=1 sees=1000007 seenby=0 known=3 near=10 shade
+[AISTATE] aistart turn=2 unit=571 type=SOLDIER faction=0 status=0 pos=(12,38,0) dir=6 tu=43 hp=75/75 stun=0 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=0 sniped=2 sees=1000003,1000005 seenby=1 known=5 near=
+[AISTATE] pstart turn=3 unit=571 type=SOLDIER faction=0 status=0 pos=(12,38,0) dir=6 tu=177 hp=9/75 stun=1 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=0 sniped=2 sees=1000006,1000018,1000019,1000026 seenby=
+[AISTATE] aistart turn=3 unit=571 type=SOLDIER faction=0 status=0 pos=(12,41,1) dir=2 tu=113 hp=9/75 stun=0 morale=100 kneel=0 weapon=STR_CD_PISTOL spotted=0 sniped=2 sees=1000009 seenby=2 known=8 near=2 shade=
+[AICASUALTY] turn=3 side=1 victim=571 vfaction=0 type=SOLDIER how=dead pos=(12,41,1) tu=8 kneel=0 seenby=5 killer=1000026 kfaction=1 ktype=STR_AQUATOID_MEDIC dist=5 weapon=STR_SONIC_PISTOL hit=front t

@@ -1,0 +1,42 @@
+[HIVEINIT] turn=1 mission=STR_UFO_GROUND_ASSAULT manages=1 hostile=31 managed=30 apart=1 nodes=194 rank0=184 sectors=6 squads=6 us=150
+units 31 managed 30 apart {'out': 1}
+in squads 30 twice 0 managed but not in a squad 0 in a squad but not managed 0
+squad sizes [2, 5, 5, 6, 6, 6] tasks Counter({'HOLD': 3, 'SEARCH': 3})
+first commanders by rank: Counter({'STR_LIVE_NAVIGATOR int=6': 3, 'STR_LIVE_LEADER int=8': 1, 'STR_LIVE_ENGINEER int=7': 1, 'STR_LIVE_NAVIGATOR int=5': 1})
+not their own squad's member: 0
+ranks and Intelligence of all: [(('STR_LIVE_ENGINEER', '7', '1'), 3), (('STR_LIVE_LEADER', '8', '0'), 1), (('STR_LIVE_NAVIGATOR', '5', '2'), 8), (('STR_LIVE_NAVIGATOR', '6', '1'), 4), (('STR_LIVE_NAVIGATOR', '6', '2'), 13), (('STR_LIVE_SOLDIER', '3', '4'), 2)]
+orders 219 a unit given a new order with another still open: 0
+state chain errors: {}
+patrol walks of units with a walking order: to the order's target 111 elsewhere 1
+turn: squads with a completed order, by task and kind
+  1 {'HOLD_STAY': 3}
+  2 {'HOLD_STAY': 3}
+  3 {'HOLD_GO': 1, 'HOLD_STAY': 3}
+  4 {'HOLD_STAY': 3, 'SEARCH_GO': 1}
+  5 {'HOLD_STAY': 3, 'SEARCH_GO': 1, 'SEARCH_STAY': 1}
+  6 {'HOLD_GO': 1, 'HOLD_STAY': 3}
+  7 {'HOLD_GO': 1, 'HOLD_STAY': 3, 'SEARCH_STAY': 1}
+  8 {'HOLD_STAY': 3, 'SEARCH_GO': 1, 'SEARCH_STAY': 1}
+  9 {'HOLD_GO': 1, 'HOLD_STAY': 3}
+  10 {'HOLD_STAY': 3}
+  11 {'HOLD_STAY': 3}
+  12 {'HOLD_STAY': 3}
+ T 1 alive 30 squads 6 hold 3 17 89% search 3 13 30% thinks 84 thinkUs 466
+ T 2 alive 27 squads 5 hold 3 16 91% search 2 11 13% thinks 80 thinkUs 429
+ T 3 alive 25 squads 5 hold 3 15 97% search 2 10 24% thinks 58 thinkUs 438
+ T 4 alive 24 squads 5 hold 3 15 79% search 2 9 17% thinks 66 thinkUs 343
+ T 5 alive 23 squads 5 hold 3 15 73% search 2 8 33% thinks 65 thinkUs 463
+ T 6 alive 22 squads 5 hold 3 15 74% search 2 7 16% thinks 53 thinkUs 254
+ T 7 alive 20 squads 5 hold 3 14 71% search 2 6 23% thinks 50 thinkUs 271
+ T 8 alive 20 squads 4 hold 3 14 79% search 1 6 50% thinks 51 thinkUs 309
+ T 9 alive 20 squads 4 hold 3 14 86% search 1 6 67% thinks 41 thinkUs 162
+ T 10 alive 20 squads 4 hold 3 14 88% search 1 6 78% thinks 45 thinkUs 155
+ T 11 alive 20 squads 4 hold 3 14 85% search 1 6 85% thinks 43 thinkUs 229
+ T 12 alive 20 squads 4 hold 3 14 87% search 1 6 18% thinks 57 thinkUs 268
+commander changes: [('2', 'dead', 'SEARCH', '1'), ('5', 'dead', 'SEARCH', '1'), ('7', 'dead', 'HOLD', '1'), ('7', 'stunned', 'SEARCH', '1')]
+merges: 2 squad lines after start: []
+objective kinds: Counter({'contact': 10}) contacts aimed at: Counter({'192': 6, '267': 1, '2': 1, '368': 1, '471': 1})
+contact classes: Counter({'LAST_KNOWN': 42, 'KNOWN': 21, 'INFERRED': 9}) expired: 2
+refusals: Counter({'no_path': 14, 'too_far': 6})
+plan us max: 333 init us: ['150']
+errors in the journal: 0

@@ -1,0 +1,210 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ua/tree/src/Battlescape/HiveCommand.h	2026-11-05 19:21:16.005238800 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Battlescape/HiveCommand.h	2026-11-05 20:48:54.344244400 +0200
+@@ -51,8 +51,8 @@
+ 	mutable int accepted = 0;
+ 	bool accepts(const Node *n) const;
+ };
+-/// The steps of the choice, in their order: not yet visited inside the place, by the unit's own kind of search and then all over the map; the same with visited ones; nearer the place than the unit stands, for one outside it.
+-const int FIT_RUNGS = 5;
++/// The steps of the choice, in their order, all by the unit's own kind of search: not yet visited inside the place; visited ones too; nearer the place than the unit stands, for one outside it.
++const int FIT_RUNGS = 3;
+ 
+ /// The flag: 0 off, 1 shadow, 2 active.
+ int mode();
+@@ -68,10 +68,14 @@
+ void beforeThink(SavedBattleGame *save, BattleUnit *unit);
+ /// Inside setupPatrol, a new node to choose: the place this unit's squad's task asks for; false, none, and the free choice is all there is.
+ bool patrolIntent(SavedBattleGame *save, BattleUnit *unit, NodeFit &fit);
+-/// Sets the fit for one step of the choice; false, the step does not apply. mapWide: the search of this step goes over the whole map.
+-bool fitRung(NodeFit &fit, int rung, bool &mapWide);
+-/// What came of the choice, for the log and the feedback: free is what the unit would have taken with no task, chosen what the task allowed (0: nothing, the free one stands).
+-void patrolChosen(SavedBattleGame *save, BattleUnit *unit, const NodeFit &fit, int rung, int tryNo, Node *free, Node *chosen);
++/// Sets the fit for one step of the choice; false, the step does not apply.
++bool fitRung(NodeFit &fit, int rung);
++/// What came of the choice, for the log and the feedback: free is what the unit would have taken with no task, chosen what the task allowed (0: nothing, the free one stands). scout: the unit's own kind of search.
++void patrolChosen(SavedBattleGame *save, BattleUnit *unit, const NodeFit &fit, int rung, int tryNo, Node *free, Node *chosen, bool scout, const Node *fromNode);
++/// The time of one choice: the free search and the steps of the condition. Written, nothing more.
++void perfSearch(long long freeNs, long long stepsNs);
++/// The time of one path check of a patrol's node and whether it failed. Written, nothing more.
++void perfPath(long long ns, bool failed);
+ /// Inside setupPatrol, a node kept from before: does it go back to the choice? Once a turn for a unit, and not a node the free choice just gave it.
+ bool dropKept(SavedBattleGame *save, BattleUnit *unit, Node *kept);
+ /// After the unit's think: what it really decided.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ua/tree/src/Battlescape/HiveCommand.cpp	2026-11-05 19:21:16.006291900 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Battlescape/HiveCommand.cpp	2026-11-05 20:48:54.344748200 +0200
+@@ -200,6 +200,9 @@
+ 	int nextOrder = 1;
+ 	int nextKey = 1;
+ 	long long thinkNs = 0, floodNs = 0;
++	// UNIFIED ARMY SAFETY: where the turn's time goes; only written
++	long long intentFloodNs = 0, maxFloodNs = 0, freeNs = 0, stepsNs = 0, pathNs = 0, maxChoiceNs = 0;
++	int intentFloods = 0, searches = 0, paths = 0, pathFails = 0;
+ 	int thinks = 0, floods = 0;
+ 	int rejFar = 0, rejUnreachable = 0, rejMemo = 0, rejIllegal = 0;
+ 	int stat[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+@@ -356,7 +359,9 @@
+ 		}
+ 	}
+ 	hq.floods++;
+-	hq.floodNs += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
++	const long long floodNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
++	hq.floodNs += floodNs;
++	hq.maxFloodNs = std::max(hq.maxFloodNs, floodNs);
+ 	Log(LOG_INFO) << "[HIVEREACH] turn=" << save->getTurn() << " unit=" << u->getId() << " at=" << pos(f.at) << " tiles=" << f.tiles << " capped=" << (f.capped ? 1 : 0) << " tu=" << u->getTimeUnits();
+ 	return f;
+ }
+@@ -789,7 +794,9 @@
+ 		Log(LOG_INFO) << "[HIVEUA] event=SQUADTURN turn=" << turn << " squad=" << s.id << " commander=" << s.commander->getId() << " kind=" << kindName(s) << " center=" << (has ? pos(center) : "-") << " alive=" << alive << " inside=" << inside
+ 			<< " own_visited=" << hq.sectors[s.sector].visited.size() << " visited=" << visited << "/" << nodes << " shots=" << s.cycle.shots << " saw=" << s.cycle.saw;
+ 	}
+-	Log(LOG_INFO) << "[HIVEPERF] turn=" << turn << " phase=turn floods=" << hq.floods << " floodUs=" << hq.floodNs / 1000;
++	Log(LOG_INFO) << "[HIVEPERF] turn=" << turn << " phase=turn floods=" << hq.floods << " floodUs=" << hq.floodNs / 1000 << " maxFloodUs=" << hq.maxFloodNs / 1000
++		<< " intentFloods=" << hq.intentFloods << " intentFloodUs=" << hq.intentFloodNs / 1000 << " searches=" << hq.searches << " freeUs=" << hq.freeNs / 1000 << " stepsUs=" << hq.stepsNs / 1000 << " maxChoiceUs=" << hq.maxChoiceNs / 1000
++		<< " paths=" << hq.paths << " pathFails=" << hq.pathFails << " pathUs=" << hq.pathNs / 1000 << " thinks=" << hq.thinks << " thinkUs=" << hq.thinkNs / 1000;
+ }
+ 
+ void initSectors(SavedBattleGame *save, const std::vector<Squad> &squads)
+@@ -1052,6 +1059,8 @@
+ 	hq.thinks = 0;
+ 	hq.floods = 0;
+ 	hq.floodNs = 0;
++	hq.intentFloodNs = hq.maxFloodNs = hq.freeNs = hq.stepsNs = hq.pathNs = hq.maxChoiceNs = 0;
++	hq.intentFloods = hq.searches = hq.paths = hq.pathFails = 0;
+ 	hq.rejFar = hq.rejUnreachable = hq.rejMemo = hq.rejIllegal = 0;
+ 	hq.starts.clear();
+ 	for (auto *u : *save->getUnits())
+@@ -1719,21 +1728,52 @@
+ bool patrolIntent(SavedBattleGame *save, BattleUnit *unit, NodeFit &fit)
+ {
+ 	if (!taskOf(save, unit, fit)) return false;
++	const auto t0 = std::chrono::steady_clock::now();
++	const int before = hq.floods;
+ 	fit.reach = &fieldOf(save, unit).node;
++	if (hq.floods != before)
++	{
++		hq.intentFloods += hq.floods - before;
++		hq.intentFloodNs += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
++	}
+ 	return true;
+ }
+ 
+-bool fitRung(NodeFit &fit, int rung, bool &mapWide)
++bool fitRung(NodeFit &fit, int rung)
+ {
+ 	fit.accepted = 0;
+-	fit.closer = rung == 4;
+-	fit.skipVisited = rung <= 1;
+-	mapWide = rung == 1 || rung >= 3;
+-	return rung == 4 ? fit.here > fit.radius : rung <= 1 ? fit.hasVisited : true;
++	fit.closer = rung == 2;
++	fit.skipVisited = rung == 0;
++	return rung == 2 ? fit.here > fit.radius : rung == 0 ? fit.hasVisited : true;
++}
++
++void perfSearch(long long freeNs, long long stepsNs)
++{
++	hq.searches++;
++	hq.freeNs += freeNs;
++	hq.stepsNs += stepsNs;
++	hq.maxChoiceNs = std::max(hq.maxChoiceNs, freeNs + stepsNs);
++}
++
++void perfPath(long long ns, bool failed)
++{
++	if (mode() == 0) return;
++	hq.paths++;
++	hq.pathFails += failed ? 1 : 0;
++	hq.pathNs += ns;
+ }
+ 
+-void patrolChosen(SavedBattleGame *save, BattleUnit *unit, const NodeFit &fit, int rung, int tryNo, Node *free, Node *chosen)
++void patrolChosen(SavedBattleGame *save, BattleUnit *unit, const NodeFit &fit, int rung, int tryNo, Node *free, Node *chosen, bool scout, const Node *fromNode)
+ {
++	const auto linked = [save, fromNode](const Node *n)
++	{
++		if (!n || !fromNode) return false;
++		for (int l : *const_cast<Node *>(fromNode)->getNodeLinks())
++		{
++			if (l >= 1 && l < (int)save->getNodes()->size() && save->getNodes()->at(l) == n) return true;
++		}
++		return false;
++	};
+ 	const int turn = save->getTurn();
+ 	const bool changed = chosen != 0 && chosen != free;
+ 	Node *done = mode() == 2 && chosen != 0 ? chosen : free;
+@@ -1742,7 +1782,8 @@
+ 	const auto closer = [&fit](Node *n) { return n && dist(fit.center, n->getPosition()) < fit.here; };
+ 	Log(LOG_INFO) << "[HIVEUA] event=CHOICE turn=" << turn << " unit=" << unit->getId() << " squad=" << fit.squad << " kind=" << fit.kind << " try=" << tryNo << " at=" << pos(unit->getPosition()) << " center=" << pos(fit.center) << " radius=" << fit.radius
+ 		<< " free=" << nodePos(free) << " chosen=" << nodePos(chosen) << " changed=" << (changed ? 1 : 0) << " fit=" << fit.accepted << " rung=" << rung << " inside=" << (inside(chosen) ? 1 : 0) << " closer=" << (closer(chosen) ? 1 : 0)
+-		<< " free_inside=" << (inside(free) ? 1 : 0) << " free_closer=" << (closer(free) ? 1 : 0) << " fallback=" << (chosen ? 0 : 1) << " tu=" << unit->getTimeUnits();
++		<< " free_inside=" << (inside(free) ? 1 : 0) << " free_closer=" << (closer(free) ? 1 : 0) << " fallback=" << (chosen ? 0 : 1) << " tu=" << unit->getTimeUnits()
++		<< " scout=" << (scout ? 1 : 0) << " chosen_linked=" << (linked(chosen) ? 1 : 0) << " free_linked=" << (linked(free) ? 1 : 0) << " from=" << (fromNode ? pos(const_cast<Node *>(fromNode)->getPosition()) : std::string("-")) << " from_rank=" << (fromNode ? const_cast<Node *>(fromNode)->getRank() : -1);
+ 	if (!chosen)
+ 	{
+ 		hq.fellBack[unit->getId()] = turn;
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ua/tree/src/Battlescape/AIModule.cpp	2026-11-05 19:21:16.005238800 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Battlescape/AIModule.cpp	2026-11-05 20:48:54.344244400 +0200
+@@ -2123,7 +2123,9 @@
+ 
+ 		if (_toNode != 0)
+ 		{
++			const auto hiveT0 = std::chrono::steady_clock::now();
+ 			_save->getPathfinding()->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
++			HiveCommand::perfPath(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - hiveT0).count(), _save->getPathfinding()->getStartDirection() == -1);
+ 			if (_save->getPathfinding()->getStartDirection() == -1)
+ 			{
+ 				if (oxceFixes && !_toNode->isAllocated())
+@@ -2172,6 +2174,7 @@
+  * UNIFIED ARMY CONTROL V0 (bench): the patrol's new node. The soldier chooses as ever, by the engine's own getPatrolNode and its own dice, among the nodes
+  * its squad's task allows; none of them will do, and the free choice stands. The free choice is always made first and the dice go on from it, so that the
+  * only thing the task changes is the node, and the log can say what the soldier would have done without it. The last two tries of the five carry no condition.
++ * UNIFIED ARMY SAFETY: the condition only narrows the very search the engine gives this unit: scout=false stays among the node's links, and the engine's own fallback to the other kind of search is the free choice's alone.
+  */
+ Node *AIModule::hivePatrolNode(bool scout, int triesLeft)
+ {
+@@ -2185,9 +2188,11 @@
+ 	{
+ 		return freeChoice();
+ 	}
++	const auto t0 = std::chrono::steady_clock::now();
+ 	const uint64_t seedBefore = RNG::getSeed();
+ 	Node *freeNode = freeChoice();
+ 	const uint64_t seedAfter = RNG::getSeed();
++	const auto t1 = std::chrono::steady_clock::now();
+ 	Node *chosen = 0;
+ 	int rung = -1;
+ 	if (triesLeft >= 2)
+@@ -2195,16 +2200,16 @@
+ 		RNG::setSeed(seedBefore);
+ 		for (int r = 0; r < HiveCommand::FIT_RUNGS && chosen == 0; ++r)
+ 		{
+-			bool mapWide = false;
+-			if (HiveCommand::fitRung(fit, r, mapWide))
++			if (HiveCommand::fitRung(fit, r))
+ 			{
+-				chosen = _save->getPatrolNode(mapWide || scout, _unit, _fromNode, &fit);
++				chosen = _save->getPatrolNode(scout, _unit, _fromNode, &fit);
+ 				rung = r;
+ 			}
+ 		}
+ 		RNG::setSeed(seedAfter);
+ 	}
+-	HiveCommand::patrolChosen(_save, _unit, fit, rung, 5 - triesLeft, freeNode, chosen);
++	HiveCommand::perfSearch(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count(), std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t1).count());
++	HiveCommand::patrolChosen(_save, _unit, fit, rung, 5 - triesLeft, freeNode, chosen, scout, _fromNode);
+ 	return HiveCommand::mode() == 2 && chosen != 0 ? chosen : freeNode;
+ }
+ 
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ua/tree/src/Savegame/SavedBattleGame.cpp	2026-11-05 19:21:16.001882700 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/us/tree/src/Savegame/SavedBattleGame.cpp	2026-11-05 20:48:54.341241700 +0200
+@@ -2462,7 +2462,9 @@
+ 		if (Options::traceAI) { Log(LOG_INFO) << (scout ? "Scout " : "Guard") << " found on patrol node! XXX XXX XXX"; }
+ 		if (unit->isBigUnit() && !scout)
+ 		{
+-			return getPatrolNode(true, unit, fromNode, fit); // move dammit
++			// UNIFIED ARMY SAFETY (bench): a task's condition emptying the list is not a big unit with nowhere to go; what the rule opens here, it opens for the unit's own free choice only
++			if (fit) return 0;
++			return getPatrolNode(true, unit, fromNode); // move dammit
+ 		}
+ 		else
+ 			return 0;

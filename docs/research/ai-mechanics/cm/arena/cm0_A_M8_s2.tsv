@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2020002	STR_LOC_HUMANIST_VILLA	over	STR_LOC_HUMANIST_VILLA	STR_LOC_HUMANIST_VILLA	45	8	URBANJUNKWOODUFO	STR_MIXED_KKK	STR_BRIG#2	12	6	8	1	0	2	229	39	36	0	3	7	0	0	33	34	h.rec.in:236,p.rec.in:116,p.rec.out.a7:1	117	0	0	0	0	0	236	0	0	1	0	0	61		win

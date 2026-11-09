@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2031001	STR_VESSEL_BOMBER	over	STR_VESSEL_BOMBER	STR_UFO_GROUND_ASSAULT	60	6	MOUNTBD_SNOW	STR_FLOATER_ELITE	STR_DRAKKAR#1	3	10	6	4	2	6	492	31	16	0	15	0	15	0	46	180	h.rec.in:710,h.rec.out.a7:2,p.rec.in:117	117	0	0	0	0	1	712	0	0	4	0	0	45		loss

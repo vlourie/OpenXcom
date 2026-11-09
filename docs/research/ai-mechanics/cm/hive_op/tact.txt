@@ -1,0 +1,113 @@
+===== op1_OA_M3_s1 base op2_OO_M3_s1
+   event=RESULT op=1 turn=5 state=ABORTED why=fighter_out target=470 target_out=0 attacked=0 target_hp_log=132 stage_turn=4 exec_turn=-1
+  -- op1_OA_M3_s1
+   target 470 at aistart: t1 (34,12,1) dir6 hp144/168; t2 (42,23,0) dir3 hp138/168; t3 (43,24,0) dir3 hp132/168; t4 (42,26,0) dir5 hp132/168; t5 (44,26,0) dir2 hp132/168; t6 (44,26,0) dir4 hp27/168; t7 (44,26,0) dir4 hp27/168
+     dead: t7 side 1 at (44,26,0) tu 50 seenby 3 by 448 AUX_TANK_LASER_CANNON dist 19 hit right
+   fighter 1000000 at aistart: t1 (45,55,3) dir4 hp116/116; t2 (40,54,3) dir0 hp37/116; t3 (40,54,3) dir0 hp37/116; t4 (41,55,3) dir0 hp37/116; t5 (44,30,3) dir7 hp37/116
+     dead: t6 side 0 at (46,26,0) tu 3 seenby 1 by 470 AUX_TANK_LASER_CANNON dist 2 hit right
+   fighter 1000005 at aistart: t1 (43,57,0) dir0 hp116/116; t2 (62,58,3) dir3 hp116/116; t3 (43,59,0) dir7 hp116/116; t4 (40,54,3) dir0 hp116/116
+     dead: t5 side 0 at (45,25,0) tu 35 seenby 1 by 470 AUX_TANK_LASER_CANNON dist 3 hit left
+  -- op2_OO_M3_s1
+   target 470 at aistart: t1 (34,12,1) dir6 hp144/168; t2 (42,23,0) dir3 hp138/168; t3 (43,24,0) dir3 hp132/168; t4 (42,26,0) dir5 hp132/168; t5 (46,27,0) dir4 hp132/168; t6 (45,27,0) dir6 hp36/168; t7 (45,27,0) dir2 hp36/168
+     dead: t7 side 1 at (45,27,0) tu 52 seenby 3 by 1000085 AUX_CHRYSSALID_WEAPON dist 2 hit rear
+   fighter 1000000 at aistart: t1 (45,55,3) dir4 hp116/116; t2 (40,54,3) dir0 hp37/116; t3 (40,54,3) dir0 hp37/116; t4 (41,55,3) dir0 hp37/116; t5 (44,32,3) dir0 hp37/116
+     dead: t5 side 1 at (45,26,0) tu 12 seenby 1 by 470 AUX_TANK_LASER_CANNON dist 1 hit front
+   fighter 1000005 at aistart: t1 (43,57,0) dir0 hp116/116; t2 (62,58,3) dir3 hp116/116; t3 (43,59,0) dir7 hp116/116; t4 (40,54,3) dir0 hp116/116; t5 (40,54,3) dir0 hp116/116; t6 (27,54,0) dir7 hp116/116; t7 (18,52,0) dir3 hp16/116; t8 (18,52,0) dir3 hp16/116
+   active blows 1000000 ['t5 (44,30,3)>(45,25,0) aim 470 src melee spent 172 dmg 105']
+   base   blows 1000000 ['t5 (44,30,3)>(45,26,0) aim 470 src melee spent 161 dmg 96']
+   active blows 1000005 []
+   base   blows 1000005 []
+   deferred: ['event=DEFER op=1 turn=4 unit=1000000 at=(44,30,3) to=(44,25,0) tu=59 way=26 blows_now=2 blows_next=10', 'event=DEFER op=1 turn=4 unit=1000005 at=(44,31,3) to=(44,25,0) tu=65 way=30 blows_now=2 blows_next=10', 'event=DEFER op=1 turn=4 unit=1000005 at=(44,27,3) to=(44,25,0) tu=45 way=14 blows_now=2 blows_next=10']
+   diverted: Counter()
+   released/recell: []
+   HIVEFAIR kinds: {(): 35}
+   HIVEFAIR sample: ['[HIVEFAIR] turn=1 observer=1000003 target=444 pos=(33,14,2)', '[HIVEFAIR] turn=1 observer=1000013 target=545 pos=(37,12,2)']
+   fighters spent>tu: []
+   bot target on the player's next turn: ['t5 (42,26,0) tu195 mode2 act8 to(45,25,0) aim1000005 dmg116', 't5 (42,26,0) tu119 mode2 act9 to(43,30,0) aim1000017 dmg87', 't5 (42,26,0) tu20 mode0 act2 to(48,54,0) aim-1 dmg0']
+   op1_OA_M3_s1: aistart t8: AI alive 17, player's alive 3, their hp sum 226
+   op2_OO_M3_s1: aistart t8: AI alive 17, player's alive 3, their hp sum 295
+===== op4_OA_M3_s1 base op2_OO_M3_s1
+   event=RESULT op=1 turn=5 state=ABORTED why=fighter_out target=470 target_out=0 attacked=0 target_hp_log=132 stage_turn=4 exec_turn=-1
+  -- op4_OA_M3_s1
+   target 470 at aistart: t1 (34,12,1) dir6 hp144/168; t2 (42,23,0) dir3 hp138/168; t3 (43,24,0) dir3 hp132/168; t4 (42,26,0) dir5 hp132/168; t5 (46,27,0) dir4 hp132/168; t6 (46,27,0) dir4 hp75/168; t7 (46,27,0) dir4 hp75/168
+     dead: t7 side 1 at (46,27,0) tu 26 seenby 8 by 1000085 AUX_CHRYSSALID_WEAPON dist 2 hit rear
+   fighter 1000000 at aistart: t1 (45,55,3) dir4 hp116/116; t2 (40,54,3) dir0 hp37/116; t3 (40,54,3) dir0 hp37/116; t4 (41,55,3) dir0 hp37/116; t5 (44,30,3) dir7 hp37/116
+     dead: t5 side 1 at (45,26,0) tu 5 seenby 1 by 470 AUX_TANK_LASER_CANNON dist 1 hit front
+   fighter 1000005 at aistart: t1 (43,57,0) dir0 hp116/116; t2 (62,58,3) dir3 hp116/116; t3 (43,59,0) dir7 hp116/116; t4 (40,54,3) dir0 hp116/116
+     dead: t5 side 0 at (44,31,3) tu 65 seenby 1 by 470 AUX_TANK_LASER_CANNON dist 5 hit front
+  -- op2_OO_M3_s1
+   target 470 at aistart: t1 (34,12,1) dir6 hp144/168; t2 (42,23,0) dir3 hp138/168; t3 (43,24,0) dir3 hp132/168; t4 (42,26,0) dir5 hp132/168; t5 (46,27,0) dir4 hp132/168; t6 (45,27,0) dir6 hp36/168; t7 (45,27,0) dir2 hp36/168
+     dead: t7 side 1 at (45,27,0) tu 52 seenby 3 by 1000085 AUX_CHRYSSALID_WEAPON dist 2 hit rear
+   fighter 1000000 at aistart: t1 (45,55,3) dir4 hp116/116; t2 (40,54,3) dir0 hp37/116; t3 (40,54,3) dir0 hp37/116; t4 (41,55,3) dir0 hp37/116; t5 (44,32,3) dir0 hp37/116
+     dead: t5 side 1 at (45,26,0) tu 12 seenby 1 by 470 AUX_TANK_LASER_CANNON dist 1 hit front
+   fighter 1000005 at aistart: t1 (43,57,0) dir0 hp116/116; t2 (62,58,3) dir3 hp116/116; t3 (43,59,0) dir7 hp116/116; t4 (40,54,3) dir0 hp116/116; t5 (40,54,3) dir0 hp116/116; t6 (27,54,0) dir7 hp116/116; t7 (18,52,0) dir3 hp16/116; t8 (18,52,0) dir3 hp16/116
+   active blows 1000000 ['t5 (44,29,3)>(45,26,0) aim 470 src melee spent 172 dmg 57']
+   base   blows 1000000 ['t5 (44,30,3)>(45,26,0) aim 470 src melee spent 161 dmg 96']
+   active blows 1000005 []
+   base   blows 1000005 []
+   deferred: ['event=DEFER op=1 turn=4 unit=1000000 at=(44,30,3) to=(44,25,0) tu=59 way=26 blows_now=2 blows_next=10', 'event=DEFER op=1 turn=4 unit=1000005 at=(44,31,3) to=(44,25,0) tu=65 way=30 blows_now=2 blows_next=10']
+   diverted: Counter()
+   released/recell: []
+   HIVEFAIR kinds: {(): 34}
+   HIVEFAIR sample: ['[HIVEFAIR] turn=1 observer=1000003 target=444 pos=(33,14,2)', '[HIVEFAIR] turn=1 observer=1000013 target=545 pos=(37,12,2)']
+   fighters spent>tu: []
+   bot target on the player's next turn: ['t5 (42,26,0) tu195 mode2 act9 to(44,31,3) aim1000005 dmg116', 't5 (42,26,0) tu102 mode0 act2 to(48,54,0) aim-1 dmg0', 't5 (46,27,0) tu72 mode3 act0 to(-1,-1,-1) aim1000025 dmg0']
+   op4_OA_M3_s1: aistart t8: AI alive 22, player's alive 3, their hp sum 253
+   op2_OO_M3_s1: aistart t8: AI alive 17, player's alive 3, their hp sum 295
+===== op5_OG_M3_s1 base op2_OO_M3_s1
+   event=RESULT op=1 turn=2 state=ABORTED why=fighter_out target=470 target_out=0 attacked=0 target_hp_log=140 stage_turn=1 exec_turn=-1
+  -- op5_OG_M3_s1
+   target 470 at aistart: t1 (34,12,1) dir6 hp144/168; t2 (34,12,1) dir6 hp140/168; t3 (38,15,0) dir6 hp140/168; t4 (38,17,0) dir4 hp137/168; t5 (38,22,0) dir4 hp137/168; t6 (38,25,0) dir4 hp133/168; t7 (36,28,0) dir4 hp123/168; t8 (36,28,0) dir5 hp119/168
+   fighter 1000003 at aistart: t1 (45,39,0) dir7 hp116/116
+     dead: t2 side 0 at (38,11,0) tu 16 seenby 1 by 545 AUX_WOLVERIN_WEAPON_MINIGUN dist 1 hit front
+   fighter 1000001 at aistart: t1 (22,38,3) dir5 hp116/116; t2 (24,41,0) dir1 hp107/116
+     dead: t3 side 0 at (21,29,0) tu 3 seenby 1 by 444 AUX_TANK_CANNON dist 2 hit under
+  -- op2_OO_M3_s1
+   target 470 at aistart: t1 (34,12,1) dir6 hp144/168; t2 (42,23,0) dir3 hp138/168; t3 (43,24,0) dir3 hp132/168; t4 (42,26,0) dir5 hp132/168; t5 (46,27,0) dir4 hp132/168; t6 (45,27,0) dir6 hp36/168; t7 (45,27,0) dir2 hp36/168
+     dead: t7 side 1 at (45,27,0) tu 52 seenby 3 by 1000085 AUX_CHRYSSALID_WEAPON dist 2 hit rear
+   fighter 1000003 at aistart: t1 (45,39,0) dir7 hp116/116
+     dead: t2 side 0 at (48,32,0) tu 133 seenby 1 by 545 AUX_WOLVERIN_WEAPON_MINIGUN dist 23 hit left
+   fighter 1000001 at aistart: t1 (22,38,3) dir5 hp116/116; t2 (16,35,0) dir6 hp109/116; t3 (11,37,0) dir0 hp105/116
+     dead: t4 side 0 at (12,36,0) tu 175 seenby 0 by 444 AUX_TANK_CANNON dist 6 hit under
+   active blows 1000003 ['t1 (39,14,0)>(38,11,0) aim 503 src melee spent 33 dmg 85']
+   base   blows 1000003 []
+   active blows 1000001 ['t1 (23,40,0)>(14,46,0) aim 1000061 src melee spent 69 dmg 70', 't2 (21,29,0)>(22,27,0) aim 444 src melee spent 120 dmg 4']
+   base   blows 1000001 ['t1 (21,38,0)>(16,35,0) aim 1000077 src melee spent 47 dmg 10', 't2 (17,36,0)>(18,43,0) aim 1000061 src melee spent 49 dmg 70']
+   deferred: []
+   diverted: Counter({'1000003': 6, '1000001': 4})
+   released/recell: []
+   HIVEFAIR kinds: {(): 31}
+   HIVEFAIR sample: ['[HIVEFAIR] turn=1 observer=1000003 target=444 pos=(33,14,2)', '[HIVEFAIR] turn=1 observer=1000013 target=545 pos=(37,12,2)']
+   fighters spent>tu: []
+   bot target on the player's next turn: ['t2 (34,12,1) tu195 mode3 act0 to(-1,-1,-1) aim-1 dmg0', 't2 (34,12,1) tu195 mode3 act0 to(-1,-1,-1) aim-1 dmg0']
+   op5_OG_M3_s1: aistart t8: AI alive 32, player's alive 3, their hp sum 344
+   op2_OO_M3_s1: aistart t8: AI alive 17, player's alive 3, their hp sum 295
+===== op6_OG_M3_s2 base scpa_D_M3_s2
+   event=RESULT op=1 turn=2 state=ABORTED why=fighter_out target=545 target_out=0 attacked=0 target_hp_log=64 stage_turn=1 exec_turn=-1
+  -- op6_OG_M3_s2
+   target 545 at aistart: t1 (5,36,0) dir4 hp68/68; t2 (5,37,0) dir4 hp64/68
+     dead: t2 side 1 at (5,37,0) tu 21 seenby 3 by 1000006 AUX_CHRYSSALID_WEAPON dist 2 hit rear
+   fighter 1000005 at aistart: t1 (10,63,1) dir5 hp116/116
+     dead: t2 side 0 at (4,46,0) tu 0 seenby 1 by 545 AUX_WOLVERIN_WEAPON_MINIGUN dist 10 hit front
+   fighter 1000006 at aistart: t1 (30,63,1) dir7 hp116/116; t2 (7,44,0) dir7 hp116/116; t3 (4,39,0) dir1 hp110/116; t4 (12,28,0) dir1 hp102/116; t5 (24,26,0) dir7 hp102/116
+     dead: t5 side 1 at (32,19,0) tu 9 seenby 0 by 444 AUX_TANK_CANNON dist 1 hit under
+  -- scpa_D_M3_s2
+   target 545 at aistart: t1 (5,36,0) dir4 hp68/68; t2 (5,36,0) dir4 hp11/68
+     dead: t2 side 1 at (5,36,0) tu 103 seenby 5 by 1000004 AUX_CHRYSSALID_WEAPON dist 1 hit rear
+   fighter 1000005 at aistart: t1 (10,63,1) dir5 hp116/116; t2 (2,67,0) dir0 hp116/116; t3 (0,32,0) dir1 hp116/116; t4 (6,17,0) dir7 hp116/116
+     dead: t5 side 0 at (19,17,0) tu 2 seenby 1 by 470 AUX_TANK_LASER_CANNON dist 2 hit rear
+   fighter 1000006 at aistart: t1 (30,63,1) dir7 hp116/116; t2 (38,57,0) dir0 hp116/116; t3 (44,53,0) dir0 hp116/116; t4 (42,44,0) dir0 hp116/116; t5 (51,4,0) dir1 hp116/116; t6 (39,15,0) dir6 hp116/116
+     dead: t6 side 1 at (22,8,0) tu 8 seenby 0 by 444 AUX_TANK_CANNON dist 2 hit under
+   active blows 1000005 ['t1 (10,63,1)>(6,64,0) aim 1000082 src melee spent 73 dmg 40']
+   base   blows 1000005 ['t1 (10,63,1)>(6,64,0) aim 1000082 src melee spent 73 dmg 40', 't3 (0,32,0)>(0,30,0) aim 1000078 src melee spent 27 dmg 45', 't3 (9,22,0)>(6,17,0) aim 1000087 src melee spent 41 dmg 69', 't4 (13,14,0)>(19,18,0) aim 470 src melee spent 141 dmg 32']
+   active blows 1000006 ['t2 (6,43,0)>(4,39,0) aim 545 src melee spent 170 dmg 64', 't3 (11,29,0)>(12,28,0) aim 1000069 src melee spent 21 dmg 41', 't4 (13,28,0)>(24,30,0) aim 520 src melee spent 63 dmg 58', 't4 (25,29,0)>(26,30,0) aim 448 src melee spent 90 dmg 164']
+   base   blows 1000006 ['t1 (34,66,0)>(40,66,0) aim 1000063 src melee spent 54 dmg 60']
+   deferred: []
+   diverted: Counter({'1000005': 1})
+   released/recell: []
+   HIVEFAIR kinds: {(): 27}
+   HIVEFAIR sample: ['[HIVEFAIR] turn=1 observer=1000002 target=545 pos=(5,36,0)', '[HIVEFAIR] turn=1 observer=1000004 target=444 pos=(19,28,0)']
+   fighters spent>tu: []
+   bot target on the player's next turn: ['t2 (5,36,0) tu108 mode2 act7 to(3,28,1) aim1000002 dmg176', 't2 (5,36,0) tu79 mode2 act7 to(3,45,0) aim1000025 dmg183', 't2 (5,36,0) tu50 mode2 act7 to(4,46,0) aim1000005 dmg20', 't2 (5,36,0) tu29 mode0 act2 to(1,61,0) aim-1 dmg0']
+   op6_OG_M3_s2: aistart t6: AI alive 26, player's alive 1, their hp sum 15
+   scpa_D_M3_s2: aistart t6: AI alive 37, player's alive 2, their hp sum 85

@@ -1,0 +1,34 @@
+{"v": 1, "gen": "base_v2", "cfg": "b66cb177c1e95585", "seed": 2026001, "rec": 1547, "turn": 13, "side": 1, "unit": 1000039, "order": 0, "n": 1, "state": {"pos": [51, 8, 3], "dir": 7, "tu": 103, "hp": 90, "stun": 0, "morale": 99, "kneel": 0, "h": {"u": "555ee21331e92c8c", "i": "1591c21f02b2ecee", "o": "f763773aadd69ae9", "m": "2c3a9c3f69372405", "r0": "f4ab94426ca9dedd", "r": "f4ab94426ca9dedd", "a0": "285717e2b30e71f6"}, "state_id": "79647e2c58de0889"}, "cand": {"n": 6433, "set": "619d07efe1d88fb9", "order": "b58b668a2deeccc1", "moves": "6072c5d38a381441", "nmoves": 6421, "acts": "3447d6020af47b05", "nacts": 12, "rng": 0}, "base": {"id": "bb3c6134571cb358", "k": "m", "in": 1, "exp": "cand", "tk": null, "t": 2, "to": [51, 8, 5], "w": "STR_WAKIZASHI", "run": 0, "mode": 2, "slot": "x", "src": null, "src_rec": null, "score": null, "reason": {"trail": ["c2.exit", "c2.exit seen=1 tried=1 dist=0 cost=16 stand=0 tu=103"], "odds": [], "props": []}}, "rule": null}
+{"v": 1, "rec": 1547, "unit": 1000039, "walk": 1, "pos": [51, 8, 5], "dir": 7, "tu": 87, "spent": 16, "kneel": 0, "hp": 90, "hp_lost": 0, "stun": 0, "down": 0, "seen": 1, "spotted": 0, "dmg": 0, "stunned": 0, "downed": 0, "fdmg": 0, "fdowned": 0, "born": 0, "trail": []}
+ prev 1535 1 a 186 ['c2.skip.unseen'] 43 []
+ prev 1536 2 a 143 ['c2.plan.here', 'c2.plan.here seen=1 shots=3 shot=40 walk=0 exit=16 left=23 tu=143'] 40 ['c2.confirm']
+  c2.plan.fp dropped in the same think (c2.drop.mode)	3
+  c2.plan.fp shots=1 -> c2.arrived	1
+  c2.plan.fp shots=2 -> c2.arrived	1
+  c2.plan.fp shots=2 -> c2.drop.walk	1
+  c2.plan.fp shots=2 -> exit	1
+  c2.plan.fp shots=2 -> turn ended / nothing	1
+  c2.plan.fp shots=3 -> turn ended / nothing	2
+  c2.plan.here dropped in the same think (c2.drop.mode)	58
+  c2.plan.here shots=1 -> c2.drop.changed	17
+  c2.plan.here shots=1 -> c2.exit.safe	29
+  c2.plan.here shots=1 -> exit	141
+  c2.plan.here shots=1 -> turn ended / nothing	81
+  c2.plan.here shots=2 -> c2.drop.changed	34
+  c2.plan.here shots=2 -> c2.exit.safe	9
+  c2.plan.here shots=2 -> exit	68
+  c2.plan.here shots=2 -> turn ended / nothing	71
+  c2.plan.here shots=3 -> c2.drop.changed	29
+  c2.plan.here shots=3 -> c2.exit.safe	3
+  c2.plan.here shots=3 -> exit	29
+  c2.plan.here shots=3 -> turn ended / nothing	85
+c2.plan.fp exit_sum	28
+c2.plan.fp left_sum	98
+c2.plan.fp shots=1	1
+c2.plan.fp shots=2	4
+c2.plan.fp shots=3	2
+c2.plan.here exit_sum	2569
+c2.plan.here left_sum	9789
+c2.plan.here shots=1	268
+c2.plan.here shots=2	182
+c2.plan.here shots=3	146

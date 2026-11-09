@@ -1,0 +1,32 @@
+ORDER 1 turn 1 by unit 1000017: target 108 at (54,37,1) hp 110, 8 units with a legal useful shot now, expected damage sum 265.4
+  member 1000017: auto cost 58 TU, expected 22.0 hp per attack
+  member 1000024: aimed cost 32 TU, expected 3.1 hp per attack
+  member 1000027: auto cost 58 TU, expected 26.8 hp per attack
+  member 1000056: aimed cost 89 TU, expected 10.4 hp per attack
+  member 1000057: aimed cost 65 TU, expected 22.8 hp per attack
+  member 1000058: aimed cost 89 TU, expected 30.8 hp per attack
+  member 1000113: snap cost 18 TU, expected 70.2 hp per attack
+  member 1000114: snap cost 18 TU, expected 79.4 hp per attack
+  ORDER SHOT unit 1000017 n1: auto at 108 (hp then 110) instead of walk (mode 0), TU 134
+  ORDER SHOT unit 1000027 n1: auto at 108 (hp then 64) instead of walk (mode 0), TU 134
+  order closed: target_out
+members' turn 1 (decisions act/TU spent/damage):
+  1000017  D0: attacks 0 dmg 0 TU left 128 [walk/2/0 walk/4/0 none/0/0]
+           on: attacks 2 dmg 46 TU left 14 [auto/61/46 aimed/59/0 walk/0/0 walk/0/0]
+  1000024  D0: attacks 3 dmg 86 TU left 18 [snap/32/43 snap/29/12 aimed/33/31 walk/22/0]
+           on: attacks 4 dmg 55 TU left 0 [snap/32/28 snap/29/27 aimed/33/0 walk/8/0 aimed/32/0]
+  1000027  D0: attacks 2 dmg 55 TU left 16 [auto/60/0 auto/58/55 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 56 [auto/60/0 walk/18/0 walk/0/0 walk/0/0]
+  1000056  D0: attacks 2 dmg 114 TU left 2 [auto/61/55 auto/60/59 walk/26/0]
+           on: attacks 2 dmg 55 TU left 11 [auto/59/0 auto/59/55 walk/20/0]
+  1000057  D0: attacks 1 dmg 0 TU left 51 [walk/1/0 walk/28/0 walk/4/0 aimed/65/0]
+           on: attacks 2 dmg 20 TU left 15 [walk/1/0 aimed/66/20 aimed/67/0 walk/0/0]
+  1000058  D0: attacks 2 dmg 0 TU left 9 [walk/22/0 auto/59/0 auto/59/0 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 20 TU left 11 [aimed/92/0 snap/46/20 walk/0/0 walk/0/0]
+  1000113  D0: attacks 2 dmg 0 TU left 6 [snap/20/0 snap/21/0 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 90 TU left 6 [snap/22/35 snap/19/55 walk/0/0 walk/0/0]
+  1000114  D0: attacks 2 dmg 109 TU left 7 [snap/21/74 snap/19/35 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 49 TU left 6 [snap/22/0 walk/0/0 snap/19/49 walk/0/0]
+  members together  D0: attacks 14 dmg 364  |  on: attacks 17 dmg 335
+  target 108 in D0: stun turn 1 by 1000024, dead turn 2 by 1000024
+  target 108 in on: dead turn 1 by 1000029

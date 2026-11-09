@@ -1,0 +1,81 @@
+{'all': 80, 'next_turn': 18, 'comrade_out': 18, 'attack_other': 27, 'dmg_attack_other': 0, 'fdmg_attack_other': 0, 'same_turn': 62, 'comrade_walked': 62, 'no_tu_for_shot': 20, 'walk_or_other': 42, 'dmg_walk_or_other': 0, 'fdmg_walk_or_other': 0, 'attack_T': 11, 'dmg_attack_T': 71, 'fdmg_attack_T': 84, 'attack_T_hurt': 1}
+L1_s2 t4>5 B1000018(4, 36, 0) tu119>119 T472(26, 47, 0) d25 STR_LASER_RIFLE_PIR | left [(1000017, [5, 37, 0], [5, 37, 0], True)] | attack_other t8 u192 sp29 dmg0 f0 others 4
+L12_s2 t10>10 B1000044(7, 33, 3) tu72>7 T575(4, 33, 4) d3 STR_XBOW_CORAL | left [(1000042, [6, 33, 3], [6, 35, 3], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 0
+L4_s1 t2>2 B1000013(14, 51, 2) tu69>43 T67(25, 37, 2) d18 STR_PIR_PLASMA_RIFLE | left [(1000009, [13, 50, 2], [13, 51, 2], False)] | walk_or_other t2 uNone sp6 dmg0 f0 others 1
+L4_s1 t7>7 B1000035(5, 3, 2) tu77>41 T71(18, 5, 2) d14 STR_PIR_HEAVY_PLASMA | left [(1000033, [7, 3, 2], [7, 3, 2], True)] | attack_T t7 u71 sp35 dmg0 f0 others 0
+L5_s1 t1>1 B1000031(15, 63, 0) tu81>29 T91(11, 10, 0) d54 STR_MP40 | left [(1000049, [13, 48, 0], [10, 49, 0], False)] | walk_or_other t2 uNone sp4 dmg0 f0 others 2
+L5_s1 t3>4 B1000015(56, 41, 0) tu77>81 T301(42, 10, 0) d35 STR_AUTO_RIFLE | left [(1000037, [54, 40, 0], [55, 37, 0], False)] | attack_other t8 u229 sp19 dmg0 f0 others 3
+L5_s1 t3>4 B1000028(23, 55, 0) tu21>81 T301(42, 10, 0) d49 STR_LUGER | left [(1000053, [23, 53, 0], [26, 53, 0], False)] | walk_or_other t2 uNone sp6 dmg0 f0 others 1
+L5_s1 t3>4 B1000056(45, 58, 0) tu44>104 T301(42, 10, 0) d49 STR_KRUGER | left [(1000000, [44, 42, 0], [44, 44, 0], False), (1000023, [45, 56, 0], [48, 55, 0], False), (1000042, [45, 45, 0], [33, 52, 0], False)] | attack_other t8 u229 sp25 dmg0 f0 others 3
+L5_s1 t5>5 B1000015(56, 41, 0) tu81>21 T157(27, 32, 0) d31 STR_AUTO_RIFLE | left [(1000004, [56, 40, 0], [56, 40, 0], True), (1000006, [52, 40, 0], [51, 40, 0], False), (1000032, [55, 42, 0], [57, 41, 0], True)] | attack_other t8 u191 sp19 dmg0 f0 others 5
+L5_s1 t5>5 B1000015(56, 41, 0) tu81>21 T324(20, 30, 0) d38 STR_AUTO_RIFLE | left [(1000004, [56, 40, 0], [56, 40, 0], True), (1000006, [52, 40, 0], [51, 40, 0], False), (1000032, [55, 42, 0], [57, 41, 0], True)] | attack_other t8 u191 sp19 dmg0 f0 others 5
+L9_s2 t2>2 B1000014(9, 41, 0) tu86>86 T571(12, 38, 0) d5 STR_SONIC_PISTOL | left [(1000003, [10, 38, 0], [15, 37, 0], False), (1000005, [11, 39, 0], [10, 42, 0], False)] | walk_or_other t2 uNone sp2 dmg0 f0 others 0
+L6_s1 t2>3 B1000025(30, 12, 0) tu90>134 T581(21, 27, 2) d18 STR_GAUSS_RIFLE | left [(1000001, [28, 13, 0], [27, 13, 0], True)] | attack_other t8 u575 sp41 dmg0 f0 others 3
+L6_s1 t30>31 B1000016(18, 12, 0) tu42>111 T571(16, 29, 0) d18 STR_GAUSS_RIFLE | left [(1000023, [18, 13, 0], [17, 13, 0], False)] | attack_other t8 u581 sp34 dmg0 f0 others 3
+L8_s2 t2>2 B1000000(6, 58, 0) tu98>66 T301(17, 39, 0) d22 STR_PIR_PLASMA_PISTOL | left [(1000007, [10, 54, 0], [7, 55, 0], False)] | attack_other t8 u344 sp18 dmg0 f0 others 2
+M10_s2 t2>3 B1000034(12, 54, 0) tu89>89 T115(11, 40, 0) d15 STR_UAC_RIFLE | left [(1000030, [11, 43, 0], [9, 44, 0], False), (1000031, [11, 44, 0], [11, 44, 0], True)] | attack_other t8 u114 sp22 dmg0 f0 others 1
+M10_s2 t3>3 B1000034(12, 54, 0) tu89>27 T46(9, 39, 0) d16 STR_UAC_RIFLE | left [(1000029, [9, 41, 0], [9, 41, 0], True), (1000030, [9, 44, 0], [9, 44, 0], True)] | attack_other t8 u114 sp22 dmg0 f0 others 2
+M10_s2 t4>4 B1000038(18, 22, 0) tu64>32 T114(4, 42, 1) d25 STR_UAC_PLASMAGUN | left [(1000018, [15, 27, 0], [15, 27, 0], True), (1000048, [15, 26, 0], [15, 26, 0], True)] | attack_other t7 u46 sp32 dmg0 f0 others 2
+L7_s2 t2>2 B1000031(18, 50, 0) tu298>168 T192(14, 31, 0) d20 AUX_ADRONE_WEAPON | left [(1000010, [15, 34, 0], [15, 33, 0], False)] | attack_other t8 u472 sp65 dmg0 f0 others 2
+L7_s2 t4>5 B1000006(8, 46, 0) tu81>81 T471(30, 32, 0) d27 STR_STORM_LASER | left [(1000026, [11, 44, 0], [10, 49, 0], False)] | attack_other t8 u472 sp24 dmg0 f0 others 2
+L7_s2 t4>5 B1000008(11, 46, 0) tu24>67 T267(24, 25, 0) d25 STR_GAUSS_RIFLE | left [(1000011, [20, 31, 0], [20, 31, 0], True), (1000026, [11, 44, 0], [10, 49, 0], False)] | attack_T t8 u267 sp21 dmg0 f0 others 2
+L7_s2 t5>6 B1000004(10, 46, 0) tu33>28 T471(30, 32, 0) d25 STR_STORM_LASER | left [(1000025, [11, 45, 0], [21, 51, 0], False)] | walk_or_other t2 uNone sp4 dmg0 f0 others 1
+L7_s1 t2>2 B1000004(45, 24, 0) tu45>19 T267(38, 26, 1) d8 STR_STORM_LASER | left [(1000024, [44, 24, 0], [44, 24, 0], True)] | walk_or_other t2 uNone sp0 dmg0 f0 others 4
+L7_s1 t2>2 B1000021(45, 23, 0) tu119>42 T472(45, 30, 3) d7 STR_PIR_PLASMA_RIFLE | left [(1000004, [45, 24, 0], [43, 22, 0], False), (1000024, [44, 24, 0], [44, 24, 0], True)] | attack_T t7 u472 sp39 dmg0 f0 others 4
+L7_s1 t2>2 B1000021(45, 23, 0) tu119>42 T2(36, 32, 0) d13 STR_PIR_PLASMA_RIFLE | left [(1000004, [45, 24, 0], [43, 22, 0], False), (1000024, [44, 24, 0], [44, 24, 0], True)] | attack_other t7 u472 sp39 dmg0 f0 others 4
+L7_s1 t2>2 B1000021(45, 23, 0) tu119>42 T192(47, 38, 0) d16 STR_PIR_PLASMA_RIFLE | left [(1000004, [45, 24, 0], [43, 22, 0], False), (1000024, [44, 24, 0], [44, 24, 0], True)] | attack_other t7 u472 sp39 dmg0 f0 others 4
+L7_s1 t11>11 B1000019(46, 30, 0) tu23>23 T471(20, 22, 1) d28 STR_LASER_RIFLE_PIR | left [(1000022, [31, 26, 0], [32, 22, 0], False), (1000029, [42, 29, 0], [38, 24, 0], False)] | attack_T t8 u471 sp18 dmg0 f0 others 0
+M10_s1 t4>4 B1000021(32, 32, 0) tu89>14 T46(42, 2, 0) d32 STR_UAC_RIFLE | left [(1000032, [39, 11, 0], [39, 11, 0], True)] | walk_or_other t2 uNone sp10 dmg0 f0 others 2
+M10_s1 t5>5 B1000028(37, 34, 0) tu89>89 T1(46, 1, 0) d35 STR_CHAINGUN | left [(1000037, [39, 26, 0], [34, 32, 0], False), (1000041, [45, 2, 0], [45, 2, 0], True)] | walk_or_other t2 uNone sp0 dmg0 f0 others 0
+M10_s1 t7>7 B1000035(36, 23, 0) tu74>26 T115(39, 11, 0) d13 STR_UAC_ROCKET_LAUNCHER | left [(1000013, [37, 19, 0], [36, 17, 0], False)] | attack_T t8 u115 sp2 dmg0 f0 others 1
+M10_s1 t9>9 B1000016(26, 17, 0) tu89>45 T46(50, 28, 0) d27 STR_UAC_RIFLE | left [(1000033, [29, 19, 0], [29, 19, 0], True)] | walk_or_other t2 uNone sp10 dmg0 f0 others 0
+M10_s1 t22>22 B1000047(20, 33, 0) tu42>42 T1(47, 19, 0) d31 AUX_DOOM_IMP_WEAPON | left [(1000018, [33, 26, 0], [35, 27, 0], False), (1000021, [46, 18, 0], [46, 18, 0], True)] | attack_T t8 u1 sp31 dmg0 f9 others 0
+M3_s1 t2>2 B1000008(33, 59, 0) tu21>21 T448(32, 10, 2) d50 AUX_SILACOID_WEAPON | left [(1000011, [34, 57, 0], [38, 57, 0], False), (1000025, [33, 55, 0], [38, 53, 0], False)] | walk_or_other t2 uNone sp4 dmg0 f0 others 2
+M3_s1 t2>2 B1000008(33, 59, 0) tu21>21 T444(31, 16, 0) d44 AUX_SILACOID_WEAPON | left [(1000011, [34, 57, 0], [38, 57, 0], False), (1000025, [33, 55, 0], [38, 53, 0], False)] | walk_or_other t2 uNone sp4 dmg0 f0 others 2
+M3_s1 t2>2 B1000011(38, 57, 0) tu49>9 T503(44, 24, 0) d34 STR_CANISTER_GUN | left [(1000018, [38, 56, 0], [40, 55, 0], False)] | walk_or_other t2 uNone sp6 dmg0 f0 others 3
+M3_s1 t2>2 B1000055(3, 7, 0) tu55>13 T470(42, 23, 0) d43 STR_SR_RIFLE | left [(1000028, [6, 8, 0], [7, 4, 0], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 2
+M3_s1 t2>2 B1000055(3, 7, 0) tu55>13 T444(31, 16, 0) d30 STR_SR_RIFLE | left [(1000028, [6, 8, 0], [7, 4, 0], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 2
+M3_s1 t3>3 B1000011(39, 56, 0) tu65>65 T470(43, 24, 0) d33 STR_CANISTER_GUN | left [(1000000, [39, 55, 3], [41, 55, 3], False), (1000025, [39, 54, 0], [42, 42, 0], False)] | walk_or_other t2 uNone sp6 dmg0 f0 others 3
+M3_s1 t3>3 B1000011(39, 56, 0) tu65>65 T545(32, 12, 2) d45 STR_CANISTER_GUN | left [(1000000, [39, 55, 3], [41, 55, 3], False), (1000025, [39, 54, 0], [42, 42, 0], False)] | walk_or_other t2 uNone sp6 dmg0 f0 others 3
+M3_s1 t4>4 B1000039(36, 58, 0) tu65>19 T545(16, 29, 0) d36 STR_CANISTER_GUN | left [(1000038, [26, 44, 0], [27, 47, 0], False), (1000041, [35, 55, 3], [40, 58, 0], False), (1000084, [27, 47, 0], [38, 53, 0], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 2
+M3_s1 t6>7 B1000054(39, 61, 0) tu71>71 T470(45, 27, 0) d35 STR_SR_RIFLE | left [(1000011, [43, 33, 0], [37, 27, 0], False), (1000025, [43, 37, 0], [46, 41, 0], False), (1000032, [40, 55, 0], [37, 60, 0], False)] | attack_T t8 u470 sp22 dmg0 f75 others 0
+M3_s2 t1>1 B1000018(40, 37, 0) tu65>32 T444(19, 28, 0) d23 STR_SR_RIFLE | left [(1000020, [35, 34, 3], [32, 34, 3], False)] | attack_T t8 u444 sp21 dmg0 f0 others 0
+M3_s2 t1>1 B1000018(40, 37, 0) tu32>10 T503(8, 28, 0) d34 STR_SR_RIFLE | left [(1000020, [32, 34, 3], [32, 34, 3], True)] | walk_or_other t2 uNone sp5 dmg0 f0 others 1
+M3_s2 t1>1 B1000046(45, 24, 0) tu65>17 T454(13, 23, 2) d33 STR_CANISTER_GUN | left [(1000024, [44, 24, 0], [46, 24, 0], False)] | walk_or_other t2 uNone sp8 dmg0 f0 others 0
+M3_s2 t2>3 B1000053(23, 67, 0) tu25>71 T470(18, 12, 0) d56 STR_SR_RIFLE | left [(1000015, [23, 66, 0], [21, 61, 0], False), (1000026, [22, 55, 0], [21, 40, 0], False), (1000029, [21, 40, 0], [23, 43, 0], True)] | walk_or_other t2 uNone sp24 dmg0 f0 others 1
+M3_s2 t4>4 B1000039(32, 57, 0) tu65>65 T444(20, 9, 0) d50 STR_CANISTER_GUN | left [(1000027, [28, 45, 0], [26, 43, 0], False)] | walk_or_other t2 uNone sp60 dmg0 f0 others 0
+M4_s1 t2>2 B1000030(51, 38, 0) tu96>65 T1(37, 42, 0) d15 STR_LASER_PISTOL_LT | left [(1000016, [45, 41, 0], [41, 47, 0], False), (1000026, [44, 40, 0], [40, 39, 0], False), (1000034, [40, 40, 0], [39, 42, 0], False)] | walk_or_other t2 uNone sp64 dmg0 f0 others 0
+M4_s1 t3>3 B1000021(36, 60, 0) tu27>27 T1(39, 40, 0) d21 STR_HEAVY_LASER_PIR | left [(1000024, [36, 59, 0], [38, 58, 0], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 0
+M6_s1 t1>1 B1000024(9, 34, 0) tu77>43 T444(31, 29, 2) d23 STR_GAUSS_RIFLE | left [(1000026, [26, 30, 0], [23, 25, 0], True)] | attack_other t8 u470 sp33 dmg0 f0 others 3
+M6_s1 t1>1 B1000025(2, 25, 0) tu111>28 T545(32, 36, 2) d32 STR_GAUSS_RIFLE | left [(1000018, [23, 33, 0], [23, 33, 0], True), (1000019, [24, 33, 0], [23, 30, 0], True)] | walk_or_other t2 uNone sp0 dmg0 f0 others 0
+M6_s1 t1>1 B1000029(18, 28, 0) tu99>33 T545(32, 36, 2) d17 STR_GAUSS_RIFLE | left [(1000019, [24, 33, 0], [23, 30, 0], True)] | attack_T t8 u545 sp1 dmg0 f0 others 4
+M6_s1 t1>1 B1000032(4, 34, 0) tu96>22 T520(36, 33, 2) d33 STR_GAUSS_RIFLE | left [(1000018, [23, 33, 0], [23, 33, 0], True), (1000019, [24, 33, 0], [23, 30, 0], True)] | walk_or_other t2 uNone sp0 dmg0 f0 others 3
+M6_s1 t3>3 B1000032(4, 34, 0) tu96>40 T448(30, 34, 0) d26 STR_GAUSS_RIFLE | left [(1000024, [11, 34, 0], [6, 39, 0], False)] | walk_or_other t2 uNone sp6 dmg0 f0 others 2
+M7_s1 t1>1 B1000014(24, 47, 0) tu104>29 T115(7, 40, 1) d19 STR_LASER_RIFLE_PIR | left [(1000010, [16, 44, 0], [20, 47, 0], False)] | attack_other t8 u1 sp26 dmg0 f0 others 3
+M8_s2 t1>1 B1000033(26, 45, 2) tu81>41 T261(11, 36, 3) d18 STR_LUGER | left [(1000025, [24, 44, 0], [24, 43, 0], False)] | attack_other t8 u108 sp14 dmg0 f0 others 6
+M8_s2 t1>1 B1000033(26, 45, 2) tu81>41 T92(14, 37, 3) d15 STR_LUGER | left [(1000025, [24, 44, 0], [24, 43, 0], False)] | attack_other t8 u108 sp14 dmg0 f0 others 6
+M8_s2 t1>1 B1000033(26, 45, 2) tu81>41 T255(12, 37, 0) d17 STR_LUGER | left [(1000025, [24, 44, 0], [24, 43, 0], False)] | attack_other t8 u108 sp14 dmg0 f0 others 6
+M8_s2 t1>1 B1000033(26, 45, 2) tu81>41 T4(14, 35, 3) d16 STR_LUGER | left [(1000025, [24, 44, 0], [24, 43, 0], False)] | attack_other t8 u108 sp14 dmg0 f0 others 6
+M6_s2 t1>1 B1000024(37, 9, 0) tu111>55 T545(18, 20, 0) d22 STR_GAUSS_SNIPER | left [(1000002, [34, 12, 1], [34, 9, 1], False), (1000004, [28, 13, 0], [28, 15, 0], False), (1000031, [34, 11, 0], [36, 12, 0], False)] | walk_or_other t2 uNone sp30 dmg0 f0 others 0
+M6_s2 t1>2 B1000000(9, 8, 0) tu35>96 T545(18, 20, 0) d15 STR_GAUSS_PISTOL | left [(1000012, [12, 10, 0], [12, 10, 0], True)] | attack_other t8 u448 sp21 dmg0 f0 others 2
+M6_s2 t1>2 B1000000(9, 8, 0) tu35>96 T454(22, 20, 0) d18 STR_GAUSS_PISTOL | left [(1000012, [12, 10, 0], [12, 10, 0], True), (1000027, [12, 9, 0], [12, 9, 0], True)] | attack_other t8 u448 sp21 dmg0 f0 others 2
+M5_s2 t4>4 B1000043(27, 26, 1) tu130>10 T261(13, 46, 3) d25 STR_ATG_RIFLE | left [(1000036, [26, 27, 1], [26, 24, 1], False)] | walk_or_other t2 uNone sp4 dmg0 f0 others 2
+M5_s2 t4>4 B1000043(27, 26, 1) tu130>10 T108(11, 49, 0) d29 STR_ATG_RIFLE | left [(1000036, [26, 27, 1], [26, 24, 1], False)] | walk_or_other t2 uNone sp4 dmg0 f0 others 2
+M5_s1 t2>3 B1000037(45, 43, 0) tu134>134 T108(54, 63, 0) d22 STR_ATG_RIFLE | left [(1000039, [46, 45, 0], [47, 41, 0], True)] | walk_or_other t2 uNone sp80 dmg0 f0 others 0
+M5_s1 t3>3 B1000037(45, 43, 0) tu134>134 T108(54, 63, 0) d22 STR_ATG_RIFLE | left [(1000039, [45, 45, 0], [47, 41, 0], True)] | walk_or_other t2 uNone sp80 dmg0 f0 others 0
+M5_s1 t5>5 B1000036(50, 12, 0) tu134>38 T255(49, 44, 0) d33 STR_SLUGGA | left [(1000015, [50, 16, 0], [45, 21, 0], False), (1000022, [50, 24, 0], [48, 24, 0], False)] | walk_or_other t2 uNone sp8 dmg0 f0 others 3
+M2_s1 t2>2 B1000024(25, 29, 1) tu134>18 T261(47, 19, 0) d25 STR_CD_RIFLE | left [(1000054, [27, 28, 1], [19, 22, 0], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 1
+M2_s1 t3>3 B1000001(25, 30, 1) tu126>6 T4(45, 16, 1) d25 STR_CD_PISTOL | left [(1000028, [26, 29, 1], [21, 26, 1], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 0
+M2_s1 t3>3 B1000044(21, 19, 0) tu186>102 T261(45, 19, 0) d24 STR_CD_PISTOL | left [(1000022, [34, 19, 0], [41, 16, 0], True)] | attack_other t8 u4 sp40 dmg0 f0 others 1
+M2_s1 t3>4 B1000052(24, 31, 2) tu163>163 T257(46, 39, 0) d24 STR_CD_RIFLE | left [(1000021, [25, 31, 2], [27, 30, 2], False)] | walk_or_other t2 uNone sp4 dmg0 f0 others 0
+M2_s1 t4>4 B1000020(24, 32, 2) tu134>18 T255(50, 17, 0) d31 STR_CD_RIFLE | left [(1000001, [25, 30, 1], [23, 28, 1], False), (1000019, [26, 31, 1], [21, 34, 1], False), (1000021, [25, 31, 2], [27, 30, 2], True), (1000023, [30, 28, 0], [34, 28, 0], False), (1000037, [28, 30, 3], [29, 29, 0], False), (1000052, [24, 31, 2], [26, 30, 2], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 0
+M2_s1 t4>4 B1000032(26, 26, 0) tu134>75 T268(45, 43, 1) d26 STR_CD_RIFLE | left [(1000023, [28, 28, 0], [34, 28, 0], False), (1000029, [26, 28, 2], [28, 29, 2], False)] | attack_T t7 u268 sp59 dmg0 f0 others 1
+M2_s1 t4>4 B1000051(10, 22, 0) tu163>91 T255(50, 17, 0) d41 STR_CD_RIFLE | left [(1000033, [19, 21, 0], [23, 20, 0], True), (1000034, [32, 20, 0], [29, 19, 0], False)] | attack_other t7 u261 sp71 dmg0 f0 others 1
+M2_s2 t1>2 B1000026(25, 29, 1) tu134>75 T261(56, 56, 1) d42 STR_CD_PISTOL | left [(1000017, [26, 28, 2], [28, 29, 2], False), (1000027, [27, 31, 1], [22, 31, 1], False), (1000031, [28, 31, 3], [29, 30, 0], False)] | attack_other t8 u257 sp29 dmg0 f0 others 1
+M2_s2 t2>2 B1000026(25, 29, 1) tu134>75 T261(56, 56, 1) d42 STR_CD_PISTOL | left [(1000017, [27, 29, 2], [28, 29, 2], False), (1000027, [27, 31, 1], [22, 31, 1], False), (1000031, [28, 30, 3], [29, 30, 0], False), (1000038, [27, 29, 3], [28, 30, 3], False)] | attack_other t8 u257 sp29 dmg0 f0 others 1
+M2_s2 t3>3 B1000023(21, 29, 4) tu134>18 T261(39, 51, 1) d29 STR_CD_RIFLE | left [(1000014, [25, 32, 1], [26, 31, 1], False), (1000045, [22, 30, 4], [7, 35, 3], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 2
+M2_s2 t5>5 B1000015(18, 22, 0) tu126>126 T257(46, 17, 0) d29 STR_CD_PISTOL | left [(1000013, [19, 22, 0], [18, 21, 0], False), (1000042, [19, 22, 2], [21, 24, 4], False)] | walk_or_other t2 uNone sp3 dmg0 f0 others 1
+M2_s2 t5>5 B1000015(18, 22, 0) tu126>126 T4(44, 21, 1) d27 STR_CD_PISTOL | left [(1000013, [19, 22, 0], [18, 21, 0], False), (1000042, [19, 22, 2], [21, 24, 4], False)] | walk_or_other t2 uNone sp3 dmg0 f0 others 1
+L2_s2 t4>4 B1000018(30, 28, 0) tu134>18 T335(28, 21, 0) d8 STR_CD_PISTOL | left [(1000030, [30, 27, 0], [29, 29, 0], False)] | walk_or_other t2 uNone sp16 dmg0 f0 others 1
+L2_s2 t5>5 B1000006(32, 59, 0) tu126>39 T335(28, 21, 0) d39 STR_HAXXOR | left [(1000007, [32, 57, 0], [21, 44, 0], False), (1000030, [28, 27, 0], [26, 28, 0], False)] | walk_or_other t2 uNone sp0 dmg0 f0 others 1
+L2_s2 t16>17 B1000059(42, 34, 3) tu95>149 T91(41, 30, 4) d5 STR_ABC_GUN | left [(1000035, [41, 34, 3], [40, 25, 4], False)] | attack_T t9 u91 sp59 dmg71 f0 others 0

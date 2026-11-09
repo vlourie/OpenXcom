@@ -1,0 +1,19 @@
+new hostile losses to AUX_TANK in hostile turns: 13
+  walk: 5
+  attack at the carrier: 4
+  attack at another: 4
+per battle: M3_s1 13
+
+cfb_CF_M3_s1 t2 1000016 dead | during 1000016 act=8 aim=444 -> attack at the carrier
+cfb_CF_M3_s1 t2 1000027 dead | during 1000016 act=8 aim=444 -> attack at the carrier
+cfb_CF_M3_s1 t2 1000050 stun | during 1000016 act=8 aim=444 -> attack at the carrier
+cfb_CF_M3_s1 t3 1000001 stun | during 1000012 act=6 aim=1000080 -> attack at another
+cfb_CF_M3_s1 t3 1000012 dead | during 1000012 act=6 aim=1000080 -> attack at another
+cfb_CF_M3_s1 t3 1000020 dead | during 1000012 act=6 aim=1000080 -> attack at another
+cfb_CF_M3_s1 t3 1000085 dead | during 1000012 act=6 aim=1000080 -> attack at another
+cfb_CF_M3_s1 t3 1000022 dead | during 1000022 act=2 aim=444 -> walk
+cfb_CF_M3_s1 t3 1000038 dead | during 1000022 act=2 aim=444 -> walk
+cfb_CF_M3_s1 t3 1000051 dead | during 1000022 act=2 aim=444 -> walk
+cfb_CF_M3_s1 t4 1000006 dead | during 1000006 act=2 aim=444 -> walk
+cfb_CF_M3_s1 t4 1000052 dead | during 1000006 act=2 aim=444 -> walk
+cfb_CF_M3_s1 t12 1000025 dead | during 1000025 act=8 aim=448 -> attack at the carrier

@@ -1,0 +1,17 @@
+diff -ru c1/base/src/Battlescape/AIModule.cpp c2/tree/src/Battlescape/AIModule.cpp
+--- c1/base/src/Battlescape/AIModule.cpp	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/AIModule.cpp	2026-10-27 13:28:46.865323700 +0200
+@@ -5929,10 +5929,12 @@
+  * of the line of fire (from the shooter up to a fifth past the target, the floors between them +-1), whose blast (power / 10
+  * tiles, as ExplosionBState sets it) reaches our own side - the shooter weighed as explosiveEfficacy's kamikaze - for no gain
+  * by the unit weights: our own where they stand, enemies only those the shooter sees now (FAIR_KNOWLEDGE). No RNG.
++ * Bit 16: the hostile side only - the bot playing the player's side and the neutrals shoot as without the bit.
+  */
+ bool AIModule::ffLineRisk(Position target) const
+ {
+-	if (target.x < 0)
++	static const int ffRisk = (int)AiProbe::param("OXCE_AI_FF_RISK", 0);
++	if (target.x < 0 || ((ffRisk & 16) && _unit->getFaction() != FACTION_HOSTILE))
+ 	{
+ 		return false;
+ 	}

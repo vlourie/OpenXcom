@@ -1,0 +1,5 @@
+build_label=cmrun-SC
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + SIDE_TURN_ACTION_SCHEDULER stage 2 (AiProbe.cpp/.h, BattlescapeGame.cpp), flag OXCE_AI_SCHEDULER
+patch_sha256=a108690d02bcde4a5389b0bb0023c8589f65267074a68065aec70081a296f364
+exe_sha256=e962ee08b7c02227519dc4afe0b41ce97a273902336417578b0a74c1b53187db

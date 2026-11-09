@@ -1,0 +1,96 @@
+1/1 fy2_FL_L4_s2 code=0 82s total=82s
+ALL DONE
+1/1 fy3_FL_L4_s1 code=0 92s total=92s
+ALL DONE
+1/1 fy4_FL_L4_s3 code=0 63s total=63s
+ALL DONE
+IDENTICAL over 1744 lines (a 1744, b 1744); decisions 442
+DIFFER at line 1747 of 3365/1789
+  a: [AIDECIDE] turn=5 side=0 unit=340 n=1 from=(11,20,2) tu=101 mode=0 act=2 to=(10,24,2) run=0 kneel=0 aim=-1 weapon=AUX_TANK_PSI_CANNON seen=1000016 hu=a3afcf4d585caa5a hi=e9ffa9267bc00906 ho=6a782d588b5f85fe hou=bbc5389ee9396c7e hm=a4323141dee1eca6 hr=96223529d167bae hr0=609f1b3548d52935 ha0=f66
+  b: [AISTATE] end turn=5 unit=340 type=SOLDIER faction=0 status=0 pos=(11,20,2) dir=6 tu=101 hp=68/69 stun=0 morale=98 kneel=0 weapon=AUX_TANK_PSI_CANNON spotted=0 sniped=0 sees=- seenby=1 known=1 near=18 shade=0 tumax=101 wounds=0 threat=-1 reach=-1 rh=AUX_TANK_PSI_CANNON:1 lh=AUX_XEC_WEAPON_TWIN_
+DIFFER at line 1561 of 3368/1600
+  a: [AIDECIDE] turn=5 side=0 unit=340 n=1 from=(42,34,2) tu=101 mode=0 act=2 to=(31,34,2) run=0 kneel=0 aim=-1 weapon=AUX_TANK_PSI_CANNON seen=- hu=2162ad4b1468fbc0 hi=311a73486f4bdf0 ho=d30eadc6d5f04ca7 hou=bbc5389ee9396c7e hm=dc6f9ca3ef1be4c0 hr=e6991e3e86a01e99 hr0=a1d4d4f919b21211 ha0=59065531d
+  b: [AISTATE] end turn=5 unit=340 type=SOLDIER faction=0 status=0 pos=(42,34,2) dir=6 tu=101 hp=69/69 stun=0 morale=92 kneel=0 weapon=AUX_TANK_PSI_CANNON spotted=2 sniped=0 sees=- seenby=0 known=0 near=-1 shade=0 tumax=101 wounds=0 threat=-1 reach=-1 rh=AUX_TANK_PSI_CANNON:1 lh=AUX_XEC_WEAPON_TWIN_
+== fy3_FL_L4_s1: hostile decisions of turn 1: 61, with the probe 61, known median 12
+   23 walk now_clear dest_clear safe_exists
+   14 attack now_exposed dest_clear safe_exists
+   10 walk now_exposed dest_clear safe_exists
+   9 other now_clear dest_clear safe_exists
+   3 other now_exposed dest_exposed safe_exists
+   1 attack now_clear dest_clear safe_exists
+   1 walk now_exposed dest_exposed safe_exists
+   alive at the next player turn, by the last decision:
+     18 last_walk unseen_at_pstart safe_existed
+     5 last_other unseen_at_pstart safe_existed
+     3 last_walk seen_at_pstart safe_existed
+     1 last_attack seen_at_pstart safe_existed
+== fy2_FL_L4_s2: hostile decisions of turn 1: 93, with the probe 93, known median 11
+   32 attack now_exposed dest_clear safe_exists
+   22 walk now_exposed dest_clear safe_exists
+   20 other now_clear dest_clear safe_exists
+   18 walk now_clear dest_clear safe_exists
+   1 walk now_exposed dest_exposed safe_exists
+   alive at the next player turn, by the last decision:
+     8 last_walk unseen_at_pstart safe_existed
+     8 last_walk seen_at_pstart safe_existed
+     3 last_attack seen_at_pstart safe_existed
+== fy4_FL_L4_s3: hostile decisions of turn 1: 46, with the probe 46, known median 8
+   15 walk now_clear dest_clear safe_exists
+   14 walk now_exposed dest_clear safe_exists
+   10 attack now_exposed dest_clear safe_exists
+   6 other now_clear dest_clear safe_exists
+   1 walk now_exposed dest_exposed safe_exists
+   alive at the next player turn, by the last decision:
+     11 last_walk unseen_at_pstart safe_existed
+     3 last_walk seen_at_pstart safe_existed
+     3 last_other unseen_at_pstart safe_existed
+     2 last_attack seen_at_pstart safe_existed
+
+all:
+   56 walk now_clear dest_clear safe_exists
+   56 attack now_exposed dest_clear safe_exists
+   46 walk now_exposed dest_clear safe_exists
+   35 other now_clear dest_clear safe_exists
+   3 other now_exposed dest_exposed safe_exists
+   3 walk now_exposed dest_exposed safe_exists
+   1 attack now_clear dest_clear safe_exists
+
+L4_s1 t1 s1 1000017 DOOM_SARGE a8 m2 (21,57,3) > (41,54,2) tu81 lost (21,57,3) by 363 d25 lineNow1 lineDest0 known12 cells657 safe653 21.56.3:4
+L4_s1 t1 s1 1000032 DOOM_IMP_TERRO a2 m2 (24,49,2) > (25,54,2) tu52 lost (24,51,2) by 363 d22 lineNow0 lineDest0 known12 cells315 safe305 24.48.2:4
+L4_s1 t2 s0 1000024 DOOM_SARGE a2 m3 (31,47,2) > (28,51,2) tu62 lost (28,51,2) by 184 d25 lineNow0 lineDest0 known12 cells66 safe62 31.46.2:36
+L4_s1 t2 s0 1000011 DOOM_SOLDIER a7 m2 (24,54,2) > (41,54,2) tu22 lost (24,54,2) by 393 d17 lineNow1 lineDest0 known12 cells69 safe65 24.53.2:4
+L4_s1 t2 s0 1000001 DOOM_CACODEMON a2 m3 (28,44,2) > (27,46,2) tu74 lost (27,46,2) by 472 d19 lineNow0 lineDest0 known12 cells1046 safe954 27.43.2:6
+L4_s1 t2 s0 1000034 DOOM_SARGE a2 m0 (16,28,2) > (35,21,3) tu17 lost (16,30,2) by 471 d7 lineNow1 lineDest0 known12 cells22 safe19 16.27.2:4
+L4_s1 t2 s0 1000026 DOOM_GUNNER a2 m0 (7,34,2) > (31,24,4) tu74 lost (21,35,2) by 471 d14 lineNow0 lineDest0 known12 cells489 safe489 7.33.2:4
+L4_s1 t2 s0 1000020 DOOM_SARGE a2 m0 (21,40,2) > (43,15,0) tu13 lost (23,39,2) by 363 d18 lineNow0 lineDest0 known12 cells9 safe9 22.40.2:4
+L4_s1 t2 s0 1000006 DOOM_SOLDIER a2 m0 (20,44,4) > (12,25,3) tu10 lost (20,44,4) by 363 d20 lineNow0 lineDest0 known12 cells24 safe23 20.43.4:4
+L4_s1 t2 s0 1000007 DOOM_SOLDIER a2 m0 (24,40,4) > (7,6,2) tu36 lost (24,33,2) by 394 d6 lineNow0 lineDest0 known12 cells191 safe191 25.40.4:4
+L4_s1 t2 s0 1000003 DOOM_DEMON_TER a2 m0 (16,30,2) > (19,23,2) tu37 lost (22,33,2) by 394 d8 lineNow0 lineDest0 known12 cells28 safe21 17.30.2:4
+L4_s2 t1 s1 1000008 DOOM_SOLDIER a2 m3 (24,40,4) > (21,35,4) tu81 lost (24,41,2) by 340 d14 lineNow0 lineDest0 known11 cells1086 safe1086 25.40.4:4
+L4_s2 t1 s1 1000004 DOOM_DEMON_TER a2 m0 (25,41,2) > (33,38,2) tu110 lost (24,40,2) by 340 d13 lineNow1 lineDest0 known11 cells646 safe537 25.40.2:4
+L4_s2 t1 s1 1000005 DOOM_SOLDIER a2 m2 (1,44,2) > (13,42,2) tu76 lost (10,43,2) by 393 d4 lineNow1 lineDest0 known11 cells514 safe513 1.43.2:4
+L4_s2 t1 s1 1000010 DOOM_SOLDIER a2 m2 (14,51,2) > (13,43,2) tu81 lost (14,50,2) by 393 d9 lineNow1 lineDest0 known11 cells703 safe697 14.50.2:4
+L4_s2 t1 s1 1000013 DOOM_SOLDIER a7 m2 (22,49,2) > (40,43,2) tu73 lost (22,49,2) by 340 d22 lineNow1 lineDest0 known11 cells626 safe578 23.49.2:4
+L4_s2 t1 s1 1000017 DOOM_SARGE a2 m3 (31,47,2) > (35,52,2) tu25 lost (33,49,2) by 96 d9 lineNow0 lineDest0 known11 cells92 safe77 31.46.2:4
+L4_s2 t1 s1 1000031 DOOM_IMP_TERRO a8 m2 (21,57,3) > (41,54,2) tu73 lost (21,57,3) by 340 d30 lineNow1 lineDest0 known11 cells614 safe609 21.56.3:4
+L4_s2 t1 s1 1000014 DOOM_SARGE a2 m0 (20,41,4) > (57,9,1) tu20 lost (23,40,2) by 340 d13 lineNow0 lineDest0 known11 cells44 safe44 20.40.4:4
+L4_s2 t1 s1 1000023 DOOM_SARGE a2 m0 (19,45,2) > (41,54,4) tu21 lost (22,45,2) by 340 d18 lineNow0 lineDest0 known11 cells52 safe39 19.44.2:4
+L4_s2 t1 s1 1000030 DOOM_IMP_TERRO a8 m2 (34,48,2) > (34,41,2) tu48 lost (34,48,2) by 96 d8 lineNow1 lineDest0 known11 cells260 safe220 34.47.2:4
+L4_s2 t2 s0 1000006 DOOM_SOLDIER a8 m2 (20,44,4) > (40,43,2) tu22 lost (20,44,4) by 38 d6 lineNow0 lineDest0 known11 cells85 safe80 20.43.4:4
+L4_s2 t2 s0 1000016 DOOM_SARGE a2 m3 (24,4,2) > (26,4,3) tu17 lost (23,7,2) by 61 d3 lineNow1 lineDest0 known11 cells36 safe35 24.3.2:4
+L4_s2 t2 s0 1000018 DOOM_SARGE a2 m0 (31,54,2) > (51,57,2) tu16 lost (32,51,2) by 184 d11 lineNow0 lineDest0 known11 cells48 safe37 31.53.2:4
+L4_s2 t2 s0 1000022 DOOM_SARGE a2 m3 (31,44,2) > (28,45,2) tu18 lost (28,45,2) by 184 d12 lineNow1 lineDest0 known11 cells44 safe36 31.43.2:4
+L4_s2 t2 s0 1000035 DOOM_HELL_BARO a2 m3 (26,52,2) > (27,51,2) tu34 lost (27,51,2) by 363 d14 lineNow1 lineDest0 known11 cells168 safe139 26.51.2:4
+L4_s2 t2 s0 1000033 DOOM_SARGE a2 m0 (5,45,2) > (3,5,3) tu6 lost (5,44,2) by 393 d9 lineNow1 lineDest0 known11 cells8 safe6 5.44.2:4
+L4_s2 t2 s0 1000026 DOOM_GUNNER a2 m3 (2,49,2) > (2,45,2) tu18 lost (2,45,2) by 393 d13 lineNow1 lineDest0 known11 cells157 safe154 2.48.2:4
+L4_s2 t2 s0 1000020 DOOM_SARGE a7 m2 (4,51,2) > (12,40,2) tu31 lost (4,51,2) by 393 d14 lineNow1 lineDest0 known11 cells117 safe112 4.50.2:4
+L4_s2 t2 s0 1000027 DOOM_IMP_TERRO a2 m3 (14,54,2) > (9,55,2) tu114 lost (9,55,2) by 393 d15 lineNow1 lineDest0 known11 cells1204 safe1200 14.53.2:4
+L4_s3 t1 s1 1000005 DOOM_SOLDIER a6 m2 (24,40,4) > (40,44,2) tu53 lost (24,40,4) by 393 d16 lineNow1 lineDest0 known8 cells1140 safe1138 25.40.4:4
+L4_s3 t1 s1 1000001 DOOM_CACODEMON a2 m0 (21,54,2) > (20,48,4) tu13 lost (22,53,2) by 340 d26 lineNow0 lineDest0 known8 cells15 safe11 21.53.2:4
+L4_s3 t1 s1 1000009 DOOM_SOLDIER a9 m2 (8,44,2) > (40,43,2) tu81 lost (8,44,2) by 393 d32 lineNow1 lineDest0 known8 cells686 safe679 8.43.2:4
+L4_s3 t1 s1 1000022 DOOM_SARGE a8 m2 (23,57,2) > (41,54,2) tu47 lost (23,57,2) by 340 d30 lineNow1 lineDest0 known10 cells237 safe229 23.56.2:4
+L4_s3 t2 s0 1000013 DOOM_SARGE a2 m0 (20,40,4) > (28,8,3) tu20 lost (23,40,2) by 340 d13 lineNow0 lineDest0 known8 cells43 safe43 21.40.4:4
+L4_s3 t2 s0 1000033 DOOM_SARGE a2 m0 (13,31,2) > (35,21,3) tu29 lost (18,33,2) by 184 d18 lineNow0 lineDest0 known9 cells70 safe70 13.30.2:4
+L4_s3 t2 s0 1000029 DOOM_IMP_TERRO a2 m0 (20,44,2) > (52,23,0) tu8 lost (21,44,2) by 393 d19 lineNow1 lineDest0 known10 cells9 safe7 20.43.2:4
+L4_s3 t2 s0 1000028 DOOM_IMP_TERRO a8 m2 (19,45,2) > (40,43,2) tu88 lost (19,45,2) by 393 d21 lineNow1 lineDest0 known10 cells1180 safe1128 20.45.2:4
+L4_s3 t2 s0 1000007 DOOM_SOLDIER a9 m2 (2,43,2) > (40,43,2) tu36 lost (2,43,2) by 393 d38 lineNow1 lineDest0 known10 cells131 safe129 3.43.2:4

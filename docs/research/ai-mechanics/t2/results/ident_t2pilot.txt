@@ -1,0 +1,17 @@
+F2_L11_s1: IDENTICAL 2408 lines
+F2_L11_s2: IDENTICAL 3155 lines
+F2_L5_s1: IDENTICAL 1309 lines
+F2_L5_s2: IDENTICAL 1266 lines
+F2_M10_s1: IDENTICAL 2033 lines
+F2_M10_s2: DIFFERS at line 67 of 1906/1438
+  new [AIDECIDE] turn=1 side=1 unit=1000024 n=1 from=(5,44,2) tu=89 mode=2 act=8 to=(15,34,0) run=0 kneel=0 aim=16 weapon=STR_UAC_RIFLE seen=16,46,114,1,115 hu=43e1d9df5dae1a59 hi=48be65b517df3453 ho=72491d03c1353c95 hou=ca8d62f2b82f6181 hm=da8e1d0800f5aba9 hr=ab4a172382a8ad61 hr0=f1f2603f2ba277ce ha0=7fb
+  D0  [AIDECIDE] turn=1 side=1 unit=1000024 n=1 from=(5,44,2) tu=89 mode=2 act=8 to=(11,42,0) run=0 kneel=0 aim=114 weapon=STR_UAC_RIFLE seen=16,46,114,1,115 hu=43e1d9df5dae1a59 hi=48be65b517df3453 ho=72491d03c1353c95 hou=ca8d62f2b82f6181 hm=da8e1d0800f5aba9 hr=ab4a172382a8ad61 hr0=f1f2603f2ba277ce ha0=7f
+F2_M1_s1: IDENTICAL 1665 lines
+F2_M1_s2: IDENTICAL 1572 lines
+F2_M4_s1: IDENTICAL 437 lines
+F2_M4_s2: IDENTICAL 528 lines
+F2_M8_s1: IDENTICAL 539 lines
+F2_M8_s2: IDENTICAL 335 lines
+F2_M9_s1: IDENTICAL 475 lines
+F2_M9_s2: IDENTICAL 556 lines
+identical 13, different 1

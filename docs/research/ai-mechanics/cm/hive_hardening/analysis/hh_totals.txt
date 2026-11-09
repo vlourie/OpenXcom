@@ -1,0 +1,163 @@
+run | GO | closed | ARRIVED walked | ARRIVED no step | closer | not closer | not moved | open | BLOCKED | repeats same conditions | same unit+target | locked STAY | no_closer STAY | HOLD STAY | why
+hh3_JA_M6_s1 68 62 15 (by its walk order 15) 0 24 16 7 6 5 0 0 31 1 34 [('seek_contact', 63), ('take_post', 5)]
+   reasons [('unit_out', 24), ('replaced', 18), ('arrived', 15), ('no_path_now', 5)]
+hh4_JA_M6_s2 121 115 42 (by its walk order 42) 0 32 18 23 6 11 0 0 28 12 26 [('seek_contact', 103), ('sweep_sector', 8), ('advance', 7), ('take_post', 3)]
+   reasons [('arrived', 42), ('replaced', 40), ('unit_out', 17), ('no_path_now', 11), ('too_long', 5)]
+hh5_JA_M6_s2 121 115 42 (by its walk order 42) 0 32 18 23 6 11 0 0 28 12 26 [('seek_contact', 103), ('sweep_sector', 8), ('advance', 7), ('take_post', 3)]
+   reasons [('arrived', 42), ('replaced', 40), ('unit_out', 17), ('no_path_now', 11), ('too_long', 5)]
+hh6_JV_M3_s1 117 114 18 (by its walk order 15) 0 68 18 10 3 2 0 0 1 7 104 [('seek_contact', 65), ('advance', 30), ('take_post', 16), ('sweep_sector', 3), ('advance_post', 3)]
+   reasons [('replaced', 42), ('unit_out', 36), ('arrived', 18), ('too_long', 16), ('no_path_now', 2)]
+hh7_HL_M3_s1 50 65 9 (by its walk order 9) 0 41 6 9 -15 0 0 0 0 4 45 [('seek_contact', 21), ('advance', 13), ('take_post', 11), ('sweep_sector', 5)]
+   reasons [('replaced', 28), ('unit_out', 17), ('too_long', 11), ('arrived', 9)]
+hh8_HL_M3_s1 43 37 5 (by its walk order 5) 0 25 4 3 6 0 0 0 0 2 48 [('seek_contact', 21), ('take_post', 11), ('advance', 10), ('advance_post', 1)]
+   reasons [('unit_out', 15), ('replaced', 13), ('arrived', 5), ('too_long', 4)]
+
+V0 refusals etc by battle
+hv6_HA_M6_s1 GO 172 last BLOCKED 98 COMPLETED 18
+hv8_HA_M6_s2 GO 148 last BLOCKED 110 COMPLETED 17
+hv9_HA_L6_s1 GO 136 last BLOCKED 99 COMPLETED 2
+hv10_HA_L6_s2 GO 61 last BLOCKED 9 COMPLETED 6
+hv11_HA_L7_s1 GO 72 last BLOCKED 20 COMPLETED 10
+
+HOLD: every stretch by squad, what ended it
+hh3_JA_M6_s1
+  results [('stay', 23), ('exit_threat_near', 2), ('extended_useful', 2)]
+  hold lines []
+   squad 5 t2:1/1/0/4i0
+   squad 7 t2:3/1/0/6i0:exit_threat_near
+   squad 8 t2:4/0/0/5i0 t3:2/0/0/4i0:extended_useful t4:7/0/0/12i0 t5:7/0/0/10i0 t6:0/0/0/1i0:extended_useful t7:3/0/0/7i0:exit_threat_near
+  reviews with nothing 5 of 27 [('SEARCH', 5)]
+hh4_JA_M6_s2
+  results [('stay', 31), ('exit_threat_near', 4), ('objective_given_up', 1)]
+  hold lines [(('entered', 'guard_sector', 'organization'), 4)]
+   squad 0 t2:1/0/0/3i0:exit_threat_near
+   squad 1 t2:2/0/0/3i0 t3:1/0/0/2i0:exit_threat_near
+   squad 2 t2:7/0/0/13i0:exit_threat_near
+   squad 4 t2:5/1/4/13i0:exit_threat_near
+  reviews with nothing 5 of 36 [('SEARCH', 5)]
+hh5_JA_M6_s2
+  results [('stay', 31), ('exit_threat_near', 4), ('objective_given_up', 1)]
+  hold lines [(('entered', 'guard_sector', 'organization'), 4)]
+   squad 0 t2:1/0/0/3i0:exit_threat_near
+   squad 1 t2:2/0/0/3i0 t3:1/0/0/2i0:exit_threat_near
+   squad 2 t2:7/0/0/13i0:exit_threat_near
+   squad 4 t2:5/1/4/13i0:exit_threat_near
+  reviews with nothing 5 of 36 [('SEARCH', 5)]
+hh6_JV_M3_s1
+  results [('stay', 48), ('extended_useful', 7), ('exit_threat_near', 3)]
+  hold lines [(('entered', 'guard_sector', 'organization'), 6)]
+   squad 1 t2:2/0/0/4i0:exit_threat_near
+   squad 2 t2:3/0/0/0i0 t3:1/0/0/1i0:extended_useful t4:4/0/0/2i0 t5:3/0/0/4i0
+   squad 3 t2:3/0/1/0i0 t3:1/0/0/1i0:extended_useful t4:3/0/1/4i0 t5:4/0/0/7i0 t6:2/0/0/0i0:extended_useful t7:1/0/0/0i0
+   squad 4 t2:6/0/0/4i0 t3:2/0/0/0i0:extended_useful t4:1/0/0/0i0 t5:0/0/0/0i1 t6:4/0/0/3i0:extended_useful t7:0/1/0/0i0 t8:0/1/0/0i0
+   squad 9 t2:1/0/0/0i0 t3:1/0/0/1i0:extended_useful t4:4/0/0/1i0 t5:3/0/0/2i0 t6:1/1/0/2i0:extended_useful t7:1/0/0/1i0 t8:2/1/0/5i0 t9:1/0/0/1i0:exit_threat_near
+   squad 10 t2:3/0/0/3i0:exit_threat_near
+  reviews with nothing 1 of 58 [('HOLD', 1)]
+hh7_HL_M3_s1
+  results [('stay', 20), ('extended_useful', 4), ('exit_not_useful', 1), ('exit_term_over', 1)]
+  hold lines []
+   squad 2 t5:3/0/0/4i0 t6:2/0/0/0i0:extended_useful t7:0/0/0/0i1 t8:0/0/0/0i2:exit_not_useful
+   squad 3 t5:4/0/0/9i0
+   squad 4 t5:0/0/0/0i1 t6:2/0/0/0i0:extended_useful t7:0/1/0/1i0 t8:0/0/0/1i0 t9:0/0/0/0i1:exit_term_over
+   squad 9 t5:3/0/0/3i0 t6:2/0/0/3i0:extended_useful t7:1/0/0/0i0 t8:2/0/0/0i0 t9:1/0/0/0i0:extended_useful
+  reviews with nothing 4 of 26 [('HOLD', 2), ('SEARCH', 2)]
+hh8_HL_M3_s1
+  results [('stay', 17), ('extended_useful', 3)]
+  hold lines [(('entered', 'guard_sector', 'organization'), 3)]
+   squad 2 t6:2/0/1/2i0 t7:1/0/0/2i0 t8:2/0/0/1i0:extended_useful t9:2/0/0/0i0
+   squad 5 t6:2/0/1/0i0 t7:1/0/0/1i0 t8:1/0/0/0i0:extended_useful t9:2/0/0/0i0
+   squad 6 t6:2/0/0/3i0 t7:2/0/0/0i0 t8:2/0/0/1i0:extended_useful t9:1/0/0/1i0
+  reviews with nothing 0 of 20 []
+
+what fell and who took over, final build
+hh4_JA_M6_s2 changes 8 new commander 8 squad finished 0 kept 8
+  perf plan max us 274993 sum us 1231148 flood us 1225193 floods 159
+hh5_JA_M6_s2 changes 8 new commander 8 squad finished 0 kept 8
+  perf plan max us 619941 sum us 1729881 flood us 1721050 floods 159
+hh6_JV_M3_s1 changes 12 new commander 11 squad finished 1 kept 11
+  perf plan max us 141432 sum us 690064 flood us 681928 floods 175
+
+task 5, M6 s2 (run 4): squads 0 and 3
+   [HIVEHOLD] turn=0 squad=0 commander=1000034 event=entered from=organization anchor=(43,12,0) why=guard_sector since=0 end=3 exit=threat_near,not_useful,term_over
+   [HIVESQUAD] id=0 commander=1000034 rank=STR_LIVE_LEADER int=6 at=(43,12,0) size=6 members=1000034L,1000001S,1000007S,1000024L,1000025L,1000030A sector=0 sectorNodes=28 task=HOLD anchor=(43,12,0) hold=guard_sector holdEnd=3
+   [HIVESQUAD] id=3 commander=1000032 rank=STR_LIVE_ENGINEER int=6 at=(34,7,0) size=6 members=1000032A,1000003S,1000004S,1000019L,1000021A,1000023L sector=3 sectorNodes=9 task=SEARCH anchor=(34,7,0) hold=none holdEnd=-1
+   [HIVETASK] turn=1 squad=3 task=SEARCH commander=1000032 key=1 objective=(33,18,0) kind=contact contact=470 ttl=6
+   [HIVESQUADTURN] turn=1 squad=0 commander=1000034 task=HOLD hold=guard_sector since=0 end=3 idle=0 alive=5 tuPct=82 shots=1 saw=3 key=0 objective=-
+   [HIVESQUADTURN] turn=1 squad=3 commander=1000032 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=6 tuPct=55 shots=1 saw=1 key=1 objective=(33,18,0)
+   [HIVETASK] turn=2 squad=0 task=SEARCH commander=1000034 key=3 objective=(26,18,0) kind=contact contact=503 ttl=6
+   [HIVETASK] turn=2 squad=0 from=HOLD to=SEARCH why=threat_near objective=(26,18,0)
+   [HIVEREVIEW] turn=2 squad=0 commander=1000034 task=SEARCH key=3 hold=none alive=6 locked=0 shots=1 reactions=0 hurt=0 saw=3 idle=0 noProgress=0 best=1000000 result=exit_threat_near
+   [HIVEREVIEW] turn=2 squad=3 commander=1000032 task=SEARCH key=1 hold=none alive=6 locked=2 shots=1 reactions=0 hurt=0 saw=1 idle=0 noProgress=0 best=5 result=stay
+   [HIVESQUADTURN] turn=2 squad=0 commander=1000034 task=SEARCH hold=none since=0 end=3 idle=0 alive=6 tuPct=44 shots=1 saw=1 key=3 objective=(26,18,0)
+   [HIVESQUADTURN] turn=2 squad=3 commander=1000032 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=6 tuPct=50 shots=4 saw=7 key=1 objective=(33,18,0)
+   [HIVEREVIEW] turn=3 squad=0 commander=1000034 task=SEARCH key=3 hold=none alive=6 locked=0 shots=1 reactions=0 hurt=0 saw=1 idle=0 noProgress=0 best=5 result=stay
+   [HIVEREVIEW] turn=3 squad=3 commander=1000032 task=SEARCH key=1 hold=none alive=6 locked=1 shots=4 reactions=0 hurt=0 saw=8 idle=0 noProgress=0 best=5 result=stay
+   [HIVETASK] turn=3 squad=3 task=SEARCH commander=1000032 key=8 objective=(36,34,0) kind=contact contact=470 ttl=6
+   [HIVESQUADTURN] turn=3 squad=0 commander=1000034 task=SEARCH hold=none since=0 end=3 idle=0 alive=6 tuPct=90 shots=0 saw=0 key=3 objective=(26,18,0)
+   [HIVESQUADTURN] turn=3 squad=3 commander=1000032 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=6 tuPct=30 shots=5 saw=6 key=8 objective=(36,34,0)
+   [HIVEREVIEW] turn=4 squad=0 commander=1000034 task=SEARCH key=3 hold=none alive=6 locked=2 shots=0 reactions=0 hurt=0 saw=0 idle=0 noProgress=1 best=5 result=stay
+   [HIVEREVIEW] turn=4 squad=3 commander=1000032 task=SEARCH key=8 hold=none alive=6 locked=1 shots=5 reactions=0 hurt=0 saw=8 idle=0 noProgress=0 best=19 result=stay
+   [HIVESQUADTURN] turn=4 squad=0 commander=1000034 task=SEARCH hold=none since=0 end=3 idle=0 alive=6 tuPct=84 shots=0 saw=0 key=3 objective=(26,18,0)
+   [HIVESQUADTURN] turn=4 squad=3 commander=1000032 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=6 tuPct=46 shots=6 saw=13 key=8 objective=(34,36,0)
+   [HIVECMD] turn=5 squad=3 old=1000032 new=1000021 why=dead rank=STR_LIVE_NAVIGATOR int=5 task=SEARCH kept=1
+   [HIVETASK] turn=5 squad=3 task=SEARCH commander=1000021 kept=1 key=8 objective=(34,36,0)
+   [HIVETASK] turn=5 squad=0 task=SEARCH state=BLOCKED objective=(26,18,0) why=no_progress turns=2
+   [HIVEREVIEW] turn=5 squad=0 commander=1000034 task=SEARCH key=3 hold=none alive=6 locked=4 shots=0 reactions=0 hurt=0 saw=0 idle=0 noProgress=0 best=5 result=objective_given_up
+   [HIVETASK] turn=5 squad=0 task=SEARCH commander=1000034 key=10 objective=(24,15,0) kind=contact contact=448 ttl=6
+   [HIVEREVIEW] turn=5 squad=3 commander=1000021 task=SEARCH key=8 hold=none alive=4 locked=1 shots=6 reactions=0 hurt=0 saw=14 idle=0 noProgress=0 best=19 result=stay
+   [HIVESQUADTURN] turn=5 squad=0 commander=1000034 task=SEARCH hold=none since=0 end=3 idle=0 alive=5 tuPct=61 shots=2 saw=4 key=10 objective=(24,15,0)
+   [HIVESQUADTURN] turn=5 squad=3 commander=1000021 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=4 tuPct=19 shots=3 saw=10 key=8 objective=(34,36,0)
+   [HIVECMD] turn=6 squad=0 old=1000034 new=1000033 why=dead rank=STR_LIVE_ENGINEER int=6 task=SEARCH kept=1
+   [HIVETASK] turn=6 squad=0 task=SEARCH commander=1000033 kept=1 key=10 objective=(24,15,0)
+   [HIVEREVIEW] turn=6 squad=0 commander=1000033 task=SEARCH key=10 hold=none alive=4 locked=0 shots=2 reactions=0 hurt=0 saw=4 idle=0 noProgress=0 best=4 result=stay
+   [HIVEREVIEW] turn=6 squad=3 commander=1000021 task=SEARCH key=8 hold=none alive=4 locked=0 shots=3 reactions=0 hurt=0 saw=11 idle=0 noProgress=0 best=19 result=stay
+   [HIVETASK] turn=6 squad=3 task=SEARCH commander=1000021 key=12 objective=(40,28,0) kind=contact contact=470 ttl=5
+   [HIVESQUADTURN] turn=6 squad=0 commander=1000033 task=SEARCH hold=none since=0 end=3 idle=0 alive=4 tuPct=90 shots=0 saw=0 key=10 objective=(24,15,0)
+   [HIVESQUADTURN] turn=6 squad=3 commander=1000021 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=4 tuPct=31 shots=1 saw=8 key=12 objective=(40,28,0)
+   [HIVEREVIEW] turn=7 squad=0 commander=1000033 task=SEARCH key=10 hold=none alive=6 locked=3 shots=0 reactions=0 hurt=0 saw=0 idle=0 noProgress=1 best=4 result=stay
+   [HIVEREVIEW] turn=7 squad=3 commander=1000021 task=SEARCH key=12 hold=none alive=3 locked=0 shots=1 reactions=0 hurt=0 saw=8 idle=0 noProgress=0 best=14 result=stay
+   [HIVECMD] turn=7 squad=3 old=1000021 new=1000023 why=dead rank=STR_LIVE_NAVIGATOR int=5 task=SEARCH kept=1
+   [HIVETASK] turn=7 squad=3 task=SEARCH commander=1000023 kept=1 key=12 objective=(40,28,0)
+   [HIVESQUADTURN] turn=7 squad=0 commander=1000033 task=SEARCH hold=none since=0 end=3 idle=0 alive=5 tuPct=45 shots=2 saw=6 key=10 objective=(26,15,0)
+   [HIVESQUADTURN] turn=7 squad=3 commander=1000023 task=SEARCH hold=none since=-1 end=-1 idle=0 alive=2 tuPct=21 shots=5 saw=4 key=12 objective=(36,27,0)
+  fates of squads 0 and 3 up to turn 7
+   1 squad 3 unit 1000003 SEARCH ARRIVED arrived seek_contact (31,6,1) -> (28,13,1) target (28,13,1) path 38 gain 7
+   1 squad 3 unit 1000021 SEARCH NOT_MOVED no_path_now seek_contact (28,11,2) -> (28,11,2) target (40,16,0) path 186 gain 0
+   2 squad 3 unit 1000019 SEARCH ARRIVED arrived seek_contact (28,5,2) -> (40,13,0) target (40,13,0) path 120 gain 16
+   2 squad 3 unit 1000021 SEARCH ARRIVED arrived seek_contact (28,11,2) -> (37,13,2) target (37,13,2) path 102 gain 9
+   2 squad 0 unit 1000024 SEARCH ARRIVED arrived seek_contact (37,9,0) -> (34,11,0) target (34,11,0) path 18 gain 3
+   2 squad 0 unit 1000030 SEARCH ARRIVED arrived seek_contact (42,11,1) -> (31,12,1) target (31,12,1) path 46 gain 11
+   2 squad 0 unit 1000033 SEARCH ARRIVED arrived seek_contact (40,8,0) -> (31,9,0) target (31,9,0) path 38 gain 9
+   2 squad 0 unit 1000034 SEARCH ARRIVED arrived seek_contact (43,12,0) -> (25,12,0) target (25,12,0) path 80 gain 18
+   3 squad 3 unit 1000032 SEARCH MOVED_CLOSER replaced seek_contact (34,7,0) -> (28,15,0) target (34,16,0) path 87 gain 3
+   3 squad 3 unit 1000023 SEARCH MOVED_NOT_CLOSER replaced advance (30,9,2) -> (30,6,2) target (40,10,2) path 130 gain 0
+   3 squad 0 unit 1000001 SEARCH ARRIVED arrived seek_contact (43,13,2) -> (27,13,2) target (27,13,2) path 82 gain 16
+   3 squad 3 unit 1000003 SEARCH ARRIVED arrived advance (28,13,1) -> (38,15,1) target (38,15,1) path 62 gain 10
+   3 squad 0 unit 1000007 SEARCH ARRIVED arrived seek_contact (37,6,1) -> (26,15,1) target (26,15,1) path 70 gain 11
+   3 squad 3 unit 1000019 SEARCH NOT_MOVED no_path_now seek_contact (40,13,0) -> (40,13,0) target (42,31,0) path 80 gain 0
+   3 squad 3 unit 1000021 SEARCH NOT_MOVED no_path_now seek_contact (37,13,2) -> (37,13,2) target (36,40,0) path 260 gain 0
+   3 squad 3 unit 1000023 SEARCH NOT_MOVED no_path_now seek_contact (30,6,2) -> (30,6,2) target (32,32,2) path 222 gain 0
+   3 squad 3 unit 1000023 SEARCH ARRIVED arrived advance (30,6,2) -> (44,12,2) target (43,13,2) path 80 gain 12
+   3 squad 0 unit 1000030 SEARCH ARRIVED arrived seek_contact (31,12,1) -> (30,15,1) target (30,15,1) path 14 gain 3
+   3 squad 0 unit 1000033 SEARCH NOT_MOVED no_path_now seek_contact (31,9,0) -> (31,9,0) target (18,21,0) path 179 gain 0
+   3 squad 0 unit 1000034 SEARCH ARRIVED arrived seek_contact (25,12,0) -> (28,13,0) target (28,13,0) path 14 gain 3
+   4 squad 3 unit 1000021 SEARCH ARRIVED arrived advance (37,13,2) -> (43,12,0) target (43,12,0) path 138 gain 10
+   4 squad 3 unit 1000023 SEARCH ARRIVED arrived advance (44,12,2) -> (37,13,2) target (37,13,2) path 30 gain 7
+   4 squad 0 unit 1000024 SEARCH ARRIVED arrived seek_contact (34,11,0) -> (25,12,0) target (25,12,0) path 38 gain 9
+   5 squad 3 unit 1000032 SEARCH NOT_MOVED unit_out seek_contact (28,15,0) -> (28,15,0) target (35,34,0) path 104 gain 0
+   5 squad 0 unit 1000033 SEARCH MOVED_CLOSER replaced seek_contact (31,9,0) -> (27,10,1) target (28,13,1) path 76 gain 3
+   5 squad 0 unit 1000030 SEARCH NOT_MOVED no_path_now seek_contact (30,15,1) -> (30,15,1) target (18,21,0) path 171 gain 0
+   5 squad 0 unit 1000030 SEARCH ARRIVED arrived seek_contact (30,15,1) -> (28,10,1) target (28,10,1) path 26 gain 5
+   6 squad 3 unit 1000004 SEARCH MOVED_CLOSER too_long seek_contact (30,12,0) -> (41,18,0) target (42,28,0) path 134 gain 6
+   6 squad 3 unit 1000021 SEARCH MOVED_NOT_CLOSER replaced seek_contact (43,12,0) -> (36,11,0) target (35,34,0) path 110 gain -1
+   6 squad 3 unit 1000003 SEARCH MOVED_NOT_CLOSER replaced seek_contact (38,15,1) -> (28,7,1) target (36,40,0) path 279 gain -8
+   6 squad 3 unit 1000023 SEARCH MOVED_NOT_CLOSER replaced seek_contact (37,13,2) -> (40,7,2) target (40,42,0) path 264 gain -6
+   6 squad 0 unit 1000001 SEARCH MOVED_NOT_CLOSER no_path_now seek_contact (27,13,2) -> (30,6,2) target (20,9,0) path 268 gain -3
+   6 squad 0 unit 1000001 SEARCH ARRIVED arrived seek_contact (30,6,2) -> (24,9,2) target (24,9,2) path 36 gain 6
+   6 squad 3 unit 1000003 SEARCH ARRIVED arrived advance (28,7,1) -> (30,15,1) target (30,15,1) path 36 gain 8
+   6 squad 3 unit 1000023 SEARCH NOT_MOVED no_path_now seek_contact (40,7,2) -> (40,7,2) target (35,34,0) path 166 gain 0
+   6 squad 3 unit 1000023 SEARCH ARRIVED arrived advance (40,7,2) -> (40,13,0) target (40,13,0) path 68 gain 10
+   7 squad 0 unit 1000033 SEARCH ARRIVED arrived seek_contact (27,10,1) -> (31,9,0) target (31,9,0) path 58 gain 6
+   7 squad 3 unit 1000021 SEARCH MOVED_CLOSER unit_out seek_contact (36,11,0) -> (40,15,0) target (42,31,0) path 102 gain 4
+   7 squad 0 unit 1000030 SEARCH MOVED_CLOSER unit_out seek_contact (28,10,1) -> (29,12,0) target (20,9,0) path 169 gain 1
+  merged ['turn=1 merged=5 into=4 units=1 task=HOLD', 'turn=1 merged=7 into=2 units=2 task=HOLD', 'turn=2 merged=6 into=0 units=1 task=HOLD', 'turn=5 merged=4 into=2 units=2 task=SEARCH', 'turn=7 merged=2 into=0 units=2 task=SEARCH', 'turn=8 merged=3 into=0 units=2 task=SEARCH']

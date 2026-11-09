@@ -1,0 +1,17 @@
+first pick out of the engine's order: turn 1 pick 2 pass 1 site limit left 1000000
+  C (engine's next, no immediate attack) = 1000001; A (chosen, sees 157) = 1000025; between them (B, none with an immediate attack) 22: 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 ...
+  control activation order, turn 1: 1000000 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 1000010 1000011 1000001 1000002 ...
+  S       activation order, turn 1: 1000000 1000025 1000032 1000035 1000063 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 ...
+  A 1000025 control: #56 snap->157 tu134 spent29; snap->157 tu105 spent29 | #75 walk tu76 spent10 walk; walk tu66 spent10 walk | #98 walk tu56 spent4 walk; walk tu52 spent0 walk | #137 walk tu52 spent0 walk; walk tu52 spent0 walk
+  A 1000025 S      : #2 snap->157 tu134 spent29; snap->157 tu105 spent29 | #66 walk tu76 spent18 walk; walk tu58 spent16 walk
+  C 1000001 control: #2 walk tu126 spent2 walk; aimed->324 tu124 spent88 | #13 walk tu36 spent0 walk; walk tu36 spent0 walk | #31 walk tu36 spent0 walk; walk tu36 spent0 walk | #44 walk tu36 spent0 walk; walk tu36 spent0 walk | #67 walk tu36 spent33 walk
+  C 1000001 S      : #6 aimed->324 tu126 spent90; walk tu36 spent0 walk | #76 walk tu36 spent0 walk; walk tu36 spent0 walk
+  B1 1000002 control: #3 walk tu126 spent74 walk; walk tu52 spent0 walk | #14 walk tu52 spent26 walk
+  B1 1000002 S      : #7 walk tu126 spent42 walk; snap->191 tu84 spent37; snap->191 tu47 spent37 | #77 walk tu10 spent0; walk tu10 spent0
+  B2 1000003 control: #4 walk tu126 spent50 walk; walk tu76 spent6 walk | #15 snap->324 tu70 spent27; snap->324 tu43 spent27 | #32 walk tu16 spent0 walk; walk tu16 spent0 walk | #45 walk tu16 spent0 walk; walk tu16 spent0 walk | #68 walk tu16 spent0 walk; walk tu16 spent0 walk | #91 walk tu16 spent6 walk; walk tu10 spent0 walk | #131 walk tu10 spent0 walk; walk tu10 spent0 walk
+  B2 1000003 S      : #8 walk tu126 spent42 walk; aimed->324 tu84 spent30; walk tu54 spent18 walk | #63 aimed->324 tu36 spent30; walk tu6 spent0 walk
+  B3 1000004 control: #5 walk tu126 spent45 walk; snap->229 tu81 spent38 | #16 snap->335 tu43 spent38
+  B3 1000004 S      : #9 walk tu126 spent72 walk; walk tu54 spent0 walk | #78 walk tu54 spent0; walk tu54 spent0
+  B units that in the control walked and attacked within one activation this turn: 10 1000004 1000005 1000006 1000008 1000010 1000012
+  units active in the control's turn 62, in S's 62; active in the control but never in S: 0 
+  activations this turn: control 164, S 115; attack decisions: control 58, S 54

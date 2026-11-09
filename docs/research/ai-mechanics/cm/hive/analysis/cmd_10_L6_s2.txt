@@ -1,0 +1,6 @@
+example: [HIVECMD] turn=2 squad=1 old=1000029 new=1000028 why=dead rank=STR_LIVE_LEADER int=6 task=SEARCH kept=1
+  the old one's fall: (2, 'dead')
+  squad's orders, turn 1 {('SEARCH', 'GO', '(12,28,0)'): 1, ('SEARCH', 'GO', '(11,30,2)'): 1, ('SEARCH', 'GO', '(11,21,0)'): 1, ('SEARCH', 'GO', '(16,31,1)'): 1, ('SEARCH', 'GO', '(15,34,2)'): 1}
+  squad's orders, turn 2 {('SEARCH', 'GO', '(18,28,2)'): 1}
+  squad's objectives so far: [('1', '(14,25,2)', '293')]
+changes 3 {'new_was_member': 3, 'old_fell_in_records': 3, 'same_task_in_orders': 3, 'new_has_order_or_acts': 3}

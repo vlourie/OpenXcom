@@ -1,0 +1,3 @@
+{'openings with TU': 34, 'no attack': 15, 'attack any': 19, 'attack T': 6, 'attack T dmg': 0, 'attack T fdmg': 9}
+{'indirect evidence': 467, 'testable': 53, 'stayed closed': 41, 'opened': 12}
+{'decisions with a shot in hand': 9441, 'no attack': 4426, 'attack': 5015}

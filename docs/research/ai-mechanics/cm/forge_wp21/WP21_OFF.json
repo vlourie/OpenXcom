@@ -1,0 +1,44 @@
+﻿{
+ "arch:D0": {
+  "identical": true,
+  "game_lines": [
+   4366,
+   4366
+  ],
+  "decisions": [
+   600,
+   600
+  ],
+  "fields_that_differ": {},
+  "raw_lines": 1,
+  "first_difference": null
+ },
+ "A1": {
+  "identical": true,
+  "game_lines": [
+   4366,
+   4366
+  ],
+  "decisions": [
+   600,
+   600
+  ],
+  "fields_that_differ": {},
+  "raw_lines": 1,
+  "first_difference": null
+ },
+ "C1": {
+  "identical": true,
+  "game_lines": [
+   4366,
+   4366
+  ],
+  "decisions": [
+   600,
+   600
+  ],
+  "fields_that_differ": {},
+  "raw_lines": 1,
+  "first_difference": null
+ }
+}

@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2035002	STR_LOC_SMUGGLER_LAIR	over	STR_LOC_SMUGGLER_LAIR	STR_LOC_SMUGGLER_LAIR	62	8	SEWERS	STR_SMUGGLER	STR_DRAKKAR#2	11	6	8	3	0	5	226	25	21	2	2	5	0	0	7	35	h.rec.in:156,h.rec.out.a9:1,p.rec.in:115	115	0	0	0	0	5	157	0	0	3	0	1	15		win

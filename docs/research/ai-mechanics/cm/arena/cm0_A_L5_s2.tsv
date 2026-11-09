@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2029002	STR_LOC_GUNS_OF_THE_PATRIOTS_BLACKMARCH	over	STR_LOC_GUNS_OF_THE_PATRIOTS_BLACKMARCH	STR_LOC_GUNS_OF_THE_PATRIOTS_BLACKMARCH	62	8	URBAN_WASTE	STR_NAZIS	STR_DRAKKAR#2	11	5	8	0	0	2	61	53	50	0	3	8	0	0	9	58	h.rec.in:247,h.rec.out.M2:1,p.rec.in:137	137	0	0	0	0	3	248	0	0	6	0	0	31		win

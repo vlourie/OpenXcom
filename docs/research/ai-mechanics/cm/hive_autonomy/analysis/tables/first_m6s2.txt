@@ -1,0 +1,25 @@
+lines 2871 3614
+first differing line 227 same before it
+ A [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(9,8,0) tu=96 mode=2 act=9 to=(33,18,0) run=0 kneel=0 aim=470 weapon=STR_GAUSS_PISTOL seen=448,470,444,
+ B [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(9,8,0) tu=96 mode=2 act=9 to=(33,18,0) run=0 kneel=0 aim=470 weapon=STR_GAUSS_PISTOL seen=448,470,444,
+ fields that differ {'ha': ('549aa8efcc94c5ef', '51a6730b1cf7764f'), 'hr': ('5a3ba704b7417469', '27b010bacd0817b9')}
+ first differing action, A {'turn': '1', 'unit': '1000000', 'n': '2', 'tu': '56', 'mode': '2', 'act': '9', 'from': '(9,8,0)', 'to': '(33,18,0)', 'aim': '470'}
+ first differing action, B {'turn': '1', 'unit': '1000000', 'n': '2', 'tu': '56', 'mode': '2', 'act': '8', 'from': '(9,8,0)', 'to': '(33,18,0)', 'aim': '470'}
+ next decision A {'turn': '1', 'unit': '1000000', 'n': '1', 'tu': '96', 'mode': '2', 'act': '9', 'from': '(9,8,0)', 'to': '(33,18,0)'}
+ next decision B {'turn': '1', 'unit': '1000000', 'n': '1', 'tu': '96', 'mode': '2', 'act': '9', 'from': '(9,8,0)', 'to': '(33,18,0)'}
+ last decision before {'turn': '1', 'unit': '1000000', 'n': '1', 'tu': '96', 'mode': '2', 'act': '9'}
+ base class of that decision: attack hold: stay:contact_in_place label: ENGAGE task: SEARCH rolled: 2
+ answers in the fixed run, that unit-turn: ['FREE:stay:contact_in_place', 'FREE:stay:contact_in_place', 'FREE:stay:contact_in_place', 'FREE:stay:contact_in_place']
+  cc5_CC_M6_s2 turn 1: n1 attack tu=96 mode=2 act=9 (9,8,0)->(33,18,0) rolled=2; n2 attack tu=56 mode=2 act=9 (9,8,0)->(33,18,0) rolled=-; n1 natural_fallback_walk tu=18 mode=3 act=2 (9,8,0)->(13,3,0) rolled=2
+  cc5_CC_M6_s2 turn 2: no decisions
+  cc5_CC_M6_s2 fell: [AICASUALTY] turn=2 side=0 victim=1000000 vfaction=1 type=STR_MUTON_SOLDIER how=dead pos=(
+  ra2_AN_M6_s2 turn 1: n1 attack tu=96 mode=2 act=9 (9,8,0)->(33,18,0) rolled=2; n2 attack tu=56 mode=2 act=8 (9,8,0)->(33,18,0) rolled=-; n1 attack tu=35 mode=2 act=8 (9,8,0)->(33,18,0) rolled=-; n2 patrol_walk tu=14 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2
+  ra2_AN_M6_s2 turn 2: n1 attack tu=64 mode=2 act=6 (9,8,0)->(28,16,0) rolled=2; n2 patrol_walk tu=26 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2; n1 patrol_walk tu=26 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2; n2 patrol_walk tu=26 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2
+  ra2_AN_M6_s2 fell: [AICASUALTY] turn=3 side=0 victim=1000000 vfaction=1 type=STR_MUTON_SOLDIER how=stun pos=(
+ first FREE answer: {'turn': '1', 'unit': '1000000', 'from': 'stay', 'why': 'contact_in_place'} decided {'n': '1', 'tu': '96', 'mode': '2', 'act': '9', 'from': '(9,8,0)', 'to': '(33,18,0)'}
+  cc5_CC_M6_s2 turn 1: n1 attack tu=96 mode=2 act=9 (9,8,0)->(33,18,0) rolled=2; n2 attack tu=56 mode=2 act=9 (9,8,0)->(33,18,0) rolled=-; n1 natural_fallback_walk tu=18 mode=3 act=2 (9,8,0)->(13,3,0) rolled=2
+  cc5_CC_M6_s2 turn 2: no decisions
+  cc5_CC_M6_s2 fell: [AICASUALTY] turn=2 side=0 victim=1000000 vfaction=1 type=STR_MUTON_SOLDIER how=dead pos=(
+  ra2_AN_M6_s2 turn 1: n1 attack tu=96 mode=2 act=9 (9,8,0)->(33,18,0) rolled=2; n2 attack tu=56 mode=2 act=8 (9,8,0)->(33,18,0) rolled=-; n1 attack tu=35 mode=2 act=8 (9,8,0)->(33,18,0) rolled=-; n2 patrol_walk tu=14 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2
+  ra2_AN_M6_s2 turn 2: n1 attack tu=64 mode=2 act=6 (9,8,0)->(28,16,0) rolled=2; n2 patrol_walk tu=26 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2; n1 patrol_walk tu=26 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2; n2 patrol_walk tu=26 mode=0 act=2 (9,8,0)->(43,9,0) rolled=2
+  ra2_AN_M6_s2 fell: [AICASUALTY] turn=3 side=0 victim=1000000 vfaction=1 type=STR_MUTON_SOLDIER how=stun pos=(

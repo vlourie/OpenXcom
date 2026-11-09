@@ -1,0 +1,17 @@
+== ra3_AV_M3_s1 decisions 788 unit-turns 291
+  classes {'patrol_walk': 278, 'attack': 170, 'combat_walk': 157, 'held_patrol_stand': 125, 'esc_dice_walk': 26, 'esc_dice_stand': 10, 'patrol_stand': 9, 'esc_kept_walk': 6, 'natural_fallback_stand': 4, 'art_esc_stand': 3}
+  held decisions 326 with a patrol proposal (must be 0) 46 not held without one 333
+  rolled -> final when held / when not held
+    rolled 0: held {0: 101, 3: 2} | free {0: 82, 3: 3}
+    rolled 1: held {} | free {}
+    rolled 2: held {0: 117, 2: 58, 3: 1} | free {0: 92, 2: 111, 3: 1}
+    rolled 3: held {3: 14} | free {3: 22}
+    rolled -: held {2: 32, 3: 1} | free {0: 25, 2: 121, 3: 5}
+  by role: decisions art_stand art_walk held_patrol_stand esc_dice attack
+    ENGAGE 257 1 0 0 16 74
+    GUARD 169 0 0 125 5 10
+    NONE 224 0 0 0 8 62
+    REINFORCE 84 0 0 0 2 20
+    SEARCH 54 2 0 0 5 4
+  artificial by hold kind {'at_node': 2, 'arrived': 1}
+  unit turns {'unit_turns_with_art': 63, 'could_only_walk': 53, 'shot_possible_unused': 5, 'attacked_later_same_turn': 5} tu at the end {'could_only_walk': 3143, 'shot_possible_unused': 331}

@@ -1,0 +1,137 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/cc/tree/src/Battlescape/HiveCommand.h	2026-11-05 12:49:06.921158000 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ra/tree/src/Battlescape/HiveCommand.h	2026-11-05 14:38:19.391921700 +0200
+@@ -36,7 +36,7 @@
+ namespace HiveCommand
+ {
+ 
+-enum PatrolOrder { PO_NONE, PO_HOLD, PO_GO };
++enum PatrolOrder { PO_NONE, PO_HOLD, PO_GO, PO_STAND };
+ 
+ /// The flag: 0 off, 1 shadow, 2 active.
+ int mode();
+@@ -50,7 +50,7 @@
+ void forget(const SavedBattleGame *save);
+ /// Before the unit's think: the first of a side's turn plans it, every one takes what this unit sees.
+ void beforeThink(SavedBattleGame *save, BattleUnit *unit);
+-/// Inside setupPatrol: the order of this unit. PO_GO gives the node, PO_HOLD ends its selection where it stands, PO_NONE leaves the free choice.
++/// Inside setupPatrol: the order of this unit. PO_GO gives the node, PO_HOLD ends its selection where it stands, PO_NONE leaves the free choice, PO_STAND holds the post with no walk and no fall to the escape.
+ PatrolOrder patrol(SavedBattleGame *save, BattleUnit *unit, Node *&node);
+ /// After the unit's think: what it really decided, against its order.
+ void decided(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/cc/tree/src/Battlescape/HiveCommand.cpp	2026-11-05 12:59:56.838298000 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ra/tree/src/Battlescape/HiveCommand.cpp	2026-11-05 14:38:19.391921700 +0200
+@@ -193,6 +193,13 @@
+ 	return on;
+ }
+ 
++/// RESTORE COMBAT AUTONOMY (bench): a hold is what the squad keeps, not what its soldier may no longer do.
++bool autonomy()
++{
++	static const bool on = coord() && (int)AiProbe::param("OXCE_AI_HIVE_AUTONOMY", 0) == 1;
++	return on;
++}
++
+ bool onContact(const Squad &sq)
+ {
+ 	return sq.role == R_ENGAGE || sq.role == R_REINFORCE;
+@@ -2257,6 +2264,16 @@
+ 	hq.thinks++;
+ }
+ 
++/// What a hold answers: a guard keeps its post (the squad's objective), anyone else has no useful order and takes its own free choice.
++PatrolOrder held(SavedBattleGame *save, const Order &o, const char *from)
++{
++	if (!autonomy()) return PO_HOLD;
++	const auto sf = hq.squadOf.find(o.unit->getId());
++	const bool guard = sf != hq.squadOf.end() && o.task == T_HOLD && hq.squads[sf->second].holdWhy == HW_GUARD;
++	Log(LOG_INFO) << "[HIVECC] event=AUTONOMY turn=" << save->getTurn() << " unit=" << o.unit->getId() << " answer=" << (guard ? "STAND" : "FREE") << " from=" << from << " why=" << o.why;
++	return guard ? PO_STAND : PO_NONE;
++}
++
+ PatrolOrder patrol(SavedBattleGame *save, BattleUnit *unit, Node *&node)
+ {
+ 	node = 0;
+@@ -2264,15 +2281,15 @@
+ 	auto f = hq.orders.find(unit->getId());
+ 	if (f == hq.orders.end() || !f->second.unit || isTerminal(f->second)) return PO_NONE;
+ 	Order *o = &f->second;
+-	if (o->stay || o->state == COMPLETED) return PO_HOLD;
++	if (o->stay || o->state == COMPLETED) return held(save, *o, o->stay ? "stay" : "completed");
+ 	if (nearPos(unit->getPosition(), o->target, ARRIVE_RADIUS))
+ 	{
+ 		setState(*o, COMPLETED, "arrived");
+-		return PO_HOLD;
++		return held(save, *o, "arrived");
+ 	}
+ 	if (o->pauseTurn == save->getTurn())
+ 	{
+-		return PO_HOLD;
++		return held(save, *o, "pause");
+ 	}
+ 	// the plan knew the way; once a turn the engine's own search says it is still there: a unit may stand in it by now. If not, the
+ 	// node is refused under these conditions and the same plan asks again for this unit
+@@ -2305,13 +2322,14 @@
+ 		if (tries + 1 >= PATH_TRIES)
+ 		{
+ 			newOrder(sq, unit, true, 0, unit->getPosition(), "no_path_now");
+-			return PO_HOLD;
++			f = hq.orders.find(unit->getId());
++			return f == hq.orders.end() || !f->second.unit ? PO_HOLD : held(save, f->second, "no_path_now");
+ 		}
+ 		planUnit(sq, unit, save);
+ 		f = hq.orders.find(unit->getId());
+ 		if (f == hq.orders.end() || !f->second.unit || isTerminal(f->second)) return PO_NONE;
+ 		o = &f->second;
+-		if (o->stay) return PO_HOLD;
++		if (o->stay) return held(save, *o, "replan");
+ 	}
+ 	node = o->node;
+ 	return node ? PO_GO : PO_NONE;
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/cc/tree/src/Battlescape/AIModule.h	2026-11-05 12:49:06.900094300 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ra/tree/src/Battlescape/AIModule.h	2026-11-05 14:38:19.392929200 +0200
+@@ -141,6 +141,8 @@
+ 	int _patrolSpentEnergy = -1;
+ 	/// This think's action is the patrol's walk to its node.
+ 	bool _patrolWalk = false;
++	/// RESTORE COMBAT AUTONOMY (bench): this think the headquarters has the unit keep its post. Set and read inside one think, never saved.
++	bool _hiveStand = false;
+ 	/// The think after a spent patrol dropped: 1 asked for it (BA_RETHINK), 2 this think is it (no second ask).
+ 	int _patrolRetry = 0;
+ 	/// AI3-IMM (bench): the think after an immobile unit's walk dropped - 1 asked for it (BA_RETHINK), 2 this think is it.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/cc/tree/src/Battlescape/AIModule.cpp	2026-11-05 12:49:06.856854400 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/hive/ra/tree/src/Battlescape/AIModule.cpp	2026-11-05 14:38:19.394932300 +0200
+@@ -1900,6 +1900,7 @@
+  */
+ void AIModule::setupPatrol()
+ {
++	_hiveStand = false;
+ 	_patrolAction.clearTU();
+ 	_prClass.clear();
+ 	if (_toNode != 0 && _unit->getPosition() == _toNode->getPosition())
+@@ -1950,11 +1951,12 @@
+ 	// patrol's plan: what the unit does is still chosen by its own think below. A hold ends its selection as patrol.spent does
+ 	Node *hiveNode = 0;
+ 	const HiveCommand::PatrolOrder hiveOrder = HiveCommand::patrol(_save, _unit, hiveNode);
+-	if (hiveOrder == HiveCommand::PO_HOLD)
++	if (hiveOrder == HiveCommand::PO_HOLD || hiveOrder == HiveCommand::PO_STAND)
+ 	{
+ 		freePatrolTarget();
+ 		_toNode = 0;
+ 		_patrolAction.type = BA_NONE;
++		_hiveStand = hiveOrder == HiveCommand::PO_STAND;
+ 		return;
+ 	}
+ 	if (hiveOrder == HiveCommand::PO_GO && hiveNode != _toNode)
+@@ -3961,6 +3963,12 @@
+ 		{
+ 			return;
+ 		}
++		// RESTORE COMBAT AUTONOMY (bench): the unit keeps the post it was told to keep, no place to hide is no reason to run from it
++		if (_hiveStand)
++		{
++			_AIMode = AI_PATROL;
++			return;
++		}
+ 		_AIMode = AI_ESCAPE;
+ 	}
+ }

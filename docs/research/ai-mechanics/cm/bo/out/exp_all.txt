@@ -1,0 +1,238 @@
+== identity
+A2 vs A: whole log, orders included: IDENTICAL
+C vs A: whole log, orders included: IDENTICAL
+D1 vs B1: whole log, orders included: IDENTICAL
+B2 vs B: whole log, orders included: IDENTICAL
+D vs B: whole log, orders included: IDENTICAL
+A2 vs A: whole log: IDENTICAL
+C vs A: whole log: IDENTICAL
+B1 vs A: 2011 lines before the first changed decision: IDENTICAL
+   first change: [AIORDER] turn=2 unit=1000028 n=1 arm=fire status=shot idx=0 type=9 cost=41 target=520 tpos=(25,8,0) since=0 pos=(3,7,0) tu=52 d0act=6 d0to=(32,10,2)
+   state hashes of that decision vs A's: hu== hi== ho== hm== hr== hr0== ha0==; act 9 vs A 6
+D1 vs A: 2011 lines before the first changed decision: IDENTICAL
+   first change: [AIORDER] turn=2 unit=1000028 n=1 arm=fire status=shot idx=0 type=9 cost=41 target=520 tpos=(25,8,0) since=0 pos=(3,7,0) tu=52 d0act=6 d0to=(32,10,2)
+   state hashes of that decision vs A's: hu== hi== ho== hm== hr== hr0== ha0==; act 9 vs A 6
+B vs A: 2011 lines before the first changed decision: IDENTICAL
+   first change: [AIORDER] turn=2 unit=1000028 n=1 arm=fire status=shot idx=0 type=9 cost=41 target=520 tpos=(25,8,0) since=0 pos=(3,7,0) tu=65 d0act=6 d0to=(32,10,2) prime=13
+   state hashes of that decision vs A's: hu=DIFF hi=DIFF ho=DIFF hm=DIFF hr=DIFF hr0=DIFF ha0=DIFF; act 9 vs A None
+B2 vs A: 2011 lines before the first changed decision: IDENTICAL
+   first change: [AIORDER] turn=2 unit=1000028 n=1 arm=fire status=shot idx=0 type=9 cost=41 target=520 tpos=(25,8,0) since=0 pos=(3,7,0) tu=65 d0act=6 d0to=(32,10,2) prime=13
+   state hashes of that decision vs A's: hu=DIFF hi=DIFF ho=DIFF hm=DIFF hr=DIFF hr0=DIFF ha0=DIFF; act 9 vs A None
+D vs A: 2011 lines before the first changed decision: IDENTICAL
+   first change: [AIORDER] turn=2 unit=1000028 n=1 arm=fire status=shot idx=0 type=9 cost=41 target=520 tpos=(25,8,0) since=0 pos=(3,7,0) tu=65 d0act=6 d0to=(32,10,2) prime=13
+   state hashes of that decision vs A's: hu=DIFF hi=DIFF ho=DIFF hm=DIFF hr=DIFF hr0=DIFF ha0=DIFF; act 9 vs A None
+
+== turn 2 (hostile) and turn 3 (player)
+run           att520    dmg520 useful520     plost  react444 react_all        tu       tu4  hostile down own turn | 520 after | 444 after
+A                  0         0         0        35         3         6      2944       243  9: 1000036(dead by 444 AUX_TANK_CANNON), 1000048(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000051(dead by 444 AUX_TANK_CANNON), 1000029(stun by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000049(stun by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO) | hp 21/84 status 0 | hp 146/170 status 0
+A2                 0         0         0        35         3         6      2944       243  9: 1000036(dead by 444 AUX_TANK_CANNON), 1000048(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000051(dead by 444 AUX_TANK_CANNON), 1000029(stun by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000049(stun by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO) | hp 21/84 status 0 | hp 146/170 status 0
+C                  0         0         0        35         3         6      2944       243  9: 1000036(dead by 444 AUX_TANK_CANNON), 1000048(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000051(dead by 444 AUX_TANK_CANNON), 1000029(stun by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000049(stun by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO) | hp 21/84 status 0 | hp 146/170 status 0
+B1                 2        19        19        37         2         4      3043       208  8: 1000053(stun by 1000053 STR_WEAPON_UNKNO), 1000053(stun by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO), 1000036(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000051(stun by 444 AUX_TANK_CANNON) | hp 1/84 status 7 | hp 154/170 status 0
+D1                 2        19        19        37         2         4      3043       208  8: 1000053(stun by 1000053 STR_WEAPON_UNKNO), 1000053(stun by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO), 1000036(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000051(stun by 444 AUX_TANK_CANNON) | hp 1/84 status 7 | hp 154/170 status 0
+B                  3        29        29       158         2         3      2847       156  8: 1000036(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000048(dead by 444 AUX_TANK_CANNON), 1000051(dead by 444 AUX_TANK_CANNON), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000053(stun by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO) | down | hp 148/170 status 0
+B2                 3        29        29       158         2         3      2847       156  8: 1000036(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000048(dead by 444 AUX_TANK_CANNON), 1000051(dead by 444 AUX_TANK_CANNON), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000053(stun by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO) | down | hp 148/170 status 0
+D                  3        29        29       158         2         3      2847       156  8: 1000036(dead by 444 AUX_TANK_CANNON), 1000042(dead by 444 AUX_TANK_CANNON), 1000048(dead by 444 AUX_TANK_CANNON), 1000051(dead by 444 AUX_TANK_CANNON), 1000029(dead by 1000053 STR_WEAPON_UNKNO), 1000053(stun by 1000053 STR_WEAPON_UNKNO), 1000049(dead by 1000053 STR_WEAPON_UNKNO), 1000053(dead by 1000053 STR_WEAPON_UNKNO) | down | hp 148/170 status 0
+
+A: player down in turn 2: -; turn 3 player down 1: 503(dead by 470); hostile down 3: 1000034(dead by 470), 1000043(dead by 470), 1000057(dead by 545)
+   orders: -
+   result: how=over turn=21 player=8 pdead=6 livesoldiers=2 hostile=64 hdead=61 hleft=0 phplost=808
+A2: player down in turn 2: -; turn 3 player down 1: 503(dead by 470); hostile down 3: 1000034(dead by 470), 1000043(dead by 470), 1000057(dead by 545)
+   orders: -
+   result: how=over turn=21 player=8 pdead=6 livesoldiers=2 hostile=64 hdead=61 hleft=0 phplost=808
+C: player down in turn 2: -; turn 3 player down 1: 503(dead by 470); hostile down 3: 1000034(dead by 470), 1000043(dead by 470), 1000057(dead by 545)
+   orders: -
+   result: how=over turn=21 player=8 pdead=6 livesoldiers=2 hostile=64 hdead=61 hleft=0 phplost=808
+B1: player down in turn 2: 520(stun by 1000051 STR_PIR_SMALL_LA), 520(stun by 1000051 STR_WEAPON_UNKNO); turn 3 player down 0: -; hostile down 6: 1000048(dead by 444), 1000030(dead by 448), 1000009(stun by 444), 1000022(dead by 444), 1000045(dead by 444), 1000034(dead by 503)
+   orders: 1000028:shot, 1000028:cancel.no_tu, 1000042:cancel.no_lof, 1000055:cancel.target_out, 1000057:cancel.target_out
+   result: how=over turn=20 player=8 pdead=5 livesoldiers=3 hostile=67 hdead=65 hleft=0 phplost=655
+D1: player down in turn 2: 520(stun by 1000051 STR_PIR_SMALL_LA), 520(stun by 1000051 STR_WEAPON_UNKNO); turn 3 player down 0: -; hostile down 6: 1000048(dead by 444), 1000030(dead by 448), 1000009(stun by 444), 1000022(dead by 444), 1000045(dead by 444), 1000034(dead by 503)
+   orders: 1000028:shot, 1000028:cancel.no_tu, 1000042:cancel.no_lof, 1000055:cancel.target_out, 1000057:cancel.target_out
+   result: how=over turn=20 player=8 pdead=5 livesoldiers=3 hostile=67 hdead=65 hleft=0 phplost=655
+B: player down in turn 2: 520(dead by 1000055 STR_SR_RIFLE); turn 3 player down 0: -; hostile down 3: 1000057(dead by 545), 1000034(dead by 503), 1000017(dead by 470)
+   orders: 1000028:shot, 1000028:shot, 1000055:shot, 1000055:cancel.target_out, 1000057:cancel.target_out
+   result: how=over turn=18 player=8 pdead=8 livesoldiers=0 hostile=64 hdead=47 hleft=14 phplost=916
+B2: player down in turn 2: 520(dead by 1000055 STR_SR_RIFLE); turn 3 player down 0: -; hostile down 3: 1000057(dead by 545), 1000034(dead by 503), 1000017(dead by 470)
+   orders: 1000028:shot, 1000028:shot, 1000055:shot, 1000055:cancel.target_out, 1000057:cancel.target_out
+   result: how=over turn=18 player=8 pdead=8 livesoldiers=0 hostile=64 hdead=47 hleft=14 phplost=916
+D: player down in turn 2: 520(dead by 1000055 STR_SR_RIFLE); turn 3 player down 0: -; hostile down 3: 1000057(dead by 545), 1000034(dead by 503), 1000017(dead by 470)
+   orders: 1000028:shot, 1000028:shot, 1000055:shot, 1000055:cancel.target_out, 1000057:cancel.target_out
+   result: how=over turn=18 player=8 pdead=8 livesoldiers=0 hostile=64 hdead=47 hleft=14 phplost=916
+
+== the shooters' turn 2
+-- A
+ 1000028
+  n=1 act=6 to=(32,10,2) aim=448 w=STR_GRENADE_BUG spent=13 walk=0 dmg=0 pos=[3, 7, 0] tu=52 spotted=0
+  n=2 act=2 to=(8,9,0) aim=520 w=AUX_FISTO spent=14 walk=1 dmg=0 pos=[6, 8, 0] tu=38 spotted=0
+  n=1 act=8 to=(31,16,0) aim=444 w=STR_SR_RIFLE spent=20 walk=0 dmg=0 pos=[6, 8, 0] tu=18 spotted=0
+  n=2 act=2 to=(6,3,0) aim=520 w=STR_SR_RIFLE spent=18 walk=1 dmg=0 pos=[7, 4, 0] tu=0 spotted=0
+ 1000042
+  n=1 act=6 to=(37,12,2) aim=545 w=STR_GRENADE_BUG spent=42 walk=0 dmg=0 pos=[25, 18, 0] tu=23 spotted=2
+  n=2 act=2 to=(20,18,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 20, 0] tu=13 spotted=1
+ 1000055
+  n=1 act=2 to=(3,7,2) aim=520 w=AUX_FISTO spent=16 walk=1 dmg=0 pos=[3, 7, 0] tu=55 spotted=0
+  n=2 act=6 to=(32,10,2) aim=448 w=STR_GRENADE_BUG spent=42 walk=0 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+  n=1 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+  n=2 act=2 to=(27,14,1) aim=520 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+ 1000057
+  n=1 act=2 to=(18,2,0) aim=520 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[18, 2, 0] tu=55 spotted=1
+  n=2 act=2 to=(13,1,0) aim=444 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[13, 1, 0] tu=33 spotted=1
+  n=1 act=2 to=(15,6,0) aim=520 w=STR_PIR_PLASMA_RIF spent=24 walk=1 dmg=0 pos=[15, 6, 0] tu=9 spotted=1
+ 1000036
+  n=0 act=2 to=(26,15,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 15, 0] tu=55 spotted=0
+  n=1 act=9 to=(31,16,0) aim=444 w=STR_CANISTER_GUN spent=45 walk=0 dmg=8 pos=[26, 15, 0] tu=10 spotted=2
+ 1000051
+-- A2
+ 1000028
+  n=1 act=6 to=(32,10,2) aim=448 w=STR_GRENADE_BUG spent=13 walk=0 dmg=0 pos=[3, 7, 0] tu=52 spotted=0
+  n=2 act=2 to=(8,9,0) aim=520 w=AUX_FISTO spent=14 walk=1 dmg=0 pos=[6, 8, 0] tu=38 spotted=0
+  n=1 act=8 to=(31,16,0) aim=444 w=STR_SR_RIFLE spent=20 walk=0 dmg=0 pos=[6, 8, 0] tu=18 spotted=0
+  n=2 act=2 to=(6,3,0) aim=520 w=STR_SR_RIFLE spent=18 walk=1 dmg=0 pos=[7, 4, 0] tu=0 spotted=0
+ 1000042
+  n=1 act=6 to=(37,12,2) aim=545 w=STR_GRENADE_BUG spent=42 walk=0 dmg=0 pos=[25, 18, 0] tu=23 spotted=2
+  n=2 act=2 to=(20,18,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 20, 0] tu=13 spotted=1
+ 1000055
+  n=1 act=2 to=(3,7,2) aim=520 w=AUX_FISTO spent=16 walk=1 dmg=0 pos=[3, 7, 0] tu=55 spotted=0
+  n=2 act=6 to=(32,10,2) aim=448 w=STR_GRENADE_BUG spent=42 walk=0 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+  n=1 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+  n=2 act=2 to=(27,14,1) aim=520 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+ 1000057
+  n=1 act=2 to=(18,2,0) aim=520 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[18, 2, 0] tu=55 spotted=1
+  n=2 act=2 to=(13,1,0) aim=444 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[13, 1, 0] tu=33 spotted=1
+  n=1 act=2 to=(15,6,0) aim=520 w=STR_PIR_PLASMA_RIF spent=24 walk=1 dmg=0 pos=[15, 6, 0] tu=9 spotted=1
+ 1000036
+  n=0 act=2 to=(26,15,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 15, 0] tu=55 spotted=0
+  n=1 act=9 to=(31,16,0) aim=444 w=STR_CANISTER_GUN spent=45 walk=0 dmg=8 pos=[26, 15, 0] tu=10 spotted=2
+ 1000051
+-- C
+ 1000028
+  n=1 act=6 to=(32,10,2) aim=448 w=STR_GRENADE_BUG spent=13 walk=0 dmg=0 pos=[3, 7, 0] tu=52 spotted=0
+  n=2 act=2 to=(8,9,0) aim=520 w=AUX_FISTO spent=14 walk=1 dmg=0 pos=[6, 8, 0] tu=38 spotted=0
+  n=1 act=8 to=(31,16,0) aim=444 w=STR_SR_RIFLE spent=20 walk=0 dmg=0 pos=[6, 8, 0] tu=18 spotted=0
+  n=2 act=2 to=(6,3,0) aim=520 w=STR_SR_RIFLE spent=18 walk=1 dmg=0 pos=[7, 4, 0] tu=0 spotted=0
+ 1000042
+  n=1 act=6 to=(37,12,2) aim=545 w=STR_GRENADE_BUG spent=42 walk=0 dmg=0 pos=[25, 18, 0] tu=23 spotted=2
+  n=2 act=2 to=(20,18,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 20, 0] tu=13 spotted=1
+ 1000055
+  n=1 act=2 to=(3,7,2) aim=520 w=AUX_FISTO spent=16 walk=1 dmg=0 pos=[3, 7, 0] tu=55 spotted=0
+  n=2 act=6 to=(32,10,2) aim=448 w=STR_GRENADE_BUG spent=42 walk=0 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+  n=1 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+  n=2 act=2 to=(27,14,1) aim=520 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[3, 7, 0] tu=13 spotted=0
+ 1000057
+  n=1 act=2 to=(18,2,0) aim=520 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[18, 2, 0] tu=55 spotted=1
+  n=2 act=2 to=(13,1,0) aim=444 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[13, 1, 0] tu=33 spotted=1
+  n=1 act=2 to=(15,6,0) aim=520 w=STR_PIR_PLASMA_RIF spent=24 walk=1 dmg=0 pos=[15, 6, 0] tu=9 spotted=1
+ 1000036
+  n=0 act=2 to=(26,15,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 15, 0] tu=55 spotted=0
+  n=1 act=9 to=(31,16,0) aim=444 w=STR_CANISTER_GUN spent=45 walk=0 dmg=8 pos=[26, 15, 0] tu=10 spotted=2
+ 1000051
+-- B1
+ 1000028
+  [order fire shot idx=0 type=9 cost=41 tu=52 since=0 d0act=6 d0to=(32,10,2)]
+  n=1 act=9 to=(25,8,0) aim=448 w=STR_SR_RIFLE spent=54 walk=0 dmg=0 pos=[3, 7, 0] tu=11 spotted=0
+  [order fire cancel.no_tu idx=1 type=8 cost=20 tu=11 since=0 d0act=2 d0to=(63,39,3)]
+  n=2 act=2 to=(63,39,3) aim=520 w=STR_SR_RIFLE spent=10 walk=1 dmg=0 pos=[5, 8, 0] tu=1 spotted=0
+ 1000042
+  [order fire cancel.no_lof idx=0 type=8 cost=23 tu=65 since=0 d0act=2 d0to=(19,66,0)]
+  n=1 act=2 to=(19,66,0) aim=-1 w=STR_CANISTER_GUN spent=4 walk=1 dmg=0 pos=[25, 19, 0] tu=61 spotted=1
+  n=2 act=8 to=(42,23,0) aim=470 w=STR_CANISTER_GUN spent=24 walk=0 dmg=0 pos=[25, 19, 0] tu=37 spotted=1
+  n=1 act=8 to=(42,23,0) aim=470 w=STR_CANISTER_GUN spent=23 walk=0 dmg=0 pos=[25, 19, 0] tu=14 spotted=2
+ 1000055
+  [order fire cancel.target_out idx=0 type=9 cost=0 tu=71 since=255 d0act=2 d0to=(27,14,1)]
+  n=1 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=26 walk=1 dmg=0 pos=[9, 10, 0] tu=45 spotted=0
+  n=2 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=22 walk=1 dmg=0 pos=[14, 11, 0] tu=23 spotted=0
+  n=1 act=8 to=(42,23,0) aim=470 w=STR_SR_RIFLE spent=23 walk=0 dmg=0 pos=[14, 11, 0] tu=0 spotted=0
+ 1000057
+  [order fire cancel.target_out idx=0 type=9 cost=0 tu=77 since=255 d0act=2 d0to=(13,10,0)]
+  n=1 act=2 to=(13,10,0) aim=448 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[13, 10, 0] tu=55 spotted=0
+ 1000036
+  n=1 act=2 to=(25,17,0) aim=444 w=STR_CANISTER_GUN spent=36 walk=1 dmg=0 pos=[25, 17, 0] tu=29 spotted=0
+ 1000051
+  n=1 act=8 to=(25,8,0) aim=520 w=STR_PIR_SMALL_LAUN spent=48 walk=0 dmg=19 pos=[24, 19, 0] tu=23 spotted=0
+  n=2 act=2 to=(30,66,0) aim=444 w=STR_PIR_SMALL_LAUN spent=18 walk=1 dmg=0 pos=[24, 19, 0] tu=5 spotted=0
+-- D1
+ 1000028
+  [order fire shot idx=0 type=9 cost=41 tu=52 since=0 d0act=6 d0to=(32,10,2)]
+  n=1 act=9 to=(25,8,0) aim=448 w=STR_SR_RIFLE spent=54 walk=0 dmg=0 pos=[3, 7, 0] tu=11 spotted=0
+  [order fire cancel.no_tu idx=1 type=8 cost=20 tu=11 since=0 d0act=2 d0to=(63,39,3)]
+  n=2 act=2 to=(63,39,3) aim=520 w=STR_SR_RIFLE spent=10 walk=1 dmg=0 pos=[5, 8, 0] tu=1 spotted=0
+ 1000042
+  [order fire cancel.no_lof idx=0 type=8 cost=23 tu=65 since=0 d0act=2 d0to=(19,66,0)]
+  n=1 act=2 to=(19,66,0) aim=-1 w=STR_CANISTER_GUN spent=4 walk=1 dmg=0 pos=[25, 19, 0] tu=61 spotted=1
+  n=2 act=8 to=(42,23,0) aim=470 w=STR_CANISTER_GUN spent=24 walk=0 dmg=0 pos=[25, 19, 0] tu=37 spotted=1
+  n=1 act=8 to=(42,23,0) aim=470 w=STR_CANISTER_GUN spent=23 walk=0 dmg=0 pos=[25, 19, 0] tu=14 spotted=2
+ 1000055
+  [order fire cancel.target_out idx=0 type=9 cost=0 tu=71 since=255 d0act=2 d0to=(27,14,1)]
+  n=1 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=26 walk=1 dmg=0 pos=[9, 10, 0] tu=45 spotted=0
+  n=2 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=22 walk=1 dmg=0 pos=[14, 11, 0] tu=23 spotted=0
+  n=1 act=8 to=(42,23,0) aim=470 w=STR_SR_RIFLE spent=23 walk=0 dmg=0 pos=[14, 11, 0] tu=0 spotted=0
+ 1000057
+  [order fire cancel.target_out idx=0 type=9 cost=0 tu=77 since=255 d0act=2 d0to=(13,10,0)]
+  n=1 act=2 to=(13,10,0) aim=448 w=STR_PIR_PLASMA_RIF spent=22 walk=1 dmg=0 pos=[13, 10, 0] tu=55 spotted=0
+ 1000036
+  n=1 act=2 to=(25,17,0) aim=444 w=STR_CANISTER_GUN spent=36 walk=1 dmg=0 pos=[25, 17, 0] tu=29 spotted=0
+ 1000051
+  n=1 act=8 to=(25,8,0) aim=520 w=STR_PIR_SMALL_LAUN spent=48 walk=0 dmg=19 pos=[24, 19, 0] tu=23 spotted=0
+  n=2 act=2 to=(30,66,0) aim=444 w=STR_PIR_SMALL_LAUN spent=18 walk=1 dmg=0 pos=[24, 19, 0] tu=5 spotted=0
+-- B
+ 1000028
+  [order fire shot idx=0 type=9 cost=41 tu=65 since=0 d0act=6 d0to=(32,10,2)]
+  n=1 act=9 to=(25,8,0) aim=448 w=STR_SR_RIFLE spent=41 walk=0 dmg=0 pos=[3, 7, 0] tu=24 spotted=0
+  [order fire shot idx=1 type=8 cost=20 tu=24 since=0 d0act=2 d0to=(4,7,0)]
+  n=2 act=8 to=(25,8,0) aim=520 w=STR_SR_RIFLE spent=20 walk=0 dmg=0 pos=[3, 7, 0] tu=4 spotted=0
+ 1000042
+ 1000055
+  [order fire shot idx=0 type=9 cost=45 tu=71 since=0 d0act=8 d0to=(25,8,0)]
+  n=1 act=9 to=(25,8,0) aim=520 w=STR_SR_RIFLE spent=45 walk=0 dmg=29 pos=[6, 5, 2] tu=26 spotted=0
+  [order fire cancel.target_out idx=1 type=8 cost=0 tu=26 since=255 d0act=2 d0to=(7,5,2)]
+  n=1 act=2 to=(7,5,2) aim=448 w=STR_SR_RIFLE spent=4 walk=1 dmg=0 pos=[7, 5, 0] tu=22 spotted=0
+  n=2 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[7, 5, 0] tu=22 spotted=0
+  n=1 act=8 to=(32,10,2) aim=-1 w=STR_SR_RIFLE spent=22 walk=0 dmg=0 pos=[7, 5, 0] tu=0 spotted=0
+ 1000057
+  [order fire cancel.target_out idx=0 type=9 cost=0 tu=77 since=255 d0act=2 d0to=(18,9,0)]
+  n=1 act=2 to=(18,9,0) aim=448 w=STR_PIR_PLASMA_RIF spent=24 walk=1 dmg=0 pos=[18, 9, 0] tu=53 spotted=1
+ 1000036
+  n=0 act=2 to=(26,15,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 15, 0] tu=55 spotted=0
+  n=1 act=9 to=(31,16,0) aim=444 w=STR_CANISTER_GUN spent=45 walk=0 dmg=129 pos=[26, 15, 0] tu=10 spotted=2
+ 1000051
+-- B2
+ 1000028
+  [order fire shot idx=0 type=9 cost=41 tu=65 since=0 d0act=6 d0to=(32,10,2)]
+  n=1 act=9 to=(25,8,0) aim=448 w=STR_SR_RIFLE spent=41 walk=0 dmg=0 pos=[3, 7, 0] tu=24 spotted=0
+  [order fire shot idx=1 type=8 cost=20 tu=24 since=0 d0act=2 d0to=(4,7,0)]
+  n=2 act=8 to=(25,8,0) aim=520 w=STR_SR_RIFLE spent=20 walk=0 dmg=0 pos=[3, 7, 0] tu=4 spotted=0
+ 1000042
+ 1000055
+  [order fire shot idx=0 type=9 cost=45 tu=71 since=0 d0act=8 d0to=(25,8,0)]
+  n=1 act=9 to=(25,8,0) aim=520 w=STR_SR_RIFLE spent=45 walk=0 dmg=29 pos=[6, 5, 2] tu=26 spotted=0
+  [order fire cancel.target_out idx=1 type=8 cost=0 tu=26 since=255 d0act=2 d0to=(7,5,2)]
+  n=1 act=2 to=(7,5,2) aim=448 w=STR_SR_RIFLE spent=4 walk=1 dmg=0 pos=[7, 5, 0] tu=22 spotted=0
+  n=2 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[7, 5, 0] tu=22 spotted=0
+  n=1 act=8 to=(32,10,2) aim=-1 w=STR_SR_RIFLE spent=22 walk=0 dmg=0 pos=[7, 5, 0] tu=0 spotted=0
+ 1000057
+  [order fire cancel.target_out idx=0 type=9 cost=0 tu=77 since=255 d0act=2 d0to=(18,9,0)]
+  n=1 act=2 to=(18,9,0) aim=448 w=STR_PIR_PLASMA_RIF spent=24 walk=1 dmg=0 pos=[18, 9, 0] tu=53 spotted=1
+ 1000036
+  n=0 act=2 to=(26,15,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 15, 0] tu=55 spotted=0
+  n=1 act=9 to=(31,16,0) aim=444 w=STR_CANISTER_GUN spent=45 walk=0 dmg=129 pos=[26, 15, 0] tu=10 spotted=2
+ 1000051
+-- D
+ 1000028
+  [order fire shot idx=0 type=9 cost=41 tu=65 since=0 d0act=6 d0to=(32,10,2)]
+  n=1 act=9 to=(25,8,0) aim=448 w=STR_SR_RIFLE spent=41 walk=0 dmg=0 pos=[3, 7, 0] tu=24 spotted=0
+  [order fire shot idx=1 type=8 cost=20 tu=24 since=0 d0act=2 d0to=(4,7,0)]
+  n=2 act=8 to=(25,8,0) aim=520 w=STR_SR_RIFLE spent=20 walk=0 dmg=0 pos=[3, 7, 0] tu=4 spotted=0
+ 1000042
+ 1000055
+  [order fire shot idx=0 type=9 cost=45 tu=71 since=0 d0act=8 d0to=(25,8,0)]
+  n=1 act=9 to=(25,8,0) aim=520 w=STR_SR_RIFLE spent=45 walk=0 dmg=29 pos=[6, 5, 2] tu=26 spotted=0
+  [order fire cancel.target_out idx=1 type=8 cost=0 tu=26 since=255 d0act=2 d0to=(7,5,2)]
+  n=1 act=2 to=(7,5,2) aim=448 w=STR_SR_RIFLE spent=4 walk=1 dmg=0 pos=[7, 5, 0] tu=22 spotted=0
+  n=2 act=2 to=(27,14,1) aim=-1 w=STR_SR_RIFLE spent=0 walk=1 dmg=0 pos=[7, 5, 0] tu=22 spotted=0
+  n=1 act=8 to=(32,10,2) aim=-1 w=STR_SR_RIFLE spent=22 walk=0 dmg=0 pos=[7, 5, 0] tu=0 spotted=0
+ 1000057
+  [order fire cancel.target_out idx=0 type=9 cost=0 tu=77 since=255 d0act=2 d0to=(18,9,0)]
+  n=1 act=2 to=(18,9,0) aim=448 w=STR_PIR_PLASMA_RIF spent=24 walk=1 dmg=0 pos=[18, 9, 0] tu=53 spotted=1
+ 1000036
+  n=0 act=2 to=(26,15,0) aim=444 w=STR_CANISTER_GUN spent=10 walk=1 dmg=0 pos=[26, 15, 0] tu=55 spotted=0
+  n=1 act=9 to=(31,16,0) aim=444 w=STR_CANISTER_GUN spent=45 walk=0 dmg=129 pos=[26, 15, 0] tu=10 spotted=2
+ 1000051

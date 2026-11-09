@@ -1,0 +1,77 @@
+
+===== ALL battles 8 unit_turns 1214
+ attacked 35.1%  lof_no_attack 20.4%  no_lof 44.5% (540)
+ aimed damage on players 3201 no_lof after turn 20 81
+ audit known (spotted this round, unit snapshot): 517 = 42.6% of unit-turns
+ modes on no_lof: {'patrol': '362 (67.0%)', 'ambush': '97 (18.0%)', 'escape': '60 (11.1%)', 'other': '21 (3.9%)'}
+  info exact    470   87.0% of no_lof   38.7% of unit-turns
+     modes {'patrol': 303, 'escape': 57, 'ambush': 93, 'other': 17}
+     dist {'00-08': 35, '09-15': 92, '16-25': 125, '26+': 218}
+     weapon {'proven': 159, 'weak': 20, 'melee': 163, 'thrown': 0, 'unknown': 86, 'none': 42}
+     immobile 0 nomoves 0 reach adjacent 156 melee on patrol 130 of them adjacent reachable 58
+     p50: in range now 17; reach cell in range 129; +TU for a shot 61; two turns 76; patrol & reach+shot 33: proven 31 (2.6% of unit-turns; late 1), weak 2, unknown 0, thrown 0; two-turn proven patrol 27; HP at one mean attack 189
+     p90: in range now 55; reach cell in range 155; +TU for a shot 92; two turns 80; patrol & reach+shot 55: proven 53 (4.4% of unit-turns; late 1), weak 2, unknown 0, thrown 0; two-turn proven patrol 29; HP at one mean attack 305
+  info fresh     47    8.7% of no_lof    3.9% of unit-turns
+     modes {'patrol': 40, 'escape': 0, 'ambush': 4, 'other': 3}
+     dist {'00-08': 5, '09-15': 7, '16-25': 10, '26+': 25}
+     weapon {'proven': 9, 'weak': 1, 'melee': 20, 'thrown': 0, 'unknown': 2, 'none': 15}
+     immobile 0 nomoves 0 reach adjacent 13 melee on patrol 17 of them adjacent reachable 4
+     p50: in range now 1; reach cell in range 4; +TU for a shot 3; two turns 7; patrol & reach+shot 1: proven 1 (0.1% of unit-turns; late 0), weak 0, unknown 0, thrown 0; two-turn proven patrol 3; HP at one mean attack 1
+     p90: in range now 2; reach cell in range 6; +TU for a shot 4; two turns 7; patrol & reach+shot 2: proven 2 (0.2% of unit-turns; late 0), weak 0, unknown 0, thrown 0; two-turn proven patrol 3; HP at one mean attack 4
+  info stale     23    4.3% of no_lof    1.9% of unit-turns
+     modes {'patrol': 19, 'escape': 3, 'ambush': 0, 'other': 1}
+     dist {'00-08': 3, '09-15': 1, '16-25': 3, '26+': 16}
+     weapon {'proven': 9, 'weak': 0, 'melee': 13, 'thrown': 0, 'unknown': 0, 'none': 1}
+     immobile 0 nomoves 0 reach adjacent 5 melee on patrol 10 of them adjacent reachable 1
+     p50: in range now 0; reach cell in range 6; +TU for a shot 3; two turns 6; patrol & reach+shot 3: proven 3 (0.2% of unit-turns; late 0), weak 0, unknown 0, thrown 0; two-turn proven patrol 2; HP at one mean attack 8
+     p90: in range now 3; reach cell in range 6; +TU for a shot 4; two turns 8; patrol & reach+shot 4: proven 4 (0.3% of unit-turns; late 0), weak 0, unknown 0, thrown 0; two-turn proven patrol 3; HP at one mean attack 10
+  info none       0    0.0% of no_lof    0.0% of unit-turns
+ targets at aistart: {'tgt_exact': 170, 'tgt_fresh': 190, 'tgt_never': 321, 'tgt_stale': 245}
+ stale age: {'stale_age_1': 80, 'stale_age_2': 55, 'stale_age_3+': 110} mean error cells 20.4
+ stale error: {'stale_err_00-02': 28, 'stale_err_03-08': 26, 'stale_err_09-15': 32, 'stale_err_16+': 159}
+
+== Scenario bootstrap (95%), resampling scenarios
+ no_lof (36.7, 52.5, 4)
+ attacked (26.9, 46.9, 4)
+ exact+fresh on no_lof (36.3, 52.4, 4)
+ F3 exact+fresh, proven, p90 (0.6, 6.0, 4)
+ F3 exact+fresh, proven, p50 (0.5, 3.4, 4)
+
+== Per scenario: unit-turns, attacked %, no_lof %, exact+fresh %, F3 proven p90 %, F3 proven p50 %, aimed dmg
+ L4      118  att  50.8  nolof  30.5  known  29.7  F3p90   1.7  F3p50   1.7  dmg    360
+ L8      191  att  22.0  nolof  57.1  known  57.1  F3p90   1.6  F3p50   1.0  dmg   2050
+ M3      797  att  34.9  nolof  43.7  known  40.9  F3p90   6.3  F3p50   3.5  dmg    684
+ M8      108  att  42.6  nolof  43.5  known  43.5  F3p90   0.0  F3p50   0.0  dmg    107
+
+== Weapon table: attacks on players, HP, yield, p50 and p90 of hurting distance, typical shot cost, class
+ STR_CANISTER_GUN               att   101 dmg    298 y    3.0 p50  11 p90  24 cost 45 proven
+ STR_SR_RIFLE                   att    86 dmg    171 y    2.0 p50  29 p90  49 cost 41 proven
+ STR_PIR_PLASMA_RIFLE           att    52 dmg    100 y    1.9 p50   3 p90   8 cost 28 proven
+ AUX_SECTOPOD_WEAPON            att    35 dmg   2028 y   57.9 p50  14 p90  28 cost 32 proven
+ STR_PIR_PLASMA_PISTOL          att    28 dmg      0 y    0.0 p50   0 p90   0 cost 22 weak
+ STR_GRENADE_BUG                att    17 dmg      0 y    0.0 p50   0 p90   0 cost None thrown
+ AUX_DOOM_CACODEMON_WEAPON      att    14 dmg     50 y    3.6 p50   1 p90   1 cost 32 proven
+ AUX_SILACOID_WEAPON            att    14 dmg     69 y    4.9 p50   7 p90  18 cost 17 proven
+ AUX_TANK_TURRETED_AC25MM_WEAPON att    14 dmg    107 y    7.6 p50  16 p90  16 cost 104 proven
+ AUX_DOOM_IMP_WEAPON            att    13 dmg      9 y    0.7 p50   9 p90  16 cost 31 weak
+ AUX_DOOM_HELL_BARON_WEAPON     att    13 dmg     68 y    5.2 p50   3 p90   3 cost 46 proven
+ STR_PLASMA_SCORCHER            att     9 dmg    155 y   17.2 p50  10 p90  10 cost 32 unknown
+ STR_RIFLE_AK                   att     8 dmg      0 y    0.0 p50   0 p90   0 cost 28 unknown
+ STR_LMG                        att     8 dmg      0 y    0.0 p50   0 p90   0 cost 43 unknown
+ STR_PIR_HEAVY_PLASMA           att     7 dmg      0 y    0.0 p50   0 p90   0 cost 35 unknown
+ STR_MP40                       att     7 dmg      0 y    0.0 p50   0 p90   0 cost 32 unknown
+ STR_LUGER                      att     7 dmg      0 y    0.0 p50   0 p90   0 cost 24 unknown
+ STR_PIR_ALIEN_GRENADE          att     6 dmg      0 y    0.0 p50   0 p90   0 cost None thrown
+ STR_OLD_RIFLE                  att     5 dmg      0 y    0.0 p50   0 p90   0 cost 60 unknown
+ AUX_CHRYSSALID_WEAPON          att     3 dmg    146 y   48.7 p50   2 p90   2 cost None melee
+ STR_COLT45                     att     3 dmg      0 y    0.0 p50   0 p90   0 cost 28 unknown
+ STR_REVOLVER                   att     3 dmg      0 y    0.0 p50   0 p90   0 cost 26 unknown
+ STR_SHOTGUN_POLICE             att     2 dmg      0 y    0.0 p50   0 p90   0 cost 64 unknown
+ STR_GRENADE_FRAG               att     2 dmg      0 y    0.0 p50   0 p90   0 cost None thrown
+ STR_COOKER                     att     1 dmg      0 y    0.0 p50   0 p90   0 cost 48 unknown
+ AUX_DOOM_DEMON_WEAPON          att     1 dmg      0 y    0.0 p50   0 p90   0 cost None melee
+ STR_WP_GRENADE                 att     1 dmg      0 y    0.0 p50   0 p90   0 cost None thrown
+ STR_SSRL                       att     1 dmg      0 y    0.0 p50   0 p90   0 cost 59 unknown
+ STR_FLAMETHROWER_LR            att     1 dmg      0 y    0.0 p50   0 p90   0 cost 42 unknown
+ AUX_FISTO                      att     0 dmg      0 y    0.0 p50   0 p90   0 cost None melee
+ classes {'proven': 8, 'melee': 13, 'thrown': 5, 'weak': 2, 'unknown': 20}

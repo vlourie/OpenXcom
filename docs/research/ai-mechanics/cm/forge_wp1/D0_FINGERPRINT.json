@@ -1,0 +1,80 @@
+﻿{
+ "exe_sha256": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+ "commit": "07680cadb7f7246fd57d663ca7a7ae1cde531b36",
+ "build": "HEAD 07680cadb + al.diff + al3.diff, DEV, Release",
+ "archive": "C:\\Users\\user\\AppData\\Local\\Temp\\claude\\E--OpenXCom\\256842df-d34a-4d31-a77d-3f9de8ee29de\\scratchpad\\sfc\\res\\res_sfF.zip",
+ "archive_sha256": "bab7b18dbd5c3ff44c1a917ecb646b3b68bc994f49ef30d3e9e45af07a0d5593",
+ "M3_s1": {
+  "label": "sfF_D_M3_s1",
+  "seed": 2015001,
+  "fingerprints": {
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "ai_probe": "3c67575072bb853510be3e812ab2bb599832deb632ad2378aa68fb2e61df3eb3",
+   "arena": "de122139c91eef49cee304d133314c51d55f250b3c2bbc4c8f86fc51e3c00687",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687",
+   "scenario": "c8814bdfd2b680b03a945b109e5509058f003f5a966fbe684db6ec6ba76f7157",
+   "flags": "0af876b7aca2aec0e5904f625f72edc63f7ccb7bde6a79abd5264deadcdc34c2"
+  },
+  "flags": {
+   "OXCE_AI_AMBUSH_MEMO": "1",
+   "OXCE_AI_CFG": "C:/OXCE_AIWorker/cmrun/cfg/base.cfg",
+   "OXCE_AI_ESCAPE_REACH_FIRST": "1",
+   "OXCE_AI_FAST": "1",
+   "OXCE_AI_KEEP_DECIDE": "1",
+   "OXCE_AI_LIGHTSKIP": "1",
+   "OXCE_AI_RACE": "STR_ERIDIAN",
+   "OXCE_AI_RECORD": "1",
+   "OXCE_AI_RELEASE_BASE": "1",
+   "OXCE_AI_WALKFOV_SKIP": "1"
+  },
+  "campaign": "strim.sav",
+  "mission": "STR_ERIDIAN_TERROR",
+  "race": "STR_ERIDIAN"
+ },
+ "L8_s1": {
+  "label": "sfF_D_L8_s1",
+  "seed": 2032001,
+  "fingerprints": {
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "ai_probe": "3c67575072bb853510be3e812ab2bb599832deb632ad2378aa68fb2e61df3eb3",
+   "arena": "de122139c91eef49cee304d133314c51d55f250b3c2bbc4c8f86fc51e3c00687",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687",
+   "scenario": "e9e17ebb98d2a169b2ab605b067a03abb6e64fc1328416d955a89f4dd2bd89ab",
+   "flags": "cc47edb31409d0d11d7766f0f3e4bee5dc3d6527eb5f15c6eb7becc4c58fd53f"
+  },
+  "flags": {
+   "OXCE_AI_AMBUSH_MEMO": "1",
+   "OXCE_AI_CFG": "C:/OXCE_AIWorker/cmrun/cfg/base.cfg",
+   "OXCE_AI_ESCAPE_REACH_FIRST": "1",
+   "OXCE_AI_FAST": "1",
+   "OXCE_AI_KEEP_DECIDE": "1",
+   "OXCE_AI_LIGHTSKIP": "1",
+   "OXCE_AI_RACE": "STR_ETHEREAL",
+   "OXCE_AI_RECORD": "1",
+   "OXCE_AI_RELEASE_BASE": "1",
+   "OXCE_AI_WALKFOV_SKIP": "1"
+  },
+  "campaign": "NoCodexCatZ.sav",
+  "mission": "STR_BATTLESHIP",
+  "race": "STR_ETHEREAL"
+ },
+ "squad": 8,
+ "turn_limit": 60,
+ "clock": "virtual (OXCE_AI_FAST=1: Timer::probeClock)",
+ "bot": "the bench bot of exe D0 and ai_probe.py (hash above), no bot flag beyond these",
+ "rabota_now": {
+  "exe_D0": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+  "base_cfg": "e4cf1640ed634f6e08ad018c7e863eeb26bc5d23a7c824903deb28882461f83e",
+  "save_strim": "e4660fa487601db03f316325c27c6ecd5a50680e8c6f1a953f54a012f048c101",
+  "save_NoCodexCatZ": "dc46245c8368bb92e0f3a0088b465689450b56c1b5caa778ff3989c610b15774",
+  "scen_tsv": "eb3271ee9f138250e0409302e4b9ffcfd7a543f5a47a8a7ce39c3172f6e2253f",
+  "ai_arena": "5e9c62995a1ee4a8ef841de1dd624c336b167b4c717db0add1bc37d409335032",
+  "ai_probe": "3c67575072bb853510be3e812ab2bb599832deb632ad2378aa68fb2e61df3eb3"
+ },
+ "cfg_ai_lines": [
+  "oxceBetterAi: false",
+  "oxceBetterAiFixes: true",
+  "oxceBetterAiAi3: false",
+  ""
+ ]
+}
