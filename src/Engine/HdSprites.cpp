@@ -235,7 +235,7 @@ namespace
 			beforeChangeHook();
 		}
 	}
-	size_t budget = (size_t)384 << 20;
+	size_t budget = HdWorkers::cacheBudget((size_t)384 << 20);
 	size_t loadedTotal = 0; ///< bytes of the lazily loaded frames in memory
 	size_t clock = 0;
 

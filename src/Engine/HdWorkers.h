@@ -78,6 +78,9 @@ private:
 public:
 	/// The process-wide pool (started on first use with the configured number of threads).
 	static HdWorkers &instance();
+	/// A cache budget (bytes) fitted to the machine: `bytes` as it stands on 16 GB of memory or more, in proportion
+	/// below that (8 GB gets half), never under a quarter. Where the memory is not known - `bytes` unchanged.
+	static size_t cacheBudget(size_t bytes);
 	/// Number of threads that run jobs, the caller included (>= 1).
 	int threads() const { return (int)_threads.size() + 1; }
 	/// Runs fn(0) .. fn(jobs - 1) across the pool and returns when all have finished. The jobs must not

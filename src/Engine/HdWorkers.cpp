@@ -23,9 +23,33 @@
 #include <exception>
 #include "Logger.h"
 #include "Options.h"
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
 
 namespace OpenXcom
 {
+
+size_t HdWorkers::cacheBudget(size_t bytes)
+{
+#ifdef _WIN32
+	static const unsigned long long physical = []
+	{
+		MEMORYSTATUSEX status;
+		status.dwLength = sizeof(status);
+		return GlobalMemoryStatusEx(&status) ? (unsigned long long)status.ullTotalPhys : 0ull;
+	}();
+	const unsigned long long full = 16ull << 30;
+	if (physical == 0 || physical >= full)
+	{
+		return bytes;
+	}
+	return (size_t)std::max<unsigned long long>(bytes / 4, (unsigned long long)bytes * physical / full);
+#else
+	return bytes;
+#endif
+}
 
 HdWorkers &HdWorkers::instance()
 {

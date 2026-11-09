@@ -392,7 +392,7 @@ void composeLayerPart(const Surface *composite, const Surface *backdrop, const s
 
 namespace
 {
-size_t budget = (size_t)768 << 20;
+size_t budget = HdWorkers::cacheBudget((size_t)768 << 20);
 size_t loadedBytes = 0;
 size_t clock = 0;
 
@@ -826,7 +826,7 @@ struct Prepared
 };
 std::vector<std::unique_ptr<Prepared>> prepared;
 size_t preparedBytes = 0;
-const size_t preparedBudget = (size_t)256 << 20;
+const size_t preparedBudget = HdWorkers::cacheBudget((size_t)256 << 20);
 size_t preparedClock = 0;
 
 /// The picture at the world scale k, re-tinted from its reference palette to `colors` per classic pixel.
