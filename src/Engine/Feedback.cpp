@@ -279,7 +279,7 @@ bool Feedback::open(Game *game, const State *top)
 		try
 		{
 			// save() writes under the master's user folder, reports live one level up
-			saved->save("../reports/" + id + "/snapshot.sav", game->getMod());
+			saved->save("../reports/" + id + "/snapshot.sav", game->getMod(), true);
 			snapshot = "snapshot.sav";
 			Log(LOG_INFO) << "Feedback: snapshot written in " << (SDL_GetTicks() - t0) << " ms";
 		}

@@ -87,6 +87,9 @@ private:
 		_martyrKillsTotal, _postMortemKills, _slaveKillsTotal, _bestSoldier, _revivedSoldierTotal, _revivedHostileTotal, _revivedNeutralTotal;
 	bool _globeTrotter;
 public:
+	/// Chooses how save() writes the kill list: false = as always (one map per kill), true = a table of names (killStrings)
+	/// and one list of numbers per kill. Set by SavedGame::save for the time of the save; load() reads both forms.
+	static void setCompactWrite(bool compact);
 	/// Construct a diary.
 	SoldierDiary();
 	/// Cleans up a diary.

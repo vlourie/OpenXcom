@@ -395,6 +395,10 @@ OPT bool oxceHdPediaRange;
 // Battlescape: no saving or loading inside a battle (pause menu buttons, quick/insta save, quick load, turn autosave,
 // the F8 report snapshot), apart from ironman; the geoscape saves as usual. Off by default; fixed while in a battle
 OPT bool oxceNoBattleSaves;
+// Save files: write the soldier diaries' kill lists as a table of names plus numbers and pack the file body with deflate
+// (Savegame/SavedGame.cpp, SoldierDiary.cpp). Loading reads both forms whatever this says; a save written with it on
+// can be read only by this build of OXCE, so it is off by default and the option's text says so
+OPT bool oxceCompactSave;
 // Battlescape, knowledge armor (Battlescape/KnowledgeArmor.h, Dioxine's proposal): the player's research and the enemy's
 // intelligence shift how well armor stops a hit; the numbers are the ruleset's knowledgeArmor. Changes the battle; off by default
 OPT bool oxceKnowledgeArmor;

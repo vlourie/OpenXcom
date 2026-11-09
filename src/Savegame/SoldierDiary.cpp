@@ -18,6 +18,12 @@
  */
 #include "SoldierDiary.h"
 #include <algorithm>
+#include <array>
+#include <charconv>
+#include <string_view>
+#include <unordered_map>
+#include "../Engine/Exception.h"
+#include "../Engine/Logger.h"
 #include "../Mod/RuleCommendations.h"
 #include "../Mod/Mod.h"
 #include "BattleUnitStatistics.h"
@@ -25,6 +31,72 @@
 
 namespace OpenXcom
 {
+
+/// How save() writes the kill lists, see SoldierDiary::setCompactWrite.
+static bool compactKillWrite = false;
+
+void SoldierDiary::setCompactWrite(bool compact)
+{
+	compactKillWrite = compact;
+}
+
+/// Fields of a compact kill record, in order; the optional last one is the name (only a friendly-fire victim has one).
+/// Strings are indexes into the diary's killStrings, the rest are the numbers of BattleUnitKills. In the save the record
+/// is one scalar: its numbers divided by spaces.
+enum CompactKillField { CK_TYPE, CK_RANK, CK_RACE, CK_WEAPON, CK_AMMO, CK_STATUS, CK_FACTION, CK_MISSION, CK_TURN, CK_SIDE, CK_BODYPART, CK_ID, CK_NAME, CK_COUNT };
+
+/**
+ * Reads one kill from its compact form: one line of whole numbers divided by spaces (see CompactKillField), the strings
+ * as indexes into the diary's table. One YAML node per kill instead of a node per field keeps the parsing quick.
+ * Gives the same BattleUnitKills the old map form of the same kill gives.
+ */
+static BattleUnitKills* loadCompactKill(const YAML::YamlNodeReader& record, const std::vector<std::string>& strings)
+{
+	const std::string_view line = record.val();
+	int fields[CK_COUNT];
+	size_t count = 0;
+	const char* p = line.data();
+	const char* const end = p + line.size();
+	while (true)
+	{
+		while (p < end && *p == ' ')
+			++p;
+		if (p == end)
+			break;
+		int value = 0;
+		const auto parsed = std::from_chars(p, end, value);
+		if (parsed.ec != std::errc() || count == CK_COUNT || (parsed.ptr != end && *parsed.ptr != ' '))
+			throw Exception("Soldier diary: a kill record is not a list of up to " + std::to_string(CK_COUNT) + " numbers: '" + std::string(line.substr(0, 80)) + "'");
+		fields[count++] = value;
+		p = parsed.ptr;
+	}
+	if (count < CK_NAME)
+		throw Exception("Soldier diary: a kill record has " + std::to_string(count) + " numbers instead of " + std::to_string(CK_NAME) + "-" + std::to_string(CK_COUNT));
+	auto text = [&](int field) -> const std::string&
+	{
+		const int index = fields[field];
+		if (index < 0 || (size_t)index >= strings.size())
+			throw Exception("Soldier diary: a kill record names string " + std::to_string(index) + " of " + std::to_string(strings.size()));
+		return strings[index];
+	};
+	std::unique_ptr<BattleUnitKills> kill(new BattleUnitKills());
+	kill->type = text(CK_TYPE);
+	// the old form reads the name only when there is no type
+	if (kill->type.empty() && count > CK_NAME)
+		kill->name = text(CK_NAME);
+	kill->rank = text(CK_RANK);
+	kill->race = text(CK_RACE);
+	kill->weapon = text(CK_WEAPON);
+	kill->weaponAmmo = text(CK_AMMO);
+	kill->status = (UnitStatus)fields[CK_STATUS];
+	kill->faction = (UnitFaction)fields[CK_FACTION];
+	kill->mission = fields[CK_MISSION];
+	kill->turn = fields[CK_TURN];
+	kill->side = (UnitSide)fields[CK_SIDE];
+	kill->bodypart = (UnitBodyPart)fields[CK_BODYPART];
+	kill->id = fields[CK_ID];
+	return kill.release();
+}
 
 /**
  * Initializes a new blank diary.
@@ -75,8 +147,18 @@ void SoldierDiary::load(const YAML::YamlNodeReader& node, const Mod *mod)
 			delete sc;
 		}
 	}
+	// kills: either a map each (the form of every game so far) or, in a save written with oxceCompactSave, a list of
+	// numbers each, naming its strings by index in killStrings
+	std::vector<std::string> killStrings;
+	for (const auto& stringReader : reader["killStrings"].children())
+		killStrings.push_back(stringReader.readVal<std::string>());
 	for (const auto& battleUnitKillReader : reader["killList"].children())
-		_killList.push_back(new BattleUnitKills(battleUnitKillReader));
+	{
+		if (battleUnitKillReader.hasVal())
+			_killList.push_back(loadCompactKill(battleUnitKillReader, killStrings));
+		else
+			_killList.push_back(new BattleUnitKills(battleUnitKillReader));
+	}
 	reader.tryRead("missionIdList", _missionIdList);
 	reader.tryRead("daysWoundedTotal", _daysWoundedTotal);
 	reader.tryRead("totalShotByFriendlyCounter", _totalShotByFriendlyCounter);
@@ -128,9 +210,64 @@ void SoldierDiary::save(YAML::YamlNodeWriter writer) const
 	writer.write("commendations", _commendations,
 		[](YAML::YamlNodeWriter& w, SoldierCommendations* c)
 		{ c->save(w.write()); });
-	writer.write("killList", _killList,
-		[](YAML::YamlNodeWriter& w, BattleUnitKills* b)
-		{ b->save(w.write()); });
+	if (compactKillWrite && !_killList.empty())
+	{
+		// every distinct name once in killStrings; a kill is a list of numbers (see CompactKillField)
+		std::unordered_map<std::string, int> indexOf;
+		std::vector<const std::string*> strings;
+		auto intern = [&](const std::string& s) -> int
+		{
+			const auto found = indexOf.emplace(s, (int)strings.size());
+			if (found.second)
+				strings.push_back(&found.first->first);
+			return found.first->second;
+		};
+		std::vector<std::array<int, CK_COUNT> > rows(_killList.size());
+		for (size_t i = 0; i < _killList.size(); ++i)
+		{
+			const BattleUnitKills& k = *_killList[i];
+			auto& row = rows[i];
+			row[CK_TYPE] = intern(k.type);
+			row[CK_RANK] = intern(k.rank);
+			row[CK_RACE] = intern(k.race);
+			row[CK_WEAPON] = intern(k.weapon);
+			row[CK_AMMO] = intern(k.weaponAmmo);
+			row[CK_STATUS] = (int)k.status;
+			row[CK_FACTION] = (int)k.faction;
+			row[CK_MISSION] = k.mission;
+			row[CK_TURN] = k.turn;
+			row[CK_SIDE] = (int)k.side;
+			row[CK_BODYPART] = (int)k.bodypart;
+			row[CK_ID] = k.id;
+			row[CK_NAME] = k.name.empty() ? -1 : intern(k.name);
+		}
+		auto stringsWriter = writer["killStrings"];
+		stringsWriter.setAsSeq();
+		stringsWriter.setFlowStyle();
+		for (const std::string* s : strings)
+			stringsWriter.write(*s).setAsQuotedAndEscaped();
+		auto killsWriter = writer["killList"];
+		killsWriter.setAsSeq();
+		std::string line;
+		for (const auto& row : rows)
+		{
+			line.clear();
+			const int count = row[CK_NAME] < 0 ? CK_NAME : CK_COUNT;
+			for (int f = 0; f < count; ++f)
+			{
+				if (f)
+					line += ' ';
+				line += std::to_string(row[f]);
+			}
+			killsWriter.write(line);
+		}
+	}
+	else
+	{
+		writer.write("killList", _killList,
+			[](YAML::YamlNodeWriter& w, BattleUnitKills* b)
+			{ b->save(w.write()); });
+	}
 	if (!_missionIdList.empty())
 		writer.write("missionIdList", _missionIdList).setFlowStyle();
 	if (_daysWoundedTotal) writer.write("daysWoundedTotal", _daysWoundedTotal);

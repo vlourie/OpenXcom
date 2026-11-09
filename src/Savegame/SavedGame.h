@@ -198,7 +198,8 @@ public:
 	void loadTemplates(const YAML::YamlNodeReader& reader, const Mod* mod);
 	void loadUfopediaRuleStatus(const YAML::YamlNodeReader& reader);
 	/// Saves a saved game to YAML.
-	void save(const std::string &filename, Mod *mod) const;
+	/// With portable the save is always plain text of the usual form, whatever oxceCompactSave says.
+	void save(const std::string &filename, Mod *mod, bool portable = false) const;
 	/// Gets the game name.
 	std::string getName() const;
 	/// Sets the game name.

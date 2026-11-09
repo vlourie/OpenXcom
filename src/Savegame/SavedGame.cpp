@@ -69,9 +69,83 @@
 #include "ResearchDiary.h"
 #include "../Mod/AlienRace.h"
 #include "RankCount.h"
+#include <cstdlib>
+#include <cstring>
+#define MINIZ_NO_STDIO
+#define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
+#include "../../libs/miniz/miniz.h"
 
 namespace OpenXcom
 {
+
+namespace
+{
+
+/// A save written with oxceCompactSave is the header document as always, the line "---", and then, in place of the
+/// body's text: these 4 bytes, the length of the text (8 bytes, little-endian) and the text packed by deflate (zlib stream).
+/// The header stays plain, so the list of saves reads it as before.
+const char SAVE_PACK_MAGIC[4] = { 'O', 'X', 'Z', '1' };
+const size_t SAVE_PACK_HEAD = sizeof(SAVE_PACK_MAGIC) + 8;
+/// miniz counts in unsigned long, which is 32 bits on Windows
+const size_t SAVE_PACK_MAX = 0x7FFFFFFFu;
+const int SAVE_PACK_LEVEL = 3;
+
+/// Appends the body packed to out. Returns false (out untouched) when it can't, the caller then writes the plain text.
+bool packSaveBody(const std::string &body, std::string &out)
+{
+	if (body.empty() || body.size() > SAVE_PACK_MAX)
+		return false;
+	mz_ulong packedLen = mz_compressBound((mz_ulong)body.size());
+	std::string packed(packedLen, '\0');
+	if (mz_compress2((unsigned char *)&packed[0], &packedLen, (const unsigned char *)body.data(), (mz_ulong)body.size(), SAVE_PACK_LEVEL) != MZ_OK)
+		return false;
+	out.append(SAVE_PACK_MAGIC, sizeof(SAVE_PACK_MAGIC));
+	uint64_t length = body.size();
+	for (int i = 0; i < 8; ++i)
+		out.push_back((char)((length >> (8 * i)) & 0xFF));
+	out.append(packed, 0, packedLen);
+	return true;
+}
+
+/// Gives the file's bytes as the text of the two YAML documents: a plain save as it is, a packed one with its body unpacked.
+RawData unpackSave(RawData raw, const std::string &filepath)
+{
+	const char *data = (const char *)raw.data();
+	const size_t size = raw.size();
+	// the header ends at the first "---" line; a plain save has its body's text there
+	static const char marker[] = "\n---\n";
+	const char *at = nullptr;
+	for (size_t i = 0; i + sizeof(marker) <= size && i < 65536; ++i)
+	{
+		if (data[i] == '\n' && std::memcmp(data + i, marker, sizeof(marker) - 1) == 0)
+		{
+			at = data + i + sizeof(marker) - 1;
+			break;
+		}
+	}
+	if (!at || (size_t)(data + size - at) < SAVE_PACK_HEAD || std::memcmp(at, SAVE_PACK_MAGIC, sizeof(SAVE_PACK_MAGIC)) != 0)
+		return raw;
+	uint64_t length = 0;
+	for (int i = 0; i < 8; ++i)
+		length |= (uint64_t)(unsigned char)at[sizeof(SAVE_PACK_MAGIC) + i] << (8 * i);
+	if (length == 0 || length > SAVE_PACK_MAX)
+		throw Exception("Failed to read " + filepath + ": packed save with a wrong length");
+	const size_t headerLen = (size_t)(at - data);
+	char *text = (char *)std::malloc(headerLen + (size_t)length);
+	if (!text)
+		throw Exception("Failed to read " + filepath + ": out of memory for the unpacked save");
+	std::memcpy(text, data, headerLen);
+	mz_ulong textLen = (mz_ulong)length;
+	const int result = mz_uncompress((unsigned char *)text + headerLen, &textLen, (const unsigned char *)at + SAVE_PACK_HEAD, (mz_ulong)(data + size - at - SAVE_PACK_HEAD));
+	if (result != MZ_OK || textLen != (mz_ulong)length)
+	{
+		std::free(text);
+		throw Exception("Failed to read " + filepath + ": the packed save is damaged");
+	}
+	return RawData(text, headerLen + (size_t)length, +[](void *p) { std::free(p); });
+}
+
+}
 
 const std::string SavedGame::AUTOSAVE_GEOSCAPE = "_autogeo_.asav",
 				  SavedGame::AUTOSAVE_BATTLESCAPE = "_autobattle_.asav",
@@ -375,7 +449,8 @@ SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 {
 	std::string filepath = Options::getMasterUserFolder() + filename;
-	YAML::YamlRootNodeReader documents(filepath, false, false);
+	// a save packed by oxceCompactSave is unpacked here; a plain one goes through as it is
+	YAML::YamlRootNodeReader documents(unpackSave(CrossPlatform::readFileRaw(filepath), filepath), filepath, false);
 
 	// Get brief save info
 	const auto& header = documents[0];
@@ -753,8 +828,17 @@ void saveVector(YAML::YamlNodeWriter& writer, const std::vector<T*>& vector, con
  * Saves a saved game's contents to a YAML file.
  * @param filename YAML filename.
  */
-void SavedGame::save(const std::string &filename, Mod *mod) const
+void SavedGame::save(const std::string &filename, Mod *mod, bool portable) const
 {
+	// oxceCompactSave: kill lists as a table plus numbers, and the body packed. Not for a save the staff must read as
+	// text (portable: the F8 report's snapshot)
+	const bool compact = Options::oxceCompactSave && !portable;
+	struct CompactScope
+	{
+		explicit CompactScope(bool on) { SoldierDiary::setCompactWrite(on); }
+		~CompactScope() { SoldierDiary::setCompactWrite(false); }
+	} compactScope(compact);
+
 	YAML::YamlRootNodeWriter headerWriter;
 	headerWriter.setAsMap();
 	// Saves the brief game info used in the saves list
@@ -917,7 +1001,8 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	finalString.reserve(headerString.yaml.size() + directivesEndMarker.size() + bodyString.yaml.size());
 	finalString += headerString.yaml;
 	finalString	+= directivesEndMarker;
-	finalString += bodyString.yaml;
+	if (!compact || !packSaveBody(bodyString.yaml, finalString))
+		finalString += bodyString.yaml;
 
 	std::string filepath = Options::getMasterUserFolder() + filename;
 	if (!CrossPlatform::writeFile(filepath, finalString))

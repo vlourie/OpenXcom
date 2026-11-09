@@ -545,6 +545,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBetterAiAi3", &oxceBetterAiAi3, false, "STR_BETTER_AI_AI3", "STR_HD_AI"));
 	// No saves inside a battle, ironman-like but apart from it: its own group on the HD tab, off by default
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNoBattleSaves", &oxceNoBattleSaves, false, "STR_HD_NO_BATTLE_SAVES", "STR_HD_CHALLENGE"));
+	// Compact save files (Savegame/SavedGame.cpp): smaller and quicker to write and read, but only this OXCE can read them; off by default
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCompactSave", &oxceCompactSave, false, "STR_HD_COMPACT_SAVE", "STR_HD_SPEED"));
 	// Knowledge armor (Battlescape/KnowledgeArmor.h): a battle rule, its own group on the HD tab, off by default
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceKnowledgeArmor", &oxceKnowledgeArmor, false, "STR_HD_KNOWLEDGE_ARMOR", "STR_HD_RULES"));
 	// HD render (see Engine/HdCanvas.h): sprite scale of the battlescape and how sprites are drawn on the true-color canvas

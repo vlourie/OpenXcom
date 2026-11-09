@@ -490,6 +490,23 @@ std::string run(Control &c, Game *g, const std::string &line)
 		c.sinceInput = 0;
 		return MainMenuState::hdStart(g, args) ? "ok" : "err open: geoscape|base|battle|load|newbattle|options|save|ufopaedia";
 	}
+	if (cmd == "savefile")
+	{
+		// savefile имя.sav: SavedGame::save into the user folder as the game would, with the options as they are now;
+		// the answer carries the time of the save in ms and the size of the file (the save-size checks, tools/save_roundtrip.py)
+		if (!g->getSavedGame() || args.empty())
+			return "err savefile needs a game and a file name";
+		try
+		{
+			const Uint32 t0 = SDL_GetTicks();
+			g->getSavedGame()->save(args, g->getMod());
+			return "ok " + std::to_string(SDL_GetTicks() - t0) + " ms";
+		}
+		catch (const std::exception &e)
+		{
+			return std::string("err savefile: ") + e.what();
+		}
+	}
 	if (cmd == "quit")
 	{
 		c.quitAfter = true;
