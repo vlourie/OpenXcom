@@ -1332,6 +1332,11 @@ void SavedBattleGame::newTurnUpdateScripts()
 		return;
 	}
 
+	if (auto *lua = _rule->getLuaHost())
+	{
+		lua->resetTurnBudgets(); // a new turn of any side: the mods' instruction budget starts again
+	}
+
 	for (auto* bu : _units)
 	{
 		if (bu->isIgnored())

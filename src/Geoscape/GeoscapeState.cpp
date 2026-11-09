@@ -2948,6 +2948,7 @@ void GeoscapeState::time1Day()
 
 	if (auto *lua = _game->getMod()->getLuaHost())
 	{
+		lua->resetTurnBudgets(); // a new day: the mods' instruction budget starts again
 		lua->fire(LuaHost::NEW_DAY, { _game->getSavedGame() });
 	}
 }

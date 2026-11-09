@@ -241,6 +241,34 @@ int main()
 		report("off after errors in a row", s.isDisabled() && s.errorCount() == 5, "ждали выключение на пятой", 0);
 	}
 	{
+		// a handler well under the limit of one fire() but called again and again: the turn's budget switches the mod off
+		g_current = "turn budget"; g_startMs = nowMs();
+		LuaSandbox::Limits limits;
+		limits.turnInstructions = 20 * 100000;
+		std::string text;
+		LuaSandbox s(limits, { "tick" }, [](const std::string &) {}, [](int x, int) { return x; });
+		s.setErrorFn([&text](const std::string &, const std::string &t) { text = t; });
+		s.load("main.lua", "game.on('tick', function() for i = 1, 100000 do end end)");
+		int calls = 0;
+		for (; calls < 1000 && !s.isDisabled(); ++calls)
+		{
+			s.fire("tick", nullptr, nullptr);
+		}
+		report("turn budget switches the mod off", s.isDisabled() && calls > 5 && calls < 60 && s.errorCount() == 0
+			&& text.find("this turn") != std::string::npos, text.c_str(), 0);
+		LuaSandbox r(limits, { "tick" }, [](const std::string &) {}, [](int x, int) { return x; });
+		r.load("main.lua", "game.on('tick', function() for i = 1, 100000 do end end)");
+		for (int i = 0; i < 300; ++i)
+		{
+			r.fire("tick", nullptr, nullptr);
+			if (i % 5 == 0)
+			{
+				r.resetTurnBudget();
+			}
+		}
+		report("turn budget starts again", !r.isDisabled(), "выключился несмотря на сброс", 0);
+	}
+	{
 		g_current = "log flood"; g_startMs = nowMs();
 		int lines = 0;
 		LuaSandbox s({}, { "tick" }, [&lines](const std::string &) { ++lines; }, [](int x, int) { return x; });

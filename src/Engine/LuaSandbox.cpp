@@ -650,6 +650,7 @@ void LuaSandbox::runProtected(const char *event, int (*body)(lua_State*))
 	++_generation; // every handle given out here is dead now
 	_inFire = false;
 	_running = outer;
+	_turnSteps += _steps; // added once on the way out, the hot path of the count hook stays as it was
 	if (_anyError)
 	{
 		if (++_errorsInRow >= _limits.maxErrors)
@@ -666,6 +667,17 @@ void LuaSandbox::runProtected(const char *event, int (*body)(lua_State*))
 	else
 	{
 		_errorsInRow = 0;
+	}
+	if (!_disabled && _turnSteps > _limits.turnInstructions / HOOK_EVERY)
+	{
+		_disabled = true;
+		const std::string text = "the mod spent more than " + std::to_string(_limits.turnInstructions)
+			+ " instructions this turn, switched off until its Lua is reloaded";
+		writeLog(text);
+		if (_onError)
+		{
+			_onError(event, text);
+		}
 	}
 }
 

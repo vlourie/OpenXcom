@@ -41,6 +41,9 @@ public:
 		size_t memoryBytes = 32 * 1024 * 1024;
 		/// VM instructions for one fire(); the mod's main.lua gets ten times this.
 		unsigned long long instructions = 2000000;
+		/// VM instructions for all fire() between two resetTurnBudget() (a battle turn, a geoscape day);
+		/// the mod is switched off when it is spent. main.lua is not counted.
+		unsigned long long turnInstructions = 50 * instructions;
 		/// Steps of C loops (patterns, string.rep, table.move...) for one fire().
 		unsigned long long cTicks = 5000000;
 		/// Errors in a row before the mod is switched off.
@@ -81,6 +84,8 @@ public:
 	void callKept(int kept, const char *what, PushFn push, void *data);
 	/// The same, and the function stays kept: the buttons of a screen are pressed many times.
 	void callHeld(int kept, const char *what, PushFn push, void *data);
+	/// A new turn or day begins: the instructions the handlers spent so far are forgotten (Limits::turnInstructions).
+	void resetTurnBudget() { _turnSteps = 0; }
 	/// main.lua is running, not a handler.
 	bool isLoading() const { return _loading; }
 
@@ -136,7 +141,7 @@ private:
 	RandomFn _random;
 	lua_State *_L = nullptr;
 	size_t _used = 0;
-	unsigned long long _steps = 0, _maxSteps = 0, _ticks = 0, _generation = 1;
+	unsigned long long _steps = 0, _maxSteps = 0, _ticks = 0, _generation = 1, _turnSteps = 0;
 	const char *_fireEvent = nullptr;
 	PushFn _firePush = nullptr;
 	AfterFn _fireAfter = nullptr;

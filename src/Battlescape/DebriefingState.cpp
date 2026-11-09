@@ -1125,6 +1125,7 @@ void DebriefingState::prepareDebriefing()
 	// the battle as it ended, nothing of it is taken apart yet
 	if (auto *lua = _game->getMod()->getLuaHost())
 	{
+		lua->resetTurnBudgets();
 		lua->fire(LuaHost::BATTLE_END, { battle, aborted ? 1 : 0 });
 	}
 	Craft *craft = 0;

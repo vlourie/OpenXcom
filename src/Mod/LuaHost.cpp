@@ -3745,6 +3745,17 @@ LuaHost *LuaHost::create(Mod *mod)
 	return host.release();
 }
 
+void LuaHost::resetTurnBudgets()
+{
+	for (auto &entry : _entries)
+	{
+		if (entry.sandbox)
+		{
+			entry.sandbox->resetTurnBudget();
+		}
+	}
+}
+
 std::string LuaHost::reload()
 {
 	int loaded = 0, failed = 0;

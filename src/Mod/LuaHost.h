@@ -148,6 +148,8 @@ public:
 
 	/// Reads every mod's main.lua again: Lua variables are gone, a switched off mod is back. What happened, in a line.
 	std::string reload();
+	/// A battle turn of any side, the start or end of a battle, a geoscape day: every mod's count of spent instructions begins again.
+	void resetTurnBudgets();
 	/// Puts a new item on the battle's map, later: a handler may be called from a walk over the game's lists.
 	/// `done` is LuaSandbox::keep() of the mod's function or 0. An error text, or empty.
 	std::string queueSpawnItem(const LuaSandbox *sandbox, const SavedBattleGame *battle, const RuleItem *rule, int x, int y, int z, int done);

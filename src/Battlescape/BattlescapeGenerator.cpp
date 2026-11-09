@@ -991,6 +991,7 @@ void BattlescapeGenerator::run()
 	{
 		if (auto *lua = _game->getMod()->getLuaHost())
 		{
+			lua->resetTurnBudgets();
 			lua->fire(LuaHost::BATTLE_START, { _save });
 		}
 	}
