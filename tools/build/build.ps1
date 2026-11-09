@@ -827,6 +827,14 @@ function Invoke-ModStep {
         $t = [Diagnostics.Stopwatch]::StartNew()
         $code = Invoke-Native 'robocopy.exe' $rc
         if ($code -ge 8) { throw "robocopy: ошибка копирования мода $($mod.Name) (код $code)" }
+        # /MIR не стирает в приёмнике то, что подпало под /XF и /XD: файл, добавленный в исключения позже (hd.zip в intro_voice, 25 МиБ),
+        # остаётся в стейдже и уезжает в архив. Чистим сами; -Filter, не -Include (R-290)
+        foreach ($pat in $xf) {
+            Get-ChildItem -LiteralPath $dest -Recurse -File -Force -Filter $pat -ErrorAction SilentlyContinue | Remove-Item -Force
+        }
+        foreach ($dn in $xd) {
+            Get-ChildItem -LiteralPath $dest -Recurse -Directory -Force -Filter $dn -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        }
         $tree = Get-TreeInfo $dest
         Write-Ok ("{0:N0} файлов, {1}, за {2:N0} с  (исключено: {3})" -f $tree.Num, (Format-Size $tree.Bytes), $t.Elapsed.TotalSeconds, (($xd + $xf) -join ', '))
         Assert-ModContents $dest $mod.Name
