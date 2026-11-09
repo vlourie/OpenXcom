@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <exception>
 #include "Logger.h"
 #include "Options.h"
 
@@ -84,13 +85,31 @@ HdWorkers::~HdWorkers()
 	}
 }
 
+// an exception must not leave a render thread (std::terminate, no line in the log): the frame is finished
+// without this slice - a hole in the frame is better than a dead game
+static inline void runJob(const std::function<void(int)> &fn, int i)
+{
+	try
+	{
+		fn(i);
+	}
+	catch (const std::exception &e)
+	{
+		Log(LOG_ERROR) << "HD render: job " << i << " failed: " << e.what();
+	}
+	catch (...)
+	{
+		Log(LOG_ERROR) << "HD render: job " << i << " failed";
+	}
+}
+
 int HdWorkers::takeJobs(const std::function<void(int)> &fn, int jobs, long long &ns)
 {
 	const auto start = std::chrono::steady_clock::now();
 	int taken = 0;
 	for (int i = _next.fetch_add(1); i < jobs; i = _next.fetch_add(1))
 	{
-		fn(i);
+		runJob(fn, i);
 		++taken;
 	}
 	ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
@@ -143,7 +162,7 @@ void HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 	{
 		for (int i = 0; i < jobs; ++i)
 		{
-			fn(i);
+			runJob(fn, i);
 		}
 		return;
 	}
