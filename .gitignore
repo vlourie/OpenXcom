@@ -48,8 +48,8 @@ Thumbs.db
 *.lib
 *.sbr
 [Rr]elease*/
-# страница сайта /releases: правило выше прятало её от git archive (portal/deploy/pack.ps1)
-!portal/src/Xp.Portal/Pages/Releases/
+# сайт и лаунчер - отдельный ЧАСТНЫЙ репозиторий в portal/.git, в публичный Git движка не входит (Vitali 09.11)
+/portal/
 [Tt]est[Rr]esults/
 _UpgradeReport_Files/
 _ReSharper.*/
