@@ -5299,6 +5299,14 @@ void Map::drawTerrain(HdCanvas *surface)
 		std::stable_sort(pieces.begin(), pieces.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 	}
 
+	// a particle is a 2x2 pattern of size thresholds; at HD scale every cell becomes a k x k block (built once per frame, not per tile)
+	const int pixelMaskBase[] = { 0, 2, 1, 3 };
+	std::vector<int> pixelMaskArray(4 * _k * _k);
+	for (int my = 0; my < 2 * _k; ++my)
+		for (int mx = 0; mx < 2 * _k; ++mx)
+			pixelMaskArray[my * 2 * _k + mx] = pixelMaskBase[(my / _k) * 2 + (mx / _k)];
+	SurfaceRaw<int> pixelMask(pixelMaskArray, 2 * _k, 2 * _k);
+
 	surface->lock();
 	const Position cameraPos = _camera->getMapOffset();
 	// XP-000263: the ground beyond the map's edge, under the map: only at HD scale above 1, not turned, not in vacuum
@@ -5796,12 +5804,6 @@ void Map::drawTerrain(HdCanvas *surface)
 
 					//draw particle clouds
 					// a particle is a 2x2 pattern of size thresholds; at HD scale every cell becomes a k x k block
-					const int pixelMaskBase[] = { 0, 2, 1, 3 };
-					std::vector<int> pixelMaskArray(4 * _k * _k);
-					for (int my = 0; my < 2 * _k; ++my)
-						for (int mx = 0; mx < 2 * _k; ++mx)
-							pixelMaskArray[my * 2 * _k + mx] = pixelMaskBase[(my / _k) * 2 + (mx / _k)];
-					SurfaceRaw<int> pixelMask(pixelMaskArray, 2 * _k, 2 * _k);
 					const int vaporScreenOriginX = screenPosition.x + _spriteWidth / 2;
 					const int vaporScreenOriginY = screenPosition.y + _spriteHeight - _spriteWidth / 2 + tile->getPosition().toVoxel().z * _k;
 					const bool softVapor = surface->getHdMode() != HD_MODE_NEAREST;
