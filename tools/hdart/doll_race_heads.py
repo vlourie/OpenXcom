@@ -161,7 +161,7 @@ def worker(jobs):
         t = time.time()
         try:
             run = P.RUN[j["kind"]]
-            rgb, s0 = painter.paint(j["init"], j["mask"], j["control"], j["prompt"], j["seed"], run["strength"], run["control"], j["negative"])
+            rgb, s0 = painter.paint(j["init"], j["mask"], j["control"], j["prompt"], j["seed"], j.get("strength", run["strength"]), run["control"], j["negative"])
         except Exception as e:                          # память карты: новый процесс продолжит
             print("кадр %s упал: %s" % (j["tag"], str(e)[:300]), flush=True)
             sys.exit(75)
@@ -275,7 +275,14 @@ def compose(j, rgb):
     keep = np.arange(body.shape[0])[:, None] >= NECK_ROW * k
     near = w[..., 0] * keep
     body[..., :3] = np.where(keep[..., None], base[..., :3] * (1 - near[..., None]) + body[..., :3] * near[..., None], body[..., :3])
-    body[..., 3] = np.where(keep, np.maximum(base[..., 3], ws.sil4(zone & below) * 255), body[..., 3])
+    # sil4 гасит верх зоны у среза: по NECK_ROW поперёк прядей полоса альфы 206 (SYN F7). Где зона идёт и над срезом -
+    # силуэт со строкой выше; только там: у края плеча строка выше шире, и с ней край давал ступеньку (SYN F2)
+    above = np.zeros(cheeks.shape, bool)
+    above[NECK_ROW - 1:] = True
+    cont = np.repeat((zone[NECK_ROW - 1] & zone[NECK_ROW]).astype(np.float32), k)
+    cont = cv2.GaussianBlur(cont[None, :], (0, 0), 2.0)
+    sil_z = ws.sil4(zone & below) * (1 - cont) + ws.sil4(zone & above) * cont
+    body[..., 3] = np.where(keep, np.maximum(base[..., 3], sil_z * 255), body[..., 3])
     body = np.clip(body + 0.5, 0, 255).astype(np.uint8)
     for sx, sy, sr in NECK_SPOTS.get(look, ()):         # пятно на коже: заливка от соседей
         spot = np.zeros(zone4.shape, np.uint8)

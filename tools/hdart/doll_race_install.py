@@ -43,7 +43,7 @@ def main():
     if a.race.lower() == "armor_over":              # брони из нескольких вещей: выбранные сиды Vitali
         src = os.path.join("art", "doll", "pipe_pilot", "armor_over", "chosen")
         generator = "doll_armor_over.py"
-    if a.race.lower() in ("armor_batch", "armor_fhuman", "armor_mhuman", "armor_nekomimi", "armor_loknar", "armor_ogre", "armor_hybrid", "armor_gnome"):   # пачка броней поверх тел: запечатанные слои
+    if a.race.lower() in ("armor_batch", "armor_fhuman", "armor_mhuman", "armor_nekomimi", "armor_loknar", "armor_ogre", "armor_hybrid", "armor_gnome", "armor_syn"):   # пачка броней поверх тел: запечатанные слои
         src = os.path.join("art", "doll", "pipe_pilot", a.race.lower(), "chosen")
         generator = "doll_armor_batch.py"
     if a.race.lower() == "ubergal_pasties":         # тела без кружков и круги слоем, выбор Vitali 06.11
@@ -52,7 +52,10 @@ def main():
     if a.race.lower() == "gnome_pasties":           # тела без ареол и круги слоем, страница 07.11
         src = os.path.join("art", "doll", "pipe_pilot", "gnome", "pasties", "chosen")
         generator = "doll_gnome_pasties.py"
-    if a.race.lower() == "gnome_series":            # портрет в окне шлема и глаза поверх маски, страница 07.11
+    if a.race.lower() == "syn_pasties":             # один круг на голые брони SYN, страница 09.11
+        src = os.path.join("art", "doll", "pipe_pilot", "syn", "pasties")
+        generator = "doll_syn.py"
+    if a.race.lower() == "gnome_series":          # портрет в окне шлема и глаза поверх маски, страница 07.11
         src = os.path.join("art", "doll", "pipe_pilot", "gnome", "series")
         generator = "doll_gnome_series.py"
     files = sorted(f for f in os.listdir(src) if f.endswith(".png"))

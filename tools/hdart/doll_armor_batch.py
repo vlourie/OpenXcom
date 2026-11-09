@@ -131,8 +131,11 @@ def cut_hair(plan):
             continue
         look = short(x)[len("HAIR_"):]
         c = Image.new("RGBA", (db.W * dp.K, db.H * dp.K), (0, 0, 0, 255))
-        for n in ("ubergal__2__%s_nude" % look.lower(), "ubergal__10__head_%s" % look.lower()):
-            c.alpha_composite(Image.open(os.path.join(UI, n + ".png")).convert("RGBA"))
+        srcs = [os.path.join(UI, n + ".png") for n in ("ubergal__2__%s_nude" % look.lower(), "ubergal__10__head_%s" % look.lower())]
+        if RACE == "SYN":                                   # слоя головы нет: голова и волосы в теле (R-844)
+            srcs = [os.path.join(db.ROOT, "art", "doll", "pipe_pilot", "syn", "heads", "layers", "syn__2__%s_nude.png" % look.lower())]
+        for n in srcs:
+            c.alpha_composite(Image.open(n).convert("RGBA"))
         import numpy as np
         P.layer_from(np.asarray(c.convert("RGB"), np.float32), dp.layer_mask(files, x), edge=0).save(fn)
         done += 1
@@ -198,6 +201,9 @@ def draw_all(plan, texts, only=None, seed=SEED, keep=None):
     left = [x for x in frames if not os.path.exists(os.path.join(raw, "f%03d_out.png" % x["id"]))]
     # «X-COM-style» и «no text» модель пишет буквами на гладкой ткани (платье пастушки, R-760)
     style = S.STYLE.replace("an X-COM-style strategy game", "a strategy game").replace(", no text.", ".")
+    if RACE == "SYN":                                   # синтетики стоят спиной: общий стиль - вид спереди
+        import doll_syn
+        style = doll_syn.STYLE.replace("on a flat grey panel", "on a flat very dark panel")
     assert "X-COM" not in style and "text" not in style
 
     def prompt_of(x):

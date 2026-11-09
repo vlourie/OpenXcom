@@ -27,7 +27,10 @@ from PIL import Image                                # noqa: E402
 RULESET = "hd_doll_layers.rul"
 EMPTY = "Resources/Doll/empty_320x200.png"
 # префикс расы -> (слот, имя слоя, брони, которым он добавляется)
-EXTRA = {"LOKNAR": (3, "PASTIES", ("STR_LOKNAR_NUDE_UC", "STR_LOKNAR_NUDE_SEA_UC", "STR_LOKNAR_NUDE_DREAMLAND_UC"))}
+EXTRA = {"LOKNAR": (3, "PASTIES", ("STR_LOKNAR_NUDE_UC", "STR_LOKNAR_NUDE_SEA_UC", "STR_LOKNAR_NUDE_DREAMLAND_UC")),
+         # SYN: голые брони и прозрачный REFRACTOR, страница 09.11; слот 4 у них свободен, один круг на всех внешностей
+         "SYN": (4, "PASTIES", ("STR_SYNTH_NUDE_UC", "STR_SYNTH_NUDE_SEA_UC", "STR_SYNTH_NUDE_A_UC", "STR_SYNTH_NUDE_A_SPACE_UC",
+                                "STR_SYNTH_REFRACTOR_UC", "STR_SYNTH_REFRACTOR_A_UC", "STR_SYNTH_REFRACTOR_A_SPACE_UC"))}
 # UBERGAL: брони с открытой грудью по выбору Vitali 06.11; у каждой внешности свой круг, tools/hdart/doll_ubergal_pasties.py
 UBERGAL = ("STR_PIR_NUDE_UC", "STR_PIR_NUDE_SEA_UC", "STR_PIR_NUDE_DREAMLAND_UC", "STR_PIR_TOPLESS_UC", "STR_TOPLESS_SEA_UC", "STR_PIR_CHAINS_UC",
            "STR_ARMOR_SAINT_UC", "STR_ARMOR_SAINT_FAKE_UC", "STR_PATIENT_OUTFIT_UC", "STR_HYENA_RIDER_ARMOR_UC", "STR_PIR_SLAVE_ARMOR_UC",
