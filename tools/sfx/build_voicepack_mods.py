@@ -60,6 +60,32 @@ PORTRAIT_GROUPS = [
      "portraits": 24, "pool": ["V014", "V015", "V016", "V017"]},
 ]
 PORTRAIT_RUN = 10             # портретов подряд на один голос
+# XP-000541 (10.11): у каждого типа несколько голосов-тонов одной расы (tools/sfx/voice_tones.tsv, звук в
+# art/sfx/voicepack/V###/xp541/<n>.ogg, у V201-V203 <n>.proc.ogg). Набор тона VP_V### повторяет события и
+# соответствие реплик основы (реплика n тона = реплика n основы). Голос по портрету: пул типа = голоса типа по
+# умолчанию + их тоны, голос = пул[ключ % N]; ключ - тот же, что у движка (пол + look + 4 * вариант).
+# Тона русские, поэтому только в hd_voices_ru; в английском моде всё как было.
+PORTRAIT_COUNT = {t: 60 for t in ("STR_SOLDIER", "STR_SOLDIER_S", "STR_SOLDIER_M", "STR_SOLDIER_V",
+                                  "STR_SOLDIER_X", "STR_SOLDIER_W", "STR_SOLDIER_R")}
+PORTRAIT_COUNT.update({t: 64 for t in ("STR_SOLDIER_SLAVE", "STR_SOLDIER_PUREBLOOD", "STR_SOLDIER_HERO",
+                                       "STR_SOLDIER_PEASANT", "STR_SOLDIER_DAMSEL")})
+PORTRAIT_COUNT.update({"STR_SOLDIER_GNOME": 24, "STR_SOLDIER_OGRE": 16, "STR_SOLDIER_SYNTH": 12,
+                       "STR_SOLDIER_HYBRID": 8, "STR_SOLDIER_LAMIA": 8, "STR_SOLDIER_CHORT": 4})
+
+
+def pool_pick(pool, key):
+    """Голос портрета: pool[ключ % N]. При N кратном 4 ключ % N совпал бы с look (голос привязан к лицу-классу,
+    а не перемешан по вариантам) - тогда к ключу добавляется номер варианта (ключ // 4)."""
+    n = len(pool)
+    return pool[(key + (key // 4 if n % 4 == 0 else 0)) % n]
+
+
+def tone_file(tone, line):
+    d = SRC / tone / "xp541"
+    for suffix in (".ogg", ".proc.ogg"):
+        if (d / f"{line}{suffix}").is_file():
+            return d / f"{line}{suffix}"
+    return None
 
 
 def loudness(path):
@@ -116,7 +142,7 @@ def read_excluded():
         return {(r["voice"], r["n"]) for r in csv.DictReader(f, delimiter="\t")}
 
 
-def build(lang, hold, events, rows, states, doge_steps, rejected):
+def build(lang, hold, events, rows, states, doge_steps, rejected, tones):
     mod = B.MODS / f"hd_voices_{lang}"
     # rmtree не должен уйти через junction или за пределы двух наших модов.
     if mod.is_symlink() or mod.resolve().parent != B.MODS.resolve():
@@ -149,6 +175,33 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
             files.append((idx, rel))
             sets.setdefault(vid, {}).setdefault(ev["event"], []).append(idx)
             idx += 1
+    tone_ids = []                 # тона, попавшие в мод (основа есть, файлы на месте)
+    for tn in tones:
+        base = tn["base"]
+        if base in hold or base not in sets:
+            continue
+        got = 0
+        for ev in events.get(base, []):
+            if ev["event"] not in EVENTS or (base, ev["line"]) in excluded:
+                continue
+            src = tone_file(tn["id"], ev["line"])
+            if src is None:
+                if (base, ev["line"], lang) in rejected:
+                    continue
+                raise ValueError(f"missing tone line: {tn['id']}/{ev['line']}")
+            y, _ = sf.read(str(src), dtype="float32")
+            if not len(y) or float(abs(y).max()) < 0.002:     # тишина в серии (брак генерации): в мод не идёт
+                print(f"тон {tn['id']} реплика {ev['line']}: тишина в исходнике, пропущена")
+                continue
+            rel = f"Resources/Sounds/voices/{tn['id']}/{ev['line']}.ogg"
+            jobs.append((src, mod / rel, False))   # как все реплики: к -12 LUFS и лимитер (после Vorbis пик тона был до 1.5)
+            files.append((idx, rel))
+            sets.setdefault(tn["id"], {}).setdefault(ev["event"], []).append(idx)
+            idx += 1
+            got += 1
+        if not got:
+            raise ValueError(f"tone without lines: {tn['id']}")
+        tone_ids.append(tn["id"])
     best = B.pick([it for it in doge_steps["items"] if it["group"] == "doge"],
                   lambda it: (it["dir"], it["name"]), 1)
     for (d, name), cands in sorted(best.items()):
@@ -159,13 +212,13 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
         sets.setdefault("doge", {}).setdefault(cat, []).append(idx)
         idx += 1
     reserved = max(RESERVED, math.ceil(idx / 1000))
-    for vid in used:
+    for vid in used + tone_ids:
         for event in EVENTS:
             if not sets.get(vid, {}).get(event):
                 raise ValueError(f"empty event after audit: {vid}/{event}")
     def encode(job):
         loud_ogg(job[0], job[1], robot=job[2])
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=8) as pool:
         for _ in pool.map(encode, jobs):
             pass
     kept = 0
@@ -198,7 +251,32 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
         soldier[s] = {0: ["doge"], 1: ["doge"]}
     # голос по портрету: тип -> {ключ портрета: голос}; голоса, которых нет в моде (на починке), в круг не идут
     portrait = {}
+    tone_of = {tn["id"]: tn for tn in tones if tn["id"] in tone_ids}
+    for tid, tn in tone_of.items():      # набор тона виден в «Голос бойца» там же, где и основа
+        choice[tid] = {"types": set(choice[tn["base"]]["types"]), "genders": set(choice[tn["base"]]["genders"])}
+    tone_types = []
+    for tn in tone_of.values():
+        if tn["types"] not in tone_types:
+            tone_types.append(tn["types"])
+    for types in tone_types:             # пул типа и пола: основы по умолчанию + их тона
+        for t in types:
+            per = {}
+            for g, gl in ((0, "M"), (1, "F")):
+                own = []              # голоса по умолчанию всей группы типов (XP-000311: при смене типа голос тот же)
+                for t2 in types:
+                    own += [v for v in soldier.get(t2, {0: [], 1: []})[g] if v not in own]
+                pool = own + [tid for tid, tn in tone_of.items() if tn["base"] in own and t in tn["types"]]
+                per[gl] = pool
+            if all(len(p) < 2 for p in per.values()):
+                continue
+            portrait[t] = {f"{gl}{n}": pool_pick(per[gl], n) for gl in "MF" for n in range(PORTRAIT_COUNT[t])
+                           if per[gl]}
+            for pool in per.values():
+                for v in pool:
+                    choice[v]["types"].add(t)
     for grp in PORTRAIT_GROUPS:
+        if any(t in portrait for t in grp["types"]):
+            continue                      # тип уже раскладан по пулу с тонами
         pool = [v for v in grp["pool"] if v in sets]
         if len(pool) < 2:
             continue
@@ -249,6 +327,10 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
         for vid in sorted(choice):
             if vid == "doge":
                 label = "Пёс: лай" if code == "ru" else "Dog: barks"
+            elif vid in tone_of:
+                b = tone_of[vid]["base"]
+                label = (states[b]["name"] + f" (тон {tone_of[vid]['tone']})" if code == "ru"
+                         else f"{vid} " + states[b].get("for_en", b) + f" (tone {tone_of[vid]['tone']})")
             else:
                 label = states[vid]["name"] if code == "ru" else f"{vid} " + states[vid].get("for_en", vid)
             L.append(f"      {name(vid)}: {q(label)}")
@@ -284,8 +366,11 @@ def main():
         raise ValueError('audit has missing lines')
     selected = {(r['voice'], r['lang'], r['line']): r['file'] for r in audit['selected']}
     rejected = {(r['voice'], r['line'], r['lang']) for r in audit['rejected']}
+    # тона XP-000541 (V158-V203) идут отдельной серией (xp541/), в аудите основных голосов их нет
+    tone_ids_all = {r["id"] for r in read_tsv("voice_tones.tsv")}
     expected = {(v['id'], lang, ln['n']): ln[lang] for v in voice_script.parse(
-                more=voice_script.MORE100, only=voice_script.pinned()) for ln in v['lines'] for lang in ('ru','en')}
+                more=voice_script.MORE100, only=voice_script.pinned()) if v['id'] not in tone_ids_all
+                for ln in v['lines'] for lang in ('ru','en')}
     decided = set(selected) | {(vid,lang,n) for vid,n,lang in rejected}
     if decided != set(expected):
         raise ValueError('audit does not match current script; run audit_voicepack.py again')
@@ -305,8 +390,10 @@ def main():
         if r["voice"] in states and r["target_en"]:
             states[r["voice"]].setdefault("for_en", r["target_en"])
     doge = B.load_json("steps.json")
+    tones = [{"id": r["id"], "types": r["types"].split(","), "base": r["base"], "tone": r["tone"]}
+             for r in read_tsv("voice_tones.tsv")]
     for lang in a.lang.split(","):
-        n, k, s, u, nu = build(lang, hold, events, rows, states, doge, rejected)
+        n, k, s, u, nu = build(lang, hold, events, rows, states, doge, rejected, tones if lang == "ru" else [])
         print(f"hd_voices_{lang}: звуков {n}, наборов {k}, типов бойцов {s}, голосов врагов {u} на {nu} юнитов")
     print("на починке (не в моде):", " ".join(sorted(hold)) or "нет")
 

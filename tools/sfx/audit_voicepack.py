@@ -64,7 +64,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--min-close', type=float, default=.75)
     args = ap.parse_args()
-    voices = voice_script.parse(more=voice_script.MORE100, only=voice_script.pinned())
+    # тона XP-000541 (V158-V203): отдельная серия xp541/, в аудит основных голосов не входят
+    with open(Path(__file__).resolve().parent / 'voice_tones.tsv', encoding='utf-8-sig') as f:
+        tone_ids = {ln.split('\t')[0] for ln in f.read().splitlines()[1:] if ln}
+    voices = [v for v in voice_script.parse(more=voice_script.MORE100, only=voice_script.pinned())
+              if v['id'] not in tone_ids]
     states = {v['id']: json.loads((SRC/v['id']/'voice.json').read_text(encoding='utf-8-sig')) for v in voices}
     paths = {it['file'] for s in states.values() for it in s['lines'] if 'file' in it}
     paths.update(s['ref'] for s in states.values())
