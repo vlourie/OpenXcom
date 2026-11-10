@@ -1,1 +1,2 @@
 - HD interface, paper dolls: the stasis pods of peasant girls, hybrids, lamias, ogres and gnomes are now in HD, all 240 looks. The pod window shows the same HD doll as without armour, under a layer of liquid: the liquid's transparency and colour at every point are taken from the classic pod pictures; the frame and glass are HD.
+- HD battle: a melee blow (blade, claws, teeth...) on a robot or another bloodless target (UAC security drone, skeletons, slimes) no longer draws a blood spray.

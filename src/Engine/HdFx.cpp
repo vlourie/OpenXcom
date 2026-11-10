@@ -771,6 +771,11 @@ int lossPercent(const BattleUnit *unit, int lost)
 	return std::max(1, std::min(100, lost * 100 / full));
 }
 
+bool bleeds(const BattleUnit *unit)
+{
+	return !unit || std::strcmp(target(unit, false), "flesh") == 0;
+}
+
 unsigned int hitHash(Position at, int loss)
 {
 	static unsigned int n = 0;

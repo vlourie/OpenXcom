@@ -83,6 +83,8 @@ namespace HdFx
 	std::string tinted(const std::string &clip, int rgb);
 	/// The part of `unit`'s full health that `lost` points are, percent, 1-100 (for sprayClip).
 	int lossPercent(const BattleUnit *unit, int lost);
+	/// XP-000545: does a hit on `unit` draw blood (its armour is flesh, not a machine or a ghost)? A blow in melee sprays no blood over a machine.
+	bool bleeds(const BattleUnit *unit);
 	/// A hash of a hit for picking its variants: its own state, the battle's random numbers are not touched.
 	unsigned int hitHash(Position at, int loss);
 	/// The clip for an explosion.
