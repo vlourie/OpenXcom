@@ -322,7 +322,11 @@ def rises(wav, text, words, sr=SR, acc=None):
 
 def lufs_of(y, sr):
     import pyloudnorm as pyln
-    return float(pyln.Meter(sr).integrated_loudness(y.astype(np.float64)))
+    y = y.astype(np.float64)
+    if len(y) and len(y) < int(0.5 * sr):
+        # реплика короче блока 400 мс («Хм.»): меряем повтором, громкость та же
+        y = np.tile(y, int(0.5 * sr) // len(y) + 1)
+    return float(pyln.Meter(sr).integrated_loudness(y))
 
 
 def soft_limit(y, knee=0.7, top=0.95):
