@@ -437,7 +437,10 @@ def pack_is_current(set_dir, settings):
     if not os.path.exists(path):
         return True, False
     try:
-        return open(path).read().strip() == settings, True
+        have = " ".join(t for t in open(path).read().split() if not t.startswith("palette_fix="))   # XP-000549
+        if not have:
+            return True, False         # в файле одна отметка: настройки неизвестны, пак оставляем как есть
+        return have == settings, True
     except OSError:
         return True, False
 
