@@ -40,7 +40,8 @@ TONES = ROOT / "tools/sfx/voice_tones.tsv"
 NEW_REF = "V166 V169 V170 V172 V174 V175 V180 V194 V197 V198 V202".split()
 PILOT_REF = "V173 V179 V201 V203".split()
 PROC_VOICE = {"V201": "lamia", "V202": "lamia", "V203": "chort"}
-VARIANTS = {"V201": ["proc"], "V203": ["proc"], "V202": ["plain", "proc"]}
+VARIANTS = {"V201": ["proc"], "V202": ["proc"], "V203": ["proc"]}      # выбор Vitali 10.11: ламии и Чертовка - только proc
+EXTRA = False                                    # --extra: реплики 043-126 (без флага - 01-42)
 SPEED = {"V201": 0.92, "V202": 0.92, "V203": 0.92, "V173": 0.95, "V174": 0.95, "V194": 0.93}
 FEM = (195, 420)
 
@@ -220,7 +221,7 @@ class Series(P.Pilot):
         rp = outdir / "rows.json"
         rows = json.loads(rp.read_text(encoding="utf-8-sig")) if rp.exists() else []
         done = {(r["вид"], r["n"], r["вариант"]) for r in rows}
-        nums = sorted(n for (b, n) in self.lines if b == cfgv["base"])
+        nums = sorted(n for (b, n) in self.lines if b == cfgv["base"] and (int(n) >= 43) == EXTRA)
         if only:
             nums = [n for n in nums if n in only]
         variants = cfgv["variants"]
@@ -306,6 +307,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--voices", default="")
     ap.add_argument("--only", default="", help="номера реплик через запятую")
+    ap.add_argument("--extra", action="store_true", help="реплики 043-126 вместо 01-42")
     ap.add_argument("--pilot-fix", action="store_true")
     a = ap.parse_args()
     for stream in (sys.stdout, sys.stderr):
@@ -315,8 +317,10 @@ def main():
         pilot_fix()
         Q.free_asr()
         return
+    global EXTRA
+    EXTRA = a.extra
     S = Series(C.load(G.VF))
-    only = set(x for x in a.only.split(",") if x)
+    only =set(x for x in a.only.split(",") if x)
     for vid in [v for v in a.voices.split(",") if v]:
         S.voice2(vid, only or None)
         write_series()
