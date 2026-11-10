@@ -897,6 +897,8 @@ en-US:
   STR_HD_SHAPE_RECESSED: "Recessed"
   STR_HD_SHOT_CUT: "A shot cuts the sound of the shot before"
   STR_HD_SHOT_CUT_DESC: "On - when a weapon fires again while the sound of its last shot is still playing, the old sound fades out quickly. Off - sounds overlap, as in the original."
+  STR_HD_CLASSIC_SHOTS: "Classic shots: laser, plasma, gauss"
+  STR_HD_CLASSIC_SHOTS_DESC: "On = shots of laser, plasma and gauss weapons are drawn as in the classic game, with no tracer: a laser is a flat beam with a round head and a light vein, plasma is a ball with a short tail of beads, a gauss shot is a capsule in a double semi-transparent spiral of air. The size follows the weapon's class, the colour follows the weapon itself. Off = as before. Only the picture changes: the flight, the hit and the shot's timing are the same. HD modes only."
   STR_HD_GLOBE_SCALE: "HD interface: globe scale"
   STR_HD_GLOBE_SCALE_DESC: "The globe gets a scale of its own, apart from the windows, the base and the lists. \"As geoscape\" = the same as the Geoscape Scale in the Video options. 2x-6x = the globe is drawn as at that geoscape scale, e.g. 3x: set the Geoscape Scale to 5x or 6x for big windows and the globe to 3x for a detailed one. Works with the HD interface on; a value no finer than the Geoscape Scale changes nothing. Smaller numbers cost more on a big display."
   STR_HD_GLOBE_SCALE_SAME: "As geoscape"

@@ -46,6 +46,7 @@
 #include "../Engine/HdKillCam.h"
 #include "../Engine/HdLab.h"
 #include "../Engine/HdSmoke.h"
+#include "../Engine/HdShots.h"
 #include "../Engine/HdFire.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdTurn.h"
@@ -5173,6 +5174,86 @@ void Map::drawTerrain(HdCanvas *surface)
 		}
 	}
 
+	// HD render (XP-000544, Options::oxceHdClassicShots): the shot of a laser, plasma or gauss weapon as the classic game drew it - a flat
+	// beam, a ball with a tail of beads, a capsule in coils of air - instead of the 35 stamps of its tracer. Picture only: nothing below
+	// reads the shot's way any other way than the stamps did (the positions of its steps), the camera above has already moved.
+	// The shot is a row of pieces that do not overlap (HdShots); piece j stands where the way is `back[j]` steps behind the head
+	// and is stamped in the tile of that step, like a stamp of the tracer, so walls and units cover it the same way.
+	// `active`: this shot is drawn so, and the classic stamps are not (even when nothing is to be seen yet: the first step)
+	struct ClassicShot
+	{
+		bool active = false;
+		const HdShots::Shot *shot = nullptr;
+		Position head;                  // the head on the map surface
+		std::vector<int> back;          // steps behind the head of every piece, -1: before the muzzle, not drawn
+		int lowX = 16000, lowY = 16000, highX = 0, highY = 0;   // the tiles of the pieces, in the view's tiles
+	} classicShot;
+	if (Options::oxceHdClassicShots && _projectile && !_projectile->getItem() && _projectileInFOV && _explosions.empty() &&
+		_projectileSet && _k > 1 && hdFrames && _projectile->getParticle(0) != Mod::NO_SURFACE)
+	{
+		HdShots::newFrame();
+		const HdShots::Kind kind = HdShots::kindOf(_projectile->getWeaponRules());
+		if (kind)
+		{
+			const HdShots::Colours &colours = HdShots::coloursOf(_projectileSet, _projectile->getParticle(0), getPalette());
+			if (colours.valid)
+			{
+				classicShot.active = true;
+				const int flown = _projectile->getFlown();
+				// the way on the screen: its direction and how many pixels a step of it is
+				const int ref = std::min(flown + 1, 48);
+				Position tail;
+				_camera->convertVoxelToScreen(_projectile->getPosition(1), &classicShot.head);
+				_camera->convertVoxelToScreen(_projectile->getPosition(1 - ref), &tail);
+				const double vx = classicShot.head.x - tail.x, vy = classicShot.head.y - tail.y;
+				const double len = std::sqrt(vx * vx + vy * vy);
+				if (flown > 0 && len >= 2.0)
+				{
+					const double perStep = len / ref;
+					const int angle = (int)std::lround(std::atan2(vy, vx) / (2 * 3.14159265358979323846) * HdShots::ANGLES);
+					int pieces = 0;
+					if (kind.cls == HdShots::LASER)
+					{
+						// as long as the jump of a frame, or the beam's own length: no gap between two frames, no blinking (XP-000310)
+						const int steps = std::max(HdShots::laserNominalVoxels(kind.size), _projectile->getSpeed());
+						pieces = HdShots::laserPieces((int)std::ceil(steps * perStep), _k);
+					}
+					classicShot.shot = HdShots::shot(kind, colours, _k, angle, pieces);
+					if (classicShot.shot)
+					{
+						const int count = (int)classicShot.shot->pieces.size();
+						classicShot.back.assign(count, -1);
+						const double seg = HdShots::pieceLength(_k);
+						for (int j = 0; j < count; ++j)
+						{
+							const int back = (int)std::lround((j + 0.5) * seg / perStep);
+							if (back > flown + 1)
+							{
+								continue;           // before the muzzle
+							}
+							classicShot.back[j] = back;
+							const Position bp = _projectile->getPosition(1 - back);
+							classicShot.lowX = std::min(classicShot.lowX, (int)bp.x);
+							classicShot.lowY = std::min(classicShot.lowY, (int)bp.y);
+							classicShot.highX = std::max(classicShot.highX, (int)bp.x);
+							classicShot.highY = std::max(classicShot.highY, (int)bp.y);
+						}
+						classicShot.lowX /= 16; classicShot.lowY /= 16; classicShot.highX /= 16; classicShot.highY /= 16;
+						if (turned)
+						{
+							const Position a = _camera->worldToView(Position(classicShot.lowX, classicShot.lowY, 0));
+							const Position b = _camera->worldToView(Position(classicShot.highX, classicShot.highY, 0));
+							classicShot.lowX = std::min(a.x, b.x);
+							classicShot.highX = std::max(a.x, b.x);
+							classicShot.lowY = std::min(a.y, b.y);
+							classicShot.highY = std::max(a.y, b.y);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// get corner map coordinates to give rough boundaries in which tiles to redraw are
 	_camera->convertScreenToView(0, 0, &beginX, &dummy);
 	_camera->convertScreenToView(surface->getWidth(), 0, &dummy, &beginY);
@@ -5756,7 +5837,38 @@ void Map::drawTerrain(HdCanvas *surface)
 						else
 						{
 							// draw bullet on the correct tile
-							if (viewX >= bulletLowX && viewX <= bulletHighX && viewY >= bulletLowY && viewY <= bulletHighY)
+							if (classicShot.active)
+							{
+								// HD render (XP-000544): the pieces of the shot whose step of the way is in this tile (see above); the order
+								// is the stamps' - head first when the shot goes away from the viewer, tail first when it comes
+								if (classicShot.shot && viewX >= classicShot.lowX && viewX <= classicShot.highX && viewY >= classicShot.lowY && viewY <= classicShot.highY)
+								{
+									const int count = (int)classicShot.shot->pieces.size();
+									for (int n = 0; n < count; ++n)
+									{
+										const int j = _projectile->isReversed() ? count - 1 - n : n;
+										const HdShots::Piece &piece = classicShot.shot->pieces[j];
+										if (classicShot.back[j] < 0 || piece.frame.empty())
+										{
+											continue;
+										}
+										const Position voxelPos = _projectile->getPosition(1 - classicShot.back[j]);
+										if (voxelPos.x / 16 == itX &&
+											voxelPos.y / 16 == itY &&
+											voxelPos.z / 24 == itZ &&
+											_save->getTileEngine()->isVoxelVisible(voxelPos))
+										{
+											surface->blitFrame(piece.frame, classicShot.head.x + piece.dx, classicShot.head.y + piece.dy);
+											if (_gentleFlying)
+											{
+												_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
+												noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
+											}
+										}
+									}
+								}
+							}
+							else if (viewX >= bulletLowX && viewX <= bulletHighX && viewY >= bulletLowY && viewY <= bulletHighY)
 							{
 								int begin = 0;
 								int end = BULLET_SPRITES;

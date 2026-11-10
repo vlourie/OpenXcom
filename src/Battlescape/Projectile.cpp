@@ -594,6 +594,15 @@ int Projectile::getParticle(int i) const
 }
 
 /**
+ * Gets the rules of the weapon the shot was fired from (picture only, XP-000544).
+ * @return The weapon's rules, or nullptr.
+ */
+const RuleItem *Projectile::getWeaponRules() const
+{
+	return _action.weapon ? _action.weapon->getRules() : nullptr;
+}
+
+/**
  * Gets the project tile item.
  * Returns 0 when there is no item thrown.
  * @return Pointer to BattleItem.

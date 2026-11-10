@@ -172,6 +172,7 @@ set ( engine_src
   Engine/HdCraftLights.cpp
   Engine/HdCraftRoute.cpp
   Engine/HdFx.cpp
+  Engine/HdShots.cpp
   Engine/HdItems.cpp
   Engine/HdOutline.cpp
   Engine/HdRadar.cpp

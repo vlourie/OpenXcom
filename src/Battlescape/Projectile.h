@@ -30,6 +30,7 @@ class SavedBattleGame;
 class Surface;
 class Tile;
 class Mod;
+class RuleItem;
 
 /**
  * A class that represents a projectile. Map is the owner of an instance of this class during its short life.
@@ -96,6 +97,10 @@ public:
 	const BattleUnit *getActor() const { return _action.actor; }
 	/// Gets the voxels a bullet flies a frame (the HD picture stretches its trail over them, XP-000310).
 	int getSpeed() const { return _speed; }
+	/// Gets the weapon the shot was fired from (the HD picture of an energy shot goes by its class, XP-000544); nullptr: none.
+	const RuleItem *getWeaponRules() const;
+	/// Gets how many steps of its trajectory it has flown (read only: the HD picture is as long as the way so far).
+	int getFlown() const { return (int)_position; }
 	/// Gets the distance that projectile traveled.
 	float getDistance() const;
 	/// Is this projectile being drawn back-to-front or front-to-back?
