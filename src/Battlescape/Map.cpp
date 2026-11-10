@@ -2732,6 +2732,24 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 					}
 				}
 			}
+			// XP-000548: a low object of another set than the ground's is not the ground's cover: a craft's ramp, a building's
+			// prop stand on the ground's floor too. The mirror takes the objects of the sets the ground itself is made of (the
+			// sets of the floors that make a tenth of the band's open ground) and of the set of the cell's own floor
+			std::unordered_set<const MapDataSet*> groundSets;
+			for (const Kind &k : kinds)
+			{
+				if (share(k) * 10 >= bandTotal && k.data->getDataset())
+				{
+					groundSets.insert(k.data->getDataset());
+				}
+			}
+			for (HdSnapFloor &snap : _hdFloorSnap)
+			{
+				if (snap.low && snap.data && snap.low->getDataset() != snap.data->getDataset() && !groundSets.count(snap.low->getDataset()))
+				{
+					snap.low = nullptr;
+				}
+			}
 			_hdGhostState = 1;
 		}
 		else
