@@ -14,7 +14,9 @@
    подголосок на октаву ниже, перегруз, хрип, металлическое эхо. Варианты «plain» (без обработки) и «proc».
 5. ogg 22050 Гц моно, -12 LUFS; pilot.tsv.
 
-Критерий подъёма на «?» (ПОДЪЁМ): pyin (60-450 Гц) по озвученным кадрам; база - медиана F0 предыдущей части вопроса
+С 10.11 критерий вопроса - интонация всей фразы (функция rises, docs/research/voice-types-pedia.md п.5); ниже прежний
+критерий пилота 1 (rises_old).
+Критерий подъёма на «?» (ПОДЪЁМ, прежний): pyin (60-450 Гц) по озвученным кадрам; база - медиана F0 предыдущей части вопроса
 (для однословного вопроса - первые 40% озвученных кадров слова), последнее слово вопроса по временам whisper.
 Подъём пройден, если пик F0 последнего слова (медиана по 3 кадрам) выше базы не меньше чем на 3,0 полутона ИЛИ
 медиана последних 30% озвученных кадров слова выше базы не меньше чем на 1,0 полутона. Кадры дальше 12 полутонов от
@@ -175,8 +177,8 @@ def question_ends(text):
     return out
 
 
-def rises(wav, text, words, sr=SR):
-    """По каждому «?» -> {'ok': bool, 'peak': полутоны, 'end': полутоны} (критерий - в docstring модуля)."""
+def rises_old(wav, text, words, sr=SR):
+    """Критерий пилота 1 (только подъём последнего слова): оставлен для пересчёта. По каждому «?» -> ok/peak/end."""
     qs = question_ends(text)
     if not qs:
         return []
@@ -215,6 +217,106 @@ def rises(wav, text, words, sr=SR):
         end = 12 * math.log2(float(np.median(lf[-tailn:])) / bm)
         res.append({"ok": bool(peak >= RISE_PEAK_ST or end >= RISE_END_ST), "peak": round(peak, 1),
                     "end": round(end, 1)})
+    return res
+
+
+WH_WORDS = set("кто кого кому кем ком что чего чему чем чём где куда откуда когда как почему зачем отчего сколько "
+               "какой какая какое какие какого какому каким каком какую каких какими чей чья чьё чьи чьего чьей "
+               "чьим чьих ли".split())
+SKIP_FOCUS = set("же бы ли ведь вот то".split())
+YN_PEAK_ST, WH_PEAK_ST = 2.0, 2.0          # пик ударного слога над остальной фразой, полутоны
+YN_END_TOL, WH_FALL_TOL = 0.5, 1.0         # допуск измерения pyin: конец >= середина-0,5; конец >= начало-1,0
+VOWELS = "аеёиоуыэюяАЕЁИОУЫЭЮЯ"
+
+
+def stress_info(acc, pl):
+    """[(слово, номер ударного слога или None, слогов)] по словам PZ._WORD в pl; ударение - «+» перед гласной в acc."""
+    stress, pi = [], 0
+    for i, ch in enumerate(acc):
+        if ch == "+" and i + 1 < len(acc):
+            stress.append(pi)
+        else:
+            pi += 1
+    out = []
+    for m in PZ._WORD.finditer(pl):
+        w = m.group(0)
+        sts = [s - m.start() for s in stress if m.start() <= s < m.end()]
+        nsyl = sum(c in VOWELS for c in w)
+        k = None
+        if sts:
+            k = sum(c in VOWELS for c in w[:sts[-1]])             # последнее ударение слова (кое-чт+о)
+        elif "ё" in w.lower():
+            k = sum(c in VOWELS for c in w[:w.lower().index("ё")])
+        out.append((w, k, nsyl))
+    return out
+
+
+def _sm(a):
+    return np.array([np.median(a[max(0, k - 1):k + 2]) for k in range(len(a))])
+
+
+def rises(wav, text, words, sr=SR, acc=None):
+    """Вопросительная интонация ВСЕЙ фразы (docs/research/voice-types-pedia.md, «Как озвучивать» п.5).
+    По каждому «?» -> {'ok','kind':'wh'|'yn','peak','end'}.
+    yn (нет вопросительного слова): пик F0 на ударном слоге слова-фокуса (последнее значимое) выше медианы остальной
+    фразы >= 2,0 пт И конец фразы (последние 25% озвученных кадров) не ниже медианы фразы (допуск 0,5 пт).
+    wh (кто, что, где, ... ли): пик F0 на ударном слоге вопросительного слова выше медианы остальной фразы >= 2,0 пт
+    И конец фразы не ниже её начала (первые 25% кадров; допуск 1,0 пт) - нет падения в утвердительный конец.
+    Однословная фраза: «остальное» - первые 40% озвученных кадров слова."""
+    qs = question_ends(text)
+    if not qs:
+        return []
+    src = PZ.source_words(text)
+    st = stress_info(acc if acc else text, text)
+    if len(st) != len(src):
+        st = [(w, None, 1) for w, _ in src]
+    m = PZ._align(src, words)
+    t, f0 = f0_track(wav, sr)
+    res = []
+    for i, start in qs:
+        if i not in m or start not in m:
+            res.append({"ok": False, "kind": "?", "peak": 0.0, "end": 0.0, "why": "нет слов"})
+            continue
+        ts, te = words[m[start][0]][1] - 0.03, words[m[i][1]][2] + 0.05
+        sel = np.where((t >= ts) & (t <= te) & ~np.isnan(f0))[0]
+        wh = [j for j in range(start, i + 1) if src[j][0] in WH_WORDS]
+        kind = "wh" if wh else "yn"
+        cand = [j for j in range(start, i + 1) if src[j][0] not in SKIP_FOCUS and j in m]
+        fj = wh[0] if wh else (cand[-1] if cand else i)
+        if len(sel) < 8 or fj not in m:
+            res.append({"ok": False, "kind": kind, "peak": 0.0, "end": 0.0, "why": "мало тона"})
+            continue
+        w0, w1 = words[m[fj][0]][1] - 0.03, words[m[fj][1]][2] + 0.05
+        fr = np.where((t >= w0) & (t <= w1) & ~np.isnan(f0))[0]
+        if len(fr) < 3:
+            res.append({"ok": False, "kind": kind, "peak": 0.0, "end": 0.0, "why": "мало тона в слове"})
+            continue
+        _, k, nsyl = st[fj]
+        win = fr
+        if k is not None and nsyl > 1:                 # ударный слог: k-я из nsyl равных долей озвученных кадров слова
+            a = int(len(fr) * k / nsyl)
+            win = fr[a:max(a + 2, int(len(fr) * (k + 1) / nsyl))]
+        frs = set(fr.tolist())
+        rest = np.array([x for x in sel if x not in frs])
+        if len(rest) >= 5:
+            base = float(np.median(f0[rest]))
+        else:
+            kk = max(3, int(len(fr) * 0.4))
+            base = float(np.median(f0[fr[:kk]]))
+            win = fr[kk:] if len(fr) - kk >= 3 else fr
+        peak = 12 * math.log2(float(_sm(f0[win]).max()) / base)
+        allf = f0[sel]
+        q = max(3, int(len(allf) * 0.25))
+        end_med, start_med, mid = float(np.median(allf[-q:])), float(np.median(allf[:q])), float(np.median(allf))
+        if kind == "yn":
+            end_rel = 12 * math.log2(end_med / mid)
+            ok = peak >= YN_PEAK_ST and end_rel >= -YN_END_TOL
+        else:
+            end_rel = 12 * math.log2(end_med / start_med)
+            ok = peak >= WH_PEAK_ST and end_rel >= -WH_FALL_TOL
+        emax = 12 * math.log2(float(_sm(allf[-q:]).max()) / (mid if kind == "yn" else start_med))
+        res.append({"ok": bool(ok), "kind": kind, "peak": round(peak, 1), "end": round(end_rel, 1),
+                    "emax": round(emax, 1)})
     return res
 
 
@@ -393,7 +495,7 @@ class Pilot:
             c["close"] = closeness_words(ref_pl, c["words"])
             c["f0"] = G.pitch(c["wav"], SR)
             c["f3"] = GV.formant3(c["wav"], SR)
-            c["q"] = rises(c["wav"], ref_pl, c["words"])
+            c["q"] = rises(c["wav"], ref_pl, c["words"], acc=ref_acc)
             lo, hi = cfgv["f0"]
             gate = lo <= c["f0"] <= hi
             if "f3_min" in cfgv:
@@ -443,7 +545,7 @@ class Pilot:
             sf.write(str(path), wav, SR, subtype="PCM_16")
             words = words_of(path)
             c = {"tag": tag, "wav": wav, "path": path, "words": words, "close": closeness_words(pl, words),
-                 "q": rises(wav, pl, words)}
+                 "q": rises(wav, pl, words, acc=acc)}
             c["npass"] = sum(r["ok"] for r in c["q"])
             c["key"] = (c["close"] >= CLOSE_OK, c["npass"], tag.startswith("esp"),
                         sum(min(r["peak"], 8.0) for r in c["q"]), c["close"])
