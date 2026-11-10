@@ -114,7 +114,8 @@ class Series(P.Pilot):
 
     def take_row_key(self, c, nq):
         sc = sum(min(max(r["peak"], 0.0), 6.0) + min(max(r["end"], -3.0), 3.0) for r in c["q"])
-        return (c["close"] >= CLOSE_OK, c["npass"], round(sc, 1), c["tag"].startswith("esp"), c["close"])
+        return (float(np.abs(c["wav"]).max()) > 0.02, c["close"] >= CLOSE_OK, c["npass"], round(sc, 1),
+                c["tag"].startswith("esp") and c["close"] >= CLOSE_OK, c["close"])
 
     def line2(self, vid, cfgv, n, vprof, eprof, work):
         text, acc = self.lines[(cfgv["base"], n)]
@@ -146,6 +147,13 @@ class Series(P.Pilot):
         if nq and not any(good(c) for c in takes):
             for s in range(1, VOX_Q + 1):
                 add("vox%d" % s, self.vox_take(vprof, pl, P.SEED_VOX + s, cfgv["q_instr"]))
+                if good(takes[-1]):
+                    break
+        if not nq and not any(good(c) for c in takes):
+            # XP-000541 (10.11): ESpeech на репликах в 1-2 слова даёт тишину (whisper «продолжение следует») - запасной VoxCPM2
+            st_instr = cfgv["q_instr"].split("вопросительная")[0] + "утвердительная интонация, коротко и чётко"
+            for s in range(1, VOX_Q + 1):
+                add("vox%d" % s, self.vox_take(vprof, pl, P.SEED_VOX + s, st_instr))
                 if good(takes[-1]):
                     break
         best = max(takes, key=lambda c: c["key"])
