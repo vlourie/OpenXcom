@@ -5096,7 +5096,8 @@ void Map::hdDrawBloodClouds(HdCanvas *surface)
 		_camera->convertVoxelToScreen(c.voxel, &screen);
 		const float p = (float)(now - c.born) / (float)BLOOD_CLOUD_MS;
 		const float grow = std::sqrt(p);
-		const float opacity = 0.8f * std::min(1.0f, (float)(now - c.born) / 500.0f) * (1.0f - p);
+		// strength B chosen on the decisions page (XP-000557): full opacity at the peak, half as wide again
+		const float opacity = 1.0f * std::min(1.0f, (float)(now - c.born) / 500.0f) * (1.0f - p);
 		const int mx = std::max(1, std::max((c.rgb >> 16) & 255, std::max((c.rgb >> 8) & 255, c.rgb & 255)));
 		const float tint[3] = { ((c.rgb >> 16) & 255) / (float)mx, ((c.rgb >> 8) & 255) / (float)mx, (c.rgb & 255) / (float)mx };
 		const float shade = std::min(6.0f, tile->getShade() * 0.5f);
@@ -5105,7 +5106,7 @@ void Map::hdDrawBloodClouds(HdCanvas *surface)
 		{
 			const unsigned int h = cloudMix(c.seed + (unsigned int)i * 0x9e3779b9U);
 			const float angle = (h & 255) / 256.0f * 6.2831853f;
-			const float reach = (0.35f + ((h >> 8) & 127) / 190.0f) * (3.0f + 14.0f * grow) * _k;
+			const float reach = (0.35f + ((h >> 8) & 127) / 190.0f) * (4.5f + 21.0f * grow) * _k;
 			const int x = screen.x + (int)std::lround(std::cos(angle) * reach) - side / 2;
 			const int y = screen.y + (int)std::lround(std::sin(angle) * reach * 0.5f - 3.0f * grow * _k) - side / 2;
 			const int life = std::min(HdSmoke::LIFE - 1, 2 + (int)(p * 9.0f) + (int)(i & 1));
