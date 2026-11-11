@@ -1317,8 +1317,18 @@ void Map::think()
 	{
 		_redraw = true;
 	}
-	// HD render (Options::oxceHdWeather): the falling weather moves at about 30 frames a second
-	if (_hdWeatherFrameOn && !HdWeather::still(_hdWeatherKind) && SDL_GetTicks() - _hdWeatherLastDraw >= 33)
+	// HD render (Options::oxceHdWeather): the falling weather moves at about 30 frames a second; when a frame with it costs
+	// more than 10 ms (a slow processor), fewer, down to 15 a second, so that it keeps to a third of the time
+	const Uint32 weatherStep = (Uint32)std::max(33.0, std::min(66.0, _hdWeatherCostMs / 0.3));
+	{
+		static Uint32 toldStep = 33;
+		if (_hdWeatherFrameOn && (weatherStep >= toldStep + 8 || weatherStep + 8 <= toldStep))
+		{
+			toldStep = weatherStep;
+			Log(LOG_INFO) << "HD weather: moves every " << weatherStep << " ms (a frame with it " << (int)std::lround(_hdWeatherCostMs) << " ms)";
+		}
+	}
+	if (_hdWeatherFrameOn && !HdWeather::still(_hdWeatherKind) && SDL_GetTicks() - _hdWeatherLastDraw >= weatherStep)
 	{
 		_redraw = true;
 	}
@@ -1534,6 +1544,11 @@ void Map::draw()
 	}
 	_canvas->flush();
 	_lastDrawMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - drawStart).count();
+	if (_hdWeatherFrameOn)
+	{
+		// one slow frame (the twisters baked, a level changed) moves the mean a little, a slow machine moves it for good
+		_hdWeatherCostMs = _hdWeatherCostMs > 0 ? 0.85 * _hdWeatherCostMs + 0.15 * _lastDrawMs : _lastDrawMs;
+	}
 	if (_camera->isGliding())
 	{
 		_redraw = true; // gentle mode: the picture is on its way, every frame until it is there

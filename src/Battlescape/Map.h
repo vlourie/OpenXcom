@@ -278,6 +278,9 @@ private:
 	/// The highest level with a floor in every column of the view [y * w + x]: what stands lower is under a roof.
 	std::vector<int> _hdWeatherTop;
 	Uint32 _hdWeatherLastDraw = 0;
+	/// The running mean of a map frame with the weather, ms: on a slow processor the weather moves at fewer frames a second
+	/// (Map::think), so that it takes no more than about a third of the time.
+	double _hdWeatherCostMs = 0;
 	/// The weather is drawn in this frame (hdWeatherOn).
 	bool _hdWeatherFrameOn = false;
 	/// What the weather carries (HdWeatherExtras.cpp): the tumbleweeds of this frame (drawn on the ground level in the tiles'
