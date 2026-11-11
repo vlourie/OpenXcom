@@ -117,6 +117,8 @@ namespace Options
 	bool load(const std::string &filename = "options");
 	/// Saves options to YAML.
 	bool save(bool reset = false, const std::string &filename = "options");
+	/// Saves options to YAML at a full path (a copy; options.cfg is not touched).
+	bool saveTo(bool reset, const std::string &filepath);
 	/// Gets the game's data folder.
 	std::string getDataFolder();
 	/// Sets the game's data folder.

@@ -287,6 +287,10 @@ bool Feedback::open(Game *game, const State *top)
 		catch (const std::exception &e) { Log(LOG_ERROR) << "Feedback: snapshot failed: " << e.what(); }
 	}
 
+	// the settings as they are now, not as the last save left options.cfg; a copy, the player's file is not touched
+	std::string cfg;
+	if (Options::saveTo(true, dir + "options.cfg")) cfg = "options.cfg";
+
 	std::vector<std::pair<std::string, std::string> > f;
 	f.emplace_back("format", "1");
 	f.emplace_back("id", HdTest::jsonString(id));
@@ -331,6 +335,7 @@ bool Feedback::open(Game *game, const State *top)
 	f.emplace_back("luaLog", HdTest::jsonString(Options::getUserFolder() + "lua_errors.log"));
 	f.emplace_back("saveDir", HdTest::jsonString(Options::getMasterUserFolder()));
 	f.emplace_back("save", HdTest::jsonString(snapshot));
+	f.emplace_back("cfg", HdTest::jsonString(cfg));
 	f.emplace_back("gameDir", HdTest::jsonString(CrossPlatform::getExeFolder()));
 	HdTest::writeJson(dir + "context.json", f);
 	Log(LOG_INFO) << "Feedback: report " << id << " written";

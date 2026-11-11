@@ -1490,8 +1490,19 @@ bool load(const std::string &filename)
  */
 bool save(bool reset, const std::string& filename)
 {
+	return saveTo(reset, _configFolder + filename + ".cfg");
+}
+
+/**
+ * Writes the current options to the given file, the way save() does for options.cfg.
+ * For a copy that goes with a bug report: the player's own options.cfg stays as it is.
+ * @param reset Skip merging in the keys of an older file found at that path.
+ * @param filepath Full path of the YAML file.
+ * @return Was the saving successful?
+ */
+bool saveTo(bool reset, const std::string& filepath)
+{
 	std::string yaml;
-	std::string filepath = _configFolder + filename + ".cfg";
 	try
 	{
 		YAML::YamlRootNodeWriter writer;
