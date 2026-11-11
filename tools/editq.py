@@ -888,6 +888,8 @@ def newest_zip():
 def write_instructions(rid, zipname):
     text = (
         f"Выпуск {rid} для игроков готов ({stamp()}).\n\n"
+        f"Одной командой (станция, проверка канала, Google Диск, тикеты): py -3 tools/release_deploy.py dist\\{zipname}\n"
+        f"Или руками:\n\n"
         f"1. Архив: E:\\OpenXCom\\dist\\{zipname}\n"
         f"   Скопировать на станцию в C:\\XPiratezModHD\\\n\n"
         f"2. На станции, PowerShell:\n"
