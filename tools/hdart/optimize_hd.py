@@ -133,6 +133,7 @@ def best_png(rgba, args, pngquant):
 
 
 PACK_MAGIC = b"OXHDPCK1"
+DATA_MAPS = (".flow.png",)      # read by the engine as numbers (HdBaseScene flowAt): never quantized
 
 
 def optimize_bytes(blob, args, pngquant):
@@ -193,6 +194,10 @@ def optimize_file(path, args, pngquant):
         im.load()
     except Exception as e:
         return old, old, "not a picture (%s)" % e
+    if path.lower().endswith(DATA_MAPS):
+        # a map of numbers, not a picture (<N>.flow.png: u and the pipe's core in R, G, B) - a palette
+        # with dithering would scatter the numbers, so it is only recompressed
+        args = argparse.Namespace(**{**vars(args), "mode": "lossless"})
     best, note = best_png(im.convert("RGBA"), args, pngquant)
     if len(best) >= old:
         return old, old, "already small"
