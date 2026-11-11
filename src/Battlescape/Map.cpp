@@ -4348,6 +4348,23 @@ void Map::hdWeatherPick()
 	}
 	feed(std::to_string(_save->getMapSizeX() * 10000 + _save->getMapSizeY() * 100 + _save->getMapSizeZ()));
 	feed(std::to_string(_save->getGlobalShade()));
+	// a battle of its own (Vitali 11.11: the same mission on the same ground was clear every time): where the blocks,
+	// the UFO and the craft lie, and the geoscape's time, which stands still while the battle lasts - after a load the
+	// weather is the same; nothing here draws on the game's random numbers
+	for (const auto &column : _save->getFlattenedMapTerrainNames())
+	{
+		for (const std::string &name : column)
+		{
+			feed(name);
+		}
+	}
+	if (const SavedGame *geo = _game->getSavedGame())
+	{
+		if (const GameTime *t = geo->getTime())
+		{
+			feed(std::to_string(((((t->getYear() * 13LL + t->getMonth()) * 32 + t->getDay()) * 24 + t->getHour()) * 60 + t->getMinute()) * 60 + t->getSecond()));
+		}
+	}
 	_hdWeatherSeed = h;
 
 	const RuleEnviroEffects *enviro = _save->getEnviroEffects();
