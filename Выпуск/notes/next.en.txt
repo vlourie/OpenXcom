@@ -3,3 +3,4 @@
 - Launcher, the F8 "Report a problem" form: a new "Game settings" item (on by default) sends a fresh copy of your settings as options.txt, with paths that carry your user name and e-mail addresses removed first; untick it to leave it out. The game does not touch your own settings file.
 - HD battle: a new option "Blood cloud under water" (off by default): in an underwater battle a hit on a creature that bleeds leaves a small see-through cloud of its blood that spreads slowly and melts away by the end of the turn. A picture only, not smoke: it hides nothing, and the time units and the visibility are not touched.
 - HD battle: no bloody footprints and drops of a wounded unit under water any more, as no blood spray there.
+- HD dolls: the "Sky Knight" and "Triarius" armours in the inventory and the Ufopaedia are redrawn with a new model: glossy metal, highlights and deep shadows instead of a dull picture.
