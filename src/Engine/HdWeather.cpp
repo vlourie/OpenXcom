@@ -19,6 +19,7 @@
 #include "HdWeather.h"
 #include "HdSprites.h"
 #include "HdWorkers.h"
+#include "Logger.h"
 #include <algorithm>
 #include <atomic>
 #include <cctype>
@@ -30,6 +31,11 @@
 #include <map>
 #include <mutex>
 #include <tuple>
+#include <vector>
+#if defined(__SSE2__) || defined(_M_X64)
+#include <emmintrin.h>
+#define HD_WEATHER_SSE2 1
+#endif
 
 namespace OpenXcom
 {
@@ -723,7 +729,8 @@ void prepare(const Scene &s)
 	});
 }
 
-void drawRows(const Scene &s, Uint32 *pixels, int pitchBytes, int y0, int y1, int rshift, int gshift, int bshift)
+/// The pass pixel by pixel (the reference: drawRowsSse gives the same bytes, OXCE_HD_WEATHER_PATH=verify checks it).
+static void drawRowsScalar(const Scene &s, Uint32 *pixels, int pitchBytes, int y0, int y1, int rshift, int gshift, int bshift)
 {
 	Air &a = air();
 	if (a.kind != s.kind || a.k != s.k || a.grid.empty())
@@ -847,6 +854,272 @@ void drawRows(const Scene &s, Uint32 *pixels, int pitchBytes, int y0, int y1, in
 			}
 		}
 	}
+}
+
+#ifdef HD_WEATHER_SSE2
+/// The same pass four pixels at a time: the same operations in the same order (no FMA in an SSE2 build), the branches
+/// of drawRowsScalar become masks that give a step of exactly 0, so the bytes are the same.
+static void drawRowsSse(const Scene &s, Uint32 *pixels, int pitchBytes, int y0, int y1, int rshift, int gshift, int bshift)
+{
+	Air &a = air();
+	if (a.kind != s.kind || a.k != s.k || a.grid.empty())
+	{
+		return;
+	}
+	const Look &L = a.look;
+	const float day = std::max(0.0f, std::min(1.0f, s.day));
+	const float toneW = 0.5f + 0.5f * s.power;
+	const float add[3] = { L.add[0] * day, L.add[1] * day, L.add[2] * day };
+	const float veilDim = 0.25f + 0.75f * day, bandDim = 0.3f + 0.7f * day, partDim = 0.35f + 0.65f * day;
+	const Rgb veil { L.veilColor.r * veilDim, L.veilColor.g * veilDim, L.veilColor.b * veilDim };
+	const Rgb band { L.band.color.r * bandDim, L.band.color.g * bandDim, L.band.color.b * bandDim };
+	const Rgb haze { L.haze.r * bandDim, L.haze.g * bandDim, L.haze.b * bandDim };
+	const float hazeA = L.hazeA * s.power;
+	struct LayerRun { const Uint8 *tex; int side; float ox, oy; Rgb c; float alpha; };
+	LayerRun runs[3];
+	for (int i = 0; i < L.layers; ++i)
+	{
+		float ox, oy;
+		layerOffset(L.layer[i], s.k, a.tex[i].side, s.ms, ox, oy);
+		runs[i] = LayerRun{ a.tex[i].a.data(), a.tex[i].side, ox, oy,
+			{ L.layer[i].color.r * partDim, L.layer[i].color.g * partDim, L.layer[i].color.b * partDim }, s.power / 255.0f };
+	}
+	const float flash = L.flash ? s.flash : 0.0f;
+	const int gw = a.gw;
+	const float *grid = a.grid.data();
+
+	const __m128 zero = _mm_setzero_ps(), c255 = _mm_set1_ps(255.0f), half = _mm_set1_ps(0.5f), third = _mm_set1_ps(1.0f / 3);
+	const __m128 sat = _mm_set1_ps(L.sat), vToneW = _mm_set1_ps(toneW);
+	const __m128 mul0 = _mm_set1_ps(L.mul[0]), mul1 = _mm_set1_ps(L.mul[1]), mul2 = _mm_set1_ps(L.mul[2]);
+	const __m128 add0 = _mm_set1_ps(add[0]), add1 = _mm_set1_ps(add[1]), add2 = _mm_set1_ps(add[2]);
+	const __m128 vHazeA = _mm_set1_ps(hazeA), hzR = _mm_set1_ps(haze.r), hzG = _mm_set1_ps(haze.g), hzB = _mm_set1_ps(haze.b);
+	const __m128 vlR = _mm_set1_ps(veil.r), vlG = _mm_set1_ps(veil.g), vlB = _mm_set1_ps(veil.b);
+	const __m128 bdR = _mm_set1_ps(band.r), bdG = _mm_set1_ps(band.g), bdB = _mm_set1_ps(band.b);
+	const __m128 vFlash = _mm_set1_ps(flash), f18 = _mm_set1_ps(18.0f);
+	const __m128 fR = _mm_set1_ps(1.9f), fG = _mm_set1_ps(1.95f), fB = _mm_set1_ps(2.15f);
+	__m128 lyR[3], lyG[3], lyB[3], lyA[3];
+	for (int i = 0; i < L.layers; ++i)
+	{
+		lyR[i] = _mm_set1_ps(runs[i].c.r); lyG[i] = _mm_set1_ps(runs[i].c.g); lyB[i] = _mm_set1_ps(runs[i].c.b);
+		lyA[i] = _mm_set1_ps(runs[i].alpha);
+	}
+	const __m128i byte = _mm_set1_epi32(0xFF);
+	const __m128i shR = _mm_cvtsi32_si128(rshift), shG = _mm_cvtsi32_si128(gshift), shB = _mm_cvtsi32_si128(bshift);
+	const __m128i keep = _mm_set1_epi32((int)~((0xFFu << rshift) | (0xFFu << gshift) | (0xFFu << bshift)));
+	// one cell of the grid: its air (veil, particles, band, map) pixel by pixel as in drawRowsScalar, and the layers' texels
+	alignas(16) float q[GRID][4];
+	alignas(16) float tex[3][GRID];
+	const __m128 cGrid = _mm_set1_ps((float)GRID), cHalfStep = _mm_set1_ps(0.5f);
+	alignas(16) Uint32 px[GRID];
+	auto lerp = [](__m128 v, __m128 to, __m128 w) { return _mm_add_ps(v, _mm_mul_ps(_mm_sub_ps(to, v), w)); };
+	for (int y = y0; y < y1; ++y)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)pixels + (size_t)y * pitchBytes);
+		const float gyf = (y + 0.5f) / GRID;
+		const int gy = std::min(a.gh - 2, (int)gyf);
+		const float ty = gyf - gy;
+		const float *r0 = grid + (size_t)gy * gw * 4, *r1 = r0 + (size_t)gw * 4;
+		const Uint8 *texRow[3];
+		int texX[3];
+		for (int i = 0; i < L.layers; ++i)
+		{
+			const int side = runs[i].side;
+			int ry = (int)std::floor(y - s.originY - runs[i].oy);
+			ry = ((ry % side) + side) % side;
+			texRow[i] = runs[i].tex + (size_t)ry * side;
+			int rx = (int)std::floor(-s.originX - runs[i].ox);
+			texX[i] = ((rx % side) + side) % side;
+		}
+		// the four values of the air are the four lanes: each lane does what drawRowsScalar does to its value
+		const __m128 wy0 = _mm_set1_ps(1 - ty), wy1 = _mm_set1_ps(ty);
+		__m128 nodeL = _mm_add_ps(_mm_mul_ps(_mm_loadu_ps(r0), wy0), _mm_mul_ps(_mm_loadu_ps(r1), wy1));
+		for (int gx = 0; gx * GRID < s.width; ++gx)
+		{
+			const __m128 nodeR = _mm_add_ps(_mm_mul_ps(_mm_loadu_ps(r0 + (gx + 1) * 4), wy0), _mm_mul_ps(_mm_loadu_ps(r1 + (gx + 1) * 4), wy1));
+			const __m128 step = _mm_div_ps(_mm_sub_ps(nodeR, nodeL), cGrid);
+			__m128 left = _mm_add_ps(nodeL, _mm_mul_ps(step, cHalfStep));
+			nodeL = nodeR;
+			const int x0 = gx * GRID;
+			const int n = std::min(s.width, x0 + GRID) - x0;
+			for (int j = 0; j < n; ++j)
+			{
+				_mm_store_ps(q[j], left);
+				left = _mm_add_ps(left, step);
+			}
+			for (int i = 0; i < L.layers; ++i)
+			{
+				const int side = runs[i].side;
+				if (n == GRID && texX[i] + GRID <= side)
+				{
+					// the cell's texels in one piece: 8 bytes to 8 floats
+					const __m128i b8 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(texRow[i] + texX[i])), _mm_setzero_si128());
+					_mm_store_ps(tex[i], _mm_cvtepi32_ps(_mm_unpacklo_epi16(b8, _mm_setzero_si128())));
+					_mm_store_ps(tex[i] + 4, _mm_cvtepi32_ps(_mm_unpackhi_epi16(b8, _mm_setzero_si128())));
+					texX[i] += GRID;
+					if (texX[i] == side)
+					{
+						texX[i] = 0;
+					}
+				}
+				else
+				{
+					for (int j = 0; j < n; ++j)
+					{
+						tex[i][j] = (float)texRow[i][texX[i]];
+						if (++texX[i] == side)
+						{
+							texX[i] = 0;
+						}
+					}
+				}
+			}
+			for (int j = n; j < GRID; ++j)
+			{
+				q[j][0] = q[j][1] = q[j][2] = q[j][3] = 0;
+				tex[0][j] = tex[1][j] = tex[2][j] = 0;
+				px[j] = 0;
+			}
+			std::memcpy(px, row + x0, (size_t)n * sizeof(Uint32));
+			for (int j = 0; j < n; j += 4)
+			{
+				const __m128i d = _mm_load_si128((const __m128i*)(px + j));
+				__m128 r = _mm_cvtepi32_ps(_mm_and_si128(_mm_srl_epi32(d, shR), byte));
+				__m128 g = _mm_cvtepi32_ps(_mm_and_si128(_mm_srl_epi32(d, shG), byte));
+				__m128 b = _mm_cvtepi32_ps(_mm_and_si128(_mm_srl_epi32(d, shB), byte));
+				__m128 va = _mm_load_ps(q[j]), part = _mm_load_ps(q[j + 1]), ba = _mm_load_ps(q[j + 2]), m = _mm_load_ps(q[j + 3]);
+				_MM_TRANSPOSE4_PS(va, part, ba, m);
+				// a step of exactly 0 leaves a pixel as it is: a part none of the four pixels has is left out,
+				// and four pixels with no part at all are not even unpacked
+				const __m128 mOn = _mm_cmpgt_ps(m, zero);
+				const __m128 vaOn = _mm_cmpgt_ps(va, zero), baOn = _mm_cmpgt_ps(ba, zero), pOn = _mm_cmpgt_ps(part, zero);
+				const int mBits = _mm_movemask_ps(mOn), vaBits = _mm_movemask_ps(vaOn), baBits = _mm_movemask_ps(baOn);
+				const int pBits = _mm_movemask_ps(pOn);
+				int texBits[3] = { 0, 0, 0 };
+				for (int i = 0; i < L.layers; ++i)
+				{
+					texBits[i] = pBits & _mm_movemask_ps(_mm_cmpgt_ps(_mm_load_ps(tex[i] + j), zero));
+				}
+				if (!(mBits | vaBits | baBits | texBits[0] | texBits[1] | texBits[2]))
+				{
+					continue;
+				}
+				if (mBits)
+				{
+					// the overcast: less colour, a cooler light
+					const __m128 gray = _mm_mul_ps(_mm_add_ps(_mm_add_ps(r, g), b), third);
+					const __m128 w = _mm_and_ps(mOn, _mm_mul_ps(m, vToneW));
+					const __m128 tr = _mm_add_ps(_mm_mul_ps(_mm_add_ps(gray, _mm_mul_ps(_mm_sub_ps(r, gray), sat)), mul0), add0);
+					const __m128 tg = _mm_add_ps(_mm_mul_ps(_mm_add_ps(gray, _mm_mul_ps(_mm_sub_ps(g, gray), sat)), mul1), add1);
+					const __m128 tb = _mm_add_ps(_mm_mul_ps(_mm_add_ps(gray, _mm_mul_ps(_mm_sub_ps(b, gray), sat)), mul2), add2);
+					r = lerp(r, tr, w); g = lerp(g, tg, w); b = lerp(b, tb, w);
+					if (hazeA > 0)
+					{
+						const __m128 h = _mm_and_ps(mOn, _mm_mul_ps(vHazeA, m));
+						r = lerp(r, hzR, h); g = lerp(g, hzG, h); b = lerp(b, hzB, h);
+					}
+				}
+				if (vaBits)
+				{
+					const __m128 w = _mm_and_ps(vaOn, va);
+					r = lerp(r, vlR, w); g = lerp(g, vlG, w); b = lerp(b, vlB, w);
+				}
+				if (baBits)
+				{
+					const __m128 w = _mm_and_ps(baOn, ba);
+					r = lerp(r, bdR, w); g = lerp(g, bdG, w); b = lerp(b, bdB, w);
+				}
+				if (texBits[0] | texBits[1] | texBits[2])
+				{
+					const __m128 p = _mm_and_ps(pOn, part);
+					for (int i = 0; i < L.layers; ++i)
+					{
+						if (texBits[i])
+						{
+							const __m128 al = _mm_mul_ps(_mm_mul_ps(_mm_load_ps(tex[i] + j), lyA[i]), p);
+							r = lerp(r, lyR[i], al); g = lerp(g, lyG[i], al); b = lerp(b, lyB[i], al);
+						}
+					}
+				}
+				if (flash > 0 && mBits)
+				{
+					// the strike: all at once lighter and colder, the shadows stay (not a fog)
+					const __m128 f = _mm_and_ps(mOn, _mm_mul_ps(vFlash, m));
+					r = lerp(r, _mm_min_ps(c255, _mm_add_ps(_mm_mul_ps(r, fR), f18)), f);
+					g = lerp(g, _mm_min_ps(c255, _mm_add_ps(_mm_mul_ps(g, fG), f18)), f);
+					b = lerp(b, _mm_min_ps(c255, _mm_add_ps(_mm_mul_ps(b, fB), f18)), f);
+				}
+				const __m128i ri = _mm_cvttps_epi32(_mm_add_ps(_mm_min_ps(_mm_max_ps(r, zero), c255), half));
+				const __m128i gi = _mm_cvttps_epi32(_mm_add_ps(_mm_min_ps(_mm_max_ps(g, zero), c255), half));
+				const __m128i bi = _mm_cvttps_epi32(_mm_add_ps(_mm_min_ps(_mm_max_ps(b, zero), c255), half));
+				const __m128i out = _mm_or_si128(_mm_and_si128(d, keep),
+					_mm_or_si128(_mm_sll_epi32(ri, shR), _mm_or_si128(_mm_sll_epi32(gi, shG), _mm_sll_epi32(bi, shB))));
+				_mm_store_si128((__m128i*)(px + j), out);
+			}
+			std::memcpy(row + x0, px, (size_t)n * sizeof(Uint32));
+		}
+	}
+}
+#endif
+
+void drawRows(const Scene &s, Uint32 *pixels, int pitchBytes, int y0, int y1, int rshift, int gshift, int bshift)
+{
+#ifdef HD_WEATHER_SSE2
+	// a test switch (scratchpad/weather/path.py): OXCE_HD_WEATHER_PATH=ref - the pass pixel by pixel, skip - no pass
+	// (its cost), verify - both, the bytes compared in the log ("HD weather verify: 0 of N pixels differ")
+	static const int path = []
+	{
+		const char *e = std::getenv("OXCE_HD_WEATHER_PATH");
+		return !e ? 0 : (e[0] == 'r' ? 1 : (e[0] == 's' && e[1] == 'k') ? 2 : e[0] == 'v' ? 3 : 0);
+	}();
+	if (path == 1)
+	{
+		drawRowsScalar(s, pixels, pitchBytes, y0, y1, rshift, gshift, bshift);
+		return;
+	}
+	if (path == 2)
+	{
+		return;
+	}
+	if (path == 3 && y1 > y0)
+	{
+		static std::atomic<long long> total{0}, differ{0};
+		static std::atomic<int> worst{0}, calls{0};
+		const size_t words = (size_t)(y1 - y0) * pitchBytes / 4;
+		Uint32 *first = (Uint32*)((Uint8*)pixels + (size_t)y0 * pitchBytes);
+		std::vector<Uint32> copy(first, first + words);
+		drawRowsSse(s, copy.data() - (size_t)y0 * pitchBytes / 4, pitchBytes, y0, y1, rshift, gshift, bshift);
+		drawRowsScalar(s, pixels, pitchBytes, y0, y1, rshift, gshift, bshift);
+		long long dn = 0;
+		int wd = 0;
+		for (int y = 0; y < y1 - y0; ++y)
+		{
+			for (int x = 0; x < s.width; ++x)
+			{
+				const size_t i = (size_t)y * pitchBytes / 4 + x;
+				if (copy[i] != first[i])
+				{
+					++dn;
+					for (int sh = 0; sh < 32; sh += 8)
+					{
+						wd = std::max(wd, std::abs((int)((copy[i] >> sh) & 0xFF) - (int)((first[i] >> sh) & 0xFF)));
+					}
+				}
+			}
+		}
+		total += (long long)(y1 - y0) * s.width;
+		differ += dn;
+		int w = worst.load();
+		while (wd > w && !worst.compare_exchange_weak(w, wd)) {}
+		if (++calls % 400 == 0)
+		{
+			Log(LOG_INFO) << "HD weather verify: " << differ.load() << " of " << total.load() << " pixels differ, at most by " << worst.load();
+		}
+		return;
+	}
+	drawRowsSse(s, pixels, pitchBytes, y0, y1, rshift, gshift, bshift);
+#else
+	drawRowsScalar(s, pixels, pitchBytes, y0, y1, rshift, gshift, bshift);
+#endif
 }
 
 const HdFrame *groundFrame(int k, const Ground &gr, Uint32 seed, int x, int y, int closed)
