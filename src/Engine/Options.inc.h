@@ -339,6 +339,9 @@ OPT bool oxceHdFx;
 // HD render (XP-000298): the blood of a bullet hit that cost a unit health flies along the bullet's way, the more the more of its health was lost,
 // in one of three variants picked by a hash of the hit (the battle's random generator is not touched); picture only. Off by default: then the same blood as before
 OPT bool oxceHdBloodSpray;
+// HD render (XP-000557): under water (where the spray is not drawn, XP-000533) a hit on flesh leaves a small see-through cloud of the creature's blood that spreads
+// slowly and melts away by the end of the turn. A picture of the map only (not the game's smoke: nothing for the save, the visibility, the AI). Off by default
+OPT bool oxceHdBloodCloud;
 // HD render (XP-000366, 367, 368): the blood of a hit on a creature in the colour the mod's table hd/blood.txt gives its armour (zombies ochre green, the deep
 // ones blue, ogres and ubers dark red, machines graphite), the tone changed and the brightness kept (HdFx::bloodRgb, HdFx::tinted); picture only. Off by default: red as before
 OPT bool oxceHdBloodColor;

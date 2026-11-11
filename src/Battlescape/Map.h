@@ -298,6 +298,16 @@ private:
 	std::map<unsigned long long, HdFrame> _hdStepFrames;
 	/// Watches the steps of the units (before a frame is drawn) and lays the soles.
 	void hdObserveSteps();
+	/// HD render (option oxceHdBloodCloud, XP-000557): under water the blood of a hit on flesh is a small see-through cloud (puffs of HdSmoke in the
+	/// creature's blood colour) that spreads and melts away by the clock of real time, and goes at the end of the turn at the latest. Picture only: the
+	/// Map keeps the clouds (not the tiles, not the save, not the game's smoke); `stamp` is the turn and the side the cloud was born in.
+	struct HdBloodCloud { Position voxel; int rgb; int stamp; Uint32 born; unsigned int seed; };
+	std::vector<HdBloodCloud> _hdBloodClouds;
+	/// The hits drawn on the last frame and the frame each was at (a new hit at an old address is at an earlier frame).
+	std::vector<std::pair<const Explosion*, int>> _hdCloudSeen;
+	/// Notes the clouds of the hits that are drawn now (once for each hit), drawn in hdDrawBloodClouds.
+	void hdNoteBloodCloud(const Explosion *explosion, std::vector<std::pair<const Explosion*, int>> &now);
+	void hdDrawBloodClouds(HdCanvas *surface);
 	/// Puts one print on tile `index` (the oldest of the tile or of the map goes when there are too many).
 	void hdLayStep(int index, const HdStep &step);
 	/// The print frame (floor diamond, 32k x 16k) for a step by (dx, dy): `variant` 0/1 the left or right foot of a one-tile unit, 2..5 the quarter of a

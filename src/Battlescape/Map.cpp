@@ -3471,7 +3471,8 @@ void Map::hdLayStep(int index, const HdStep &step)
  */
 void Map::hdObserveSteps()
 {
-	if (!Options::oxceHdBloodSteps || _canvas->getHdMode() == HD_MODE_NEAREST)
+	// XP-000556: under water (depth > 0) no bloody soles and drops, as no blood spray there (XP-000533)
+	if (!Options::oxceHdBloodSteps || _canvas->getHdMode() == HD_MODE_NEAREST || _save->getDepth() > 0)
 	{
 		if (!_hdStepTracks.empty() || !_hdSteps.empty())
 		{
@@ -5001,6 +5002,118 @@ void drawFireTongues(HdCanvas *surface, const Tile *tile, Position screen, int k
 }
 }
 
+namespace
+{
+/// HD render (oxceHdBloodCloud): how long a cloud of blood lives by the clock of real time, ms (it goes at the end of the turn if that comes sooner)
+const Uint32 BLOOD_CLOUD_MS = 14000;
+/// How many puffs a cloud is made of
+const int BLOOD_CLOUD_PUFFS = 5;
+
+unsigned int cloudMix(unsigned int h)
+{
+	h ^= h >> 16; h *= 0x7feb352dU; h ^= h >> 15; h *= 0x846ca68bU; h ^= h >> 16;
+	return h;
+}
+}
+
+/**
+ * HD render (oxceHdBloodCloud, XP-000557): a hit on flesh that is drawn under water (where the blood spray is not, XP-000533) starts
+ * a cloud of blood at the voxel of the hit - once for each hit: `now` collects the hits of this frame, `_hdCloudSeen` those of the last.
+ * Only a picture: the explosion, the tile and the save are read, not touched; the numbers come from hashes, never from the game's random generator.
+ */
+void Map::hdNoteBloodCloud(const Explosion *explosion, std::vector<std::pair<const Explosion*, int>> &now)
+{
+	const int frame = explosion->getCurrentFrame();
+	now.push_back({ explosion, frame });
+	for (const auto &seen : _hdCloudSeen)
+	{
+		if (seen.first == explosion && seen.second <= frame)
+		{
+			return;
+		}
+	}
+	if (_hdBloodClouds.size() >= 64)
+	{
+		_hdBloodClouds.erase(_hdBloodClouds.begin());
+	}
+	const Position at = explosion->getPosition();
+	HdBloodCloud cloud;
+	cloud.voxel = at;
+	cloud.rgb = explosion->getHdBlood() >= 0 ? explosion->getHdBlood() : 0xA01818;
+	cloud.stamp = _save->getTurn() * 4 + (int)_save->getSide();
+	cloud.born = SDL_GetTicks();
+	cloud.seed = cloudMix((unsigned int)(at.x * 73856093) ^ (unsigned int)(at.y * 19349663) ^ (unsigned int)(at.z * 83492791) ^ (unsigned int)(cloud.stamp * 2654435761U) ^ cloud.born);
+	_hdBloodClouds.push_back(cloud);
+}
+
+/**
+ * HD render (oxceHdBloodCloud, XP-000557): draws the clouds of blood over the map - a few puffs of the smoke bank (HdSmoke, thin kind) in the
+ * blood's colour, see-through, that spread from the hit and melt away; each is a few blits of a frame, no pass over the screen. Only where the
+ * player sees the tile. A cloud goes when its time is up, at the end of the turn (the turn or the side changes), and with the option or under no water.
+ */
+void Map::hdDrawBloodClouds(HdCanvas *surface)
+{
+	// the test bench (OXCE_HD_CLOUD_TEST=<flag file>): while the file exists a cloud is put on the selected unit and the file goes (a hit cannot be
+	// aimed in a hidden run); nothing without the variable
+	static const char *const cloudFlag = getenv("OXCE_HD_CLOUD_TEST");
+	if (cloudFlag && Options::oxceHdBloodCloud && _save->getDepth() > 0 && _save->getSelectedUnit())
+	{
+		if (FILE *f = fopen(cloudFlag, "rb"))
+		{
+			fclose(f);
+			remove(cloudFlag);
+			HdBloodCloud cloud;
+			cloud.voxel = _save->getSelectedUnit()->getPosition().toVoxel() + Position(8, 8, 12);
+			cloud.rgb = 0xA01818;
+			cloud.stamp = _save->getTurn() * 4 + (int)_save->getSide();
+			cloud.born = SDL_GetTicks();
+			cloud.seed = cloudMix((unsigned int)cloud.born);
+			_hdBloodClouds.push_back(cloud);
+		}
+	}
+	if (_hdBloodClouds.empty())
+	{
+		return;
+	}
+	if (!Options::oxceHdBloodCloud || _k <= 1 || surface->getHdMode() == HD_MODE_NEAREST || _save->getDepth() == 0)
+	{
+		_hdBloodClouds.clear();
+		return;
+	}
+	const int stamp = _save->getTurn() * 4 + (int)_save->getSide();
+	const Uint32 now = SDL_GetTicks();
+	_hdBloodClouds.erase(std::remove_if(_hdBloodClouds.begin(), _hdBloodClouds.end(),
+		[&](const HdBloodCloud &c) { return c.stamp != stamp || now - c.born >= BLOOD_CLOUD_MS; }), _hdBloodClouds.end());
+	const bool debug = _save->getDebugMode();
+	for (const HdBloodCloud &c : _hdBloodClouds)
+	{
+		const Tile *tile = _save->getTile(c.voxel.toTile());
+		if (!tile || !(tile->getVisible() || debug))
+		{
+			continue;
+		}
+		Position screen;
+		_camera->convertVoxelToScreen(c.voxel, &screen);
+		const float p = (float)(now - c.born) / (float)BLOOD_CLOUD_MS;
+		const float grow = std::sqrt(p);
+		const float opacity = 0.8f * std::min(1.0f, (float)(now - c.born) / 500.0f) * (1.0f - p);
+		const int mx = std::max(1, std::max((c.rgb >> 16) & 255, std::max((c.rgb >> 8) & 255, c.rgb & 255)));
+		const float tint[3] = { ((c.rgb >> 16) & 255) / (float)mx, ((c.rgb >> 8) & 255) / (float)mx, (c.rgb & 255) / (float)mx };
+		const float shade = std::min(6.0f, tile->getShade() * 0.5f);
+		const int side = HdSmoke::SIDE * _k;
+		for (int i = 0; i < BLOOD_CLOUD_PUFFS; ++i)
+		{
+			const unsigned int h = cloudMix(c.seed + (unsigned int)i * 0x9e3779b9U);
+			const float angle = (h & 255) / 256.0f * 6.2831853f;
+			const float reach = (0.35f + ((h >> 8) & 127) / 190.0f) * (3.0f + 14.0f * grow) * _k;
+			const int x = screen.x + (int)std::lround(std::cos(angle) * reach) - side / 2;
+			const int y = screen.y + (int)std::lround(std::sin(angle) * reach * 0.5f - 3.0f * grow * _k) - side / 2;
+			const int life = std::min(HdSmoke::LIFE - 1, 2 + (int)(p * 9.0f) + (int)(i & 1));
+			surface->blitFrameToned(HdSmoke::frame(_k, HdSmoke::THIN, (int)((h >> 16) % HdSmoke::SHAPES), life), x, y, shade, tint, opacity);
+		}
+	}
+}
+
 void Map::drawTerrain(HdCanvas *surface)
 {
 	_isAltPressed = _game->isAltPressed(true);
@@ -5538,7 +5651,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					// HD render (Options::oxceHdBloodSteps, XP-000421): a bloody sole on this floor, after the floor, before what lies and stands here;
 					// only on a floor the player has discovered, three tiers of opacity by the age in turns (all the prints of the tile, the oldest first);
 					// they last Options::oxceHdBloodStepsLife turns (11 = always)
-					if (!_hdSteps.empty() && !turned)
+					if (!_hdSteps.empty() && !turned && _save->getDepth() == 0)
 					{
 						auto step = _hdSteps.find(_save->getTileIndex(mapPosition));
 						if (step != _hdSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
@@ -6754,6 +6867,10 @@ void Map::drawTerrain(HdCanvas *surface)
 		}
 	}
 
+	// HD render (oxceHdBloodCloud, XP-000557): the clouds of blood under water, under the hits' own pictures
+	hdDrawBloodClouds(surface);
+	std::vector<std::pair<const Explosion*, int>> cloudHits;
+
 	// check if we got big explosions
 	if (_explosionInFOV)
 	{
@@ -6777,6 +6894,11 @@ void Map::drawTerrain(HdCanvas *surface)
 				// HD render: the combat effect clip in place of the classic frames, frame for frame by progress
 				// XP-000533: under water (depth > 0) no HD blood: the hit on flesh keeps the classic animation, no spray flies on
 				const bool hdBloodless = _save->getDepth() > 0;
+				if (hdBloodless && Options::oxceHdBloodCloud && Options::oxceHdFx && _k > 1 && surface->getHdMode() != HD_MODE_NEAREST
+					&& explosion->getCurrentFrame() >= 0 && HdFx::isBloodClip(explosion->getHdFx()))
+				{
+					hdNoteBloodCloud(explosion, cloudHits);
+				}
 				if (Options::oxceHdFx && surface->getHdMode() != HD_MODE_NEAREST && !explosion->getHdFx().empty()
 					&& !(hdBloodless && HdFx::isBloodClip(explosion->getHdFx())))
 				{
@@ -6851,7 +6973,12 @@ void Map::drawTerrain(HdCanvas *surface)
 						surface->setFrameVariant(0);
 				}
 			}
+			_hdCloudSeen.swap(cloudHits);
 		}
+	}
+	else
+	{
+		_hdCloudSeen.clear();
 	}
 
 	// HD render: muzzle flashes, on their own clock (see hdMuzzle)
