@@ -127,3 +127,4 @@ gen_pilot_voices.py
 t254_silo_edit.py
 t249_box_gen.py
 t_regen_obj.py
+weather_sfx_gen.py

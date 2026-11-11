@@ -1194,6 +1194,7 @@ int Map::hdEnviClock(int animFrame, Position pos, int pace)
  */
 Map::~Map()
 {
+	HdWeather::silence();
 	if (!_hdAoFrames.empty())
 	{
 		Log(LOG_INFO) << "HD floor AO: " << _hdAoFrames.size() << " looks for this battle, grids and frames made in " << _hdAoBuildMs << " ms";
@@ -1321,6 +1322,8 @@ void Map::think()
 	{
 		_redraw = true;
 	}
+	// HD render (Options::oxceHdWeatherSound): the weather's sound goes on whether the picture is drawn or not
+	hdWeatherHear();
 	// a collapse shaking the picture needs every frame until it is still again
 	if (_shakeMs && SDL_GetTicks() - _shakeStart <= _shakeMs)
 	{
@@ -4388,8 +4391,12 @@ void Map::hdWeatherPick()
 			_hdWeatherKind = test;
 		}
 	}
+	_hdWeatherBiome = biome;
+	_hdWeatherExtras = HdWeather::extras(_hdWeatherKind, biome, _hdWeatherSeed);
 	Log(LOG_INFO) << "HD weather: ground " << ground << ", biome " << (int)biome << (cold ? " cold" : "") << ", enviro "
-		<< (enviroType.empty() ? "-" : enviroType) << " -> " << HdWeather::kindName(_hdWeatherKind) << ", seed " << _hdWeatherSeed;
+		<< (enviroType.empty() ? "-" : enviroType) << " -> " << HdWeather::kindName(_hdWeatherKind) << ", seed " << _hdWeatherSeed
+		<< "; tumbleweeds " << _hdWeatherExtras.tumbleweeds << ", dust devils " << _hdWeatherExtras.devils << ", tornado "
+		<< (_hdWeatherExtras.tornado ? (_hdWeatherExtras.tornadoLook ? "grey" : "dust") : "no") << ", bolts " << (_hdWeatherExtras.bolts ? "yes" : "no");
 }
 
 /**
@@ -4607,7 +4614,273 @@ void Map::hdWeatherAir(HdCanvas *surface)
 	s.flash = HdWeather::lightning(_hdWeatherKind, _hdWeatherSeed, s.ms);
 	HdWeather::prepare(s);
 	surface->drawWeather(&s);
+	hdWeatherOver(surface);
 	_hdWeatherLastDraw = SDL_GetTicks();
+}
+
+/**
+ * HD render (Options::oxceHdWeather): can the floor of the ground level at (x, y) bear a tumbleweed - open sky over it, a
+ * floor, nothing standing on it, no unit the player sees (a unit the player does not see is never asked about).
+ */
+bool Map::hdWeatherFree(int x, int y)
+{
+	const int sx = _save->getMapSizeX(), sy = _save->getMapSizeY();
+	if (x < 0 || y < 0 || x >= sx || y >= sy || (int)_hdWeatherTop.size() != sx * sy || _hdWeatherTop[(size_t)y * sx + x] > 0)
+		return false;
+	Tile *t = _save->getTile(Position(x, y, 0));
+	if (!t || t->hasNoFloor(_save) || t->getMapData(O_OBJECT))
+		return false;
+	BattleUnit *u = t->getUnit();
+	return !(u && (u->getFaction() == FACTION_PLAYER || u->getVisible()));
+}
+
+/**
+ * HD render: a tumbleweed can go from (fromU, fromV) to (u, v) of the ground level: the way crosses no wall, and the ball
+ * there keeps clear of what stands around it (a margin to every side and to the front, where it is drawn).
+ */
+bool Map::hdWeatherClear(void *ctx, float fromU, float fromV, float u, float v)
+{
+	Map *map = static_cast<Map*>(ctx);
+	auto wallX = [map](int x, int y) { Tile *t = map->_save->getTile(Position(x, y, 0)); return t && t->getMapData(O_WESTWALL); };
+	auto wallY = [map](int x, int y) { Tile *t = map->_save->getTile(Position(x, y, 0)); return t && t->getMapData(O_NORTHWALL); };
+	// one step to a tile next to this one (or this one), the walls on the way
+	std::function<bool(int, int, int, int)> step = [&](int ax, int ay, int bx, int by) -> bool
+	{
+		if (!map->hdWeatherFree(bx, by))
+			return false;
+		const int dx = bx - ax, dy = by - ay;
+		if (dx == 0 && dy == 0)
+			return true;
+		if (std::abs(dx) > 1 || std::abs(dy) > 1)
+			return false;
+		if (dx != 0 && dy != 0)
+			return (step(ax, ay, bx, ay) && step(bx, ay, bx, by)) || (step(ax, ay, ax, by) && step(ax, by, bx, by));
+		if (dx == 1) return !wallX(bx, by);
+		if (dx == -1) return !wallX(ax, ay);
+		if (dy == 1) return !wallY(bx, by);
+		return !wallY(ax, ay);
+	};
+	const int fx = (int)std::floor(fromU), fy = (int)std::floor(fromV);
+	const int cx = (int)std::floor(u), cy = (int)std::floor(v);
+	if (!step(fx, fy, cx, cy))
+		return false;
+	const float M = 0.3f;
+	const float around[5][2] = { { M, 0 }, { -M, 0 }, { 0, M }, { 0, -M }, { M, M } };
+	for (const auto &a : around)
+	{
+		if (!step(cx, cy, (int)std::floor(u + a[0]), (int)std::floor(v + a[1])))
+			return false;
+	}
+	return true;
+}
+
+/**
+ * HD render: a dust devil may rise at (u, v): open sky over the ground there, nothing standing, a column the player knows.
+ */
+bool Map::hdWeatherOpen(void *ctx, float u, float v)
+{
+	Map *map = static_cast<Map*>(ctx);
+	const int x = (int)std::floor(u), y = (int)std::floor(v);
+	const int sx = map->_save->getMapSizeX();
+	if (!map->hdWeatherFree(x, y) || (int)map->_hdWeatherKnown.size() != sx * map->_save->getMapSizeY())
+		return false;
+	return map->_hdWeatherKnown[(size_t)y * sx + x] != 0;
+}
+
+/**
+ * HD render: a bolt may come down at the canvas point (px, py): the ground there is open and known, five tiles and more from
+ * the own units and three from the spotted enemies and the cursor (a strike on the squad would read as a hit).
+ */
+bool Map::hdWeatherSpot(void *ctx, float px, float py)
+{
+	Map *map = static_cast<Map*>(ctx);
+	const HdWeather::Scene &s = map->_hdWeatherScene;
+	const float u = s.au * px + s.bu * py + s.cu, v = s.av * px + s.bv * py + s.cv;
+	if (!hdWeatherOpen(ctx, u, v))
+		return false;
+	const int x = (int)std::floor(u), y = (int)std::floor(v);
+	if (!s.dist || !s.window || x >= s.mapW || y >= s.mapL)
+		return false;
+	const size_t i = (size_t)y * s.mapW + x;
+	return s.dist[i] >= 5 && s.window[i] >= 3;
+}
+
+/**
+ * HD render: tiles from the ground point (u, v) to the nearest own unit, spotted enemy or the cursor (the veil's fields);
+ * far off the map or before the fields are made - far.
+ */
+float Map::hdWeatherAway(void *ctx, float u, float v)
+{
+	Map *map = static_cast<Map*>(ctx);
+	const HdWeather::Scene &s = map->_hdWeatherScene;
+	const int x = (int)std::floor(u), y = (int)std::floor(v);
+	if (!s.dist || !s.window || x < 0 || y < 0 || x >= s.mapW || y >= s.mapL)
+		return 1e6f;
+	const size_t i = (size_t)y * s.mapW + x;
+	return std::min(s.dist[i], s.window[i]);
+}
+
+/**
+ * HD render (Options::oxceHdWeather): the tumbleweeds of this frame and the tiles they are drawn in; notes new ones the
+ * player can see for the sound.
+ */
+void Map::hdWeatherRolls()
+{
+	_hdWeatherRollCount = 0;
+	if (_hdWeatherExtras.tumbleweeds <= 0 || _camera->getRotation() != 0)
+		return;
+	const int sx = _save->getMapSizeX(), sy = _save->getMapSizeY();
+	const Position offset = _camera->getMapOffset();
+	// the ground in the middle of the view (hdWeatherAir's mapping): a run starting now sets off upwind of it
+	const float k = (float)_k, mx = getWidth() * 0.5f, my = getHeight() * 0.5f;
+	const float midU = mx / (32 * k) + my / (16 * k) - offset.x / (32 * k) - offset.y / (16 * k) - 2;
+	const float midV = -mx / (32 * k) + my / (16 * k) + offset.x / (32 * k) - offset.y / (16 * k) - 1;
+	_hdWeatherRollCount = HdWeather::rolls(_hdWeatherExtras, _hdWeatherKind, _hdWeatherSeed, _hdWeatherScene.ms, _hdWeatherPower,
+		sx, sy, midU, midV, &Map::hdWeatherClear, this, _hdWeatherRoll);
+	for (int i = 0; i < _hdWeatherRollCount; ++i)
+	{
+		const HdWeather::Roll &r = _hdWeatherRoll[i];
+		// the front-most tile the ball reaches: drawn there, after the floors it overlaps (hdWeatherClear keeps it free)
+		const int x = std::min(sx - 1, (int)std::floor(r.u + 0.3f)), y = std::min(sy - 1, (int)std::floor(r.v + 0.3f));
+		_hdWeatherRollTile[i] = _save->getTileIndex(Position(x, y, 0));
+		if (std::find(_hdWeatherSeenIds.begin(), _hdWeatherSeenIds.end(), r.id) == _hdWeatherSeenIds.end())
+		{
+			Tile *t = _save->getTile(Position(x, y, 0));
+			Position screen;
+			_camera->convertMapToScreen(Position(x, y, 0), &screen);
+			screen += offset;
+			if (t && t->isDiscovered(O_FLOOR) && screen.x > -32 * _k && screen.x < getWidth() && screen.y > -40 * _k && screen.y < getHeight())
+			{
+				_hdWeatherSeenIds.push_back(r.id);
+				++_hdWeatherNewRolls;
+				_hdWeatherRollPan = (screen.x + 16 * _k) * 2.0f / std::max(1, getWidth()) - 1;
+			}
+		}
+	}
+	if (_hdWeatherSeenIds.size() > 64)
+		_hdWeatherSeenIds.erase(_hdWeatherSeenIds.begin(), _hdWeatherSeenIds.begin() + 32);
+}
+
+/**
+ * HD render (Options::oxceHdWeather): the tumbleweeds drawn in this tile - the shadow on the ground, the ball over it -
+ * lit as the tile is.
+ */
+void Map::hdWeatherRollsAt(HdCanvas *surface, const Position &mapPos, const Position &screenPos, int shade)
+{
+	const int index = _save->getTileIndex(mapPos);
+	static const float white[3] = { 1, 1, 1 };
+	for (int i = 0; i < _hdWeatherRollCount; ++i)
+	{
+		if (_hdWeatherRollTile[i] != index)
+			continue;
+		const HdWeather::Roll &r = _hdWeatherRoll[i];
+		const float fu = r.u - mapPos.x, fv = r.v - mapPos.y;
+		const int cx = screenPos.x + (int)std::lround((16 + (fu - fv) * 16) * _k);
+		const int cy = screenPos.y + (int)std::lround((24 + (fu + fv) * 8) * _k);
+		const HdFrame &shadow = HdWeather::rollShadow(_k, r.shape);
+		surface->blitFrameToned(shadow, cx - shadow.width / 2, cy - shadow.height / 2, (float)shade, white, r.alpha * (1 - std::min(0.6f, r.hop * 0.12f)));
+		const HdFrame &ball = HdWeather::rollFrame(_k, r.shape, r.turn);
+		surface->blitFrameToned(ball, cx - ball.width / 2, cy - ball.height - (int)std::lround(r.hop * _k), (float)shade, white, r.alpha);
+	}
+}
+
+/**
+ * HD render (Options::oxceHdWeather): over the air - the dust devils and the tornado on the ground they stand on, the bolt
+ * of a strike; notes for the sound how much of the tornado shows and the new dust devils.
+ */
+void Map::hdWeatherOver(HdCanvas *surface)
+{
+	_hdWeatherTornadoSeen = 0;
+	if (_camera->getRotation() != 0)
+		return;
+	const HdWeather::Scene &s = _hdWeatherScene;
+	const float k = (float)_k;
+	const int sx = _save->getMapSizeX(), sy = _save->getMapSizeY();
+	static const float white[3] = { 1, 1, 1 };
+	const float shade = (float)std::max(0, std::min(15, _save->getGlobalShade()));
+	HdWeather::Twister tw[HdWeather::TWISTERS];
+	// the ground in the middle of the view: a pass starting now goes by there
+	const float midU = s.au * s.width * 0.5f + s.bu * s.height * 0.5f + s.cu, midV = s.av * s.width * 0.5f + s.bv * s.height * 0.5f + s.cv;
+	const int n = HdWeather::twisters(_hdWeatherExtras, _hdWeatherKind, _hdWeatherSeed, s.ms, sx, sy, midU, midV, &Map::hdWeatherOpen,
+		&Map::hdWeatherAway, this, tw);
+	for (int i = 0; i < n; ++i)
+	{
+		const HdWeather::Twister &t = tw[i];
+		// the ground point on the canvas (the inverse of the air's mapping)
+		const float A = t.u - s.cu, B = t.v - s.cv;
+		const int px = (int)std::lround((A - B) * 16 * k), py = (int)std::lround((A + B) * 8 * k);
+		// over the ground the player knows; the tornado thins out over the units, the spotted enemies and the cursor
+		const int bx = (int)std::floor(t.u), by = (int)std::floor(t.v);
+		int known = 0;
+		for (int dy = -1; dy <= 1; ++dy)
+			for (int dx = -1; dx <= 1; ++dx)
+			{
+				const int x = bx + dx, y = by + dy;
+				if (x >= 0 && y >= 0 && x < sx && y < sy && (int)_hdWeatherKnown.size() == sx * sy && _hdWeatherKnown[(size_t)y * sx + x])
+					++known;
+			}
+		float alpha = t.alpha * known / 9.0f;
+		if (t.big)
+		{
+			alpha *= 0.8f + 0.2f * _hdWeatherPower;
+			const int vx = std::max(0, std::min(s.mapW - 1, bx)), vy = std::max(0, std::min(s.mapL - 1, by));
+			if (bx >= 0 && by >= 0 && bx < s.mapW && by < s.mapL && s.dist && s.window)
+			{
+				const float closest = std::min(s.dist[(size_t)vy * s.mapW + vx], s.window[(size_t)vy * s.mapW + vx]);
+				alpha *= 0.5f + 0.5f * std::max(0.0f, std::min(1.0f, (closest - 1.5f) / 2.5f));
+			}
+		}
+		if (alpha <= 0.01f)
+			continue;
+		int baseX = 0, baseY = 0;
+		const HdFrame &f = HdWeather::twisterFrame(_k, t.big, _hdWeatherExtras.tornadoLook, s.ms, baseX, baseY);
+		const int x = px - baseX, y = py - baseY;
+		surface->blitFrameToned(f, x, y, shade, white, alpha);
+		const bool onScreen = x + f.width > 0 && x < s.width && y + f.height > 0 && y < s.height;
+		if (t.big && onScreen)
+		{
+			_hdWeatherTornadoSeen = std::max(_hdWeatherTornadoSeen, alpha);
+		}
+		else if (!t.big && onScreen && std::find(_hdWeatherSeenIds.begin(), _hdWeatherSeenIds.end(), t.id) == _hdWeatherSeenIds.end())
+		{
+			_hdWeatherSeenIds.push_back(t.id);
+			++_hdWeatherNewDevils;
+			_hdWeatherDevilPan = px * 2.0f / std::max(1, s.width) - 1;
+		}
+	}
+	if (_hdWeatherExtras.bolts)
+	{
+		int x = 0, y = 0;
+		float opacity = 0;
+		if (const HdFrame *b = HdWeather::bolt(_hdWeatherKind, _hdWeatherSeed, s.ms, _k, s.width, s.height, &Map::hdWeatherSpot, this,
+			x, y, opacity))
+		{
+			surface->blitFrameToned(*b, x, y, 0, white, opacity);
+		}
+	}
+}
+
+/**
+ * HD render (Options::oxceHdWeatherSound): the weather's sound of this moment, on every tick of the map (the hidden turn of
+ * the other side too: the picture stands, the rain goes on).
+ */
+void Map::hdWeatherHear()
+{
+	HdWeather::Hearing h;
+	if (_hdWeatherFrameOn && Options::oxceHdWeather)
+	{
+		h.kind = _hdWeatherKind;
+		h.seed = _hdWeatherSeed;
+		h.power = _hdWeatherPower;
+		h.tornado = _hdWeatherTornadoSeen;
+		h.newRolls = _hdWeatherNewRolls;
+		h.newDevils = _hdWeatherNewDevils;
+		h.rollPan = _hdWeatherRollPan;
+		h.devilPan = _hdWeatherDevilPan;
+	}
+	_hdWeatherNewRolls = 0;
+	_hdWeatherNewDevils = 0;
+	HdWeather::hear(h, SDL_GetTicks());
 }
 
 /**
@@ -5881,6 +6154,10 @@ void Map::drawTerrain(HdCanvas *surface)
 	hdObserveSteps();
 	// HD render (Options::oxceHdWeather): the weather of the battle - the ground goes with the floors, the air at the end
 	const bool hdWeather = hdWeatherOn(surface);
+	if (hdWeather)
+	{
+		hdWeatherRolls();
+	}
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
@@ -6414,6 +6691,12 @@ void Map::drawTerrain(HdCanvas *surface)
 						auto transparetOffsets = vaporLut(p);
 
 						surface->drawVapor(pixelMask, vaporX, vaporY, p.getSize(), transparetOffsets, vaporTint(p));
+					}
+
+					// HD render (Options::oxceHdWeather): a tumbleweed whose front-most tile this is, before the units of the tile
+					if (hdWeather && _hdWeatherRollCount > 0 && !turned && itZ == 0 && tile->isDiscovered(O_FLOOR))
+					{
+						hdWeatherRollsAt(surface, mapPosition, screenPosition, tileShade);
 					}
 
 					unit = tile->getUnit();

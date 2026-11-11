@@ -57,6 +57,9 @@ namespace HdWeather
 	float veilTiles(Kind kind);
 	/// The lightning of a thunderstorm at the clock `ms`: 0..1 (0 for any other kind).
 	float lightning(Kind kind, Uint32 seed, Uint32 ms);
+	/// A thunderstorm strikes once a slot of STRIKE_SLOT ms at most: the strike's ms in the slot, -1 for a quiet slot.
+	const Uint32 STRIKE_SLOT = 7000;
+	int strikeAt(Uint32 seed, Uint32 slot);
 	/// The air is still: nothing moves, the frame need not be redrawn for the weather.
 	bool still(Kind kind);
 
@@ -118,6 +121,89 @@ namespace HdWeather
 	int splashes(Kind kind, int k, Uint32 seed, Uint32 ms, float power, int x, int y, Splash out[SPLASHES]);
 	/// Milliseconds spent baking the textures and the ground frames (the battle's log line).
 	int bakeMs();
+
+	// ---- what the weather carries (HdWeatherExtras.cpp): tumbleweeds, dust devils, a tornado, lightning bolts, the sound
+
+	/// What a battle's weather brings besides the air and the ground (by its kind, biome and seed).
+	struct Extras
+	{
+		/// Tumbleweeds rolling at a time (slots), dust devils (slots), a tornado crossing the map, bolts in the strikes.
+		int tumbleweeds = 0, devils = 0;
+		bool tornado = false, bolts = false;
+		/// The tornado's colour: 0 dust (desert, steppe), 1 storm grey.
+		int tornadoLook = 0;
+	};
+	Extras extras(Kind kind, Biome biome, Uint32 seed);
+	/// The wind's direction on the ground, map tiles a second per unit (u along x, v along y) - the way the particles fly.
+	void windDir(Kind kind, float &du, float &dv);
+
+	/// A tumbleweed of this moment: its contact point on the ground (map tiles), its hop and turn, its look and opacity.
+	struct Roll
+	{
+		float u, v;
+		/// Hop above the ground, base pixels; turn of the ball, radians.
+		float hop, turn;
+		float alpha;
+		int shape;
+		/// It has just set off (the sound of a new tumbleweed).
+		Uint32 id;
+	};
+	const int ROLLS = 6;
+	/// Can a ball stand at (u, v) of the map coming straight from (fromU, fromV)? (open sky, a floor, nothing on it, no wall
+	/// crossed) - asked by the extras, answered by the map.
+	typedef bool (*ClearFn)(void *ctx, float fromU, float fromV, float u, float v);
+	/// The tumbleweeds at the clock `ms` on a map of mapW x mapL; how many of `out` are filled. A ball sets off upwind of
+	/// (viewU, viewV), the ground in the middle of the view when its run begins, and keeps that start for the run.
+	int rolls(const Extras &ex, Kind kind, Uint32 seed, Uint32 ms, float power, int mapW, int mapL, float viewU, float viewV,
+		ClearFn clear, void *ctx, Roll out[ROLLS]);
+	/// The frames of a tumbleweed (shape, turn) and its shadow at scale k; the ball's contact point is the bottom middle of
+	/// the frame, the shadow's centre is its middle.
+	const HdFrame &rollFrame(int k, int shape, float turn);
+	const HdFrame &rollShadow(int k, int shape);
+
+	/// A twister of this moment: its base on the ground (map tiles), its frame and opacity.
+	struct Twister
+	{
+		float u, v;
+		float alpha;
+		/// 0 a dust devil, 1 the tornado.
+		int big;
+		Uint32 id;
+	};
+	const int TWISTERS = 3;
+	/// `open(ctx, u, v)`: the ground at (u, v) is open sky and discovered (a dust devil is born only there).
+	typedef bool (*OpenFn)(void *ctx, float u, float v);
+	/// `away(ctx, u, v)`: tiles from (u, v) to the nearest own unit, spotted enemy or the cursor (the way keeps off them).
+	typedef float (*AwayFn)(void *ctx, float u, float v);
+	/// The twisters at the clock `ms`; like the tumbleweeds, each is placed near (viewU, viewV) as its pass begins.
+	int twisters(const Extras &ex, Kind kind, Uint32 seed, Uint32 ms, int mapW, int mapL, float viewU, float viewV, OpenFn open,
+		AwayFn away, void *ctx, Twister out[TWISTERS]);
+	/// The frame of a twister at the clock `ms`; its base (the ground point) is at (baseX, baseY) of the frame.
+	const HdFrame &twisterFrame(int k, int big, int look, Uint32 ms, int &baseX, int &baseY);
+
+	/// A lightning bolt of the strike at the clock `ms` on a canvas of width x height: its frame and where it goes, nullptr
+	/// when no bolt is seen now; `opacity` follows the flash.
+	/// `spot(ctx, px, py)`: the bolt may come down at the canvas point (px, py) - open ground away from the units.
+	typedef bool (*SpotFn)(void *ctx, float px, float py);
+	const HdFrame *bolt(Kind kind, Uint32 seed, Uint32 ms, int k, int width, int height, SpotFn spot, void *ctx, int &x, int &y,
+		float &opacity);
+
+	/// The sound of the weather (option oxceHdWeatherSound): the loop of the kind on the reserved channel 0, the thunder of
+	/// the strikes, the tornado's roar while it is seen, a rustle for a tumbleweed setting off and a whoosh for a dust devil.
+	/// Files hd/SOUND/WEATHER/<name>.ogg (loops) and <name>_<N>.ogg (one-shots); a missing file stays silent.
+	struct Hearing
+	{
+		Kind kind = CLEAR;
+		Uint32 seed = 0;
+		float power = 1;
+		/// The tornado is seen (0..1), new tumbleweeds and dust devils since the last call, their screen place -1..1.
+		float tornado = 0;
+		int newRolls = 0, newDevils = 0;
+		float rollPan = 0, devilPan = 0;
+	};
+	void hear(const Hearing &h, Uint32 ms);
+	/// Stops all the weather's sound (the battle ends, the option goes off).
+	void silence();
 }
 
 }

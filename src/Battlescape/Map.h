@@ -280,6 +280,28 @@ private:
 	Uint32 _hdWeatherLastDraw = 0;
 	/// The weather is drawn in this frame (hdWeatherOn).
 	bool _hdWeatherFrameOn = false;
+	/// What the weather carries (HdWeatherExtras.cpp): the tumbleweeds of this frame (drawn on the ground level in the tiles'
+	/// pass, before the units), the twisters and the bolt (over the air), the sound (Map::think).
+	void hdWeatherRolls();
+	void hdWeatherRollsAt(HdCanvas *surface, const Position &mapPos, const Position &screenPos, int shade);
+	void hdWeatherOver(HdCanvas *surface);
+	void hdWeatherHear();
+	static bool hdWeatherClear(void *ctx, float fromU, float fromV, float u, float v);
+	static bool hdWeatherOpen(void *ctx, float u, float v);
+	static bool hdWeatherSpot(void *ctx, float px, float py);
+	static float hdWeatherAway(void *ctx, float u, float v);
+	bool hdWeatherFree(int x, int y);
+	HdWeather::Biome _hdWeatherBiome = HdWeather::B_NONE;
+	HdWeather::Extras _hdWeatherExtras;
+	HdWeather::Roll _hdWeatherRoll[HdWeather::ROLLS];
+	int _hdWeatherRollCount = 0;
+	/// The tile each tumbleweed is drawn in (its front-most tile), [i] for _hdWeatherRoll[i].
+	int _hdWeatherRollTile[HdWeather::ROLLS] = {};
+	/// For the sound: the tumbleweeds and dust devils of the last frame, how much of the tornado shows, new ones since.
+	std::vector<Uint32> _hdWeatherSeenIds;
+	float _hdWeatherTornadoSeen = 0;
+	int _hdWeatherNewRolls = 0, _hdWeatherNewDevils = 0;
+	float _hdWeatherRollPan = 0, _hdWeatherDevilPan = 0;
 	/// Options::oxceHdBeyondEdge (XP-000263): the ground beyond the map's edge, under the map, at the canvas of HD scale above 1.
 	void hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos);
 	/// The commonest floor of the map's outer band on the ground level, found once a battle: the cells beyond the edge take it

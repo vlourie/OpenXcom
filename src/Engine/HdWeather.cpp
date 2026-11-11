@@ -202,7 +202,8 @@ namespace
 			break;
 		case WIND:
 			tone(0.97f, 1, 1, 1);
-			l.band = BandLook{ 0.12f, { 235, 205, 150 }, 70, 6.0f, 0.5f, 0.55f, 0.9f, -380, 60 };
+			// the bands drift with the particles (to the right and a little up: angle 100)
+			l.band = BandLook{ 0.12f, { 235, 205, 150 }, 70, 6.0f, 0.5f, 0.55f, 0.9f, 380, -60 };
 			l.layers = 1;
 			streaks(0, 260, 0.8f, 1.5f, { 210, 170, 110 }, 0.5f, 26, 100, 900);
 			break;
@@ -211,7 +212,7 @@ namespace
 			tone(0.75f, 0.92f, 0.82f, 0.66f, 30, 18, 4);
 			l.hazeA = 0.32f; l.haze = { 195, 145, 85 };
 			l.veil = 8; l.veilA = 0.88f; l.veilColor = { 190, 140, 80 }; l.ragged = 3.5f; l.veilSoft = 2.5f;
-			l.band = BandLook{ 0.42f, { 200, 150, 90 }, 110, 5.0f, 0.6f, 0.35f, 0.85f, -520, 40 };
+			l.band = BandLook{ 0.42f, { 200, 150, 90 }, 110, 5.0f, 0.6f, 0.35f, 0.85f, 520, -50 };
 			l.layers = 1;
 			streaks(0, 2600, 0.8f, 1.6f, { 215, 170, 110 }, 0.55f, 30, 96, 1300);
 			break;
@@ -583,6 +584,12 @@ float veilTiles(Kind kind)
 	return lookOf(kind).veil;
 }
 
+int strikeAt(Uint32 seed, Uint32 slot)
+{
+	const Uint32 h = hash(seed, 31, slot);
+	return (h & 3) == 0 ? -1 : (int)(500 + (h >> 4) % 5500);
+}
+
 float lightning(Kind kind, Uint32 seed, Uint32 ms)
 {
 	if (kind != THUNDER)
@@ -590,14 +597,13 @@ float lightning(Kind kind, Uint32 seed, Uint32 ms)
 		return 0;
 	}
 	// one strike a slot of 7 s at a place of its own in the slot: a flash, a short dark, a weaker second flash
-	const Uint32 slot = ms / 7000;
-	const Uint32 h = hash(seed, 31, slot);
-	if ((h & 3) == 0)
+	const Uint32 slot = ms / STRIKE_SLOT;
+	const int at = strikeAt(seed, slot);
+	if (at < 0)
 	{
 		return 0; // a quiet slot
 	}
-	const int at = (int)(500 + (h >> 4) % 5500);
-	const int t = (int)(ms % 7000) - at;
+	const int t = (int)(ms % STRIKE_SLOT) - at;
 	if (t < 0 || t >= 420)
 	{
 		return 0;
