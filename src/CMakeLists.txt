@@ -185,6 +185,7 @@ set ( engine_src
   Engine/HdSmooth.cpp
   Engine/HdSmoke.cpp
   Engine/HdFire.cpp
+  Engine/HdWeather.cpp
   Engine/HdUi.cpp
   Engine/HdSprites.cpp
   Engine/HdPaletteShift.cpp

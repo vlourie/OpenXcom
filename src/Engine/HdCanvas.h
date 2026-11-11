@@ -34,6 +34,7 @@ namespace OpenXcom
 {
 
 class ScriptWorkerBlit;
+namespace HdWeather { struct Scene; }
 
 /**
  * Where the drawing of one battle frame went, for the frame log (OXCE_HD_FRAMELOG, Game.cpp):
@@ -203,6 +204,9 @@ public:
 	virtual void drawVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint) { (void)cx16; (void)cy16; (void)size; (void)k; (void)tint; }
 	/// The blast flash: every drawn pixel jumps to the brightest shade of its color group.
 	virtual void flash() = 0;
+	/// HD render (option oxceHdWeather): the air of the weather over all that is drawn so far (HdWeather::drawRows), with the
+	/// scene HdWeather::prepare got last; the scene must stay alive until the flush. No effect on the classic canvas.
+	virtual void drawWeather(const HdWeather::Scene *scene) { (void)scene; }
 
 	/// Locks the canvas for direct access (matches Surface::lock, a no-op for software surfaces).
 	virtual void lock() {}
@@ -317,7 +321,7 @@ private:
 	/// One recorded drawing call.
 	struct Cmd
 	{
-		enum Type : Uint8 { FILL, BLIT, BLIT_HD, BLIT_HD_LIT, BLIT_SCALED, VAPOR, FLASH, FILL_BACKDROP, VAPOR_SOFT };
+		enum Type : Uint8 { FILL, BLIT, BLIT_HD, BLIT_HD_LIT, BLIT_SCALED, VAPOR, FLASH, FILL_BACKDROP, VAPOR_SOFT, WEATHER };
 		Type type;
 		Uint8 color;
 		Uint8 newBaseColor;
@@ -347,6 +351,8 @@ private:
 		bool tintFlat;
 		/// BLIT_HD_LIT: 0 = the frame's alpha as it is, 1..254 = the frame's alpha scaled by opacity / 255.
 		Uint8 opacity;
+		/// WEATHER: the scene of the frame (HdWeather).
+		const HdWeather::Scene *weather;
 	};
 	/// Per-pixel weights of a frame size: the quadrant of the diamond the pixel is in and the bilinear
 	/// weights of that quadrant's four nodes (sum 256); 5 bytes per pixel.
@@ -657,6 +663,7 @@ public:
 	void drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *transparencyLUT, SDL_Color tint) override;
 	void drawVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint) override;
 	void flash() override;
+	void drawWeather(const HdWeather::Scene *scene) override;
 	bool saveDump(const std::string &filename) override;
 	void setPalette(const SDL_Color *colors, int firstcolor, int ncolors) override;
 	/// The surface with the drawn frame (executes pending commands first).

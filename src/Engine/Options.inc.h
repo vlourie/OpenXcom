@@ -356,6 +356,9 @@ OPT int oxceHdBloodStepsLife;
 // HD render (XP-000421): the colour of the soles and drops: 0 by the creature (HdFx::bloodRgb with the table hd/blood.txt, whether "Blood colour by creature" is on or not),
 // 1 red for all
 OPT int oxceHdBloodStepsColor;
+// HD render (docs/research/battle-weather-2026-11-11.md): the weather of a battle as a picture (rain, thunderstorm, fog, snow, wind,
+// sand storm) by the map's ground, about half of the battles clear; the veil far from the own units; picture only. On by default
+OPT bool oxceHdWeather;
 // HD render: the fire picture (SMOKE.PCK 0..7): 0 the pack's own (<i>.png, <i>.v1.png), style s = the pack's variants 2s and 2s + 1 (tools/hdart/fire_real_pack.py)
 OPT int oxceHdFire;
 // HD render: pace of the fire and smoke animation on tiles (Map::hdEnviClock), a step of HD_ENVI_PACE: 0 stock, higher = slower; picture only

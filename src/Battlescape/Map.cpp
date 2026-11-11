@@ -1316,6 +1316,11 @@ void Map::think()
 	{
 		_redraw = true;
 	}
+	// HD render (Options::oxceHdWeather): the falling weather moves at about 30 frames a second
+	if (_hdWeatherFrameOn && !HdWeather::still(_hdWeatherKind) && SDL_GetTicks() - _hdWeatherLastDraw >= 33)
+	{
+		_redraw = true;
+	}
 	// a collapse shaking the picture needs every frame until it is still again
 	if (_shakeMs && SDL_GetTicks() - _shakeStart <= _shakeMs)
 	{
@@ -4288,6 +4293,324 @@ static bool hdOrbitalMap(const SavedBattleGame *save)
 }
 
 /**
+ * HD render (Options::oxceHdWeather): picks the weather of the battle once. The ground is the terrain most of the map's
+ * blocks come from (or the mission type) looked up in the mod's table hd/weather.txt; the seed is made of what the save
+ * holds already (mission, terrains, map size, shade), so a loaded battle has the same weather. Nothing on the
+ * underwater, orbital or vacuum maps. The test switch OXCE_HD_WEATHER names a kind for any ground.
+ */
+void Map::hdWeatherPick()
+{
+	if (_hdWeatherPicked)
+	{
+		return;
+	}
+	_hdWeatherPicked = true;
+	_hdWeatherKind = HdWeather::CLEAR;
+	Uint32 h = 2166136261u;
+	auto feed = [&h](const std::string &s)
+	{
+		for (unsigned char c : s)
+		{
+			h = (h ^ c) * 16777619u;
+		}
+		h = (h ^ 0xFFu) * 16777619u;
+	};
+	feed(_save->getMissionType());
+	std::map<std::string, int> blocks;
+	for (const auto &column : _save->getFlattenedMapTerrainNames())
+	{
+		for (const std::string &name : column)
+		{
+			++blocks[name];
+		}
+	}
+	for (const auto &b : blocks)
+	{
+		feed(b.first);
+	}
+	feed(std::to_string(_save->getMapSizeX() * 10000 + _save->getMapSizeY() * 100 + _save->getMapSizeZ()));
+	feed(std::to_string(_save->getGlobalShade()));
+	_hdWeatherSeed = h;
+
+	const RuleEnviroEffects *enviro = _save->getEnviroEffects();
+	const std::string enviroType = enviro ? enviro->getType() : "";
+	std::string ground = "-";
+	HdWeather::Biome biome = HdWeather::B_NONE;
+	bool cold = enviroType.find("COLD") != std::string::npos;
+	if (_save->getDepth() == 0 && !hdVacuum() && !hdOrbitalMap(_save))
+	{
+		std::map<std::string, std::string> table;
+		const std::string path = HdSprites::artPath("weather.txt");
+		std::unique_ptr<std::istream> in = FileMap::fileExists(path) ? FileMap::getIStream(path) : nullptr;
+		std::string line;
+		while (in && std::getline(*in, line))
+		{
+			if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+			{
+				line.erase(0, 3);
+			}
+			std::istringstream fields(line);
+			std::string name, word;
+			if (fields >> name >> word && name[0] != '#')
+			{
+				table[name] = word;
+			}
+		}
+		std::string best = table.count(_save->getMissionType()) ? _save->getMissionType() : "";
+		int most = 0;
+		for (const auto &b : blocks)
+		{
+			if (table.count(b.first) && b.second > most)
+			{
+				most = b.second;
+				best = b.first;
+			}
+		}
+		if (!best.empty())
+		{
+			ground = best;
+			bool coldWord = false;
+			biome = HdWeather::biomeOf(table[best], coldWord);
+			cold = cold || coldWord;
+		}
+		if (biome != HdWeather::B_NONE)
+		{
+			_hdWeatherKind = HdWeather::pick(biome, cold, _hdWeatherSeed);
+			// the map's own weather wins: its dust storm and acid rain are the sand and the rain of the picture
+			if (enviroType.find("DUST_STORM") != std::string::npos)
+				_hdWeatherKind = HdWeather::SANDSTORM;
+			else if (enviroType.find("ACID_RAIN") != std::string::npos)
+				_hdWeatherKind = HdWeather::RAIN;
+		}
+		const HdWeather::Kind test = HdWeather::forced();
+		if (test != HdWeather::KINDS)
+		{
+			_hdWeatherKind = test;
+		}
+	}
+	Log(LOG_INFO) << "HD weather: ground " << ground << ", biome " << (int)biome << (cold ? " cold" : "") << ", enviro "
+		<< (enviroType.empty() ? "-" : enviroType) << " -> " << HdWeather::kindName(_hdWeatherKind) << ", seed " << _hdWeatherSeed;
+}
+
+/**
+ * HD render (Options::oxceHdWeather): readies the weather of this frame - the strength and the ground of the turn, the
+ * open sky of every column (once a turn) and the fields of the veil. False when the frame has no weather.
+ */
+bool Map::hdWeatherOn(HdCanvas *surface)
+{
+	_hdWeatherFrameOn = false;
+	if (!Options::oxceHdWeather || surface->getHdMode() == HD_MODE_NEAREST || _camera->getShowSingleLayer())
+	{
+		return false;
+	}
+	hdWeatherPick();
+	if (_hdWeatherKind == HdWeather::CLEAR)
+	{
+		return false;
+	}
+	const int turn = _save->getTurn();
+	const int sx = _save->getMapSizeX(), sy = _save->getMapSizeY(), sz = _save->getMapSizeZ();
+	const bool newTurn = turn != _hdWeatherTurn || (int)_hdWeatherTop.size() != sx * sy;
+	if (newTurn)
+	{
+		_hdWeatherTurn = turn;
+		_hdWeatherPower = HdWeather::power(_hdWeatherSeed, turn);
+		_hdWeatherGround = HdWeather::ground(_hdWeatherKind, _hdWeatherSeed, turn);
+		// the open sky: the highest level of a column with a floor; what is lower stands under it
+		_hdWeatherTop.assign((size_t)sx * sy, 0);
+		for (int y = 0; y < sy; ++y)
+		{
+			for (int x = 0; x < sx; ++x)
+			{
+				for (int z = sz - 1; z > 0; --z)
+				{
+					Tile *t = _save->getTile(Position(x, y, z));
+					if (t && t->getMapData(O_FLOOR))
+					{
+						_hdWeatherTop[(size_t)y * sx + x] = z;
+						break;
+					}
+				}
+			}
+		}
+	}
+	hdWeatherFields();
+	if (newTurn)
+	{
+		// how much of the view the veil may cover: the discovered columns and the farthest of them from the own units
+		int known = 0;
+		float farthest = 0;
+		for (size_t i = 0; i < _hdWeatherSeen.size(); ++i)
+		{
+			if (_hdWeatherSeen[i] > 0)
+			{
+				++known;
+				farthest = std::max(farthest, _hdWeatherDist[i]);
+			}
+		}
+		Log(LOG_INFO) << "HD weather: turn " << turn << ", power " << _hdWeatherPower << ", wet " << _hdWeatherGround.wet << ", puddles "
+			<< _hdWeatherGround.puddles << ", snow " << _hdWeatherGround.snow << "; discovered " << known << " of " << _hdWeatherSeen.size()
+			<< " columns, the farthest " << farthest << " tiles from the own units, the veil from " << HdWeather::veilTiles(_hdWeatherKind);
+	}
+	// the clock of the fall and the drops; the frame of the render test (hdTestFreeze) is the one at 0, as its animations
+	_hdWeatherScene.ms = _hdTestFrozen ? 0 : SDL_GetTicks();
+	_hdWeatherFrameOn = true;
+	return true;
+}
+
+/**
+ * HD render (Options::oxceHdWeather): the fields of the view's tiles for the veil - the distance from the nearest own unit,
+ * the open sky over the level the camera shows, the distance from the nearest spotted enemy or the cursor.
+ */
+void Map::hdWeatherFields()
+{
+	const int w = _camera->getViewSizeX(), l = _camera->getViewSizeY();
+	const int sx = _save->getMapSizeX();
+	const int level = _camera->getViewLevel();
+	const bool turned = _camera->getRotation() != 0;
+	const size_t n = (size_t)w * l;
+	_hdWeatherDist.assign(n, 1e6f);
+	_hdWeatherWindow.assign(n, 1e6f);
+	_hdWeatherSky.assign(n, 1.0f);
+	_hdWeatherSeen.assign(n, 0.0f);
+	// the discovered columns: only the ones not yet known are looked at again
+	const int sy = _save->getMapSizeY(), sz = _save->getMapSizeZ();
+	if ((int)_hdWeatherKnown.size() != sx * sy)
+	{
+		_hdWeatherKnown.assign((size_t)sx * sy, 0);
+	}
+	for (int y = 0; y < sy; ++y)
+	{
+		for (int x = 0; x < sx; ++x)
+		{
+			Uint8 &known = _hdWeatherKnown[(size_t)y * sx + x];
+			for (int z = 0; z < sz && !known; ++z)
+			{
+				Tile *t = _save->getTile(Position(x, y, z));
+				if (t && t->isDiscovered(O_FLOOR))
+				{
+					known = 1;
+				}
+			}
+		}
+	}
+	std::vector<std::pair<float, float>> own, windows;
+	for (BattleUnit *unit : *_save->getUnits())
+	{
+		if (unit->isOut() || unit->getTile() == nullptr)
+		{
+			continue;
+		}
+		const Position p = turned ? _camera->worldToView(unit->getPosition()) : unit->getPosition();
+		const float cx = p.x + unit->getArmor()->getSize() * 0.5f, cy = p.y + unit->getArmor()->getSize() * 0.5f;
+		if (unit->getFaction() == FACTION_PLAYER)
+			own.push_back({ cx, cy });
+		else if (unit->getVisible())
+			windows.push_back({ cx, cy });
+	}
+	if (_cursorType != CT_NONE && _selectorX >= 0 && _selectorY >= 0)
+	{
+		windows.push_back({ _selectorX + 0.5f, _selectorY + 0.5f });
+	}
+	for (int y = 0; y < l; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			const size_t i = (size_t)y * w + x;
+			const float cx = x + 0.5f, cy = y + 0.5f;
+			float best = 1e12f;
+			for (const auto &p : own)
+				best = std::min(best, (p.first - cx) * (p.first - cx) + (p.second - cy) * (p.second - cy));
+			_hdWeatherDist[i] = std::sqrt(best);
+			best = 1e12f;
+			for (const auto &p : windows)
+				best = std::min(best, (p.first - cx) * (p.first - cx) + (p.second - cy) * (p.second - cy));
+			_hdWeatherWindow[i] = std::sqrt(best);
+			const Position world = turned ? _camera->viewToWorld(Position(x, y, 0)) : Position(x, y, 0);
+			_hdWeatherSky[i] = _hdWeatherTop[(size_t)world.y * sx + world.x] <= level ? 1.0f : 0.0f;
+			_hdWeatherSeen[i] = _hdWeatherKnown[(size_t)world.y * sx + world.x] ? 1.0f : 0.0f;
+		}
+	}
+}
+
+/**
+ * HD render (Options::oxceHdWeather): what the weather leaves on an open floor (wet, puddles, snow) and the rings of the
+ * drops, right after the floor; lit as the floor is.
+ */
+void Map::hdWeatherGround(HdCanvas *surface, Tile *tile, const Position &mapPos, const Position &screenPos, int shade)
+{
+	const int sx = _save->getMapSizeX(), sy = _save->getMapSizeY();
+	const int z = mapPos.z;
+	if (_hdWeatherTop[(size_t)mapPos.y * sx + mapPos.x] > z || tile->hasNoFloor(_save))
+	{
+		return;
+	}
+	// the sides with no open floor of this level beyond: the cover thins out there
+	auto open = [&](int x, int y)
+	{
+		if (x < 0 || y < 0 || x >= sx || y >= sy || _hdWeatherTop[(size_t)y * sx + x] > z)
+			return false;
+		Tile *t = _save->getTile(Position(x, y, z));
+		return t && !t->hasNoFloor(_save);
+	};
+	int closed = 0;
+	if (!open(mapPos.x - 1, mapPos.y)) closed |= HdWeather::SIDE_X0;
+	if (!open(mapPos.x + 1, mapPos.y)) closed |= HdWeather::SIDE_X1;
+	if (!open(mapPos.x, mapPos.y - 1)) closed |= HdWeather::SIDE_Y0;
+	if (!open(mapPos.x, mapPos.y + 1)) closed |= HdWeather::SIDE_Y1;
+	const int x = screenPos.x, y = screenPos.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k;
+	static const float white[3] = { 1, 1, 1 };
+	if (const HdFrame *g = HdWeather::groundFrame(_k, _hdWeatherGround, _hdWeatherSeed, mapPos.x, mapPos.y, closed))
+	{
+		surface->blitFrameToned(*g, x, y, (float)shade, white);
+	}
+	HdWeather::Splash rings[HdWeather::SPLASHES];
+	const int count = HdWeather::splashes(_hdWeatherKind, _k, _hdWeatherSeed, _hdWeatherScene.ms, _hdWeatherPower, mapPos.x, mapPos.y, rings);
+	for (int i = 0; i < count; ++i)
+	{
+		surface->blitFrameToned(*rings[i].frame, x + rings[i].x, y + rings[i].y, (float)shade, white);
+	}
+}
+
+/**
+ * HD render (Options::oxceHdWeather): the air of the frame - the fall, the tone, the veil, the lightning - over the whole
+ * map, as one command of the canvas drawn on the HD workers.
+ */
+void Map::hdWeatherAir(HdCanvas *surface)
+{
+	HdWeather::Scene &s = _hdWeatherScene;
+	const Position offset = _camera->getMapOffset();
+	const float k = (float)_k;
+	s.kind = _hdWeatherKind;
+	s.k = _k;
+	s.seed = _hdWeatherSeed;
+	s.power = _hdWeatherPower;
+	s.day = 1.0f - std::max(0, std::min(15, _save->getGlobalShade())) / 15.0f;
+	s.width = surface->getWidth();
+	s.height = surface->getHeight();
+	// a canvas pixel in view tiles on the ground (level 0, whatever level the camera shows: the columns stand on it):
+	// the inverse of Camera::viewToScreen at the floor's diamond
+	s.au = 1 / (32 * k);
+	s.bu = 1 / (16 * k);
+	s.cu = -offset.x / (32 * k) - offset.y / (16 * k) - 2;
+	s.av = -1 / (32 * k);
+	s.bv = 1 / (16 * k);
+	s.cv = offset.x / (32 * k) - offset.y / (16 * k) - 1;
+	s.mapW = _camera->getViewSizeX();
+	s.mapL = _camera->getViewSizeY();
+	s.dist = _hdWeatherDist.data();
+	s.sky = _hdWeatherSky.data();
+	s.window = _hdWeatherWindow.data();
+	s.known = _hdWeatherSeen.data();
+	s.originX = offset.x;
+	s.originY = offset.y;
+	s.flash = HdWeather::lightning(_hdWeatherKind, _hdWeatherSeed, s.ms);
+	HdWeather::prepare(s);
+	surface->drawWeather(&s);
+	_hdWeatherLastDraw = SDL_GetTicks();
+}
+
+/**
  * Draw part of unit graphic that overlap current tile.
  * @param surface
  * @param unitTile
@@ -5556,6 +5879,8 @@ void Map::drawTerrain(HdCanvas *surface)
 	hdGatherFlierShadows(cameraPos, endZ);
 	hdGatherFlashLights();
 	hdObserveSteps();
+	// HD render (Options::oxceHdWeather): the weather of the battle - the ground goes with the floors, the air at the end
+	const bool hdWeather = hdWeatherOn(surface);
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
@@ -5637,6 +5962,11 @@ void Map::drawTerrain(HdCanvas *surface)
 						{
 							if (const HdFrame *ao = hdFloorAo(tile, mapPosition))
 								surface->blitFrame(*ao, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+						}
+						// HD render (Options::oxceHdWeather): the wet, the puddles, the snow and the drops on an open floor
+						if (hdWeather && !turned && tile->isDiscovered(O_FLOOR))
+						{
+							hdWeatherGround(surface, tile, mapPosition, screenPosition, tileShade);
 						}
 					}
 					// HD render: the shadow of a unit hanging above this floor (Map::hdGatherFlierShadows), under all that stands here
@@ -6980,6 +7310,12 @@ void Map::drawTerrain(HdCanvas *surface)
 	else
 	{
 		_hdCloudSeen.clear();
+	}
+
+	// HD render (Options::oxceHdWeather): the air of the weather over the whole map; the muzzle flashes shine through it
+	if (hdWeather)
+	{
+		hdWeatherAir(surface);
 	}
 
 	// HD render: muzzle flashes, on their own clock (see hdMuzzle)

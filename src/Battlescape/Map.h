@@ -19,6 +19,7 @@
  */
 #include "../Engine/InteractiveSurface.h"
 #include "../Engine/HdCanvas.h"
+#include "../Engine/HdWeather.h"
 #include "../Engine/Options.h"
 #include "../Engine/Collections.h"
 #include "../Engine/Unicode.h"
@@ -257,6 +258,28 @@ private:
 	/// Is the battle's environment in the mod's table hd/vacuum.txt (no backdrop gradient, no hover bob there)?
 	bool hdVacuum();
 	int _hdVacuum = -1; ///< hdVacuum once looked (-1: not looked yet)
+	/// Options::oxceHdWeather: the battle's weather (HdWeather), picked once a battle from the mod's table hd/weather.txt and
+	/// what the save already holds; the fields of the frame (distance from the own units, open sky, windows of the veil).
+	void hdWeatherPick();
+	bool hdWeatherOn(HdCanvas *surface);
+	void hdWeatherFields();
+	void hdWeatherGround(HdCanvas *surface, Tile *tile, const Position &mapPos, const Position &screenPos, int shade);
+	void hdWeatherAir(HdCanvas *surface);
+	bool _hdWeatherPicked = false;
+	HdWeather::Kind _hdWeatherKind = HdWeather::CLEAR;
+	Uint32 _hdWeatherSeed = 0;
+	int _hdWeatherTurn = -1;
+	float _hdWeatherPower = 1;
+	HdWeather::Ground _hdWeatherGround;
+	HdWeather::Scene _hdWeatherScene;
+	std::vector<float> _hdWeatherDist, _hdWeatherSky, _hdWeatherWindow, _hdWeatherSeen;
+	/// The columns the player has discovered [y * w + x] (once discovered, always).
+	std::vector<Uint8> _hdWeatherKnown;
+	/// The highest level with a floor in every column of the view [y * w + x]: what stands lower is under a roof.
+	std::vector<int> _hdWeatherTop;
+	Uint32 _hdWeatherLastDraw = 0;
+	/// The weather is drawn in this frame (hdWeatherOn).
+	bool _hdWeatherFrameOn = false;
 	/// Options::oxceHdBeyondEdge (XP-000263): the ground beyond the map's edge, under the map, at the canvas of HD scale above 1.
 	void hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos);
 	/// The commonest floor of the map's outer band on the ground level, found once a battle: the cells beyond the edge take it

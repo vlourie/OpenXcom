@@ -34,6 +34,7 @@
 #include "HdGpuCanvas.h"
 #include "HdGpuWorld.h"
 #include "HdUiArt.h"
+#include "HdWeather.h"
 #include "Logger.h"
 #include "Options.h"
 #include "../Battlescape/AiProbe.h"
@@ -1488,6 +1489,21 @@ void Canvas32::flash()
 	record(cmd);
 }
 
+void Canvas32::drawWeather(const HdWeather::Scene *scene)
+{
+	if (_hdMode == HD_MODE_NEAREST || !scene)
+	{
+		return;
+	}
+	Cmd cmd {};
+	cmd.type = Cmd::WEATHER;
+	cmd.weather = scene;
+	cmd.clip = fullArea();
+	cmd.y0 = 0;
+	cmd.y1 = _height;
+	record(cmd);
+}
+
 bool Canvas32::saveDump(const std::string &filename)
 {
 	flush();
@@ -2005,6 +2021,9 @@ void Canvas32::execute(const Cmd &cmd, int y0, int y1)
 		break;
 	case Cmd::FLASH:
 		doFlash(y0, y1);
+		break;
+	case Cmd::WEATHER:
+		HdWeather::drawRows(*cmd.weather, (Uint32*)_surface->pixels, _surface->pitch, y0, y1, _rshift, _gshift, _bshift);
 		break;
 	}
 }

@@ -722,6 +722,15 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 	const int page = atlas.page;
 	++atlas.clock;
 	bool emptied = false;
+	// the air of the weather (HdWeather) is drawn by the processor's strips: such a flush is not prepared at all
+	for (const Cmd &cmd : canvas._cmds)
+	{
+		if (cmd.type == Cmd::WEATHER)
+		{
+			tellOnce("weather - the processor draws such flushes");
+			return false;
+		}
+	}
 	for (int attempt = 0; attempt < 8; ++attempt)
 	{
 		p.clear();
@@ -941,6 +950,11 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 			case Cmd::VAPOR:
 				// the 2x2 patterns of mode 0 (the HD modes draw soft puffs)
 				why = "vapor patterns";
+				fail = true;
+				continue;
+			case Cmd::WEATHER:
+				// the air of the weather (HdWeather): drawn by the processor's strips
+				why = "weather";
 				fail = true;
 				continue;
 			}
