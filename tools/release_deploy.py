@@ -31,6 +31,13 @@ DROP = "C:\\XPiratezModHD\\"
 PORTAL = "https://x-piratez.mywire.org:8443/releases/channels/stable.json"
 SSH = ["ssh", "-i", KEY, "-o", "BatchMode=yes", HOST]
 
+# вывод в файл или конвейер иначе идёт в cp1252 и падает на первой кириллице (R-484)
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 
 def step(msg):
     print(f"==> {msg}", flush=True)
