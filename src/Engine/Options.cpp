@@ -583,6 +583,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodSteps", &oxceHdBloodSteps, false, "STR_HD_BLOOD_STEPS", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodStepsLife", &oxceHdBloodStepsLife, 3, "STR_HD_BLOOD_STEPS_LIFE", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodStepsColor", &oxceHdBloodStepsColor, 0, "STR_HD_BLOOD_STEPS_COLOR", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdSnowTracks", &oxceHdSnowTracks, false, "STR_HD_SNOW_TRACKS", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWeather", &oxceHdWeather, true, "STR_HD_WEATHER", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWeatherSound", &oxceHdWeatherSound, true, "STR_HD_WEATHER_SOUND", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodColor", &oxceHdBloodColor, false, "STR_HD_BLOOD_COLOR", "STR_HD_GRAPHICS"));

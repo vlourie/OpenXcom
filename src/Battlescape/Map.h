@@ -344,6 +344,10 @@ private:
 	Uint32 _hdStepSeq = 0;
 	int _hdStepTurn = -1, _hdStepLifeSeen = -1;
 	std::map<unsigned long long, HdFrame> _hdStepFrames;
+	/// HD render (option oxceHdSnowTracks, XP-000563): the dents of the steps in snow, the same picture-only way: own store (own caps), they last three turns.
+	std::unordered_map<int, std::vector<HdStep>> _hdSnowSteps;
+	std::deque<std::pair<int, Uint32>> _hdSnowOrder;
+	size_t _hdSnowCount = 0;
 	/// Watches the steps of the units (before a frame is drawn) and lays the soles.
 	void hdObserveSteps();
 	/// HD render (option oxceHdBloodCloud, XP-000557): under water the blood of a hit on flesh is a small see-through cloud (puffs of HdSmoke in the
@@ -358,6 +362,8 @@ private:
 	void hdDrawBloodClouds(HdCanvas *surface);
 	/// Puts one print on tile `index` (the oldest of the tile or of the map goes when there are too many).
 	void hdLayStep(int index, const HdStep &step);
+	/// The same for the snow (own store, own caps).
+	void hdLaySnow(int index, const HdStep &step);
 	/// The print frame (floor diamond, 32k x 16k) for a step by (dx, dy): `variant` 0/1 the left or right foot of a one-tile unit, 2..5 the quarter of a
 	/// 2x2 body (for drops 0 light, 1 heavy); `kind` the look (HdFx::Track, or HD_STEP_DROPS), colour `rgb`, fading `tier` (0 fresh .. 2 old), `pattern` one of
 	/// HD_STEP_PATTERNS looks (0 the plain print, the others turned, shifted, a bit larger or smaller and worn in places).

@@ -540,6 +540,8 @@ en-US:
   STR_HD_BLOOD_STEPS_COLOR_DESC: "By the creature = the soles and drops take the blood colour of the creature that bled (the mod's table hd/blood.txt: zombies ochre green, the deep ones blue and so on; creatures the table does not name bleed red), whether \"Blood colour by creature\" is on or not. Red = all in red. Works with \"Bloody footprints\". Picture only."
   STR_HD_BLOOD_STEPS_COLOR_0: "By creature"
   STR_HD_BLOOD_STEPS_COLOR_1: "Red"
+  STR_HD_SNOW_TRACKS: "Footprints in snow"
+  STR_HD_SNOW_TRACKS_DESC: "On = in a battle on snow (a mission whose ground is snow, tundra or a snowy forest) every step of a walking unit leaves a dent in the snow, a cold grey-blue: a boot, a bare foot, a paw, the ruts of wheels or tracks (a big 2x2 body leaves one on each of its four tiles). They lie on any floor but water and lava, fade over three turns and are gone after that. Only what the player sees leaves them, and only on floor the player has discovered. Units that fly or float leave none. They come only from new steps: a loaded battle has none from before. Works only in the HD sprite modes, and not under water. Does not depend on \"Bloody footprints\". Picture only: the save, the turn order, visibility and the game's rules are not affected. Off = as before."
   STR_HD_ENEMY_NUMBER: "Numbers above enemies"
   STR_HD_ENEMY_NUMBER_DESC: "The number above an enemy the selected unit sees itself - the same as on the red button at the right of the panel. None = no numbers above enemies, the buttons stay. Blinking = the number shimmers with its button. Steady = the number stays plain red."
   STR_HD_ENEMY_NUMBER_0: "None"

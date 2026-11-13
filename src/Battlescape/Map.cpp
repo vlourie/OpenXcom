@@ -3250,6 +3250,12 @@ const HdFrame *Map::hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> spri
 const int HD_STEP_TILES = 2, HD_STEP_MAX = 240, HD_STEP_PER_TILE = 3, HD_STEP_PATTERNS = 4, HD_STEP_ALPHA[3] = { 200, 150, 105 }, HD_STEP_RED = 0x8E1212,
 	HD_STEP_ALWAYS = 11, HD_STEP_DROPS = 8, HD_STEP_FRAMES_MAX = 1200;
 
+/// Dents in snow (Options::oxceHdSnowTracks, XP-000563): the flag in a print's `kind` (the look itself is HdFx::Track), how many turns they last (always three,
+/// not Options::oxceHdBloodStepsLife), the caps of the snow's own store (a tile, the map), the cold grey-blue of the dent, the edge softer than the blood's (times),
+/// and the share of the print's opacity.
+const int HD_STEP_SNOW = 16, HD_SNOW_LIFE = 3, HD_SNOW_PER_TILE = 4, HD_SNOW_MAX = 900, HD_SNOW_RGB = 0x4A5570;
+const double HD_SNOW_SOFT = 1.8, HD_SNOW_ALPHA = 1.0;
+
 /// Turns a print lasts by the setting (the slider's 11 = always: 0).
 static int hdStepLife()
 {
@@ -3295,6 +3301,9 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 		return it->second;
 	}
 	HdFrame &f = _hdStepFrames[key];
+	// a dent in snow (the flag is in the key already): the look is the kind's, the edge is softer and the opacity its own
+	const bool snow = (kind & HD_STEP_SNOW) != 0;
+	kind &= ~HD_STEP_SNOW;
 	const int k = _k;
 	f.width = 32 * k;
 	f.height = 16 * k;
@@ -3389,7 +3398,8 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 	// the cross tread: bars along the way, whole to the tile (so they meet at its edges), dark bars and paler gaps
 	const double pass = std::fabs(hx) > 0.9 || std::fabs(hy) > 0.9 ? 1.0 : std::sqrt(2.0);
 	const double period = pass / (wheel ? 6 : 8), duty = wheel ? 0.55 : 0.8, gap = wheel ? 0.25 : 0.5;
-	const double soft = 1.0 / (16.0 * k);
+	const double soft = (snow ? HD_SNOW_SOFT : 1.0) / (16.0 * k);
+	const double alphaScale = snow ? HD_SNOW_ALPHA : 1.0;
 	const Uint32 rgbPart = (Uint32)rgb & 0xFFFFFF;
 	auto grace = [soft](double distance) { return std::min(1.0, std::max(0.0, 0.5 - distance / soft)); };
 	for (int y = 0; y < f.height; ++y)
@@ -3433,7 +3443,7 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 			{
 				cover *= wear(u, v);
 			}
-			const int alpha = (int)std::lround(HD_STEP_ALPHA[std::max(0, std::min(2, tier))] * cover);
+			const int alpha = (int)std::lround(HD_STEP_ALPHA[std::max(0, std::min(2, tier))] * alphaScale * cover);
 			if (alpha > 0)
 			{
 				f.pixels[(size_t)y * f.width + x] = ((Uint32)alpha << 24) | rgbPart;
@@ -3448,39 +3458,53 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 /**
  * Puts a print on tile `index`: a tile keeps HD_STEP_PER_TILE at most (the oldest of the tile goes), the map HD_STEP_MAX (the oldest of the map goes).
  */
-void Map::hdLayStep(int index, const HdStep &step)
+template <class Steps, class Order>
+static void hdLayInto(Steps &steps, Order &order, size_t &count, size_t perTile, size_t maxCount, int index, const typename Steps::mapped_type::value_type &step)
 {
-	std::vector<HdStep> &prints = _hdSteps[index];
-	if (prints.size() >= (size_t)HD_STEP_PER_TILE)
+	auto &prints = steps[index];
+	if (prints.size() >= perTile)
 	{
 		prints.erase(prints.begin());
-		--_hdStepCount;
+		--count;
 	}
 	prints.push_back(step);
-	++_hdStepCount;
-	_hdStepOrder.push_back(std::make_pair(index, step.seq));
-	while (_hdStepCount > (size_t)HD_STEP_MAX || _hdStepOrder.size() > (size_t)HD_STEP_MAX * 4)
+	++count;
+	order.push_back(std::make_pair(index, step.seq));
+	while (count > maxCount || order.size() > maxCount * 4)
 	{
-		auto old = _hdSteps.find(_hdStepOrder.front().first);
-		if (old != _hdSteps.end())
+		auto old = steps.find(order.front().first);
+		if (old != steps.end())
 		{
-			std::vector<HdStep> &list = old->second;
+			auto &list = old->second;
 			for (auto p = list.begin(); p != list.end(); ++p)
 			{
-				if (p->seq == _hdStepOrder.front().second)
+				if (p->seq == order.front().second)
 				{
 					list.erase(p);
-					--_hdStepCount;
+					--count;
 					break;
 				}
 			}
 			if (list.empty())
 			{
-				_hdSteps.erase(old);
+				steps.erase(old);
 			}
 		}
-		_hdStepOrder.pop_front();
+		order.pop_front();
 	}
+}
+
+void Map::hdLayStep(int index, const HdStep &step)
+{
+	hdLayInto(_hdSteps, _hdStepOrder, _hdStepCount, (size_t)HD_STEP_PER_TILE, (size_t)HD_STEP_MAX, index, step);
+}
+
+/**
+ * The same for a dent in snow (Options::oxceHdSnowTracks): a tile keeps HD_SNOW_PER_TILE, the map HD_SNOW_MAX - their own, so the snow never pushes the blood out.
+ */
+void Map::hdLaySnow(int index, const HdStep &step)
+{
+	hdLayInto(_hdSnowSteps, _hdSnowOrder, _hdSnowCount, (size_t)HD_SNOW_PER_TILE, (size_t)HD_SNOW_MAX, index, step);
 }
 
 /**
@@ -3495,16 +3519,40 @@ void Map::hdLayStep(int index, const HdStep &step)
 void Map::hdObserveSteps()
 {
 	// XP-000556: under water (depth > 0) no bloody soles and drops, as no blood spray there (XP-000533)
-	if (!Options::oxceHdBloodSteps || _canvas->getHdMode() == HD_MODE_NEAREST || _save->getDepth() > 0)
+	if (!(Options::oxceHdBloodSteps || Options::oxceHdSnowTracks) || _canvas->getHdMode() == HD_MODE_NEAREST || _save->getDepth() > 0)
 	{
-		if (!_hdStepTracks.empty() || !_hdSteps.empty())
+		if (!_hdStepTracks.empty() || !_hdSteps.empty() || !_hdSnowSteps.empty())
 		{
 			_hdStepTracks.clear();
 			_hdSteps.clear();
 			_hdStepOrder.clear();
 			_hdStepCount = 0;
+			_hdSnowSteps.clear();
+			_hdSnowOrder.clear();
+			_hdSnowCount = 0;
 		}
 		return;
+	}
+	// the blood and the snow are two options (XP-000563): the blood part below runs only when its own is on; the snow only in a battle whose ground is
+	// snow (the weather's biome, picked once for the battle - also when the weather itself is off), on any floor but water and lava
+	const bool blood = Options::oxceHdBloodSteps;
+	bool snow = false;
+	if (Options::oxceHdSnowTracks)
+	{
+		hdWeatherPick();
+		snow = _hdWeatherBiome == HdWeather::B_SNOW;
+	}
+	if (!blood && !_hdSteps.empty())
+	{
+		_hdSteps.clear();
+		_hdStepOrder.clear();
+		_hdStepCount = 0;
+	}
+	if (!snow && !_hdSnowSteps.empty())
+	{
+		_hdSnowSteps.clear();
+		_hdSnowOrder.clear();
+		_hdSnowCount = 0;
 	}
 	// the cache of the print frames is cleared between frames when it grows (patterns x colours x directions), the frames are made again as they are met
 	if (_hdStepFrames.size() > (size_t)HD_STEP_FRAMES_MAX)
@@ -3524,6 +3572,14 @@ void Map::hdObserveSteps()
 			prints.erase(std::remove_if(prints.begin(), prints.end(), [&](const HdStep &p) { return turn < p.turn || (life > 0 && turn - p.turn >= life); }), prints.end());
 			_hdStepCount -= before - prints.size();
 			s = prints.empty() ? _hdSteps.erase(s) : std::next(s);
+		}
+		for (auto s = _hdSnowSteps.begin(); s != _hdSnowSteps.end();)
+		{
+			auto &prints = s->second;
+			const size_t before = prints.size();
+			prints.erase(std::remove_if(prints.begin(), prints.end(), [&](const HdStep &p) { return turn < p.turn || turn - p.turn >= HD_SNOW_LIFE; }), prints.end());
+			_hdSnowCount -= before - prints.size();
+			s = prints.empty() ? _hdSnowSteps.erase(s) : std::next(s);
 		}
 	}
 	const bool redOnly = Options::oxceHdBloodStepsColor == 1;
@@ -3573,7 +3629,7 @@ void Map::hdObserveSteps()
 		++track.count;
 		// the wounded one on the move (alive, fatal wounds - read only) drops blood on each tile it enters: a few drops along its way, more and larger when
 		// it has many wounds; in its own blood colour (or red by the setting)
-		if (bu->getFatalWounds() > 0 && bu->getHealth() > 0 && bu->getStatus() != STATUS_DEAD)
+		if (blood && bu->getFatalWounds() > 0 && bu->getHealth() > 0 && bu->getStatus() != STATUS_DEAD)
 		{
 			const int own = redOnly ? -1 : HdFx::bloodRgb(bu->getArmor(), true);
 			for (int j = 0; j < size; ++j)
@@ -3591,6 +3647,30 @@ void Map::hdObserveSteps()
 					hdLayStep(index, HdStep{ dx, dy, bu->getFatalWounds() >= 3 ? 1 : 0, HD_STEP_DROPS, own >= 0 ? own : HD_STEP_RED, turn, ++_hdStepSeq, pattern });
 				}
 			}
+		}
+		// XP-000563: in a snow battle every step of a walker leaves a dent of its kind (a 2x2 body on all its four tiles), the left or the right foot by turns;
+		// no bloody soles needed; the colour is the snow's own
+		if (snow && kind != HdFx::TRACK_NONE)
+		{
+			for (int j = 0; j < size; ++j)
+			{
+				for (int i = 0; i < size; ++i)
+				{
+					const Position at(pos.x + i, pos.y + j, pos.z);
+					const Tile *floorTile = _save->getTile(at);
+					if (!floorTile || floorTile->hasNoFloor(_save) || !HdFx::dryFloor(floorTile))
+					{
+						continue;
+					}
+					const int index = _save->getTileIndex(at);
+					const int pattern = (int)((hdStepMix((Uint32)index * 0x9E3779B1U ^ (Uint32)turn * 0x85EBCA6BU ^ (Uint32)bu->getId() * 0xC2B2AE35U ^ track.count * 0x27D4EB2FU ^ 0x3C6EF372U) >> 8) % HD_STEP_PATTERNS);
+					hdLaySnow(index, HdStep{ dx, dy, size > 1 ? 2 + (i & 1) + 2 * (j & 1) : (int)(track.count & 1), kind | HD_STEP_SNOW, HD_SNOW_RGB, turn, ++_hdStepSeq, pattern });
+				}
+			}
+		}
+		if (!blood)
+		{
+			continue;
 		}
 		if (kind == HdFx::TRACK_NONE)
 		{
@@ -6291,6 +6371,23 @@ void Map::drawTerrain(HdCanvas *surface)
 					// HD render (Options::oxceHdBloodSteps, XP-000421): a bloody sole on this floor, after the floor, before what lies and stands here;
 					// only on a floor the player has discovered, three tiers of opacity by the age in turns (all the prints of the tile, the oldest first);
 					// they last Options::oxceHdBloodStepsLife turns (11 = always)
+					// XP-000563 (Options::oxceHdSnowTracks): the dents in snow, the same way, under the blood; they last three turns (HD_SNOW_LIFE, age = tier)
+					if (!_hdSnowSteps.empty() && !turned && _save->getDepth() == 0)
+					{
+						auto dent = _hdSnowSteps.find(_save->getTileIndex(mapPosition));
+						if (dent != _hdSnowSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
+						{
+							for (const HdStep &s : dent->second)
+							{
+								const int age = _save->getTurn() - s.turn;
+								if (age >= 0 && age < HD_SNOW_LIFE)
+								{
+									surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, std::min(2, age), s.pattern), screenPosition.x,
+										screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
+								}
+							}
+						}
+					}
 					if (!_hdSteps.empty() && !turned && _save->getDepth() == 0)
 					{
 						auto step = _hdSteps.find(_save->getTileIndex(mapPosition));
