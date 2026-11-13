@@ -1,0 +1,37 @@
+===== M11_s1 turns 60 melee fighters by turn {1: 4, 2: 4, 3: 4, 4: 2, 5: 2, 6: 2, 7: 1, 8: 1, 9: 1, 11: 1, 12: 1, 13: 1, 16: 1, 21: 1, 22: 1, 24: 1, 25: 1, 26: 1, 27: 1, 28: 1, 29: 1, 30: 1, 32: 1, 33: 1, 35: 1, 36: 1, 37: 1, 39: 1, 40: 1, 42: 1, 43: 1, 44: 1, 46: 1, 48: 1}
+  chances: 0
+===== M11_s2 turns 60 melee fighters by turn {1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 3, 8: 3, 9: 3, 10: 3, 11: 2, 12: 4, 13: 3, 14: 3, 15: 4, 16: 3, 17: 3, 18: 2, 20: 2, 21: 1, 23: 2, 24: 1, 25: 1, 26: 1, 28: 1, 29: 1, 31: 1, 32: 1, 35: 1, 36: 1, 37: 1, 39: 1, 40: 1, 41: 1, 43: 1, 44: 1}
+  chances: 0
+===== M2_s1 turns 15 melee fighters by turn {1: 28, 2: 26, 3: 25, 4: 22, 5: 17, 6: 15, 7: 9, 8: 9, 9: 8, 10: 8, 11: 7, 12: 7, 13: 7, 14: 6, 15: 6}
+  chances: 0
+===== M2_s2 turns 38 melee fighters by turn {1: 29, 2: 27, 3: 25, 4: 20, 5: 16, 6: 12, 7: 10, 8: 8, 9: 7, 10: 5, 11: 5, 12: 5, 13: 4, 14: 3, 15: 3}
+  chances: 0
+===== M3_s1 turns 20 melee fighters by turn {1: 4, 2: 3, 3: 3, 4: 2, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 12: 1}
+  t1 target 470 at (34,12,1) dir 6 hp 144/168:  [('1000001', 'CHRYSSALID', 'tu', 181, 'way', 167, 'now', 0, 'next', 12, 'hp', '116/116'), ('1000003', 'CHRYSSALID', 'tu', 181, 'way', 163, 'now', 1, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000001/1': [47, 10], '1000001/2': [49, 70]} target hp next 138/168
+  t2 target 470 at (42,23,0) dir 3 hp 138/168:  [('1000000', 'CHRYSSALID', 'tu', 181, 'way', 150, 'now', 2, 'next', 12, 'hp', '37/116'), ('1000001', 'CHRYSSALID', 'tu', 181, 'way', 162, 'now', 1, 'next', 12, 'hp', '109/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000001/2': [49, 70]} target hp next 132/168
+  t3 target 470 at (43,24,0) dir 3 hp 132/168:  [('1000000', 'CHRYSSALID', 'tu', 181, 'way', 146, 'now', 2, 'next', 12, 'hp', '37/116'), ('1000001', 'CHRYSSALID', 'tu', 181, 'way', 146, 'now', 2, 'next', 12, 'hp', '105/116'), ('1000005', 'CHRYSSALID', 'tu', 181, 'way', 152, 'now', 1, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {} target hp next 132/168
+  t4 target 470 at (42,26,0) dir 5 hp 132/168:  [('1000000', 'CHRYSSALID', 'tu', 181, 'way', 144, 'now', 2, 'next', 12, 'hp', '37/116'), ('1000005', 'CHRYSSALID', 'tu', 181, 'way', 146, 'now', 2, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000000/5': [161, 96]} target hp next 132/168
+  t4 target 444 at (16,34,0) dir 4 hp 91/170:  [('1000000', 'CHRYSSALID', 'tu', 181, 'way', 154, 'now', 1, 'next', 12, 'hp', '37/116'), ('1000005', 'CHRYSSALID', 'tu', 181, 'way', 148, 'now', 2, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000000/5': [161, 96]} target hp next 71/170
+  t4 target 545 at (16,29,0) dir 5 hp 68/68:  [('1000000', 'CHRYSSALID', 'tu', 181, 'way', 176, 'now', 0, 'next', 12, 'hp', '37/116'), ('1000005', 'CHRYSSALID', 'tu', 181, 'way', 170, 'now', 0, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000000/5': [161, 96]} target hp next 68/68
+  chances: 6
+===== M3_s2 turns 6 melee fighters by turn {1: 6, 2: 5, 3: 5, 4: 5, 5: 6, 6: 5}
+  t1 target 448 at (14,17,2) dir 4 hp 171/171:  [('1000002', 'CHRYSSALID', 'tu', 181, 'way', 172, 'now', 0, 'next', 12, 'hp', '116/116'), ('1000004', 'CHRYSSALID', 'tu', 181, 'way', 162, 'now', 1, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000004/1': [91, 122], '1000004/2': [94, 70]} target hp next 171/171
+  t1 target 470 at (18,11,0) dir 2 hp 168/168:  [('1000002', 'CHRYSSALID', 'tu', 181, 'way', 146, 'now', 2, 'next', 12, 'hp', '116/116'), ('1000004', 'CHRYSSALID', 'tu', 181, 'way', 136, 'now', 3, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000004/1': [91, 122], '1000004/2': [94, 70]} target hp next 168/168
+  t2 target 444 at (29,28,0) dir 2 hp 166/170:  [('1000004', 'CHRYSSALID', 'tu', 181, 'way', 176, 'now', 0, 'next', 12, 'hp', '105/116'), ('1000006', 'CHRYSSALID', 'tu', 181, 'way', 148, 'now', 2, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000004/2': [94, 70], '1000004/3': [37, 46]} target hp next 166/170
+  t3 target 448 at (16,24,2) dir 4 hp 171/171:  [('1000003', 'CHRYSSALID', 'tu', 181, 'way', 136, 'now', 3, 'next', 12, 'hp', '116/116'), ('1000004', 'CHRYSSALID', 'tu', 181, 'way', 123, 'now', 3, 'next', 12, 'hp', '94/116'), ('1000005', 'CHRYSSALID', 'tu', 181, 'way', 148, 'now', 2, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000003/3': [158, 79], '1000003/4': [165, 167], '1000004/3': [37, 46], '1000004/4': [126, 6], '1000005/3': [68, 114], '1000005/4': [141, 32]} target hp next 171/171
+  t3 target 444 at (35,23,0) dir 0 hp 166/170:  [('1000005', 'CHRYSSALID', 'tu', 181, 'way', 152, 'now', 1, 'next', 12, 'hp', '116/116'), ('1000006', 'CHRYSSALID', 'tu', 181, 'way', 126, 'now', 3, 'next', 12, 'hp', '116/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000005/3': [68, 114], '1000005/4': [141, 32]} target hp next 158/170
+  t4 target 444 at (20,9,0) dir 6 hp 158/170:  [('1000006', 'CHRYSSALID', 'tu', 181, 'way', 178, 'now', 0, 'next', 12, 'hp', '116/116'), ('1000004', 'CHRYSSALID', 'tu', 181, 'way', 144, 'now', 2, 'next', 12, 'hp', '94/116')]
+      D0 on t,t+1 (TU spent, dmg of damaging decisions): {'1000004/4': [126, 6], '1000004/5': [126, 149]} target hp next 143/170
+  chances: 6
+all chances: 12

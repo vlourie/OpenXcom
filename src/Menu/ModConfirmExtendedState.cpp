@@ -37,6 +37,7 @@ namespace OpenXcom
 	 */
 	ModConfirmExtendedState::ModConfirmExtendedState(ModListState *state, const ModInfo *modInfo, const ModInfo *masterInfo) : _state(state), _isMaster(modInfo->isMaster())
 	{
+		setHdScreen("optionsDialog");
 		_screen = false;
 
 		// Create objects

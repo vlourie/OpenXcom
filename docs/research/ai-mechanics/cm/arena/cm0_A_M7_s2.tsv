@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2019002	STR_VESSEL_GUNSHIP	over	STR_VESSEL_GUNSHIP	STR_UFO_GROUND_ASSAULT	20	5	URBANJUNKUFO	STR_SNAKEMAN	STR_AIRTRUCK#1	8	2	5	5	0	5	539	28	0	0	28	0	28	0	8	21	h.rec.in:186,p.rec.in:26	26	0	0	0	0	8	186	0	0	1	0	2	8		loss

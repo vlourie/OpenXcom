@@ -1,0 +1,814 @@
+﻿{
+ "prov": [
+  {
+   "run": "R1",
+   "ref": "arch:M3",
+   "same": {
+    "ai_probe": true,
+    "arena": true,
+    "data": true,
+    "scenario": true,
+    "flags": true
+   },
+   "exe": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "exe_ref": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "flags_beyond_ref": {},
+   "flags_missing": []
+  },
+  {
+   "run": "R4",
+   "ref": "arch:L8",
+   "same": {
+    "ai_probe": true,
+    "arena": true,
+    "data": true,
+    "scenario": true,
+    "flags": true
+   },
+   "exe": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "exe_ref": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "flags_beyond_ref": {},
+   "flags_missing": []
+  },
+  {
+   "run": "R1",
+   "ref": "R2",
+   "same": {
+    "ai_probe": true,
+    "arena": true,
+    "data": true,
+    "scenario": true,
+    "flags": false
+   },
+   "exe": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "exe_ref": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "flags_beyond_ref": {},
+   "flags_missing": [
+    "OXCE_AI_FORGE"
+   ]
+  },
+  {
+   "run": "R4",
+   "ref": "R5",
+   "same": {
+    "ai_probe": true,
+    "arena": true,
+    "data": true,
+    "scenario": true,
+    "flags": false
+   },
+   "exe": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "exe_ref": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "flags_beyond_ref": {},
+   "flags_missing": [
+    "OXCE_AI_FORGE"
+   ]
+  },
+  {
+   "run": "R2",
+   "ref": "R3",
+   "same": {
+    "ai_probe": true,
+    "arena": true,
+    "data": true,
+    "scenario": true,
+    "flags": true
+   },
+   "exe": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "exe_ref": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "flags_beyond_ref": {},
+   "flags_missing": []
+  },
+  {
+   "run": "R5",
+   "ref": "R6",
+   "same": {
+    "ai_probe": true,
+    "arena": true,
+    "data": true,
+    "scenario": true,
+    "flags": false
+   },
+   "exe": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "exe_ref": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "flags_beyond_ref": {},
+   "flags_missing": [
+    "OXCE_AI_FORGE_DUMP",
+    "OXCE_AI_FORGE_STOP"
+   ]
+  },
+  {
+   "run": "P1",
+   "ref": "R5",
+   "same": {
+    "ai_probe": true,
+    "arena": true,
+    "data": true,
+    "scenario": true,
+    "flags": true
+   },
+   "exe": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "exe_ref": "96e96de7ee5d58fd0898d3487b8c7a1d287a455fa73771a9e490c075d232516d",
+   "flags_beyond_ref": {},
+   "flags_missing": []
+  }
+ ],
+ "compare": [
+  {
+   "a": "R1",
+   "b": "arch:M3",
+   "game_lines": [
+    8518,
+    8518
+   ],
+   "forge_events": [
+    0,
+    0
+   ],
+   "game_first_difference": null,
+   "game_identical": true,
+   "game_same_prefix": true
+  },
+  {
+   "a": "R4",
+   "b": "arch:L8",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "forge_events": [
+    0,
+    0
+   ],
+   "game_first_difference": null,
+   "game_identical": true,
+   "game_same_prefix": true
+  },
+  {
+   "a": "R1",
+   "b": "R2",
+   "game_lines": [
+    8518,
+    8518
+   ],
+   "forge_events": [
+    0,
+    12579
+   ],
+   "game_first_difference": null,
+   "game_identical": true,
+   "game_same_prefix": true
+  },
+  {
+   "a": "R4",
+   "b": "R5",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "forge_events": [
+    0,
+    6514
+   ],
+   "game_first_difference": null,
+   "game_identical": true,
+   "game_same_prefix": true
+  },
+  {
+   "a": "R2",
+   "b": "R3",
+   "game_lines": [
+    8518,
+    8518
+   ],
+   "forge_events": [
+    12579,
+    12579
+   ],
+   "relative_first_difference": null,
+   "relative_identical": true,
+   "relative_same_prefix": true,
+   "relative_chain": [
+    "50339eb294384250b7a609eac9cf4e958918745572532dc17df7097b9ce4ab5a",
+    "50339eb294384250b7a609eac9cf4e958918745572532dc17df7097b9ce4ab5a"
+   ],
+   "relative_dumps_compared": 22,
+   "relative_dump_first_difference": null,
+   "relative_dump_lines_equal": true,
+   "clock_shifts": {
+    "3020": 1186
+   },
+   "game_first_difference": null,
+   "game_identical": true,
+   "game_same_prefix": true,
+   "chain_first_difference": {
+    "a": "[FORGE] n=3 h=11ff70b113197612 rng=97e71a6c35572bf t=1 s=0 ev=fp at=side S=2d730b2ada5daaa4 U=19a75d9851b15d5b A=6ef05cc2101e560d I=d179efddafbf6d4d O=874986aa5c11e678 M=589efc4faf9a4930 N=2474b4ecb349c777 B=bb7fbab42909817c J=cc8ba4b10eb9f1fd R=97e71a6c35572bf C=14020",
+    "b": "[FORGE] n=3 h=47e6c0db5fd8c7d5 rng=97e71a6c35572bf t=1 s=0 ev=fp at=side S=2d730b2ada5daaa4 U=19a75d9851b15d5b A=6ef05cc2101e560d I=d179efddafbf6d4d O=874986aa5c11e678 M=589efc4faf9a4930 N=2474b4ecb349c777 B=bb7fbab42909817c J=cc8ba4b10eb9f1fd R=97e71a6c35572bf C=11000",
+    "sections": [
+     "C"
+    ]
+   },
+   "chain_identical": false,
+   "chain_same_prefix": false,
+   "fingerprints_compared": 1186,
+   "fingerprints_equal": 0,
+   "section_differs_count": {
+    "S": 0,
+    "U": 0,
+    "A": 0,
+    "I": 0,
+    "O": 0,
+    "M": 0,
+    "N": 0,
+    "B": 0,
+    "J": 0,
+    "R": 0,
+    "C": 1186
+   },
+   "dumps_compared": 22,
+   "dump_first_difference": {
+    "at": 8,
+    "a": "why=shot.0 S=efd022f1e3cf192b U=881c5af44edcea60 A=4fcbe4abb988d465 I=d179efddafbf6d4d O=874986aa5c11e678 M=589efc4faf9a4930 N=a6333cc4112b3f6 B=73ff3feb55b75267 J=cc8ba4b10eb9f1fd R=11b9c4ac18938ed9 C=14020",
+    "b": "why=shot.0 S=efd022f1e3cf192b U=881c5af44edcea60 A=4fcbe4abb988d465 I=d179efddafbf6d4d O=874986aa5c11e678 M=589efc4faf9a4930 N=a6333cc4112b3f6 B=73ff3feb55b75267 J=cc8ba4b10eb9f1fd R=11b9c4ac18938ed9 C=11000"
+   },
+   "boundaries": {
+    "shot.0": 8,
+    "death.0": 14,
+    "walk.0": 19,
+    "reaction.0": 51,
+    "none.0": 68,
+    "second_pass.0": 162,
+    "stun.0": 213,
+    "walk.1": 281,
+    "shot.1": 355,
+    "reaction.1": 365,
+    "throw.1": 472,
+    "death.1": 548,
+    "none.1": 600,
+    "second_pass.1": 1285,
+    "convert.1": 1319,
+    "melee.1": 1371,
+    "walk.2": 1845,
+    "shot.2": 2019,
+    "stun.1": 2325,
+    "death.2": 3803,
+    "second_pass.2": 6610,
+    "convert.0": 8450
+   }
+  },
+  {
+   "a": "R5",
+   "b": "R6",
+   "game_lines": [
+    4366,
+    551
+   ],
+   "forge_events": [
+    6514,
+    889
+   ],
+   "relative_first_difference": null,
+   "relative_identical": false,
+   "relative_same_prefix": true,
+   "relative_chain": [
+    "36bf3fa459c34bd662d291355d0ea0525705fa1227c3969b07e302347e3c7de6",
+    "36bf3fa459c34bd662d291355d0ea0525705fa1227c3969b07e302347e3c7de6"
+   ],
+   "relative_dumps_compared": 11,
+   "relative_dump_first_difference": null,
+   "relative_dump_lines_equal": true,
+   "clock_shifts": {
+    "-6290": 81
+   },
+   "stop_event": 889,
+   "game_before_stop": [
+    537,
+    537
+   ],
+   "game_before_stop_identical": true,
+   "stop_section_values": {
+    "a": "[FORGE] n=889 rng=c2375dc4fd73ce77 t=1 s=1 ev=fp at=decide S=79b5e528667b6cb1 U=f579603bf3312ac5 A=95ed35fbb4e7ea36 I=a4395ecb0e1b4cc7 O=9df7da14b9ee93b9 M=50806ed289374d23 N=c59e75d233ba6d91 B=8dfed9c30fd1116f J=fc0f421c132b2321 R=c2375dc4fd73ce77 C=+57900",
+    "b": "[FORGE] n=889 rng=c2375dc4fd73ce77 t=1 s=1 ev=fp at=decide S=79b5e528667b6cb1 U=f579603bf3312ac5 A=95ed35fbb4e7ea36 I=a4395ecb0e1b4cc7 O=9df7da14b9ee93b9 M=50806ed289374d23 N=c59e75d233ba6d91 B=8dfed9c30fd1116f J=fc0f421c132b2321 R=c2375dc4fd73ce77 C=+57900"
+   },
+   "game_first_difference": {
+    "line": 541,
+    "a": "[AIEXEC] {\"v\":1,\"rec\":78,\"unit\":1000026,\"walk\":1,\"pos\":[47,33,1],\"dir\":2,\"tu\":42,\"spent\":0,\"kneel\":0,\"hp\":60,\"hp_lost\":0,\"stun\":0,\"down\":0,\"seen\":0,\"spotted\":0,\"dmg\":0,\"stunned\":0,\"downed\":0,\"fdmg\":0,\"fdowned\":0,\"born\":0,\"trail\":[\"walk.stop.reserve 47,33,1>46,33,1 d6 bam0 mt1 sz1 tu42/8 en71/4 rs7 bu-1\"]}",
+    "b": "[AIRESULT] how=timeout tac=h.rec.in:41,p.rec.in:38 seed=2032001 livesoldiers=7 livealiens=31 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=1 player=8 pdead=1 pout=0 pwounded=5 phplost=215 hostile=34 hdead=3 hout=0 hleft=31 pmoves=33 pattacks=2 hmoves=30 hattacks=5 vms=57910"
+   },
+   "game_identical": false,
+   "game_same_prefix": false,
+   "chain_first_difference": {
+    "a": "[FORGE] n=3 h=8e0519d0aa3193cb rng=45526e1cd29fd459 t=1 s=0 ev=fp at=side S=7b91693fcde7d95a U=d70290dd7f424983 A=947835cd44cff8b0 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=51ce45daad8855dd B=bb7fbab42909817c J=c741ee91487cbcd8 R=45526e1cd29fd459 C=7480",
+    "b": "[FORGE] n=3 h=304f938ee16f144a rng=45526e1cd29fd459 t=1 s=0 ev=fp at=side S=7b91693fcde7d95a U=d70290dd7f424983 A=947835cd44cff8b0 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=51ce45daad8855dd B=bb7fbab42909817c J=c741ee91487cbcd8 R=45526e1cd29fd459 C=13770",
+    "sections": [
+     "C"
+    ]
+   },
+   "chain_identical": false,
+   "chain_same_prefix": false,
+   "fingerprints_compared": 81,
+   "fingerprints_equal": 0,
+   "section_differs_count": {
+    "S": 0,
+    "U": 0,
+    "A": 0,
+    "I": 0,
+    "O": 0,
+    "M": 0,
+    "N": 0,
+    "B": 0,
+    "J": 0,
+    "R": 0,
+    "C": 81
+   },
+   "dumps_compared": 11,
+   "dump_first_difference": {
+    "at": 8,
+    "a": "why=walk.0 S=c2150eccbf5d33d6 U=35d20807c0c5c0fc A=feb578317df78397 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=3e1bb073f14cd586 B=b72104830a3fe5e9 J=c741ee91487cbcd8 R=c0c0c0135e660ccb C=7480",
+    "b": "why=walk.0 S=c2150eccbf5d33d6 U=35d20807c0c5c0fc A=feb578317df78397 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=3e1bb073f14cd586 B=b72104830a3fe5e9 J=c741ee91487cbcd8 R=c0c0c0135e660ccb C=13770"
+   },
+   "boundaries": {
+    "walk.0": 8,
+    "reaction.0": 30,
+    "none.0": 126,
+    "death.0": 141,
+    "shot.0": 270,
+    "second_pass.0": 313,
+    "melee.0": 317,
+    "walk.1": 501,
+    "none.1": 526,
+    "shot.1": 608,
+    "psi.1": 885,
+    "second_pass.1": 997,
+    "stun.0": 1314,
+    "throw.1": 1573,
+    "death.1": 1927,
+    "panic.0": 2235,
+    "stun.1": 2716,
+    "reaction.1": 3660
+   }
+  },
+  {
+   "a": "P1",
+   "b": "R5",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "forge_events": [
+    6514,
+    6514
+   ],
+   "relative_first_difference": null,
+   "relative_identical": true,
+   "relative_same_prefix": true,
+   "relative_chain": [
+    "462b58000307dc77fba75af2eb2a0fa2817cd41accce78d55faf1e077a938c05",
+    "462b58000307dc77fba75af2eb2a0fa2817cd41accce78d55faf1e077a938c05"
+   ],
+   "relative_dumps_compared": 18,
+   "relative_dump_first_difference": null,
+   "relative_dump_lines_equal": true,
+   "clock_shifts": {
+    "10510": 630
+   },
+   "game_first_difference": null,
+   "game_identical": true,
+   "game_same_prefix": true,
+   "chain_first_difference": {
+    "a": "[FORGE] n=3 h=1aa15b21b8ec8be rng=45526e1cd29fd459 t=1 s=0 ev=fp at=side S=7b91693fcde7d95a U=d70290dd7f424983 A=947835cd44cff8b0 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=51ce45daad8855dd B=bb7fbab42909817c J=c741ee91487cbcd8 R=45526e1cd29fd459 C=17990",
+    "b": "[FORGE] n=3 h=8e0519d0aa3193cb rng=45526e1cd29fd459 t=1 s=0 ev=fp at=side S=7b91693fcde7d95a U=d70290dd7f424983 A=947835cd44cff8b0 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=51ce45daad8855dd B=bb7fbab42909817c J=c741ee91487cbcd8 R=45526e1cd29fd459 C=7480",
+    "sections": [
+     "C"
+    ]
+   },
+   "chain_identical": false,
+   "chain_same_prefix": false,
+   "fingerprints_compared": 630,
+   "fingerprints_equal": 0,
+   "section_differs_count": {
+    "S": 0,
+    "U": 0,
+    "A": 0,
+    "I": 0,
+    "O": 0,
+    "M": 0,
+    "N": 0,
+    "B": 0,
+    "J": 0,
+    "R": 0,
+    "C": 630
+   },
+   "dumps_compared": 18,
+   "dump_first_difference": {
+    "at": 8,
+    "a": "why=walk.0 S=c2150eccbf5d33d6 U=35d20807c0c5c0fc A=feb578317df78397 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=3e1bb073f14cd586 B=b72104830a3fe5e9 J=c741ee91487cbcd8 R=c0c0c0135e660ccb C=17990",
+    "b": "why=walk.0 S=c2150eccbf5d33d6 U=35d20807c0c5c0fc A=feb578317df78397 I=34890db93104e205 O=968e5188aca4383a M=c35e1da3f95672c N=3e1bb073f14cd586 B=b72104830a3fe5e9 J=c741ee91487cbcd8 R=c0c0c0135e660ccb C=7480"
+   },
+   "boundaries": {
+    "walk.0": 8,
+    "reaction.0": 30,
+    "none.0": 126,
+    "death.0": 141,
+    "shot.0": 270,
+    "second_pass.0": 313,
+    "melee.0": 317,
+    "walk.1": 501,
+    "none.1": 526,
+    "shot.1": 608,
+    "psi.1": 885,
+    "second_pass.1": 997,
+    "stun.0": 1314,
+    "throw.1": 1573,
+    "death.1": 1927,
+    "panic.0": 2235,
+    "stun.1": 2716,
+    "reaction.1": 3660
+   }
+  }
+ ],
+ "monitor": {
+  "P1": {
+   "events": 6514,
+   "chain_last": "64ab8426eaaadbdd",
+   "counts": {
+    "act.0": 33,
+    "act.10": 11,
+    "act.13": 8,
+    "act.14": 16,
+    "act.2": 483,
+    "act.6": 1,
+    "act.7": 33,
+    "act.8": 15,
+    "chain.panic": 2,
+    "decisions": 600,
+    "ev.act": 600,
+    "ev.boundary": 18,
+    "ev.casualty": 24,
+    "ev.decide": 600,
+    "ev.end": 1,
+    "ev.fp": 630,
+    "ev.gate": 342,
+    "ev.hiding": 92,
+    "ev.mark": 580,
+    "ev.panic": 2,
+    "ev.react": 87,
+    "ev.sel": 407,
+    "ev.side": 30,
+    "ev.tick": 942,
+    "ev.tu": 1929,
+    "ev.walk_end": 230,
+    "marks_cleared": 254,
+    "marks_set": 326,
+    "reactions": 87,
+    "reselected": 100,
+    "sel_marked_turn_start": 8,
+    "tu_marked_reaction": 32
+   },
+   "sets": {
+    "postPathProcedures:529": 191,
+    "selectPlayerUnit:1009": 101,
+    "handleAI:396": 20,
+    "postPathProcedures:552": 14
+   },
+   "clears": {
+    "prepareNewTurn:2943": 247,
+    "psiAttack:5286": 7
+   },
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "first_notes": []
+  },
+  "R2": {
+   "events": 12579,
+   "chain_last": "44fca9a2af0b6ffb",
+   "counts": {
+    "act.0": 51,
+    "act.10": 2,
+    "act.2": 816,
+    "act.6": 15,
+    "act.7": 17,
+    "act.8": 161,
+    "act.9": 62,
+    "conversions": 6,
+    "decisions": 1124,
+    "ev.act": 1124,
+    "ev.boundary": 22,
+    "ev.casualty": 294,
+    "ev.convert": 6,
+    "ev.decide": 1124,
+    "ev.end": 1,
+    "ev.fp": 1186,
+    "ev.gate": 549,
+    "ev.hiding": 175,
+    "ev.mark": 929,
+    "ev.react": 83,
+    "ev.sel": 662,
+    "ev.side": 62,
+    "ev.tick": 1673,
+    "ev.tu": 4415,
+    "ev.walk_end": 274,
+    "marks_cleared": 404,
+    "marks_set": 525,
+    "reactions": 83,
+    "reselected": 200,
+    "sel_marked_turn_start": 20,
+    "tu_marked_reaction": 32,
+    "tu_past_hooks": 18
+   },
+   "sets": {
+    "handleAI:396": 264,
+    "selectPlayerUnit:1009": 187,
+    "postPathProcedures:529": 34,
+    "postPathProcedures:552": 34,
+    "convertUnit:2246": 6
+   },
+   "clears": {
+    "prepareNewTurn:2943": 404
+   },
+   "violations": 0,
+   "first_violations": [],
+   "notes": 18,
+   "first_notes": [
+    [
+     "time units fell past the hooks",
+     231,
+     " rng=b6562d82a8b863b8 t=1 s=0 ev=tick unit=444 fac=0 st=0 tu=41 noresel=0 hide=0 counter=2 second=1 pos=33,14,"
+    ],
+    [
+     "time units fell past the hooks",
+     241,
+     " rng=86aae3174bae9f38 t=1 s=0 ev=sel unit=520 from=545 again=1 noresel=0 fac=0 st=0 tu=97"
+    ],
+    [
+     "time units fell past the hooks",
+     929,
+     " rng=56ab1abaa9d33a1 t=1 s=1 ev=tick unit=1000036 fac=1 st=0 tu=9 noresel=0 hide=0 counter=2 second=0 pos=27,1"
+    ],
+    [
+     "time units fell past the hooks",
+     1134,
+     " rng=1fcf176edc24b1e4 t=1 s=1 ev=casualty dead=1 unit=454 fac=0 st=7 tu=91 noresel=0 hide=1"
+    ]
+   ]
+  },
+  "R3": {
+   "events": 12579,
+   "chain_last": "4380f5bc73a38b27",
+   "counts": {
+    "act.0": 51,
+    "act.10": 2,
+    "act.2": 816,
+    "act.6": 15,
+    "act.7": 17,
+    "act.8": 161,
+    "act.9": 62,
+    "conversions": 6,
+    "decisions": 1124,
+    "ev.act": 1124,
+    "ev.boundary": 22,
+    "ev.casualty": 294,
+    "ev.convert": 6,
+    "ev.decide": 1124,
+    "ev.end": 1,
+    "ev.fp": 1186,
+    "ev.gate": 549,
+    "ev.hiding": 175,
+    "ev.mark": 929,
+    "ev.react": 83,
+    "ev.sel": 662,
+    "ev.side": 62,
+    "ev.tick": 1673,
+    "ev.tu": 4415,
+    "ev.walk_end": 274,
+    "marks_cleared": 404,
+    "marks_set": 525,
+    "reactions": 83,
+    "reselected": 200,
+    "sel_marked_turn_start": 20,
+    "tu_marked_reaction": 32,
+    "tu_past_hooks": 18
+   },
+   "sets": {
+    "handleAI:396": 264,
+    "selectPlayerUnit:1009": 187,
+    "postPathProcedures:529": 34,
+    "postPathProcedures:552": 34,
+    "convertUnit:2246": 6
+   },
+   "clears": {
+    "prepareNewTurn:2943": 404
+   },
+   "violations": 0,
+   "first_violations": [],
+   "notes": 18,
+   "first_notes": [
+    [
+     "time units fell past the hooks",
+     231,
+     " rng=b6562d82a8b863b8 t=1 s=0 ev=tick unit=444 fac=0 st=0 tu=41 noresel=0 hide=0 counter=2 second=1 pos=33,14,"
+    ],
+    [
+     "time units fell past the hooks",
+     241,
+     " rng=86aae3174bae9f38 t=1 s=0 ev=sel unit=520 from=545 again=1 noresel=0 fac=0 st=0 tu=97"
+    ],
+    [
+     "time units fell past the hooks",
+     929,
+     " rng=56ab1abaa9d33a1 t=1 s=1 ev=tick unit=1000036 fac=1 st=0 tu=9 noresel=0 hide=0 counter=2 second=0 pos=27,1"
+    ],
+    [
+     "time units fell past the hooks",
+     1134,
+     " rng=1fcf176edc24b1e4 t=1 s=1 ev=casualty dead=1 unit=454 fac=0 st=7 tu=91 noresel=0 hide=1"
+    ]
+   ]
+  },
+  "R5": {
+   "events": 6514,
+   "chain_last": "35cc61313e51423",
+   "counts": {
+    "act.0": 33,
+    "act.10": 11,
+    "act.13": 8,
+    "act.14": 16,
+    "act.2": 483,
+    "act.6": 1,
+    "act.7": 33,
+    "act.8": 15,
+    "chain.panic": 2,
+    "decisions": 600,
+    "ev.act": 600,
+    "ev.boundary": 18,
+    "ev.casualty": 24,
+    "ev.decide": 600,
+    "ev.end": 1,
+    "ev.fp": 630,
+    "ev.gate": 342,
+    "ev.hiding": 92,
+    "ev.mark": 580,
+    "ev.panic": 2,
+    "ev.react": 87,
+    "ev.sel": 407,
+    "ev.side": 30,
+    "ev.tick": 942,
+    "ev.tu": 1929,
+    "ev.walk_end": 230,
+    "marks_cleared": 254,
+    "marks_set": 326,
+    "reactions": 87,
+    "reselected": 100,
+    "sel_marked_turn_start": 8,
+    "tu_marked_reaction": 32
+   },
+   "sets": {
+    "postPathProcedures:529": 191,
+    "selectPlayerUnit:1009": 101,
+    "handleAI:396": 20,
+    "postPathProcedures:552": 14
+   },
+   "clears": {
+    "prepareNewTurn:2943": 247,
+    "psiAttack:5286": 7
+   },
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "first_notes": []
+  },
+  "R6": {
+   "events": 889,
+   "chain_last": "7f7807e78afdd820",
+   "counts": {
+    "act.0": 9,
+    "act.10": 1,
+    "act.13": 1,
+    "act.2": 62,
+    "act.7": 2,
+    "act.8": 3,
+    "decisions": 79,
+    "ev.act": 78,
+    "ev.boundary": 11,
+    "ev.casualty": 4,
+    "ev.decide": 79,
+    "ev.fp": 81,
+    "ev.gate": 35,
+    "ev.hiding": 11,
+    "ev.mark": 18,
+    "ev.react": 13,
+    "ev.sel": 47,
+    "ev.side": 2,
+    "ev.tick": 114,
+    "ev.tu": 375,
+    "ev.walk_end": 21,
+    "marks_set": 18,
+    "reactions": 13,
+    "reselected": 13
+   },
+   "sets": {
+    "postPathProcedures:529": 9,
+    "selectPlayerUnit:1009": 7,
+    "handleAI:396": 2
+   },
+   "clears": {},
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "first_notes": []
+  }
+ },
+ "resources": [
+  {
+   "run": "arch:M3",
+   "ms": 127041,
+   "vms": 857870,
+   "how": "over",
+   "turn": "21",
+   "log_bytes": 18011148,
+   "forge_lines": 0,
+   "dump_lines": 0
+  },
+  {
+   "run": "arch:L8",
+   "ms": 22833,
+   "vms": 320920,
+   "how": "over",
+   "turn": "10",
+   "log_bytes": 9249989,
+   "forge_lines": 0,
+   "dump_lines": 0
+  },
+  {
+   "run": "R1",
+   "ms": 88292,
+   "vms": 857870,
+   "how": "over",
+   "turn": "21",
+   "log_bytes": 17990098,
+   "forge_lines": 0,
+   "dump_lines": 0
+  },
+  {
+   "run": "R2",
+   "ms": 92596,
+   "vms": 857870,
+   "how": "over",
+   "turn": "21",
+   "log_bytes": 20913874,
+   "forge_lines": 12579,
+   "dump_lines": 2240
+  },
+  {
+   "run": "R3",
+   "ms": 94045,
+   "vms": 857870,
+   "how": "over",
+   "turn": "21",
+   "log_bytes": 20914804,
+   "forge_lines": 12579,
+   "dump_lines": 2240
+  },
+  {
+   "run": "R4",
+   "ms": 15363,
+   "vms": 320920,
+   "how": "over",
+   "turn": "10",
+   "log_bytes": 9247483,
+   "forge_lines": 0,
+   "dump_lines": 0
+  },
+  {
+   "run": "R5",
+   "ms": 17204,
+   "vms": 320920,
+   "how": "over",
+   "turn": "10",
+   "log_bytes": 10699061,
+   "forge_lines": 6514,
+   "dump_lines": 900
+  },
+  {
+   "run": "R6",
+   "ms": 5195,
+   "vms": 57910,
+   "how": "timeout",
+   "turn": "1",
+   "log_bytes": 1969008,
+   "forge_lines": 889,
+   "dump_lines": 650
+  },
+  {
+   "run": "P1",
+   "ms": 19885,
+   "vms": 320920,
+   "how": "over",
+   "turn": "10",
+   "log_bytes": 10699310,
+   "forge_lines": 6514,
+   "dump_lines": 900
+  }
+ ]
+}

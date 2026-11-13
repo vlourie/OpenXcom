@@ -49,6 +49,7 @@ namespace OpenXcom
  */
 BuildNewBaseState::BuildNewBaseState(Base *base, Globe *globe, bool first) : _base(base), _globe(globe), _first(first), _oldlat(0), _oldlon(0), _mousex(0), _mousey(0)
 {
+	setHdScreen("buildNewBase");
 	int dx = _game->getScreen()->getDX();
 	int dy = _game->getScreen()->getDY();
 	_screen = false;
@@ -235,7 +236,7 @@ void BuildNewBaseState::globeClick(Action *action)
 		if (_globe->insideLand(lon, lat))
 		{
 			bool fakeUnderwaterBasesUnlocked = true;
-			if (!_game->getMod()->getFakeUnderwaterBaseUnlockResearch().empty())
+			if (_game->getMod()->getFakeUnderwaterBaseUnlockResearch())
 			{
 				fakeUnderwaterBasesUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getFakeUnderwaterBaseUnlockResearch(), true);
 			}

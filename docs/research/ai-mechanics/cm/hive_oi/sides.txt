@@ -1,0 +1,70 @@
+attacks counted {'cc3_CO_M6_s1': 89, 'scpa_D_M6_s2': 158, 'scpa_D_M3_s1': 158}
+formula against [AICASUALTY] hit (predicted, logged):
+   ('front', 'front') 2
+   ('front/right', 'rear') 1
+   ('left', 'left') 1
+   ('front/right', 'front') 1
+   ('rear/right', 'rear') 1
+weapon by side: attacks, with damage, share, damage, damage per attack
+  STR_GAUSS_RIFLE 96
+    front           21    1   4.8%     49    2.3
+    front/right     12    3  25.0%     47    3.9
+    front/left      13    1   7.7%     18    1.4
+    right           10    3  30.0%     61    6.1
+    left            10    1  10.0%     91    9.1
+    rear/right       7    0   0.0%      0    0.0
+    rear/left       11    0   0.0%      0    0.0
+    rear            12    7  58.3%    204   17.0
+  STR_SR_RIFLE 91
+    front           12    0   0.0%      0    0.0
+    front/right     21    0   0.0%      0    0.0
+    front/left       7    0   0.0%      0    0.0
+    right           13    0   0.0%      0    0.0
+    left            17    0   0.0%      0    0.0
+    rear/right       9    1  11.1%      5    0.6
+    rear/left        7    0   0.0%      0    0.0
+    rear             5    0   0.0%      0    0.0
+  STR_FLECHETTE_GUN 60
+    front            8    0   0.0%      0    0.0
+    front/right      5    0   0.0%      0    0.0
+    front/left       2    0   0.0%      0    0.0
+    right           10    0   0.0%      0    0.0
+    left             9    1  11.1%    239   26.6
+    rear/right       7    0   0.0%      0    0.0
+    rear/left       11    0   0.0%      0    0.0
+    rear             8    0   0.0%      0    0.0
+  STR_CANISTER_GUN 56
+    front           15    3  20.0%     37    2.5
+    front/right     10    2  20.0%     12    1.2
+    front/left       7    1  14.3%      8    1.1
+    right            7    2  28.6%     86   12.3
+    left             7    0   0.0%      0    0.0
+    rear/right       5    1  20.0%      6    1.2
+    rear/left        1    0   0.0%      0    0.0
+    rear             4    0   0.0%      0    0.0
+  STR_GAUSS_PISTOL 51
+    front           14    1   7.1%      8    0.6
+    front/right      6    1  16.7%     21    3.5
+    front/left       7    0   0.0%      0    0.0
+    right            9    0   0.0%      0    0.0
+    left             5    0   0.0%      0    0.0
+    rear/right       3    0   0.0%      0    0.0
+    rear/left        6    1  16.7%     22    3.7
+    rear             1    1 100.0%      9    9.0
+  STR_HEAVY_GAUSS 22
+    front            6    0   0.0%      0    0.0
+    front/right      2    0   0.0%      0    0.0
+    front/left       1    0   0.0%      0    0.0
+    right            1    0   0.0%      0    0.0
+    left             5    3  60.0%    142   28.4
+    rear/right       4    2  50.0%     52   13.0
+    rear/left        3    2  66.7%     62   20.7
+  STR_GAUSS_SNIPER 14
+    front            3    0   0.0%      0    0.0
+    front/right      1    1 100.0%     97   97.0
+    front/left       2    1  50.0%     14    7.0
+    right            3    0   0.0%      0    0.0
+    left             2    1  50.0%     47   23.5
+    rear/left        2    1  50.0%     34   17.0
+    rear             1    0   0.0%      0    0.0
+all weapons: {'front arc': (181, 18, 9.9, 502, 2.8), 'rear arc': (114, 19, 16.7, 461, 4.0), 'side': (110, 12, 10.9, 672, 6.1)}

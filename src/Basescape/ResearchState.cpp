@@ -55,8 +55,10 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	_txtAllocated = new Text(150, 9, 160, 24);
 	_txtSpace = new Text(300, 9, 10, 34);
 	_txtProject = new Text(110, 17, 10, 44);
-	_txtScientists = new Text(106, 17, 120, 44);
-	_txtProgress = new Text(84, 9, 226, 44);
+	// the term after the count needs room before the order arrows (XP-000499); without the option the classic layout
+	const bool hdEta = Options::oxceHdResearchEta;
+	_txtScientists = hdEta ? new Text(72, 17, 122, 44) : new Text(106, 17, 120, 44);
+	_txtProgress = hdEta ? new Text(74, 9, 220, 44) : new Text(84, 9, 226, 44);
 	_lstResearch = new TextList(288, 112, 8, 62);
 
 	// Set palette
@@ -73,6 +75,10 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	add(_txtScientists, "text", "researchMenu");
 	add(_txtProgress, "text", "researchMenu");
 	add(_lstResearch, "list", "researchMenu");
+
+	addBaseSwitch(_base, "researchMenu", "text", "button", 24,
+		[](const Base *other) { return other->getAvailableLaboratories() > 0; },
+		[](Base *other) { return withBaseSwitch(new ResearchState(other)); });
 
 	centerAllSurfaces();
 
@@ -96,15 +102,33 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	_txtProject->setText(tr("STR_RESEARCH_PROJECT"));
 
 	_txtScientists->setWordWrap(true);
-	_txtScientists->setText(tr("STR_SCIENTISTS_ALLOCATED_UC"));
+	std::string scientists = tr("STR_SCIENTISTS_ALLOCATED_UC");
+	if (hdEta)
+	{
+		// the Russian patch puts this header over the classic column with leading spaces
+		scientists.erase(0, scientists.find_first_not_of(' '));
+	}
+	_txtScientists->setText(scientists);
 
 	_txtProgress->setText(tr("STR_PROGRESS"));
+	if (hdEta)
+	{
+		_txtProgress->setAlign(ALIGN_RIGHT);
+	}
 
 	if (Options::oxceBaseResearchReorder)
 	{
-		_lstResearch->setArrowColumn(192, ARROW_VERTICAL);
+		_lstResearch->setArrowColumn(hdEta ? 186 : 192, ARROW_VERTICAL);
 	}
-	_lstResearch->setColumns(3, 158, 58, 70);
+	if (hdEta)
+	{
+		_lstResearch->setColumns(3, 112, 98, 74);
+		_lstResearch->setAlign(ALIGN_RIGHT, 2);
+	}
+	else
+	{
+		_lstResearch->setColumns(3, 158, 58, 70);
+	}
 	_lstResearch->setSelectable(true);
 	_lstResearch->setBackground(_window);
 	_lstResearch->setMargin(2);
@@ -237,8 +261,16 @@ void ResearchState::init()
 
 	if (Options::oxceResearchScrollSpeed > 0 || Options::oxceResearchScrollSpeedWithCtrl > 0)
 	{
-		// 175 +/- 20
-		_lstResearch->setNoScrollArea(_txtAllocated->getX() - 5, _txtAllocated->getX() + 35);
+		if (Options::oxceHdResearchEta)
+		{
+			// the moved count column, from its left edge up to the order arrows (XP-000520)
+			_lstResearch->setNoScrollArea(_txtScientists->getX() - 2, _txtScientists->getX() + _txtScientists->getWidth() - 1);
+		}
+		else
+		{
+			// 175 +/- 20
+			_lstResearch->setNoScrollArea(_txtAllocated->getX() - 5, _txtAllocated->getX() + 35);
+		}
 	}
 	else
 	{
@@ -256,6 +288,11 @@ void ResearchState::fillProjectList(size_t scrl)
 	{
 		std::ostringstream sstr;
 		sstr << proj->getAssigned();
+		if (Options::oxceHdResearchEta && proj->getAssigned() > 0)
+		{
+			// the short term after the count, by the ruleset cost, never the real one (XP-000494)
+			sstr << " " << ResearchInfoState::etaShort(this, proj);
+		}
 		const RuleResearch *r = proj->getRules();
 
 		std::string wstr = tr(r->getName());

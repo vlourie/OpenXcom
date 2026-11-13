@@ -101,11 +101,11 @@ void TrainingFinishedState::btnOpenClick(Action *)
 	_game->popState();
 	if (_psi)
 	{
-		_game->pushState(new AllocatePsiTrainingState(_base));
+		_game->pushState(withBaseSwitch(new AllocatePsiTrainingState(_base)));
 	}
 	else
 	{
-		_game->pushState(new AllocateTrainingState(_base));
+		_game->pushState(withBaseSwitch(new AllocateTrainingState(_base)));
 	}
 }
 

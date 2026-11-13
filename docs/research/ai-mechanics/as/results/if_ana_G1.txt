@@ -1,0 +1,38 @@
+totals: {'hostile_attacks': 3674, 'records': 730, 'cases': 514}
+recorded but no matching shot (act): {2: 215, 0: 1}
+primary class (cheapest useful alternative): {'none': 503, 'alt': 9, 'pos': 2}
+flags (non-exclusive): {'alt': 9, 'alt_pot': 11, 'gren_any': 184, 'hand_any': 59, 'melee_any': 482, 'melee_reach': 3, 'pos': 10}
+grenade on the belt but no use: {'no_tu': 107, 'no_efficacy': 62, 'invalid_throw': 15}
+no alternative: {'has_other_weapon_but_useless': 498, 'single_target': 307, 'only_this_weapon': 5, 'other_targets_seen': 196}
+executed shot's real effect: {'fx': 514, 'damage': 2, 'armour': 0, 'fire': 0, 'morale': 1, 'energy': 37, 'hp_lost': 0, 'self_hit': 13, 'self_hp_lost': 292, 'self_out': 7}
+by weapon:
+  STR_UAC_RIFLE                             174  {'none': 167, 'alt': 7}
+  STR_SHOTGUN_PA                             54  {'none': 54}
+  STR_UAC_CARBINE                            52  {'none': 49, 'pos': 2, 'alt': 1}
+  STR_LUGER                                  43  {'none': 43}
+  STR_UAC_SHOTGUN                            30  {'none': 30}
+  STR_OMEGA_RIFLE                            29  {'none': 29}
+  STR_MP40                                   22  {'none': 22}
+  STR_WOLFGUN                                20  {'none': 20}
+  STR_DB_SHOTGUN                             19  {'none': 18, 'alt': 1}
+  STR_AUTO_RIFLE                             16  {'none': 16}
+  STR_MP                                     15  {'none': 15}
+  STR_MACHINEGUN_LIGHT                        9  {'none': 9}
+  STR_SUPER_MAGNUM                            7  {'none': 7}
+  STR_RIFLE                                   6  {'none': 6}
+  STR_PISTOL_BM                               6  {'none': 6}
+  STR_SNIPER_RIFLE_LT                         3  {'none': 3}
+  STR_DART_PISTOL                             3  {'none': 3}
+  STR_SAW                                     2  {'none': 2}
+  STR_RIFLE_AK                                2  {'none': 2}
+  STR_REVOLVER                                1  {'none': 1}
+  STR_LMG                                     1  {'none': 1}
+by battle:
+  G1_L11_s1          48  {'none': 48}
+  G1_L11_s2          36  {'none': 36}
+  G1_L5_s1           94  {'none': 94}
+  G1_L5_s2           45  {'none': 45}
+  G1_M10_s1         152  {'none': 152}
+  G1_M10_s2         129  {'none': 118, 'alt': 9, 'pos': 2}
+  G1_M4_s1            3  {'none': 3}
+  G1_M8_s2            7  {'none': 7}

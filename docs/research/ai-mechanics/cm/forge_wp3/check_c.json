@@ -1,0 +1,191 @@
+﻿{
+ "batch": "c",
+ "frozen": {
+  "exe_sha256": "e5a8777ffa587ee69c1887d6a7f7b3451a4ab32bcc0666eb4b3ffb33ac67c0cf",
+  "frozen": "2026-11-06T22:47:46",
+  "monitor_cpp": "bbb75778e1c0a0a1b8f04070f8ac55873a7e60a07858793fcd6646471a1b2304",
+  "legal_h": "c7ff1d5b9f7402327af467f7471b1109431a167ae7fe604de387522102174b16",
+  "oracle": "5384b02b003f1295d5d065af7340e08d08e9b7e75ffed5e6ad84489aed3969f8",
+  "run_cm": "9eddb50fb4979ada83e1c7e310eab028ed22a9fb986551dc3ffc64263b9aadcf",
+  "plan": "cb53fa28db1db77fe6890da8366a751b04f6c4f393cc03b4d3ef50e346c42d80",
+  "seeds": "64cdaef1c3266b24dac9747910704284dc58ee3644bcd54a06821e54d6091bfc",
+  "oracle_after_addendum": "8f2f0396b68088dcb4a69da1f9bc955f12ed257a3bc1e664ba94d013e56c8d4e",
+  "addendum": "cf508fceb5c466ee32c5429d2f2afcaf156e2c924a8770124cd2a62fe774702a"
+ },
+ "runs": [
+  {
+   "arm": "Z3KA1",
+   "defects": [],
+   "events": 8969,
+   "violations": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 174,
+    "tu.recover": 186,
+    "tu.script": 28,
+    "tu.spend": 3598,
+    "tu_marked_reaction": 27
+   },
+   "notes": 0
+  },
+  {
+   "arm": "Z3KA2",
+   "defects": [],
+   "events": 8969,
+   "violations": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 174,
+    "tu.recover": 186,
+    "tu.script": 28,
+    "tu.spend": 3598,
+    "tu_marked_reaction": 27
+   },
+   "notes": 0
+  },
+  {
+   "arm": "Z3KB1",
+   "defects": [],
+   "events": 6881,
+   "violations": 0,
+   "tu_kinds": {
+    "tu.clear": 3,
+    "tu.cost": 161,
+    "tu.recover": 222,
+    "tu.script": 7,
+    "tu.spend": 1923,
+    "tu_marked_reaction": 12
+   },
+   "notes": 0
+  },
+  {
+   "arm": "Z3KB2",
+   "defects": [],
+   "events": 6881,
+   "violations": 0,
+   "tu_kinds": {
+    "tu.clear": 3,
+    "tu.cost": 161,
+    "tu.recover": 222,
+    "tu.script": 7,
+    "tu.spend": 1923,
+    "tu_marked_reaction": 12
+   },
+   "notes": 0
+  },
+  {
+   "arm": "Z3KD",
+   "defects": [],
+   "events": 6729,
+   "violations": 0,
+   "tu_kinds": {
+    "tu.clear": 1,
+    "tu.cost": 133,
+    "tu.recover": 233,
+    "tu.script": 5,
+    "tu.spend": 1886,
+    "tu_marked_reaction": 20
+   },
+   "notes": 0
+  }
+ ],
+ "off_vs_d0": {
+  "game_lines": [
+   4366,
+   4366
+  ],
+  "identical": true,
+  "first_difference": null,
+  "raw_differences": 1,
+  "monitor_lines": 0
+ },
+ "off_exe": [
+  "e5a8777ffa587ee69c1887d6a7f7b3451a4ab32bcc0666eb4b3ffb33ac67c0cf",
+  "C:\\OXCE_AIWorker\\cmrun\\exe\\F3\\openxcom.exe"
+ ],
+ "prefix_vs_wp21": {
+  "chain_identical": true,
+  "dump_identical": true
+ },
+ "AA": {
+  "a": "Z3KA1",
+  "b": "Z3KA2",
+  "forge_events": [
+   8969,
+   8969
+  ],
+  "game_lines": [
+   4683,
+   4683
+  ],
+  "chain_identical": true,
+  "chain_first_difference": null,
+  "game_identical": true,
+  "game_first_difference": null,
+  "dumps_compared": 24,
+  "dumps_only_one": [],
+  "dump_first_difference": null,
+  "branch_lines_equal": true,
+  "legal_lines_equal": true,
+  "raw_differences": 1,
+  "verdict": "IDENTICAL"
+ },
+ "BB": {
+  "a": "Z3KB1",
+  "b": "Z3KB2",
+  "forge_events": [
+   6881,
+   6881
+  ],
+  "game_lines": [
+   4441,
+   4441
+  ],
+  "chain_identical": true,
+  "chain_first_difference": null,
+  "game_identical": true,
+  "game_first_difference": null,
+  "dumps_compared": 24,
+  "dumps_only_one": [],
+  "dump_first_difference": null,
+  "branch_lines_equal": true,
+  "legal_lines_equal": true,
+  "raw_differences": 1,
+  "verdict": "IDENTICAL"
+ },
+ "different_seeds": {
+  "a": "Z3KA1",
+  "b": "Z3KD",
+  "values": [
+   8358,
+   6118
+  ],
+  "first_rng": [
+   "2cf08723339e165f",
+   "ad494bd710c7b342"
+  ],
+  "common_values": 0,
+  "same_course": false
+ },
+ "pair": {
+  "pair": [
+   "Z3KA1",
+   "Z3KB1"
+  ],
+  "defects": [],
+  "coupling": {
+   "a": "Z3KA1",
+   "b": "Z3KB1",
+   "events_in_step": 3,
+   "shared_state_share_of_b": 0.0192,
+   "act_fields_differ": {
+    "type": [
+     "7",
+     "8"
+    ]
+   }
+  }
+ },
+ "defects": [],
+ "verdict": "PASS"
+}

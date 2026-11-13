@@ -1,0 +1,5 @@
+build_label=cmrun-SV
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + STRIKE-V0 (AiProbe.cpp/.h, BattlescapeGame.cpp), OXCE_AI_STRIKE=0 off, 1 shadow, 2 on
+patch_sha256=2cc37037c4dab3e8b0bdd92b0908d3afe17e11c5f99ffe140053dda9e55ce48e
+exe_sha256=f9153088692b4a7b2f99322be9caa287ce5d45ebf5f6300e2f31720d13a3231a

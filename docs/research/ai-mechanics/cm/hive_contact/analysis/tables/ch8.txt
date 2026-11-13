@@ -1,0 +1,14 @@
+== what each kind of order came to: attack in the same turn or the next
+   ('ENGAGE', 'approach') {'n': 9, 'attack_same': 2, 'attack_next': 1, 'none': 6} last decision's TU, % of first, median 53
+   ('ENGAGE', 'fire') {'n': 12, 'attack_same': 8, 'attack_next': 1, 'none': 3} last decision's TU, % of first, median 44
+   ('ENGAGE', 'in_place') {'n': 5, 'attack_same': 2, 'attack_next': 1, 'none': 2} last decision's TU, % of first, median 100
+   ('ENGAGE', 'no_node') {'n': 6, 'attack_same': 0, 'attack_next': 0, 'none': 6} last decision's TU, % of first, median 43
+   ('ENGAGE', 'own_fight') {'n': 22, 'attack_same': 14, 'attack_next': 0, 'none': 8} last decision's TU, % of first, median 41
+   ('REINFORCE', 'approach') {'n': 11, 'attack_same': 0, 'attack_next': 0, 'none': 11} last decision's TU, % of first, median 38
+   ('REINFORCE', 'fire') {'n': 9, 'attack_same': 5, 'attack_next': 1, 'none': 3} last decision's TU, % of first, median 41
+   ('REINFORCE', 'in_place') {'n': 3, 'attack_same': 1, 'attack_next': 1, 'none': 1} last decision's TU, % of first, median 100
+   ('REINFORCE', 'no_node') {'n': 8, 'attack_same': 0, 'attack_next': 0, 'none': 8} last decision's TU, % of first, median 100
+== orders that arrived and then
+   [(('contact_approach', 'none'), 10), (('contact_fire', 'attack'), 6), (('advance_post', 'none'), 3), (('contact_fire', 'none'), 3), (('take_post', 'attack'), 2), (('sweep_sector', 'none'), 2), (('contact_approach', 'attack'), 1), (('take_post', 'none'), 1), (('sweep_sector', 'attack'), 1)]
+== guards at the moment they took a contact: their anchor and the contact
+   t1 squad 4 anchor (37, 42, 2) contact 520 (36, 33, 2) distance 9 why threat_near

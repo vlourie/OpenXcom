@@ -34,6 +34,7 @@
 #include "../Engine/Timer.h"
 #include "../Engine/RNG.h"
 #include <climits>
+#include <sstream>
 
 namespace OpenXcom
 {
@@ -75,22 +76,35 @@ void ResearchInfoState::buildUi()
 {
 	_screen = false;
 
-	_window = new Window(this, 230, 140, 45, 30);
-	_txtTitle = new Text(210, 17, 61, 40);
+	// the option "approximate term" (XP-000491) makes the window 14 px taller for one more line: the upper part
+	// goes 7 px up, the buttons 7 px down; with the option off every number is as it was
+	// (XP-000493: two lines now, the range and the "expected about N days", so 22 px taller: dy = 11)
+	const int dy = Options::oxceHdResearchEta ? 11 : 0;
 
-	_txtAvailableScientist = new Text(210, 9, 61, 60);
-	_txtAvailableSpace = new Text(210, 9, 61, 70);
-	_txtAllocatedScientist = new Text(210, 17, 61, 80);
-	_txtMore = new Text(110, 17, 85, 100);
-	_txtLess = new Text(110, 17, 85, 120);
-	_btnCancel = new TextButton(90, 16, 61, 145);
-	_btnOk = new TextButton(90, 16, 169, 145);
+	_window = new Window(this, 230, 140 + 2 * dy, 45, 30 - dy);
+	_txtTitle = new Text(210, 17, 61, 40 - dy);
 
-	_btnMore = new ArrowButton(ARROW_BIG_UP, 13, 14, 195, 100);
-	_btnLess = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 195, 120);
+	_txtAvailableScientist = new Text(210, 9, 61, 60 - dy);
+	_txtAvailableSpace = new Text(210, 9, 61, 70 - dy);
+	_txtAllocatedScientist = new Text(210, 17, 61, 80 - dy);
+	_txtMore = new Text(110, 17, 85, 100 - dy);
+	_txtLess = new Text(110, 17, 85, 120 - dy);
+	_btnCancel = new TextButton(90, 16, 61, 145 + dy);
+	_btnOk = new TextButton(90, 16, 169, 145 + dy);
 
-	_surfaceScientists = new InteractiveSurface(230, 140, 45, 30);
+	_btnMore = new ArrowButton(ARROW_BIG_UP, 13, 14, 195, 100 - dy);
+	_btnLess = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 195, 120 - dy);
+
+	_surfaceScientists = new InteractiveSurface(230, 140 + 2 * dy, 45, 30 - dy);
 	_surfaceScientists->onMouseClick((ActionHandler)&ResearchInfoState::handleWheel, 0);
+
+	if (dy)
+	{
+		_txtEta = new Text(210, 9, 61, 132);
+		_txtEtaExpected = new Text(210, 9, 61, 141);
+	}
+
+	touchComponentsCreate(_txtTitle, false, -45, +30 - dy, true);
 
 	// Set palette
 	setInterface("allocateResearch");
@@ -103,15 +117,24 @@ void ResearchInfoState::buildUi()
 	add(_txtAvailableScientist, "text", "allocateResearch");
 	add(_txtAvailableSpace, "text", "allocateResearch");
 	add(_txtAllocatedScientist, "text", "allocateResearch");
+	if (_txtEta)
+	{
+		add(_txtEta, "text", "allocateResearch");
+		add(_txtEtaExpected, "text", "allocateResearch");
+	}
 	add(_txtMore, "text", "allocateResearch");
 	add(_txtLess, "text", "allocateResearch");
 	add(_btnMore, "button1", "allocateResearch");
 	add(_btnLess, "button1", "allocateResearch");
 
+	touchComponentsAdd("button3", "allocateResearch", _window);
+
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "allocateResearch");
+
+	touchComponentsConfigure();
 
 	_txtTitle->setBig();
 
@@ -179,6 +202,16 @@ ResearchInfoState::~ResearchInfoState()
 }
 
 /**
+ * Resets stuff when coming back from other screens.
+ */
+void ResearchInfoState::init()
+{
+	State::init();
+
+	touchComponentsRefresh();
+}
+
+/**
  * Returns to the previous screen.
  * @param action Pointer to an action.
  */
@@ -206,6 +239,114 @@ void ResearchInfoState::setAssignedScientist()
 	_txtAvailableScientist->setText(tr("STR_SCIENTISTS_AVAILABLE_UC").arg(_base->getAvailableScientists()));
 	_txtAvailableSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE_UC").arg(_base->getFreeLaboratories()));
 	_txtAllocatedScientist->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(_project->getAssigned()));
+	if (_txtEta)
+	{
+		_txtEta->setText(etaText());
+		_txtEtaExpected->setText(etaExpectedText());
+	}
+}
+
+/**
+ * The approximate term of the project, "from and to" in days (option oxceHdResearchEta, XP-000491).
+ * Display only. It is counted from what the player can know: the ruleset cost R, the man-days already spent
+ * and the scientists assigned now. The real cost of the project (hidden, RNG 50-150 % of R, see the constructor
+ * above) is never read here: the bounds are the bounds of that RNG, not its result.
+ * The project is stepped once a day (spent += assigned, then done when spent >= cost), so the term is at least a day;
+ * and a project still on the list is not finished, i.e. its cost is above the spent.
+ * Once the spent passes the lower bound the range narrows from below: this follows from the project not being done yet.
+ */
+std::string ResearchInfoState::etaText() const
+{
+	long long fromDays = 0, toDays = 0, expectedDays = 0;
+	if (!etaDays(_project, fromDays, toDays, expectedDays))
+	{
+		return tr("STR_HD_RESEARCH_ETA_NONE");
+	}
+	if (fromDays >= toDays)
+	{
+		return tr("STR_HD_RESEARCH_ETA_ONE").arg(std::string(tr("STR_DAY", (unsigned)toDays)));
+	}
+	return tr("STR_HD_RESEARCH_ETA_RANGE").arg((int)fromDays).arg(std::string(tr("STR_DAY", (unsigned)toDays)));
+}
+
+/**
+ * The second line, "expected about N days" (XP-000493): the term if the cost were the ruleset cost itself.
+ * Empty when there is no scientists or the range is a single number.
+ */
+std::string ResearchInfoState::etaExpectedText() const
+{
+	long long fromDays = 0, toDays = 0, expectedDays = 0;
+	if (!etaDays(_project, fromDays, toDays, expectedDays) || fromDays >= toDays)
+	{
+		return "";
+	}
+	return tr("STR_HD_RESEARCH_ETA_EXPECTED").arg(std::string(tr("STR_DAY", (unsigned)expectedDays)));
+}
+
+/**
+ * The days to the end of a project counted from the ruleset cost, the spent and the scientists assigned now
+ * (the same numbers for the assign window and for the research list, XP-000493, XP-000494).
+ * The real cost of the project (_cost, the hidden RNG result) and the RNG are never touched: the bounds are the bounds
+ * of the RNG (rule cost * 50..150 / 100, as the constructor above makes it) and "expected" is the term at the ruleset
+ * cost itself, clamped to the bounds.
+ * @param project The project.
+ * @param fromDays Out: the least term, a day at least.
+ * @param toDays Out: the longest term.
+ * @param expectedDays Out: the term at the ruleset cost, between the two.
+ * @return False if there are no scientists (no term).
+ */
+bool ResearchInfoState::etaDays(const ResearchProject *project, long long &fromDays, long long &toDays, long long &expectedDays)
+{
+	const long long cost = project->getRules()->getCost();
+	const long long spent = project->getSpent();
+	const long long assigned = project->getAssigned();
+	if (cost <= 0)
+	{
+		// a project of no cost is finished by the next daily step, whoever works on it
+		fromDays = toDays = expectedDays = 1;
+		return true;
+	}
+	if (assigned <= 0)
+	{
+		return false;
+	}
+	const long long lowCost = std::max(1LL, cost * 50 / 100);
+	const long long highCost = std::max(lowCost, cost * 150 / 100);
+	const long long lowGoal = std::max(lowCost, spent + 1);
+	const long long highGoal = std::max(highCost, spent + 1);
+	fromDays = (lowGoal - spent + assigned - 1) / assigned;
+	toDays = (highGoal - spent + assigned - 1) / assigned;
+	const long long midGoal = std::max(cost, spent + 1);
+	expectedDays = std::min(toDays, std::max(fromDays, (midGoal - spent + assigned - 1) / assigned));
+	return true;
+}
+
+/**
+ * The short term for a cell of the research list, e.g. "(2-5d)" (option oxceHdResearchEta, XP-000494).
+ * @param state The state whose language is used.
+ * @param project The project.
+ * @return The text, empty if no scientists are assigned.
+ */
+std::string ResearchInfoState::etaShort(const State *state, const ResearchProject *project)
+{
+	long long fromDays = 0, toDays = 0, expectedDays = 0;
+	if (!etaDays(project, fromDays, toDays, expectedDays))
+	{
+		return "";
+	}
+	std::ostringstream range;
+	range << fromDays;
+	if (toDays > fromDays)
+	{
+		range << "-" << toDays;
+	}
+	std::string text = state->tr("STR_HD_RESEARCH_ETA_SHORT").arg(range.str());
+	if (text.compare(0, 4, "STR_") == 0)
+	{
+		// a language without the new string: the existing short day
+		text = state->tr("STR_DAY_SHORT").arg(range.str());
+	}
+	return text;
 }
 
 /**
@@ -224,7 +365,7 @@ void ResearchInfoState::handleWheel(Action *action)
  */
 void ResearchInfoState::morePress(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT) _timerMore->start();
+	if (_game->isLeftClick(action, true)) _timerMore->start();
 }
 
 /**
@@ -233,7 +374,7 @@ void ResearchInfoState::morePress(Action *action)
  */
 void ResearchInfoState::moreRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerMore->setInterval(250);
 		_timerMore->stop();
@@ -247,10 +388,10 @@ void ResearchInfoState::moreRelease(Action *action)
  */
 void ResearchInfoState::moreClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	if (_game->isRightClick(action, true))
 		moreByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-		moreByValue(1);
+	if (_game->isLeftClick(action, true))
+		moreByValue(_game->getScrollStep());
 }
 
 /**
@@ -259,7 +400,7 @@ void ResearchInfoState::moreClick(Action *action)
  */
 void ResearchInfoState::lessPress(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT) _timerLess->start();
+	if (_game->isLeftClick(action, true)) _timerLess->start();
 }
 
 /**
@@ -268,7 +409,7 @@ void ResearchInfoState::lessPress(Action *action)
  */
 void ResearchInfoState::lessRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerLess->setInterval(250);
 		_timerLess->stop();
@@ -282,10 +423,10 @@ void ResearchInfoState::lessRelease(Action *action)
  */
 void ResearchInfoState::lessClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	if (_game->isRightClick(action, true))
 		lessByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-		lessByValue(1);
+	if (_game->isLeftClick(action, true))
+		lessByValue(_game->getScrollStep());
 }
 
 /**
@@ -294,7 +435,7 @@ void ResearchInfoState::lessClick(Action *action)
 void ResearchInfoState::more()
 {
 	_timerMore->setInterval(50);
-	moreByValue(1);
+	moreByValue(_game->getScrollStep());
 }
 
 /**
@@ -321,7 +462,7 @@ void ResearchInfoState::moreByValue(int change)
 void ResearchInfoState::less()
 {
 	_timerLess->setInterval(50);
-	lessByValue(1);
+	lessByValue(_game->getScrollStep());
 }
 
 /**

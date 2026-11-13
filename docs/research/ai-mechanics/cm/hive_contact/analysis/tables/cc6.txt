@@ -1,0 +1,94 @@
+== cc6_CV_M3_s1 against scpa_D_M3_s1 lines 11433 9036
+ errors []
+ events {'CONTACT': 34, 'ASSIGN': 41, 'REINFORCE_CHECK': 7, 'DECISION': 8, 'ORDER': 157, 'EXEC': 313, 'FEEDBACK': 52}
+== decisions (first 5 turns)
+   event=DECISION turn=1 in_sight=6 fighting=3 free=9 cap=2 helpers=1 squads: 0=ENGAGE:543 1=MAINTAIN:-1 2=MAINTAIN:-1 3=MAINTAIN:-1 4=MAINTAIN:-1 5=REINFORCE:543 6=MAINTAIN:-1 7=MAINTAIN:-1 8=ENGAGE:545 9=MAINTAIN:-1 10=ENGAGE:448 11=MAINTAIN:-1
+   event=DECISION turn=2 in_sight=5 fighting=5 free=5 cap=2 helpers=1 squads: 1=ENGAGE:444 2=MAINTAIN:-1 3=MAINTAIN:-1 4=MAINTAIN:-1 5=ENGAGE:444 6=ENGAGE:444 7=ENGAGE:503 8=REINFORCE:503 9=MAINTAIN:-1 11=ENGAGE:444
+   event=DECISION turn=3 in_sight=4 fighting=4 free=6 cap=2 helpers=1 squads: 1=ENGAGE:444 2=MAINTAIN:-1 3=MAINTAIN:-1 4=MAINTAIN:-1 5=ENGAGE:444 6=ENGAGE:444 7=MAINTAIN:-1 8=REINFORCE:503 9=MAINTAIN:-1 11=ENGAGE:470
+   event=DECISION turn=4 in_sight=5 fighting=4 free=6 cap=2 helpers=2 squads: 1=REINFORCE:470 2=ENGAGE:444 3=MAINTAIN:-1 4=MAINTAIN:-1 5=MAINTAIN:-1 6=ENGAGE:444 7=REINFORCE:444 8=ENGAGE:448 9=MAINTAIN:-1 11=ENGAGE:470
+   event=DECISION turn=5 in_sight=5 fighting=4 free=5 cap=2 helpers=1 squads: 1=REINFORCE:470 2=ENGAGE:444 3=MAINTAIN:-1 4=MAINTAIN:-1 5=MAINTAIN:-1 7=ENGAGE:545 8=ENGAGE:448 9=MAINTAIN:-1 11=ENGAGE:503
+== assignments
+   ('NONE', 'MAINTAIN', 'own_task') 9
+   ('MAINTAIN', 'REINFORCE', 'nearest_free_with_route') 7
+   ('ENGAGE', 'MAINTAIN', 'engage_over_nothing_in_sight') 7
+   ('REINFORCE', 'ENGAGE', 'reinforce_now_sees') 5
+   ('MAINTAIN', 'ENGAGE', 'sees') 4
+   ('MAINTAIN', 'ENGAGE', 'threat_near') 3
+   ('NONE', 'ENGAGE', 'sees') 2
+   ('ENGAGE', 'ENGAGE', 'sees') 2
+   ('NONE', 'ENGAGE', 'threat_near') 1
+   ('REINFORCE', 'MAINTAIN', 'contact_not_in_sight') 1
+   first ones:
+    t 1 squad 0 NONE -> ENGAGE contact 543 sees task SEARCH none
+    t 1 squad 1 NONE -> MAINTAIN contact -1 own_task task HOLD guard_sector
+    t 1 squad 2 NONE -> MAINTAIN contact -1 own_task task HOLD guard_sector
+    t 1 squad 3 NONE -> MAINTAIN contact -1 own_task task HOLD guard_sector
+    t 1 squad 4 NONE -> MAINTAIN contact -1 own_task task HOLD guard_sector
+    t 1 squad 5 NONE -> MAINTAIN contact -1 own_task task SEARCH none
+    t 1 squad 6 NONE -> MAINTAIN contact -1 own_task task SEARCH none
+    t 1 squad 7 NONE -> MAINTAIN contact -1 own_task task SEARCH none
+    t 1 squad 8 NONE -> ENGAGE contact 545 sees task SEARCH none
+    t 1 squad 9 NONE -> MAINTAIN contact -1 own_task task HOLD guard_sector
+    t 1 squad 10 NONE -> ENGAGE contact 448 threat_near task HOLD guard_sector
+    t 1 squad 11 NONE -> MAINTAIN contact -1 own_task task SEARCH none
+    t 1 squad 5 MAINTAIN -> REINFORCE contact 543 nearest_free_with_route task SEARCH none
+    t 2 squad 1 MAINTAIN -> ENGAGE contact 444 threat_near task HOLD guard_sector
+== reinforce checks [('1', '5', '543', '11', '2'), ('2', '8', '503', '14', '3'), ('4', '1', '470', '15', '3'), ('4', '7', '444', '19', '3'), ('6', '11', '444', '3', '3'), ('7', '7', '470', '6', '4'), ('7', '5', '444', '22', '3')]
+== orders by role and kind [(('ENGAGE', 'own_fight'), 46), (('ENGAGE', 'approach'), 40), (('REINFORCE', 'approach'), 16), (('ENGAGE', 'fire'), 14), (('ENGAGE', 'in_place'), 12), (('ENGAGE', 'no_node'), 11), (('REINFORCE', 'fire'), 9), (('REINFORCE', 'no_node'), 6), (('REINFORCE', 'in_place'), 3)]
+== F2 changed by the order (walk on the order's node; in the off run this unit-turn did not): 20 units-turns, 14 units
+    (1, 1000055, 'fire', '(6,6,2)', ['(27,14,1)', '(15,15,0)'])
+    (1, 1000028, 'fire', '(2,8,0)', ['(63,39,3)', '(4,7,0)'])
+    (2, 1000013, 'approach', '(52,10,0)', [])
+    (2, 1000034, 'approach', '(52,37,0)', ['(54,27,3)', '(52,11,3)'])
+    (3, 1000023, 'approach', '(49,8,0)', ['(58,6,0)', '(53,7,0)'])
+    (4, 1000031, 'fire', '(29,19,0)', [])
+    (4, 1000057, 'approach', '(22,17,0)', [])
+    (4, 1000056, 'fire', '(25,24,0)', [])
+    (4, 1000000, 'approach', '(19,66,0)', ['(48,3,0)', '(48,3,0)'])
+    (4, 1000008, 'approach', '(35,69,0)', ['(37,67,2)', '(37,67,2)'])
+    (4, 1000025, 'approach', '(32,61,0)', ['(16,29,0)', '(14,5,3)'])
+    (5, 1000057, 'approach', '(25,19,0)', [])
+== F3 attacks by units under a REINFORCE order, not in sight at the plan: 21
+    (1, 1000055, 'fire', '9', '1000074', '(6,5,2)', 'STR_SR_RIFLE')
+    (1, 1000028, 'fire', '8', '543', '(2,8,0)', 'STR_SR_RIFLE')
+    (2, 1000013, 'approach', '9', '1000070', '(50,3,0)', 'STR_SR_RIFLE')
+    (2, 1000034, 'approach', '8', '1000079', '(55,35,0)', 'STR_CANISTER_GUN')
+    (3, 1000013, 'approach', '8', '448', '(54,11,0)', 'STR_SR_RIFLE')
+    (4, 1000057, 'approach', '9', '-1', '(16,8,0)', 'STR_PIR_PLASMA_RIFLE')
+    (4, 1000057, 'approach', '8', '-1', '(18,12,0)', 'STR_PIR_PLASMA_RIFLE')
+    (4, 1000056, 'fire', '8', '448', '(25,24,0)', 'STR_PIR_SMALL_LAUNCHER')
+    (5, 1000031, 'no_node', '8', '448', '(27,25,0)', 'STR_CANISTER_GUN')
+    (5, 1000057, 'approach', '8', '545', '(27,19,0)', 'STR_PIR_PLASMA_RIFLE')
+    (5, 1000041, 'no_node', '8', '470', '(52,59,0)', 'STR_SR_RIFLE')
+    (5, 1000041, 'no_node', '8', '470', '(52,59,0)', 'STR_SR_RIFLE')
+    (6, 1000016, 'approach', '8', '-1', '(18,16,0)', 'STR_SR_RIFLE')
+    (6, 1000038, 'in_place', '9', '470', '(14,43,0)', 'STR_CANISTER_GUN')
+    (6, 1000047, 'approach', '8', '470', '(50,57,0)', 'STR_SR_RIFLE')
+    (6, 1000047, 'approach', '8', '470', '(50,57,0)', 'STR_SR_RIFLE')
+== attacks by role, from EXEC
+   t 1 {'ENGAGE': 12, 'MAINTAIN': 12, 'REINFORCE': 2}
+   t 2 {'REINFORCE': 2, 'ENGAGE': 11, 'MAINTAIN': 6}
+   t 3 {'ENGAGE': 17, 'REINFORCE': 1, 'MAINTAIN': 9}
+   t 4 {'ENGAGE': 11, 'MAINTAIN': 4, 'REINFORCE': 3}
+   t 5 {'ENGAGE': 11, 'MAINTAIN': 3, 'REINFORCE': 5}
+   t 6 {'ENGAGE': 8, 'REINFORCE': 5}
+   t 7 {'REINFORCE': 2, 'MAINTAIN': 3, 'ENGAGE': 4}
+   t 8 {'REINFORCE': 2, 'ENGAGE': 7, 'MAINTAIN': 3}
+== F4 left MAINTAIN: [(('REINFORCE', 'nearest_free_with_route'), 7), (('ENGAGE', 'sees'), 4), (('ENGAGE', 'threat_near'), 3)]
+   a contact as an objective without the decision: 0 []
+   left a hold: [('not_useful', 1)] [('6', '4', 'not_useful')]
+== F5 same unit and node blocked twice: 0 blocked in all 2
+   units A-B-A-B over the turns: []
+   stays by reason: [('guard_sector', 83), ('contact_in_place', 15), ('no_closer_node', 10), ('at_node', 8), ('locked', 1)]
+== FAIR: orders on a contact with no observer record that turn: 0 []
+== TACTICAL (descriptive). The units under a REINFORCE order in the first turn it was given, their turns 1-4, this run against off
+   first turn 1 units [1000028, 1000050, 1000055]
+   on  (8, {'dmg': 62, 'downed': 2, 'stunned': 7, 'fdmg': 0})
+   off (17, {'dmg': 68, 'downed': 2, 'stunned': 5, 'fdmg': 0})
+   side per turn (units deciding, attacks, damage)
+    on  {1: (54, 26, 271), 2: (53, 19, 250), 3: (50, 27, 40), 4: (43, 18, 37), 5: (40, 19, 56), 6: (36, 13, 6), 7: (30, 9, 0), 8: (29, 12, 0)}
+    off {1: (54, 36, 659), 2: (49, 28, 285), 3: (42, 19, 238), 4: (33, 20, 0), 5: (29, 18, 61), 6: (24, 16, 4), 7: (19, 17, 6), 8: (17, 9, 7)}
+   casualties to turn 8 on {'enemy': 199, 'player': 34} off {'enemy': 221, 'player': 38}
+== plan us, max 194296 sum 974414
+ end [AIBLOCKSTEP] mode=0 player.recorded=0 player.suppressed=0 player.rerouted=0 player.no_path=0 player
+ result ['[AIRESULT] how=timeout tac=h.rec.in:938,h.rec.out.M2:18,h.rec.out.a8:1,h.rec.out.a9:2,p.rec.in:130,p.rec.out.a8:1 seed=2015001 livesoldiers=2 livealiens=24 aborted=0 mission=STR_ERIDIAN_TERROR turn=9 ']

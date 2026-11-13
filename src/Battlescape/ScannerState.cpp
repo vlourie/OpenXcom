@@ -40,6 +40,7 @@ namespace OpenXcom
  */
 ScannerState::ScannerState (BattleAction *action) : _action(action)
 {
+	setHdScreen("scanner");
 	if (Options::maximizeInfoScreens)
 	{
 		Options::baseXResolution = Screen::ORIGINAL_WIDTH;

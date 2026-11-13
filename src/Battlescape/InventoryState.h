@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <map>
+#include <memory>
 #include "../Engine/State.h"
 #include "../Interface/TextButton.h"
 #include "../Savegame/EquipmentLayoutItem.h"
@@ -37,6 +38,7 @@ class BattlescapeState;
 class BattleUnit;
 class BattlescapeButton;
 class Base;
+struct BattleAction;
 
 /**
  * Screen which displays soldier's inventory.
@@ -69,6 +71,11 @@ private:
 	bool _reloadUnit;
 	int _globalLayoutIndex;
 	int _prev_key = 0, _key_repeats = 0;
+	/// The use of an item dropped on the unit's body (a medikit's window keeps a pointer to it); used - the battle checks casualties on leaving
+	std::unique_ptr<BattleAction> _useAction;
+	bool _itemUsed = false;
+	/// Uses the grabbed item on the unit (it was dropped on the unit's body).
+	bool useOnSelf();
 	/// Helper method for Create Template button
 	void _createInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate);
 	/// Helper method for Apply Template button
@@ -135,8 +142,10 @@ public:
 	void onClearInventory(Action *action);
 	/// Handler for hitting the Auto-equip hotkey.
 	void onAutoequip(Action *action);
-	/// Handler for clicking on the inventory.
-	void invClick(Action *action);
+	/// Handler for left clicking on the inventory.
+	void invLeftClick(Action *action);
+	/// Handler for right clicking on the inventory.
+	void invRightClick(Action* action);
 	/// Handler for showing item info.
 	void calculateCurrentDamageTooltip();
 	void invMouseOver(Action *action);
@@ -144,6 +153,8 @@ public:
 	void invMouseOut(Action *action);
 	/// Handler for hitting the [Move Ground Inventory To Base] hotkey.
 	void onMoveGroundInventoryToBase(Action *action);
+	/// Handler for hitting the [Move Ground Inventory To Base] click.
+	void onMoveGroundInventoryToBaseClick(bool leftClick);
 	/// Handles keypresses.
 	void handle(Action *action) override;
 	/// Runs state functionality every cycle.

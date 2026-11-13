@@ -1,0 +1,5 @@
+build_label=cmrun-BO
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + TACTICAL STAGE 2 orders (AiProbe.cpp/.h, BattlescapeGame.cpp), flags OXCE_AI_ORDER_FIRE / OXCE_AI_ORDER_AVOID
+patch_sha256=f8a3f24dcc83ce9037121fbbece9ac99e0a28ed4b4535cdd71ff70251db4426d
+exe_sha256=fc468820cfe95e6724dd7f1a6ba916317710bb6205cdf95adb3002f56f05621f

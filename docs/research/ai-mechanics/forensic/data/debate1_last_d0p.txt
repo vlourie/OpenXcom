@@ -1,0 +1,40 @@
+== 1. Battles
+ ALL battles 48 player_units 518 pdead 255 per battle 5.31 battles with deaths 71% phplost 27262 per battle 568 hdead 1357 turns 17.2
+ NO M1 battles 46 player_units 398 pdead 143 per battle 3.11 battles with deaths 70% phplost 17606 per battle 383 hdead 1325 turns 17.3
+ M only battles 24 player_units 278 pdead 200 per battle 8.33 battles with deaths 79% phplost 21073 per battle 878 hdead 636 turns 16.0
+ L only battles 24 player_units 240 pdead 55 per battle 2.29 battles with deaths 62% phplost 6189 per battle 258 hdead 721 turns 18.3
+ months [(20, 8), (45, 8), (46, 8), (60, 8), (62, 8), (108, 8)]
+ kinds [('STR_UFO_GROUND_ASSAULT', 12), ('STR_UFO_CRASH_RECOVERY', 10), ('STR_BASE_DEFENSE', 4), ('STR_LOC_RITUAL_CAVE', 2), ('STR_LOC_SMUGGLER_LAIR', 2), ('STR_LOC_PIRATE_CRUISE', 2), ('STR_LOC_GUNS_OF_THE_PATRIOTS_BLACKMARCH', 2), ('STR_LOC_DOOMED_FARM2', 2), ('STR_LOC_CATACOMBS_UNDERGROUND_PRESS', 2), ('STR_GOVT_BASE_DEFENSE', 2), ('STR_ERIDIAN_TERROR', 2), ('STR_NINJA_BASE_OUTPOST_ASSAULT', 2), ('STR_LOC_HUMANIST_VILLA', 2), ('STR_SEA_DEVILS_REEF', 2)]
+ M1 [('d0p_D_M1_s1', 'STR_BASE_DEFENSE', '60', '55', '4696', '38', '14'), ('d0p_D_M1_s2', 'STR_BASE_DEFENSE', '60', '57', '4960', '37', '18')]
+ pdead by scenario [('M1', 112), ('M2', 16), ('L8', 15), ('M3', 14), ('L2', 12), ('M9', 12), ('M6', 11), ('M11', 10), ('L6', 9), ('L7', 9), ('M4', 9), ('M7', 8), ('M10', 6), ('L10', 3), ('L4', 3), ('L11', 2), ('M5', 2), ('L1', 1), ('L9', 1), ('L12', 0), ('L3', 0), ('L5', 0), ('M12', 0), ('M8', 0)]
+
+== 1b. By month of the squad (funnel counters): battles, unit-turns, attacked, no line, known on no line, weak/proven/melee among known no line, HP aimed per attack, HP/battle, pdead/battle, hdead/battle
+ month  20 scen ['M1', 'M10', 'M4', 'M7'] battles 8 ut  2143 att 33.9% nolof 44.0% known 38.5% | weak 42% proven 37% melee 3% | F3p90 10.0% | dmg   9898 /battle 1237 | pdead/b 16.88 hdead/b 12.8 player/b 18.8
+ month  45 scen ['M11', 'M2', 'M5', 'M8'] battles 8 ut  2574 att 32.5% nolof 58.0% known 57.8% | weak 17% proven 30% melee 48% | F3p90 6.1% | dmg   2070 /battle 259 | pdead/b 3.50 hdead/b 42.5 player/b 8.0
+ month  46 scen ['M12', 'M3', 'M6', 'M9'] battles 8 ut  1468 att 29.9% nolof 55.8% known 51.6% | weak 17% proven 46% melee 24% | F3p90 14.0% | dmg   2639 /battle 330 | pdead/b 4.62 hdead/b 24.2 player/b 8.0
+ month  60 scen ['L1', 'L10', 'L4', 'L7'] battles 8 ut  1068 att 39.2% nolof 49.5% known 37.5% | weak 13% proven 68% melee 4% | F3p90 14.7% | dmg   1194 /battle 149 | pdead/b 2.00 hdead/b 22.4 player/b 14.0
+ month  62 scen ['L11', 'L2', 'L5', 'L8'] battles 8 ut  3328 att 20.2% nolof 70.0% known 58.5% | weak 56% proven 23% melee 13% | F3p90 2.8% | dmg   2863 /battle 358 | pdead/b 3.62 hdead/b 38.8 player/b 8.0
+ month 108 scen ['L12', 'L3', 'L6', 'L9'] battles 8 ut  1041 att 22.4% nolof 72.0% known 62.3% | weak 19% proven 27% melee 31% | F3p90 11.0% | dmg    288 /battle 36 | pdead/b 1.25 hdead/b 29.0 player/b 8.0
+
+== 2. Casualties
+ hostile casualties 1916 dead 1356 by own side 327 {'ff_all': 327, 'ff_how_dead': 202, 'ff_side_1': 313, 'ff_terrain_0': 217, 'ff_other': 285, 'ff_self': 42, 'ff_how_stun': 125, 'ff_terrain_1': 110, 'ff_side_0': 14}
+ FF weapons [('STR_WEAPON_UNKNOWN', 113), ('STR_PIR_PLASMA_RIFLE', 15), ('STR_UAC_ROCKET_LAUNCHER', 15), ('AUX_DOOM_IMP_WEAPON', 14), ('STR_SATCHEL_CHARGE', 13), ('STR_CHAINGUN', 12), ('STR_PIR_ALIEN_GRENADE', 11), ('STR_UAC_HEAVY_NAILGUN', 11), ('STR_PIR_HEAVY_PLASMA', 8), ('STR_UAC_RIFLE', 7), ('STR_NINJA_SMG', 6), ('STR_HIGH_EXPLOSIVE', 5), ('STR_GAS_GRENADE', 5), ('STR_CD_RIFLE', 5)]
+ FF by scenario [('L5', 102), ('M10', 76), ('L2', 30), ('M2', 30), ('M1', 25), ('M5', 10), ('M3', 9), ('L11', 8), ('M4', 8), ('M8', 8), ('L7', 6), ('L6', 5), ('L4', 4), ('M7', 4)]
+ FF terrain flag by scenario [('L5', 89), ('L2', 10), ('M3', 6), ('M2', 3), ('M1', 2)]
+ players {'all': 391, 'class_melee': 54, 'class_not_in_table': 19, 'class_proven': 254, 'class_thrown': 29, 'class_unknown': 19, 'class_weak': 16, 'how_dead': 254, 'how_stun': 137, 'kf_-1': 8, 'kf_0': 9, 'kf_1': 373, 'kf_2': 1, 'round_1': 77, 'round_11+': 47, 'round_2': 60, 'round_3': 55, 'round_4-5': 65, 'round_6-10': 87, 'side_0': 119, 'side_1': 271, 'side_2': 1}
+ player killers [('STR_PIR_HEAVY_PLASMA', 67), ('STR_PIR_PLASMA_RIFLE', 53), ('AUX_XTURRET_14MMCHAINGUN_WEAPON', 17), ('AUX_SECTOPOD_WEAPON', 16), ('STR_PLASMA_SCORCHER', 15), ('STR_PIR_PLASMA_PISTOL', 13), ('STR_KUNG_FU_ALT', 13), ('STR_EMP_GRENADE', 12), ('STR_WEAPON_UNKNOWN', 10), ('AUX_ZOMBIE_WEAPON', 9), ('AUX_CHRYSSALID_WEAPON', 9), ('AUX_XTANK_GAUSS_WEAPON', 8), ('AUX_VAMPIRE_WEAPON', 8), ('STR_PIR_ALIEN_GRENADE', 8)]
+
+== 3. New exposures (unseen at pstart T-1, seen at pstart T): 742 died in the next player phase 223
+  fired itself in that enemy phase             n   430 (58.0%) died 0.277
+  did not fire itself                          n   312 (42.0%) died 0.333
+  alone: no other fired, no other newly seen   n    15 ( 2.0%) died 0.467
+  did not fire, others fired                   n   293 (39.5%) died 0.317
+  did not fire, others newly seen, none fired  n     4 ( 0.5%) died 1.000
+  fired, others also fired                     n   400 (53.9%) died 0.273
+  fired, alone                                 n    30 ( 4.0%) died 0.333
+  not firing, others 1-2                       n    60 ( 8.1%) died 0.500
+  not firing, others 3+                        n   233 (31.4%) died 0.270
+  fired itself vs not, death diff CI (-0.156, 0.025)
+  alone vs others fired (both not firing), death diff CI (-0.234, 0.668)
+
+== 4. Player TU at the enemy phase start: n 5011 mean 75.3 share <=10: 42.0% share >=40: 49.0%

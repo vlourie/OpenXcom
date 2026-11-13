@@ -73,6 +73,30 @@ namespace Options
 #define OPT extern
 #include "Options.inc.h"
 #undef OPT
+	namespace QOL
+	{
+		enum class ItemTooltipMode
+		{
+			None,
+			Hover,
+			Hotkey
+		};
+
+		enum class HighlightLowManaSoldiersMode
+		{
+			None,
+			Name,
+			Rank
+		};
+
+		enum class DefaultSoldiersSorter
+		{
+			Original,
+			KillCount,
+			FiringAccuracy,
+			CurrentMana
+		};
+	};
 
 	/// Creates the options info.
 	void create();
@@ -93,6 +117,8 @@ namespace Options
 	bool load(const std::string &filename = "options");
 	/// Saves options to YAML.
 	bool save(bool reset = false, const std::string &filename = "options");
+	/// Saves options to YAML at a full path (a copy; options.cfg is not touched).
+	bool saveTo(bool reset, const std::string &filepath);
 	/// Gets the game's data folder.
 	std::string getDataFolder();
 	/// Sets the game's data folder.

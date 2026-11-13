@@ -1,0 +1,52 @@
+== state lines, turns 4-5
+  pstart t 4 470 pos (43,24,0) dir 3 tu 195 hp 132/168 spot 0 sees - seenby 2 known 3 near 18 reach -1
+  pstart t 4 1000000 pos (41,55,3) dir 0 tu 111 hp 37/116 spot 255 sees 470,444 seenby 0 known 2 near 31 reach 0
+  pstart t 4 1000005 pos (40,54,3) dir 0 tu 43 hp 116/116 spot 255 sees 470,444 seenby 0 known 2 near 30 reach 0
+  aistart t 4 470 pos (42,26,0) dir 5 tu 156 hp 132/168 spot 0 sees 1000082 seenby 2 known 6 near 13 reach 1
+  aistart t 4 1000000 pos (41,55,3) dir 0 tu 181 hp 37/116 spot 255 sees 470 seenby 0 known 4 near 29 reach -1
+  aistart t 4 1000005 pos (40,54,3) dir 0 tu 181 hp 116/116 spot 255 sees 448,470,545 seenby 0 known 4 near 28 reach -1
+  pstart t 5 470 pos (42,26,0) dir 5 tu 195 hp 132/168 spot 1 sees 1000000,1000044 seenby 2 known 0 near -1 reach -1
+  pstart t 5 1000000 pos (44,32,3) dir 0 tu 31 hp 37/116 spot 255 sees 470 seenby 1 known 1 near 28 reach 3
+  pstart t 5 1000005 pos (40,54,3) dir 0 tu 58 hp 116/116 spot 255 sees 448,470,545 seenby 0 known 1 near 35 reach 2
+  aistart t 5 470 pos (46,27,0) dir 4 tu 156 hp 132/168 spot 0 sees 1000018,1000047 seenby 3 known 7 near 5 reach 6
+  aistart t 5 1000000 pos (44,32,3) dir 0 tu 181 hp 37/116 spot 255 sees 470 seenby 0 known 4 near 5 reach -1
+  aistart t 5 1000005 pos (40,54,3) dir 0 tu 181 hp 116/116 spot 255 sees - seenby 0 known 4 near 25 reach -1
+== decisions and trails
+  4 1000000 (41,55,3) tu 181 mode 0 src patrol.node to (48,3,0) aim 470 seen 448,470,444,545 spent 12 dmg 0 trail ['walk.stop.turnspot 43,55,3>43,55,3 d0 bam0 mt0 sz1 tu169/-1 en136/-1 rs0 bu-1']
+  4 1000000 (43,55,3) tu 169 mode 0 src patrol.node to (48,3,0) aim -1 seen 448,470,444,545 spent 22 dmg 0 trail ['walk.stop.spotted 44,51,3>44,51,3 d0 bam0 mt0 sz1 tu147/-1 en127/-1 rs0 bu-1']
+  4 1000005 (40,54,3) tu 181 mode 2 src firepoint.random to (38,54,3) aim 470 seen 448,470,444,545 spent 1 dmg 0 trail ['walk.stop.turnspot 40,54,3>40,54,3 d7 bam0 mt0 sz1 tu180/-1 en122/-1 rs0 bu-1']
+  4 1000005 (40,54,3) tu 180 mode 0 src patrol.node to (43,57,0) aim 470 seen 448,470,444,545 spent 30 dmg 0 trail []
+  4 1000000 (44,51,3) tu 147 mode 2 src firepoint.random to (44,56,3) aim 470 seen 448,470,444,545,1000081 spent 20 dmg 0 trail []
+  4 1000005 (43,57,0) tu 150 mode 2 src firepoint.random to (40,56,0) aim 470 seen 448,470,444,545,1000081 spent 14 dmg 0 trail []
+  4 1000005 (40,56,0) tu 136 mode 2 src firepoint to (43,57,0) aim 470 seen 448,470,444,545,1000081 spent 14 dmg 0 trail []
+  4 1000000 (44,56,3) tu 127 mode 2 src firepoint.fallback to (44,55,3) aim 470 seen 448,470,444,545,1000081 spent 4 dmg 0 trail []
+  4 1000000 (44,55,3) tu 123 mode 0 src patrol.node to (48,3,0) aim -1 seen 448,470,444,545,1000081 spent 92 dmg 0 trail ['walk.stop.spotted 44,32,3>44,32,3 d0 bam0 mt0 sz1 tu31/-1 en69/-1 rs0 bu-1']
+  4 1000005 (43,57,0) tu 122 mode 0 src patrol.node to (45,55,3) aim -1 seen 448,470,444,545,1000081 spent 42 dmg 0 trail []
+  4 1000005 (45,55,3) tu 80 mode 2 src firepoint.random to (40,54,3) aim 470 seen 448,470,444,545,1000081 spent 22 dmg 0 trail []
+  5 1000000 (44,32,3) tu 181 mode 2 src melee to (45,26,0) aim 470 seen 448,470,444,545 spent 8 dmg 0 trail ['walk.stop.spotted 44,30,3>44,30,3 d0 bam0 mt0 sz1 tu173/-1 en102/-1 rs0 bu-1']
+  5 1000000 (44,30,3) tu 173 mode 2 src melee to (45,26,0) aim 470 seen 448,470,444,545,1000081 spent 161 dmg 96 trail []
+  5 1000005 (40,54,3) tu 181 mode 2 src firepoint to (39,55,3) aim 444 seen 448,470,444,545 spent 6 dmg 0 trail []
+  5 1000005 (39,55,3) tu 175 mode 2 src firepoint to (35,55,3) aim 444 seen 448,470,444,545 spent 16 dmg 0 trail []
+  5 1000005 (35,55,3) tu 159 mode 2 src melee to (18,48,0) aim 444 seen 448,470,444,545 spent 24 dmg 0 trail ['walk.stop.spotted 29,55,3>29,55,3 d6 bam0 mt0 sz1 tu135/-1 en102/-1 rs0 bu-1']
+  5 1000005 (29,55,3) tu 135 mode 2 src melee to (18,48,0) aim 444 seen 448,470,444,545 spent 10 dmg 0 trail ['walk.stop.spotted 27,54,0>27,54,0 d7 bam0 mt0 sz1 tu125/-1 en97/-1 rs0 bu-1']
+== rebuilt routes of 1000005 at t4 (cost descent on its own first list)
+  (44, 32, 3) cost 112 route [(40, 54, 3), (41, 54, 3), (42, 54, 3), (43, 53, 3), (44, 52, 3), (45, 51, 3), (45, 50, 3), (45, 49, 3), (45, 48, 3), (45, 47, 3), (45, 46, 3), (45, 45, 3), (45, 44, 3), (44, 43, 3), (44, 42, 3), (44, 41, 3), (44, 40, 3), (44, 39, 3), (44, 38, 3), (44, 37, 3), (44, 36, 3), (44, 35, 3), (44, 34, 3), (44, 33, 3), (44, 32, 3)]
+  (45, 32, 3) cost 114 route [(40, 54, 3), (41, 54, 3), (42, 54, 3), (43, 53, 3), (44, 52, 3), (45, 51, 3), (45, 50, 3), (45, 49, 3), (45, 48, 3), (45, 47, 3), (45, 46, 3), (45, 45, 3), (45, 44, 3), (44, 43, 3), (44, 42, 3), (44, 41, 3), (44, 40, 3), (44, 39, 3), (44, 38, 3), (44, 37, 3), (44, 36, 3), (44, 35, 3), (44, 34, 3), (44, 33, 3), (45, 32, 3)]
+  (44, 33, 3) cost 108 route [(40, 54, 3), (41, 54, 3), (42, 54, 3), (43, 53, 3), (44, 52, 3), (45, 51, 3), (45, 50, 3), (45, 49, 3), (45, 48, 3), (45, 47, 3), (45, 46, 3), (45, 45, 3), (45, 44, 3), (44, 43, 3), (44, 42, 3), (44, 41, 3), (44, 40, 3), (44, 39, 3), (44, 38, 3), (44, 37, 3), (44, 36, 3), (44, 35, 3), (44, 34, 3), (44, 33, 3)]
+  (45, 33, 3) cost 110 route [(40, 54, 3), (41, 54, 3), (42, 54, 3), (43, 53, 3), (44, 52, 3), (45, 51, 3), (45, 50, 3), (45, 49, 3), (45, 48, 3), (45, 47, 3), (45, 46, 3), (45, 45, 3), (45, 44, 3), (44, 43, 3), (44, 42, 3), (44, 41, 3), (44, 40, 3), (44, 39, 3), (44, 38, 3), (44, 37, 3), (44, 36, 3), (44, 35, 3), (44, 34, 3), (45, 33, 3)]
+  (44, 31, 3) cost 116 route [(40, 54, 3), (41, 54, 3), (42, 54, 3), (43, 53, 3), (44, 52, 3), (45, 51, 3), (45, 50, 3), (45, 49, 3), (45, 48, 3), (45, 47, 3), (45, 46, 3), (45, 45, 3), (45, 44, 3), (44, 43, 3), (44, 42, 3), (44, 41, 3), (44, 40, 3), (44, 39, 3), (44, 38, 3), (44, 37, 3), (44, 36, 3), (44, 35, 3), (44, 34, 3), (44, 33, 3), (44, 32, 3), (44, 31, 3)]
+  (44, 34, 3) cost 104 route [(40, 54, 3), (41, 54, 3), (42, 54, 3), (43, 53, 3), (44, 52, 3), (45, 51, 3), (45, 50, 3), (45, 49, 3), (45, 48, 3), (45, 47, 3), (45, 46, 3), (45, 45, 3), (45, 44, 3), (44, 43, 3), (44, 42, 3), (44, 41, 3), (44, 40, 3), (44, 39, 3), (44, 38, 3), (44, 37, 3), (44, 36, 3), (44, 35, 3), (44, 34, 3)]
+ 1000000 at t4 from (41,55,3) tu 181 {(44, 32, 3): 110, (45, 32, 3): 112, (44, 33, 3): 106, (45, 33, 3): 108}
+== any AI unit standing in x 41..49, y 28..37, z 3, all logs of this seed, by kind of state line
+  cc6_CV_M3_s1 0
+  cc7_CL_M3_s1 0
+  ci7_IV_M3_s1 0
+  hh6_JV_M3_s1 0
+  hh7_HL_M3_s1 0
+  hh8_HL_M3_s1 0
+  ra3_AV_M3_s1 0
+  ri4_RV_M3_s1 0
+  ri5_RL_M3_s1 0
+  scpa_D_M3_s1 2
+     (5, '1000000', 'aistart') ('(44,32,3)', '0', '37/116', 'CHRYSSALID', '470')
+     (5, '1000000', 'pstart') ('(44,32,3)', '1', '37/116', 'CHRYSSALID', '470')

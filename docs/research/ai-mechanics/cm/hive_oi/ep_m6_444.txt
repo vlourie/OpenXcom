@@ -1,0 +1,57 @@
+==== scpa_D_M6_s2 target 444
+ t5 pstart: pos (23,14,0) dir 3 tu 183 hp 170/170
+ t5 aistart: pos (24,38,0) dir 5 tu 6 hp 170/170 spotted 0 sniped 6 seenby 2 wounds 0
+ t6 pstart: pos (24,38,0) dir 5 tu 183 hp 129/170
+ t6 aistart: pos (20,42,0) dir 5 tu 6 hp 129/170 spotted 0 sniped 6 seenby 1 wounds 0
+ t5 1000013 from (26,6,0) tu 111 hp 151 mode 0 act 2 to (28,5,0) HEAVY_GAUSS src patrol.node tgt  side-if-from-to rear/right spent 10 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d33 t8 HEAVY_GA tu38 p55 lof0 d33 t7 HEAVY_GA tu53 p50 lof0 d33
+ t5 1000013 from (28,5,0) tu 101 hp 151 mode 0 act 2 to (25,6,0) HEAVY_GAUSS src patrol.node tgt  side-if-from-to rear/right spent 14 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d34 t8 HEAVY_GA tu38 p55 lof0 d34 t7 HEAVY_GA tu53 p50 lof0 d34
+ t5 1000015 from (24,10,2) tu 111 hp 151 mode 0 act 2 to (27,13,2) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 22 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p145 lof0 d28 t10 FISTO tu16 p132 lof0 d28 t6 PIR_ALIE tu44 p84 lof0 d28
+ t5 1000015 from (27,13,2) tu 89 hp 151 mode 0 act 2 to (32,10,2) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 28 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p145 lof0 d26 t10 FISTO tu16 p132 lof0 d26 t6 PIR_ALIE tu44 p84 lof0 d26
+ t5 1000018 from (2,38,1) tu 111 hp 151 mode 2 act 8 to (24,38,0) HEAVY_GAUSS src sniper tgt 444 side-if-from-to under spent 39 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d22 t8 HEAVY_GA tu38 p55 lof1 d22 t7 HEAVY_GA tu53 p50 lof1 d22
+ t5 1000018 from (2,38,1) tu 72 hp 151 mode 2 act 2 to (5,41,1) HEAVY_GAUSS src firepoint tgt  side-if-from-to front/right spent 18 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d22 t8 HEAVY_GA tu38 p55 lof1 d22 t7 HEAVY_GA tu53 p50 lof1 d22
+ t5 1000018 from (5,41,1) tu 54 hp 151 mode 2 act 8 to (24,38,0) HEAVY_GAUSS src sniper tgt 444 side-if-from-to under spent 38 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d20 t8 HEAVY_GA tu38 p55 lof1 d20 t7 HEAVY_GA tu53 p50 lof1 d20
+ t5 1000021 from (26,9,2) tu 111 hp 151 mode 0 act 2 to (27,7,2) HEAVY_GAUSS src patrol.node tgt  side-if-from-to rear/right spent 10 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d30 t8 HEAVY_GA tu38 p55 lof0 d30 t7 HEAVY_GA tu53 p50 lof0 d30
+ t5 1000021 from (27,7,2) tu 101 hp 151 mode 0 act 2 to (26,9,2) HEAVY_GAUSS src patrol.node tgt  side-if-from-to rear/right spent 10 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d32 t8 HEAVY_GA tu38 p55 lof0 d32 t7 HEAVY_GA tu53 p50 lof0 d32
+ t5 1000022 from (37,38,0) tu 111 hp 81 mode 2 act 9 to (24,38,0) GAUSS_SNIPER src shot tgt 444 side-if-from-to under spent 100 dmg 34 down 0 | on 444: t9 GAUSS_SN tu97 p127 lof1 d13 t10 FISTO tu16 p116 lof0 d13 t6 PIR_ALIE tu44 p73 lof0 d13
+ t5 1000022 from (37,38,0) tu 11 hp 81 mode 0 act 2 to (36,40,0) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/left spent 0 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p127 lof1 d13 t10 FISTO tu16 p116 lof0 d13 t6 PIR_ALIE tu44 p73 lof0 d13
+ t5 1000024 from (29,3,1) tu 111 hp 93 mode 0 act 2 to (34,9,1) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 42 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p130 lof0 d36 t10 FISTO tu16 p118 lof0 d36 t6 PIR_ALIE tu44 p75 lof0 d36
+ t5 1000024 from (34,9,1) tu 69 hp 93 mode 0 act 2 to (31,9,0) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 30 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p130 lof0 d31 t10 FISTO tu16 p118 lof0 d31 t6 PIR_ALIE tu44 p75 lof0 d31
+ t5 1000032 from (28,10,0) tu 96 hp 139 mode 0 act 2 to (9,33,0) HEAVY_GAUSS src patrol.node tgt  side-if-from-to front/right spent 31 dmg 0 down 0 | on 444: t10 FISTO tu16 p120 lof0 d29 t8 HEAVY_GA tu33 p64 lof0 d29 t7 HEAVY_GA tu46 p59 lof0 d29
+ t5 1000032 from (28,15,0) tu 65 hp 139 mode 2 act 8 to (24,38,0) HEAVY_GAUSS src sniper tgt 444 side-if-from-to under spent 33 dmg 0 down 0 | on 444: t10 FISTO tu16 p120 lof0 d24 t8 HEAVY_GA tu33 p64 lof1 d24 t7 HEAVY_GA tu46 p59 lof1 d24
+ t5 1000033 from (37,9,0) tu 96 hp 103 mode 0 act 2 to (37,6,1) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 4 dmg 0 down 0 | on 444: t9 GAUSS_SN tu84 p212 lof0 d32 t8 GAUSS_SN tu62 p114 lof0 d32 t10 FISTO tu16 p111 lof0 d32
+ t5 1000033 from (36,9,0) tu 92 hp 103 mode 0 act 2 to (37,6,1) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 54 dmg 0 down 0 | on 444: t9 GAUSS_SN tu84 p212 lof0 d32 t8 GAUSS_SN tu62 p114 lof0 d32 t10 FISTO tu16 p111 lof0 d32
+ t5 1000035 from (28,13,0) tu 134 hp 193 mode 0 act 2 to (25,12,0) GAUSS_RIFLE src patrol.node tgt  side-if-from-to rear/right spent 14 dmg 0 down 0 | on 444: t10 PRED_CLA tu7 p174 lof0 d26 t9 GAUSS_RI tu100 p121 lof1 d26 t8 GAUSS_RI tu40 p89 lof1 d26
+ t5 1000035 from (25,12,0) tu 120 hp 193 mode 2 act 2 to (30,13,0) GAUSS_RIFLE src firepoint.fallback tgt  side-if-from-to rear/right spent 22 dmg 0 down 0 | on 444: t10 PRED_CLA tu7 p174 lof0 d27 t9 GAUSS_RI tu100 p121 lof0 d27 t8 GAUSS_RI tu40 p89 lof0 d27
+ t5 1000035 from (30,13,0) tu 98 hp 193 mode 2 act 2 to (36,15,0) PRED_CLAWS src melee tgt  side-if-from-to rear spent 59 dmg 0 down 0 | on 444: t10 PRED_CLA tu7 p174 lof0 d26 t9 GAUSS_RI tu100 p121 lof0 d26 t8 GAUSS_RI tu40 p89 lof0 d26
+ t5 1000036 from (30,28,0) tu 134 hp 193 mode 2 act 8 to (24,38,0) GAUSS_RIFLE src sniper tgt 444 side-if-from-to under spent 44 dmg 7 down 0 | on 444: t10 PRED_CLA tu7 p174 lof0 d12 t9 GAUSS_RI tu100 p121 lof1 d12 t8 GAUSS_RI tu40 p89 lof1 d12
+ t5 1000036 from (30,28,0) tu 90 hp 193 mode 2 act 8 to (24,38,0) GAUSS_RIFLE src shot tgt 444 side-if-from-to under spent 40 dmg 0 down 0 | on 444: t10 PRED_CLA tu7 p174 lof0 d12 t9 GAUSS_RI tu100 p121 lof1 d12 t8 GAUSS_RI tu40 p89 lof1 d12
+ t5 1000013 from (25,6,0) tu 87 hp 151 mode 0 act 2 to (28,5,0) HEAVY_GAUSS src patrol.node tgt  side-if-from-to rear/right spent 14 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d33 t8 HEAVY_GA tu38 p55 lof0 d33 t7 HEAVY_GA tu53 p50 lof0 d33
+ t5 1000013 from (28,5,0) tu 73 hp 151 mode 2 act 2 to (33,10,0) HEAVY_GAUSS src firepoint.fallback tgt  side-if-from-to rear/right spent 34 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d34 t8 HEAVY_GA tu38 p55 lof0 d34 t7 HEAVY_GA tu53 p50 lof0 d34
+ t5 1000013 from (33,10,0) tu 39 hp 151 mode 2 act 8 to (25,17,0) HEAVY_GAUSS src sniper tgt 448 side-if-from-to rear/right spent 38 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d30 t8 HEAVY_GA tu38 p55 lof0 d30 t7 HEAVY_GA tu53 p50 lof0 d30
+ t5 1000015 from (32,10,2) tu 61 hp 151 mode 0 act 2 to (37,13,2) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear spent 24 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p145 lof0 d30 t10 FISTO tu16 p132 lof0 d30 t6 PIR_ALIE tu44 p84 lof0 d30
+ t5 1000015 from (36,12,2) tu 37 hp 151 mode 0 act 2 to (37,13,2) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear spent 0 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p145 lof0 d29 t10 FISTO tu16 p132 lof0 d29 t6 PIR_ALIE tu44 p84 lof0 d29
+ t5 1000018 from (5,41,1) tu 16 hp 151 mode 0 act 2 to (6,43,0) HEAVY_GAUSS src patrol.node tgt  side-if-from-to front/right spent 0 dmg 0 down 0 | on 444: 
+ t5 1000018 from (5,41,1) tu 16 hp 151 mode 0 act 2 to (6,43,0) HEAVY_GAUSS src patrol.node tgt  side-if-from-to front/right spent 0 dmg 0 down 0 | on 444: 
+ t5 1000021 from (26,9,2) tu 91 hp 151 mode 0 act 2 to (24,9,2) HEAVY_GAUSS src patrol.node tgt  side-if-from-to rear/right spent 12 dmg 0 down 0 | on 444: 
+ t5 1000021 from (24,9,2) tu 79 hp 151 mode 0 act 2 to (26,9,2) HEAVY_GAUSS src patrol.node tgt  side-if-from-to rear/right spent 8 dmg 0 down 0 | on 444: t10 FISTO tu16 p132 lof0 d29 t8 HEAVY_GA tu38 p55 lof0 d29 t7 HEAVY_GA tu53 p50 lof0 d29
+ t5 1000022 from (37,38,0) tu 11 hp 81 mode 0 act 2 to (36,40,0) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/left spent 0 dmg 0 down 0 | on 444: 
+ t5 1000022 from (37,38,0) tu 11 hp 81 mode 0 act 2 to (36,40,0) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/left spent 0 dmg 0 down 0 | on 444: 
+ t5 1000024 from (30,7,1) tu 39 hp 93 mode 0 act 2 to (31,9,0) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 0 dmg 0 down 0 | on 444: t9 GAUSS_SN tu97 p130 lof0 d32 t10 FISTO tu16 p118 lof0 d32 t6 PIR_ALIE tu44 p75 lof0 d32
+ t5 1000024 from (30,7,1) tu 39 hp 93 mode 0 act 2 to (31,9,0) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 0 dmg 0 down 0 | on 444: 
+ t5 1000032 from (28,15,0) tu 32 hp 139 mode 3 act 2 to (32,14,0) HEAVY_GAUSS src escape tgt  side-if-from-to rear/right spent 31 dmg 0 down 0 | on 444: 
+ t5 1000033 from (28,6,1) tu 38 hp 103 mode 0 act 2 to (37,6,1) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 0 dmg 0 down 0 | on 444: t9 GAUSS_SN tu84 p212 lof0 d33 t8 GAUSS_SN tu62 p114 lof0 d33 t10 FISTO tu16 p111 lof0 d33
+ t5 1000033 from (28,6,1) tu 38 hp 103 mode 0 act 2 to (37,6,1) GAUSS_SNIPER src patrol.node tgt  side-if-from-to rear/right spent 0 dmg 0 down 0 | on 444: 
+ t5 1000035 from (40,15,0) tu 39 hp 193 mode 0 act 2 to (28,13,0) GAUSS_RIFLE src patrol.node tgt  side-if-from-to rear/right spent 1 dmg 0 down 0 | on 444: t10 PRED_CLA tu7 p174 lof0 d29 t9 GAUSS_RI tu100 p121 lof1 d29 t8 GAUSS_RI tu40 p89 lof1 d29
+ t5 1000035 from (40,15,0) tu 38 hp 193 mode 0 act 2 to (28,13,0) GAUSS_RIFLE src patrol.node tgt  side-if-from-to rear/right spent 38 dmg 0 down 0 | on 444: t10 PRED_CLA tu7 p174 lof0 d29 t9 GAUSS_RI tu100 p121 lof1 d29 t8 GAUSS_RI tu40 p89 lof1 d29
+ t5 1000036 from (30,28,0) tu 50 hp 193 mode 2 act 8 to (24,38,0) GAUSS_RIFLE src shot tgt 444 side-if-from-to under spent 40 dmg 0 down 0 | on 444: 
+ t5 1000036 from (30,28,0) tu 10 hp 193 mode 0 act 2 to (47,9,0) GAUSS_RIFLE src patrol.node tgt  side-if-from-to rear spent 2 dmg 0 down 0 | on 444: 
+-- reactions and casualties in the window, in log order
+  casualty {'turn': '6', 'victim': '1000022', 'how': 'stun', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'front', 'dist': '13', 'pos': '(37,38,0)'}
+  casualty {'turn': '6', 'victim': '1000036', 'how': 'stun', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'under', 'dist': '12', 'pos': '(30,28,0)'}
+  casualty {'turn': '6', 'victim': '1000032', 'how': 'dead', 'killer': '448', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'right', 'dist': '5', 'pos': '(30,19,0)'}
+  casualty {'turn': '6', 'victim': '1000006', 'how': 'dead', 'killer': '543', 'weapon': 'STR_SUPER_MAGNUM', 'hit': 'front', 'dist': '19', 'pos': '(21,48,0)'}
+  casualty {'turn': '6', 'victim': '1000014', 'how': 'stun', 'killer': '448', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'front', 'dist': '27', 'pos': '(1,19,0)'}
+  casualty {'turn': '6', 'victim': '1000022', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'under', 'dist': '17', 'pos': '(37,38,0)'}
+-- kills by the target, per turn, over the whole battle
+   [(2, 1), (4, 1), (6, 1), (21, 2), (22, 1), (25, 1), (27, 1), (28, 1)]
+-- all player's kills per turn: [(1, 2), (2, 3), (3, 3), (4, 3), (5, 3), (6, 5), (8, 2), (9, 1), (10, 1), (12, 1), (14, 2), (16, 1), (19, 1), (21, 2), (22, 1), (24, 1), (25, 2), (27, 1), (28, 1)]

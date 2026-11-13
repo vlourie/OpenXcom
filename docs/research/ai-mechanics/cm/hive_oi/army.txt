@@ -1,0 +1,156 @@
+===== cc3_CO_M6_s1 seed 2018001 result {'mission': 'STR_UFO_GROUND_ASSAULT', 'how': 'timeout', 'turn': '9', 'pdead': '4', 'hdead': '26', 'hostile': '41', 'player': '8', 'pattacks': '34', 'hattacks': '96'}
+-- player's units (first state)
+  444 SOLDIER tu=183 hp=170/170 morale=94 rh=AUX_TANK_CANNON:1 lh=AUX_TANK_MG:1 spare=3 ammo=0 pos=(34,34,2)
+  448 SOLDIER tu=182 hp=171/171 morale=94 rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spare=3 ammo=0 pos=(33,24,2)
+  454 SOLDIER tu=108 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=3 pos=(33,33,2)
+  470 SOLDIER tu=195 hp=168/168 morale=94 rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spare=3 ammo=0 pos=(35,24,2)
+  503 SOLDIER tu=99 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=1 pos=(36,29,2)
+  520 SOLDIER tu=108 hp=84/84 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=2 pos=(36,33,2)
+  543 SOLDIER tu=109 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=3 pos=(33,29,2)
+  545 SOLDIER tu=108 hp=68/68 morale=98 rh=AUX_WOLVERIN_WEAPON_MINIGUN:1 lh=AUX_TANK_WEAPON_GRENADES:1 spare=0 ammo=2 pos=(34,36,2)
+-- AI side by type
+  STR_MUTON_SOLDIER n=17 tu=['96'] hp=['133'] hands={'STR_GAUSS_RIFLE:1|-': 7, 'STR_FLECHETTE_GUN:1|-': 3, 'STR_GAUSS_PISTOL:1|-': 6, 'STR_GAUSS_PISTOL:1|STR_GLADIUS:1': 1}
+  STR_MUTON_NAVIGATOR n=17 tu=['111'] hp=['151'] hands={'STR_GAUSS_RIFLE:1|-': 13, 'STR_HEAVY_GAUSS:1|-': 1, 'STR_FLECHETTE_GUN:1|-': 1, 'STR_GAUSS_SNIPER:1|-': 2}
+  STR_MUTON_ENGINEER n=4 tu=['96'] hp=['139'] hands={'STR_GAUSS_SNIPER:1|-': 2, 'STR_GAUSS_RIFLE:1|-': 1, 'STR_HEAVY_GAUSS:1|-': 1}
+  STR_MUTON_LEADER n=3 tu=['134'] hp=['193'] hands={'STR_GAUSS_PISTOL:1|-': 2, 'STR_GAUSS_RIFLE:1|-': 1}
+-- what each AI fighter could do, from the engine's own list of actions at its first decision
+  AUX_FISTO                        melee  fighters= 35 tu=[16]
+  STR_GAUSS_RIFLE                  snap   fighters= 20 tu=[28, 33, 40]
+  STR_GAUSS_RIFLE                  aimed  fighters= 20 tu=[72, 83, 100]
+  STR_PIR_ALIEN_GRENADE            throw  fighters= 20 tu=[38, 44, 53]
+  STR_GAUSS_PISTOL                 snap   fighters=  9 tu=[21, 29]
+  STR_GAUSS_PISTOL                 aimed  fighters=  9 tu=[38, 53]
+  STR_GAUSS_SNIPER                 snap   fighters=  4 tu=[62, 72]
+  STR_GAUSS_SNIPER                 aimed  fighters=  4 tu=[84, 97]
+  STR_FLECHETTE_GUN                snap   fighters=  3 tu=[22, 25]
+  AUX_PRED_CLAWS                   melee  fighters=  3 tu=[7]
+  STR_HEAVY_GAUSS                  snap   fighters=  2 tu=[33, 38]
+  STR_HEAVY_GAUSS                  auto   fighters=  2 tu=[46, 53]
+  STR_GLADIUS                      melee  fighters=  1 tu=[9]
+-- what the AI side did
+  STR_GAUSS_RIFLE                  act   8 n=  48 with_damage=  5 dmg=116
+  STR_GAUSS_PISTOL                 act   8 n=  19 with_damage=  0 dmg=0
+  STR_FLECHETTE_GUN                act   8 n=   8 with_damage=  1 dmg=239
+  THROW                            act   6 n=   6 with_damage=  0 dmg=0
+  STR_GAUSS_RIFLE                  act   9 n=   5 with_damage=  1 dmg=6
+  STR_GAUSS_SNIPER                 act   9 n=   4 with_damage=  1 dmg=14
+  STR_HEAVY_GAUSS                  act   8 n=   3 with_damage=  1 dmg=21
+  STR_GAUSS_PISTOL                 act   9 n=   2 with_damage=  0 dmg=0
+  STR_HEAVY_GAUSS                  act   7 n=   1 with_damage=  1 dmg=62
+-- who killed and stunned player's units, first line per victim and how
+  turn 1 454 dead by 1000016 (STR_MUTON_NAVIGATOR) STR_HEAVY_GAUSS side=front dist=27
+  turn 1 543 stun by 444 (SOLDIER) AUX_TANK_CANNON side=under dist=2
+  turn 1 543 dead by 444 (SOLDIER) AUX_TANK_CANNON side=under dist=2
+  turn 1 520 dead by 1000027 (STR_MUTON_NAVIGATOR) STR_PIR_ALIEN_GRENADE side=under dist=10
+  turn 1 503 stun by 1000017 (STR_MUTON_NAVIGATOR) STR_PIR_ALIEN_GRENADE side=under dist=19
+  turn 2 503 dead by 1000017 (STR_MUTON_NAVIGATOR) STR_PIR_ALIEN_GRENADE side=under dist=19
+-- AI losses by turn, killer's weapon
+   [('AUX_TANK_LASER_CANNON', 13), ('AUX_WOLVERIN_WEAPON_MINIGUN', 8), ('AUX_TANK_CANNON', 4), ('STR_PIR_ALIEN_GRENADE', 1)]
+===== scpa_D_M6_s2 seed 2018002 result {'mission': 'STR_UFO_CRASH_RECOVERY', 'how': 'over', 'turn': '29', 'pdead': '5', 'hdead': '36', 'hostile': '37', 'player': '8', 'pattacks': '59', 'hattacks': '161'}
+-- player's units (first state)
+  444 SOLDIER tu=183 hp=170/170 morale=94 rh=AUX_TANK_CANNON:1 lh=AUX_TANK_MG:1 spare=3 ammo=0 pos=(14,34,2)
+  448 SOLDIER tu=182 hp=171/171 morale=94 rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spare=3 ammo=0 pos=(13,24,2)
+  454 SOLDIER tu=108 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=3 pos=(13,33,2)
+  470 SOLDIER tu=195 hp=168/168 morale=94 rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spare=3 ammo=0 pos=(15,24,2)
+  503 SOLDIER tu=99 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=1 pos=(16,29,2)
+  520 SOLDIER tu=108 hp=84/84 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=2 pos=(16,33,2)
+  543 SOLDIER tu=109 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=3 pos=(13,29,2)
+  545 SOLDIER tu=108 hp=68/68 morale=98 rh=AUX_WOLVERIN_WEAPON_MINIGUN:1 lh=AUX_TANK_WEAPON_GRENADES:1 spare=0 ammo=2 pos=(14,36,2)
+-- AI side by type
+  STR_MUTON_NAVIGATOR n=19 tu=['111'] hp=['151'] hands={'STR_GAUSS_SNIPER:1|-': 4, 'STR_GAUSS_RIFLE:1|-': 8, 'STR_FLECHETTE_GUN:1|-': 4, 'STR_HEAVY_GAUSS:1|-': 3}
+  STR_MUTON_SOLDIER n=12 tu=['96'] hp=['133'] hands={'STR_GAUSS_PISTOL:1|-': 7, 'STR_FLECHETTE_GUN:1|-': 2, 'STR_GAUSS_PISTOL:1|STR_GLADIUS:1': 1, 'STR_GAUSS_RIFLE:1|-': 2}
+  STR_MUTON_ENGINEER n=3 tu=['96'] hp=['139'] hands={'STR_GAUSS_RIFLE:1|-': 1, 'STR_HEAVY_GAUSS:1|-': 1, 'STR_GAUSS_SNIPER:1|-': 1}
+  STR_MUTON_LEADER n=3 tu=['134'] hp=['193'] hands={'STR_BOOM_GUN:1|-': 1, 'STR_GAUSS_RIFLE:1|-': 2}
+-- what each AI fighter could do, from the engine's own list of actions at its first decision
+  AUX_FISTO                        melee  fighters= 31 tu=[16]
+  STR_PIR_ALIEN_GRENADE            throw  fighters= 18 tu=[38, 44, 53]
+  STR_GAUSS_RIFLE                  snap   fighters= 10 tu=[28, 33, 40]
+  STR_GAUSS_RIFLE                  aimed  fighters= 10 tu=[72, 83, 100]
+  STR_GAUSS_PISTOL                 snap   fighters=  8 tu=[21]
+  STR_GAUSS_PISTOL                 aimed  fighters=  8 tu=[38]
+  STR_FLECHETTE_GUN                snap   fighters=  6 tu=[22, 25]
+  STR_GAUSS_SNIPER                 aimed  fighters=  5 tu=[84, 97]
+  STR_GAUSS_SNIPER                 snap   fighters=  5 tu=[62, 72]
+  STR_HEAVY_GAUSS                  snap   fighters=  4 tu=[33, 38]
+  STR_HEAVY_GAUSS                  auto   fighters=  4 tu=[46, 53]
+  AUX_PRED_CLAWS                   melee  fighters=  3 tu=[7]
+  STR_GLADIUS                      melee  fighters=  1 tu=[9]
+  STR_BOOM_GUN                     aimed  fighters=  1 tu=[93]
+  STR_BOOM_GUN                     snap   fighters=  1 tu=[42]
+-- what the AI side did
+  STR_FLECHETTE_GUN                act   8 n=  52 with_damage=  0 dmg=0
+  STR_GAUSS_RIFLE                  act   8 n=  42 with_damage=  9 dmg=296
+  STR_GAUSS_PISTOL                 act   8 n=  23 with_damage=  3 dmg=51
+  STR_HEAVY_GAUSS                  act   7 n=  10 with_damage=  3 dmg=121
+  STR_HEAVY_GAUSS                  act   8 n=   9 with_damage=  2 dmg=52
+  STR_GAUSS_SNIPER                 act   9 n=   8 with_damage=  2 dmg=131
+  STR_GAUSS_PISTOL                 act   9 n=   7 with_damage=  1 dmg=9
+  STR_BOOM_GUN                     act   8 n=   4 with_damage=  0 dmg=0
+  STR_GAUSS_RIFLE                  act   9 n=   2 with_damage=  1 dmg=52
+  THROW                            act   6 n=   2 with_damage=  0 dmg=0
+  STR_GAUSS_SNIPER                 act   8 n=   2 with_damage=  1 dmg=47
+-- who killed and stunned player's units, first line per victim and how
+  turn 2 545 dead by 1000031 (STR_MUTON_ENGINEER) STR_GAUSS_RIFLE side=rear dist=23
+  turn 2 543 dead by 1000031 (STR_MUTON_ENGINEER) STR_GAUSS_RIFLE side=left dist=27
+  turn 2 520 dead by 1000035 (STR_MUTON_LEADER) STR_GAUSS_RIFLE side=front dist=3
+  turn 2 454 dead by 1000026 (STR_MUTON_NAVIGATOR) STR_PIR_ALIEN_GRENADE side=under dist=28
+  turn 3 503 dead by 1000024 (STR_MUTON_NAVIGATOR) STR_GAUSS_SNIPER side=front dist=9
+-- AI losses by turn, killer's weapon
+   [('AUX_TANK_LASER_CANNON', 15), ('AUX_TANK_CANNON', 9), ('AUX_TANK_LASER', 6), ('AUX_WOLVERIN_WEAPON_MINIGUN', 4), ('STR_SUPER_MAGNUM', 1), ('STR_WEAPON_UNKNOWN', 1)]
+===== scpa_D_M3_s1 seed 2015001 result {'mission': 'STR_ERIDIAN_TERROR', 'how': 'over', 'turn': '21', 'pdead': '6', 'hdead': '61', 'hostile': '64', 'player': '8', 'pattacks': '46', 'hattacks': '209'}
+-- player's units (first state)
+  444 SOLDIER tu=183 hp=170/170 morale=94 rh=AUX_TANK_CANNON:1 lh=AUX_TANK_MG:1 spare=3 ammo=0 pos=(34,14,2)
+  448 SOLDIER tu=182 hp=171/171 morale=94 rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spare=3 ammo=0 pos=(33,4,2)
+  454 SOLDIER tu=108 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=3 pos=(33,13,2)
+  470 SOLDIER tu=195 hp=168/168 morale=94 rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spare=3 ammo=0 pos=(35,4,2)
+  503 SOLDIER tu=99 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=1 pos=(36,9,2)
+  520 SOLDIER tu=108 hp=84/84 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=2 pos=(36,13,2)
+  543 SOLDIER tu=109 hp=85/85 morale=100 rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spare=0 ammo=3 pos=(33,9,2)
+  545 SOLDIER tu=108 hp=68/68 morale=98 rh=AUX_WOLVERIN_WEAPON_MINIGUN:1 lh=AUX_TANK_WEAPON_GRENADES:1 spare=0 ammo=2 pos=(34,16,2)
+-- AI side by type
+  STR_ERIDIAN_SOLDIER n=42 tu=['65'] hp=['87'] hands={'STR_CANISTER_GUN:1|-': 30, 'STR_SR_RIFLE:1|-': 12}
+  STR_CHRYSSALID_TERRORIST n=8 tu=['181'] hp=['116'] hands={'AUX_CHRYSSALID_WEAPON:1|-': 8}
+  STR_ERIDIAN_BEASTMASTER n=6 tu=['71'] hp=['94'] hands={'STR_PIR_SMALL_LAUNCHER:1|-': 3, 'STR_TOXIGUN:1|-': 1, 'STR_SR_RIFLE:1|-': 2}
+  STR_SILACOID_TERRORIST n=3 tu=['59'] hp=['137'] hands={'AUX_SILACOID_WEAPON:1|AUX_SILACOID_WEAPON_MELEE:1': 3}
+  STR_ZOMBIE n=3 tu=['59'] hp=['101'] hands={'AUX_ZOMBIE_WEAPON:1|-': 3}
+  STR_ERIDIAN_LEADER n=1 tu=['77'] hp=['101'] hands={'STR_PIR_PLASMA_RIFLE:1|-': 1}
+-- what each AI fighter could do, from the engine's own list of actions at its first decision
+  AUX_FISTO                        melee  fighters= 48 tu=[16]
+  STR_GRENADE_BUG                  throw  fighters= 45 tu=[26, 28, 30]
+  STR_CANISTER_GUN                 snap   fighters= 29 tu=[23]
+  STR_CANISTER_GUN                 aimed  fighters= 29 tu=[45]
+  STR_SR_RIFLE                     aimed  fighters= 14 tu=[41, 45]
+  STR_SR_RIFLE                     snap   fighters= 14 tu=[20, 22]
+  AUX_CHRYSSALID_WEAPON            melee  fighters=  6 tu=[15]
+  STR_PIR_SMALL_LAUNCHER           aimed  fighters=  3 tu=[49]
+  STR_PIR_SMALL_LAUNCHER           snap   fighters=  3 tu=[28]
+  AUX_ZOMBIE_WEAPON                melee  fighters=  3 tu=[15]
+  AUX_SILACOID_WEAPON_MELEE        melee  fighters=  2 tu=[12]
+  AUX_SILACOID_WEAPON              snap   fighters=  2 tu=[17]
+  STR_TOXIGUN                      auto   fighters=  1 tu=[46]
+  STR_PIR_PLASMA_RIFLE             aimed  fighters=  1 tu=[32]
+  STR_PIR_PLASMA_RIFLE             snap   fighters=  1 tu=[18]
+  STR_PIR_PLASMA_RIFLE             auto   fighters=  1 tu=[24]
+-- what the AI side did
+  STR_SR_RIFLE                     act   8 n=  82 with_damage=  6 dmg=311
+  STR_CANISTER_GUN                 act   8 n=  44 with_damage= 13 dmg=359
+  STR_CANISTER_GUN                 act   9 n=  29 with_damage=  6 dmg=173
+  STR_SR_RIFLE                     act   9 n=  19 with_damage=  1 dmg=5
+  THROW                            act   6 n=  15 with_damage=  0 dmg=0
+  AUX_SILACOID_WEAPON              act   8 n=  10 with_damage=  6 dmg=167
+  STR_PIR_SMALL_LAUNCHER           act   8 n=   3 with_damage=  2 dmg=84
+  STR_PIR_PLASMA_RIFLE             act   7 n=   2 with_damage=  1 dmg=20
+  AUX_CHRYSSALID_WEAPON            act  10 n=   2 with_damage=  2 dmg=79
+  STR_PIR_PLASMA_RIFLE             act   8 n=   1 with_damage=  1 dmg=53
+  STR_TOXIGUN                      act   7 n=   1 with_damage=  1 dmg=80
+  STR_PIR_SMALL_LAUNCHER           act   9 n=   1 with_damage=  0 dmg=0
+-- who killed and stunned player's units, first line per victim and how
+  turn 1 454 stun by 444 (SOLDIER) AUX_TANK_CANNON side=left dist=1
+  turn 1 454 dead by 1000048 (STR_ERIDIAN_SOLDIER) STR_CANISTER_GUN side=front dist=5
+  turn 1 543 dead by 1000057 (STR_ERIDIAN_LEADER) STR_PIR_PLASMA_RIFLE side=front dist=1
+  turn 3 503 dead by 470 (SOLDIER) AUX_TANK_LASER_CANNON side=rear dist=2
+  turn 3 520 dead by 444 (SOLDIER) AUX_TANK_CANNON side=front dist=14
+  turn 7 470 dead by 1000085 (STR_CHRYSSALID_TERRORIST) AUX_CHRYSSALID_WEAPON side=rear dist=2
+  turn 12 444 dead by 1000087 (STR_CHRYSSALID_TERRORIST) AUX_CHRYSSALID_WEAPON side=rear dist=1
+-- AI losses by turn, killer's weapon
+   [('AUX_TANK_LASER_CANNON', 24), ('AUX_TANK_CANNON', 21), ('AUX_WOLVERIN_WEAPON_MINIGUN', 10), ('STR_WEAPON_UNKNOWN', 4), ('STR_SUPER_MAGNUM', 1), ('AUX_TANK_WEAPON_GRENADES', 1)]

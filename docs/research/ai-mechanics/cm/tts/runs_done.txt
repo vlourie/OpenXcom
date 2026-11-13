@@ -1,0 +1,6 @@
+1 ZD scene_s1.asav SC s1 turns=1 bot=0
+2 ZS scene_s1.asav SC s1 turns=1 bot=0
+3 ZD scene_s2.asav SC s2 turns=1 bot=0
+4 ZS scene_s2.asav SC s2 turns=1 bot=0
+5 ZD src_m10.asav M10 s1 turns=8 bot=1
+6 ZS src_m10.asav M10 s1 turns=8 bot=1

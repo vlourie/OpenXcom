@@ -1,0 +1,44 @@
+M1: same until the first step True (first mismatch rec 144, step rec 144) unit 1000012 turn 1: A end spotted 0 after hp_lost 0 down 0 | B end spotted 0 after hp_lost 72 down 1
+M2: same until the first step True (first mismatch rec 91, step rec 91) unit 1000033 turn 1: A end spotted 0 after hp_lost 90 down 1 | B end spotted 2 after hp_lost 0 down 0
+M3: same until the first step True (first mismatch rec 39, step rec 39) unit 1000007 turn 1: A end spotted 4 after hp_lost 0 down 0 | B end spotted 4 after hp_lost 94 down 1
+M4: same until the first step True (first mismatch rec 62, step rec 62) unit 1000022 turn 1: A end spotted 1 after hp_lost 14 down 0 | B end spotted 1 after hp_lost 8 down 0
+M5: same until the first step True (first mismatch rec 299, step rec 299) unit 1000023 turn 2: A end spotted 0 after hp_lost 0 down 0 | B end spotted 0 after hp_lost 0 down 0
+M6: same until the first step True (first mismatch rec 37, step rec 37) unit 1000001 turn 1: A end spotted 0 after hp_lost 0 down 0 | B end spotted 1 after hp_lost 3 down 0
+M7: no cover step; first mismatch none
+M8: no cover step; first mismatch none
+M9: same until the first step True (first mismatch rec 42, step rec 42) unit 1000005 turn 1: A end spotted 0 after hp_lost 0 down 0 | B end spotted 0 after hp_lost 0 down 0
+M10: same until the first step True (first mismatch rec 186, step rec 186) unit 1000007 turn 2: A end spotted 2 after hp_lost 0 down 0 | B end spotted 2 after hp_lost 0 down 0
+M11: same until the first step True (first mismatch rec 83, step rec 83) unit 1000010 turn 1: A end spotted 0 after hp_lost 0 down 0 | B end spotted 0 after hp_lost 0 down 0
+M12: same until the first step True (first mismatch rec 27, step rec 27) unit 1000000 turn 1: A end spotted 0 after hp_lost 3 down 0 | B end spotted 0 after hp_lost 3 down 0
+L1: same until the first step True (first mismatch rec 49, step rec 49) unit 1000010 turn 1: A end spotted 1 after hp_lost 60 down 1 | B end spotted 0 after hp_lost 0 down 0
+L2: same until the first step True (first mismatch rec 65, step rec 65) unit 1000017 turn 1: A end spotted 0 after hp_lost 0 down 0 | B end spotted 0 after hp_lost 0 down 0
+L3: no cover step; first mismatch none
+L4: same until the first step True (first mismatch rec 91, step rec 91) unit 1000004 turn 1: A end spotted 0 after hp_lost 11 down 0 | B end spotted 0 after hp_lost 0 down 0
+L5: same until the first step True (first mismatch rec 149, step rec 149) unit 1000050 turn 1: A end spotted 3 after hp_lost 72 down 1 | B end spotted 3 after hp_lost 72 down 1
+L6: same until the first step True (first mismatch rec 53, step rec 53) unit 1000012 turn 1: A end spotted 1 after hp_lost 151 down 1 | B end spotted 1 after hp_lost 151 down 1
+L7: same until the first step True (first mismatch rec 26, step rec 26) unit 1000002 turn 1: A end spotted 0 after hp_lost 54 down 1 | B end spotted 0 after hp_lost 54 down 1
+L8: same until the first step True (first mismatch rec 51, step rec 51) unit 1000006 turn 1: A end spotted 1 after hp_lost 0 down 0 | B end spotted 2 after hp_lost 66 down 1
+L9: same until the first step True (first mismatch rec 76, step rec 76) unit 1000016 turn 1: A end spotted 0 after hp_lost 42 down 1 | B end spotted 0 after hp_lost 0 down 0
+L10: same until the first step True (first mismatch rec 260, step rec 260) unit 1000009 turn 4: A end spotted 2 after hp_lost 24 down 1 | B end spotted 1 after hp_lost 0 down 0
+L11: same until the first step True (first mismatch rec 43, step rec 43) unit 1000005 turn 1: A end spotted 0 after hp_lost 0 down 0 | B end spotted 0 after hp_lost 0 down 0
+L12: same until the first step True (first mismatch rec 244, step rec 244) unit 1000008 turn 2: A end spotted 0 after hp_lost 72 down 1 | B end spotted 0 after hp_lost 0 down 0
+
+A_after	21
+A_down	8
+A_end_spotted	8
+A_hit	11
+A_hp	593
+A_seen	3
+B_after	21
+B_down	6
+B_end_spotted	9
+B_hit	9
+B_hp	523
+B_seen	6
+base_down	139
+base_hit	220
+base_hp	11423
+base_n	575
+battles	21
+no_step	3
+same_until_step	21

@@ -1,0 +1,10 @@
+battles 48, hostile unit-turns with a decision 9939
+category       share  dmg dealt   next player turn: fell  hp lost/unit
+  useful      808    8%     33026      808  13.9%     9.6
+  wasted     2368   24%         0     2368  19.7%    11.9
+  exposed     768    8%         0      768  36.2%    18.4
+  hidden     5995   60%         0     5995   3.4%     2.3
+exposed by mode: {'patrol': 321, 'escape': 248, 'combat': 164, 'ambush': 35}
+exposed: useful attackers of the same turn within 8 tiles: {'0': 530, 'fell_0': 205, '2+': 97, 'fell_2+': 25, '1': 141, 'fell_1': 48}
+(turn, target) by useful attackers on it: {'2': 129, '1': 481, '3+': 39}  dmg: {'2': 8540, '1': 21930, '3+': 2525}
+hostile turns by useful attackers: {1: 98, 2: 48, 3: 35, 4: 19, 5: 11, 6: 14, 7: 8, 8: 3, 9: 6, 11: 5, 12: 1, 13: 2, 14: 1, 16: 1, 17: 1, 20: 1}

@@ -1,0 +1,821 @@
+"""HIVE COMBAT INTENT V0: a squad's intent read by its soldier before it chooses a target, over hive/ra/tree copied to hive/ci/tree. Nothing after think, no dice, no new planner. Run once on a fresh copy."""
+from pathlib import Path
+
+B = Path(__file__).parent / "tree" / "src" / "Battlescape"
+
+
+def patch(name, reps):
+    p = B / name
+    raw = p.read_bytes().decode("utf-8")
+    crlf = "\r\n" in raw
+    s = raw.replace("\r\n", "\n")
+    for old, new in reps:
+        n = s.count(old)
+        if n != 1:
+            raise SystemExit(f"{name}: {n} hits for: {old[:80]}")
+        s = s.replace(old, new)
+    p.write_bytes((s.replace("\n", "\r\n") if crlf else s).encode("utf-8"))
+
+
+patch("HiveCommand.h", [
+    ("""/// After the unit's think: what it really decided, against its order.
+""", """/// COMBAT INTENT V0 (bench, OXCE_AI_HIVE_INTENT: 0 off, 1 shadow, 2 active, over OXCE_AI_HIVE_AUTONOMY): what the squad wants of its soldier, as the soldier's own choice of a target reads it.
+enum IntentType { IT_NONE, IT_ENGAGE_CONTACT, IT_SUPPORT_CONTACT, IT_MAINTAIN_OBJECTIVE };
+struct IntentView { int squad = -1, type = IT_NONE, contact = -1, priority = 0, firepointWalks = 0; bool active = false; };
+/// Inside setupAttack and findFirePoint, before the unit picks: false - no intent with a contact for this soldier now; the unit chooses as it always did.
+bool intentOf(SavedBattleGame *save, const BattleUnit *unit, IntentView &view);
+/// The soldier's answer at one place it chooses a target: no - why it stays on its own target, "same" - it is the contact already, 0 - it takes the contact.
+void intentChoice(SavedBattleGame *save, BattleUnit *unit, const char *site, const IntentView &view, int own, const char *no);
+/// After the unit's think: what it really decided, against its order.
+"""),
+])
+
+patch("HiveCommand.cpp", [
+    ("""#include "AiProbe.h"
+""", """#include "AIModule.h"
+#include "AiProbe.h"
+"""),
+    ("""struct Squad
+{
+	int id = 0;
+""", """/// COMBAT INTENT V0: what a squad's commander passes on for one side's turn. Its soldiers read it before they choose a target; the choice stays theirs.
+struct HiveCombatIntent
+{
+	int squadId = -1;
+	int type = IT_NONE;
+	int contactId = -1; // a contact this side lawfully knows, or -1
+	Position objective;
+	int priority = 0;
+	int issuedTurn = -1, expiryTurn = -1;
+	std::string status = "none"; // open, done, expired, contact_down, cancelled
+};
+
+/// What the squad's soldiers answered and what really came of it, this intent.
+struct IntentTally
+{
+	int accepted = 0, changed = 0, refused = 0, attacked = 0, other = 0, walkToward = 0, walkOther = 0, notExecuted = 0;
+	std::map<std::string, int> why;
+};
+
+/// A soldier's last answer in this think.
+struct IntentAnswer
+{
+	std::string site, no;
+	int final = -1;
+	bool changed = false;
+};
+
+/// A decided action until the stack has played it: what is compared with what really happened.
+struct IntentPending
+{
+	bool open = false;
+	BattleUnit *actor = 0, *aimUnit = 0;
+	int squad = -1, act = 0, tu = 0, contact = -1, aim = -1, hp = 0, stun = 0;
+	bool changed = false;
+	Position from;
+};
+
+struct Squad
+{
+	int id = 0;
+"""),
+    ("""	int roleContact = -1, roleSince = -1, roleUntil = -1, restUntil = -1, roleShots = 0, roleStall = 0, roleBest = 1000000;
+};
+""", """	int roleContact = -1, roleSince = -1, roleUntil = -1, restUntil = -1, roleShots = 0, roleStall = 0, roleBest = 1000000;
+	HiveCombatIntent intent;
+	IntentTally tally;
+};
+"""),
+    ("""	int stat[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+};
+""", """	int stat[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	int priority = -1; // COMBAT INTENT V0: the contact the side concentrates on this turn
+	std::map<int, std::pair<int, int> > effect; // contact -> soldiers who found it unsuited, soldiers' attacks that really went at it
+	std::set<std::pair<int, int> > effectSeen; // unit, contact: counted once a turn
+	std::map<int, IntentAnswer> answers;
+	IntentPending pending;
+	std::set<int> replanned; // soldiers already sent on once more this turn
+	std::map<int, int> firepointWalks; // unit: walks to a fire point for the contact this turn
+};
+"""),
+    ("""bool onContact(const Squad &sq)
+{
+""", """/// COMBAT INTENT V0 (bench): 0 off, 1 shadow, 2 active; only over RESTORE COMBAT AUTONOMY.
+int intentFlag()
+{
+	static const int on = autonomy() ? (int)AiProbe::param("OXCE_AI_HIVE_INTENT", 0) : 0;
+	return on;
+}
+
+bool onContact(const Squad &sq)
+{
+"""),
+    ("""	hq.rejFar = hq.rejUnreachable = hq.rejMemo = hq.rejIllegal = 0;
+
+	if (first)
+""", """	hq.rejFar = hq.rejUnreachable = hq.rejMemo = hq.rejIllegal = 0;
+	hq.replanned.clear();
+	hq.firepointWalks.clear();
+
+	if (first)
+"""),
+    ("""		coordinate(save);
+	}
+	for (auto &s : hq.squads)
+	{
+		if (s.commander)
+		{
+			reviewSquad(s, save);
+""", """		coordinate(save);
+	}
+	if (intentFlag())
+	{
+		issueIntents(save);
+	}
+	for (auto &s : hq.squads)
+	{
+		if (s.commander)
+		{
+			reviewSquad(s, save);
+"""),
+    ("""void planTurn(SavedBattleGame *save)
+{
+""", """BattleUnit *unitById(SavedBattleGame *save, int id)
+{
+	for (auto *u : *save->getUnits())
+	{
+		if (u->getId() == id) return u;
+	}
+	return 0;
+}
+
+const char *const INTENT_NAME[] = { "NONE", "ENGAGE_CONTACT", "SUPPORT_CONTACT", "MAINTAIN_OBJECTIVE" };
+
+void closeIntent(Squad &s, const char *status, int turn)
+{
+	HiveCombatIntent &in = s.intent;
+	if (in.status != "open") return;
+	in.status = status;
+	std::ostringstream why;
+	for (const auto &e : s.tally.why)
+	{
+		why << e.first << ':' << e.second << ',';
+	}
+	Log(LOG_INFO) << "[HIVEINTENT] event=CLOSE turn=" << turn << " squad=" << s.id << " type=" << INTENT_NAME[in.type] << " contact=" << in.contactId << " status=" << status << " accepted=" << s.tally.accepted << " changed=" << s.tally.changed
+		<< " refused=" << s.tally.refused << " attacked=" << s.tally.attacked << " other=" << s.tally.other << " walk_toward=" << s.tally.walkToward << " walk_other=" << s.tally.walkOther << " not_executed=" << s.tally.notExecuted << " why=" << why.str();
+}
+
+/// The contact the side concentrates on: the one in sight now that most of its soldiers both see and can hurt by the rules of their weapons (no one's health, no armour as it is now); on a tie the same as before, then the one they expect most of. One its soldiers found unsuited more often than they really attacked it is left out.
+int pickPriority(SavedBattleGame *save, std::map<int, std::set<int> > &sees)
+{
+	const int turn = save->getTurn();
+	std::map<int, int> seers, capable;
+	std::map<int, double> expected;
+	for (auto &s : hq.squads)
+	{
+		if (!s.commander) continue;
+		for (auto *m : s.members)
+		{
+			if (!available(m) || unmanaged(m)) continue;
+			AIModule asks(save, m, 0);
+			BattleItem *weapon = m->getMainHandWeapon(false);
+			for (auto *v : *m->getVisibleUnits())
+			{
+				if (v->isOut() || v->getFaction() != FACTION_PLAYER) continue;
+				seers[v->getId()]++;
+				sees[s.id].insert(v->getId());
+				const double effect = asks.intentEffect(v, weapon, false);
+				if (effect != 0.0) capable[v->getId()]++; // a weapon the estimate says nothing of is not counted against it
+				if (effect > 0.0) expected[v->getId()] += effect;
+			}
+		}
+	}
+	int best = -1, bestN = 0;
+	double bestE = 0.0;
+	for (const auto &e : capable)
+	{
+		const auto c = hq.contacts.find(e.first);
+		if (c == hq.contacts.end() || c->second.cls != KNOWN || c->second.seenTurn != turn) continue;
+		const auto f = hq.effect.find(e.first);
+		if (f != hq.effect.end() && f->second.first >= 2 && f->second.first > f->second.second)
+		{
+			Log(LOG_INFO) << "[HIVEINTENT] event=SKIP turn=" << turn << " contact=" << e.first << " unsuited=" << f->second.first << " attacks=" << f->second.second;
+			continue;
+		}
+		const double exp = expected[e.first];
+		const bool tie = e.second == bestN;
+		if (e.second > bestN || (tie && best != hq.priority && (e.first == hq.priority || exp > bestE)))
+		{
+			best = e.first;
+			bestN = e.second;
+			bestE = exp;
+		}
+	}
+	std::ostringstream all;
+	for (const auto &e : seers)
+	{
+		all << e.first << ':' << e.second << ':' << capable[e.first] << ',';
+	}
+	Log(LOG_INFO) << "[HIVEINTENT] event=PRIORITY turn=" << turn << " contact=" << best << " capable=" << bestN << " was=" << hq.priority << " contact_seers_capable=" << all.str();
+	return best;
+}
+
+void giveIntent(Squad &s, int best, const std::map<int, std::set<int> > &sees, SavedBattleGame *save)
+{
+	const int turn = save->getTurn();
+	HiveCombatIntent &in = s.intent;
+	in = HiveCombatIntent();
+	s.tally = IntentTally();
+	if (!s.commander) return;
+	in.squadId = s.id;
+	in.issuedTurn = in.expiryTurn = turn;
+	in.status = "open";
+	const auto seen = sees.find(s.id);
+	const bool seesBest = best != -1 && seen != sees.end() && seen->second.count(best);
+	const auto alive = [save](int id)
+	{
+		const BattleUnit *u = id >= 0 ? unitById(save, id) : 0;
+		return u && !u->isOut() ? id : -1;
+	};
+	if (s.role == R_ENGAGE)
+	{
+		in.type = IT_ENGAGE_CONTACT;
+		in.contactId = seesBest ? best : alive(s.roleContact);
+		in.priority = 2;
+		if (intentFlag() == 2 && in.contactId != -1 && in.contactId != s.roleContact)
+		{
+			setRole(s, R_ENGAGE, in.contactId, "intent_priority", save);
+		}
+	}
+	else if (s.role == R_REINFORCE)
+	{
+		in.type = IT_SUPPORT_CONTACT;
+		in.contactId = alive(s.roleContact);
+		in.priority = 2;
+	}
+	else
+	{
+		in.type = IT_MAINTAIN_OBJECTIVE;
+		in.contactId = seesBest ? best : -1;
+		in.priority = 1;
+	}
+	const auto c = hq.contacts.find(in.contactId);
+	if (in.type != IT_MAINTAIN_OBJECTIVE && c != hq.contacts.end())
+	{
+		in.objective = c->second.pos;
+	}
+	else
+	{
+		in.objective = s.task == T_HOLD || !s.objective.valid ? s.anchor : s.objective.pos;
+	}
+	Log(LOG_INFO) << "[HIVEINTENT] event=ISSUE turn=" << turn << " squad=" << s.id << " commander=" << s.commander->getId() << " type=" << INTENT_NAME[in.type] << " contact=" << in.contactId << " objective=" << pos(in.objective)
+		<< " priority=" << in.priority << " expiry=" << in.expiryTurn << " role=" << ROLE_NAME[s.role];
+}
+
+/// Once a side's turn, after the roles: the headquarters' contact and each squad's intent. What the last turn's soldiers answered counts here and is then forgotten.
+void issueIntents(SavedBattleGame *save)
+{
+	std::map<int, std::set<int> > sees;
+	for (auto &s : hq.squads)
+	{
+		closeIntent(s, "cancelled", save->getTurn());
+	}
+	const int best = pickPriority(save, sees);
+	hq.priority = best;
+	hq.effect.clear();
+	hq.effectSeen.clear();
+	for (auto &s : hq.squads)
+	{
+		giveIntent(s, best, sees, save);
+	}
+}
+
+/// The squad's contact fell during the turn: the intent is over, the headquarters names the next from what is in sight now.
+void intentReview(Squad &s, SavedBattleGame *save)
+{
+	if (!intentFlag() || s.intent.status != "open" || s.intent.contactId < 0 || s.intent.issuedTurn != save->getTurn()) return;
+	const BattleUnit *c = unitById(save, s.intent.contactId);
+	if (c && !c->isOut()) return;
+	closeIntent(s, "contact_down", save->getTurn());
+	std::map<int, std::set<int> > sees;
+	hq.priority = pickPriority(save, sees);
+	giveIntent(s, hq.priority, sees, save);
+}
+
+/// What the decided action really came to, once the stack has played it: time units really spent, not what was planned. Health goes to the journal only; nothing plans by it.
+void intentFlush(SavedBattleGame *save)
+{
+	IntentPending &p = hq.pending;
+	if (!p.open) return;
+	p.open = false;
+	const int spent = p.tu - p.actor->getTimeUnits();
+	const Position here = p.actor->getPosition();
+	const char *kind = "OTHER_ACTION";
+	IntentTally &t = hq.squads[p.squad].tally;
+	if (isAttack(p.act))
+	{
+		kind = spent <= 0 ? "NOT_EXECUTED" : p.contact >= 0 && p.aim == p.contact ? "ATTACKED_CONTACT" : "OTHER_ATTACK";
+	}
+	else if (p.act == BA_NONE)
+	{
+		kind = "NO_ACTION";
+	}
+	else if (p.act == BA_WALK)
+	{
+		const auto c = hq.contacts.find(p.contact);
+		kind = spent <= 0 && here == p.from ? "NOT_EXECUTED" : c != hq.contacts.end() && dist(here, c->second.pos) < dist(p.from, c->second.pos) ? "WALK_TOWARD" : "WALK_OTHER";
+	}
+	else if (spent <= 0)
+	{
+		kind = "NOT_EXECUTED";
+	}
+	const std::string k = kind;
+	t.attacked += k == "ATTACKED_CONTACT";
+	t.other += k == "OTHER_ATTACK";
+	t.walkToward += k == "WALK_TOWARD";
+	t.walkOther += k == "WALK_OTHER";
+	t.notExecuted += k == "NOT_EXECUTED";
+	if (k == "ATTACKED_CONTACT")
+	{
+		hq.effect[p.contact].second++;
+	}
+	const bool hit = p.aimUnit && (p.aimUnit->getHealth() < p.hp || p.aimUnit->getStunlevel() > p.stun);
+	Log(LOG_INFO) << "[HIVEINTENT] event=RESULT turn=" << save->getTurn() << " squad=" << p.squad << " unit=" << p.actor->getId() << " kind=" << kind << " act=" << p.act << " tu_spent=" << spent << " contact=" << p.contact << " aim=" << p.aim
+		<< " changed=" << (p.changed ? 1 : 0) << " hit=" << (hit ? 1 : 0) << " down=" << (p.aimUnit && p.aimUnit->isOut() ? 1 : 0) << " hp_lost=" << (p.aimUnit ? p.hp - p.aimUnit->getHealth() : 0);
+}
+
+/// What the unit's think came to, against its squad's intent. Before its action is played: the check is in intentFlush.
+void intentDecided(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
+{
+	intentFlush(save);
+	const int turn = save->getTurn();
+	const auto answer = hq.answers.find(unit->getId());
+	const bool had = answer != hq.answers.end();
+	const IntentAnswer said = had ? answer->second : IntentAnswer();
+	if (had)
+	{
+		hq.answers.erase(answer);
+	}
+	const auto sf = hq.squadOf.find(unit->getId());
+	if (sf == hq.squadOf.end())
+	{
+		if (isAttack(action.type) && unit->isLeeroyJenkins())
+		{
+			Log(LOG_INFO) << "[HIVEINTENT] event=DECIDED turn=" << turn << " squad=-1 unit=" << unit->getId() << " act=" << (int)action.type << " own=leeroy";
+		}
+		return;
+	}
+	const Squad &s = hq.squads[sf->second];
+	if (s.intent.type == IT_NONE || s.intent.issuedTurn != turn) return;
+	const bool attack = isAttack(action.type);
+	Tile *t = save->getTile(action.target);
+	BattleUnit *aim = t && t->getUnit() ? t->getUnit() : 0;
+	if (!aim && attack && had)
+	{
+		aim = unitById(save, said.final);
+	}
+	const char *own = "-";
+	if (unit->isLeeroyJenkins())
+	{
+		own = "leeroy";
+	}
+	else if (attack && !had)
+	{
+		own = action.type == BA_HIT ? "own_melee" : action.type == BA_THROW ? "own_grenade" : action.type == BA_PANIC || action.type == BA_MINDCONTROL ? "own_psi" : "own_other";
+	}
+	else if (!attack && had && said.changed)
+	{
+		own = "dice_mode";
+	}
+	Log(LOG_INFO) << "[HIVEINTENT] event=DECIDED turn=" << turn << " squad=" << s.id << " unit=" << unit->getId() << " act=" << (int)action.type << " to=" << pos(action.target) << " contact=" << s.intent.contactId << " aim=" << (aim ? aim->getId() : -1)
+		<< " site=" << (had ? said.site : "-") << " changed=" << (had && said.changed ? 1 : 0) << " own=" << own << " tu=" << unit->getTimeUnits();
+	if (had && said.changed && said.site == "firepoint" && action.type == BA_WALK)
+	{
+		++hq.firepointWalks[unit->getId()];
+	}
+	IntentPending &p = hq.pending;
+	p.open = true;
+	p.actor = unit;
+	p.aimUnit = aim;
+	p.squad = s.id;
+	p.act = (int)action.type;
+	p.tu = unit->getTimeUnits();
+	p.contact = s.intent.contactId;
+	p.aim = aim ? aim->getId() : -1;
+	p.hp = aim ? aim->getHealth() : 0;
+	p.stun = aim ? aim->getStunlevel() : 0;
+	p.changed = had && said.changed;
+	p.from = unit->getPosition();
+}
+
+void planTurn(SavedBattleGame *save)
+{
+"""),
+    ("""void beforeThink(SavedBattleGame *save, BattleUnit *unit)
+{
+	if (mode() == 0 || save->getSide() != FACTION_HOSTILE || !isOurs(unit)) return;
+	const auto t0 = std::chrono::steady_clock::now();
+""", """bool intentOf(SavedBattleGame *save, const BattleUnit *unit, IntentView &view)
+{
+	if (!intentFlag() || hq.save != save || !hq.managesBattle || save->getSide() != FACTION_HOSTILE || !isOurs(unit) || unmanaged(unit)) return false;
+	const auto f = hq.squadOf.find(unit->getId());
+	if (f == hq.squadOf.end()) return false;
+	const HiveCombatIntent &in = hq.squads[f->second].intent;
+	if (in.type == IT_NONE || in.status != "open" || in.contactId < 0 || in.issuedTurn != save->getTurn()) return false;
+	view.squad = f->second;
+	view.type = in.type;
+	view.contact = in.contactId;
+	view.priority = in.priority;
+	view.active = intentFlag() == 2 && mode() == 2;
+	const auto walks = hq.firepointWalks.find(unit->getId());
+	view.firepointWalks = walks == hq.firepointWalks.end() ? 0 : walks->second;
+	return true;
+}
+
+void intentChoice(SavedBattleGame *save, BattleUnit *unit, const char *site, const IntentView &view, int own, const char *no)
+{
+	Squad &s = hq.squads[view.squad];
+	const std::string why = no ? no : "";
+	const bool takes = !no;
+	const bool changed = takes && view.active;
+	if (takes || why == "same")
+	{
+		s.tally.accepted++;
+	}
+	else
+	{
+		s.tally.refused++;
+		s.tally.why[why]++;
+		if ((why == "no_effect" || why == "weak_effect") && hq.effectSeen.insert(std::make_pair(unit->getId(), view.contact)).second)
+		{
+			hq.effect[view.contact].first++;
+		}
+	}
+	s.tally.changed += changed;
+	IntentAnswer &a = hq.answers[unit->getId()];
+	a.site = site;
+	a.no = why;
+	a.final = changed ? view.contact : own;
+	a.changed = takes;
+	Log(LOG_INFO) << "[HIVEINTENT] event=CHOICE turn=" << save->getTurn() << " squad=" << view.squad << " unit=" << unit->getId() << " site=" << site << " type=" << INTENT_NAME[view.type] << " contact=" << view.contact << " own=" << own
+		<< " changed=" << (changed ? 1 : 0) << " would=" << (takes && !view.active ? 1 : 0) << " no=" << (no ? no : "-") << " tu=" << unit->getTimeUnits();
+}
+
+void beforeThink(SavedBattleGame *save, BattleUnit *unit)
+{
+	if (mode() == 0 || save->getSide() != FACTION_HOSTILE || !isOurs(unit)) return;
+	const auto t0 = std::chrono::steady_clock::now();
+	if (intentFlag())
+	{
+		intentFlush(save);
+	}
+"""),
+    ("""			checkSquad(sq, save, true);
+			objectiveReached(sq, save);
+			if (sq.task == T_SEARCH)
+""", """			checkSquad(sq, save, true);
+			objectiveReached(sq, save);
+			intentReview(sq, save);
+			if (sq.task == T_SEARCH)
+"""),
+    ("""PatrolOrder patrol(SavedBattleGame *save, BattleUnit *unit, Node *&node)
+{
+	node = 0;
+""", """/// COMBAT INTENT V0: a soldier whose walk to the contact is over goes on with the squad's task before a free walk takes it away: the plan it already had is asked once more, at most once a turn. Nothing to walk to, or it has the contact in line: its free choice as before.
+PatrolOrder heldOrBack(SavedBattleGame *save, BattleUnit *unit, const Order &o, const char *from, Node *&node)
+{
+	const PatrolOrder answer = held(save, o, from);
+	if (answer != PO_NONE || intentFlag() != 2) return answer;
+	const auto sf = hq.squadOf.find(unit->getId());
+	if (sf == hq.squadOf.end()) return answer;
+	Squad &sq = hq.squads[sf->second];
+	if (!onContact(sq) || sq.intent.status != "open" || sq.intent.contactId < 0 || sq.intent.issuedTurn != save->getTurn() || !hq.replanned.insert(unit->getId()).second) return answer;
+	fieldOf(save, unit, true);
+	planContactUnit(sq, unit, save);
+	const auto f = hq.orders.find(unit->getId());
+	if (f == hq.orders.end() || !f->second.unit || isTerminal(f->second) || f->second.stay || f->second.state == COMPLETED || !f->second.node) return answer;
+	Log(LOG_INFO) << "[HIVEINTENT] event=BACK turn=" << save->getTurn() << " squad=" << sq.id << " unit=" << unit->getId() << " contact=" << sq.intent.contactId << " order=" << f->second.id << " target=" << pos(f->second.target) << " tu=" << unit->getTimeUnits();
+	return patrol(save, unit, node);
+}
+
+PatrolOrder patrol(SavedBattleGame *save, BattleUnit *unit, Node *&node)
+{
+	node = 0;
+"""),
+    ("""	if (o->stay || o->state == COMPLETED) return held(save, *o, o->stay ? "stay" : "completed");
+""", """	if (o->stay) return held(save, *o, "stay");
+	if (o->state == COMPLETED) return heldOrBack(save, unit, *o, "completed", node);
+"""),
+    ("""		setState(*o, COMPLETED, "arrived");
+		return held(save, *o, "arrived");
+""", """		setState(*o, COMPLETED, "arrived");
+		return heldOrBack(save, unit, *o, "arrived", node);
+"""),
+    ("""	if (mode() == 0 || hq.save != save || !hq.managesBattle || save->getSide() != FACTION_HOSTILE || !isOurs(unit)) return;
+	auto sf = hq.squadOf.find(unit->getId());
+	if (sf != hq.squadOf.end() && isAttack(action.type))
+""", """	if (mode() == 0 || hq.save != save || !hq.managesBattle || save->getSide() != FACTION_HOSTILE || !isOurs(unit)) return;
+	if (intentFlag())
+	{
+		intentDecided(save, unit, action);
+	}
+	auto sf = hq.squadOf.find(unit->getId());
+	if (sf != hq.squadOf.end() && isAttack(action.type))
+"""),
+    ("""	hq.turnOpen = false;
+	int alive = 0, holdUnits = 0,""", """	hq.turnOpen = false;
+	if (intentFlag())
+	{
+		intentFlush(save);
+		for (auto &s : hq.squads)
+		{
+			closeIntent(s, s.tally.attacked > 0 ? "done" : "expired", save->getTurn());
+		}
+	}
+	int alive = 0, holdUnits = 0,"""),
+])
+
+patch("AIModule.h", [
+    ("""class Pathfinding;
+""", """class Pathfinding;
+namespace HiveCommand { struct IntentView; }
+"""),
+    ("""	BattleActionType getReserveMode();
+""", """	BattleActionType getReserveMode();
+	/// COMBAT INTENT V0 (bench): what this unit's weapon expects of the contact by its rules, the best of its modes; needTU - only the modes it can pay for now. -1 - the estimate has nothing to say.
+	double intentEffect(BattleUnit *contact, BattleItem *weapon, bool needTU);
+"""),
+    ("""	/// Selects a suitable position from which to attack.
+	bool findFirePoint();
+""", """	/// COMBAT INTENT V0 (bench): validTarget as this check asks it, with no note in the bench's fair-knowledge record.
+	bool intentValid(BattleUnit *contact, bool civs) const;
+	/// COMBAT INTENT V0: no_effect or weak_effect of the contact against the unit's own target, or 0.
+	const char *intentEffectRefusal(BattleUnit *contact, BattleUnit *own, BattleItem *weapon, bool needTU);
+	/// COMBAT INTENT V0: why this soldier stays on own and does not take its squad's contact, or 0. Reads only; no dice. listed - the sniper branch has already passed the contact through its own checks.
+	const char *intentRefusal(const HiveCommand::IntentView &view, BattleUnit *contact, BattleUnit *own, BattleItem *weapon, bool needSight, bool listed);
+	/// COMBAT INTENT V0: selectSpottedUnitForSniper's pick after its dice: the contact's place in the list, if the soldier takes it.
+	int intentSniperPick(const std::vector<std::pair<BattleUnit*, BattleAction>> &targets, int pick);
+	/// COMBAT INTENT V0: the contact instead of the nearest at the regular shot, or 0.
+	BattleUnit *intentShot(BattleUnit *nearest, HiveCommand::IntentView &view);
+	/// COMBAT INTENT V0: the contact instead of the closest known enemy at the start of findFirePoint.
+	void intentFirePoint();
+	/// Selects a suitable position from which to attack.
+	bool findFirePoint();
+"""),
+])
+
+patch("AIModule.cpp", [
+    ("""		int pick = RNG::generate(0, numberOfTargets - 1);
+		_aggroTarget = spottedTargets.at(pick).first;
+""", """		int pick = RNG::generate(0, numberOfTargets - 1);
+		pick = intentSniperPick(spottedTargets, pick);
+		_aggroTarget = spottedTargets.at(pick).first;
+"""),
+    ("""		if (_rifle)
+		{
+			const ProbeMark mark = probeMark('x');
+			projectileAction();
+			probeSlot('x', "shot", mark);
+		}
+""", """		if (_rifle)
+		{
+			const ProbeMark mark = probeMark('x');
+			// COMBAT INTENT V0 (bench): the squad's contact if this soldier takes it; projectileAction has the last word as for any target, and with no attack there the nearest is back
+			BattleUnit *const nearest = _aggroTarget;
+			HiveCommand::IntentView intent;
+			BattleUnit *const contact = intentShot(nearest, intent);
+			if (contact)
+			{
+				_aggroTarget = contact;
+			}
+			projectileAction();
+			if (contact && _attackAction.type == BA_RETHINK)
+			{
+				HiveCommand::intentChoice(_save, _unit, "shot", intent, nearest->getId(), "attack_unsuitable");
+				_aggroTarget = nearest;
+				projectileAction();
+			}
+			probeSlot('x', "shot", mark);
+		}
+"""),
+    ("""	if (!selectClosestKnownEnemy())
+		return false;
+	// AI2-H FAIR KNOWLEDGE: the whole search (lines to the target""", """	if (!selectClosestKnownEnemy())
+		return false;
+	intentFirePoint();
+	// AI2-H FAIR KNOWLEDGE: the whole search (lines to the target"""),
+    ("""	return _aggroTarget != 0;
+}
+
+/**
+ * Scores a firing mode for a particular target""", """	return _aggroTarget != 0;
+}
+
+/// COMBAT INTENT V0 (bench): a unit of the battle by its id.
+static BattleUnit *intentUnit(SavedBattleGame *save, int id)
+{
+	for (auto *bu : *save->getUnits())
+	{
+		if (bu->getId() == id) return bu;
+	}
+	return 0;
+}
+
+bool AIModule::intentValid(BattleUnit *contact, bool civs) const
+{
+	if (contact->isOut() || (contact->getFaction() != FACTION_PLAYER && contact->isIgnoredByAI())) return false;
+	Position kp;
+	int kdir = 0;
+	const int kind = AiProbe::fairPlace(_save, _unit, contact, kp, kdir);
+	if (kind != 2)
+	{
+		Tile *tile = kind == 1 ? _save->getTile(kp) : contact->getTile();
+		if (tile && tile->getDangerous()) return false;
+	}
+	return getTargetAttackWeight(contact) > (civs ? (int)AIW_IGNORED : (int)_save->getMod()->getAITargetWeightThreatThreshold());
+}
+
+double AIModule::intentEffect(BattleUnit *contact, BattleItem *weapon, bool needTU)
+{
+	double best = -1.0;
+	if (!weapon || weapon->getRules()->getBattleType() != BT_FIREARM) return best;
+	BattleAction shot;
+	shot.actor = _unit;
+	shot.weapon = weapon;
+	for (BattleActionType type : { BA_AIMEDSHOT, BA_AUTOSHOT, BA_SNAPSHOT })
+	{
+		BattleActionCost cost(type, _unit, weapon);
+		if (cost.Time <= 0 || (needTU && !cost.haveTU())) continue;
+		shot.type = type;
+		const char *why = "";
+		best = std::max(best, fireModeEffect(&shot, contact, why));
+	}
+	return best;
+}
+
+const char *AIModule::intentEffectRefusal(BattleUnit *contact, BattleUnit *own, BattleItem *weapon, bool needTU)
+{
+	const double effect = intentEffect(contact, weapon, needTU);
+	if (effect == 0.0)
+	{
+		// the journal only: the rule armour is what the estimate counts, the worn armour is not its knowledge
+		const Armor *ar = contact->getArmor();
+		Log(LOG_INFO) << "[HIVEINTENT] event=EFFECTNOTE turn=" << _save->getTurn() << " unit=" << _unit->getId() << " contact=" << contact->getId()
+			<< " weapon=" << weapon->getRules()->getType() << " dir=" << contact->getDirection()
+			<< " rule=" << ar->getFrontArmor() << "/" << ar->getRightSideArmor() << "/" << ar->getRearArmor() << "/" << ar->getLeftSideArmor()
+			<< " now=" << contact->getArmor(SIDE_FRONT) << "/" << contact->getArmor(SIDE_RIGHT) << "/" << contact->getArmor(SIDE_REAR) << "/" << contact->getArmor(SIDE_LEFT);
+		return "no_effect";
+	}
+	if (effect > 0.0 && own && own != contact && effect < 0.5 * intentEffect(own, weapon, needTU)) return "weak_effect";
+	return 0;
+}
+
+const char *AIModule::intentRefusal(const HiveCommand::IntentView &view, BattleUnit *contact, BattleUnit *own, BattleItem *weapon, bool needSight, bool listed)
+{
+	if (!contact || contact->isOut()) return "contact_gone";
+	if (!intentValid(contact, true)) return "not_valid_target";
+	TileEngine *te = _save->getTileEngine();
+	if (needSight)
+	{
+		Position mem;
+		int memDir = 0;
+		const int state = AiProbe::fairState(_save, _unit, contact, mem, memDir);
+		if (!te->visible(_unit, contact->getTile()) || (state != AiProbe::FAIR_LEGACY && state != AiProbe::FAIR_CURRENT && state != AiProbe::FAIR_CHEAT)) return "not_visible";
+		BattleAction line;
+		line.actor = _unit;
+		line.weapon = weapon;
+		line.target = contact->getPosition();
+		Position origin = te->getOriginVoxel(line, 0), voxel;
+		if (!te->canTargetUnit(&origin, contact->getTile(), &voxel, _unit, false)) return "no_line";
+	}
+	if (!listed)
+	{
+		if (!weapon || !weapon->haveAnyAmmo()) return "no_weapon";
+		if (weapon->getRules()->isOutOfRange(_unit->distance3dToPositionSq(contact->getPosition()))) return "out_of_range";
+	}
+	if (weapon && weapon->getRules()->getBattleType() == BT_FIREARM)
+	{
+		bool paid = false;
+		for (BattleActionType type : { BA_AIMEDSHOT, BA_AUTOSHOT, BA_SNAPSHOT })
+		{
+			BattleActionCost cost(type, _unit, weapon);
+			paid = paid || (cost.Time > 0 && cost.haveTU());
+		}
+		if (!paid && !listed) return "no_tu";
+		const char *const weak = intentEffectRefusal(contact, own, weapon, true);
+		if (weak) return weak;
+	}
+	if (own && own != contact)
+	{
+		const int ownDist = Position::distance2d(_unit->getPosition(), own->getPosition());
+		const int contactDist = Position::distance2d(_unit->getPosition(), contact->getPosition());
+		if (ownDist <= 3 && contactDist > ownDist) return "closer_threat";
+		if (view.priority <= 1 && contactDist > ownDist + 4) return "too_far_for_priority";
+	}
+	return 0;
+}
+
+int AIModule::intentSniperPick(const std::vector<std::pair<BattleUnit*, BattleAction>> &targets, int pick)
+{
+	HiveCommand::IntentView view;
+	if (!HiveCommand::intentOf(_save, _unit, view)) return pick;
+	int at = -1;
+	for (size_t i = 0; i < targets.size(); ++i)
+	{
+		if (targets[i].first->getId() == view.contact) at = (int)i;
+	}
+	BattleUnit *const own = targets[pick].first;
+	const char *no = 0;
+	if (at == pick)
+	{
+		no = "same";
+	}
+	else if (at != -1)
+	{
+		no = intentRefusal(view, targets[at].first, own, targets[at].second.weapon, false, true);
+	}
+	else
+	{
+		BattleUnit *const contact = intentUnit(_save, view.contact);
+		if (contact && intentValid(contact, true) && !contact->getTurnsLeftSpottedForSnipersByFaction(_unit->getFaction()))
+		{
+			no = "not_spotted";
+		}
+		else
+		{
+			no = intentRefusal(view, contact, own, _unit->getMainHandWeapon(false), false, false);
+			no = no ? no : "mode_choice_rejected";
+		}
+	}
+	HiveCommand::intentChoice(_save, _unit, "sniper", view, own->getId(), no);
+	return !no && view.active ? at : pick;
+}
+
+BattleUnit *AIModule::intentShot(BattleUnit *nearest, HiveCommand::IntentView &view)
+{
+	if (!nearest || !HiveCommand::intentOf(_save, _unit, view)) return 0;
+	BattleUnit *const contact = intentUnit(_save, view.contact);
+	const char *const no = contact == nearest ? "same" : intentRefusal(view, contact, nearest, _attackAction.weapon, true, false);
+	HiveCommand::intentChoice(_save, _unit, "shot", view, nearest->getId(), no);
+	return !no && view.active ? contact : 0;
+}
+
+void AIModule::intentFirePoint()
+{
+	HiveCommand::IntentView view;
+	if (!HiveCommand::intentOf(_save, _unit, view)) return;
+	BattleUnit *const own = _aggroTarget;
+	BattleUnit *const contact = intentUnit(_save, view.contact);
+	const char *no = 0;
+	if (!contact || contact->isOut())
+	{
+		no = "contact_gone";
+	}
+	else if (contact == own)
+	{
+		no = "same";
+	}
+	else if (view.type == HiveCommand::IT_MAINTAIN_OBJECTIVE)
+	{
+		no = "maintain_keeps_post";
+	}
+	else if (!intentValid(contact, false))
+	{
+		no = "not_valid_target";
+	}
+	else
+	{
+		Position kp;
+		int kdir = 0;
+		const int kind = AiProbe::fairPlace(_save, _unit, contact, kp, kdir);
+		const int ownDist = Position::distance2d(_unit->getPosition(), own->getPosition());
+		if (kind == 2)
+		{
+			no = "not_visible";
+		}
+		else if (ownDist <= 3 && Position::distance2d(_unit->getPosition(), kind == 1 ? kp : contact->getPosition()) > ownDist)
+		{
+			no = "closer_threat";
+		}
+		else
+		{
+			// nobody walks to a place to fire at what its weapon cannot hurt: the time units it will have there are not known here, the modes are asked without them
+			no = intentEffectRefusal(contact, own, _attackAction.weapon, false);
+		}
+	}
+	// two walks for the contact and still no shot from there: walking on between fire points only burns the time units
+	if (!no && view.firepointWalks >= 2)
+	{
+		no = "firepoint_no_shot";
+	}
+	HiveCommand::intentChoice(_save, _unit, "firepoint", view, own->getId(), no);
+	if (!no && view.active)
+	{
+		_aggroTarget = contact;
+	}
+}
+
+/**
+ * Scores a firing mode for a particular target"""),
+])
+print("patched")

@@ -45,6 +45,7 @@ namespace OpenXcom
  */
 BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 {
+	setHdScreen("briefing");
 	_screen = true;
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -61,6 +62,7 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 	BriefingData data = deployment->getBriefingData();
 	setStandardPalette("PAL_GEOSCAPE", data.palette);
 	_window->setBackground(_game->getMod()->getSurface(data.background));
+	_window->setInterfaceName("briefing");
 
 	add(_window, "window", "briefing");
 	add(_btnOk, "button", "briefing");

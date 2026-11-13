@@ -1,0 +1,12 @@
+GO orders 72 {'executed:CANCELLED': 21, 'executed:INTERRUPTED': 3, 'refused_before_a_step': 20, 'executed:COMPLETED': 7, 'never_executing:CANCELLED': 8, 'never_executing:INTERRUPTED': 3, 'never_executing:COMPLETED': 3, 'executed:EXECUTING': 6, 'never_executing:VALIDATED': 1}
+  executed, HOLD: 7, closer to the target at the last record 6, not closer 1, mean gain 5.3, distinct units 6, distinct squads 3
+  executed, SEARCH: 30, closer to the target at the last record 10, not closer 20, mean gain -0.1, distinct units 13, distinct squads 3
+refused 'no path': units 7 orders 14 top [('1000030', 3), ('1000008', 2), ('1000012', 2), ('1000023', 2), ('1000024', 2), ('1000004', 2)] | of these units, also walked some other order: 7
+turns: shots/walks active // D0
+   1- 3: 42/87 // 47/252
+   4- 6: 60/56 // 54/120
+   7- 9: 19/41 // 61/76
+  10-12: 14/41 // 41/64
+turn 1, first patrol walk: units 11 to their order's target 9 of those not where the same unit went in D0 9 | D0 patrol walkers 21 active walkers that matched D0 0
+turn 1, units with a STAY order: 17 patrol-walked in D0 13 patrol-walked here 0
+TU% at the player's turn 2 of the STAY units: active (89, 17) D0 (48, 17)

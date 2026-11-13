@@ -1,0 +1,12 @@
+1 UN M6 s1 turns=8
+2 UN M3 s1 turns=8
+3 UN M8 s1 turns=8
+4 UO M6 s1 turns=8
+5 US M6 s1 turns=8
+6 UO M3 s1 turns=8
+7 US M3 s1 turns=8
+8 UO M8 s1 turns=8
+9 US M8 s1 turns=8
+10 UN M6 s1 turns=8
+11 UV M3 s1 turns=8
+12 LOAD ua11_UV_M3_s1 hive_3.asav turns=8

@@ -1,0 +1,1148 @@
+"""Конвейер HD-полов партиями: очередь -> план съёмки -> сборка -> игровые кадры -> общий лист -> установка.
+
+Одна строка очереди - ГРУППА побайтных копий классики (census/frame_hash.tsv, R-296): рисуется один раз,
+ставится на все копии. Состояние - art/ground/queue/queue.tsv (UTF-8 со спецификацией), правится только этим
+скриптом и руками в столбце «заметка».
+
+    py -3.13 tools/hdart/floor_batch.py index            # где на картах сейвов стоит каждый кадр пола (раз)
+    py -3.13 tools/hdart/floor_batch.py queue            # пересобрать очередь (статусы сохраняются)
+    py -3.13 tools/hdart/floor_batch.py plan  --batch b01 --n 24
+    py -3.13 tools/hdart/floor_batch.py build --batch b01
+    py -3.13 tools/hdart/floor_batch.py shoot --batch b01 [--jobs 3]
+    py -3.13 tools/hdart/floor_batch.py sheet --batch b01
+    py -3.13 tools/hdart/floor_batch.py judge --batch b01 --accept K1,K2 --reject K3=почему,...
+    py -3.13 tools/hdart/floor_batch.py install --batch b01 [--yes]   # через editq: файлы мода
+    py -3.13 tools/hdart/floor_batch.py stats
+
+Статусы: queued, built, accepted, rejected (перерисовать другим методом), installed, keep_old (прежний пак
+лучше или равен - закрыто), problem (отдельная очередь проблем, партии их не берут), no_save (нет на картах
+сейвов - нечем проверить), need_view (собрана, на картах есть, но в игровой кадр партии не попала - нужен
+другой ракурс; партии не берут, ждёт проверки), hold (проверка рецепта recipe_guard по классике: ковру или
+pixel_lines кадр не подходит или сомнителен - нужен другой рецепт или просмотр; не отказ картинке, партии не
+берут, после просмотра - plan --groups ... --reviewed), skip (не трогать: KEEP, PORTROADS, U_BASE_VR).
+Установленные: installed (ещё не проверены контуром), verified (контур цел), needs_fix (в моде кадр с
+потерей контура классики, R-326; причина в столбце «дефект»), fixed (был дефект, исправленный прошёл проверку).
+failed - сборка группы упала, партия идёт дальше.
+
+    py -3.13 tools/hdart/floor_batch.py audit [--groups K1,K2]   # контур всех установленных (contour_check)
+    py -3.13 tools/hdart/floor_batch.py plan --batch fx1 --fix --edges   # партия исправления, кадры краёв площадок
+
+    py -3.13 tools/hdart/floor_batch.py queue --min-group 100   # группы от 100 клеток (по умолчанию 200)
+
+Игровые кадры - только невидимо (tools/game_hidden.py, R-124). Камера кадра подбирается по совпадению с
+расчётным рисунком карты (map_screen_check.render), владелец пикселя даёт вырез каждой группы.
+"""
+import argparse
+import collections
+import csv
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+ROOT = Path(__file__).resolve().parents[2]
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+WORK = ROOT / "art" / "ground" / "queue"
+SAVES = WORK / "saves"
+QTSV = WORK / "queue.tsv"
+INDEX = WORK / "save_index.json"
+INST = ROOT / "Пиратки" / "Dioxine_XPiratez"
+GAME_MODS = INST / "user" / "mods"
+GAME = GAME_MODS / "hd" / "hd"
+REPO = ROOT / "user" / "mods" / "hd" / "hd"
+TAB = "\t"
+ENC_R, ENC_W = "utf-8-sig", "utf-8-sig"
+FRESH = time.mktime((2026, 10, 7, 0, 0, 0, 0, 0, -1))      # пак правлен после - набор уже закрыт
+MIN_CELLS = 200
+KEEP = {"UFOAA_INT:43", "UFOAA_INT:44", "AVENGER_EDIT:37", "STATIONDECOR:35"}
+KEEP_PREFIX = ("PORTROADS:", "U_BASE_VR:")
+COPY_KEEP_PREFIX = ("CARGO1:",)
+PROBLEMS = {"ROADS_WASTE:0": "отдельная очередь проблем (рецензия 13.10)",
+            "CARGO1:48": "R-320: подмена палитры боя - почти чёрные индексы становятся бирюзой",
+            "C_INT:6": "в игре не виден - закрыт бортом поезда"}
+COLS = ["группа", "копии", "клеток", "статус", "партия", "метод", "заметка", "дефект"]
+# аудит контура (contour_check, R-326): потеря только в клине у верхней вершины - нарочно (R-247, перекрёсток ROADS:
+# сквозь клин виден выступ соседей); FREIGHTER_MAIN:0 - тот же асфальт ROADS 9 на копиях CYBERWAREAN, METRO1 и др.
+WEDGE = {"ROADS:9", "ROADS:13", "FREIGHTER_MAIN:0"}
+WEDGE_BOX = (14, 17, 24, 27)            # x0, x1, y0, y1 пикселей базы: клин 1/8 x 1/8 у верхней вершины
+INSTALLED = ("installed", "verified", "fixed", "needs_fix")   # кадр группы стоит в моде
+# окно игрового кадра 1920x1080 при k = 4: база 480x270, внизу панель боя
+VIEW_DX, VIEW_UP, VIEW_DOWN = 13, 14, 8
+
+
+def say(*a):
+    print(*a, flush=True)
+
+
+def rows(p):
+    with open(p, encoding=ENC_R, newline="") as f:
+        return list(csv.DictReader(f, delimiter=TAB, quoting=csv.QUOTE_NONE))
+
+
+def key_of(s, f):
+    return "%s:%d" % (s.replace(".PCK", "").upper(), int(f))
+
+
+# ------------------------------------------------------------------ данные
+
+def copies():
+    """группа побайтных копий: ключ -> хэш, хэш -> ключи"""
+    hof, by = {}, collections.defaultdict(list)
+    with open(ROOT / "census" / "frame_hash.tsv", encoding=ENC_R) as f:
+        for line in f:
+            p = line.rstrip("\n").split(TAB)
+            if len(p) < 3 or not p[1].isdigit():
+                continue
+            k = key_of(p[0], p[1])
+            hof[k] = p[2]
+            by[p[2]].append(k)
+    return hof, by
+
+
+def cells_on_maps():
+    out = {}
+    for r in rows(ROOT / "census" / "frames.tsv"):
+        if r["раздел"] == "TERRAIN":
+            out[key_of(r["набор"], r["кадр"])] = int(r["клеток"] or 0)
+    return out
+
+
+def floors():
+    out = set()
+    for r in rows(ROOT / "census" / "ground.tsv"):
+        if r["раздел"] == "TERRAIN" and r["тип"] == "0" and r["пусто"] != "1":
+            out.add(key_of(r["набор"], r["кадр"]))
+    return out
+
+
+def pack_png(k, root=GAME):
+    s, f = k.split(":")
+    return root / "TERRAIN" / ("%s.PCK" % s) / ("%s.png" % f)
+
+
+def skip_reason(k):
+    if k in KEEP or k.startswith(KEEP_PREFIX) or k.split(":")[0].endswith("_VR"):   # R-314
+        return "не трогать"
+    return None
+
+
+def copy_kept(k):
+    """копия, которую установка не пишет, а группа идёт дальше: CARGO1 видна только в лайнере под подменой
+    палитры (R-320) и рядом со своими копиями не стоит"""
+    return k.startswith(COPY_KEEP_PREFIX)
+
+
+def load_queue():
+    if not QTSV.exists():
+        return {}
+    return {r["группа"]: r for r in rows(QTSV)}
+
+
+def save_queue(q):
+    WORK.mkdir(parents=True, exist_ok=True)
+    order = sorted(q.values(), key=lambda r: -int(r["клеток"]))
+    tmp = QTSV.with_suffix(".tmp")
+    with open(tmp, "w", encoding=ENC_W, newline="") as f:
+        f.write(TAB.join(COLS) + "\n")
+        for r in order:
+            f.write(TAB.join(str(r.get(c, "")).replace(TAB, " ").replace("\n", " ") for c in COLS) + "\n")
+    if len(rows(tmp)) != len(order):          # R-159: проверка до замены
+        raise SystemExit("запись очереди не сошлась")
+    os.replace(tmp, QTSV)
+
+
+# ------------------------------------------------------------------ index
+
+def cmd_index(a):
+    import map_truth as mt
+    src = Path(a.saves) if a.saves else SAVES
+    if a.saves:
+        SAVES.mkdir(parents=True, exist_ok=True)
+        for p in sorted(src.glob("*.asav")):
+            if not (SAVES / p.name).exists():
+                shutil.copy2(p, SAVES / p.name)
+    idx = json.loads(INDEX.read_text(encoding=ENC_R)) if INDEX.exists() else {}
+    for sv in sorted(SAVES.glob("*.asav")):
+        if sv.name in idx and not a.force:
+            continue
+        t0 = time.time()
+        bt = mt.Battle(str(sv))
+        D = mt.Data(bt.mods)
+        where = collections.defaultdict(list)
+        for z in range(bt.Z):
+            for y in range(bt.Y):
+                for x in range(bt.X):
+                    q = bt.part(z, y, x, 0)
+                    if not q:
+                        continue
+                    recs = D.mcd(bt.sets[q[0]])
+                    if q[1] >= len(recs):
+                        continue
+                    where[key_of(bt.sets[q[0]], recs[q[1]]["frames"][0])].append((x, y, z))
+        idx[sv.name] = {"size": [bt.X, bt.Y, bt.Z], "frames": where}
+        say("%-60s кадров пола %4d  %.0f с" % (sv.name, len(where), time.time() - t0))
+        INDEX.write_text(json.dumps(idx, ensure_ascii=False), encoding=ENC_W)
+    if save_envs(idx):
+        INDEX.write_text(json.dumps(idx, ensure_ascii=False), encoding=ENC_W)
+    say("сейвов в индексе:", len(idx))
+
+
+def save_envs(idx):
+    """окружение боя и глубина каждого сейва индекса (R-314) - в запись сейва, «env»: [окружение, глубина].
+    -> дописано ли что-то"""
+    import palette_shift_sets as pss
+    n = 0
+    for name, v in idx.items():
+        if "env" not in v and (SAVES / name).exists():
+            v["env"] = list(pss.save_env(SAVES / name))
+            n += 1
+    return n
+
+
+def shift_members(ms, risk, env):
+    """копии группы, чьи клетки годятся в план: без риска R-314 - все; с риском - только копии наборов, которые
+    игра красит подменой палитры в бою с этим окружением и глубиной [окружение, глубина]"""
+    if not risk:
+        return list(ms)
+    import palette_shift_sets as pss
+    return [m for m in ms if pss.shifted(risk.get(m.split(":")[0].upper()), env[0], env[1])]
+
+
+def load_index():
+    if not INDEX.exists():
+        raise SystemExit("нет %s - сначала index" % INDEX)
+    return json.loads(INDEX.read_text(encoding=ENC_R))
+
+
+# ------------------------------------------------------------------ queue
+
+def rep_of(grp, cells):
+    return max(grp, key=lambda m: (cells.get(m, 0), m))
+
+
+def cmd_queue(a):
+    hof, by = copies()
+    cells = cells_on_maps()
+    fl = floors()
+    idx = load_index()
+    seen = set()
+    for v in idx.values():
+        seen.update(v["frames"])
+    old = load_queue()
+    q = {}
+    done = set()
+    for k in sorted(fl):
+        if k in done:
+            continue
+        grp = sorted(set(by.get(hof.get(k), [])) | {k})
+        done.update(grp)
+        n = sum(cells.get(m, 0) for m in grp)
+        if n < a.min_group and rep_of(grp, cells) not in old:
+            continue
+        rep = rep_of(grp, cells)
+        prev = old.get(rep)
+        st, note = (prev["статус"], prev["заметка"]) if prev else ("queued", "")
+        live = [m for m in grp if not skip_reason(m)]
+        fresh = [m for m in live if pack_png(m).exists() and os.path.getmtime(pack_png(m)) >= FRESH]
+        if len(live) < len(grp):                # копия PORTROADS или VR-набора - не трогать всю группу
+            live = []
+        if not live:
+            st, note = "skip", "не трогать: " + ",".join(grp)
+        elif any(m in PROBLEMS for m in grp):
+            m = [m for m in grp if m in PROBLEMS][0]
+            st, note = "problem", PROBLEMS[m]
+        elif st in ("queued", "no_save") and fresh:
+            st, note = "installed", "правлен с 07.10: " + ",".join(fresh[:3])
+        elif st in ("queued", "no_save") and not (st == "no_save" and note):   # с заметкой - решено планом
+            st = "queued" if any(m in seen for m in grp) else "no_save"
+        q[rep] = {"группа": rep, "копии": ",".join(m for m in grp if m != rep), "клеток": n, "статус": st,
+                  "партия": prev["партия"] if prev else "", "метод": prev["метод"] if prev else "",
+                  "заметка": note, "дефект": prev.get("дефект", "") if prev else ""}
+    save_queue(q)
+    stats(q)
+
+
+def stats(q):
+    c = collections.Counter(r["статус"] for r in q.values())
+    cc = collections.Counter()
+    for r in q.values():
+        cc[r["статус"]] += int(r["клеток"])
+    say("групп %d:" % len(q))
+    sts = ("queued", "built", "accepted", "rejected", "installed", "verified", "fixed", "needs_fix", "failed",
+           "keep_old", "problem", "no_save", "need_view", "hold", "skip")
+    for st in sts + tuple(sorted(set(c) - set(sts))):     # неизвестный статус тоже виден: сумма = всем группам
+        say("  %-10s %4d групп  %8d клеток" % (st, c[st], cc[st]))
+    # группа с дефектом в партии исправления (built, accepted, failed) - в моде всё ещё прежний кадр с дефектом
+    work = sum(1 for r in q.values() if r.get("дефект") and r["статус"] not in INSTALLED)
+    inst = sum(c[s] for s in INSTALLED) + work
+    say("установлено %d: требует исправления %d (из них в партии исправления %d), исправлено %d, проверено %d, "
+        "ещё не проверено %d" % (inst, c["needs_fix"] + work, work, c["fixed"], c["verified"], c["installed"]))
+
+
+def cmd_stats(a):
+    stats(load_queue())
+
+
+# ------------------------------------------------------------------ audit
+
+def audit_group(r, root=GAME, cache=None):
+    """Контур установленных кадров группы (R-326): каждая копия и каждый её вариант .vN в моде, против своей
+    классики (копии побайтно одна классика). -> ("ok" | "wedge" | "lost", текст)"""
+    import contour_check as cc
+    import water_build as wb
+    cache = {} if cache is None else cache
+    if "pal" not in cache:
+        cache["pal"] = wb.palette().astype(np.float32)
+    g = r["группа"]
+    s, f = g.split(":")
+    if s not in cache:
+        cache[s] = wb.read_set(s)
+    cl = cache[s][int(f)]
+    bad, wedge, n = [], [], 0
+    for m in [g] + [m for m in r["копии"].split(",") if m]:
+        if skip_reason(m) or copy_kept(m):
+            continue
+        ms, mf = m.split(":")
+        sd = root / "TERRAIN" / ("%s.PCK" % ms)
+        for p in ([sd / ("%s.png" % mf)] if (sd / ("%s.png" % mf)).exists() else []) + sorted(sd.glob(mf + ".v*.png")):
+            n += 1
+            lost, _r, _c = cc.loss(cl, cc.read_alpha(p), cache["pal"])
+            if not lost.any():
+                continue
+            ys, xs = np.nonzero(lost)
+            x0, x1, y0, y1 = WEDGE_BOX
+            name = "%s/%s" % (m, p.name)
+            if g in WEDGE and xs.min() >= x0 and xs.max() <= x1 and ys.min() >= y0 and ys.max() <= y1:
+                wedge.append(name)
+            else:
+                bad.append("%s %d пикс (x %d-%d y %d-%d)" % (name, int(lost.sum()), xs.min(), xs.max(), ys.min(),
+                                                              ys.max()))
+    if not n:
+        return "lost", "нет кадра в моде"
+    if bad:
+        return "lost", "потеря контура: " + "; ".join(bad[:4]) + (" и ещё %d" % (len(bad) - 4) if len(bad) > 4 else "")
+    if wedge:
+        return "wedge", "контур цел, кроме клина у верхней вершины (R-247, нарочно): %d файлов" % len(wedge)
+    return "ok", "контур цел: %d файлов" % n
+
+
+def shift_risk(r, ps=None):
+    """R-314: группа точными цветами палитры (pixel_lines) в наборах, которые игра показывает под подменой палитры
+    боя. -> {НАБОР: инфо palette_shift_sets} таких копий; пусто - подмены нет или метод не pixel_lines.
+    Пустой метод - pixel_lines только у группы, которую ещё будут собирать (cmd_build берёт его по умолчанию); у
+    установленной пустой метод - кадр, правленный вне конвейера (ковры, перекрёстки с 07.10)"""
+    if (r["метод"] or ("" if r["статус"] in INSTALLED else "pixel_lines")).split()[:1] not in (["pixel_lines"], ["lines_material"]):
+        return {}
+    if ps is None:
+        import palette_shift_sets as pss
+        ps = pss.load()
+    out = {}
+    for m in [r["группа"]] + [m for m in r["копии"].split(",") if m]:
+        s = m.split(":")[0].upper()
+        if s in ps and not skip_reason(m) and not copy_kept(m):
+            out[s] = ps[s]
+    return out
+
+
+_SEEN = {}
+
+
+def shift_seen():
+    """Группы, которые были в игровом кадре новой версии под подменой палитры: строка 'HD palette shift: on' в
+    логе прогона снимка (_users/<партия>_<i>_n). Только так видно, что рецензент смотрел кадр в цвете игрока"""
+    if "g" not in _SEEN:
+        seen = set()
+        for pj in sorted(WORK.glob("*/plan.json")):
+            p = json.loads(pj.read_text(encoding=ENC_R))
+            for i, sh in enumerate(p.get("shots", [])):
+                log = WORK / "_users" / ("%s_%d_n" % (p["batch"], i)) / "openxcom.log"
+                if log.exists() and "HD palette shift: on" in log.read_text(encoding="utf-8", errors="replace"):
+                    seen.update(sh["groups"])
+        _SEEN["g"] = seen
+    return _SEEN["g"]
+
+
+def audit_set(r, v, why, seen=None, ps=None):
+    """статус установленной группы по аудиту: потеря - needs_fix с причиной в «дефект»; цел - fixed, если раньше
+    был дефект, иначе verified. Группа pixel_lines в наборе под подменой палитры (R-314), ни разу не снятая под
+    подменой, - installed (не проверено), что бы ни показал контур"""
+    if v == "lost":
+        r["статус"] = "needs_fix"
+        r["дефект"] = why
+        return
+    risk = shift_risk(r, ps)
+    if risk and r["группа"] not in (shift_seen() if seen is None else seen):
+        r["статус"] = "installed"
+        envs = sorted({e for i in risk.values() for e in i["envs"]})
+        t = "R-314: не снята под подменой палитры (%s: %s)" % (",".join(sorted(risk)), ",".join(envs)[:120])
+        r["заметка"] = re.sub(r"(; )?R-314: не снята под подменой палитры \([^)]*\)", "", r["заметка"]).strip("; ")
+        r["заметка"] = (r["заметка"] + "; " if r["заметка"] else "") + t
+    else:
+        r["статус"] = "fixed" if r.get("дефект") else "verified"
+        r["заметка"] = re.sub(r"(; )?R-314: не снята под подменой палитры \([^)]*\)", "", r["заметка"]).strip("; ")
+    if v == "wedge" and "клина у верхней вершины" not in r["заметка"]:
+        r["заметка"] = (r["заметка"] + "; " if r["заметка"] else "") + why
+
+
+def cmd_audit(a):
+    """Установленные группы (installed, verified, fixed, needs_fix или --groups) - контур каждого файла в копии мода
+    игры. Это проверка геометрии, а не картинки: verified = лист партии принят и контур цел."""
+    q = load_queue()
+    names = [g for g in a.groups.split(",") if g] or [g for g, r in q.items() if r["статус"] in INSTALLED]
+    cache, cnt = {}, collections.Counter()
+    for g in names:
+        r = q[g]
+        if r["статус"] not in INSTALLED:
+            raise SystemExit("%s: статус %s - не установлена" % (g, r["статус"]))
+        v, why = audit_group(r, cache=cache)
+        audit_set(r, v, why)
+        cnt[r["статус"]] += 1
+        if v != "ok":
+            say("%-24s %-9s %s" % (g, r["статус"], why))
+    save_queue(q)
+    say("аудит: %d групп - %s" % (len(names), ", ".join("%s %d" % kv for kv in sorted(cnt.items()))))
+    stats(q)
+
+
+# ------------------------------------------------------------------ plan
+
+def visible(dx, dy):
+    return abs(dx - dy) <= VIEW_DX and -VIEW_UP <= dx + dy <= VIEW_DOWN
+
+
+def guard_pass(r):
+    """Проверка рецепта группы по классике (recipe_guard, R-298 и R-325). Не ok - статус hold с причиной в
+    заметке: нужен другой рецепт или просмотр, картинка не отклонена. -> годится ли группа рецепту строки."""
+    import recipe_guard as rg
+    meth = r["метод"] or "pixel_lines"
+    v, why, _m = rg.check(r["группа"], meth)
+    if v == "ok":
+        return True
+    r["статус"] = "hold"
+    r["заметка"] = rg.note("carpet" if meth.split()[0] == "ground_seam" else "lines", v, why)
+    r["_new"] = True
+    return False
+
+
+def cmd_plan(a):
+    q = load_queue()
+    idx = load_index()
+    # пустой список групп (подстановка из оболочки ничего не нашла) - не «вся очередь»: план набрал бы чужие группы
+    if a.groups is not None and not [g for g in a.groups.split(",") if g.strip()]:
+        raise SystemExit("--groups пуст: план не построен (без ключа - вся очередь)")
+    if a.groups:
+        # пересборка названных групп после правки инструмента (own_gate): только незакрытые статусы
+        names = [g for g in a.groups.split(",") if g]
+        # installed - проверка уже установленного (R-314: снять под подменой палитры), сборки не будет: игровой
+        # кадр «пак сейчас» и есть установленный кадр
+        bad = [g for g in names if g not in q or q[g]["статус"] not in ("queued", "rejected", "need_view", "built",
+                                                                         "hold", "needs_fix", "failed", "installed")]
+        if bad:
+            raise SystemExit("не взять в партию (нет в очереди или статус закрыт): %s" % ", ".join(bad))
+        want = [q[g] for g in names]
+        if not getattr(a, "reviewed", False):
+            want = [r for r in want if r["статус"] == "installed" or guard_pass(r)]
+    else:
+        want = []
+        for r in sorted(q.values(), key=lambda r: -int(r["клеток"])):
+            if len(want) >= a.n:
+                break
+            if a.fix:                           # исправление установленного: рецепт тот же, проверка не нужна
+                # набор с подменой палитры боя (R-320) - только со слова Vitali, заметка «R-320» держит группу
+                if r["статус"] == "needs_fix" and not r["заметка"].startswith("R-320"):
+                    want.append(r)
+            elif r["статус"] in (("queued",) + (("rejected",) if a.redo else ())) and guard_pass(r):
+                want.append(r)
+    held = [r["группа"] for r in q.values() if r["статус"] == "hold" and r.get("_new")]
+    if held:
+        say("проверка рецепта: на просмотр или другой рецепт (статус hold) %d: %s" % (len(held), ", ".join(held)))
+    for r in q.values():
+        r.pop("_new", None)
+    if not want:
+        save_queue(q)
+        raise SystemExit("в очереди пусто")
+    members = {r["группа"]: [r["группа"]] + [m for m in r["копии"].split(",") if m] for r in want}
+    # R-314: группа pixel_lines в наборе под подменой палитры - клетки только с сейвов, где игра красит её подменой
+    risks = {g: shift_risk(q[g]) for g in members}
+    if save_envs(idx):
+        INDEX.write_text(json.dumps(idx, ensure_ascii=False), encoding=ENC_W)
+    nrisk = [g for g in members if risks[g]]
+    if nrisk:
+        say("под подменой палитры (R-314), клетки только с сейвов с подменой: %d групп" % len(nrisk))
+    # клетки групп по сейвам и этажам
+    occ = collections.defaultdict(lambda: collections.defaultdict(list))   # (сейв, z) -> группа -> клетки
+    stacked = 0
+    for sv, v in idx.items():
+        for g, ms in members.items():
+            use = shift_members(ms, risks[g], v.get("env", ["", 0]))
+            cells = {tuple(c) for m in use for c in v["frames"].get(m, [])}
+            for x, y, z in cells:
+                # стопка одной группы по этажам: снимать только верхний этаж (R-324) - с нижнего клетки не видно
+                if (x, y, z + 1) in cells:
+                    stacked += 1
+                    continue
+                # край площадки (R-326): сосед со стороны камеры (+x, +y) - не та же группа; там боковину и
+                # кромку не закрывает следующий кадр, и срез контура виден
+                if getattr(a, "edges", False) and (x + 1, y, z) in cells and (x, y + 1, z) in cells:
+                    continue
+                occ[(sv, z)][g].append((x, y))
+    if stacked:
+        say("клеток под той же группой этажом выше (не в счёт, R-324): %d" % stacked)
+    import map_screen_check as msc
+    busy = {sv: {p for _u, p, _f in msc.units(str(SAVES / sv))[0]} for sv in idx}
+    R = 14
+    offs = [(dy, dx) for dy in range(-R, R + 1) for dx in range(-R, R + 1) if visible(dx, dy)]
+    # число клеток группы в кадре при центре (cx, cy): свёртка карты клеток с окном кадра
+    hits = {}
+    for (sv, z), gs in occ.items():
+        X, Y, _Z = idx[sv]["size"]
+        free = np.zeros((Y, X), bool)
+        for g, cs in gs.items():
+            m = np.zeros((Y, X), np.float32)
+            for x, y in cs:
+                m[y, x] = 1
+                free[y, x] = True
+            pm = np.pad(m, R)
+            acc = np.zeros((Y, X), np.float32)
+            for dy, dx in offs:                 # acc[cy, cx] = клеток группы со сдвигом (dx, dy) от центра
+                acc += pm[R + dy:R + dy + Y, R + dx:R + dx + X]
+            hits[(sv, z, g)] = acc.astype(np.int32)
+        for x, y, zz in busy[sv]:
+            if zz == z and 0 <= y < Y and 0 <= x < X:
+                free[y, x] = False
+        occ[(sv, z)]["_free"] = free
+
+    def at(sv, z, g, c):
+        return int(hits[(sv, z, g)][c[1], c[0]])
+    left = set(members)
+    shots = []
+    while left and len(shots) < a.max_shots:
+        best = None
+        for (sv, z), gs in occ.items():
+            live = [g for g in gs if g in left]
+            if not live:
+                continue
+            ok = [np.minimum(hits[(sv, z, g)], 12) * (hits[(sv, z, g)] >= a.min_cells) for g in live]
+            n = sum((o > 0).astype(np.int32) for o in ok)
+            # добор по всем клеткам групп: при насыщенном счёте центр уходит в гущу пола, а не в угол карты
+            raw = sum(np.minimum(hits[(sv, z, g)], 999) for g in live)
+            sc = n * 10 ** 7 + sum(ok).astype(np.int64) * 10 ** 4 + raw
+            sc = np.where(gs["_free"], sc, -1)
+            yy, xx = np.unravel_index(int(np.argmax(sc)), sc.shape)
+            if sc[yy, xx] >= 10 ** 7 and (best is None or sc[yy, xx] > best[0]):
+                best = (int(sc[yy, xx]), sv, (int(xx), int(yy), z), live)
+        if best is None:
+            break
+        _sc, sv, c, live = best
+        hit = {g: at(sv, c[2], g, c) for g in live}
+        good = {g for g in live if hit[g] >= a.min_cells}
+        shots.append({"save": sv, "center": c, "groups": sorted(good), "cells": {g: hit[g] for g in good}})
+        left -= good
+        say("кадр %2d: %-55s %-12s групп %d" % (len(shots), sv, "%d,%d,%d" % c, len(good)))
+    plan = {"batch": a.batch, "made": time.strftime("%Y-%m-%d %H:%M"), "shots": shots,
+            "groups": sorted(set(members) - left), "unplaced": sorted(left),
+            "reviewed": sorted(set(members) - left) if a.groups and getattr(a, "reviewed", False) else []}
+    d = WORK / a.batch
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding=ENC_W)
+    for r in q.values():
+        if r["партия"] == a.batch and r["статус"] == "queued":
+            r["партия"] = ""
+    for g in plan["groups"]:
+        q[g]["партия"] = a.batch
+    def placeable(g):
+        return any(int((np.where(gs["_free"], hits[(sv, z, g)], 0) >= a.min_cells).sum()) > 0
+                   for (sv, z), gs in occ.items() if g in gs)
+    nowhere = {g for g in left if not placeable(g)}
+    say("не влезли в %d кадров: %d, места нет вовсе: %d" % (a.max_shots, len(left - nowhere), len(nowhere)))
+    for g in left - nowhere:
+        q[g]["партия"] = ""
+    left = nowhere
+    for g in left:                              # нечем проверить - из партий вон, пока не будет сейва
+        if q[g]["статус"] in INSTALLED:         # установленное не теряет статус: needs_fix остаётся в счёте дефектов
+            q[g]["партия"] = ""
+            continue
+        q[g]["статус"] = "no_save"
+        q[g]["заметка"] = "на картах сейвов нет места с %d клетками в кадре" % a.min_cells
+        if risks[g]:
+            q[g]["заметка"] += " под подменой палитры (R-314: нужна сцена floor_scene --env %s)" % ",".join(
+                sorted({e for i in risks[g].values() for e in i["envs"]}))[:150]
+    save_queue(q)
+    say("партия %s: групп в плане %d, без места %d, игровых кадров %d" % (a.batch, len(plan["groups"]), len(left),
+                                                                         len(shots)))
+
+
+def load_plan(batch):
+    p = WORK / batch / "plan.json"
+    if not p.exists():
+        raise SystemExit("нет плана " + str(p))
+    return json.loads(p.read_text(encoding=ENC_R))
+
+
+# ------------------------------------------------------------------ build
+
+def frame_files(d, s, f):
+    """Кадр и его варианты .vN в папке сборки: <d>/<S>.PCK/<f>.png, <f>.v1.png..."""
+    sd = d / ("%s.PCK" % s)
+    base = sd / ("%s.png" % f)
+    return ([base] if base.exists() else []) + sorted(sd.glob("%s.v*.png" % f))
+
+
+def run_tool(cmd):
+    return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                          env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+
+
+def cmd_build(a):
+    """Метод группы - строка очереди: «pixel_lines [ключи]» или «ground_seam [ключи]» (ковёр с вариантами .vN,
+    ключи --set/--carpet/--out ставит сборка). Копии получают кадр и все его варианты под своими номерами."""
+    plan = load_plan(a.batch)
+    q = load_queue()
+    out = WORK / a.batch / "TERRAIN"
+    py = sys.executable
+    for g in plan["groups"]:
+        r = q[g]
+        meth = r["метод"] or "pixel_lines"
+        tool, extra = meth.split()[0], meth.split()[1:]
+        s, f = g.split(":")
+        # метод мог смениться после плана: проверка рецепта перед инструментом, просмотренное не трогать
+        if not (getattr(a, "reviewed", False) or g in plan.get("reviewed", [])) and not guard_pass(r):
+            r.pop("_new", None)
+            say("%-22s hold: %s" % (g, r["заметка"]))
+            continue
+        for old in frame_files(out, s, f):     # прежняя сборка группы в этой партии: варианты не должны остаться
+            old.unlink()
+        if tool in ("pixel_lines", "lines_material"):
+            cmd = [py, str(HERE / (tool + ".py")), "--out", str(out), "--frames", g] + extra
+            p = run_tool(cmd)
+            if p.returncode and "поле не закрывает кадр" in (p.stdout + p.stderr) and "--holes" not in extra:
+                extra = extra + ["--holes"]
+                p = run_tool(cmd + ["--holes"])
+        elif tool == "ground_seam":
+            p = run_tool([py, str(HERE / "ground_seam.py"), "--set", s, "--carpet", f, "--out", str(out)] + extra)
+        else:
+            say("%-22s метод %s - не умею, пропуск" % (g, meth))
+            continue
+        if p.returncode:
+            # отдельный статус, остальная партия идёт дальше; установленный кадр остаётся, дефект не теряется
+            err = ((p.stderr or p.stdout).strip().splitlines() or ["?"])[-1]
+            say("%-22s ОШИБКА %s" % (g, err))
+            if r["статус"] != "needs_fix":
+                r["статус"] = "failed"
+            r["заметка"] = "сборка упала: " + err[:200]
+            continue
+        r["метод"] = " ".join([tool] + extra)
+        r["статус"] = "built"
+        say("%-22s %s" % (g, p.stdout.strip().splitlines()[-1]))
+        files = frame_files(out, s, f)
+        for m in [m for m in r["копии"].split(",") if m]:
+            ms, mf = m.split(":")
+            for old in frame_files(out, ms, mf):
+                old.unlink()
+            for src in files:
+                dst = out / ("%s.PCK" % ms) / (mf + src.name[len(f):])
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
+    save_queue(q)
+
+
+# ------------------------------------------------------------------ shoot
+
+def junction(link, target):
+    subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], check=True, capture_output=True)
+
+
+def game_save(sv, center):
+    import map_screen_check as msc
+    out = WORK / "_game" / ("%s_%d_%d_%d.sav" % ((Path(sv).stem,) + tuple(center)))
+    if not out.exists():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        msc.prep(str(SAVES / sv), str(out), center=tuple(center), clear_smoke=True)
+        txt = out.read_text(encoding="utf-8")
+        import re
+        txt2, k = re.subn(r"(?m)^  globalshade: \d+$", "  globalshade: 0", txt)
+        if k != 1:
+            raise SystemExit("globalshade: %d мест" % k)
+        out.write_text(txt2, encoding="utf-8")
+    return out
+
+
+def layout(batch):
+    """Папка модов партии: соединения на моды установки; в hd/hd/TERRAIN копии наборов партии с новыми кадрами.
+    Варианты .vN заменённого кадра снимаются: иначе узор groundFrameFor показывает прежний рисунок (R-245)."""
+    new = WORK / batch / "TERRAIN"
+    new.mkdir(parents=True, exist_ok=True)      # партия проверки установленного (R-314): своих кадров нет
+    root = WORK / "_mods" / batch
+    sets = sorted(p.name for p in new.iterdir() if p.is_dir())
+    terr = root / "hd" / "hd" / "TERRAIN"
+    if not root.exists():
+        root.mkdir(parents=True)
+        for m in GAME_MODS.iterdir():
+            if m.name != "hd":
+                junction(root / m.name, m)
+        src_hd = GAME_MODS / "hd"
+        for sub_src, sub_dst, keep in ((src_hd, root / "hd", {"hd"}), (src_hd / "hd", root / "hd" / "hd", {"TERRAIN"}),
+                                       (src_hd / "hd" / "TERRAIN", terr, set(sets))):
+            sub_dst.mkdir(parents=True, exist_ok=True)
+            for e in sub_src.iterdir():
+                if e.name in keep:
+                    continue
+                if e.is_dir():
+                    junction(sub_dst / e.name, e)
+                else:
+                    shutil.copy2(e, sub_dst / e.name)
+    n = gone = 0
+    src_t = GAME_MODS / "hd" / "hd" / "TERRAIN"
+    for s in sets:
+        if (terr / s).is_junction():            # набор добавлен после первой раскладки: связь снять (R-047)
+            os.rmdir(terr / s)
+        if not (terr / s).exists():
+            if (src_t / s).exists():
+                shutil.copytree(src_t / s, terr / s)
+            else:
+                (terr / s).mkdir(parents=True)
+        elif (src_t / s).exists():         # копия от прежней раскладки: прочие кадры набора - как в установке сейчас
+            mine = {p.name for p in (new / s).glob("*.png")}
+            for g in (src_t / s).iterdir():
+                d = terr / s / g.name
+                if g.name not in mine and (not d.exists() or d.stat().st_size != g.stat().st_size
+                                           or d.read_bytes() != g.read_bytes()):
+                    shutil.copy2(g, d)
+            for d in list((terr / s).iterdir()):
+                if d.name not in mine and not (src_t / s / d.name).exists():
+                    d.unlink()
+        got = sorted((new / s).glob("*.png"))
+        # сначала снять варианты всех заменённых кадров, потом класть новые: иначе .vN сборки ground_seam,
+        # положенный раньше своего кадра, снимется вместе со старыми
+        for p in got:
+            f = p.name[:-4]
+            if ".v" not in f:
+                for v in (terr / s).glob(f + ".v*.png"):
+                    v.unlink()
+                    gone += 1
+        for p in got:
+            shutil.copy2(p, terr / s / p.name)
+            n += 1
+    say("раскладка %s: наборов %d, кадров %d, снято вариантов %d" % (root, len(sets), n, gone))
+    return root
+
+
+def run_game(out, mods_dir, mode, user, save, after):
+    if out.exists():
+        return True
+    sets = "oxceHdMode=%d;oxceHdScale=4;oxceHdGroundVariants=true" % mode
+    cmd = [sys.executable, str(ROOT / "tools" / "game_hidden.py"), "--out", str(out), "--save", str(save),
+           "--after", str(after), "--user", str(user), "--set", sets]
+    if mods_dir:
+        cmd += ["--mods-dir", str(mods_dir)]
+    out.parent.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    ok = out.exists()
+    say("  %-50s %s" % (out.parent.name + "/" + out.name, "есть" if ok else "НЕТ, код %d" % r.returncode))
+    return ok
+
+
+def shot_paths(batch, sh):
+    stem = Path(sh["save"]).stem
+    c = tuple(sh["center"])
+    ref = WORK / "_game" / ("ref_%s_%d_%d_%d" % ((stem,) + c))
+    nm = "%d_%d_%d_r0.png" % c
+    return ref / ("classic_" + nm), ref / ("hd_now_" + nm), WORK / batch / "game" / ("%s_new_%s" % (stem, nm))
+
+
+def cmd_shoot(a):
+    plan = load_plan(a.batch)
+    mods = layout(a.batch)
+    # снимок новой версии старше собранных кадров партии - снят с прежней сборки: переснять (R-087)
+    built = [p.stat().st_mtime for p in (WORK / a.batch / "TERRAIN").rglob("*.png")]
+    fresh = max(built) if built else 0
+    stale = 0
+    for sh in plan["shots"]:
+        nw = shot_paths(a.batch, sh)[2]
+        if nw.exists() and nw.stat().st_mtime < fresh:
+            nw.unlink()
+            stale += 1
+    if stale:
+        say("снимков старше сборки партии: %d - переснимаю" % stale)
+    # эталон hd_now старше установки своих наборов - снят с прежнего пака: переснять (R-087)
+    src_t = GAME_MODS / "hd" / "hd" / "TERRAIN"
+    old_ref = 0
+    for sh in plan["shots"]:
+        hn = shot_paths(a.batch, sh)[1]
+        if not hn.exists():
+            continue
+        sets = {g.split(":")[0] + ".PCK" for g in sh["groups"]}
+        inst = max((p.stat().st_mtime for s in sets for p in (src_t / s).glob("*.png")), default=0)
+        if inst > hn.stat().st_mtime:
+            hn.unlink()
+            old_ref += 1
+    if old_ref:
+        say("эталонов hd_now старше установки: %d - переснимаю" % old_ref)
+    jobs = []
+    for i, sh in enumerate(plan["shots"]):
+        try:            # один негодный сейв не роняет партию: его кадры просто не сняты, лист покажет пропуск
+            sav = game_save(sh["save"], sh["center"])
+        except (Exception, SystemExit) as e:
+            say("  %s %s: сейв не подготовлен - %s" % (sh["save"], sh["center"], str(e) or type(e).__name__))
+            continue
+        cl, hn, nw = shot_paths(a.batch, sh)
+        u = WORK / "_users"
+        jobs += [(cl, None, 0, u / ("ref%d_c" % i + a.batch), sav), (hn, None, 1, u / ("ref%d_h" % i + a.batch), sav),
+                 (nw, mods, 1, u / ("%s_%d_n" % (a.batch, i)), sav)]
+    t0 = time.time()
+    with ThreadPoolExecutor(a.jobs) as ex:
+        res = list(ex.map(lambda j: run_game(j[0], j[1], j[2], j[3], j[4], a.after), jobs))
+    say("игровых кадров: %d из %d, %.0f мин" % (sum(res), len(res), (time.time() - t0) / 60))
+
+
+# ------------------------------------------------------------------ sheet
+
+def camera_fit(bt, data, classic, center):
+    """Камера кадра (смещение карты при k = 1) подбором: расчётный рисунок карты против классики по пикселям."""
+    import map_screen_check as msc
+    H0, W0 = classic.shape[:2]
+    W, H = W0 // 4, H0 // 4
+    small = classic[2::4, 2::4][:H, :W].astype(np.int64)
+    col = (small[..., 0] << 16) | (small[..., 1] << 8) | small[..., 2]
+    x, y, z = center
+    sx, sy = x * 16 - y * 16, x * 8 + y * 8 - z * 24
+    M = 48
+    nom = (W // 2 - sx - 16, H // 2 - sy, z)
+    img, owner = msc.render(bt, data, (nom[0] + M, nom[1] + M, z), W + 2 * M, H + 2 * M)
+    best = None
+    for st, rng in ((4, range(-M + 4, M - 3, 4)), (1, None)):
+        cand = [(dx, dy) for dx in rng for dy in rng] if rng is not None else \
+            [(best[1] + i, best[2] + j) for i in range(-4, 5) for j in range(-4, 5)]
+        for dx, dy in cand:
+            ix = img[M - dy:M - dy + H, M - dx:M - dx + W]
+            m = ix > 0
+            if m.sum() < 1000:
+                continue
+            k = (ix[m].astype(np.int64) << 24) | col[m]
+            u, n = np.unique(k, return_counts=True)
+            per = collections.defaultdict(int)
+            for kk, nn in zip((u >> 24).tolist(), n.tolist()):
+                per[kk] = max(per[kk], nn)
+            sc = sum(per.values()) / m.sum()
+            if best is None or sc > best[0]:
+                best = (sc, dx, dy)
+    sc, dx, dy = best
+    own = owner[M - dy:M - dy + H, M - dx:M - dx + W]
+    return sc, own
+
+
+def font(sz):
+    for f in ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/segoeui.ttf"):
+        if os.path.exists(f):
+            return ImageFont.truetype(f, sz)
+    return ImageFont.load_default()
+
+
+def cmd_sheet(a):
+    import map_truth as mt
+    plan = load_plan(a.batch)
+    q = load_queue()
+    d = WORK / a.batch
+    tiles = []      # (группа, [три выреза], подпись)
+    info = {}
+    for sh in plan["shots"]:
+        cl, hn, nw = shot_paths(a.batch, sh)
+        if not (cl.exists() and hn.exists() and nw.exists()):
+            say("нет игровых кадров для", sh["save"], sh["center"])
+            continue
+        bt = mt.Battle(str(SAVES / sh["save"]))
+        data = mt.Data(bt.mods)
+        A = [np.asarray(Image.open(p).convert("RGB")) for p in (cl, hn, nw)]
+        sc, own = camera_fit(bt, data, A[0], sh["center"])
+        say("%-55s камера: совпадение %.3f" % (sh["save"], sc))
+        part = (own - 1) % 4
+        cell = (own - 1) // 4
+        fkey = {}
+        for g in sh["groups"]:
+            for m in [g] + [m for m in q[g]["копии"].split(",") if m]:
+                fkey[m] = g
+        H, W = own.shape
+        names = np.full(own.shape, "", object)
+        uniq = np.unique(cell[(own > 0) & (part == 0)])
+        lookup = {}
+        for c in uniq.tolist():
+            z, rest = divmod(c, bt.Y * bt.X)
+            y, x = divmod(rest, bt.X)
+            p0 = bt.part(z, y, x, 0)
+            if not p0:
+                continue
+            recs = data.mcd(bt.sets[p0[0]])
+            if p0[1] < len(recs):
+                lookup[c] = fkey.get(key_of(bt.sets[p0[0]], recs[p0[1]]["frames"][0]), "")
+        for g in sh["groups"]:
+            cs = [c for c, gg in lookup.items() if gg == g]
+            mask = (own > 0) & (part == 0) & np.isin(cell, cs)
+            npx = int(mask.sum())
+            if npx < 40:
+                continue
+            # вырез: самое плотное окно 96x60 базы
+            ii = np.cumsum(np.cumsum(np.pad(mask, ((1, 0), (1, 0))).astype(np.int32), 0), 1)
+            bw, bh = min(120, W), min(68, H - 56)
+            sums = ii[bh:, bw:] - ii[:-bh, bw:] - ii[bh:, :-bw] + ii[:-bh, :-bw]
+            sums = sums[: max(1, H - 56 - bh + 1)]
+            yy, xx = np.unravel_index(int(np.argmax(sums)), sums.shape)
+            box = tuple(int(v) for v in (xx * 4, yy * 4, (xx + bw) * 4, (yy + bh) * 4))
+            m4 = np.repeat(np.repeat(mask, 4, 0), 4, 1)
+            dn = np.abs(A[2].astype(int) - A[1].astype(int)).sum(2)[m4[:A[1].shape[0], :A[1].shape[1]]]
+            crops = [Image.fromarray(x).crop(box) for x in A]
+            prev = info.get(g)
+            if prev and prev["px"] >= npx:
+                continue
+            info[g] = {"px": npx, "changed": float((dn > 24).mean()) if dn.size else 0.0, "save": sh["save"],
+                       "center": sh["center"], "box": box}
+            tiles = [t for t in tiles if t[0] != g] + [(g, crops)]
+    # лист: по строке на группу, три вырезa 0.5
+    order = [g for g in plan["groups"] if g in info]
+    miss = [g for g in plan["groups"] if g not in info]
+    f1, f2 = font(22), font(18)
+    tw, th = 360, 204                      # вырез 480x272 в 0.75: мелкий рисунок ещё читается
+    rows_ = []
+    for i, g in enumerate(order):
+        crops = dict(tiles)[g]
+        row = Image.new("RGB", (60 + 3 * (tw + 6), th + 30), (28, 28, 32))
+        dr = ImageDraw.Draw(row)
+        dr.text((6, th // 2), "%d" % (i + 1), fill=(255, 220, 90), font=f1)
+        for j, c in enumerate(crops):
+            row.paste(c.resize((tw, th), Image.LANCZOS), (60 + j * (tw + 6), 26))
+        r = q[g]
+        dr.text((60, 3), "%s  (+%d копий)  %s  изм. %.0f%%" % (g, len([m for m in r["копии"].split(",") if m]),
+                                                                r["метод"], 100 * info[g]["changed"]),
+                fill=(230, 230, 230), font=f2)
+        rows_.append(row)
+    per = a.per_page
+    pages = []
+    for pi in range(0, len(rows_), per):
+        chunk = rows_[pi:pi + per]
+        head = Image.new("RGB", (chunk[0].width, 34), (28, 28, 32))
+        dh = ImageDraw.Draw(head)
+        for j, t in enumerate(("классика", "пак сейчас", "новое")):
+            dh.text((60 + j * (tw + 6) + 6, 6), t, fill=(160, 200, 255), font=f1)
+        page = Image.new("RGB", (chunk[0].width, 34 + sum(r.height for r in chunk)), (28, 28, 32))
+        page.paste(head, (0, 0))
+        y = 34
+        for r in chunk:
+            page.paste(r, (0, y))
+            y += r.height
+        p = d / ("sheet_%d.png" % (pi // per + 1))
+        page.save(p)
+        pages.append(p)
+    (d / "sheet.json").write_text(json.dumps({"order": order, "missing": miss, "info": info}, ensure_ascii=False,
+                                             indent=1), encoding=ENC_W)
+    say("лист: групп %d, без выреза %d %s" % (len(order), len(miss), miss))
+    for p in pages:
+        say(" ", p)
+
+
+# ------------------------------------------------------------------ judge / install
+
+def cmd_judge(a):
+    q = load_queue()
+    sh = json.loads((WORK / a.batch / "sheet.json").read_text(encoding=ENC_R))
+    num = {str(i + 1): g for i, g in enumerate(sh["order"])}
+
+    def g_of(t):
+        return num.get(t, t.upper())
+    # установленная группа в партии проверки (R-314): принята - аудит (контур и снимок под подменой), иначе -
+    # needs_fix: в моде кадр, который игрок видит плохо
+    checked = set()
+    for t in [t for t in (a.accept or "").split(",") if t]:
+        g = g_of(t)
+        if q[g]["статус"] in INSTALLED:
+            _SEEN.clear()
+            v, why = audit_group(q[g])
+            audit_set(q[g], v, why)
+            checked.add(g)
+            say("%-22s проверка установленного: %s" % (g, q[g]["статус"]))
+            continue
+        q[g]["статус"] = "accepted"
+    for t in [t for t in ((a.reject or "") + ";" + (a.keep or "")).split(";") if t]:
+        k, _, why = t.partition("=")
+        g = g_of(k.strip())
+        if q[g]["статус"] in INSTALLED:
+            q[g]["статус"] = "needs_fix"
+            q[g]["дефект"] = "игровой кадр %s: %s" % (a.batch, why.strip())
+            checked.add(g)
+    for t in [t for t in (a.reject or "").split(";") if t]:
+        k, _, why = t.partition("=")
+        g = g_of(k.strip())
+        if g in checked:
+            continue
+        q[g]["статус"] = "rejected"
+        q[g]["заметка"] = why.strip()
+    for t in [t for t in (a.keep or "").split(";") if t]:
+        k, _, why = t.partition("=")
+        g = g_of(k.strip())
+        if g in checked:
+            continue
+        q[g]["статус"] = "keep_old"
+        q[g]["заметка"] = why.strip()
+    fixq = [g for g in sh["order"] if q[g].get("дефект") and q[g]["статус"] in ("rejected", "keep_old")]
+    for g in fixq:                              # в моде по-прежнему кадр с дефектом: он не закрыт, ждёт исправления
+        q[g]["заметка"] = "%s: %s" % (q[g]["статус"], q[g]["заметка"])
+        q[g]["статус"] = "needs_fix"
+    save_queue(q)
+    # вердикты партии - отдельным файлом: в очереди только последнее состояние группы, а группа, возвращённая на
+    # пересборку, уходит в следующую партию, и счёт прежней партии из очереди уже не собрать
+    vp = WORK / a.batch / "verdicts.tsv"
+    old = {}
+    if vp.exists():
+        for row in csv.reader(vp.read_text(encoding=ENC_R).splitlines()[1:], delimiter="\t", quoting=csv.QUOTE_NONE):
+            old[row[0]] = row
+    for g in sh["order"]:
+        if q[g]["статус"] in ("accepted", "rejected", "keep_old") or g in fixq or g in checked:
+            old[g] = [g, q[g]["статус"], (q[g].get("дефект") or q[g]["заметка"]).replace("\t", " ")]
+    vp.write_text("группа\tвердикт\tзаметка\n" + "".join("\t".join(r) + "\n" for r in old.values()), encoding=ENC_W)
+    stats(q)
+
+
+def cmd_install(a):
+    import build_hd_pack as bp
+    os.chdir(ROOT)
+    q = load_queue()
+    out = WORK / a.batch / "TERRAIN"
+    take = [r for r in q.values() if r["партия"] == a.batch and r["статус"] == "accepted"]
+    man = bp.load()
+    plan, drop = [], []
+    for r in take:
+        g = r["группа"]
+        for m in [g] + [m for m in r["копии"].split(",") if m]:
+            if skip_reason(m):
+                continue
+            if copy_kept(m):
+                say("%-22s копия не пишется (R-320) - пропуск" % m)
+                continue
+            ms, mf = m.split(":")
+            gd = GAME / "TERRAIN" / ("%s.PCK" % ms)
+            if not (gd / ("%s.png" % mf)).exists():
+                say("%-22s нет пака в установке - пропуск" % m)
+                continue
+            files = frame_files(out, ms, mf)
+            if not files or files[0].name != "%s.png" % mf:
+                raise SystemExit("%s: нет собранного кадра в %s" % (m, out))
+            for src in files:
+                plan.append(("TERRAIN/%s.PCK/%s" % (ms, src.name), str(src), m, g,
+                             "конвейер полов %s: игровой кадр лучше прежнего пака (%s)" % (a.batch, r["метод"]),
+                             r["метод"].split()[0]))
+            new = {src.name for src in files}
+            for v in sorted(gd.glob(mf + ".v*.png")):
+                if v.name not in new:           # прежние варианты, которых нет в новой сборке
+                    drop.append("TERRAIN/%s.PCK/%s" % (ms, v.name))
+    say("групп %d, файлов %d, снять вариантов %d" % (len(take), len(plan), len(drop)))
+    if not a.yes:
+        raise SystemExit("сухой прогон; --yes - записать")
+    for rel, src, m, g, why, tool in plan:
+        old = man["files"].get(rel, {}).get("sha256")
+        bp.stage(man, rel, src, generator=tool, generator_version="%s.py 13.10 floor_batch" % tool,
+                 source_path=src, approved=True, approval=why, asset_id=m, source_frame=g, replaced=old)
+    for rel in drop:
+        man["files"].pop(rel, None)
+    bp.save(man, why="floor_batch %s" % a.batch)
+    bp.log("save", "", bp.manifest_hash(man)[:16], "floor_batch %s: %d файлов, снято вариантов %d"
+           % (a.batch, len(plan), len(drop)))
+    rels = sorted({p[0] for p in plan})
+    say("game:", bp.install(man, "game", only=rels))
+    repo = []
+    for r in rels:
+        sd = r.rsplit("/", 1)[0] + "/"
+        whole = [k for k in man["files"] if k.startswith(sd)]
+        if (REPO / sd).is_dir() and len(os.listdir(REPO / sd)) >= len(whole):
+            repo.append(r)
+        else:                                   # R-257: набора нет или он неполный - целиком
+            repo += whole
+    say("repo:", bp.install(man, "repo", only=sorted(set(repo))))
+    for rel in drop:
+        for root in (GAME, REPO):
+            p = root / rel
+            if p.exists():
+                bp.unlink_ro(str(p)) if hasattr(bp, "unlink_ro") else p.unlink()
+    bad = 0
+    for r in rels:
+        for root in (GAME, REPO):
+            if hashlib.sha256((root / r).read_bytes()).hexdigest() != man["files"][r]["sha256"]:
+                say("РАСХОДИТСЯ", root, r)
+                bad += 1
+    for sd in sorted({r.rsplit("/", 1)[0] + "/" for r in rels}):
+        ng, nr = len(os.listdir(GAME / sd)), len(os.listdir(REPO / sd))
+        nm = len([k for k in man["files"] if k.startswith(sd)])
+        if not ng == nr == nm:
+            say("ЧИСЛО ФАЙЛОВ", sd, "game", ng, "repo", nr, "манифест", nm)
+            bad += 1
+    say("сверка: расхождений", bad)
+    if not bad:
+        cache = {}
+        for r in take:                          # контур установленного (R-326): потеря - needs_fix, не verified
+            r["статус"] = "installed"
+            v, why = audit_group(r, cache=cache)
+            audit_set(r, v, why)
+            if v == "lost":
+                say("%-22s КОНТУР: %s" % (r["группа"], why))
+        save_queue(q)
+    stats(q)
+
+
+def main():
+    sys.stdout.reconfigure(encoding="utf-8")
+    ap = argparse.ArgumentParser()
+    sp = ap.add_subparsers(dest="cmd", required=True)
+    p = sp.add_parser("index")
+    p.add_argument("--saves", default="")
+    p.add_argument("--force", action="store_true")
+    p = sp.add_parser("queue")
+    p.add_argument("--min-group", type=int, default=MIN_CELLS, help="группы от стольких клеток на картах")
+    sp.add_parser("stats")
+    p = sp.add_parser("plan")
+    p.add_argument("--batch", required=True)
+    p.add_argument("--n", type=int, default=24)
+    p.add_argument("--min-cells", type=int, default=3)
+    p.add_argument("--max-shots", type=int, default=16)
+    p.add_argument("--redo", action="store_true", help="брать и отклонённые (после смены метода)")
+    p.add_argument("--groups", default="",
+                   help="только эти группы через запятую (queued, rejected, need_view, hold, needs_fix, failed; "
+                        "installed - проверка установленного кадра без сборки, R-314)")
+    p.add_argument("--reviewed", action="store_true",
+                   help="группы --groups просмотрены человеком: проверку рецепта (recipe_guard) не применять")
+    p.add_argument("--fix", action="store_true", help="партия исправления: установленные группы со статусом needs_fix")
+    p.add_argument("--edges", action="store_true",
+                   help="снимать края площадок: клетки, у которых сосед по +x и по +y - та же группа, не брать")
+    p = sp.add_parser("audit")
+    p.add_argument("--groups", default="", help="только эти группы через запятую (по умолчанию все установленные)")
+    for nm in ("build", "sheet", "shoot", "install", "judge"):
+        p = sp.add_parser(nm)
+        p.add_argument("--batch", required=True)
+        if nm == "build":
+            p.add_argument("--reviewed", action="store_true", help="не применять проверку рецепта ко всей партии")
+        if nm == "shoot":
+            p.add_argument("--jobs", type=int, default=3)
+            p.add_argument("--after", type=int, default=90)
+        if nm == "sheet":
+            p.add_argument("--per-page", type=int, default=8)
+        if nm == "install":
+            p.add_argument("--yes", action="store_true")
+        if nm == "judge":
+            p.add_argument("--accept", default="")
+            p.add_argument("--reject", default="")
+            p.add_argument("--keep", default="")
+    a = ap.parse_args()
+    {"index": cmd_index, "queue": cmd_queue, "stats": cmd_stats, "plan": cmd_plan, "build": cmd_build,
+     "shoot": cmd_shoot, "sheet": cmd_sheet, "judge": cmd_judge, "install": cmd_install,
+     "audit": cmd_audit}[a.cmd](a)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,1 @@
+﻿- Launcher 0.5.7: updates now have a second source, a copy of the release storage on Google Drive. If the station does not answer, or Drive is faster for you, the launcher takes the files from there by itself; everything is still checked by signature and hash. Choose in the launcher's settings.json, key repoSource: auto (default), main (station only), mirror (Drive first).

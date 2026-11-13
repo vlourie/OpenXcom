@@ -1,0 +1,453 @@
+﻿{
+ "candidate": [
+  {
+   "label": "csd_D_L2_s2",
+   "scen": "L2",
+   "seed": 2,
+   "rec": 1147,
+   "turn": 4,
+   "unit": 1000050,
+   "w": "STR_KUNG_FU_ALT",
+   "tu": 66,
+   "player": true,
+   "spent": 64,
+   "effect": false,
+   "shots": 1,
+   "cheapest": 40,
+   "weapons": [
+    "STR_CD_RIFLE"
+   ]
+  },
+  {
+   "label": "csd_D_L2_s2",
+   "scen": "L2",
+   "seed": 2,
+   "rec": 1328,
+   "turn": 5,
+   "unit": 1000050,
+   "w": "STR_KUNG_FU_ALT",
+   "tu": 105,
+   "player": true,
+   "spent": 96,
+   "effect": false,
+   "shots": 3,
+   "cheapest": 40,
+   "weapons": [
+    "STR_CD_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_L12_s2",
+   "scen": "L12",
+   "seed": 2,
+   "rec": 1180,
+   "turn": 9,
+   "unit": 1000035,
+   "w": "LOBSTER_CLAWS",
+   "tu": 74,
+   "player": true,
+   "spent": 64,
+   "effect": false,
+   "shots": 2,
+   "cheapest": 29,
+   "weapons": [
+    "STR_SONIC_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_L7_s2",
+   "scen": "L7",
+   "seed": 2,
+   "rec": 300,
+   "turn": 3,
+   "unit": 1000011,
+   "w": "STR_UNARMED_GAUNTLET",
+   "tu": 67,
+   "player": true,
+   "spent": 60,
+   "effect": false,
+   "shots": 3,
+   "cheapest": 16,
+   "weapons": [
+    "STR_PIR_PLASMA_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 207,
+   "turn": 2,
+   "unit": 1000014,
+   "w": "AUX_FISTO",
+   "tu": 77,
+   "player": true,
+   "spent": 64,
+   "effect": false,
+   "shots": 3,
+   "cheapest": 17,
+   "weapons": [
+    "STR_UAC_CARBINE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 234,
+   "turn": 2,
+   "unit": 1000027,
+   "w": "AUX_FISTO",
+   "tu": 67,
+   "player": true,
+   "spent": 64,
+   "effect": false,
+   "shots": 2,
+   "cheapest": 22,
+   "weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 785,
+   "turn": 6,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "player": true,
+   "spent": 80,
+   "effect": false,
+   "shots": 2,
+   "cheapest": 22,
+   "weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1101,
+   "turn": 9,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "player": true,
+   "spent": 80,
+   "effect": false,
+   "shots": 2,
+   "cheapest": 22,
+   "weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1194,
+   "turn": 10,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 64,
+   "player": true,
+   "spent": 64,
+   "effect": false,
+   "shots": 2,
+   "cheapest": 22,
+   "weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1274,
+   "turn": 11,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "player": true,
+   "spent": 80,
+   "effect": false,
+   "shots": 2,
+   "cheapest": 22,
+   "weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1523,
+   "turn": 15,
+   "unit": 1000043,
+   "w": "AUX_DOOM_IMP_CLAWS",
+   "tu": 114,
+   "player": true,
+   "spent": 112,
+   "effect": false,
+   "shots": 1,
+   "cheapest": 31,
+   "weapons": [
+    "AUX_DOOM_IMP_WEAPON"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1686,
+   "turn": 18,
+   "unit": 1000038,
+   "w": "AUX_FISTO",
+   "tu": 44,
+   "player": true,
+   "spent": 32,
+   "effect": false,
+   "shots": 1,
+   "cheapest": 23,
+   "weapons": [
+    "STR_UAC_HEAVY_NAILGUN"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1865,
+   "turn": 22,
+   "unit": 1000038,
+   "w": "AUX_FISTO",
+   "tu": 74,
+   "player": true,
+   "spent": 64,
+   "effect": false,
+   "shots": 1,
+   "cheapest": 23,
+   "weapons": [
+    "STR_UAC_HEAVY_NAILGUN"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s2",
+   "scen": "M10",
+   "seed": 2,
+   "rec": 913,
+   "turn": 7,
+   "unit": 1000013,
+   "w": "AUX_FISTO",
+   "tu": 33,
+   "player": true,
+   "spent": 32,
+   "effect": false,
+   "shots": 2,
+   "cheapest": 17,
+   "weapons": [
+    "STR_UAC_CARBINE"
+   ]
+  },
+  {
+   "label": "d0p_D_M10_s2",
+   "scen": "M10",
+   "seed": 2,
+   "rec": 1100,
+   "turn": 9,
+   "unit": 1000007,
+   "w": "AUX_FISTO",
+   "tu": 60,
+   "player": true,
+   "spent": 48,
+   "effect": false,
+   "shots": 3,
+   "cheapest": 17,
+   "weapons": [
+    "STR_UAC_CARBINE"
+   ]
+  }
+ ],
+ "blows": {
+  "n": 191,
+  "player": 169,
+  "empty": 134,
+  "tu": 8220,
+  "empty_tu": 5384
+ },
+ "scan": {
+  "battles": 56,
+  "decisions": 40042,
+  "rng_touched": 0,
+  "with_alternative": {
+   "attack_vs_walk": 7013,
+   "mode": 3098,
+   "throw": 1543,
+   "target_same_mode": 3147,
+   "target_other_mode": 2120,
+   "D0_shot_at_player": 4764,
+   "weapon": 171,
+   "attack_vs_none": 238,
+   "melee": 169,
+   "psi": 197,
+   "attack_vs_11": 1
+  },
+  "walks_with_a_legal_attack_by_source": {
+   "patrol.node": 3257,
+   "firepoint.fallback": 815,
+   "firepoint": 671,
+   "firepoint.random": 658,
+   "ambush": 641,
+   "escape": 547,
+   "melee": 332,
+   "escape.known": 86,
+   "grenade": 5,
+   "sniper": 1
+  }
+ },
+ "families": {
+  "M": {
+   "decisions": {
+    "L1": 1,
+    "L10": 4,
+    "L11": 8,
+    "L12": 2,
+    "L2": 14,
+    "L4": 5,
+    "L5": 6,
+    "L6": 7,
+    "L7": 12,
+    "L9": 4,
+    "M1": 11,
+    "M10": 40,
+    "M2": 9,
+    "M3": 3,
+    "M5": 1,
+    "M6": 1,
+    "M7": 4
+   },
+   "units": {
+    "L1": 1,
+    "L10": 3,
+    "L11": 5,
+    "L12": 2,
+    "L2": 11,
+    "L4": 3,
+    "L5": 3,
+    "L6": 4,
+    "L7": 5,
+    "L9": 2,
+    "M1": 6,
+    "M10": 16,
+    "M2": 5,
+    "M3": 1,
+    "M5": 1,
+    "M6": 1,
+    "M7": 3
+   }
+  },
+  "T": {
+   "decisions": {
+    "L1": 11,
+    "L2": 12,
+    "L5": 17,
+    "L6": 5,
+    "L7": 20,
+    "L8": 13,
+    "M1": 5,
+    "M2": 5,
+    "M3": 30,
+    "M5": 14,
+    "M6": 16,
+    "M8": 6
+   },
+   "units": {
+    "L1": 7,
+    "L2": 9,
+    "L5": 10,
+    "L6": 4,
+    "L7": 11,
+    "L8": 9,
+    "M1": 4,
+    "M2": 5,
+    "M3": 23,
+    "M5": 10,
+    "M6": 12,
+    "M8": 5
+   }
+  },
+  "P": {
+   "decisions": {
+    "L8": 85,
+    "L9": 20,
+    "M7": 2
+   },
+   "units": {
+    "L8": 37,
+    "L9": 11,
+    "M7": 2
+   }
+  }
+ },
+ "checks": {
+  "PASS": 13,
+  "runs": 81,
+  "events": 370712,
+  "violations": 0,
+  "notes": 0,
+  "refused": 0,
+  "tu.clear": 188,
+  "tu.cost": 12274,
+  "tu.recover": 9159,
+  "tu.script": 1442,
+  "tu.spend": 116271,
+  "tu_marked_reaction": 1443,
+  "tu.damage": 1385,
+  "pairs": 36,
+  "pair_defects": 0
+ },
+ "off": {
+  "battle": "sfF_D_M3_s4",
+  "game_lines": [
+   7092,
+   7092
+  ],
+  "identical": true,
+  "first_difference": null,
+  "raw_differences": 1,
+  "monitor_lines": 0
+ },
+ "aa": {
+  "verdict": "IDENTICAL",
+  "forge_events": [
+   3335,
+   3335
+  ],
+  "game_lines": [
+   2331,
+   2331
+  ],
+  "dumps_compared": 21,
+  "raw_differences": 1
+ },
+ "seconds": {
+  "run_f4c1": 85,
+  "run_f4c2": 18,
+  "run_f4c3": 22,
+  "run_f4sM1": 23,
+  "run_f4sM2": 20,
+  "run_f4sP1": 16,
+  "run_f4sP2": 16,
+  "run_f4sT1": 61,
+  "run_f4sT2": 22,
+  "run_f4xM1": 51,
+  "run_f4xM2": 52,
+  "run_f4xP1": 45,
+  "run_f4xP2": 46,
+  "run_f4xT1": 88,
+  "run_f4xT2": 48
+ }
+}

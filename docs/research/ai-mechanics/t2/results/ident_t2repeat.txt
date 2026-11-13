@@ -1,0 +1,2 @@
+F2R_M10_s2: IDENTICAL 1906 lines
+identical 1, different 0

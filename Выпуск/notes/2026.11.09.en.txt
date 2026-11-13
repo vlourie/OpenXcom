@@ -1,0 +1,1 @@
+﻿- Launcher 0.5.3: a "Tasks" tab for reviewers — listen to a race's voices, fix the lines and delivery, remove what doesn't fit, suggest new lines and send the answer to the team. Only people assigned as reviewers on the site see it.

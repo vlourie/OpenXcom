@@ -1,0 +1,26 @@
+===== cc3_CO_M6_s1
+  STR_GAUSS_RIFLE                tank/front 17:2:20  tank/side 10:2:22  tank/rear 9:2:80  wolv/front 9:0:0  wolv/rear 6:0:0  inf/rear 1:0:0
+  STR_GAUSS_PISTOL               tank/front 10:0:0  tank/side 3:0:0  tank/rear 5:0:0  wolv/front 3:0:0
+  STR_FLECHETTE_GUN              tank/front 4:0:0  tank/side 2:1:239  inf/rear 2:0:0
+  STR_HEAVY_GAUSS                tank/side 2:1:21  wolv/side 2:1:62
+  STR_GAUSS_SNIPER               tank/front 4:1:14
+  (attacks:with damage:damage)
+  weapons in engine lists: AUX_FISTO AUX_PRED_CLAWS STR_FLECHETTE_GUN STR_GAUSS_PISTOL STR_GAUSS_RIFLE STR_GAUSS_SNIPER STR_GLADIUS STR_HEAVY_GAUSS STR_PIR_ALIEN_GRENADE
+===== scpa_D_M6_s2
+  STR_FLECHETTE_GUN              tank/front 11:0:0  tank/side 17:0:0  tank/rear 22:0:0  wolv/rear 2:0:0
+  STR_GAUSS_RIFLE                tank/front 15:0:0  tank/side 8:1:39  tank/rear 12:3:55  wolv/front 1:1:20  wolv/side 1:0:0  inf/front 4:2:74  inf/side 1:1:91  inf/rear 2:2:69
+  STR_GAUSS_PISTOL               tank/front 12:0:0  tank/side 11:0:0  tank/rear 3:1:22  wolv/rear 1:0:0  inf/front 2:2:29  inf/rear 1:1:9
+  STR_HEAVY_GAUSS                tank/front 9:0:0  tank/side 2:1:59  tank/rear 5:2:62  wolv/rear 2:2:52
+  STR_GAUSS_SNIPER               tank/front 1:0:0  tank/side 4:1:47  tank/rear 3:1:34  wolv/side 1:0:0  inf/front 1:1:97
+  STR_BOOM_GUN                   tank/front 1:0:0  tank/rear 3:0:0
+  (attacks:with damage:damage)
+  weapons in engine lists: AUX_FISTO AUX_PRED_CLAWS STR_BOOM_GUN STR_FLECHETTE_GUN STR_GAUSS_PISTOL STR_GAUSS_RIFLE STR_GAUSS_SNIPER STR_GLADIUS STR_HEAVY_GAUSS STR_PIR_ALIEN_GRENADE
+===== scpa_D_M3_s1
+  STR_SR_RIFLE                   tank/front 33:0:0  tank/side 24:0:0  tank/rear 14:1:5  wolv/front 2:0:0  wolv/side 6:0:0  wolv/rear 7:0:0  inf/front 5:0:0
+  STR_CANISTER_GUN               tank/front 26:5:49  tank/side 8:2:86  tank/rear 7:1:6  wolv/front 5:0:0  wolv/side 6:0:0  wolv/rear 3:0:0  inf/front 1:1:8
+  AUX_SILACOID_WEAPON            tank/front 1:1:118  wolv/side 2:1:6  wolv/rear 1:1:5
+  STR_PIR_PLASMA_RIFLE           inf/front 3:2:73
+  STR_PIR_SMALL_LAUNCHER         tank/front 1:0:0  tank/rear 1:0:0  inf/rear 1:1:14
+  AUX_CHRYSSALID_WEAPON          tank/rear 1:1:48
+  (attacks:with damage:damage)
+  weapons in engine lists: AUX_CHRYSSALID_WEAPON AUX_FISTO AUX_SILACOID_WEAPON AUX_SILACOID_WEAPON_MELEE AUX_ZOMBIE_WEAPON STR_CANISTER_GUN STR_GRENADE_BUG STR_PIR_PLASMA_RIFLE STR_PIR_SMALL_LAUNCHER STR_SR_RIFLE STR_TOXIGUN

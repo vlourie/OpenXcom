@@ -1,0 +1,9 @@
+﻿- HD interface, paper dolls: Gnome soldiers now have HD paper dolls in all 23 armors and 48 looks, with new bodies, faces and hair.
+- Battle (HD): "HD corner shading" now follows the shape of an object's picture instead of the whole tile: trees, bushes, crates and wreckage get a truer shadow without a dark diamond, and a well has less shade along its tile edge (ticket XP-000528).
+- HD interface, paper dolls: the cat-girls that have a cat muzzle in the original (panther, blue, Siamese, crested, violet) get a cat muzzle again in HD instead of a human face with lipstick (ticket XP-000531).
+- Globe: the Rustfighter and Black Bomber planes (they flew wing first) and the Kraken now fly nose first (tickets XP-000536, XP-000538).
+- Battle panel (HD), "Niello silver": the frame of the left and right hand cells is thinner, like on "Ship's brass", so the digits for charges and two-handedness lie on the cell floor and are clearly visible (ticket XP-000539).
+- Base exchange ("only here / only there" option): the green of the "only here" rows is darker, so it is easy to tell from the gold of "only there" (ticket XP-000532).
+- HD interface, soldier sheet: the backpack slot no longer has a black square on 42 armors (Annihilators of all races, the Flying Suit, jetpacks, oxygen, the generator) - the item sits on the inventory background (ticket XP-000537).
+- Battle (HD): under water a hit no longer draws red blood splashes, nor the drops icon over a bleeding unit lying down - the plain hit animation stays instead; sparks on machines and other effects are as before. Sharkmen now have red blood (with the "Blood colour by creature" option on) instead of the blue of the other deep ones. Picture only: damage, bleeding and animation time are unchanged (ticket XP-000533).
+- HD interface, paper dolls: the cat-girls in the Annihilator armor get redrawn hands - readable gauntlets with three grey claws instead of dark smudges (ticket XP-000537).

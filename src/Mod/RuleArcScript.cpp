@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "RuleArcScript.h"
+#include "Mod.h"
 #include <climits>
 
 namespace OpenXcom
@@ -29,7 +30,8 @@ namespace OpenXcom
  */
 RuleArcScript::RuleArcScript(const std::string& type) :
 	_type(type), _firstMonth(0), _lastMonth(-1), _executionOdds(100), _maxArcs(-1), _minDifficulty(0), _maxDifficulty(4),
-	_minScore(INT_MIN), _maxScore(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX)
+	_minScore(INT_MIN), _maxScore(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX), _counterMin(0), _counterMax(-1)
+
 {
 }
 
@@ -52,7 +54,7 @@ void RuleArcScript::load(const YAML::YamlNodeReader& node)
 		load(parent);
 	}
 
-	reader.tryRead("sequentialArcs", _sequentialArcs);
+	reader.tryRead("sequentialArcs", _sequentialArcNames);
 	if (reader["randomArcs"])
 	{
 		_randomArcs.load(reader["randomArcs"]);
@@ -72,13 +74,41 @@ void RuleArcScript::load(const YAML::YamlNodeReader& node)
 	reader.tryRead("counterMin", _counterMin);
 	reader.tryRead("counterMax", _counterMax);
 
-	reader.tryRead("researchTriggers", _researchTriggers);
+	reader.tryRead("researchTriggers", _researchTriggerNames);
 	reader.tryRead("itemTriggers", _itemTriggers);
 	reader.tryRead("facilityTriggers", _facilityTriggers);
 	reader.tryRead("soldierTypeTriggers", _soldierTypeTriggers);
 	reader.tryRead("xcomBaseInRegionTriggers", _xcomBaseInRegionTriggers);
 	reader.tryRead("xcomBaseInCountryTriggers", _xcomBaseInCountryTriggers);
 	reader.tryRead("pactCountryTriggers", _pactCountryTriggers);
+}
+
+/**
+ * Cross link with other Rules.
+ */
+void RuleArcScript::afterLoad(const Mod* mod)
+{
+	mod->linkRule(_sequentialArcs, _sequentialArcNames);
+
+	// No link, only check
+	for (auto& name : _randomArcs.getNames())
+	{
+		mod->getResearchOrPlaceholder(name);   // HD: только назвать дыру в логе, не падать
+	}
+
+	// Link manually
+	for (auto& entry : _researchTriggerNames)
+	{
+		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
+		auto* research = mod->getResearchOrPlaceholder(entry.first);
+		if (research)
+		{
+			_researchTriggers[research] = entry.second;
+		}
+	}
+
+	//remove not needed data
+	Collections::removeAll(_researchTriggerNames);
 }
 
 }

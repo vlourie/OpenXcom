@@ -35,8 +35,15 @@ class Camera
 private:
 	Timer *_scrollMouseTimer, *_scrollKeyTimer;
 	int _spriteWidth, _spriteHeight;
+	/// HD render scale k = _spriteWidth / 32; _screenWidth/_screenHeight/_visibleMapHeight/_mapOffset are in world pixels (k times base).
+	int _k;
+	/// Half of a world-pixel size, computed as k times half of the base size (exactly what the original code did at k = 1).
+	int halfWorld(int worldSize) const { return (worldSize / _k / 2) * _k; }
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	int _screenWidth, _screenHeight;
+	/// HD render: the size of the view, world pixels - the map's size divided by the battle view zoom
+	/// (Map::getViewWidth); every place on the map is counted in it, the screen size stays for the mouse.
+	int _viewWidth, _viewHeight;
 	Position _mapOffset, _center;
 	int _scrollMouseX, _scrollMouseY, _scrollKeyX, _scrollKeyY;
 	bool _scrollTrigger;
@@ -44,6 +51,20 @@ private:
 	bool _showAllLayers;
 	bool _showSingleLayer;
 	Map *_map;
+	/// Gentle mode: the offset the map is drawn at glides after the logical one (docs/research/gentle-mode.md).
+	/// The game reads only _mapOffset; the shown offset is put in its place between beginShown and endShown alone.
+	double _shownX = 0, _shownY = 0, _shownVX = 0, _shownVY = 0;
+	Position _lastLogical, _savedOffset, _drawnOffset;
+	unsigned _shownTicks = 0;
+	bool _shownValid = false, _glideNext = false, _gliding = false, _inShown = false;
+	/// HD lab (Engine/HdLab.h): the view turned by this many quarters (0..3). Picture only: the world, the
+	/// positions the game reads and the camera's API stay in world tiles; the view tile (u, v) of the world
+	/// tile (x, y) is turned (see worldToView), and the screen is drawn from the view tiles.
+	int _rot = 0;
+	/// Converts view tile coordinates to screen coordinates (the unturned formula).
+	void viewToScreen(Position viewPos, Position *screenPos) const;
+	/// Is this tile well inside the visible part of the map at the logical offset?
+	bool inView(Position mapPos) const;
 public:
 	static const int SCROLL_BORDER = 5;
 	static const int SCROLL_DIAGONAL_EDGE = 60;
@@ -67,6 +88,8 @@ public:
 	void scrollMouse();
 	/// Scrolls the view for keyboard-scrolling.
 	void scrollKey();
+	/// A scroll step of base screen pixels in world pixels of the view (the battle view zoom).
+	int viewStep(int base) const;
 	/// Scrolls the view a certain amount.
 	void scrollXY(int x, int y, bool redraw);
 	/// Jumps the view (when projectile in motion).
@@ -83,8 +106,31 @@ public:
 	void convertVoxelToScreen(Position voxelPos, Position *screenPos) const;
 	/// Converts screen coordinates to map coordinates.
 	void convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) const;
+	/// Converts screen coordinates to view tile coordinates (the map's when it is not turned).
+	void convertScreenToView(int screenX, int screenY, int *viewX, int *viewY) const;
+	/// HD lab: the quarter turns of the view (0..3).
+	int getRotation() const { return _rot; }
+	/// HD lab: turns the view; the tile at the centre of the view stays there.
+	void setRotation(int rot);
+	/// HD lab: the view tile of a world tile, and back (z stays).
+	Position worldToView(Position mapPos) const;
+	Position viewToWorld(Position viewPos) const;
+	/// HD lab: a step on the map as a step in the view, and back (z stays).
+	Position worldStepToView(Position step) const;
+	Position viewStepToWorld(Position step) const;
+	/// HD lab: the size of the map along the view's x and y.
+	int getViewSizeX() const { return (_rot & 1) ? _mapsize_y : _mapsize_x; }
+	int getViewSizeY() const { return (_rot & 1) ? _mapsize_x : _mapsize_y; }
 	/// Center map on a position.
 	void centerOnPosition(Position pos, bool redraw = true);
+	/// Centers map on a position, but in gentle mode only shows its level if it is in view already.
+	void focusOn(Position pos, bool redraw = true);
+	/// Gentle mode: puts the shown (gliding) offset in place for drawing the map.
+	void beginShown();
+	/// Gentle mode: brings the logical offset back after drawing the map.
+	void endShown();
+	/// Gentle mode: is the picture still on its way to the logical offset?
+	bool isGliding() const;
 	/// Gets map's center position.
 	Position getCenterPosition();
 	/// Gets the map displayed level.

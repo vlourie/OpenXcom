@@ -1,0 +1,1 @@
+- Battle (HD): the cursor box is back as before - walls, craft, objects and levels in front of it hide it again, and the blue boxes of lower levels no longer show through buildings. The previous fix (the box on top of smoke and fire, XP-000451) drew it through everything and is undone; in smoke and fire the box may hide again for now (tickets XP-000456, XP-000457, XP-000459).

@@ -1,0 +1,23 @@
+sfF_XN_M3_s1 {'act': 225, 'attack': 123, 'attack_tu_over': 1, 'result': 225, 'special': 8, 'walk': 94, 'walk_not_moved': 3, 'walk_stopped_short': 25}
+  examples [('A', 'STR_CANISTER_GUN', 9, 49, 55)]
+sfF_XN_M3_s2 {'act': 291, 'attack': 130, 'attack_tu_over': 6, 'result': 291, 'special': 8, 'walk': 153, 'walk_not_moved': 10, 'walk_stopped_short': 44}
+  examples [('A', 'STR_CANISTER_GUN', 8, 23, 28), ('A', 'STR_CANISTER_GUN', 9, 47, 55), ('A', 'STR_CANISTER_GUN', 8, 24, 29), ('A', 'STR_CANISTER_GUN', 8, 23, 29), ('A', 'STR_CANISTER_GUN', 8, 23, 29), ('A', 'STR_CANISTER_GUN', 8, 26, 32)]
+sfF_XN_M3_s3 {'act': 263, 'attack': 151, 'attack_tu_over': 1, 'result': 263, 'special': 12, 'walk': 100, 'walk_not_moved': 12, 'walk_stopped_short': 29}
+  examples [('A', 'STR_CANISTER_GUN', 8, 24, 29)]
+sfF_XN_M3_s4 {'act': 177, 'attack': 105, 'attack_tu_over': 1, 'result': 177, 'special': 8, 'walk': 64, 'walk_not_moved': 3, 'walk_stopped_short': 13}
+  examples [('A', 'STR_CANISTER_GUN', 8, 23, 31)]
+sfF_XN_M8_s1 {'act': 50, 'attack': 8, 'result': 50, 'walk': 42, 'walk_not_moved': 1, 'walk_stopped_short': 20}
+sfF_XN_M8_s2 {'act': 25, 'attack': 11, 'result': 25, 'walk': 14, 'walk_stopped_short': 9}
+sfF_XN_M8_s3 {'act': 58, 'attack': 26, 'attack_tu_over': 1, 'result': 58, 'walk': 32, 'walk_not_moved': 1, 'walk_stopped_short': 13}
+  examples [('A', 'AUX_TANK_TURRETED_AC25MM_WEAPON', 7, 104, 107)]
+sfF_XN_M8_s4 {'act': 49, 'attack': 17, 'result': 49, 'walk': 32, 'walk_not_moved': 1, 'walk_stopped_short': 14}
+sfF_XN_L4_s1 {'act': 79, 'attack': 34, 'result': 79, 'special': 1, 'walk': 44, 'walk_not_moved': 3, 'walk_stopped_short': 24}
+sfF_XN_L4_s2 {'act': 65, 'attack': 35, 'result': 65, 'walk': 30, 'walk_not_moved': 7, 'walk_stopped_short': 23}
+sfF_XN_L4_s3 {'act': 56, 'attack': 17, 'result': 56, 'special': 1, 'walk': 38, 'walk_not_moved': 5, 'walk_stopped_short': 29}
+sfF_XN_L4_s4 {'act': 77, 'act_without_result': 1, 'attack': 42, 'result': 75, 'special': 2, 'walk': 31, 'walk_not_moved': 4, 'walk_stopped_short': 22, 'walk_tu_over': 1}
+  examples [('P', 50, 80)]
+sfF_XN_L8_s1 {'act': 80, 'attack': 31, 'result': 80, 'walk': 49, 'walk_not_moved': 2, 'walk_stopped_short': 13}
+sfF_XN_L8_s2 {'act': 66, 'attack': 38, 'result': 66, 'special': 1, 'walk': 27, 'walk_not_moved': 2, 'walk_stopped_short': 8}
+sfF_XN_L8_s3 {'act': 182, 'attack': 99, 'result': 182, 'special': 2, 'walk': 81, 'walk_not_moved': 1, 'walk_stopped_short': 17}
+sfF_XN_L8_s4 {'act': 193, 'attack': 77, 'attack_on_out': 2, 'result': 193, 'special': 1, 'walk': 115, 'walk_not_moved': 4, 'walk_stopped_short': 17}
+BAD 13

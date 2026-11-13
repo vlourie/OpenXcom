@@ -1,0 +1,3 @@
+the replaced walks in the shadow run, how they ended: moved, walk.stop.spotted=42, moved, walk.stop.reserve=29, moved, (no=26, moved, walk.stop.turnspot=23, spent 0, walk.stop.reserve=19, spent 0, (no=9, moved, walk.stop.tu=6, moved, walk.stop.reaction=1
+TU left after order shots (81), of the start TU: 1/2 or more=28 (35%), 1/3-2/5=5 (6%), 2/5-1/2=4 (5%), below 1/3=44 (54%)
+TU left after other attacks (2318), of the start TU: 1/2 or more=714 (31%), 1/3-2/5=241 (10%), 2/5-1/2=228 (10%), below 1/3=1135 (49%)

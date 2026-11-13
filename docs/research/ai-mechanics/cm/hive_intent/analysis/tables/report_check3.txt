@@ -1,0 +1,25 @@
+ci5_IA_M6_s1 HIVESQUAD lines 15 13 first differing 10
+   ra [HIVESQUAD] turn=2 merged=2 into=7 units=1 task=HOLD
+   ci [HIVESQUAD] turn=2 merged=6 into=1 units=1 task=SEARCH
+   first plan lines same: True 10 10
+   AIDECIDE keys ['act', 'aim', 'from', 'ha', 'ha0', 'hi', 'hm', 'ho', 'hou', 'hr', 'hr0', 'hu', 'kneel', 'mode', 'n', 'run', 'seen', 'side', 'to', 'tu', 'turn', 'unit', 'weapon']
+   min tu 6 energy keys ['seen']
+ci6_IA_M6_s2 HIVESQUAD lines 13 11 first differing 10
+   ra [HIVESQUAD] turn=3 merged=6 into=3 units=1 task=SEARCH
+   ci [HIVESQUAD] turn=2 merged=6 into=3 units=1 task=SEARCH
+   first plan lines same: True 10 10
+   AIDECIDE keys ['act', 'aim', 'from', 'ha', 'ha0', 'hi', 'hm', 'ho', 'hou', 'hr', 'hr0', 'hu', 'kneel', 'mode', 'n', 'run', 'seen', 'side', 'to', 'tu', 'turn', 'unit', 'weapon']
+   min tu 6 energy keys ['seen']
+ci7_IV_M3_s1 HIVESQUAD lines 20 18 first differing 12
+   ra [HIVESQUAD] turn=2 merged=8 into=1 units=2 task=HOLD
+   ci [HIVESQUAD] turn=2 merged=0 into=1 units=2 task=HOLD
+   first plan lines same: True 12 12
+   AIDECIDE keys ['act', 'aim', 'from', 'ha', 'ha0', 'hi', 'hm', 'ho', 'hou', 'hr', 'hr0', 'hu', 'kneel', 'mode', 'n', 'run', 'seen', 'side', 'to', 'tu', 'turn', 'unit', 'weapon']
+   min tu 0 energy keys ['seen']
+M3 decisions without RESULT: 20 units ['1000082', '1000083', '1000084', '1000085']
+   [(('2', '1000082'), (2, 0)), (('2', '1000083'), (1, 0)), (('3', '1000083'), (3, 0)), (('3', '1000084'), (1, 0)), (('3', '1000085'), (1, 0)), (('4', '1000083'), (3, 0)), (('4', '1000084'), (1, 0)), (('4', '1000085'), (1, 0)), (('5', '1000084'), (1, 0)), (('5', '1000085'), (1, 0)), (('6', '1000084'), (1, 0)), (('6', '1000085'), (4, 0))]
+  squad mentions in ISSUE or DECIDED of those units: 0
+own by act and kind
+  ci5_IA_M6_s1 [(('dice_mode', '2'), 4), (('own_grenade', '6'), 3), (('own_other', '8'), 20), (('own_other', '9'), 5), (('own_other', '7'), 1)]
+  ci6_IA_M6_s2 [(('dice_mode', '2'), 23), (('own_other', '8'), 22), (('own_other', '9'), 2), (('own_other', '7'), 1)]
+  ci7_IV_M3_s1 [(('dice_mode', '2'), 29), (('dice_mode', '0'), 4), (('own_grenade', '6'), 8), (('own_melee', '10'), 2), (('own_other', '8'), 27), (('own_other', '9'), 12)]

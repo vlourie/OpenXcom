@@ -45,6 +45,7 @@ namespace OpenXcom
  */
 AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeState *state) : _battleGame(battleGame), _state(state), _inEntrance(0), _inExit(0), _outside(0)
 {
+	setHdScreen("abortMission");
 	// Create objects
 	_screen = false;
 	_window = new Window(this, 320, 144, 0, 0);
@@ -120,6 +121,7 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 	// Set up objects
 	_window->setHighContrast(true);
 	_window->setBackground(_game->getMod()->getSurface("TAC00.SCR"));
+	_window->setInterfaceName("battlescape");
 
 	_txtInEntrance->setBig();
 	_txtInEntrance->setHighContrast(true);

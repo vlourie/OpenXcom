@@ -1,0 +1,104 @@
+== E vs A
+M2: IDENTICAL (17656 lines)
+M10: IDENTICAL (9935 lines)
+L2: IDENTICAL (12450 lines)
+M3: IDENTICAL (9787 lines)
+M1: IDENTICAL (12171 lines)
+L7: IDENTICAL (5807 lines)
+
+== per scenario: A | B
+M2 STR_GOVT_BASE_DEFENSE/STR_NINJA: out loss|loss turn 13|25 pdead 8|7 phplost 991|942 hdead 31|42 hattacks 414|540 how over|over sec 236|266 | first C2 action rec 200 first B!=A rec 200
+M10 STR_LOC_DOOMED_FARM2/STR_DOOM: out loss|loss turn 20|12 pdead 4|3 phplost 527|521 hdead 37|27 hattacks 360|346 how over|over sec 56|55 | first C2 action rec 28 first B!=A rec 28
+L2 STR_VESSEL_NIN_LANDCRUISER_BA/STR_NINJA: out loss|loss turn 41|18 pdead 3|4 phplost 388|715 hdead 61|59 hattacks 276|278 how over|over sec 107|98 | first C2 action rec 122 first B!=A rec 122
+M3 STR_ERIDIAN_TERROR/STR_ERIDIAN: out win|win turn 27|17 pdead 6|3 phplost 839|485 hdead 60|58 hattacks 245|239 how over|over sec 156|161 | first C2 action rec 249 first B!=A rec 249
+M1 STR_BASE_DEFENSE/STR_NINJA: out loss|loss turn 15|15 pdead 59|59 phplost 4991|4995 hdead 20|22 hattacks 220|235 how over|over sec 124|132 | first C2 action rec 194 first B!=A rec 194
+L7 STR_VESSEL_BOMBER/STR_FLOATER_ELITE: out loss|loss turn 13|18 pdead 5|5 phplost 512|486 hdead 21|25 hattacks 206|257 how over|over sec 54|69 | first C2 action rec 78 first B!=A rec 78
+
+== totals
+A.act.extra	0
+A.battles	6
+A.hattacks	1721
+A.hdead	230
+A.hdecisions	8177
+A.hleft	71
+A.hostile	313
+A.hout	12
+A.how.over	6
+A.max_n	2
+A.max_recs	12
+A.out.loss	5
+A.out.win	1
+A.pattacks	276
+A.pdead	85
+A.phplost	8248
+A.pout	8
+A.pwounded	90
+A.seconds	733
+A.turn	129
+B.act.extra	0
+B.battles	6
+B.hattacks	1895
+B.hdead	233
+B.hdecisions	9066
+B.hleft	71
+B.hostile	311
+B.hout	7
+B.how.over	6
+B.max_n	2
+B.max_recs	14
+B.out.loss	5
+B.out.win	1
+B.pattacks	301
+B.pdead	81
+B.phplost	8144
+B.pout	10
+B.pwounded	94
+B.seconds	781
+B.turn	105
+ba_battles	6
+ba_same_until_c2	6
+baseA.after	366
+baseA.attack_turns	999
+baseA.down	55
+baseA.hit	112
+baseA.hp	4289
+baseB.after	381
+baseB.attack_turns	1050
+baseB.down	74
+baseB.hit	114
+baseB.hp	5433
+ea_identical	6
+exit	138
+exitF.after	138
+exitF.down	28
+exitF.hit	36
+exitF.hp	2013
+exit_after_c2.plan.here	138
+exit_clean	39
+exit_dist_sum	135
+exit_down	1
+exit_hit	1
+exit_hp	107
+exit_moved	138
+exit_reached	133
+exit_spent_eq	138
+exit_stopped	2
+exit_tu_buys_shot	1
+exit_unspotted	48
+tag.c2.arrived	3
+tag.c2.drop.changed	71
+tag.c2.drop.mode	61
+tag.c2.drop.walk	1
+tag.c2.exit	276
+tag.c2.exit.safe	29
+tag.c2.exit.wait	302
+tag.c2.none	130
+tag.c2.plan.fp	14
+tag.c2.plan.here	1192
+tag.c2.skip.safe	884
+tag.c2.skip.unseen	507
+xtag.c2.confirm	577
+
+== to look at
+L2 rec 1547: exit with tu 103 >= shot 40
+total 1

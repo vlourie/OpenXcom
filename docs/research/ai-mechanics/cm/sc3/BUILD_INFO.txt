@@ -1,0 +1,5 @@
+build_label=cmrun-SC
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=stage 3 COVER + AICOVERGATE reaction-gate log (log only)
+patch_sha256=63ef34b58a7b9c98a2e19835e52b166f00b7c85bb08119f43b31981e967f1d0f
+exe_sha256=128fa142c861f8fc52c260714fd769cdf157b0863046ea9be761059aeeec9340

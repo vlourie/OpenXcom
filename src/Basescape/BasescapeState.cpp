@@ -18,6 +18,8 @@
  */
 #include "BasescapeState.h"
 #include "../Engine/Game.h"
+#include "../Menu/LuaScreenState.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -221,6 +223,7 @@ void BasescapeState::init()
 
 	setBase(_base);
 	_view->setBase(_base);
+	_view->setHdTime(_game->getSavedGame()->getTime());
 	_mini->draw();
 	_edtBase->setText(_base->getName());
 
@@ -238,7 +241,7 @@ void BasescapeState::init()
 
 	_btnNewBase->setVisible(_game->getSavedGame()->getBases()->size() < MiniBaseView::MAX_BASES);
 
-	if (!_game->getMod()->getNewBaseUnlockResearch().empty())
+	if (_game->getMod()->getNewBaseUnlockResearch())
 	{
 		bool newBasesUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getNewBaseUnlockResearch(), true);
 		if (!newBasesUnlocked)
@@ -312,7 +315,7 @@ void BasescapeState::btnBaseInfoClick(Action *)
  */
 void BasescapeState::btnSoldiersClick(Action *)
 {
-	_game->pushState(new SoldiersState(_base));
+	_game->pushState(withBaseSwitch(new SoldiersState(_base)));
 }
 
 /**
@@ -321,7 +324,7 @@ void BasescapeState::btnSoldiersClick(Action *)
  */
 void BasescapeState::btnCraftsClick(Action *)
 {
-	_game->pushState(new CraftsState(_base));
+	_game->pushState(withBaseSwitch(new CraftsState(_base)));
 }
 
 /**
@@ -339,7 +342,7 @@ void BasescapeState::btnFacilitiesClick(Action *)
  */
 void BasescapeState::btnResearchClick(Action *)
 {
-	_game->pushState(new ResearchState(_base));
+	_game->pushState(withBaseSwitch(new ResearchState(_base)));
 }
 
 /**
@@ -348,7 +351,7 @@ void BasescapeState::btnResearchClick(Action *)
  */
 void BasescapeState::btnManufactureClick(Action *)
 {
-	_game->pushState(new ManufactureState(_base));
+	_game->pushState(withBaseSwitch(new ManufactureState(_base)));
 }
 
 /**
@@ -357,7 +360,7 @@ void BasescapeState::btnManufactureClick(Action *)
  */
 void BasescapeState::btnPurchaseClick(Action *)
 {
-	_game->pushState(new PurchaseState(_base));
+	_game->pushState(withBaseSwitch(new PurchaseState(_base)));
 }
 
 /**
@@ -366,7 +369,7 @@ void BasescapeState::btnPurchaseClick(Action *)
  */
 void BasescapeState::btnSellClick(Action *)
 {
-	_game->pushState(new SellState(_base, 0));
+	_game->pushState(withBaseSwitch(new SellState(_base, 0)));
 }
 
 /**
@@ -492,13 +495,13 @@ void BasescapeState::viewRightClick(Action *)
 	{
 		switch (f->getRules()->getRightClickActionType())
 		{
-			case 1: _game->pushState(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE)); break;
-			case 2: _game->pushState(new ManufactureState(_base)); break;
-			case 3: _game->pushState(new ResearchState(_base)); break;
-			case 4: _game->pushState(new AllocateTrainingState(_base)); break;
-			case 5: if (Options::anytimePsiTraining) _game->pushState(new AllocatePsiTrainingState(_base)); break;
-			case 6: _game->pushState(new SoldiersState(_base)); break;
-			case 7: _game->pushState(new SellState(_base, 0)); break;
+			case 1: _game->pushState(withBaseSwitch(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE))); break;
+			case 2: _game->pushState(withBaseSwitch(new ManufactureState(_base))); break;
+			case 3: _game->pushState(withBaseSwitch(new ResearchState(_base))); break;
+			case 4: _game->pushState(withBaseSwitch(new AllocateTrainingState(_base))); break;
+			case 5: if (Options::anytimePsiTraining) _game->pushState(withBaseSwitch(new AllocatePsiTrainingState(_base))); break;
+			case 6: _game->pushState(withBaseSwitch(new SoldiersState(_base))); break;
+			case 7: _game->pushState(withBaseSwitch(new SellState(_base, 0))); break;
 			default: _game->popState(); break;
 		}
 	}
@@ -515,7 +518,7 @@ void BasescapeState::viewRightClick(Action *)
 	{
 		if (f->getCraftForDrawing() == 0)
 		{
-			_game->pushState(new CraftsState(_base));
+			_game->pushState(withBaseSwitch(new CraftsState(_base)));
 		}
 		else
 			for (size_t craft = 0; craft < _base->getCrafts()->size(); ++craft)
@@ -529,31 +532,31 @@ void BasescapeState::viewRightClick(Action *)
 	}
 	else if (f->getRules()->getStorage() > 0)
 	{
-		_game->pushState(new SellState(_base, 0));
+		_game->pushState(withBaseSwitch(new SellState(_base, 0)));
 	}
 	else if (f->getRules()->getPersonnel() > 0)
 	{
-		_game->pushState(new SoldiersState(_base));
+		_game->pushState(withBaseSwitch(new SoldiersState(_base)));
 	}
 	else if (f->getRules()->getPsiLaboratories() > 0 && Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0)
 	{
-		_game->pushState(new AllocatePsiTrainingState(_base));
+		_game->pushState(withBaseSwitch(new AllocatePsiTrainingState(_base)));
 	}
 	else if (f->getRules()->getTrainingFacilities() > 0 && _base->getAvailableTraining() > 0)
 	{
-		_game->pushState(new AllocateTrainingState(_base));
+		_game->pushState(withBaseSwitch(new AllocateTrainingState(_base)));
 	}
 	else if (f->getRules()->getLaboratories() > 0)
 	{
-		_game->pushState(new ResearchState(_base));
+		_game->pushState(withBaseSwitch(new ResearchState(_base)));
 	}
 	else if (f->getRules()->getWorkshops() > 0)
 	{
-		_game->pushState(new ManufactureState(_base));
+		_game->pushState(withBaseSwitch(new ManufactureState(_base)));
 	}
 	else if (f->getRules()->getAliens() > 0)
 	{
-		_game->pushState(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE));
+		_game->pushState(withBaseSwitch(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE)));
 	}
 	else if (f->getRules()->isLift() || f->getRules()->getRadarRange() > 0)
 	{
@@ -664,6 +667,12 @@ void BasescapeState::handleKeyPress(Action *action)
 			Options::keyBaseSelect8
 		};
 		int key = action->getDetails()->key.keysym.sym;
+		// the pause menu does not open here: the key is the player's only way to the screens of Lua mods
+		if (key == Options::keyLuaMods && _game->getMod()->getLuaHost() && _game->getMod()->getLuaHost()->hasMenuScreens())
+		{
+			_game->pushState(new LuaModsState());
+			return;
+		}
 		for (size_t i = 0; i < _game->getSavedGame()->getBases()->size(); ++i)
 		{
 			if (key == baseKeys[i])

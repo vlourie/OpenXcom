@@ -1,0 +1,1 @@
+[HIVECMD] turn=3 squad=4 old=1000006 new=-1 why=dead rank=- int=0 task=SEARCH kept=1 | start members ['1000006', '1000008', '1000017'] | not fallen yet []

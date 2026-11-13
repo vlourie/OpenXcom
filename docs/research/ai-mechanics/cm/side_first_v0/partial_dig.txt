@@ -1,0 +1,114 @@
+===== dig v0
+
+== M3
+ D: ходов 87, phplost 3358 (38.6 за ход), врагов сбито 251 (2.89 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 440, 'att_at_2': 153, 'att_at_place': 58, 'attdmg_at_0': 1523, 'attdmg_at_2': 2966, 'attdmg_at_place': 72, 'attff_at_0': 3349, 'attff_at_2': 274, 'attff_at_place': 68}
+   ОВ: {'tu_aim': 8642, 'tu_auto': 496, 'tu_hit': 796, 'tu_none': 14, 'tu_snap': 9221, 'tu_throw': 2610, 'tu_walk': 63982} пси: {}
+   игрок сбит: [(('h', 'STR_CHRYSSALID_TERRORIST', 'AUX_CHRYSSALID_WEAPON', 'dead'), 11), (('h', 'SOLDIER', 'AUX_TANK_CANNON', 'dead'), 3), (('p', 'SOLDIER', 'AUX_TANK_CANNON', 'stun'), 2), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'dead'), 2), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('p', 'SOLDIER', 'AUX_TANK_LASER_CANNON', 'dead'), 1), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'stun'), 1), (('p', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('p', 'STR_ERIDIAN_BEASTMASTER', 'STR_PIR_SMALL_LAUNCHER', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 133), (('h', 'player', 'dead'), 73), (('p', 'player', 'stun'), 25), (('h', 'player', 'stun'), 9), (('h', 'own', 'dead'), 5), (('h', 'own', 'stun'), 4), (('p', '?', 'stun'), 1), (('p', '?', 'dead'), 1)]
+ XN: ходов 70, phplost 2191 (31.3 за ход), врагов сбито 281 (4.01 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 300, 'att_at_2': 155, 'att_at_place': 87, 'attdmg_at_0': 1919, 'attdmg_at_2': 3598, 'attdmg_at_place': 365, 'attff_at_0': 640, 'attff_at_2': 106, 'attff_at_place': 22}
+   ОВ: {'tu_aim': 4449, 'tu_auto': 544, 'tu_hit': 425, 'tu_none': 259, 'tu_snap': 9391, 'tu_throw': 2349, 'tu_walk': 34459} пси: {}
+   игрок сбит: [(('p', 'SOLDIER', 'AUX_TANK_CANNON', 'dead'), 5), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_SR_RIFLE', 'dead'), 4), (('h', 'STR_CHRYSSALID_TERRORIST', 'AUX_CHRYSSALID_WEAPON', 'dead'), 3), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'dead'), 2), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_SR_RIFLE', 'stun'), 2), (('p', 'SOLDIER', 'AUX_TANK_CANNON', 'stun'), 1), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'stun'), 1), (('p', '-', 'STR_WEAPON_UNKNOWN', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 196), (('p', 'player', 'stun'), 36), (('h', 'player', 'dead'), 31), (('h', 'player', 'stun'), 13), (('h', 'own', 'dead'), 2), (('p', '?', 'stun'), 1), (('p', '?', 'dead'), 1), (('p', 'own', 'dead'), 1)]
+
+== L8
+ D: ходов 22, phplost 3057 (139.0 за ход), врагов сбито 33 (1.50 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 208, 'att_at_place': 7, 'attdmg_at_0': 4220, 'attdmg_at_place': 0, 'attff_at_0': 76, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 227, 'tu_auto': 3659, 'tu_mc': 668, 'tu_none': 0, 'tu_o': 220, 'tu_psi': 548, 'tu_snap': 2258, 'tu_throw': 221, 'tu_walk': 15341} пси: {'psi_psi': 8, 'psi_mc': 20}
+   игрок сбит: [(('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 26), (('p', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 3), (('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'stun'), 2), (('h', 'STR_ETHEREAL_NOVICE', 'ETHEREAL_WEAPON', 'dead'), 1), (('h', 'STR_ETHEREAL_SOLDIER', 'STR_PLASMA_SCORCHER', 'stun'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 15), (('h', 'player', 'dead'), 11), (('p', '?', 'dead'), 3), (('h', 'own', 'dead'), 2), (('p', 'player', 'stun'), 1), (('h', 'own', 'stun'), 1)]
+ XN: ходов 16, phplost 3339 (208.7 за ход), врагов сбито 22 (1.38 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 167, 'att_at_place': 82, 'attdmg_at_0': 1357, 'attdmg_at_place': 3583, 'attff_at_0': 3, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 703, 'tu_auto': 3058, 'tu_mc': 142, 'tu_none': 0, 'tu_o': 73, 'tu_psi': 150, 'tu_snap': 3767, 'tu_throw': 251, 'tu_walk': 23170} пси: {'psi_psi': 2, 'psi_mc': 4}
+   игрок сбит: [(('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 29), (('p', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 2), (('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'stun'), 1), (('h', 'STR_ETHEREAL_SOLDIER', 'STR_PIR_HEAVY_PLASMA', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 12), (('h', 'player', 'dead'), 4), (('p', '?', 'dead'), 3), (('p', 'player', 'stun'), 1), (('h', 'player', 'stun'), 1), (('h', 'own', 'dead'), 1)]
+
+== первый ход врага по парам: здоровье игрока D -> XN
+ M3 s1: 114 -> 30
+ M3 s2: 183 -> 103
+ M3 s3: 64 -> 119
+ M3 s4: 42 -> 34
+ L8 s1: -5 -> 503
+ L8 s2: 394 -> 560
+ L8 s3: 225 -> 260
+ L8 s4: 429 -> 278
+ знаки: {'-': 4, '+': 4}
+
+
+===== dig v01
+
+== M3
+ D: ходов 87, phplost 3358 (38.6 за ход), врагов сбито 251 (2.89 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 440, 'att_at_2': 153, 'att_at_place': 58, 'attdmg_at_0': 1523, 'attdmg_at_2': 2966, 'attdmg_at_place': 72, 'attff_at_0': 3349, 'attff_at_2': 274, 'attff_at_place': 68}
+   ОВ: {'tu_aim': 8642, 'tu_auto': 496, 'tu_hit': 796, 'tu_none': 14, 'tu_snap': 9221, 'tu_throw': 2610, 'tu_walk': 63982} пси: {}
+   игрок сбит: [(('h', 'STR_CHRYSSALID_TERRORIST', 'AUX_CHRYSSALID_WEAPON', 'dead'), 11), (('h', 'SOLDIER', 'AUX_TANK_CANNON', 'dead'), 3), (('p', 'SOLDIER', 'AUX_TANK_CANNON', 'stun'), 2), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'dead'), 2), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('p', 'SOLDIER', 'AUX_TANK_LASER_CANNON', 'dead'), 1), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'stun'), 1), (('p', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('p', 'STR_ERIDIAN_BEASTMASTER', 'STR_PIR_SMALL_LAUNCHER', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 133), (('h', 'player', 'dead'), 73), (('p', 'player', 'stun'), 25), (('h', 'player', 'stun'), 9), (('h', 'own', 'dead'), 5), (('h', 'own', 'stun'), 4), (('p', '?', 'stun'), 1), (('p', '?', 'dead'), 1)]
+ XN: ходов 66, phplost 2917 (44.2 за ход), врагов сбито 288 (4.36 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 319, 'att_at_2': 138, 'att_at_place': 78, 'attdmg_at_0': 2192, 'attdmg_at_2': 3119, 'attdmg_at_place': 750, 'attff_at_0': 3096, 'attff_at_2': 5, 'attff_at_place': 346}
+   ОВ: {'tu_aim': 3606, 'tu_auto': 522, 'tu_hit': 1159, 'tu_none': 400, 'tu_snap': 9245, 'tu_throw': 1890, 'tu_walk': 42826} пси: {}
+   игрок сбит: [(('h', 'STR_CHRYSSALID_TERRORIST', 'AUX_CHRYSSALID_WEAPON', 'dead'), 7), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_SR_RIFLE', 'dead'), 4), (('p', 'SOLDIER', 'AUX_TANK_CANNON', 'dead'), 2), (('p', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'dead'), 2), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'dead'), 2), (('h', 'STR_ERIDIAN_BEASTMASTER', 'STR_SR_RIFLE', 'stun'), 2), (('h', 'SOLDIER', 'AUX_TANK_CANNON', 'dead'), 2), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'stun'), 2), (('p', 'SOLDIER', 'AUX_TANK_CANNON', 'stun'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 164), (('h', 'player', 'dead'), 76), (('h', 'player', 'stun'), 24), (('p', 'player', 'stun'), 21), (('h', 'own', 'dead'), 2), (('p', '?', 'dead'), 1)]
+
+== L8
+ D: ходов 22, phplost 3057 (139.0 за ход), врагов сбито 33 (1.50 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 208, 'att_at_place': 7, 'attdmg_at_0': 4220, 'attdmg_at_place': 0, 'attff_at_0': 76, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 227, 'tu_auto': 3659, 'tu_mc': 668, 'tu_none': 0, 'tu_o': 220, 'tu_psi': 548, 'tu_snap': 2258, 'tu_throw': 221, 'tu_walk': 15341} пси: {'psi_psi': 8, 'psi_mc': 20}
+   игрок сбит: [(('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 26), (('p', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 3), (('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'stun'), 2), (('h', 'STR_ETHEREAL_NOVICE', 'ETHEREAL_WEAPON', 'dead'), 1), (('h', 'STR_ETHEREAL_SOLDIER', 'STR_PLASMA_SCORCHER', 'stun'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 15), (('h', 'player', 'dead'), 11), (('p', '?', 'dead'), 3), (('h', 'own', 'dead'), 2), (('p', 'player', 'stun'), 1), (('h', 'own', 'stun'), 1)]
+ XN: ходов 10, phplost 3408 (340.8 за ход), врагов сбито 18 (1.80 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 69, 'att_at_place': 84, 'attdmg_at_0': 248, 'attdmg_at_place': 4346, 'attff_at_0': 0, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 364, 'tu_auto': 2194, 'tu_mc': 130, 'tu_none': 0, 'tu_o': 76, 'tu_snap': 2069, 'tu_throw': 221, 'tu_walk': 15122} пси: {'psi_mc': 4}
+   игрок сбит: [(('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 27), (('p', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 2), (('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'stun'), 2), (('h', 'STR_ETHEREAL_SOLDIER', 'STR_PLASMA_SCORCHER', 'stun'), 1), (('h', 'STR_ETHEREAL_SOLDIER', 'STR_PIR_PLASMA_RIFLE', 'stun'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 14), (('p', '?', 'dead'), 3), (('h', 'player', 'dead'), 1)]
+
+== первый ход врага по парам: здоровье игрока D -> XN
+ M3 s1: 114 -> 30
+ M3 s2: 183 -> 134
+ M3 s3: 64 -> 126
+ M3 s4: 42 -> 29
+ L8 s1: -5 -> 390
+ L8 s2: 394 -> 549
+ L8 s3: 225 -> 230
+ L8 s4: 429 -> 207
+ знаки: {'-': 4, '+': 4}
+
+
+===== first_cause v0
+M3 s1: общий префикс 233 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (41,55,3) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000057 act 7 к (15,15,0) оружие STR_PIR_PLASMA_RIFLE; первое действие директора act:A {"actor": 1000057, "target": 1000060, "w": "STR_PIR_PLASMA_RIFLE", "eff": 69.4997, "net": 69.4997}
+M3 s2: общий префикс 254 строк; D: ход 1 сторона 1 юнит 1000001 act 2 к (59,24,0) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000057 act 7 к (47,58,0) оружие STR_PIR_PLASMA_RIFLE; первое действие директора act:A {"actor": 1000057, "target": 1000072, "w": "STR_PIR_PLASMA_RIFLE", "eff": 44.4757, "net": 44.4757}
+M3 s3: общий префикс 217 строк; D: ход 1 сторона 1 юнит 1000002 act 2 к (65,18,1) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000025 act 8 к (43,16,2) оружие STR_CANISTER_GUN; первое действие директора act:A {"actor": 1000025, "target": 1000051, "w": "STR_CANISTER_GUN", "eff": 20.6715, "net": 20.6715}
+M3 s4: общий префикс 234 строк; D: ход 1 сторона 1 юнит 1000001 act 2 к (13,4,0) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000016 act 6 к (17,11,0) оружие STR_GRENADE_BUG; первое действие директора act:A {"actor": 1000016, "target": 1000058, "w": "STR_CANISTER_GUN", "eff": 29.7741, "net": 26.9491}
+L8 s1: общий префикс 160 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (39,13,2) оружие STR_PIR_PLASMA_PISTOL; XN: юнит 1000030 act 7 к (22,36,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000030, "target": 229, "w": "AUX_SECTOPOD_WEAPON", "eff": 127.613, "net": 127.613}
+L8 s2: общий префикс 152 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (6,58,0) оружие STR_PIR_PLASMA_PISTOL; XN: юнит 1000035 act 7 к (19,41,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000035, "target": 229, "w": "AUX_SECTOPOD_WEAPON", "eff": 148.849, "net": 148.849}
+L8 s3: общий префикс 147 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (42,32,1) оружие STR_PIR_PLASMA_RIFLE; XN: юнит 1000033 act 8 к (8,25,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000033, "target": 335, "w": "AUX_SECTOPOD_WEAPON", "eff": 59.8921, "net": 59.8921}
+L8 s4: общий префикс 154 строк; D: ход 1 сторона 1 юнит 1000001 act 7 к (10,23,0) оружие STR_PIR_PLASMA_PISTOL; XN: юнит 1000035 act 7 к (10,23,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000035, "target": 191, "w": "AUX_SECTOPOD_WEAPON", "eff": 185.571, "net": 185.571}
+первое действие директора по парам: {'act:A': 8}
+
+
+===== first_cause v01
+M3 s1: общий префикс 233 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (41,55,3) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000057 act 7 к (15,15,0) оружие STR_PIR_PLASMA_RIFLE; первое действие директора act:A {"actor": 1000057, "target": 1000060, "w": "STR_PIR_PLASMA_RIFLE", "eff": 69.4997, "net": 69.4997}
+M3 s2: общий префикс 254 строк; D: ход 1 сторона 1 юнит 1000001 act 2 к (59,24,0) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000057 act 7 к (47,58,0) оружие STR_PIR_PLASMA_RIFLE; первое действие директора act:A {"actor": 1000057, "target": 1000072, "w": "STR_PIR_PLASMA_RIFLE", "eff": 44.4757, "net": 44.4757}
+M3 s3: общий префикс 217 строк; D: ход 1 сторона 1 юнит 1000002 act 2 к (65,18,1) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000025 act 8 к (43,16,2) оружие STR_CANISTER_GUN; первое действие директора act:A {"actor": 1000025, "target": 1000051, "w": "STR_CANISTER_GUN", "eff": 20.6715, "net": 20.6715}
+M3 s4: общий префикс 234 строк; D: ход 1 сторона 1 юнит 1000001 act 2 к (13,4,0) оружие AUX_CHRYSSALID_WEAPON; XN: юнит 1000016 act 6 к (17,11,0) оружие STR_GRENADE_BUG; первое действие директора act:A {"actor": 1000016, "target": 1000058, "w": "STR_CANISTER_GUN", "eff": 29.7741, "net": 26.9491}
+L8 s1: общий префикс 160 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (39,13,2) оружие STR_PIR_PLASMA_PISTOL; XN: юнит 1000030 act 7 к (22,36,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000030, "target": 229, "w": "AUX_SECTOPOD_WEAPON", "eff": 127.613, "net": 127.613}
+L8 s2: общий префикс 152 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (6,58,0) оружие STR_PIR_PLASMA_PISTOL; XN: юнит 1000035 act 7 к (19,41,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000035, "target": 229, "w": "AUX_SECTOPOD_WEAPON", "eff": 148.849, "net": 148.849}
+L8 s3: общий префикс 147 строк; D: ход 1 сторона 1 юнит 1000000 act 2 к (42,32,1) оружие STR_PIR_PLASMA_RIFLE; XN: юнит 1000033 act 8 к (8,25,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000033, "target": 335, "w": "AUX_SECTOPOD_WEAPON", "eff": 59.8921, "net": 59.8921}
+L8 s4: общий префикс 154 строк; D: ход 1 сторона 1 юнит 1000001 act 7 к (10,23,0) оружие STR_PIR_PLASMA_PISTOL; XN: юнит 1000035 act 7 к (10,23,0) оружие AUX_SECTOPOD_WEAPON; первое действие директора act:A {"actor": 1000035, "target": 191, "w": "AUX_SECTOPOD_WEAPON", "eff": 185.571, "net": 185.571}
+первое действие директора по парам: {'act:A': 8}
+
+
+===== ff_weapon v0
+M3 D: всего 5740; {'attack:think': 3691, 'other act 2': 1983, 'other act 6': 66}; выстрелов {'think': 651}; [(('STR_CANISTER_GUN', '8'), 1189), (('STR_CANISTER_GUN', '9'), 1087), (('STR_CANISTER_GUN', '2'), 829), (('AUX_CHRYSSALID_WEAPON', '2'), 740), (('AUX_CHRYSSALID_WEAPON', '10'), 432), (('AUX_SILACOID_WEAPON', '8'), 342)]
+M3 XN: всего 1625; {'attack:director': 760, 'other act 2': 857, 'attack:think': 8}; выстрелов {'director': 509, 'think': 33}; [(('-', '2'), 692), (('STR_SR_RIFLE', '8'), 331), (('STR_CANISTER_GUN', '8'), 198), (('STR_CANISTER_GUN', '2'), 158), (('STR_SR_RIFLE', '9'), 128), (('STR_PIR_PLASMA_RIFLE', '7'), 62)]
+L8 D: всего 186; {'attack:think': 76, 'other act 12': 110}; выстрелов {'think': 215}; [(('STR_PIR_BLASTER_LAUNCHER', '12'), 110), (('AUX_SECTOPOD_WEAPON', '7'), 60), (('STR_PIR_PLASMA_RIFLE', '7'), 16)]
+L8 XN: всего 155; {'attack:director': 3, 'other act 12': 152}; выстрелов {'director': 245, 'think': 4}; [(('STR_PIR_BLASTER_LAUNCHER', '12'), 152), (('STR_PLASMA_SCORCHER', '7'), 3)]
+
+
+===== ff_weapon v01
+M3 D: всего 5740; {'attack:think': 3691, 'other act 2': 1983, 'other act 6': 66}; выстрелов {'think': 651}; [(('STR_CANISTER_GUN', '8'), 1189), (('STR_CANISTER_GUN', '9'), 1087), (('STR_CANISTER_GUN', '2'), 829), (('AUX_CHRYSSALID_WEAPON', '2'), 740), (('AUX_CHRYSSALID_WEAPON', '10'), 432), (('AUX_SILACOID_WEAPON', '8'), 342)]
+M3 XN: всего 8317; {'attack:director': 1711, 'attack:think': 1736, 'other act 2': 4870}; выстрелов {'director': 451, 'think': 84}; [(('STR_CANISTER_GUN', '2'), 2321), (('AUX_CHRYSSALID_WEAPON', '2'), 1737), (('STR_SR_RIFLE', '8'), 1315), (('AUX_SILACOID_WEAPON', '8'), 976), (('AUX_CHRYSSALID_WEAPON', '10'), 661), (('STR_CANISTER_GUN', '9'), 341)]
+L8 D: всего 186; {'attack:think': 76, 'other act 12': 110}; выстрелов {'think': 215}; [(('STR_PIR_BLASTER_LAUNCHER', '12'), 110), (('AUX_SECTOPOD_WEAPON', '7'), 60), (('STR_PIR_PLASMA_RIFLE', '7'), 16)]
+L8 XN: всего 0; {}; выстрелов {'director': 145, 'think': 8}; []
+
+

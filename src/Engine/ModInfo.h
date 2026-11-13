@@ -55,6 +55,8 @@ private:
 	ModInfoVersion _version;
 	bool _isMaster;
 	int _reservedSpace;
+	int _luaApi;
+	std::vector<std::string> _luaCaps;
 	bool _engineOk;
 	std::string _requiredExtendedEngine;
 	std::string _requiredExtendedVersion;
@@ -98,6 +100,10 @@ public:
 	bool canActivate(const std::string &curMaster) const;
 	/// Gets size of mod, bigger mod reserve more values in common collections/surfacesets.
 	int getReservedSpace() const;
+	/// Gets the Lua API version the mod is written for, 0 for a mod without Lua.
+	int getLuaApi() const;
+	/// What the mod's Lua declares it does beyond the Y-script (luaCaps).
+	const std::vector<std::string> &getLuaCaps() const { return _luaCaps; }
 
 	/// Is mod compatible with current OXCE engine aka "fork", check too whether the current OXCE version is equal to (or higher than) the required OXCE version.
 	bool isEngineOk() const;

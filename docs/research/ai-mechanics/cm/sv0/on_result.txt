@@ -1,0 +1,134 @@
+== svn_SN_L1_s1  result over turn=18  (D0: turn=15 pdead=0 phplost=57 hdead=24; on: pdead=1 phplost=229 hdead=25)
+  exec t1 u1000001 n2 order1 target267 type9 cost25 est0.5 d0act2 mode0 -> act9 spent25 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t2 u1000004 n1 order2 target267 type9 cost46 est12.8 d0act2 mode0 -> act9 spent46 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t2 u1000008 n1 order2 target267 type9 cost45 est24.1 d0act2 mode0 -> act9 spent46 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000016 n1 order3 target2 type9 cost83 est3.8 d0act2 mode0 -> act9 spent84 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000004 n1 order4 target2 type9 cost46 est17.6 d0act2 mode0 -> act9 spent46 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000011 n1 order4 target2 type9 cost45 est24.1 d0act2 mode0 -> act9 spent46 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000004 n1 order5 target2 type9 cost46 est13.6 d0act2 mode0 -> act9 spent46 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000015 n1 order5 target2 type7 cost42 est8.2 d0act2 mode0 -> act7 spent43 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000016 n1 order5 target2 type9 cost83 est4.5 d0act2 mode0 -> act9 spent83 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  first order shot t1 u1000001 n2, rest of that unit-turn  D0: attacks 0 dmg 0 spent 4 TU left 30 acts [2, 2]  |  on: attacks 1 dmg 0 spent 29 TU left 5 acts [2, 9]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 8 / D0 8
+== svn_SN_L2_s1  result over turn=6  (D0: turn=10 pdead=7 phplost=777 hdead=55; on: pdead=2 phplost=690 hdead=37)
+  exec t1 u1000036 n1 order1 target91 type7 cost53 est9.3 d0act2 mode0 -> act7 spent54 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000058 n1 order2 target324 type8 cost18 est23.0 d0act2 mode0 -> act8 spent20 dmg12 stun1 down0 hp_lost0 react0 died0 EXEC USEFUL
+  first order shot t1 u1000036 n1, rest of that unit-turn  D0: attacks 0 dmg 0 spent 78 TU left 56 acts [2, 2, 2, 0, 2, 2, 2, 2]  |  on: attacks 1 dmg 0 spent 132 TU left 2 acts [2, 2, 7]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 15 / D0 15
+== svn_SN_L2_s2  result over turn=18  (D0: turn=25 pdead=5 phplost=696 hdead=60; on: pdead=7 phplost=628 hdead=60)
+  exec t1 u1000055 n2 order1 target324 type7 cost71 est6.2 d0act2 mode0 -> act7 spent72 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000031 n1 order1 target324 type8 cost29 est0.9 d0act2 mode0 -> act8 spent29 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000029 n1 order2 target335 type7 cost58 est1.9 d0act2 mode0 -> act7 spent58 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000031 n1 order3 target344 type7 cost58 est1.9 d0act2 mode0 -> act7 spent58 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000038 n1 order4 target91 type7 cost53 est13.3 d0act2 mode0 -> act7 spent53 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t7 u1000031 n1 order5 target191 type7 cost58 est1.5 d0act2 mode0 -> act7 spent60 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t13 u1000029 n1 order6 target191 type9 cost58 est2.0 d0act2 mode0 -> act9 spent61 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t13 u1000062 n1 order6 target191 type8 cost18 est15.6 d0act2 mode0 -> act8 spent20 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  first order shot t1 u1000055 n2, rest of that unit-turn  D0: attacks 0 dmg 0 spent 83 TU left 56 acts [2, 2]  |  on: attacks 1 dmg 0 spent 72 TU left 67 acts [7, 2]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 12 / D0 14
+== svn_SN_L6_s2  result over turn=7  (D0: turn=24 pdead=8 phplost=612 hdead=27; on: pdead=7 phplost=611 hdead=22)
+  exec t1 u1000006 n1 order1 target571 type9 cost83 est3.2 d0act2 mode0 -> act9 spent87 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000010 n1 order2 target538 type9 cost83 est2.8 d0act2 mode0 -> act9 spent83 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000012 n1 order2 target538 type9 cost97 est7.2 d0act2 mode0 -> act9 spent97 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000006 n2 order3 target293 type8 cost33 est0.5 d0act2 mode0 -> act8 spent33 dmg0 stun0 down0 hp_lost99 react2 died1 EXEC
+  exec t4 u1000020 n1 order3 target293 type9 cost83 est0.8 d0act2 mode0 -> act9 spent83 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000010 n1 order4 target538 type9 cost83 est2.8 d0act2 mode0 -> act9 spent87 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000012 n1 order4 target538 type9 cost97 est7.2 d0act2 mode0 -> act9 spent98 dmg16 stun3 down1 hp_lost0 react0 died0 EXEC USEFUL
+  exec t5 u1000024 n1 order5 target297 type9 cost84 est6.8 d0act2 mode0 -> act9 spent85 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000020 n1 order6 target581 type9 cost83 est6.9 d0act2 mode0 -> act9 spent84 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  first order shot t1 u1000006 n1, rest of that unit-turn  D0: attacks 1 dmg 0 spent 97 TU left 14 acts [2, 2, 2, 6, 2, 2]  |  on: attacks 1 dmg 0 spent 87 TU left 24 acts [9, 2, 2, 2, 2, 2]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 8 / D0 8
+== svn_SN_L7_s1  result over turn=17  (D0: turn=22 pdead=5 phplost=539 hdead=21; on: pdead=3 phplost=363 hdead=30)
+  exec t4 u1000010 n2 order1 target2 type8 cost21 est15.0 d0act2 mode0 -> act8 spent22 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  first order shot t4 u1000010 n2, rest of that unit-turn  D0: attacks 0 dmg 0 spent 0 TU left 23 acts [2, 2]  |  on: attacks 1 dmg 0 spent 22 TU left 1 acts [8]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 8 / D0 8
+== svn_SN_L7_s2  result over turn=16  (D0: turn=8 pdead=4 phplost=519 hdead=16; on: pdead=2 phplost=290 hdead=33)
+  exec t1 u1000015 n2 order1 target368 type9 cost40 est0.9 d0act2 mode0 -> act9 spent40 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000008 n2 order2 target471 type9 cost50 est0.6 d0act2 mode0 -> act9 spent51 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  first order shot t1 u1000015 n2, rest of that unit-turn  D0: attacks 1 dmg 11 spent 31 TU left 6 acts [2, 8]  |  on: attacks 2 dmg 0 spent 56 TU left 6 acts [9, 8]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 6 / D0 6
+== svn_SN_M2_s1  result over turn=24  (D0: turn=15 pdead=8 phplost=993 hdead=46; on: pdead=8 phplost=968 hdead=47)
+  exec t1 u1000017 n2 order1 target108 type8 cost29 est6.1 d0act2 mode0 -> act8 spent29 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000024 n1 order1 target108 type9 cost58 est17.8 d0act2 mode0 -> act9 spent60 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t2 u1000025 n2 order2 target108 type9 cost58 est17.8 d0act2 mode0 -> act9 spent58 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t2 u1000040 n1 order2 target108 type8 cost40 est4.2 d0act2 mode0 -> act8 spent42 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t2 u1000049 n1 order2 target108 type8 cost35 est5.4 d0act2 mode0 -> act8 spent37 dmg27 stun0 down0 hp_lost0 react0 died0 EXEC USEFUL
+  exec t2 u1000125 n1 order2 target108 type8 cost18 est54.4 d0act2 mode0 -> act8 spent19 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000040 n1 order3 target4 type9 cost44 est0.5 d0act2 mode0 -> act9 spent47 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000017 n1 order4 target257 type7 cost58 est2.3 d0act2 mode0 -> act7 spent59 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t7 u1000024 n1 order5 target257 type9 cost58 est2.2 d0act2 mode0 -> act9 spent59 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t8 u1000017 n1 order6 target257 type7 cost58 est2.4 d0act2 mode0 -> act7 spent58 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t8 u1000052 n1 order6 target257 type8 cost35 est3.3 d0act2 mode0 -> act8 spent35 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t9 u1000031 n1 order7 target257 type7 cost58 est3.9 d0act2 mode0 -> act7 spent59 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t9 u1000035 n1 order7 target257 type7 cost58 est2.8 d0act2 mode0 -> act7 spent58 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t9 u1000052 n1 order7 target257 type7 cost71 est9.4 d0act2 mode0 -> act7 spent71 dmg27 stun0 down1 hp_lost0 react0 died0 EXEC USEFUL
+  first order shot t1 u1000017 n2, rest of that unit-turn  D0: attacks 1 dmg 0 spent 29 TU left 12 acts [2, 8]  |  on: attacks 1 dmg 0 spent 29 TU left 12 acts [8, 2]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 13 / D0 13
+== svn_SN_M2_s2  result over turn=50  (D0: turn=38 pdead=8 phplost=984 hdead=67; on: pdead=7 phplost=941 hdead=65)
+  exec t1 u1000017 n1 order1 target108 type7 cost58 est22.0 d0act2 mode0 -> act7 spent61 dmg46 stun0 down0 hp_lost0 react0 died0 EXEC USEFUL
+  exec t1 u1000027 n1 order1 target108 type7 cost58 est26.8 d0act2 mode0 -> act7 spent60 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000058 n1 order2 target261 type9 cost89 est4.7 d0act2 mode0 -> act9 spent92 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000114 n1 order2 target261 type8 cost18 est6.2 d0act2 mode0 -> act8 spent22 dmg0 stun0 down0 hp_lost61 react1 died0 EXEC
+  exec t1 u1000038 n1 order2 target261 type8 cost40 est1.9 d0act2 mode0 -> act8 spent41 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000023 n1 order3 target4 type7 cost58 est29.1 d0act2 mode0 -> act7 spent58 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000038 n1 order4 target261 type7 cost53 est8.1 d0act2 mode0 -> act7 spent53 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000058 n2 order4 target261 type9 cost89 est7.4 d0act2 mode0 -> act9 spent90 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000023 n1 order5 target255 type9 cost58 est2.2 d0act2 mode0 -> act9 spent59 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000038 n1 order5 target255 type9 cost80 est11.9 d0act2 mode0 -> act9 spent80 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000058 n1 order5 target255 type9 cost89 est13.9 d0act2 mode0 -> act9 spent90 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000020 n1 order5 target255 type8 cost29 est1.1 d0act2 mode0 -> act8 spent29 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000020 n2 order6 target255 type7 cost58 est2.3 d0act2 mode0 -> act7 spent59 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t6 u1000033 n1 order6 target255 type7 cost58 est4.3 d0act2 mode0 -> act7 spent62 dmg10 stun0 down0 hp_lost0 react0 died0 EXEC USEFUL
+  exec t7 u1000020 n1 order7 target255 type7 cost58 est3.3 d0act2 mode0 -> act7 spent58 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  first order shot t1 u1000017 n1, rest of that unit-turn  D0: attacks 0 dmg 0 spent 6 TU left 128 acts [2, 2, 0]  |  on: attacks 2 dmg 46 spent 120 TU left 14 acts [7, 9, 2, 2]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 12 / D0 11
+== svn_SN_M3_s2  result over turn=7  (D0: turn=6 pdead=8 phplost=916 hdead=39; on: pdead=8 phplost=916 hdead=40)
+  exec t1 u1000057 n1 order1 target454 type9 cost32 est18.2 d0act2 mode0 -> act9 spent34 dmg14 stun5 down0 hp_lost0 react0 died0 EXEC USEFUL
+  exec t3 u1000040 n1 order2 target520 type9 cost45 est3.6 d0act2 mode0 -> act9 spent45 dmg39 stun8 down1 hp_lost0 react0 died0 EXEC USEFUL
+  first order shot t1 u1000057 n1, rest of that unit-turn  D0: attacks 2 dmg 39 spent 75 TU left 2 acts [2, 7, 6]  |  on: attacks 3 dmg 14 spent 74 TU left 3 acts [9, 2, 8, 8]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 12 / D0 10
+== svn_SN_M7_s2  result over turn=5  (D0: turn=5 pdead=3 phplost=469 hdead=2; on: pdead=5 phplost=539 hdead=1)
+  exec t2 u1000016 n1 order1 target115 type9 cost72 est9.4 d0act2 mode0 -> act9 spent73 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000001 n1 order2 target115 type8 cost22 est4.3 d0act2 mode0 -> act8 spent22 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000007 n1 order2 target115 type9 cost62 est11.4 d0act2 mode0 -> act9 spent62 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000022 n1 order2 target115 type9 cost40 est30.6 d0act2 mode0 -> act9 spent40 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t3 u1000000 n1 order2 target115 type8 cost17 est1.2 d0act2 mode0 -> act8 spent17 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000000 n1 order3 target115 type8 cost17 est1.6 d0act2 mode0 -> act8 spent17 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000003 n1 order3 target115 type9 cost62 est12.2 d0act2 mode0 -> act9 spent62 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000010 n1 order4 target46 type9 cost70 est22.5 d0act2 mode0 -> act9 spent70 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000016 n1 order4 target46 type9 cost72 est5.0 d0act2 mode0 -> act9 spent73 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000022 n1 order4 target46 type9 cost40 est16.5 d0act2 mode0 -> act9 spent40 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t4 u1000001 n1 order4 target46 type8 cost22 est0.8 d0act2 mode0 -> act8 spent22 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000010 n2 order5 target46 type8 cost33 est4.9 d0act2 mode0 -> act8 spent33 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t5 u1000015 n1 order5 target46 type9 cost70 est18.5 d0act2 mode0 -> act9 spent74 dmg70 stun18 down1 hp_lost0 react0 died0 EXEC USEFUL
+  first order shot t2 u1000016 n1, rest of that unit-turn  D0: attacks 0 dmg 0 spent 100 TU left 4 acts [2, 2, 2, 2]  |  on: attacks 1 dmg 0 spent 101 TU left 3 acts [9, 2]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 17 / D0 10
+== svn_SN_M9_s2  result over turn=1  (D0: turn=2 pdead=7 phplost=545 hdead=0; on: pdead=6 phplost=536 hdead=0)
+  exec t1 u1000001 n1 order1 target454 type8 cost64 est10.0 d0act2 mode0 -> act8 spent68 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000040 n1 order2 target503 type8 cost64 est12.6 d0act2 mode0 -> act8 spent64 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000042 n1 order2 target503 type8 cost64 est8.6 d0act2 mode0 -> act8 spent64 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000059 n1 order2 target503 type8 cost22 est13.8 d0act2 mode0 -> act8 spent22 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  exec t1 u1000063 n1 order3 target470 type9 cost44 est66.2 d0act2 mode0 -> act9 spent45 dmg11 stun86 down1 hp_lost0 react0 died0 EXEC USEFUL
+  exec t1 u1000070 n2 order4 target543 type9 cost62 est18.3 d0act2 mode0 -> act9 spent62 dmg0 stun0 down0 hp_lost0 react0 died0 EXEC
+  first order shot t1 u1000001 n1, rest of that unit-turn  D0: attacks 1 dmg 0 spent 74 TU left 24 acts [2, 2, 8, 2]  |  on: attacks 1 dmg 0 spent 76 TU left 22 acts [8, 2, 2, 2]
+  checks: TU grew within a unit-turn on 0 / D0 0; max decisions per unit-turn on 10 / D0 10
+== totals
+  orders                                   47
+  orders >=2 units                         47
+  joins                                    6
+  order shots handed out                   81
+  executed                                 81
+  useful                                   10
+  reactions after                          3
+  shooter hp lost (that action)            160
+  shooter down later in its turn           1
+  TU of order shots                        4414
+  dmg by order shots                       272
+  downs by order shots                     5
+  unit-turns with >1 order shot            0
+  first: D0 att                            6
+  first: on att                            15
+  first: D0 dmg                            50
+  first: on dmg                            60
+  TU grew within a unit-turn (on)          0
+  TU grew within a unit-turn (D0)          0

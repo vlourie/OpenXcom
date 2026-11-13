@@ -50,6 +50,10 @@ private:
 	Text *_txtETA;
 
 	int _weaponNum;
+	Uint8 _weaponOnColor, _weaponOnColor2, _weaponOffColor;
+	bool _weaponOffContrast;
+	/// Colors a weapon label by its enabled/disabled state.
+	void updateWeaponColor(int slot);
 public:
 	/// Creates the Geoscape Craft state.
 	GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *waypoint, bool useCustomSound);
@@ -63,6 +67,8 @@ public:
 	void btnPatrolClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
+	/// Handler for clicking a weapon name to toggle it on/off.
+	void txtWeaponClick(Action *action);
 };
 
 }

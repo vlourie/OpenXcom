@@ -1,0 +1,65 @@
+--- v2/AIModule.cpp
++++ v3/AIModule.cpp
+@@ -980,6 +980,7 @@
+ 	std::map<int, std::pair<int, int>> waits; // target -> (turn, turns its group waited) of the last plan
+ 	std::map<int, int> orders;        // unit -> the director's orders in this turn (the loop guard)
+ 	std::set<int> reserved;           // tiles a member was sent to in this turn
++	std::map<int, Position> parked;   // unit -> the tile it covers or waits on in this turn (held there when it thinks again)
+ };
+ TdState td;
+ const int TD_WAIT_LIMIT = 2, TD_ORDER_LIMIT = 4, TD_GROUP_MAX = 4;
+@@ -1173,6 +1174,7 @@
+ 	td.role.clear();
+ 	td.orders.clear();
+ 	td.reserved.clear();
++	td.parked.clear();
+ 	tdUpdateMemory(save);
+ 	tdContacts(save);
+ 	std::ostringstream head;
+@@ -1393,6 +1395,22 @@
+ 		say("FREE", "lost");
+ 		return;
+ 	}
++	const bool joined = !g.attacked.empty();
++	// it covers or waits where it was put in this turn: it stays (the engine thinks for it again in the second pass); not an
++	// order - the loop guard does not count it. A member that closes in still joins once its group has attacked; a tile a
++	// contact would see now is no longer held.
++	auto park = td.parked.find(_unit->getId());
++	if (park != td.parked.end() && park->second == _unit->getPosition() && !(joined && (role == 'M' || role == 'a'))
++		&& !tdMask(_save, _unit->getPosition()))
++	{
++		action->type = BA_NONE;
++		if (role == 'S')
++			_AIMode = AI_AMBUSH;
++		_reserve = BA_NONE;
++		_unit->setCharging(0);
++		say("HOLD", role == 'S' ? "cover" : "wait");
++		return;
++	}
+ 	if (td.orders[_unit->getId()] >= TD_ORDER_LIMIT)
+ 	{
+ 		say("FREE", "limit");
+@@ -1436,7 +1454,6 @@
+ 		td.reserved.insert(_save->getTileIndex(to));
+ 		td.orders[_unit->getId()]++;
+ 	};
+-	const bool joined = !g.attacked.empty();
+ 	if (role == 'A' || (joined && (role == 'M' || role == 'a')))
+ 	{
+ 		const char *order = role == 'A' ? "FIRE" : "JOIN";
+@@ -1561,6 +1578,7 @@
+ 			{
+ 				walkTo(best, true, _unit->getArmor()->allowsKneeling(false));
+ 			}
++			td.parked[_unit->getId()] = best;
+ 			_AIMode = AI_AMBUSH;
+ 			_reserve = BA_NONE;
+ 			_unit->setCharging(0);
+@@ -1603,6 +1621,7 @@
+ 	{
+ 		action->type = BA_NONE;
+ 		td.orders[_unit->getId()]++;
++		td.parked[_unit->getId()] = _unit->getPosition();
+ 		say("WAIT","d=" + std::to_string(now) + " tried=" + std::to_string(tries));
+ 		return;
+ 	}

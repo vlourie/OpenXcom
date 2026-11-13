@@ -1,0 +1,50 @@
+identity with D0: lines 1828 / 1043, DIFFERENT from line 222
+ D0: [AIDECIDE] turn=1 side=1 unit=1000006 n=1 from=(20,44,4) tu=81 mode=2 act=8 to=(40,45,2) run=0 kneel=0 aim=81 weapon=STR_PIR_PLASMA_PISTOL seen=340,184,366,363,393,427,472,471,2,61,394,81
+ this: [AIDECIDE] turn=1 side=1 unit=1000006 n=1 from=(20,44,4) tu=81 mode=2 act=8 to=(40,45,2) run=0 kneel=0 aim=81 weapon=STR_PIR_PLASMA_PISTOL seen=340,184,366,363,393,427,472,471,2,61,394,81
+result: {'how': 'over', 'turn': '5', 'livesoldiers': '32', 'livealiens': '0', 'player': '38', 'pdead': '6', 'pout': '0', 'phplost': '736', 'hostile': '37', 'hdead': '37', 'hout': '0', 'hmoves': '104', 'hattacks': '39', 'pattacks': '34', 'ms': '40689'}
+--- objective / plan / done / release:
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=1.87813 why=none
+  what=plan turn=1 cell=4,3 fighters=1000010>44,34,3;1000023>47,34,3
+  what=release turn=1 unit=1000010 why=out
+  what=release turn=1 unit=1000023 why=out
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=2.33412 why=few
+  what=plan turn=1 cell=4,3 fighters=1000019>44,34,3;1000036>47,34,3
+  what=release turn=1 unit=1000019 why=out
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=2.49642 why=few
+  what=plan turn=1 cell=4,3 fighters=1000015>47,34,3;1000036>44,34,3
+  what=release turn=1 unit=1000036 why=out
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=2.71373 why=few
+  what=plan turn=1 cell=4,3 fighters=1000006>47,34,3;1000015>44,34,3
+  what=release turn=2 unit=1000006 why=out
+  what=objective turn=2 cell=5,4 fac=STR_DATA_CENTER left=11 score=6.50998 why=few
+  what=plan turn=2 cell=5,4 fighters=1000013>51,41,3;1000015>55,41,3;1000018>53,47,3;1000034>58,46,3
+  what=release turn=2 unit=1000015 why=out
+  what=release turn=3 unit=1000018 why=out
+  what=release turn=3 unit=1000034 why=out
+  what=objective turn=3 cell=3,0 fac=STR_PERSONAL_LABS left=17 score=7.0709 why=few
+  what=plan turn=3 cell=3,0 fighters=1000004>35,6,3;1000005>37,4,1;1000016>33,5,3;1000033>32,1,1
+  what=release turn=4 unit=1000033 why=out
+  what=release turn=5 unit=1000005 why=out
+  what=release turn=5 unit=1000016 why=out
+  what=noplan turn=5 why=few candidates=0 fighters=1
+--- D0's protocol aims: 0; no line of fire to the target: 0; a legal alternative in the same room at that moment: 0; both: 0
+--- nomodule (on a target node, nothing at z=1): 4; with a legal alternative: 1
+  t1 1000016 24,4,3 alt - armor None
+  t2 1000004 12,35,3 alt - armor None
+  t2 1000005 2,25,3 alt - armor None
+  t3 1000014 5,11,3 alt 5,12,3 armor 20
+--- tasks by unit and kind: [(('1000004', 'walk'), 1), (('1000005', 'walk'), 1), (('1000006', 'walk'), 1), (('1000013', 'walk'), 1), (('1000015', 'walk'), 1), (('1000016', 'walk'), 1), (('1000018', 'walk'), 1), (('1000033', 'walk'), 1), (('1000034', 'walk'), 1)]
+--- chain: turn unit task > actual (mode act to spent) | hits
+  t1 1000006 walk 47,34,3 (20,44,4) > m2 a8 (40,45,2) sp14 | 40,45,2:p4:37/-1:m0
+  t1 1000015 walk 44,34,3 (20,40,4) > m0 a2 (44,34,3) sp28 | 
+  t2 1000013 walk 51,41,3 (14,54,2) > m0 a2 (51,41,3) sp78 | 
+  t2 1000018 walk 53,47,3 (14,48,2) > m2 a2 (15,43,2) sp22 | 
+  t2 1000034 walk 58,46,3 (19,33,2) > m2 a7 (30,35,2) sp28 | 29,36,2:p2:22/50:m0 29,36,2:p2:52/50:m0 43,35,2:p0:32/50:m0
+  t3 1000016 walk 33,5,3 (14,23,2) > m0 a2 (33,5,3) sp8 | 
+  t3 1000033 walk 32,1,1 (8,13,2) > m0 a2 (32,1,1) sp60 | 
+  t4 1000004 walk 35,6,3 (27,30,4) > m2 a2 (24,26,4) sp36 | 
+  t4 1000005 walk 37,4,1 (17,22,2) > m3 a2 (18,26,2) sp18 | 
+--- how tasks went: [(('walk', 'obeyed'), 4), (('walk', 'other mode2 act2'), 2), (('walk', 'other mode2 act7'), 1), (('walk', 'other mode2 act8'), 1), (('walk', 'other mode3 act2'), 1)]
+--- by fighter: {'1000006': {'other': 1}, '1000015': {'walk': 1}, '1000013': {'walk': 1}, '1000018': {'other': 1}, '1000034': {'other': 1}, '1000016': {'walk': 1}, '1000033': {'walk': 1}, '1000004': {'other': 1}, '1000005': {'other': 1}}
+--- hostile hits on module objects 0, breaking 0; blasts 13
+--- OBJECTIVE RESULT at what=grid when=end turn=5 le: module tiles 527 > 516 (lost 11); facilities demolished: 0 []

@@ -76,6 +76,10 @@ public:
 
 	/// Gets the total frames in the set.
 	size_t getTotalFrames() const;
+	/// HD render: replaces every frame with a nearest-neighbour copy scale times bigger (no-op for scale 1).
+	void hdScaleInPlace(int scale);
+	/// HD render: returns a new set whose frames are nearest-neighbour copies scale times bigger.
+	SurfaceSet *hdScaledCopy(int scale) const;
 	/// Sets the surface set's palette.
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256);
 };

@@ -40,6 +40,8 @@
 #include "../Engine/Sound.h"
 #include "../Mod/RuleInventory.h"
 #include "../Battlescape/AIModule.h"
+#include "../Battlescape/AiCoverMap.h"
+#include "../Battlescape/AiProbe.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Options.h"
 #include "../Engine/Logger.h"
@@ -51,6 +53,7 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleWeaponSet.h"
+#include "../Mod/LuaHost.h"
 #include "../fallthrough.h"
 #include "../fmath.h"
 #include "../Engine/Language.h"
@@ -92,6 +95,9 @@ SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang, bool isPreview) :
  */
 SavedBattleGame::~SavedBattleGame()
 {
+#ifdef OXCE_AI_DEV
+	AiCoverMap::reset(this);
+#endif
 	for (auto* mds : _mapDataSets)
 	{
 		mds->unloadData();
@@ -273,7 +279,10 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			std::string armor = unitReader["genUnitArmor"].readVal<std::string>();
 			// create a new Unit.
 			if (!mod->getUnit(type) || !mod->getArmor(armor))
+			{
+				Log(LOG_ERROR) << "Failed to load unit " << type;
 				continue;
+			}
 			unit = new BattleUnit(mod, mod->getUnit(type), originalFaction, id, nullptr, mod->getArmor(armor), mod->getStatAdjustment(savedGame->getDifficulty()), _depth, nullptr);
 		}
 		unit->load(unitReader, this->getMod(), this->getMod()->getScriptGlobal());
@@ -315,6 +324,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			if (!mod->getItem(type))
 			{
 				Log(LOG_ERROR) << "Failed to load item " << type;
+				continue;
+			}
+			if (itemReader["owner"].readVal(-1) != -1 && !findUnitById(itemReader["owner"]))
+			{
+				Log(LOG_ERROR) << "Failed to load item " << type << ": its unit is gone";
 				continue;
 			}
 			int id = itemReader["id"].readVal<int>();
@@ -363,7 +377,7 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 		for (const auto& itemReader : reader[keyAndVector.first].children())
 		{
 			std::string type = itemReader["type"].readVal<std::string>();
-			if (!mod->getItem(type))
+			if (!mod->getItem(type) || !itemIndex.count(itemReader["id"].readVal<int>()))
 				continue;
 			BattleItem* item = itemIndex.at(itemReader["id"].readVal<int>());
 			// if "ammoItemSlots" node exists, then link ammo items for all slots, else try the backwards-compatibility node
@@ -419,6 +433,54 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 	reader.tryRead("togglePersonalLight", _togglePersonalLight);
 	reader.tryRead("toggleNightVision", _toggleNightVision);
 	reader.tryRead("toggleBrightness", _toggleBrightness);
+	// building collapse pilot, off by default: checked against the build in CollapsePilot
+	if (Options::oxceCollapse)
+	{
+		if (const auto& cp = reader["collapsePilot"])
+		{
+			// a damaged key must not stop the battle from loading: an entry that can't be read
+			// stays empty and CollapsePilot rejects it, a key that can't be read at all is one such entry
+			_collapsePilotVersion = -1;
+			try
+			{
+				if (cp.isMap())
+				{
+					cp.tryRead("version", _collapsePilotVersion);
+					const auto& buildings = cp["buildings"];
+					if (buildings && buildings.isSeq())
+					{
+						for (const auto& b : buildings.children())
+						{
+							CollapsePilotEntry e = { std::string(), Position(-1, -1, -1), std::string() };
+							try
+							{
+								if (b.isMap())
+								{
+									b.tryRead("model", e.model);
+									b.tryRead("at", e.at);
+									b.tryRead("sig", e.sig);
+								}
+							}
+							catch (const YAML::Exception&)
+							{
+								e = { std::string(), Position(-1, -1, -1), std::string() };
+							}
+							_collapsePilot.push_back(e);
+						}
+					}
+				}
+			}
+			catch (const YAML::Exception&)
+			{
+				_collapsePilotVersion = -1;
+				_collapsePilot.clear();
+			}
+			if (_collapsePilotVersion < 0 && _collapsePilot.empty())
+			{
+				_collapsePilot.push_back({ std::string(), Position(-1, -1, -1), std::string() });
+			}
+		}
+	}
 	_scriptValues.load(reader, _rule->getScriptGlobal());
 
 	// Sanity checks
@@ -447,9 +509,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
  */
 void SavedBattleGame::loadMapResources(Mod *mod)
 {
+	// HD render: a loaded battle picks up the HD scale option before its terrain loads
+	mod->refreshHdScale();
 	for (auto* mds : _mapDataSets)
 	{
-		mds->loadData(mod->getMCDPatch(mds->getName()));
+		mds->loadData(mod->getMCDPatch(mds->getName()), true, mod->getHdScale());
 	}
 
 	int mdsID, mdID;
@@ -618,6 +682,23 @@ void SavedBattleGame::save(YAML::YamlNodeWriter writer) const
 	writer.write("togglePersonalLight", _togglePersonalLight);
 	writer.write("toggleNightVision", _toggleNightVision);
 	writer.write("toggleBrightness", _toggleBrightness);
+	if (Options::oxceCollapse && _collapsePilotVersion > 0 && !_collapsePilot.empty())
+	{
+		auto cp = writer["collapsePilot"];
+		cp.setAsMap();
+		cp.write("version", _collapsePilotVersion);
+		auto buildings = cp["buildings"];
+		buildings.setAsSeq();
+		for (const auto& b : _collapsePilot)
+		{
+			auto w = buildings.write();
+			w.setAsMap();
+			w.write("model", b.model);
+			w.write("at", b.at);
+			if (!b.sig.empty())
+				w.write("sig", b.sig);
+		}
+	}
 	_scriptValues.save(writer, _rule->getScriptGlobal());
 }
 
@@ -1251,6 +1332,11 @@ void SavedBattleGame::newTurnUpdateScripts()
 		return;
 	}
 
+	if (auto *lua = _rule->getLuaHost())
+	{
+		lua->resetTurnBudgets(); // a new turn of any side: the mods' instruction budget starts again
+	}
+
 	for (auto* bu : _units)
 	{
 		if (bu->isIgnored())
@@ -1259,6 +1345,10 @@ void SavedBattleGame::newTurnUpdateScripts()
 		}
 
 		ModScript::scriptCallback<ModScript::NewTurnUnit>(bu->getArmor(), bu, this, this->getTurn(), _side);
+		if (auto *lua = _rule->getLuaHost())
+		{
+			lua->fire(LuaHost::NEW_TURN_UNIT, { bu, this, this->getTurn(), (int)_side });
+		}
 	}
 
 	for (auto* item : _items)
@@ -1269,6 +1359,10 @@ void SavedBattleGame::newTurnUpdateScripts()
 		}
 
 		ModScript::scriptCallback<ModScript::NewTurnItem>(item->getRules(), item, this, this->getTurn(), _side);
+		if (auto *lua = _rule->getLuaHost())
+		{
+			lua->fire(LuaHost::NEW_TURN_ITEM, { item, this, this->getTurn(), (int)_side });
+		}
 	}
 
 	reviveUnconsciousUnits(false);
@@ -1478,6 +1572,7 @@ const RuleCraftDeployment& SavedBattleGame::getCustomDeployment(const RuleCraft*
  */
 void SavedBattleGame::endTurn()
 {
+	AiProbe::turnStage(this, "endturn");
 	// reset turret direction for all hostile and neutral units (as it may have been changed during reaction fire)
 	for (auto* bu : _units)
 	{
@@ -1519,6 +1614,7 @@ void SavedBattleGame::endTurn()
 	else if (_side == FACTION_NEUTRAL)
 	{
 		prepareNewTurn();
+		AiProbe::turnStage(this, "envi");
 		_turn++;
 		_side = FACTION_PLAYER;
 		if (_lastSelectedUnit && _lastSelectedUnit->isSelectable(FACTION_PLAYER, false, false))
@@ -1610,8 +1706,10 @@ void SavedBattleGame::endTurn()
 		}
 	}
 
+	AiProbe::turnStage(this, "rest");
 	//scripts update
 	newTurnUpdateScripts();
+	AiProbe::turnStage(this, "script");
 
 	//fov check will be done by `BattlescapeGame::endTurn`
 
@@ -1972,12 +2070,20 @@ void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
 	}
 
 	ModScript::scriptCallback<ModScript::CreateUnit>(armor, unit, this, this->getTurn());
+	if (auto *lua = _rule->getLuaHost())
+	{
+		lua->fire(LuaHost::CREATE_UNIT, { unit, this, this->getTurn() });
+	}
 
 	if (auto* solder = unit->getGeoscapeSoldier())
 	{
 		for (const auto* bonus : *solder->getBonuses(nullptr))
 		{
 			ModScript::scriptCallback<ModScript::ApplySoldierBonuses>(bonus, unit, this, bonus);
+			if (auto *lua = _rule->getLuaHost())
+			{
+				lua->fire(LuaHost::APPLY_SOLDIER_BONUSES, { unit, this, bonus });
+			}
 		}
 	}
 }
@@ -1994,6 +2100,10 @@ void SavedBattleGame::initItem(BattleItem *item, BattleUnit *unit)
 	}
 
 	ModScript::scriptCallback<ModScript::CreateItem>(item->getRules(), item, unit, this, this->getTurn());
+	if (auto *lua = _rule->getLuaHost())
+	{
+		lua->fire(LuaHost::CREATE_ITEM, { item, unit, this, this->getTurn() });
+	}
 }
 
 /**
@@ -2107,6 +2217,68 @@ BattleUnit *SavedBattleGame::createTempUnit(const Unit *rules, UnitFaction facti
 		newUnit->setAIModule(new AIModule(this, newUnit, 0));
 	}
 
+	return newUnit;
+}
+
+/**
+ * Puts a new unit on the map, the way of an item's spawnUnit.
+ * @param rules Unit config
+ * @param faction Faction of unit
+ * @param position Tile position to try, or one around it
+ * @param checkDirection Where the search around the position starts
+ * @param direction Where the unit looks, below 0 a random direction
+ * @param owner Who made it
+ * @return The new unit, null when it has no place there.
+ */
+BattleUnit *SavedBattleGame::placeNewUnit(const Unit *rules, UnitFaction faction, Position position, int checkDirection, int direction, BattleUnit *owner)
+{
+	// Create the unit
+	BattleUnit *newUnit = createTempUnit(rules, faction);
+
+	// Validate the position for the unit, checking if there's a surrounding tile if necessary
+	if (!getTileEngine()->isPositionValidForUnit(position, newUnit, true, checkDirection))
+	{
+		delete newUnit;
+		return nullptr;
+	}
+
+	// Place the unit and initialize it in the battlescape
+	int unitDirection = direction >= 0 ? direction : RNG::generate(0, 7);
+	// If this is a tank, arm it with its weapon
+	if (_rule->getItem(newUnit->getType()) && _rule->getItem(newUnit->getType())->isFixed())
+	{
+		const RuleItem *newUnitWeapon = _rule->getItem(newUnit->getType());
+		if (!_isPreview)
+		{
+			createItemForUnit(newUnitWeapon, newUnit, true);
+			if (newUnitWeapon->getVehicleClipAmmo())
+			{
+				const RuleItem *ammo = newUnitWeapon->getVehicleClipAmmo();
+				BattleItem *ammoItem = createItemForUnit(ammo, newUnit);
+				if (ammoItem)
+				{
+					ammoItem->setAmmoQuantity(newUnitWeapon->getVehicleClipSize());
+				}
+			}
+		}
+		newUnit->setTurretType(newUnitWeapon->getTurretType());
+	}
+
+	// Pick the item sets if the unit has builtInWeaponSets
+	size_t itemLevel = (size_t)(_rule->getAlienItemLevels().at(getAlienItemLevel()).at(RNG::generate(0,9)));
+
+	// Initialize the unit and its position
+	newUnit->setTile(getTile(position), this);
+	newUnit->setPosition(position);
+	newUnit->setDirection(unitDirection);
+	newUnit->clearTimeUnits();
+	newUnit->setPreviousOwner(owner);
+	newUnit->setVisible(faction == FACTION_PLAYER);
+	getUnits()->push_back(newUnit);
+	initUnit(newUnit, itemLevel);
+
+	getTileEngine()->applyGravity(newUnit->getTile());
+	getTileEngine()->calculateFOV(newUnit->getPosition());  //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
 	return newUnit;
 }
 
@@ -2342,7 +2514,22 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 			&& (!scout || n != fromNode)																// scouts push forward
 			&& n->getPosition().x > 0 && n->getPosition().y > 0)
 		{
-			if (!preferred
+			if (AiProbe::oxceFixes())
+			{
+				// O7 (BetterAI): the rank test above came to nothing - its case is inside the last one; a node of the unit's
+				// own rank goes first, the higher flags among equals
+				auto ownRank = [unit](const Node *node)
+				{
+					return unit->getRankInt() >= 0 && node->getRank() == Node::nodeRank[unit->getRankInt()][0];
+				};
+				if (!preferred
+					|| (ownRank(n) && !ownRank(preferred))
+					|| (ownRank(n) == ownRank(preferred) && preferred->getFlags() < n->getFlags()))
+				{
+					preferred = n;
+				}
+			}
+			else if (!preferred
 				|| (unit->getRankInt() >=0 &&
 					preferred->getRank() == Node::nodeRank[unit->getRankInt()][0] &&
 					preferred->getFlags() < n->getFlags())
@@ -2683,8 +2870,7 @@ bool SavedBattleGame::eyesOnTarget(UnitFaction faction, BattleUnit* unit)
 	{
 		if (bu->getFaction() != faction) continue;
 
-		auto* vis = bu->getVisibleUnits();
-		if (std::find(vis->begin(), vis->end(), unit) != vis->end()) return true;
+		if (AiProbe::upstreamSees(bu, unit, 4)) return true; // UPSTREAM_VIS (bench, upstream 613ec4a28)
 		// aliens know the location of all XCom agents sighted by all other aliens due to sharing locations over their space-walkie-talkies
 	}
 

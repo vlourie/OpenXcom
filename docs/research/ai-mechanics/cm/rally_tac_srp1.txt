@@ -1,0 +1,24 @@
+battles 48 totals {'arrived': 400, 'contact_reached': 173, 'release.three': 279, 'release.turn': 33, 'to_contact': 204, 'to_node': 689, 'wait': 298}
+  STR_BASE_DEFENSE x4: {'arrived': 64, 'contact_reached': 32, 'release.three': 49, 'to_contact': 55, 'to_node': 141, 'wait': 52}
+  STR_LOC_PIRATE_CRUISE x2: {'arrived': 33, 'contact_reached': 20, 'release.three': 27, 'to_contact': 33, 'to_node': 68, 'wait': 10}
+  STR_VESSEL_NIN_LANDCRUISER_BA x2: {'arrived': 38, 'contact_reached': 25, 'release.three': 34, 'release.turn': 1, 'to_contact': 11, 'to_node': 66, 'wait': 10}
+  STR_GOVT_BASE_DEFENSE x2: {'arrived': 36, 'contact_reached': 7, 'release.three': 25, 'release.turn': 3, 'to_contact': 30, 'to_node': 58, 'wait': 35}
+  STR_VESSEL_GUNSHIP x4: {'arrived': 19, 'release.turn': 5, 'to_contact': 6, 'to_node': 43, 'wait': 25, 'contact_reached': 3, 'release.three': 7}
+  STR_ERIDIAN_TERROR x2: {'arrived': 5, 'to_node': 38, 'wait': 12}
+  STR_BATTLESHIP x2: {'arrived': 24, 'contact_reached': 13, 'release.three': 14, 'release.turn': 4, 'to_contact': 2, 'to_node': 36, 'wait': 17}
+  STR_VESSEL_BOMBER x2: {'arrived': 35, 'contact_reached': 13, 'release.three': 30, 'release.turn': 2, 'to_contact': 25, 'to_node': 33, 'wait': 9}
+  STR_LOC_CATACOMBS_UNDERGROUND_PRESS x2: {'arrived': 23, 'contact_reached': 17, 'release.three': 8, 'release.turn': 11, 'to_contact': 9, 'to_node': 31, 'wait': 33}
+  STR_VESSEL_FRIGATE x2: {'arrived': 28, 'contact_reached': 4, 'release.three': 22, 'release.turn': 2, 'to_contact': 10, 'to_node': 30, 'wait': 12}
+  STR_LOC_SMUGGLER_LAIR x2: {'arrived': 6, 'to_node': 26, 'wait': 10, 'release.three': 1}
+  STR_NINJA_BASE_OUTPOST_ASSAULT x2: {'arrived': 10, 'contact_reached': 2, 'release.three': 9, 'to_node': 21, 'wait': 6}
+  STR_LOC_GUNS_OF_THE_PATRIOTS_BLACKMARCH x2: {'arrived': 4, 'contact_reached': 4, 'release.three': 4, 'to_node': 19}
+  STR_VESSEL_HEAVY_GUNSHIP x2: {'arrived': 15, 'contact_reached': 9, 'release.three': 13, 'release.turn': 1, 'to_node': 19, 'wait': 8, 'to_contact': 7}
+  STR_LOC_RITUAL_CAVE x2: {'arrived': 19, 'contact_reached': 7, 'release.three': 9, 'release.turn': 2, 'to_contact': 12, 'to_node': 16, 'wait': 28}
+  STR_LOC_DOOMED_FARM2 x2: {'arrived': 10, 'contact_reached': 2, 'release.three': 6, 'to_node': 14, 'wait': 12, 'release.turn': 1, 'to_contact': 4}
+  STR_VESSEL_LABSHIP x2: {'arrived': 3, 'to_node': 10, 'wait': 4}
+  STR_SEA_DEVILS_REEF x2: {'to_node': 10, 'arrived': 2, 'wait': 8}
+  STR_VESSEL_USO_HEAVY_CRUISER x2: {'arrived': 14, 'to_node': 5, 'wait': 1, 'contact_reached': 13, 'release.three': 13}
+  STR_VESSEL_NIN_APC x2: {'to_node': 4, 'arrived': 1, 'wait': 3}
+  STR_SUPPLY_SHIP x2: {'arrived': 1, 'release.three': 1, 'to_node': 1}
+  STR_LOC_HUMANIST_VILLA x2: {'arrived': 10, 'contact_reached': 2, 'release.three': 7, 'release.turn': 1, 'wait': 3}
+missions with no rally: []

@@ -1,0 +1,1 @@
+14:46 P1, first try: not a battle. Arm FO was taken by an old series on the stand, the arms patch skipped itself, run_cm refused --arms FS, the task ended with code 1. No game process, no log, no work folder. Taken off the ledger; names changed to FGO, FGS, FGR, FGT.

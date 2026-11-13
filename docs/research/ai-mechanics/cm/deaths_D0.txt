@@ -1,0 +1,5 @@
+hostile deaths: {'player_turn': 906, 'own_turn': 496, 'by_own_side': 189}
+player_turn: last decision mode/act: {'patrol/walk': 300, 'escape/walk': 187, 'no_decision/-': 159, 'combat/snap': 88, 'combat/walk': 67, 'ambush/walk': 38, 'escape/none': 25, 'combat/aimed': 16, 'combat/auto': 13, 'combat/throw': 6}
+own_turn: last decision mode/act: {'patrol/walk': 116, 'combat/walk': 110, 'combat/snap': 98, 'escape/walk': 59, 'combat/auto': 37, 'combat/aimed': 19, 'no_decision/-': 19, 'combat/hit': 16, 'combat/throw': 10, 'ambush/walk': 7}
+died without a single attack, by last decision: {'player_turn:no_decision/-': 159, 'player_turn:patrol/walk': 103, 'own_turn:patrol/walk': 51, 'player_turn:escape/walk': 43, 'own_turn:combat/walk': 43, 'player_turn:ambush/walk': 27, 'player_turn:combat/walk': 22, 'own_turn:no_decision/-': 19, 'own_turn:escape/walk': 15, 'player_turn:escape/none': 13, 'own_turn:ambush/walk': 5}
+own-turn killers: {'reaction_killer_SOLDIER': 306, 'reaction_killer_STR_NAZI_SOLDIER': 36, 'reaction_killer_STR_DOOM_GUNNER': 26, 'reaction_killer_STR_NINJA_GAL': 18, 'reaction_killer_STR_DOOM_SARGE': 16, 'reaction_killer_STR_NINJA_ASSASSIN': 13}

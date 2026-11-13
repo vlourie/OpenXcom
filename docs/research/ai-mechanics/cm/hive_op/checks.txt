@@ -1,0 +1,27 @@
+OFF = D0: op2_OO_M3_s1 vs scpa_D_M3_s1: decisions 882 and 1124, identical over 882 (lengths differ)
+shadow = OFF: op3_OS_M3_s1 vs op2_OO_M3_s1: decisions 882 and 882, identical over 882 
+active 4: op4_OA_M3_s1 vs op2_OO_M3_s1: decisions 896 and 882, FIRST DIFFERENCE at 489, turn 4
+     {'turn': '4', 'side': '1', 'unit': '1000000', 'n': '1', 'from': '(41,55,3)', 'tu': '181', 'act': '2', 'to': '(44,30,3)', 'aim': '470', 'hr': '7b32302800cf888f', 'hu': '88d25470bb1f9e17'}
+     {'turn': '4', 'side': '1', 'unit': '1000000', 'n': '1', 'from': '(41,55,3)', 'tu': '181', 'act': '2', 'to': '(48,3,0)', 'aim': '470', 'hr': '4769eac24a8978c6', 'hu': '88d25470bb1f9e17'}
+general s1: op5_OG_M3_s1 vs op2_OO_M3_s1: decisions 1057 and 882, FIRST DIFFERENCE at 28, turn 1
+     {'turn': '1', 'side': '1', 'unit': '1000001', 'n': '1', 'from': '(22,38,3)', 'tu': '181', 'act': '2', 'to': '(16,34,0)', 'aim': '1000077', 'hr': '32d46791372b2e8c', 'hu': '20b236b10843238e'}
+     {'turn': '1', 'side': '1', 'unit': '1000001', 'n': '1', 'from': '(22,38,3)', 'tu': '181', 'act': '2', 'to': '(16,34,0)', 'aim': '1000077', 'hr': '9c4b3a7cbb5f11d8', 'hu': '20b236b10843238e'}
+general s2: op6_OG_M3_s2 vs scpa_D_M3_s2: decisions 822 and 896, FIRST DIFFERENCE at 38, turn 1
+     {'turn': '1', 'side': '1', 'unit': '1000005', 'n': '1', 'from': '(10,63,1)', 'tu': '181', 'act': '2', 'to': '(6,64,0)', 'aim': '1000082', 'hr': '879f0456355da70e', 'hu': '963b5296777a6701'}
+     {'turn': '1', 'side': '1', 'unit': '1000005', 'n': '1', 'from': '(10,63,1)', 'tu': '181', 'act': '2', 'to': '(6,64,0)', 'aim': '1000082', 'hr': 'cb77005ab6defaaf', 'hu': '963b5296777a6701'}
+op2_OO_M3_s1: lines 7105 result timeout turn 9 liveS 3 liveA 17 pdead 5 modes {'2': 362, '0': 345, '3': 34} tags {} bad_tu 0 spent>tu 16 fatal 0
+    states []
+op3_OS_M3_s1: lines 8991 result timeout turn 9 liveS 3 liveA 17 pdead 5 modes {'2': 362, '0': 345, '3': 34} tags {'[HIVEFAIR]': 37} bad_tu 0 spent>tu 16 fatal 0
+    states ['PROPOSED:known_big_target', 'VALIDATED:two_cells_time_units', 'ABORTED:shadow']
+op1_OA_M3_s1: lines 8855 result timeout turn 9 liveS 3 liveA 15 pdead 5 modes {'2': 336, '0': 344, '3': 39} tags {'[HIVEFAIR]': 35} bad_tu 0 spent>tu 14 fatal 0
+    states ['PROPOSED:known_big_target', 'VALIDATED:two_cells_time_units', 'STAGING:assigned', 'READY:both_on_cells', 'ABORTED:fighter_out']
+op4_OA_M3_s1: lines 9113 result timeout turn 9 liveS 3 liveA 22 pdead 5 modes {'2': 367, '0': 347, '3': 45} tags {'[HIVEFAIR]': 34} bad_tu 0 spent>tu 12 fatal 0
+    states ['PROPOSED:known_big_target', 'VALIDATED:two_cells_time_units', 'STAGING:assigned', 'READY:both_on_cells', 'ABORTED:fighter_out']
+op5_OG_M3_s1: lines 10171 result timeout turn 9 liveS 3 liveA 30 pdead 5 modes {'2': 417, '0': 447, '3': 36} tags {'[HIVEFAIR]': 31} bad_tu 0 spent>tu 20 fatal 0
+    states ['PROPOSED:known_big_target', 'VALIDATED:two_cells_time_units', 'STAGING:assigned', 'ABORTED:fighter_out']
+op6_OG_M3_s2: lines 7553 result over turn 6 liveS 0 liveA 25 pdead 8 modes {'2': 346, '0': 311, '3': 29} tags {'[HIVEFAIR]': 27} bad_tu 0 spent>tu 8 fatal 0
+    states ['PROPOSED:known_big_target', 'VALIDATED:two_cells_time_units', 'STAGING:assigned', 'ABORTED:fighter_out']
+scpa_D_M3_s1: lines 9036 result over turn 21 liveS 2 liveA 0 pdead 6 modes {'2': 454, '0': 404, '3': 44} tags {} bad_tu 0 spent>tu 21 fatal 0
+    states []
+scpa_D_M3_s2: lines 6425 result over turn 6 liveS 0 liveA 36 pdead 8 modes {'2': 377, '0': 347, '3': 31} tags {} bad_tu 0 spent>tu 14 fatal 0
+    states []

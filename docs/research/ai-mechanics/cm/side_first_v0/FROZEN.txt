@@ -1,0 +1,4 @@
+SideCombatDirector V0 and V0.1 are frozen by Vitali's final verdict of 2026-11-06: NO-GO.
+Do not change these files, do not create V0.2, do not run M8 and L4 on V0.1, do not move the director into the main OXCE or a release.
+frozen = V0, v01 = intermediate V0.1, v01_final = V0.1 of the final check, res = all battle results, tree_src.tar.gz = source of the V0.1 build.
+Verdict: docs/research/ai-mechanics/SIDE_FIRST_COMBAT_V0_RESULT.md

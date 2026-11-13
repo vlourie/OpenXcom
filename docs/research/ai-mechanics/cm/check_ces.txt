@@ -1,0 +1,21 @@
+== A csd: battles 12 results {'timeout': 8, 'over': 4} turns 89
+   phplost 14702 pdead 144 hdead 257  dmg by hostile attacks 14974
+   unit-turns: useful 240 (fell 40)  wasted 489 (fell 104)  exposed 102 (fell 44)  hidden 1361 (fell 36)
+   decisions 7691, most in one unit-turn 17
+   engagement: {'hold_on_attack': 0, 'order_viol': 0}
+   HOLD outcomes: {}
+   excluded: {}
+== B cse: battles 12 results {'timeout': 8, 'over': 4} turns 89
+   phplost 14702 pdead 144 hdead 257  dmg by hostile attacks 14974
+   unit-turns: useful 240 (fell 40)  wasted 489 (fell 104)  exposed 102 (fell 44)  hidden 1361 (fell 36)
+   decisions 7691, most in one unit-turn 17
+   engagement: {'groups': 348, 'groups_2plus': 165, 'gt_attackers': 286, 'gt_exposed_noattack': 22, 'gt_useful': 128, 'hold_on_attack': 0, 'joint': 38, 'order.FIRE': 293, 'order_viol': 0}
+   HOLD outcomes: {}
+   excluded: {'noranged': 41, 'hurt': 50, 'far': 206, 'escape': 230, 'panic': 1}
+== gates
+   confirmed joint engagements 0 (need >= 20): FAIL
+   useful attacks B/A 240/240 = 1.00 (need >= 0.90): PASS
+   exposed without attack B/A 102/102 (need B < A): FAIL
+   HOLD on an attack 0, turn-order violations 0, orders outside the group 0 (need 0): PASS
+   decisions B/A 7691/7691 (need <= 1.10), max per unit-turn 17/17: PASS
+   results B {'timeout': 8, 'over': 4} A {'timeout': 8, 'over': 4}

@@ -161,7 +161,7 @@ ModInfo::ModInfo(const std::string &path) :
 	_id(_name), _master("xcom1"),
 	_versionDisplay("1.0"),
 	_version(defaultModVersion),
-	_isMaster(false), _reservedSpace(1),
+	_isMaster(false), _reservedSpace(1), _luaApi(0),
 	_engineOk(false)
 {
 	// empty
@@ -181,7 +181,8 @@ struct EngineData
  */
 const EngineData supportedEngines[] = {
 	{ OPENXCOM_VERSION_ENGINE, { OPENXCOM_VERSION_NUMBER }},
-	{ "", { 0, 0, 0, 0 } }, // assume that every engine support mods from base game, remove if its not true.
+	{ "OXCE-HD", { OPENXCOM_VERSION_NUMBER }}, // this fork: mods that need the HD layer ask for it by name
+	{ "",{ 0, 0, 0, 0 } }, // assume that every engine support mods from base game, remove if its not true.
 };
 
 template<int I>
@@ -213,6 +214,8 @@ void ModInfo::load(const YAML::YamlNodeReader& reader)
 	reader.tryRead("author", _author);
 	reader.tryRead("isMaster", _isMaster);
 	reader.tryRead("reservedSpace", _reservedSpace);
+	reader.tryRead("luaApi", _luaApi);
+	reader.tryRead("luaCaps", _luaCaps);
 
 	if (reader.tryRead("requiredExtendedVersion", _requiredExtendedVersion))
 		_requiredExtendedEngine = "Extended"; // for backward compatibility
@@ -277,6 +280,7 @@ const std::string &ModInfo::getRequiredExtendedEngine()  const { return _require
 const std::string &ModInfo::getRequiredExtendedVersion() const { return _requiredExtendedVersion; }
 const std::string &ModInfo::getResourceConfigFile()      const { return _resourceConfigFile;      }
 int                ModInfo::getReservedSpace()           const { return _reservedSpace;           }
+int                ModInfo::getLuaApi()                  const { return _luaApi;                  }
 
 /**
  * Is parent mod is in required version?
@@ -317,6 +321,7 @@ static auto dummy = ([]
 	assert(findCompatibleEngine(supportedEngines, "Extended", create(OPENXCOM_VERSION_NUMBER)));
 	assert(findCompatibleEngine(supportedEngines, "Extended", create(1, 0, 0, 0)));
 	assert(findCompatibleEngine(supportedEngines, "", create(0, 0, 0, 0)));
+	assert(findCompatibleEngine(supportedEngines, "OXCE-HD", create(OPENXCOM_VERSION_NUMBER)));
 	assert(!findCompatibleEngine(supportedEngines, "Extended", create(OPENXCOM_VERSION_NUMBER + 1)));
 	assert(!findCompatibleEngine(supportedEngines, "XYZ", create(OPENXCOM_VERSION_NUMBER)));
 	assert(!findCompatibleEngine(supportedEngines, "XYZ", create(0, 0, 0, 0)));

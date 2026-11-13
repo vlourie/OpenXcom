@@ -1208,6 +1208,12 @@
     <ClCompile Include="..\libs\rapidyaml\c4\yml\version.cpp">
       <Filter>Engine\rapidyaml\c4\yml</Filter>
     </ClCompile>
+    <ClCompile Include="Battlescape\UnitTeleportingState.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ItemCountTooltip.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
     <ClCompile Include="Basescape\GlobalResearchDiaryState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
@@ -1217,11 +1223,23 @@
     <ClCompile Include="Basescape\ItemLocationsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Battlescape\UnitTeleportingState.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ItemCountTooltip.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
     <ClCompile Include="Ufopaedia\ArticleStateSoldier.cpp">
       <Filter>Ufopaedia</Filter>
     </ClCompile>
     <ClCompile Include="Ufopaedia\ArticleStateUnit.cpp">
       <Filter>Ufopaedia</Filter>
+    </ClCompile>
+    <ClCompile Include="Mod\RuleVoiceSet.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\SoldierVoiceState.cpp">
+      <Filter>Basescape</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2552,135 +2570,6 @@
     <ClInclude Include="..\libs\rapidyaml\c4\windows.hpp">
       <Filter>Engine\rapidyaml\c4</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\windows_pop.hpp">
-      <Filter>Engine\rapidyaml\c4</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\windows_push.hpp">
-      <Filter>Engine\rapidyaml\c4</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\ext\fast_float.hpp">
-      <Filter>Engine\rapidyaml\c4\ext</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\ext\fast_float_all.h">
-      <Filter>Engine\rapidyaml\c4\ext</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\ext\rng\rng.hpp">
-      <Filter>Engine\rapidyaml\c4\ext\rng</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\ext\sg14\inplace_function.h">
-      <Filter>Engine\rapidyaml\c4\ext\sg14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\std.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\std_fwd.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\string.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\string_fwd.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\string_view.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\tuple.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\vector.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\std\vector_fwd.hpp">
-      <Filter>Engine\rapidyaml\c4\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\common.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\emit.def.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\emit.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\event_handler_stack.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\event_handler_tree.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\export.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\filter_processor.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\fwd.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\node.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\node_type.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\parse.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\parse_engine.def.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\parse_engine.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\parser_state.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\preprocess.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\reference_resolver.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\tag.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\tree.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\version.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\writer.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\yml.hpp">
-      <Filter>Engine\rapidyaml\c4\yml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\checks.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\parser_dbg.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\print.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\stack.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\map.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\std.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\string.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\std</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\vector.hpp">
-      <Filter>Engine\rapidyaml\c4\yml\std</Filter>
-    </ClInclude>
     <ClInclude Include="Savegame\ResearchDiary.h">
       <Filter>Savegame</Filter>
     </ClInclude>
@@ -2696,11 +2585,32 @@
     <ClInclude Include="Engine\NullableValue.h">
       <Filter>Engine</Filter>
     </ClInclude>
+    <ClInclude Include="Battlescape\UnitTeleportingState.h">
+      <Filter>Battlescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ItemCountTooltip.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ItemCountTooltipMixin.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\HighlightLowManaSoldiersMixin.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\SortSoldiersMixin.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
     <ClInclude Include="Ufopaedia\ArticleStateSoldier.h">
       <Filter>Ufopaedia</Filter>
     </ClInclude>
     <ClInclude Include="Ufopaedia\ArticleStateUnit.h">
       <Filter>Ufopaedia</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RuleVoiceSet.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\SoldierVoiceState.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

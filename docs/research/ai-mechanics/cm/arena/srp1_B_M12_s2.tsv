@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2024002	STR_VESSEL_NIN_APC	over	STR_VESSEL_NIN_APC	STR_UFO_GROUND_ASSAULT	46	8	FORESTWASTE	STR_NINJA	STR_DROPSHIP#2	11	5	8	1	0	4	257	10	10	0	0	7	0	0	15	9	h.rally.arrived:1,h.rally.wait:3,h.rec.in:24,h.rec.out.a8:1,p.rec.in:83	83	0	0	0	0	0	25	0	0	1	0	0	31		win

@@ -1,0 +1,5 @@
+build_label=cmrun-UA
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=RA minus orders and stand + UNIFIED ARMY CONTROL V0 (OXCE_AI_HIVE=1 shadow, 2 active)
+patch_sha256=5b35da53c9fad051bea28337600a483ac97179fbdf3df9d323b6be7f22076cca
+exe_sha256=aecde0320f635622ba318da745d6620b5d9d22dca1f6bcb9b0fe0ffb5c4ff935

@@ -1,0 +1,4 @@
+OXCE_AI_GAME=C:/OXCE_AIWorker/game
+OXCE_AI_WORK=C:/OXCE_AIWorker/c1run/work
+PATH+=C:/OXCE_AIWorker/bench/dll
+OXCE_AI_EXE=C:/OXCE_AIWorker/c1run/exe/FH/openxcom.exe

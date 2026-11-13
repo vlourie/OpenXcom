@@ -1,0 +1,1 @@
+﻿- Three HD walls have their own colour again, as in the original: the top of the purple fence in the war-torn city is no longer yellow, the green fence top is no longer yellow-green, and the glowing turquoise panel at the base is no longer blue. Graphics only.

@@ -1,0 +1,1 @@
+battles 48; attacking unit-turns 3333; of them aimed at a player unit 2827; damaging a player unit 554

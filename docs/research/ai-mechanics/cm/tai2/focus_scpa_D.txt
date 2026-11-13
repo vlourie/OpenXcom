@@ -1,0 +1,8 @@
+triggers 481 in 37 battles; E down in the turn 75; E damaged by anyone in the turn 172
+per scenario: L11_s1:2 L11_s2:1 L12_s1:1 L1_s1:13 L1_s2:14 L2_s1:29 L2_s2:51 L4_s1:1 L5_s1:25 L5_s2:28 L6_s1:3 L6_s2:29 L7_s1:18 L7_s2:11 L8_s1:14 L8_s2:18 L9_s1:7 L9_s2:5 M10_s1:42 M10_s2:29 M1_s1:4 M1_s2:1 M2_s1:30 M2_s2:16 M3_s1:3 M3_s2:6 M4_s1:4 M4_s2:6 M5_s1:23 M5_s2:15 M6_s1:1 M6_s2:2 M7_s1:4 M7_s2:13 M8_s2:2 M9_s1:4 M9_s2:6
+possible shooters 3289; with a 'capable' weapon 1807
+  at_E_hit    all   184 ( 5.6%)   capable   183 (10.1%)
+  at_E_miss   all   842 (25.6%)   capable   455 (25.2%)
+  other_hit   all   183 ( 5.6%)   capable   164 ( 9.1%)
+  other_miss  all   915 (27.8%)   capable   390 (21.6%)
+  none        all  1165 (35.4%)   capable   615 (34.0%)

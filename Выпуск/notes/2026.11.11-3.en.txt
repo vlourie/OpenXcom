@@ -1,0 +1,1 @@
+﻿- HD battle: the weather now changes from battle to battle. Before, battles of one type on the same ground got the same weather, so you could get clear skies several times in a row. After loading a save the weather stays the same. Only the picture changes: the rules of the game do not.

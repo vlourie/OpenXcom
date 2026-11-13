@@ -1,0 +1,29 @@
+﻿Hi Dioxine! Same checker again, this time Piratez_Planet.rul. It's huge and in very good shape. All 248 terrains have their MCD/PCK/TAB/MAP/RMP files on disk. Every MAP matches its block size, and every tile index fits its terrain's MCD total, with one exception below. RMP nodes and block items are all inside their blocks. In 495 terrain × mapscript pairs, every group and block a command asks for exists. Every one of the 893 land polygons is covered by a terrain condition of its texture. Every zone a mission asks for exists, and all 212 site missions resolve a deployment. Countries don't overlap, and all land is inside some region. What's left is below. Line numbers are from the current release.
+
+1) EMANSION_MAG is missing SPACEVOID (Piratez_Planet.rul:16287).
+Its mapDataSets (BLANKS, COMMERCE_MAG, XB3BITZ1_MAG, MANSIONFURNITURE_MAG, URBITS, MANSIONGARDEN_MAG, MANSIONFLOOR_MAG, MANSIONBITS, XCOMEXIT) add up to 250 MCD entries, 0-249. But 21 of its blocks use floor tiles 250 (level 0) and 251 (level 1): EMANS00B, EMANS06_SPAWN1, EMANS_VOID00, EMANS_VOID20, EMANS_VOID_WE00-07, EMANS_VOID_NS00-07, EMANS_VOID_XX00. 250/251 are exactly SPACEVOID.mcd: 2 entries, no sprite, TU_Walk 255, armor 255, the invisible "void" floor, same as in ORBIT_S1B. The engine silently turns an out-of-range index into BLANKS 0, an empty tile. There's no error and no log line. The VOID_WE/NS/XX blocks are the addLine blocks, so the void cross is on every map of this mission. From the code, level 0 of the void should become walkable empty ground and level 1 a hole. I haven't looked at it in combat.
+Fix (it has to go last, so it lands on 250/251):
+  - name: EMANSION_MAG
+    mapDataSets:
+      ...
+      - XCOMEXIT
+      - SPACEVOID
+Plain EMANSION (line 15335) shares 9 of these blocks, but none of them go past 249 there, so it's fine.
+
+Questions, maybe intended:
+- JUNGLE2NEO lists JUNGLE05 twice (lines 19061 and 19072), with the gas trap in a different spot ([6,3,0] and [0,0,0]). If it's a variant, JUNGLE05 comes up twice as often as its neighbours. If it's a typo for another block, that block is missing.
+- MOONBERIA lists MOONBERIA29 twice (lines 26064 and 26067), identical entries, so double chance.
+- Mission zone 8 isn't read by any mission in any of the 15 regions (48 port points: Miami, Hawaii, Nuuk, Marseille...). Zones 10, 12 and 15 aren't used either. If that's a placeholder, two things in zone 8 will bite once something uses it:
+  - Kuril Islands (line 8536, STR_SIBERIA) and Reunion (line 9345, STR_INDIAN_OCEAN) have texture -325, which doesn't exist. A site mission without siteType landing there would crash.
+  - "Mauritius" (line 9343) has the same coordinates as Reunion, [55.532, 21.114]. Mauritius is around 57.5E, 20.2S.
+
+Small stuff, no rush:
+- Regions overlap in a few thin strips, mostly sea. The first region in the list wins there:
+  - STR_PACIFIC [180,195,-70,-55] and [180,230,-55,-30] vs STR_SIBERIA [60,190.7,-70,-50]: 180-190.7E, 50-70N (Bering Sea / Chukotka);
+  - STR_PACIFIC [180,274,-10,0] vs STR_SOUTH_AMERICA [270,315,-10,0]: 270-274, 0-10N;
+  - STR_SOUTH_AMERICA vs STR_SOUTH_ATLANTIC [311.66,335,-10,0]: 311.66-315, 0-10N.
+- DARK_TOWER_TOP (line 30497) says height: 3, the MAP has 4 levels. The engine uses the MAP, so it doesn't matter in game.
+- Country labels outside their own areas: Chile (287, 19; line 1679), NCR (231, -39; line 1597, in the ocean), Russia (60, -60; line 1331). Cosmetic.
+- Terrains nothing references: BLANKSPACE (9739), CRUISE_LINER (13639; the mission goes through CRUISE_LINER_ACADEMY with the same script), ISLANDURBAN_BEACH (18889), MOUNTROADS (20258), VAMPIRE_CASTLE (29561). Leftovers or planned?
+
+That's all. It's from the ruleset, the map files and the engine code only, none of it tested in combat.

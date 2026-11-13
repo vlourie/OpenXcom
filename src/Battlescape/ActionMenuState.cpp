@@ -28,6 +28,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/RuleItem.h"
 #include "ActionMenuItem.h"
+#include "BattlescapeState.h"
 #include "PrimeGrenadeState.h"
 #include "MedikitState.h"
 #include "ScannerState.h"
@@ -59,6 +60,7 @@ ActionMenuState::ActionMenuState(BattleAction *action) : _action(action)
 ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(action)
 {
 	_screen = false;
+	setHdScreen("actionMenu");
 
 	// Set palette
 	_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
@@ -208,6 +210,20 @@ void ActionMenuState::init()
 	{
 		// Item don't have any actions, close popup.
 		_game->popState();
+	}
+}
+
+/**
+ * Runs the menu's own timers and, while it is open (also the skill menu, which is one), lets the picture of the battle
+ * under it go on animating: smoke, fire and lamps stood still, as only the top state thinks (XP-000097).
+ */
+void ActionMenuState::think()
+{
+	State::think();
+	BattlescapeState *battle = _game->getSavedGame()->getSavedBattle()->getBattleState();
+	if (battle)
+	{
+		battle->animateInMenu();
 	}
 }
 

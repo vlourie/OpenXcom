@@ -37,6 +37,7 @@ namespace OpenXcom
  */
 SetWindowedRootState::SetWindowedRootState(OptionsOrigin origin, OptionsVideoState *optionsVideoState) : _origin(origin), _optionsVideoState(optionsVideoState)
 {
+	setHdScreen("optionsDialog");
 	_screen = false;
 
 	// Create object

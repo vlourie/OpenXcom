@@ -20,6 +20,7 @@
 #include <vector>
 #include "Position.h"
 #include "BattlescapeGame.h"
+#include "../Engine/RNG.h"
 
 namespace OpenXcom
 {
@@ -29,6 +30,7 @@ class SavedBattleGame;
 class Surface;
 class Tile;
 class Mod;
+class RuleItem;
 
 /**
  * A class that represents a projectile. Map is the owner of an instance of this class during its short life.
@@ -59,6 +61,11 @@ private:
 	int _bulletSprite;
 	bool _reversed;
 	int _vaporColor, _vaporDensity, _vaporProbability;
+	// XP-000301: a plain grey smoke trail for a bullet or a rocket with no vapor of its own in the ruleset
+	// (Options::oxceHdPlainSmoke). Its own random generator, so the battle's one (RNG::globalRandomState) is never read
+	bool _plainSmoke = false;
+	RNG::RandomState _plainSmokeRng{1};
+	void addPlainSmoke();
 	void applyAccuracy(Position origin, Position *target, double accuracy, bool keepRange, bool extendLine);
 public:
 	/// Creates a new Projectile.
@@ -86,6 +93,14 @@ public:
 	Position getOrigin() const;
 	/// Gets the targetted tile for the projectile.
 	Position getTarget() const;
+	/// Gets the unit that fired it (the picture marks reaction shots by it).
+	const BattleUnit *getActor() const { return _action.actor; }
+	/// Gets the voxels a bullet flies a frame (the HD picture stretches its trail over them, XP-000310).
+	int getSpeed() const { return _speed; }
+	/// Gets the weapon the shot was fired from (the HD picture of an energy shot goes by its class, XP-000544); nullptr: none.
+	const RuleItem *getWeaponRules() const;
+	/// Gets how many steps of its trajectory it has flown (read only: the HD picture is as long as the way so far).
+	int getFlown() const { return (int)_position; }
 	/// Gets the distance that projectile traveled.
 	float getDistance() const;
 	/// Is this projectile being drawn back-to-front or front-to-back?

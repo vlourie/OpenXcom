@@ -1,0 +1,1670 @@
+﻿{
+ "blows": {
+  "AUX_ZOMBIE_WEAPON": {
+   "n": 75,
+   "with_effect": 9,
+   "spent": 840,
+   "dmg": 448,
+   "stunned": 48,
+   "actor_hp_lost": 63,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 74,
+   "missions": [
+    "M11",
+    "M3"
+   ],
+   "units": 9
+  },
+  "AUX_FISTO": {
+   "n": 29,
+   "with_effect": 0,
+   "spent": 1936,
+   "dmg": 0,
+   "stunned": 0,
+   "actor_hp_lost": 29,
+   "shot_same": 11,
+   "shot_any": 10,
+   "player_target": 28,
+   "missions": [
+    "L6",
+    "M10",
+    "M3"
+   ],
+   "units": 15
+  },
+  "STR_KATANA": {
+   "n": 14,
+   "with_effect": 4,
+   "spent": 960,
+   "dmg": 126,
+   "stunned": 27,
+   "actor_hp_lost": 267,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 11,
+   "missions": [
+    "L11",
+    "L2",
+    "M2"
+   ],
+   "units": 10
+  },
+  "STR_WAKIZASHI": {
+   "n": 12,
+   "with_effect": 5,
+   "spent": 872,
+   "dmg": 250,
+   "stunned": 110,
+   "actor_hp_lost": 0,
+   "shot_same": 3,
+   "shot_any": 2,
+   "player_target": 10,
+   "missions": [
+    "L11",
+    "L2",
+    "M2",
+    "M5"
+   ],
+   "units": 7
+  },
+  "AUX_CHRYSSALID_WEAPON": {
+   "n": 12,
+   "with_effect": 12,
+   "spent": 765,
+   "dmg": 582,
+   "stunned": 85,
+   "actor_hp_lost": 149,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 7,
+   "missions": [
+    "M3"
+   ],
+   "units": 9
+  },
+  "AUX_VAMPIRE_WEAPON": {
+   "n": 10,
+   "with_effect": 6,
+   "spent": 630,
+   "dmg": 155,
+   "stunned": 354,
+   "actor_hp_lost": 897,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 10,
+   "missions": [
+    "M11"
+   ],
+   "units": 5
+  },
+  "STR_KUNG_FU_ALT": {
+   "n": 8,
+   "with_effect": 6,
+   "spent": 544,
+   "dmg": 120,
+   "stunned": 382,
+   "actor_hp_lost": 72,
+   "shot_same": 7,
+   "shot_any": 7,
+   "player_target": 8,
+   "missions": [
+    "L2",
+    "M1"
+   ],
+   "units": 5
+  },
+  "STR_AQUA_HATCHET": {
+   "n": 7,
+   "with_effect": 4,
+   "spent": 176,
+   "dmg": 205,
+   "stunned": 68,
+   "actor_hp_lost": 0,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 3,
+   "missions": [
+    "L12"
+   ],
+   "units": 7
+  },
+  "STR_BOATHOOK": {
+   "n": 5,
+   "with_effect": 4,
+   "spent": 234,
+   "dmg": 138,
+   "stunned": 18,
+   "actor_hp_lost": 111,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 1,
+   "missions": [
+    "L12"
+   ],
+   "units": 5
+  },
+  "STR_RUSTY_BLADE": {
+   "n": 3,
+   "with_effect": 1,
+   "spent": 160,
+   "dmg": 57,
+   "stunned": 5,
+   "actor_hp_lost": 13,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 3,
+   "missions": [
+    "L10"
+   ],
+   "units": 2
+  },
+  "AUX_VAMPBAT_WEAPON": {
+   "n": 3,
+   "with_effect": 1,
+   "spent": 384,
+   "dmg": 41,
+   "stunned": 90,
+   "actor_hp_lost": 0,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 3,
+   "missions": [
+    "M11"
+   ],
+   "units": 2
+  },
+  "LOBSTER_CLAWS": {
+   "n": 2,
+   "with_effect": 0,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "actor_hp_lost": 9,
+   "shot_same": 1,
+   "shot_any": 1,
+   "player_target": 2,
+   "missions": [
+    "L12"
+   ],
+   "units": 2
+  },
+  "STR_AQUA_TRIDENT": {
+   "n": 2,
+   "with_effect": 1,
+   "spent": 102,
+   "dmg": 45,
+   "stunned": 11,
+   "actor_hp_lost": 0,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 1,
+   "missions": [
+    "L12"
+   ],
+   "units": 2
+  },
+  "AUX_DOOM_IMP_CLAWS": {
+   "n": 2,
+   "with_effect": 0,
+   "spent": 126,
+   "dmg": 0,
+   "stunned": 0,
+   "actor_hp_lost": 0,
+   "shot_same": 1,
+   "shot_any": 1,
+   "player_target": 2,
+   "missions": [
+    "M10"
+   ],
+   "units": 1
+  },
+  "STR_VIBRO_AX": {
+   "n": 1,
+   "with_effect": 1,
+   "spent": 30,
+   "dmg": 43,
+   "stunned": 0,
+   "actor_hp_lost": 0,
+   "shot_same": 1,
+   "shot_any": 1,
+   "player_target": 1,
+   "missions": [
+    "L11"
+   ],
+   "units": 1
+  },
+  "STR_UNARMED_BASIC": {
+   "n": 1,
+   "with_effect": 1,
+   "spent": 32,
+   "dmg": 2,
+   "stunned": 0,
+   "actor_hp_lost": 48,
+   "shot_same": 1,
+   "shot_any": 1,
+   "player_target": 1,
+   "missions": [
+    "L5"
+   ],
+   "units": 1
+  },
+  "AUX_DOGG_WEAPON": {
+   "n": 1,
+   "with_effect": 0,
+   "spent": 140,
+   "dmg": 0,
+   "stunned": 0,
+   "actor_hp_lost": 0,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 1,
+   "missions": [
+    "L5"
+   ],
+   "units": 1
+  },
+  "AUX_POWER_FISTO": {
+   "n": 1,
+   "with_effect": 1,
+   "spent": 105,
+   "dmg": 82,
+   "stunned": 5,
+   "actor_hp_lost": 9,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 1,
+   "missions": [
+    "L6"
+   ],
+   "units": 1
+  },
+  "STR_UNARMED_GAUNTLET": {
+   "n": 1,
+   "with_effect": 0,
+   "spent": 60,
+   "dmg": 0,
+   "stunned": 0,
+   "actor_hp_lost": 0,
+   "shot_same": 1,
+   "shot_any": 1,
+   "player_target": 1,
+   "missions": [
+    "L7"
+   ],
+   "units": 1
+  },
+  "STR_GOTHIC_HAMMER": {
+   "n": 1,
+   "with_effect": 1,
+   "spent": 44,
+   "dmg": 110,
+   "stunned": 93,
+   "actor_hp_lost": 0,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 0,
+   "missions": [
+    "M2"
+   ],
+   "units": 1
+  },
+  "AUX_DOOM_DEMON_WEAPON": {
+   "n": 1,
+   "with_effect": 0,
+   "spent": 0,
+   "dmg": 0,
+   "stunned": 0,
+   "actor_hp_lost": 0,
+   "shot_same": 0,
+   "shot_any": 0,
+   "player_target": 1,
+   "missions": [
+    "L4"
+   ],
+   "units": 1
+  }
+ },
+ "fisto": [
+  {
+   "battle": "d0p_D_L6_s1",
+   "scen": "L6",
+   "seed": 1,
+   "rec": 1453,
+   "turn": 32,
+   "unit": 1000023,
+   "w": "AUX_FISTO",
+   "tu": 96,
+   "target": 581,
+   "player_target": true,
+   "spent": 96,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 10,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_L6_s2",
+   "scen": "L6",
+   "seed": 2,
+   "rec": 681,
+   "turn": 9,
+   "unit": 1000022,
+   "w": "AUX_FISTO",
+   "tu": 35,
+   "target": 297,
+   "player_target": true,
+   "spent": 32,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 11,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 207,
+   "turn": 2,
+   "unit": 1000014,
+   "w": "AUX_FISTO",
+   "tu": 77,
+   "target": 114,
+   "player_target": true,
+   "spent": 64,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 7,
+   "shot_same_target": 3,
+   "shot_any_player": 3,
+   "shot_weapons": [
+    "STR_UAC_CARBINE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 234,
+   "turn": 2,
+   "unit": 1000027,
+   "w": "AUX_FISTO",
+   "tu": 67,
+   "target": 114,
+   "player_target": true,
+   "spent": 64,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 2,
+   "shot_any_player": 2,
+   "shot_weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 785,
+   "turn": 6,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 2,
+   "shot_any_player": 2,
+   "shot_weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1101,
+   "turn": 9,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 2,
+   "shot_any_player": 2,
+   "shot_weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1194,
+   "turn": 10,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 64,
+   "target": 1,
+   "player_target": true,
+   "spent": 64,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 2,
+   "shot_any_player": 2,
+   "shot_weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1274,
+   "turn": 11,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 2,
+   "shot_any_player": 2,
+   "shot_weapons": [
+    "STR_UAC_RIFLE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1394,
+   "turn": 13,
+   "unit": 1000016,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 46,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1530,
+   "turn": 15,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 52,
+   "target": 1,
+   "player_target": true,
+   "spent": 48,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1549,
+   "turn": 16,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1597,
+   "turn": 17,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1653,
+   "turn": 18,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1655,
+   "turn": 18,
+   "unit": 1000028,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1686,
+   "turn": 18,
+   "unit": 1000038,
+   "w": "AUX_FISTO",
+   "tu": 44,
+   "target": 1,
+   "player_target": true,
+   "spent": 32,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 1,
+   "shot_any_player": 1,
+   "shot_weapons": [
+    "STR_UAC_HEAVY_NAILGUN"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1702,
+   "turn": 19,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 81,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1703,
+   "turn": 19,
+   "unit": 1000028,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1745,
+   "turn": 20,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1796,
+   "turn": 21,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1798,
+   "turn": 21,
+   "unit": 1000028,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1849,
+   "turn": 22,
+   "unit": 1000021,
+   "w": "AUX_FISTO",
+   "tu": 85,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1865,
+   "turn": 22,
+   "unit": 1000038,
+   "w": "AUX_FISTO",
+   "tu": 74,
+   "target": 1,
+   "player_target": true,
+   "spent": 64,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 1,
+   "shot_any_player": 1,
+   "shot_weapons": [
+    "STR_UAC_HEAVY_NAILGUN"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s1",
+   "scen": "M10",
+   "seed": 1,
+   "rec": 1902,
+   "turn": 23,
+   "unit": 1000025,
+   "w": "AUX_FISTO",
+   "tu": 89,
+   "target": 1,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s2",
+   "scen": "M10",
+   "seed": 2,
+   "rec": 469,
+   "turn": 4,
+   "unit": 1000017,
+   "w": "AUX_FISTO",
+   "tu": 36,
+   "target": 115,
+   "player_target": true,
+   "spent": 32,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s2",
+   "scen": "M10",
+   "seed": 2,
+   "rec": 913,
+   "turn": 7,
+   "unit": 1000013,
+   "w": "AUX_FISTO",
+   "tu": 33,
+   "target": 114,
+   "player_target": true,
+   "spent": 32,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 2,
+   "shot_any_player": 2,
+   "shot_weapons": [
+    "STR_UAC_CARBINE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s2",
+   "scen": "M10",
+   "seed": 2,
+   "rec": 1100,
+   "turn": 9,
+   "unit": 1000007,
+   "w": "AUX_FISTO",
+   "tu": 60,
+   "target": 114,
+   "player_target": true,
+   "spent": 48,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 1,
+   "shot_same_target": 3,
+   "shot_any_player": 3,
+   "shot_weapons": [
+    "STR_UAC_CARBINE"
+   ]
+  },
+  {
+   "battle": "d0p_D_M10_s2",
+   "scen": "M10",
+   "seed": 2,
+   "rec": 1120,
+   "turn": 9,
+   "unit": 1000023,
+   "w": "AUX_FISTO",
+   "tu": 85,
+   "target": 114,
+   "player_target": true,
+   "spent": 80,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "d0p_D_M10_s2",
+   "scen": "M10",
+   "seed": 2,
+   "rec": 1252,
+   "turn": 10,
+   "unit": 1000038,
+   "w": "AUX_FISTO",
+   "tu": 74,
+   "target": 114,
+   "player_target": true,
+   "spent": 64,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 0,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  },
+  {
+   "battle": "sfF_D_M3_s4",
+   "scen": "M3",
+   "seed": 4,
+   "rec": 259,
+   "turn": 2,
+   "unit": 1000016,
+   "w": "AUX_FISTO",
+   "tu": 23,
+   "target": 1000058,
+   "player_target": false,
+   "spent": 16,
+   "dmg": 0,
+   "stunned": 0,
+   "downed": 0,
+   "hp_lost": 0,
+   "shot_same_target": 1,
+   "shot_any_player": 0,
+   "shot_weapons": []
+  }
+ ],
+ "blows_total": {
+  "n": 191,
+  "with_effect": 57,
+  "spent": 8220,
+  "no_effect_spent": 5384
+ },
+ "derangements": {
+  "hn": {
+   "rate": 0.003249475890985325,
+   "of": 57240,
+   "metrics": [
+    [
+     "objects",
+     34
+    ],
+    [
+     "player_armor_lost",
+     24
+    ],
+    [
+     "fire_new",
+     24
+    ],
+    [
+     "hostile_hp_lost",
+     22
+    ],
+    [
+     "hostile_morale_loss",
+     22
+    ],
+    [
+     "player_hp_lost",
+     20
+    ]
+   ]
+  },
+  "h1": {
+   "rate": 0.00012578616352201257,
+   "of": 95400,
+   "metrics": [
+    [
+     "actor_hp_lost",
+     12
+    ]
+   ]
+  }
+ },
+ "real_cells": {
+  "hn": [
+   [
+    "P2",
+    "player_armor_lost",
+    0,
+    6
+   ],
+   [
+    "M1",
+    "player_armor_lost",
+    6,
+    0
+   ],
+   [
+    "M1",
+    "objects",
+    4,
+    1
+   ],
+   [
+    "M1",
+    "fire_new",
+    6,
+    0
+   ],
+   [
+    "M1",
+    "smoke_new",
+    6,
+    0
+   ],
+   [
+    "M2",
+    "player_hp_lost",
+    0,
+    6
+   ],
+   [
+    "M2",
+    "player_armor_lost",
+    4,
+    1
+   ],
+   [
+    "M2",
+    "player_morale_loss",
+    1,
+    5
+   ],
+   [
+    "M2",
+    "hostile_hp_lost",
+    4,
+    1
+   ],
+   [
+    "M2",
+    "hostile_morale_loss",
+    4,
+    1
+   ],
+   [
+    "M2",
+    "hostile_dead_new",
+    4,
+    1
+   ],
+   [
+    "M2",
+    "hostile_out_new",
+    5,
+    0
+   ]
+  ],
+  "h1": [
+   [
+    "T1",
+    "tu_spent",
+    0,
+    6
+   ],
+   [
+    "T1",
+    "follow_tu",
+    6,
+    0
+   ],
+   [
+    "P1",
+    "tu_spent",
+    6,
+    0
+   ],
+   [
+    "P1",
+    "energy_spent",
+    6,
+    0
+   ],
+   [
+    "P1",
+    "ammo_spent",
+    0,
+    6
+   ],
+   [
+    "P1",
+    "actor_morale_lost",
+    6,
+    0
+   ],
+   [
+    "P1",
+    "follow_tu",
+    0,
+    6
+   ],
+   [
+    "P1",
+    "follow_attacks",
+    0,
+    6
+   ],
+   [
+    "P2",
+    "tu_spent",
+    6,
+    0
+   ],
+   [
+    "P2",
+    "energy_spent",
+    6,
+    0
+   ],
+   [
+    "P2",
+    "ammo_spent",
+    0,
+    6
+   ],
+   [
+    "P2",
+    "actor_morale_lost",
+    6,
+    0
+   ],
+   [
+    "P2",
+    "target_armor_lost",
+    0,
+    4
+   ],
+   [
+    "P2",
+    "alt_target_armor_lost",
+    0,
+    4
+   ],
+   [
+    "P2",
+    "player_armor_lost",
+    0,
+    4
+   ],
+   [
+    "P2",
+    "follow_tu",
+    0,
+    6
+   ],
+   [
+    "P2",
+    "follow_attacks",
+    0,
+    6
+   ],
+   [
+    "M1",
+    "tu_spent",
+    6,
+    0
+   ],
+   [
+    "M1",
+    "reactions",
+    6,
+    0
+   ],
+   [
+    "M1",
+    "follow_tu",
+    1,
+    5
+   ],
+   [
+    "M1",
+    "follow_attacks",
+    0,
+    4
+   ],
+   [
+    "M1",
+    "objects",
+    0,
+    5
+   ],
+   [
+    "M1",
+    "fire_new",
+    0,
+    5
+   ],
+   [
+    "M1",
+    "smoke_new",
+    0,
+    5
+   ],
+   [
+    "M2",
+    "tu_spent",
+    6,
+    0
+   ],
+   [
+    "M2",
+    "player_hp_lost",
+    0,
+    4
+   ],
+   [
+    "M2",
+    "player_morale_loss",
+    0,
+    4
+   ],
+   [
+    "M2",
+    "actor_hp_lost",
+    4,
+    1
+   ],
+   [
+    "M2",
+    "reactions",
+    6,
+    0
+   ],
+   [
+    "M2",
+    "follow_same_turn",
+    0,
+    6
+   ],
+   [
+    "M2",
+    "follow_tu",
+    0,
+    6
+   ],
+   [
+    "M2",
+    "follow_attacks",
+    0,
+    6
+   ]
+  ]
+ },
+ "effects": {
+  "T.h1.player_hp_lost": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "T.h1.player_out_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "T.h1.player_stun_gain": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "T.h1.player_morale_loss": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "T.h1.player_controlled_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "T.hn.player_hp_lost": {
+   "better": [
+    3,
+    1
+   ],
+   "worse": [
+    3,
+    3
+   ],
+   "equal": [
+    0,
+    2
+   ]
+  },
+  "T.hn.player_out_new": {
+   "better": [
+    1,
+    0
+   ],
+   "worse": [
+    1,
+    0
+   ],
+   "equal": [
+    4,
+    6
+   ]
+  },
+  "T.hn.player_stun_gain": {
+   "better": [
+    0,
+    1
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    5
+   ]
+  },
+  "T.hn.player_morale_loss": {
+   "better": [
+    1,
+    1
+   ],
+   "worse": [
+    2,
+    1
+   ],
+   "equal": [
+    3,
+    4
+   ]
+  },
+  "T.hn.player_controlled_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "P.h1.player_hp_lost": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "P.h1.player_out_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "P.h1.player_stun_gain": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "P.h1.player_morale_loss": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "P.h1.player_controlled_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "P.hn.player_hp_lost": {
+   "better": [
+    2,
+    2
+   ],
+   "worse": [
+    4,
+    2
+   ],
+   "equal": [
+    0,
+    2
+   ]
+  },
+  "P.hn.player_out_new": {
+   "better": [
+    2,
+    2
+   ],
+   "worse": [
+    4,
+    2
+   ],
+   "equal": [
+    0,
+    2
+   ]
+  },
+  "P.hn.player_stun_gain": {
+   "better": [
+    2,
+    2
+   ],
+   "worse": [
+    1,
+    1
+   ],
+   "equal": [
+    3,
+    3
+   ]
+  },
+  "P.hn.player_morale_loss": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    3,
+    0
+   ],
+   "equal": [
+    3,
+    6
+   ]
+  },
+  "P.hn.player_controlled_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    1,
+    0
+   ],
+   "equal": [
+    5,
+    6
+   ]
+  },
+  "M.h1.player_hp_lost": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    1,
+    4
+   ],
+   "equal": [
+    5,
+    2
+   ]
+  },
+  "M.h1.player_out_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "M.h1.player_stun_gain": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    1,
+    0
+   ],
+   "equal": [
+    5,
+    6
+   ]
+  },
+  "M.h1.player_morale_loss": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    4
+   ],
+   "equal": [
+    6,
+    2
+   ]
+  },
+  "M.h1.player_controlled_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  },
+  "M.hn.player_hp_lost": {
+   "better": [
+    4,
+    0
+   ],
+   "worse": [
+    2,
+    6
+   ],
+   "equal": [
+    0,
+    0
+   ]
+  },
+  "M.hn.player_out_new": {
+   "better": [
+    2,
+    0
+   ],
+   "worse": [
+    1,
+    0
+   ],
+   "equal": [
+    3,
+    6
+   ]
+  },
+  "M.hn.player_stun_gain": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    1,
+    1
+   ],
+   "equal": [
+    5,
+    5
+   ]
+  },
+  "M.hn.player_morale_loss": {
+   "better": [
+    2,
+    1
+   ],
+   "worse": [
+    2,
+    5
+   ],
+   "equal": [
+    2,
+    0
+   ]
+  },
+  "M.hn.player_controlled_new": {
+   "better": [
+    0,
+    0
+   ],
+   "worse": [
+    0,
+    0
+   ],
+   "equal": [
+    6,
+    6
+   ]
+  }
+ }
+}

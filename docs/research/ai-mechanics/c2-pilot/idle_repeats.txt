@@ -1,0 +1,12 @@
+c2_A_L2.rec.gz: unit-turns with 4+ idle repeats 7, idle repeat recs 544
+c2_A_L7.rec.gz: unit-turns with 4+ idle repeats 1, idle repeat recs 159
+c2_A_M1.rec.gz: unit-turns with 4+ idle repeats 8, idle repeat recs 341
+c2_A_M10.rec.gz: unit-turns with 4+ idle repeats 1, idle repeat recs 47
+c2_A_M2.rec.gz: unit-turns with 4+ idle repeats 1, idle repeat recs 356
+c2_A_M3.rec.gz: unit-turns with 4+ idle repeats 2, idle repeat recs 94
+c2_B_L2.rec.gz: unit-turns with 4+ idle repeats 15, idle repeat recs 349
+c2_B_L7.rec.gz: unit-turns with 4+ idle repeats 0, idle repeat recs 118
+c2_B_M1.rec.gz: unit-turns with 4+ idle repeats 6, idle repeat recs 281
+c2_B_M10.rec.gz: unit-turns with 4+ idle repeats 0, idle repeat recs 54
+c2_B_M2.rec.gz: unit-turns with 4+ idle repeats 9, idle repeat recs 863
+c2_B_M3.rec.gz: unit-turns with 4+ idle repeats 0, idle repeat recs 23

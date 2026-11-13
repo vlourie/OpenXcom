@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2027001	STR_SUPPLY_SHIP	over	STR_SUPPLY_SHIP	STR_UFO_CRASH_RECOVERY	108	8	POLAR_SOLID	STR_FLOATER	STR_DROPSHIP#3	3	2	8	0	0	0	0	20	15	0	5	8	0	0	22	0	h.rec.in:4,p.rec.in:47	47	0	0	0	0	0	4	0	0	0	0	0	6		win

@@ -51,6 +51,8 @@ public:
 	void setThickness(int thickness);
 	/// Draws the frame.
 	void draw() override;
+	/// HD interface: geometry, scaled crisply.
+	void hdMirror() override;
 };
 
 }

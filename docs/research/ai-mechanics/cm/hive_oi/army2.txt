@@ -1,0 +1,34 @@
+===== cc3_CO_M6_s1
+  kinds of action in lists (k,t): {('a', 8): 1840, ('a', 9): 1551, ('a', 10): 1941, ('t', 1): 2660, ('e', 0): 380, ('r', 15): 380, ('a', 6): 900, ('a', 7): 120}
+  STR_GAUSS_RIFLE:1: (ammo, spare) {('0', '0'): 22}
+  STR_GAUSS_PISTOL:1: (ammo, spare) {('0', '0'): 9}
+  STR_FLECHETTE_GUN:1: (ammo, spare) {('0', '0'): 4}
+  STR_GAUSS_SNIPER:1: (ammo, spare) {('0', '0'): 4}
+  STR_HEAVY_GAUSS:1: (ammo, spare) {('0', '0'): 2}
+  modes of decisions: {'COMBAT': 118, 'ESCAPE': 78, 'PATROL': 352}
+  sources: [('patrol.node', 352), ('sniper', 73), ('escape.known', 61), ('shot', 21), ('escape', 17), ('firepoint.fallback', 9), ('firepoint', 8), ('firepoint.random', 5), ('grenade', 2)]
+  TU spent: walks 4925 attacks 3546
+===== scpa_D_M6_s2
+  kinds of action in lists (k,t): {('a', 8): 3382, ('a', 9): 2255, ('a', 10): 3424, ('a', 6): 1904, ('t', 1): 5915, ('e', 0): 845, ('r', 15): 845, ('a', 7): 553}
+  STR_GAUSS_RIFLE:1: (ammo, spare) {('0', '0'): 13}
+  STR_GAUSS_PISTOL:1: (ammo, spare) {('0', '0'): 8}
+  STR_FLECHETTE_GUN:1: (ammo, spare) {('0', '0'): 6}
+  STR_GAUSS_SNIPER:1: (ammo, spare) {('0', '0'): 5}
+  STR_HEAVY_GAUSS:1: (ammo, spare) {('0', '0'): 4}
+  STR_BOOM_GUN:1: (ammo, spare) {('1', '0'): 1}
+  modes of decisions: {'COMBAT': 219, 'PATROL': 921, 'ESCAPE': 75}
+  sources: [('patrol.node', 921), ('sniper', 121), ('escape.known', 61), ('shot', 40), ('firepoint.fallback', 24), ('firepoint', 18), ('escape', 14), ('firepoint.random', 12), ('melee', 4)]
+  TU spent: walks 14236 attacks 5739
+===== scpa_D_M3_s1
+  kinds of action in lists (k,t): {('a', 10): 6846, ('t', 1): 5530, ('e', 0): 790, ('r', 15): 790, ('a', 8): 5756, ('a', 9): 5396, ('a', 6): 4587, ('a', 7): 151}
+  STR_CANISTER_GUN:1: (ammo, spare) {('3', '0'): 30}
+  STR_SR_RIFLE:1: (ammo, spare) {('2', '0'): 14}
+  AUX_CHRYSSALID_WEAPON:1: (ammo, spare) {('0', '0'): 8}
+  AUX_SILACOID_WEAPON:1: (ammo, spare) {('0', '0'): 3}
+  STR_PIR_SMALL_LAUNCHER:1: (ammo, spare) {('5', '0'): 3}
+  AUX_ZOMBIE_WEAPON:1: (ammo, spare) {('0', '0'): 3}
+  STR_TOXIGUN:1: (ammo, spare) {('1', '0'): 1}
+  STR_PIR_PLASMA_RIFLE:1: (ammo, spare) {('2', '0'): 1}
+  modes of decisions: {'COMBAT': 454, 'PATROL': 404, 'ESCAPE': 44}
+  sources: [('patrol.node', 398), ('sniper', 138), ('firepoint.random', 94), ('firepoint', 70), ('shot', 68), ('firepoint.fallback', 46), ('melee', 37), ('escape', 24), ('escape.known', 20), ('leeroy', 6), ('grenade', 1)]
+  TU spent: walks 13687 attacks 5975

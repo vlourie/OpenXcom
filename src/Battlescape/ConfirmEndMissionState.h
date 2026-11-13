@@ -50,7 +50,8 @@ public:
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
-
+	/// The AI probe confirms by itself.
+	void think() override;
 };
 
 }

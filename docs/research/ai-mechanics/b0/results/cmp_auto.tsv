@@ -1,0 +1,193 @@
+﻿scen	pair	verdict	rng	units	h_units	items	tiles	other	first
+L10	P0~P0b	IDENTICAL	1	0	0	0	0		-
+L10	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L10	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L10	P0~D0	IDENTICAL	1	0	0	0	0		-
+L10	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L10	P0~U0	IDENTICAL	1	0	0	0	0		-
+L10	P0~P1	DIFF	0	21	15	6	0	nodes	unit 1000000h morale: 94 | 88
+L10	P1~D1	IDENTICAL	1	0	0	0	0		-
+L10	P1~P1A	DIFF	0	21	15	13	0	nodes	unit 1000000h morale: 88 | 100; AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+L10	D0~DH	DIFF	0	8	6	0	0		unit 1000000h AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+L10	DH~DS	IDENTICAL	1	0	0	0	0		-
+L10	P0~DS	DIFF	0	8	6	0	0		unit 1000000h AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+L10	D0~U0	IDENTICAL	1	0	0	0	0		-
+L10	P1~DH	DIFF	0	21	15	6	0	nodes	unit 1000000h morale: 88 | 94; AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+L10	P1~DS	DIFF	0	21	15	6	0	nodes	unit 1000000h morale: 88 | 94; AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+L10	D1~DS	DIFF	0	21	15	6	0	nodes	unit 1000000h morale: 88 | 94; AI: {'fromNode': 26, 'toNode': 11, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 26, 'toNode': 11, 'AIMode': 0, 'wasHitBy': []}
+L11	P0~P0b	IDENTICAL	1	0	0	0	0		-
+L11	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L11	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L11	P0~D0	SAME_BUT_SNAPSHOT	1	1	0	0	0		unit 344p direction: 0 | 7
+L11	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L11	P0~U0	IDENTICAL	1	0	0	0	0		-
+L11	P0~P1	DIFF	0	3	2	0	0	nodes	unit 1000024h AI: {'fromNode': 27, 'toNode': 63, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 27, 'toNode': 22, 'AIMode': 0, 'wasHitBy': []}
+L11	P1~D1	SAME_BUT_SNAPSHOT	1	1	0	0	0		unit 344p direction: 0 | 7
+L11	P1~P1A	DIFF	0	22	19	1	0	nodes	unit 1000000h position: [56, 12, 1] | [41, 14, 1]; direction: 2 | 5; tu: 9 | 1; energy: 40 | 36
+L11	D0~DH	IDENTICAL	1	0	0	0	0		-
+L11	DH~DS	IDENTICAL	1	0	0	0	0		-
+L11	P0~DS	SAME_BUT_SNAPSHOT	1	1	0	0	0		unit 344p direction: 0 | 7
+L11	D0~U0	SAME_BUT_SNAPSHOT	1	1	0	0	0		unit 344p direction: 7 | 0
+L11	P1~DH	DIFF	0	4	2	0	0	nodes	unit 1000024h AI: {'fromNode': 27, 'toNode': 22, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 27, 'toNode': 63, 'AIMode': 0, 'wasHitBy': []}
+L11	P1~DS	DIFF	0	4	2	0	0	nodes	unit 1000024h AI: {'fromNode': 27, 'toNode': 22, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 27, 'toNode': 63, 'AIMode': 0, 'wasHitBy': []}
+L11	D1~DS	DIFF	0	3	2	0	0	nodes	unit 1000024h AI: {'fromNode': 27, 'toNode': 22, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 27, 'toNode': 63, 'AIMode': 0, 'wasHitBy': []}
+L12	P0~P0b	IDENTICAL	1	0	0	0	0		-
+L12	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L12	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L12	P0~D0	IDENTICAL	1	0	0	0	0		-
+L12	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L12	P0~U0	IDENTICAL	1	0	0	0	0		-
+L12	P0~P1	DIFF	0	44	28	44	133	nodes,totalTiles	unit 1000001h AI: {'fromNode': 123, 'toNode': 112, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 123, 'toNode': 161, 'AIMode': 0, 'wasHitBy': []...
+L12	P1~D1	IDENTICAL	1	0	0	0	0		-
+L12	P1~P1A	DIFF	0	33	18	19	0	nodes	unit 1000002h tempUnitStatistics: {'kills': [{'type': 'STR_PIRATE_CIV', 'rank': 'STR_CIVILIAN'... | {'kills': [{'type': 'STR_PIRATE_CIV', 'rank': 'STR_CIVILIAN'...; turnsSinceSpottedByCivilian: 2 | 1
+L12	D0~DH	DIFF	0	45	24	50	231	nodes,totalTiles	unit 1000001h AI: {'fromNode': 123, 'toNode': 112, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 123, 'toNode': 220, 'AIMode': 0, 'wasHitBy': []...; turnsSinceSpottedByCivilian: 1 | 0
+L12	DH~DS	DIFF	1	1	1	0	0		unit 1000010h AI: {'fromNode': 69, 'toNode': 18, 'AIMode': 0, 'wasHitBy': [100... | {'fromNode': 69, 'toNode': 18, 'AIMode': 0, 'wasHitBy': [100...
+L12	P0~DS	DIFF	0	45	24	50	231	nodes,totalTiles	unit 1000001h AI: {'fromNode': 123, 'toNode': 112, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 123, 'toNode': 220, 'AIMode': 0, 'wasHitBy': []...; turnsSinceSpottedByCivilian: 1 | 0
+L12	D0~U0	IDENTICAL	1	0	0	0	0		-
+L12	P1~DH	DIFF	0	51	29	51	100	nodes,totalTiles	unit 1000001h AI: {'fromNode': 123, 'toNode': 161, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 123, 'toNode': 220, 'AIMode': 0, 'wasHitBy': []...; turnsSinceSpottedByCivilian: 1 | 0
+L12	P1~DS	DIFF	0	51	29	51	100	nodes,totalTiles	unit 1000001h AI: {'fromNode': 123, 'toNode': 161, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 123, 'toNode': 220, 'AIMode': 0, 'wasHitBy': []...; turnsSinceSpottedByCivilian: 1 | 0
+L12	D1~DS	DIFF	0	51	29	51	100	nodes,totalTiles	unit 1000001h AI: {'fromNode': 123, 'toNode': 161, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 123, 'toNode': 220, 'AIMode': 0, 'wasHitBy': []...; turnsSinceSpottedByCivilian: 1 | 0
+L4	P0~P0b	IDENTICAL	1	0	0	0	0		-
+L4	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L4	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L4	P0~D0	IDENTICAL	1	0	0	0	0		-
+L4	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L4	P0~U0	IDENTICAL	1	0	0	0	0		-
+L4	P0~P1	DIFF	0	20	9	21	272	moduleMap,nodes	unit 1000004h visible: None | True; turnsSinceSpottedByXcom: 1 | 0
+L4	P1~D1	SAME_BUT_SNAPSHOT	1	1	0	0	0		unit 197p direction: 6 | 4
+L4	P1~P1A	DIFF	0	17	8	14	185	moduleMap,nodes,totalTiles	unit 1000015h position: [24, 31, 2] | [24, 29, 2]; tu: 33 | 25; energy: 80 | 76; health: 0 | 32
+L4	D0~DH	DIFF	0	20	9	21	272	moduleMap,nodes	unit 1000004h visible: None | True; turnsSinceSpottedByXcom: 1 | 0
+L4	DH~DS	IDENTICAL	1	0	0	0	0		-
+L4	P0~DS	DIFF	0	20	9	21	272	moduleMap,nodes	unit 1000004h visible: None | True; turnsSinceSpottedByXcom: 1 | 0
+L4	D0~U0	IDENTICAL	1	0	0	0	0		-
+L4	P1~DH	SAME_BUT_SNAPSHOT	1	1	0	0	0		unit 197p direction: 6 | 4
+L4	P1~DS	SAME_BUT_SNAPSHOT	1	1	0	0	0		unit 197p direction: 6 | 4
+L4	D1~DS	IDENTICAL	1	0	0	0	0		-
+L5	P0~P0b	IDENTICAL	1	0	0	0	0		-
+L5	D0~D0b	IDENTICAL	1	0	0	0	0		-
+L5	U0~U0b	IDENTICAL	1	0	0	0	0		-
+L5	P0~D0	IDENTICAL	1	0	0	0	0		-
+L5	D0~D0n	IDENTICAL	1	0	0	0	0		-
+L5	P0~U0	IDENTICAL	1	0	0	0	0		-
+L5	P0~P1	DIFF	0	25	21	12	246	nodes,totalTiles	unit 1000000h position: [24, 42, 0] | [36, 50, 0]; direction: 1 | 2; tu: 92 | 16; energy: 38 | 1
+L5	P1~D1	IDENTICAL	1	0	0	0	0		-
+L5	P1~P1A	DIFF	0	12	9	2	78		unit 1000000h AI: {'fromNode': 152, 'toNode': 153, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 152, 'toNode': 153, 'AIMode': 3, 'wasHitBy': []...
+L5	D0~DH	DIFF	0	11	9	4	407	totalTiles	unit 1000000h AI: {'fromNode': 152, 'toNode': 268, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 152, 'toNode': 268, 'AIMode': 3, 'wasHitBy': []...
+L5	DH~DS	IDENTICAL	1	0	0	0	0		-
+L5	P0~DS	DIFF	0	11	9	4	407	totalTiles	unit 1000000h AI: {'fromNode': 152, 'toNode': 268, 'AIMode': 0, 'wasHitBy': []... | {'fromNode': 152, 'toNode': 268, 'AIMode': 3, 'wasHitBy': []...
+L5	D0~U0	IDENTICAL	1	0	0	0	0		-
+L5	P1~DH	DIFF	0	25	21	13	218	nodes,totalTiles	unit 1000000h position: [36, 50, 0] | [24, 42, 0]; direction: 2 | 1; tu: 16 | 92; energy: 1 | 38
+L5	P1~DS	DIFF	0	25	21	13	218	nodes,totalTiles	unit 1000000h position: [36, 50, 0] | [24, 42, 0]; direction: 2 | 1; tu: 16 | 92; energy: 1 | 38
+L5	D1~DS	DIFF	0	25	21	13	218	nodes,totalTiles	unit 1000000h position: [36, 50, 0] | [24, 42, 0]; direction: 2 | 1; tu: 16 | 92; energy: 1 | 38
+M1	P0~P0b	IDENTICAL	1	0	0	0	0		-
+M1	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M1	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M1	P0~D0	IDENTICAL	1	0	0	0	0		-
+M1	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M1	P0~U0	IDENTICAL	1	0	0	0	0		-
+M1	P0~P1	DIFF	0	64	26	60	262	moduleMap,nodes,totalTiles	unit 1000000h position: [32, 27, 2] | [31, 26, 2]; direction: 2 | 3; tu: 45 | 9; energy: 80 | 77
+M1	P1~D1	SAME_BUT_SNAPSHOT	1	0	0	2	0		-
+M1	P1~P1A	DIFF	0	68	30	172	379	itemsSpecial,nodes,totalTiles	unit 1000000h position: [31, 26, 2] | [33, 30, 2]; direction: 3 | 4; tu: 9 | 0; energy: 77 | 73
+M1	D0~DH	DIFF	0	64	26	61	262	moduleMap,nodes,totalTiles	unit 1000000h position: [32, 27, 2] | [31, 26, 2]; direction: 2 | 3; tu: 45 | 9; energy: 80 | 77
+M1	DH~DS	DIFF	1	1	1	0	0		unit 1000012h AI: {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': [17...
+M1	P0~DS	DIFF	0	64	26	61	262	moduleMap,nodes,totalTiles	unit 1000000h position: [32, 27, 2] | [31, 26, 2]; direction: 2 | 3; tu: 45 | 9; energy: 80 | 77
+M1	D0~U0	IDENTICAL	1	0	0	0	0		-
+M1	P1~DH	DIFF	1	1	1	2	0		unit 1000012h AI: {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': [17... | {'fromNode': 560, 'toNode': 26, 'AIMode': 0, 'wasHitBy': []}
+M1	P1~DS	SAME_BUT_SNAPSHOT	1	0	0	2	0		-
+M1	D1~DS	IDENTICAL	1	0	0	0	0		-
+M10	P0~P0b	IDENTICAL	1	0	0	0	0		-
+M10	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M10	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M10	P0~D0	IDENTICAL	1	0	0	0	0		-
+M10	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M10	P0~U0	IDENTICAL	1	0	0	0	0		-
+M10	P0~P1	DIFF	0	46	42	29	192	nodes,totalTiles	unit 1000001h position: [34, 12, 0] | [28, 21, 0]; direction: 1 | 3; tu: 3 | 5; energy: 47 | 32
+M10	P1~D1	IDENTICAL	1	0	0	0	0		-
+M10	P1~P1A	DIFF	0	23	19	7	231	nodes,totalTiles	unit 1000015h position: [30, 42, 1] | [37, 42, 0]; direction: 1 | 0; tu: 0 | 53; energy: 18 | 44
+M10	D0~DH	DIFF	0	23	19	8	130	nodes,totalTiles	unit 1000001h position: [34, 12, 0] | [33, 14, 0]; tu: 3 | 13; energy: 47 | 52; motionPoints: 36 | 28
+M10	DH~DS	DIFF	0	11	7	0	59	totalTiles	unit 1000002h fatalShotBodyPart: 1 | None
+M10	P0~DS	DIFF	0	24	20	8	126	nodes,totalTiles	unit 1000001h position: [34, 12, 0] | [33, 14, 0]; tu: 3 | 13; energy: 47 | 52; motionPoints: 36 | 28
+M10	D0~U0	IDENTICAL	1	0	0	0	0		-
+M10	P1~DH	DIFF	0	48	44	34	172	nodes,totalTiles	unit 1000001h position: [28, 21, 0] | [33, 14, 0]; direction: 3 | 1; tu: 5 | 13; energy: 32 | 52
+M10	P1~DS	DIFF	0	48	44	34	173	nodes,totalTiles	unit 1000001h position: [28, 21, 0] | [33, 14, 0]; direction: 3 | 1; tu: 5 | 13; energy: 32 | 52
+M10	D1~DS	DIFF	0	48	44	34	173	nodes,totalTiles	unit 1000001h position: [28, 21, 0] | [33, 14, 0]; direction: 3 | 1; tu: 5 | 13; energy: 32 | 52
+M11	P0~P0b	IDENTICAL	1	0	0	0	0		-
+M11	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M11	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M11	P0~D0	IDENTICAL	1	0	0	0	0		-
+M11	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M11	P0~U0	IDENTICAL	1	0	0	0	0		-
+M11	P0~P1	DIFF	0	7	6	0	0	nodes	unit 1000012h AI: {'fromNode': 90, 'toNode': 18, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 90, 'toNode': 18, 'AIMode': 3, 'wasHitBy': []}
+M11	P1~D1	IDENTICAL	1	0	0	0	0		-
+M11	P1~P1A	DIFF	0	2	2	0	0	nodes	unit 1000010h position: [7, 23, 1] | [13, 26, 0]; tu: 47 | 5; energy: 91 | 70; AI: {'fromNode': 3, 'toNode': 70, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 70, 'toNode': 99, 'AIMode': 0, 'wasHitBy': []}
+M11	D0~DH	DIFF	0	0	0	0	0		-
+M11	DH~DS	DIFF	0	5	4	0	0	nodes	unit 1000014h position: [44, 47, 0] | [48, 44, 0]; direction: 0 | 1; tu: 196 | 174; energy: 140 | 129
+M11	P0~DS	DIFF	0	5	4	0	0	nodes	unit 1000014h position: [44, 47, 0] | [48, 44, 0]; direction: 0 | 1; tu: 196 | 174; energy: 140 | 129
+M11	D0~U0	IDENTICAL	1	0	0	0	0		-
+M11	P1~DH	DIFF	0	7	6	0	0	nodes	unit 1000012h AI: {'fromNode': 90, 'toNode': 18, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 90, 'toNode': 18, 'AIMode': 0, 'wasHitBy': []}
+M11	P1~DS	DIFF	0	8	7	0	0	nodes	unit 1000012h AI: {'fromNode': 90, 'toNode': 18, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 90, 'toNode': 18, 'AIMode': 0, 'wasHitBy': []}
+M11	D1~DS	DIFF	0	8	7	0	0	nodes	unit 1000012h AI: {'fromNode': 90, 'toNode': 18, 'AIMode': 3, 'wasHitBy': []} | {'fromNode': 90, 'toNode': 18, 'AIMode': 0, 'wasHitBy': []}
+M2	P0~P0b	IDENTICAL	1	0	0	0	0		-
+M2	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M2	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M2	P0~D0	IDENTICAL	1	0	0	0	0		-
+M2	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M2	P0~U0	IDENTICAL	1	0	0	0	0		-
+M2	P0~P1	DIFF	0	98	61	90	537	nodes,totalTiles	unit 1000000h position: [20, 27, 1] | [12, 33, 3]; direction: 2 | 4; morale: 90 | 98; AI: {'fromNode': 397, 'toNode': 3, 'AIMode': 0, 'wasHitBy': []} | {'fromNode': 397, 'toNode': 313, 'AIMode': 0, 'wasHitBy': []...
+M2	P1~D1	IDENTICAL	1	0	0	0	0		-
+M2	P1~P1A	DIFF	0	96	59	92	565	nodes,totalTiles	unit 1000000h position: [12, 33, 3] | [19, 26, 4]; direction: 4 | 2; energy: 46 | 50; morale: 98 | 94
+M2	D0~DH	DIFF	0	83	54	59	417	nodes,totalTiles	unit 1000000h position: [20, 27, 1] | [12, 35, 4]; direction: 2 | 3; tu: 50 | 13; energy: 46 | 61
+M2	DH~DS	DIFF	0	65	38	54	296	nodes,totalTiles	unit 1000000h position: [12, 35, 4] | [13, 31, 4]; direction: 3 | 1; tu: 13 | 50; energy: 61 | 52
+M2	P0~DS	DIFF	0	90	57	60	458	nodes,totalTiles	unit 1000000h position: [20, 27, 1] | [13, 31, 4]; direction: 2 | 1; energy: 46 | 52; stunlevel: 0 | 2
+M2	D0~U0	IDENTICAL	1	0	0	0	0		-
+M2	P1~DH	DIFF	0	97	59	89	639	nodes,totalTiles	unit 1000000h position: [12, 33, 3] | [12, 35, 4]; direction: 4 | 3; tu: 50 | 13; energy: 46 | 61
+M2	P1~DS	DIFF	0	100	59	91	673	nodes,totalTiles	unit 1000000h position: [12, 33, 3] | [13, 31, 4]; direction: 4 | 1; energy: 46 | 52; stunlevel: 0 | 2
+M2	D1~DS	DIFF	0	100	59	91	673	nodes,totalTiles	unit 1000000h position: [12, 33, 3] | [13, 31, 4]; direction: 4 | 1; energy: 46 | 52; stunlevel: 0 | 2
+M3	P0~P0b	IDENTICAL	1	0	0	0	0		-
+M3	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M3	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M3	P0~D0	IDENTICAL	1	0	0	0	0		-
+M3	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M3	P0~U0	IDENTICAL	1	0	0	0	0		-
+M3	P0~P1	DIFF	0	66	47	95	2004	nodes,totalTiles	unit 1000000h stunlevel: 21 | 39; morale: 74 | 80; fire: 1 | 4; armor: [14, 32, 34, 34, 34] | [2, 34, 34, 34, 34]
+M3	P1~D1	IDENTICAL	1	0	0	0	0		-
+M3	P1~P1A	DIFF	0	65	46	68	1004	nodes,totalTiles	unit 1000000h stunlevel: 39 | 83; morale: 80 | 45; fire: 4 | 3; armor: [2, 34, 34, 34, 34] | [0, 34, 34, 34, 34]
+M3	D0~DH	DIFF	0	63	45	120	2534	itemsSpecial,nodes,totalTiles	unit 1000000h stunlevel: 21 | 32; morale: 74 | 40; armor: [14, 32, 34, 34, 34] | [0, 34, 34, 34, 34]
+M3	DH~DS	IDENTICAL	1	0	0	0	0		-
+M3	P0~DS	DIFF	0	63	45	120	2534	itemsSpecial,nodes,totalTiles	unit 1000000h stunlevel: 21 | 32; morale: 74 | 40; armor: [14, 32, 34, 34, 34] | [0, 34, 34, 34, 34]
+M3	D0~U0	IDENTICAL	1	0	0	0	0		-
+M3	P1~DH	DIFF	0	67	47	120	1828	itemsSpecial,nodes,totalTiles	unit 1000000h stunlevel: 39 | 32; morale: 80 | 40; fire: 4 | 1; armor: [2, 34, 34, 34, 34] | [0, 34, 34, 34, 34]
+M3	P1~DS	DIFF	0	67	47	120	1828	itemsSpecial,nodes,totalTiles	unit 1000000h stunlevel: 39 | 32; morale: 80 | 40; fire: 4 | 1; armor: [2, 34, 34, 34, 34] | [0, 34, 34, 34, 34]
+M3	D1~DS	DIFF	0	67	47	120	1828	itemsSpecial,nodes,totalTiles	unit 1000000h stunlevel: 39 | 32; morale: 80 | 40; fire: 4 | 1; armor: [2, 34, 34, 34, 34] | [0, 34, 34, 34, 34]
+M5	P0~P0b	IDENTICAL	1	0	0	0	0		-
+M5	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M5	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M5	P0~D0	IDENTICAL	1	0	0	0	0		-
+M5	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M5	P0~U0	IDENTICAL	1	0	0	0	0		-
+M5	P0~P1	DIFF	0	50	42	67	656	nodes,totalTiles	unit 1000000h stunlevel: 72 | 38; fatalWounds: [0, 5, 0, 0, 0, 0] | [0, 4, 0, 0, 0, 0]; AI: {'fromNode': 137, 'toNode': 197, 'AIMode': 2, 'wasHitBy': [2... | {'fromNode': 137, 'toNode': 129, 'AIMode': 2, 'wasHitBy': [2...; armor: [15, 10, 10, 12, 4] | [15, 10, 10, 12, 2]
+M5	P1~D1	IDENTICAL	1	0	0	0	0		-
+M5	P1~P1A	DIFF	0	50	42	53	557	nodes,totalTiles	unit 1000000h position: [38, 34, 2] | [34, 38, 2]; tu: 66 | 52; energy: 76 | 69; stunlevel: 38 | 19
+M5	D0~DH	DIFF	0	48	41	70	447	nodes,totalTiles	unit 1000000h health: 0 | 33; stunlevel: 72 | 38; status: 6 | 7; fatalWounds: [0, 5, 0, 0, 0, 0] | [0, 3, 0, 0, 0, 0]
+M5	DH~DS	DIFF	0	46	39	32	559	nodes,totalTiles	unit 1000001h morale: 67 | 70
+M5	P0~DS	DIFF	0	45	37	60	399	nodes,totalTiles	unit 1000000h health: 0 | 33; stunlevel: 72 | 38; status: 6 | 7; fatalWounds: [0, 5, 0, 0, 0, 0] | [0, 3, 0, 0, 0, 0]
+M5	D0~U0	IDENTICAL	1	0	0	0	0		-
+M5	P1~DH	DIFF	0	43	35	34	625	nodes,totalTiles	unit 1000000h health: 0 | 33; status: 6 | 7; fatalWounds: [0, 4, 0, 0, 0, 0] | [0, 3, 0, 0, 0, 0]; AI: {'fromNode': 137, 'toNode': 129, 'AIMode': 2, 'wasHitBy': [2... | {'fromNode': 137, 'toNode': 197, 'AIMode': 2, 'wasHitBy': [2...
+M5	P1~DS	DIFF	0	49	41	44	819	nodes,totalTiles	unit 1000000h health: 0 | 33; status: 6 | 7; fatalWounds: [0, 4, 0, 0, 0, 0] | [0, 3, 0, 0, 0, 0]; AI: {'fromNode': 137, 'toNode': 129, 'AIMode': 2, 'wasHitBy': [2... | {'fromNode': 137, 'toNode': 197, 'AIMode': 2, 'wasHitBy': [2...
+M5	D1~DS	DIFF	0	49	41	44	819	nodes,totalTiles	unit 1000000h health: 0 | 33; status: 6 | 7; fatalWounds: [0, 4, 0, 0, 0, 0] | [0, 3, 0, 0, 0, 0]; AI: {'fromNode': 137, 'toNode': 129, 'AIMode': 2, 'wasHitBy': [2... | {'fromNode': 137, 'toNode': 197, 'AIMode': 2, 'wasHitBy': [2...
+M8	P0~P0b	IDENTICAL	1	0	0	0	0		-
+M8	D0~D0b	IDENTICAL	1	0	0	0	0		-
+M8	U0~U0b	IDENTICAL	1	0	0	0	0		-
+M8	P0~D0	IDENTICAL	1	0	0	0	0		-
+M8	D0~D0n	IDENTICAL	1	0	0	0	0		-
+M8	P0~U0	IDENTICAL	1	0	0	0	0		-
+M8	P0~P1	DIFF	0	8	5	0	36	nodes,totalTiles	unit 1000006h position: [14, 50, 0] | [19, 48, 1]; direction: 2 | 4; tu: 77 | 78; energy: 0 | 1
+M8	P1~D1	IDENTICAL	1	0	0	0	0		-
+M8	P1~P1A	DIFF	0	8	6	1	104	totalTiles	unit 1000000h direction: 0 | 7; directionTurret: 0 | 7
+M8	D0~DH	DIFF	0	6	3	0	36	totalTiles	unit 1000029h position: [26, 47, 0] | [28, 47, 0]; direction: 6 | 0; tu: 3 | 15; energy: 57 | 63
+M8	DH~DS	DIFF	1	2	2	0	0	nodes	unit 1000006h position: [14, 50, 0] | [19, 48, 1]; direction: 2 | 4; tu: 77 | 78; energy: 0 | 1
+M8	P0~DS	DIFF	0	8	5	0	36	nodes,totalTiles	unit 1000006h position: [14, 50, 0] | [19, 48, 1]; direction: 2 | 4; tu: 77 | 78; energy: 0 | 1
+M8	D0~U0	IDENTICAL	1	0	0	0	0		-
+M8	P1~DH	DIFF	1	2	2	0	0	nodes	unit 1000006h position: [19, 48, 1] | [14, 50, 0]; direction: 4 | 2; tu: 78 | 77; energy: 1 | 0
+M8	P1~DS	IDENTICAL	1	0	0	0	0		-
+M8	D1~DS	IDENTICAL	1	0	0	0	0		-

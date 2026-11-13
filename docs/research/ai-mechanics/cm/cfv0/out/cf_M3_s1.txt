@@ -1,0 +1,17 @@
+== 1. identity
+C vs A: whole log: IDENTICAL
+
+== 2. the rule's lines in C (every attack at a vehicle with a blast counter)
+statuses: 
+kept for 'other': 
+
+== 3. per cancel: the same decision in A, and what the unit did next in C
+
+== 5. rules
+cancels 0; most per unit per turn 0
+TU rising within a turn for a hostile unit: 0 
+cancels followed by the unit's act=0 decision: 0 of 0
+
+== 6. result
+A: how=over turn=21 player=8 pdead=6 livesoldiers=2 hostile=64 hdead=61 hleft=0 phplost=808
+C: how=over turn=21 player=8 pdead=6 livesoldiers=2 hostile=64 hdead=61 hleft=0 phplost=808

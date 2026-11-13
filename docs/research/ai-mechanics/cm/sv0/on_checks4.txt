@@ -1,0 +1,15 @@
+  L1_s1    hostile reactions D0 16 on 31
+  L2_s1    hostile reactions D0 26 on 39
+  L2_s2    hostile reactions D0 50 on 72
+  L6_s2    hostile reactions D0 29 on 35
+  L7_s1    hostile reactions D0 34 on 14
+  L7_s2    hostile reactions D0 15 on 21
+  M2_s1    hostile reactions D0 105 on 59
+  M2_s2    hostile reactions D0 103 on 113
+  M3_s2    hostile reactions D0 17 on 20
+  M7_s2    hostile reactions D0 12 on 11
+  M9_s2    hostile reactions D0 9 on 9
+  together D0 416 on 424
+hostile walk decisions in the shadow run 31874, spent nothing 12756
+  by mode: 0=12722, 2=21, 3=9, 1=4
+  by the trail's last word: walk.stop.reserve=8380, (no=2372, walk.stop.energy=1828, walk.stop.tu=155, walk.stop.unit=19, walk.stop.invalid=2

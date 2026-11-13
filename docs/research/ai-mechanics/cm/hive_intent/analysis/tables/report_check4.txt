@@ -1,0 +1,3 @@
+ci5_IA_M6_s1 [(('MAINTAIN_OBJECTIVE', 'no_contact'), 23), (('ENGAGE_CONTACT', 'no_contact'), 2), (('SUPPORT_CONTACT', 'no_contact'), 1)]
+ci6_IA_M6_s2 [(('MAINTAIN_OBJECTIVE', 'no_contact'), 23), (('ENGAGE_CONTACT', 'no_contact'), 2)]
+ci7_IV_M3_s1 [(('MAINTAIN_OBJECTIVE', 'no_contact'), 29), (('ENGAGE_CONTACT', 'no_contact'), 7), (('SUPPORT_CONTACT', 'no_contact'), 3)]

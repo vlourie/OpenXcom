@@ -1,0 +1,60 @@
+result: {'how': 'over', 'turn': '11', 'livesoldiers': '0', 'livealiens': '20', 'player': '60', 'pdead': '55', 'pout': '5', 'phplost': '4696', 'hostile': '38', 'hdead': '14', 'hout': '4', 'hmoves': '820', 'hattacks': '200', 'pattacks': '29', 'ms': '64360'}
+--- objective / plan / done / release:
+  what=objective turn=1 cell=0,0 fac=STR_PERSONAL_LABS left=17 score=7.7117 why=none
+  what=plan turn=1 cell=0,0 fighters=1000003>2,1,1;1000012>7,4,1;1000026>5,6,3;1000034>3,5,3
+  what=release turn=1 unit=1000026 why=out
+  what=release turn=3 unit=1000034 why=out
+  what=release turn=7 unit=1000003 why=nopath from=3,13,0
+  what=objective turn=7 cell=0,0 fac=STR_PERSONAL_LABS left=13 score=3.60065 why=few
+  what=plan turn=7 cell=0,0 fighters=1000008>1,7,2;1000012>3,5,3;1000015>7,4,1;1000020>5,0,3
+  what=release turn=7 unit=1000020 why=nomodule from=5,0,3
+  what=release turn=7 unit=1000015 why=nomodule from=7,4,1
+--- D0's protocol aims: 72; no line of fire to the target: 51; a legal alternative in the same room at that moment: 54; both: 33
+  t4 1000008 1,7,2 > 0,3,1 lof0 l0 impact 1,5,2 alt - armor None
+  t4 1000008 1,7,2 > 0,3,1 lof1 l3 impact 0,3,1 alt 2,4,1 armor 14
+  t4 1000008 1,7,2 > 2,2,1 lof1 l3 impact 2,2,1 alt 2,4,1 armor 14
+  t5 1000008 1,7,2 > 2,2,1 lof0 l2 impact 1,6,2 alt - armor None
+  t5 1000008 1,7,2 > 2,2,1 lof0 l2 impact 1,6,2 alt - armor None
+  t5 1000012 3,5,3 > 2,2,1 lof0 l3 impact 3,4,3 alt 2,4,3 armor 12
+  t5 1000015 7,4,1 > 2,2,1 lof0 l3 impact 4,3,1 alt 6,4,1 armor 14
+  t5 1000020 5,0,3 > 2,2,1 lof0 l0 impact 4,1,3 alt - armor None
+--- nomodule (on a target node, nothing at z=1): 19; with a legal alternative: 15
+  t3 1000004 5,11,3 alt 5,12,3 armor 20
+  t5 1000003 4,15,3 alt 3,15,3 armor 20
+  t5 1000022 5,11,3 alt 5,12,3 armor 20
+  t6 1000006 55,10,3 alt 54,10,3 armor 25
+  t6 1000017 25,11,3 alt 26,15,3 armor 25
+  t7 1000015 7,4,1 alt - armor None
+  t7 1000018 2,1,1 alt - armor None
+  t7 1000020 5,0,3 alt - armor None
+--- tasks by unit and kind: [(('1000003', 'walk'), 2), (('1000008', 'shoot'), 5), (('1000012', 'shoot'), 12), (('1000012', 'walk'), 1), (('1000015', 'shoot'), 3), (('1000026', 'walk'), 1), (('1000034', 'walk'), 1)]
+--- chain: turn unit task > actual (mode act to spent) | hits
+  t1 1000003 walk 2,1,1 (4,40,4) > m0 a2 (4,15,3) sp8 | 
+  t1 1000012 walk 7,4,1 (4,34,2) > m2 a7 (6,27,2) sp42 | 6,29,2:p1:40/50:m0 6,29,2:p1:33/50:m0 5,26,2:p2:28/50:m0
+  t1 1000026 walk 5,6,3 (0,34,2) > m2 a2 (3,32,2) sp20 | 
+  t1 1000034 walk 3,5,3 (4,30,2) > m2 a2 (2,32,2) sp14 | 
+  t5 1000003 walk 2,1,1 (4,15,3) > m0 a2 (3,13,0) sp58 | 
+  t5 1000012 shoot 2,4,3 (3,5,3) > m3 a0 (3,5,3) sp0 | 
+  t5 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (2,2,1) sp32 | 3,4,3:p3:23/5:m0
+  t5 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (2,2,1) sp30 | 3,4,3:p0:60/20:m0
+  t6 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (2,5,1) sp32 | 2,5,3:p0:36/20:m0
+  t6 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (2,5,1) sp30 | 2,5,2:p0:39/50:m0
+  t6 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (4,3,1) sp33 | 4,4,3:p1:29/50:m0
+  t6 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (4,3,1) sp30 | 4,4,3:p1:51/50:m0
+  t7 1000008 shoot 2,4,3 (1,7,2) > m0 a8 (4,3,1) sp30 | 3,5,2:p0:40/50:m0
+  t7 1000008 shoot 2,4,3 (1,7,2) > m0 a8 (4,3,1) sp30 | 3,5,2:p0:49/50:m0
+  t7 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (4,3,1) sp30 | 3,3,2:p0:36/50:m0
+  t7 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (4,3,1) sp30 | 4,4,3:p3:21/3:m0
+  t7 1000015 shoot 6,4,1 (7,4,1) > m0 a8 (4,3,1) sp32 | 4,3,1:p3:44/40:m1
+  t7 1000015 shoot 6,4,1 (7,4,1) > m0 a8 (6,2,1) sp33 | 6,2,1:p3:53/12:m1
+  t7 1000008 shoot 2,4,3 (1,7,2) > m0 a8 (6,4,1) sp30 | 3,6,2:p1:56/50:m0
+  t7 1000008 shoot 2,4,3 (1,7,2) > m0 a8 (6,4,1) sp30 | 4,6,2:p0:21/50:m0
+  t7 1000012 shoot 2,4,3 (3,5,3) > m0 a8 (6,4,1) sp31 | 4,5,3:p1:48/50:m1
+  t7 1000012 shoot 2,4,3 (3,5,3) > m3 a0 (3,5,3) sp0 | 
+  t7 1000015 shoot 6,4,1 (7,4,1) > m0 a8 (6,4,1) sp33 | 6,4,1:p3:59/14:m1
+  t8 1000008 shoot 2,4,3 (1,7,2) > m0 a2 (28,54,0) sp72 | 
+  t8 1000012 shoot 2,4,3 (3,5,3) > m0 a2 (15,25,0) sp76 | 
+--- how tasks went: [(('shoot', 'obeyed'), 1), (('shoot', 'other mode0 act2'), 2), (('shoot', 'other mode0 act8'), 15), (('shoot', 'other mode3 act0 notpaid'), 2), (('shot landed', 'module'), 1), (('shot landed', 'nothing logged'), 0), (('shot landed', 'other terrain'), 0), (('walk', 'other mode0 act2'), 2), (('walk', 'other mode2 act2'), 2), (('walk', 'other mode2 act7'), 1)]
+--- by fighter: {'1000003': {'other': 2}, '1000012': {'other': 13, 'module_hits': 0, 'broke': 0}, '1000026': {'other': 1}, '1000034': {'other': 1}, '1000008': {'other': 5, 'module_hits': 0, 'broke': 0}, '1000015': {'other': 2, 'module_hits': 3, 'broke': 3, 'shoot': 1}}
+--- hostile hits on module objects 16, breaking 11; blasts 9
+--- OBJECTIVE RESULT at what=grid when=end turn=11 l: module tiles 206 > 187 (lost 19); facilities demolished: 1 ['3,0:WELL']

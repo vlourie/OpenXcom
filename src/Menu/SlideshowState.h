@@ -40,6 +40,8 @@ private:
 	std::vector<Text *>_captions;
 	int _curScreen;
 	Timer *_transitionTimer;
+	/// how long the slide on screen is asked to stay, in milliseconds
+	Uint32 _holdMs;
 public:
 	/// Creates the Slideshow state.
 	SlideshowState(const SlideshowHeader &slideshowHeader, const std::vector<SlideshowSlide> *slideshowRule);
@@ -47,8 +49,6 @@ public:
 	~SlideshowState();
 	/// Handle timers.
 	void think() override;
-	/// Handler for waiting the screen.
-	void screenTimer();
 	/// Handler for clicking the screen.
 	void screenClick(Action *action);
 	/// Handler for skipping the screen.

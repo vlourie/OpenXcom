@@ -1,0 +1,357 @@
+      X 1/0 victim=1000019(1) dead at (24,49,2) by 340(0) AUX_TANK_PSI_CANNON dist=22
+      ~ reaction turn=1 side=0 reactor=1000000 turn=1 side=0 what=reaction unit=1000000 pos=(47,54,2)
+      ~ reaction turn=1 side=0 reactor=1000029 turn=1 side=0 what=reaction unit=1000029 pos=(34,41,2)
+      ~ reaction turn=1 side=0 reactor=1000035 turn=1 side=0 what=reaction unit=1000035 pos=(23,23,2)
+      ~ reaction turn=1 side=0 reactor=1000035 turn=1 side=0 what=reaction unit=1000035 pos=(23,23,2)
+      ~ reaction turn=1 side=0 reactor=1000022 turn=1 side=0 what=reaction unit=1000022 pos=(40,45,2)
+      ~ reaction turn=1 side=0 reactor=1000022 turn=1 side=0 what=reaction unit=1000022 pos=(40,45,2)
+      ~ reaction turn=1 side=0 reactor=1000022 turn=1 side=0 what=reaction unit=1000022 pos=(40,45,2)
+      ~ reaction turn=1 side=0 reactor=1000009 turn=1 side=0 what=reaction unit=1000009 pos=(40,43,2)
+      ~ reaction turn=1 side=0 reactor=1000009 turn=1 side=0 what=reaction unit=1000009 pos=(40,43,2)
+      ~ reaction turn=1 side=0 reactor=1000009 turn=1 side=0 what=reaction unit=1000009 pos=(40,43,2)
+      ~ reaction turn=1 side=0 reactor=1000018 turn=1 side=0 what=reaction unit=1000018 pos=(12,40,2)
+      X 1/0 victim=1000009(1) dead at (14,44,2) by 366(0) AUX_TANK_LASER dist=4
+      ~ reaction turn=1 side=0 reactor=1000018 turn=1 side=0 what=reaction unit=1000018 pos=(12,40,2)
+      X 1/0 victim=1000000(1) dead at (34,54,2) by 363(0) AUX_ACAR_WEAPON_LASCANNON dist=7
+      ~ reaction turn=1 side=0 reactor=1000011 turn=1 side=0 what=reaction unit=1000011 pos=(41,54,2)
+      X 1/0 victim=1000011(1) stun at (34,51,2) by 363(0) AUX_ACAR_WEAPON_LASCANNON dist=8
+      X 1/0 victim=1000012(1) dead at (11,44,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=4
+      X 1/0 victim=1000002(1) dead at (11,47,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=7
+      X 1/0 victim=1000029(1) dead at (34,44,2) by 427(0) AUX_MECHA_GRABBER dist=3
+      ~ reaction turn=1 side=0 reactor=1000016 turn=1 side=0 what=reaction unit=1000016 pos=(23,5,3)
+      ~ reaction turn=1 side=0 reactor=1000016 turn=1 side=0 what=reaction unit=1000016 pos=(23,5,3)
+      X 1/1 victim=1000011(1) dead at (34,51,2) by 363(0) AUX_ACAR_WEAPON_LASCANNON dist=8
+P      340 SOLDIER                  pos=(24,27,2) dir=4 tu=73/101 hp=69/69 kneel=0 st=0 w=AUX_TANK_PSI_CANNON rh=AUX_TANK_PSI_CANNON:1 lh=AUX_XEC_WEAPON_TWIN_LASCANNON:1 spotted=0 sees=1000035
+P      184 SOLDIER                  pos=(40,43,2) dir=0 tu=78/192 hp=172/172 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_TANK_LASER_CANNON:0 lh=AUX_TANK_LASER:1 spotted=0 sees=-
+P       96 SOLDIER                  pos=(32,40,2) dir=3 tu=194/194 hp=175/177 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spotted=0 sees=-
+P      366 SOLDIER                  pos=(12,40,2) dir=3 tu=146/188 hp=166/166 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_TANK_LASER_CANNON:0 lh=AUX_TANK_LASER:1 spotted=0 sees=-
+P      363 SOLDIER                  pos=(41,54,2) dir=7 tu=12/347 hp=67/67 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_ACAR_WEAPON_LASCANNON:1 lh=AUX_TANK_LASER:1 spotted=0 sees=1000006,1000018,1000035
+P      393 SOLDIER                  pos=(14,41,2) dir=5 tu=192/343 hp=67/67 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_ACAR_WEAPON_LASCANNON:1 lh=AUX_TANK_LASER:1 spotted=0 sees=1000005,1000010,1000020,1000021,1000023,1000027
+P      427 SOLDIER                  pos=(34,41,2) dir=5 tu=24/110 hp=54/59 kneel=0 st=0 w=AUX_MECHA_GRABBER rh=AUX_WOLVERIN_WEAPON_MINIGUN:0 lh=AUX_TANK_WEAPON_GRENADES:0 spotted=0 sees=1000004,1000006,1000017,1000018,1000022,1000030,1000035
+P      472 SOLDIER                  pos=(44,57,2) dir=5 tu=329/329 hp=57/57 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_ACAR_WEAPON_XGAUSS:1 lh=AUX_TANK_LASER:1 spotted=0 sees=-
+P      471 SOLDIER                  pos=(32,30,2) dir=6 tu=5/326 hp=57/57 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_ACAR_WEAPON_LASCANNON:1 lh=AUX_TANK_LASER:1 spotted=255 sees=-
+P        2 SOLDIER                  pos=(46,35,2) dir=6 tu=3/157 hp=144/144 kneel=0 st=0 w=STR_SMARTGUN rh=STR_SMARTGUN:1 lh=- spotted=255 sees=-
+P       38 SOLDIER                  pos=(23,31,2) dir=4 tu=0/153 hp=129/129 kneel=0 st=0 w=STR_FND rh=STR_FND:1 lh=- spotted=0 sees=1000035
+P       67 SOLDIER                  pos=(54,28,4) dir=4 tu=2/122 hp=115/115 kneel=0 st=0 w=STR_GATLING_LASER rh=STR_GATLING_LASER:1 lh=- spotted=255 sees=-
+P       61 SOLDIER                  pos=(23,5,3) dir=1 tu=34/119 hp=97/115 kneel=0 st=0 w=STR_XG_HEAVY rh=STR_XG_HEAVY:1 lh=- spotted=0 sees=1000016
+P      394 SOLDIER                  pos=(44,17,1) dir=4 tu=4/112 hp=186/186 kneel=0 st=0 w=STR_XG_HEAVY rh=STR_XG_HEAVY:1 lh=- spotted=255 sees=-
+P      200 SOLDIER                  pos=(41,11,2) dir=4 tu=3/101 hp=114/114 kneel=0 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- spotted=255 sees=-
+P      255 SOLDIER                  pos=(40,13,2) dir=4 tu=4/100 hp=113/113 kneel=0 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- spotted=255 sees=-
+P      240 SOLDIER                  pos=(51,17,2) dir=2 tu=1/112 hp=107/107 kneel=0 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- spotted=255 sees=-
+P      418 SOLDIER                  pos=(55,16,1) dir=0 tu=1/83 hp=80/80 kneel=0 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- spotted=255 sees=-
+P      321 SOLDIER                  pos=(40,14,2) dir=5 tu=3/106 hp=100/100 kneel=0 st=0 w=STR_ELITE_HEAVY_PLASMA rh=STR_ELITE_HEAVY_PLASMA:1 lh=- spotted=255 sees=-
+P      241 SOLDIER                  pos=(45,14,2) dir=4 tu=3/117 hp=104/104 kneel=0 st=0 w=STR_PRECISION_PLASMA rh=STR_PRECISION_PLASMA:1 lh=- spotted=255 sees=-
+P      199 SOLDIER                  pos=(45,9,2) dir=7 tu=1/135 hp=87/87 kneel=0 st=0 w=STR_PRECISION_PLASMA rh=STR_PRECISION_PLASMA:1 lh=- spotted=255 sees=-
+P      144 SOLDIER                  pos=(50,27,0) dir=0 tu=4/128 hp=111/111 kneel=0 st=0 w=STR_SONIC_CANNON rh=STR_SONIC_CANNON:1 lh=- spotted=255 sees=-
+P      424 SOLDIER                  pos=(46,17,2) dir=6 tu=0/86 hp=106/106 kneel=0 st=0 w=STR_PPSH_4 rh=STR_PPSH_4:1 lh=- spotted=255 sees=-
+P      274 SOLDIER                  pos=(54,9,2) dir=2 tu=0/93 hp=53/53 kneel=0 st=0 w=STR_SONIC_PISTOL rh=STR_SONIC_PISTOL:1 lh=- spotted=255 sees=-
+P      286 SOLDIER                  pos=(43,14,0) dir=0 tu=2/92 hp=53/53 kneel=0 st=0 w=STR_SONIC_PISTOL rh=STR_SONIC_PISTOL:1 lh=- spotted=255 sees=-
+P      368 SOLDIER                  pos=(45,18,2) dir=6 tu=1/110 hp=104/104 kneel=0 st=0 w=STR_SMARTGUN rh=STR_SMARTGUN:1 lh=- spotted=255 sees=-
+P      468 SOLDIER                  pos=(45,18,0) dir=5 tu=2/84 hp=105/105 kneel=0 st=0 w=STR_PPSH_4 rh=STR_PPSH_4:1 lh=- spotted=255 sees=-
+P       81 SOLDIER                  pos=(43,6,2) dir=5 tu=0/98 hp=179/179 kneel=0 st=0 w=STR_FLECHETTE_GUN rh=STR_FLECHETTE_GUN:1 lh=- spotted=255 sees=-
+P      197 SOLDIER                  pos=(53,20,0) dir=4 tu=1/97 hp=178/178 kneel=0 st=0 w=STR_FLECHETTE_GUN rh=STR_FLECHETTE_GUN:1 lh=- spotted=255 sees=-
+P      114 SOLDIER                  pos=(39,14,2) dir=7 tu=1/93 hp=54/54 kneel=0 st=0 w=STR_SONIC_RIFLE rh=STR_SONIC_RIFLE:1 lh=- spotted=255 sees=-
+P       90 SOLDIER                  pos=(47,13,4) dir=5 tu=2/94 hp=55/55 kneel=0 st=0 w=STR_SONIC_RIFLE rh=STR_SONIC_RIFLE:1 lh=- spotted=255 sees=-
+P       87 SOLDIER                  pos=(44,13,4) dir=6 tu=1/89 hp=56/56 kneel=0 st=0 w=STR_SONIC_RIFLE rh=STR_SONIC_RIFLE:1 lh=- spotted=255 sees=-
+P      267 SOLDIER                  pos=(43,20,0) dir=4 tu=4/132 hp=81/81 kneel=0 st=0 w=STR_SMARTGUN rh=STR_SMARTGUN:1 lh=- spotted=255 sees=-
+P      192 SOLDIER                  pos=(45,13,4) dir=5 tu=4/110 hp=103/103 kneel=0 st=0 w=STR_ASUKA_RIFLE rh=STR_ASUKA_RIFLE:1 lh=- spotted=255 sees=-
+P      102 SOLDIER                  pos=(49,10,3) dir=0 tu=2/92 hp=164/164 kneel=0 st=0 w=STR_XG_HEAVY rh=STR_XG_HEAVY:1 lh=- spotted=255 sees=-
+P      380 SOLDIER                  pos=(49,15,2) dir=4 tu=3/96 hp=50/50 kneel=0 st=0 w=STR_HARPOON_AUTO rh=STR_HARPOON_AUTO:1 lh=- spotted=255 sees=-
+P       71 SOLDIER                  pos=(48,1,2) dir=6 tu=2/94 hp=178/178 kneel=0 st=0 w=STR_FLECHETTE_GUN rh=STR_FLECHETTE_GUN:1 lh=- spotted=255 sees=-
+P      392 SOLDIER                  pos=(54,53,2) dir=6 tu=3/73 hp=154/154 kneel=0 st=0 w=STR_PPSH_4 rh=STR_PPSH_4:1 lh=- spotted=0 sees=1000018
+H  1000001 STR_DOOM_CACODEMON_TERRORIST pos=(2,37,3) dir=2 tu=74/74 hp=484/484 mor=100 st=0 w=AUX_DOOM_CACODEMON_WEAPON rh=AUX_DOOM_CACODEMON_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=11 near=10
+H  1000003 STR_DOOM_DEMON_TERRORIST pos=(4,34,2) dir=2 tu=131/131 hp=181/181 mor=100 st=0 w=AUX_DOOM_DEMON_WEAPON rh=AUX_DOOM_DEMON_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=11 near=10
+H  1000004 STR_DOOM_DEMON_TERRORIST pos=(28,44,2) dir=3 tu=131/131 hp=132/181 mor=100 st=0 w=AUX_DOOM_DEMON_WEAPON rh=AUX_DOOM_DEMON_WEAPON:1 lh=- ammo=0 sees=184,363 seenby=1 known=11 near=6
+H  1000005 STR_DOOM_SOLDIER         pos=(0,44,4) dir=0 tu=81/81 hp=36/36 mor=100 st=0 w=STR_PIR_PLASMA_PISTOL rh=STR_PIR_PLASMA_PISTOL:1 lh=- ammo=0 sees=- seenby=1 known=11 near=13
+H  1000006 STR_DOOM_SOLDIER         pos=(20,44,4) dir=0 tu=81/81 hp=36/36 mor=100 st=0 w=STR_PIR_PLASMA_RIFLE rh=STR_PIR_PLASMA_RIFLE:1 lh=- ammo=0 sees=- seenby=2 known=11 near=7
+H  1000007 STR_DOOM_SOLDIER         pos=(4,40,4) dir=4 tu=81/81 hp=36/36 mor=100 st=0 w=STR_PIR_PLASMA_PISTOL rh=STR_PIR_PLASMA_PISTOL:1 lh=- ammo=0 sees=- seenby=0 known=11 near=8
+H  1000008 STR_DOOM_SOLDIER         pos=(24,40,4) dir=0 tu=81/81 hp=36/36 mor=100 st=0 w=STR_PIR_PLASMA_RIFLE rh=STR_PIR_PLASMA_RIFLE:1 lh=- ammo=0 sees=- seenby=0 known=11 near=8
+H  1000010 STR_DOOM_SOLDIER         pos=(14,51,2) dir=7 tu=81/81 hp=36/36 mor=100 st=0 w=STR_PIR_PLASMA_RIFLE rh=STR_PIR_PLASMA_RIFLE:1 lh=- ammo=0 sees=393 seenby=1 known=11 near=10
+H  1000013 STR_DOOM_SOLDIER         pos=(21,49,2) dir=0 tu=81/81 hp=36/36 mor=100 st=0 w=STR_PIR_PLASMA_PISTOL rh=STR_PIR_PLASMA_PISTOL:1 lh=- ammo=0 sees=- seenby=0 known=11 near=11
+H  1000014 STR_DOOM_SARGE           pos=(20,40,4) dir=0 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_PLASMA_RIFLE rh=STR_PIR_PLASMA_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=11 near=6
+H  1000015 STR_DOOM_SARGE           pos=(0,40,4) dir=3 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- ammo=1 sees=393 seenby=0 known=11 near=12
+H  1000016 STR_DOOM_SARGE           pos=(24,4,3) dir=5 tu=89/89 hp=44/48 mor=100 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- ammo=1 sees=61 seenby=1 known=11 near=1
+H  1000017 STR_DOOM_SARGE           pos=(31,47,2) dir=4 tu=85/89 hp=48/48 mor=100 st=0 w=STR_COOKER rh=STR_COOKER:1 lh=- ammo=0 sees=- seenby=1 known=11 near=7
+H  1000018 STR_DOOM_SARGE           pos=(31,54,2) dir=7 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- ammo=1 sees=366,393 seenby=3 known=11 near=10
+H  1000020 STR_DOOM_SARGE           pos=(4,51,2) dir=7 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_PLASMA_RIFLE rh=STR_PIR_PLASMA_RIFLE:1 lh=- ammo=0 sees=- seenby=1 known=11 near=14
+H  1000021 STR_DOOM_SARGE           pos=(8,54,2) dir=3 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- ammo=1 sees=- seenby=1 known=11 near=14
+H  1000022 STR_DOOM_SARGE           pos=(31,44,2) dir=2 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_HEAVY_PLASMA rh=STR_PIR_HEAVY_PLASMA:1 lh=- ammo=1 sees=184,427 seenby=1 known=11 near=4
+H  1000023 STR_DOOM_SARGE           pos=(11,54,2) dir=7 tu=85/89 hp=48/48 mor=100 st=0 w=STR_COOKER rh=STR_COOKER:1 lh=- ammo=0 sees=- seenby=1 known=11 near=13
+H  1000024 STR_DOOM_GUNNER          pos=(7,34,2) dir=5 tu=74/74 hp=66/66 mor=100 st=0 w=STR_COOKER rh=STR_COOKER:1 lh=- ammo=0 sees=- seenby=0 known=11 near=8
+H  1000025 STR_DOOM_GUNNER          pos=(0,34,2) dir=6 tu=74/74 hp=66/66 mor=100 st=0 w=STR_COOKER rh=STR_COOKER:1 lh=- ammo=0 sees=- seenby=0 known=11 near=13
+H  1000026 STR_DOOM_GUNNER          pos=(1,49,2) dir=4 tu=74/74 hp=66/66 mor=100 st=0 w=STR_PIR_SMALL_LAUNCHER rh=STR_PIR_SMALL_LAUNCHER:1 lh=- ammo=4 sees=- seenby=0 known=11 near=14
+H  1000027 STR_DOOM_IMP_TERRORIST   pos=(14,54,2) dir=3 tu=114/114 hp=79/79 mor=100 st=0 w=AUX_DOOM_IMP_WEAPON rh=AUX_DOOM_IMP_WEAPON:1 lh=AUX_DOOM_IMP_CLAWS:1 ammo=0 sees=- seenby=1 known=11 near=13
+H  1000028 STR_DOOM_IMP_TERRORIST   pos=(1,57,2) dir=3 tu=114/114 hp=79/79 mor=100 st=0 w=AUX_DOOM_IMP_WEAPON rh=AUX_DOOM_IMP_WEAPON:1 lh=AUX_DOOM_IMP_CLAWS:1 ammo=0 sees=- seenby=0 known=11 near=20
+H  1000030 STR_DOOM_IMP_TERRORIST   pos=(34,48,2) dir=4 tu=114/114 hp=79/79 mor=100 st=0 w=AUX_DOOM_IMP_WEAPON rh=AUX_DOOM_IMP_WEAPON:1 lh=AUX_DOOM_IMP_CLAWS:1 ammo=0 sees=363 seenby=1 known=11 near=7
+H  1000031 STR_DOOM_IMP_TERRORIST   pos=(21,57,2) dir=5 tu=114/114 hp=79/79 mor=100 st=0 w=AUX_DOOM_IMP_WEAPON rh=AUX_DOOM_IMP_WEAPON:1 lh=AUX_DOOM_IMP_CLAWS:1 ammo=0 sees=- seenby=0 known=11 near=17
+H  1000032 STR_DOOM_SARGE           pos=(4,30,2) dir=5 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_BLASTER_LAUNCHER rh=STR_PIR_BLASTER_LAUNCHER:1 lh=- ammo=1 sees=- seenby=0 known=11 near=13
+H  1000033 STR_DOOM_SARGE           pos=(4,37,2) dir=6 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PIR_PLASMA_RIFLE rh=STR_PIR_PLASMA_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=11 near=9
+H  1000034 STR_DOOM_SARGE           pos=(2,37,2) dir=6 tu=89/89 hp=48/48 mor=100 st=0 w=STR_PLASMA_SCORCHER rh=STR_PLASMA_SCORCHER:1 lh=- ammo=0 sees=- seenby=0 known=11 near=10
+H  1000035 STR_DOOM_HELL_BARON_TERRORIST pos=(24,51,2) dir=0 tu=91/122 hp=832/1210 mor=92 st=0 w=AUX_DOOM_HELL_BARON_WEAPON rh=AUX_DOOM_HELL_BARON_WEAPON:1 lh=- ammo=0 sees=340,38 seenby=4 known=11 near=14
+  H1 D 1000001 n=1 from=(2,37,3) tu=74 escape none to=(2,37,3) run=0 aim=-1 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 37, 3] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=2 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000004 n=1 from=(28,44,2) tu=131 patrol walk to=(40,5,2) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[28, 44, 2] tu=128 spent=3 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.turnspot 28,44,2>28,44,2 d6 bam0 mt0 sz2 tu128/-1 en100/-1 rs0 bu-1
+  H1 D 1000004 n=2 from=(28,44,2) tu=128 patrol walk to=(40,5,2) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[25, 41, 2] tu=110 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 walk.stop.spotted 25,41,2>25,41,2 d7 bam0 mt0 sz2 tu110/-1 en91/-1 rs0 bu-1
+  H1 D 1000005 n=1 from=(0,44,4) tu=81 patrol walk to=(12,35,3) run=0 aim=366 w=STR_PIR_PLASMA_PISTOL seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[0, 44, 4] tu=80 spent=1 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.turnspot 0,44,4>0,44,4 d1 bam0 mt0 sz1 tu80/-1 en70/-1 rs0 bu-1
+  H1 D 1000005 n=2 from=(0,44,4) tu=80 patrol walk to=(12,35,3) run=0 aim=366 w=STR_PIR_PLASMA_PISTOL seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[1, 44, 2] tu=76 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.spotted 1,44,2>1,44,2 d2 bam0 mt0 sz1 tu76/-1 en68/-1 rs0 bu-1
+  H1 D 1000006 n=1 from=(20,44,4) tu=81 combat snap to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 44, 4] tu=60 spent=21 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  H1 D 1000006 n=2 from=(20,44,4) tu=60 combat snap to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 44, 4] tu=41 spent=19 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  H1 D 1000007 n=1 from=(4,40,4) tu=81 patrol walk to=(2,25,3) run=0 aim=366 w=STR_PIR_PLASMA_PISTOL seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 28, 4] tu=1 spent=80 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 4,28,4>4,27,4 d0 bam0 mt0 sz1 tu1/4 en36/2 rs0 bu-1
+  H1 D 1000008 n=1 from=(24,40,4) tu=81 escape walk to=(21,35,4) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,41,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,41,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,41,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,41,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,41,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,41,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,41,2)
+      X 1/1 victim=1000008(1) dead at (24,41,2) by 340(0) AUX_TANK_PSI_CANNON dist=14
+      -> pos=[24, 41, 2] tu=77 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=36 down=1 seen=0 spotted=2 walk.stop.reaction 24,41,2>24,41,2 d4 bam0 mt0 sz1 tu77/-1 en68/-1 rs0 bu-1
+  H1 D 1000001 n=2 from=(2,37,3) tu=74 escape none to=(2,37,3) run=0 aim=366 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 37, 3] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=2 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000004 n=1 from=(25,41,2) tu=110 patrol walk to=(33,38,2) run=0 aim=96 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(24,40,2)
+      X 1/1 victim=1000004(1) dead at (24,40,2) by 340(0) AUX_TANK_PSI_CANNON dist=13
+      -> pos=[24, 40, 2] tu=104 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=132 down=1 seen=0 spotted=2 walk.stop.reaction 24,40,2>24,40,2 d7 bam0 mt0 sz2 tu104/-1 en88/-1 rs0 bu-1
+  H1 D 1000001 n=2 from=(2,37,3) tu=74 escape none to=(2,37,3) run=0 aim=366 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 37, 3] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=2 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000005 n=1 from=(1,44,2) tu=76 combat walk to=(13,42,2) run=0 aim=393 w=AUX_FISTO seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=393 turn=1 side=1 what=reaction unit=393 pos=(10,43,2)
+      ~ reaction turn=1 side=1 reactor=393 turn=1 side=1 what=reaction unit=393 pos=(10,43,2)
+      ~ reaction turn=1 side=1 reactor=393 turn=1 side=1 what=reaction unit=393 pos=(10,43,2)
+      X 1/1 victim=1000005(1) dead at (10,43,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=4
+      -> pos=[10, 43, 2] tu=38 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=180 down=1 seen=0 spotted=1 walk.stop.reaction 10,43,2>10,43,2 d2 bam0 mt0 sz1 tu38/-1 en49/-1 rs0 bu-1
+  H1 D 1000001 n=2 from=(2,37,3) tu=74 escape none to=(2,37,3) run=0 aim=-1 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 37, 3] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=2 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000006 n=1 from=(20,44,4) tu=41 combat snap to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 44, 4] tu=22 spent=19 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  H1 D 1000006 n=2 from=(20,44,4) tu=22 combat snap to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 44, 4] tu=3 spent=19 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  H1 D 1000010 n=1 from=(14,51,2) tu=81 combat walk to=(13,43,2) run=0 aim=393 w=AUX_FISTO seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=393 turn=1 side=1 what=reaction unit=393 pos=(14,50,2)
+      X 1/1 victim=1000010(1) dead at (14,50,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=9
+      -> pos=[14, 50, 2] tu=77 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=180 down=1 seen=0 spotted=1 walk.stop.reaction 14,50,2>14,50,2 d0 bam0 mt0 sz1 tu77/-1 en68/-1 rs0 bu-1
+  H1 D 1000001 n=2 from=(2,37,3) tu=74 escape none to=(2,37,3) run=0 aim=366 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 37, 3] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=2 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000013 n=0 from=(21,49,2) tu=81 combat walk to=(17,48,2) run=0 aim=393 w=STR_PIR_PLASMA_PISTOL seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[22, 49, 2] tu=73 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=4 walk.stop.spotted 22,49,2>22,49,2 d2 bam0 mt0 sz1 tu73/-1 en68/-1 rs0 bu-1
+  H1 D 1000013 n=1 from=(22,49,2) tu=73 combat auto to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_PISTOL seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,49,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,49,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,49,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,49,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,49,2)
+      X 1/1 victim=1000013(1) dead at (22,49,2) by 340(0) AUX_TANK_PSI_CANNON dist=22
+      -> pos=[22, 49, 2] tu=51 spent=22 dmg=0 downed=0 fdmg=27 hp_lost=36 down=1 seen=0 spotted=4 
+  H1 D 1000001 n=2 from=(2,37,3) tu=74 escape none to=(2,37,3) run=0 aim=366 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 37, 3] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=2 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000014 n=1 from=(20,40,4) tu=89 combat walk to=(16,43,2) run=0 aim=393 w=AUX_FISTO seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 41, 4] tu=85 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 walk.stop.spotted 20,41,4>20,41,4 d4 bam0 mt0 sz1 tu85/-1 en78/-1 rs0 bu-1
+  H1 D 1000014 n=2 from=(20,41,4) tu=85 combat snap to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 41, 4] tu=62 spent=23 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000015 n=1 from=(0,40,4) tu=89 patrol walk to=(12,35,3) run=0 aim=366 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[13, 33, 4] tu=1 spent=88 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 13,33,4>13,33,3 d9 bam0 mt0 sz1 tu1/8 en40/0 rs0 bu-1
+  H1 D 1000016 n=1 from=(24,4,3) tu=89 combat auto to=(23,5,3) run=0 aim=61 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=61 turn=1 side=1 what=reaction unit=61 pos=(24,4,3)
+      -> pos=[24, 4, 3] tu=54 spent=35 dmg=0 downed=0 fdmg=0 hp_lost=7 down=0 seen=0 spotted=1 
+  H1 D 1000016 n=2 from=(24,4,3) tu=54 combat auto to=(23,5,3) run=0 aim=61 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[24, 4, 2] tu=17 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000017 n=1 from=(31,47,2) tu=85 combat snap to=(34,41,2) run=0 aim=427 w=STR_COOKER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[31, 47, 2] tu=25 spent=60 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000017 n=2 from=(31,47,2) tu=25 escape walk to=(35,52,2) run=0 aim=427 w=STR_COOKER seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=96 turn=1 side=1 what=reaction unit=96 pos=(33,49,2)
+      ~ reaction turn=1 side=1 reactor=96 turn=1 side=1 what=reaction unit=96 pos=(33,49,2)
+      ~ reaction turn=1 side=1 reactor=96 turn=1 side=1 what=reaction unit=96 pos=(33,49,2)
+      X 1/1 victim=1000017(1) dead at (33,49,2) by 96(0) AUX_TANK_LASER_CANNON dist=9
+      -> pos=[33, 49, 2] tu=13 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=48 down=1 seen=0 spotted=4 walk.stop.reaction 33,49,2>33,49,2 d3 bam0 mt0 sz1 tu13/-1 en74/-1 rs0 bu-1
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=2 from=(4,34,2) tu=131 patrol 15 to=(-1,-1,-1) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 34, 2] tu=131 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000014 n=1 from=(20,41,4) tu=62 combat snap to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 41, 4] tu=41 spent=21 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000014 n=2 from=(20,41,4) tu=41 combat snap to=(40,43,2) run=0 aim=184 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 41, 4] tu=20 spent=21 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000016 n=1 from=(24,4,2) tu=17 escape walk to=(26,4,3) run=0 aim=61 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[23, 7, 2] tu=3 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 23,7,2>22,7,2 d6 bam0 mt0 sz1 tu3/8 en73/4 rs0 bu-1
+  H1 D 1000018 n=1 from=(31,54,2) tu=89 combat auto to=(41,54,2) run=0 aim=363 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[31, 54, 2] tu=51 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=3 
+  H1 D 1000018 n=2 from=(31,54,2) tu=51 combat auto to=(41,54,2) run=0 aim=363 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[31, 54, 2] tu=16 spent=35 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=3 
+  H1 D 1000020 n=1 from=(4,51,2) tu=89 combat auto to=(14,41,2) run=0 aim=393 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 51, 2] tu=59 spent=30 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000020 n=2 from=(4,51,2) tu=59 combat auto to=(12,40,2) run=0 aim=366 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 51, 2] tu=31 spent=28 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000021 n=1 from=(8,54,2) tu=89 combat auto to=(12,40,2) run=0 aim=366 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[8, 54, 2] tu=51 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000021 n=2 from=(8,54,2) tu=51 combat auto to=(12,40,2) run=0 aim=366 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[8, 54, 2] tu=16 spent=35 dmg=93 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000022 n=1 from=(31,44,2) tu=89 combat auto to=(34,41,2) run=0 aim=427 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[31, 44, 2] tu=53 spent=36 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000022 n=2 from=(31,44,2) tu=53 combat auto to=(34,41,2) run=0 aim=427 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[31, 44, 2] tu=18 spent=35 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000023 n=1 from=(11,54,2) tu=85 combat walk to=(13,43,2) run=0 aim=393 w=AUX_FISTO seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[11, 53, 2] tu=81 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.spotted 11,53,2>11,53,2 d0 bam0 mt0 sz1 tu81/-1 en78/-1 rs0 bu-1
+  H1 D 1000023 n=2 from=(11,53,2) tu=81 combat walk to=(13,43,2) run=0 aim=393 w=AUX_FISTO seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[13, 45, 2] tu=45 spent=36 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=3 walk.stop.spotted 13,45,2>13,45,2 d1 bam0 mt0 sz1 tu45/-1 en60/-1 rs0 bu-1
+  H1 D 1000024 n=1 from=(7,34,2) tu=74 patrol walk to=(5,11,3) run=0 aim=366 w=STR_COOKER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[5, 20, 2] tu=0 spent=74 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 5,20,2>5,19,2 d0 bam0 mt0 sz1 tu0/4 en43/2 rs0 bu-1
+  H1 D 1000025 n=1 from=(0,34,2) tu=74 patrol walk to=(1,7,2) run=0 aim=-1 w=STR_COOKER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 21, 2] tu=4 spent=70 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 2,21,2>3,20,2 d1 bam0 mt0 sz1 tu4/6 en45/3 rs0 bu-1
+  H1 D 1000026 n=1 from=(1,49,2) tu=74 patrol walk to=(46,53,4) run=0 aim=-1 w=STR_PIR_SMALL_LAUNCHER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 49, 2] tu=66 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.spotted 2,49,2>2,49,2 d2 bam0 mt0 sz1 tu66/-1 en78/-1 rs0 bu-1
+  H1 D 1000026 n=2 from=(2,49,2) tu=66 combat snap to=(12,40,2) run=0 aim=366 w=STR_PIR_SMALL_LAUNCHER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 49, 2] tu=36 spent=30 dmg=26 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000027 n=1 from=(14,54,2) tu=114 escape walk to=(9,55,2) run=0 aim=393 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[9, 55, 2] tu=92 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000028 n=1 from=(1,57,2) tu=114 patrol walk to=(34,18,4) run=0 aim=-1 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 57, 2] tu=98 spent=16 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.turnspot 4,57,2>4,57,2 d1 bam0 mt0 sz1 tu98/-1 en94/-1 rs0 bu-1
+  H1 D 1000028 n=2 from=(4,57,2) tu=98 combat snap to=(12,40,2) run=0 aim=366 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 57, 2] tu=67 spent=31 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000030 n=1 from=(34,48,2) tu=114 combat snap to=(34,41,2) run=0 aim=427 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[34, 48, 2] tu=79 spent=35 dmg=6 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 
+  H1 D 1000030 n=2 from=(34,48,2) tu=79 combat snap to=(34,41,2) run=0 aim=427 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[34, 48, 2] tu=48 spent=31 dmg=7 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 
+  H1 D 1000031 n=0 from=(21,57,2) tu=114 combat walk to=(18,54,2) run=0 aim=393 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[21, 57, 3] tu=106 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=2 walk.stop.turnspot 21,57,3>21,57,3 d0 bam0 mt0 sz1 tu106/-1 en100/-1 rs0 bu-1
+  H1 D 1000031 n=1 from=(21,57,3) tu=106 combat snap to=(41,54,2) run=0 aim=363 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(21,57,3)
+      -> pos=[21, 57, 3] tu=73 spent=33 dmg=0 downed=0 fdmg=0 hp_lost=20 down=0 seen=3 spotted=2 
+  H1 D 1000031 n=2 from=(21,57,3) tu=73 combat snap to=(41,54,2) run=0 aim=363 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(21,57,3)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(21,57,3)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(21,57,3)
+      X 1/1 victim=1000031(1) dead at (21,57,3) by 340(0) AUX_TANK_PSI_CANNON dist=30
+      -> pos=[21, 57, 3] tu=42 spent=31 dmg=1 downed=0 fdmg=0 hp_lost=59 down=1 seen=0 spotted=2 
+  H1 D 1000003 n=1 from=(4,34,2) tu=131 patrol walk to=(57,44,2) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[9, 34, 2] tu=107 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 9,34,2>9,34,2 d2 bam0 mt0 sz2 tu107/-1 en90/-1 rs0 bu-1
+  H1 D 1000003 n=2 from=(9,34,2) tu=107 patrol walk to=(57,44,2) run=0 aim=-1 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[20, 33, 2] tu=37 spent=70 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.spotted 20,33,2>20,33,2 d2 bam0 mt0 sz2 tu37/-1 en55/-1 rs0 bu-1
+  H1 D 1000014 n=1 from=(20,41,4) tu=20 patrol walk to=(57,9,1) run=0 aim=393 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[23, 40, 2] tu=2 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 walk.stop.spotted 23,40,2>23,40,2 d1 bam0 mt0 sz1 tu2/-1 en69/-1 rs0 bu-1
+  H1 D 1000018 n=1 from=(31,54,2) tu=16 patrol walk to=(51,57,2) run=0 aim=363 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[32, 51, 2] tu=2 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=3 walk.stop.tu 32,51,2>33,50,2 d1 bam0 mt0 sz1 tu2/6 en73/3 rs0 bu-1
+  H1 D 1000020 n=1 from=(4,51,2) tu=31 combat auto to=(12,40,2) run=0 aim=366 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 51, 2] tu=3 spent=28 dmg=2 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000021 n=1 from=(8,54,2) tu=16 escape walk to=(6,58,2) run=0 aim=366 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[7, 57, 2] tu=2 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 7,57,2>6,58,2 d5 bam0 mt0 sz1 tu2/6 en73/3 rs0 bu-1
+  H1 D 1000022 n=1 from=(31,44,2) tu=18 escape walk to=(28,45,2) run=0 aim=96 w=STR_PIR_HEAVY_PLASMA seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[28, 45, 2] tu=4 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000023 n=1 from=(13,45,2) tu=45 patrol walk to=(41,54,4) run=0 aim=393 w=STR_COOKER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[19, 45, 2] tu=21 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=4 walk.stop.spotted 19,45,2>19,45,2 d2 bam0 mt0 sz1 tu21/-1 en48/-1 rs0 bu-1
+  H1 D 1000023 n=2 from=(19,45,2) tu=21 patrol walk to=(41,54,4) run=0 aim=393 w=STR_COOKER seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,45,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,45,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,45,2)
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(22,45,2)
+      X 1/1 victim=1000014(1) dead at (23,40,2) by 340(0) AUX_TANK_PSI_CANNON dist=13
+      X 1/1 victim=1000023(1) dead at (22,45,2) by 340(0) AUX_TANK_PSI_CANNON dist=18
+      -> pos=[22, 45, 2] tu=9 spent=12 dmg=0 downed=0 fdmg=48 hp_lost=48 down=1 seen=0 spotted=4 walk.stop.reaction 22,45,2>22,45,2 d2 bam0 mt0 sz1 tu9/-1 en42/-1 rs0 bu-1
+  H1 D 1000003 n=1 from=(20,33,2) tu=37 patrol walk to=(21,32,2) run=0 aim=38 w=AUX_DOOM_DEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[21, 32, 2] tu=5 spent=32 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000026 n=1 from=(2,49,2) tu=18 escape walk to=(2,45,2) run=0 aim=366 w=STR_PIR_SMALL_LAUNCHER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[2, 45, 2] tu=2 spent=34 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=3 
+  H1 D 1000028 n=1 from=(4,57,2) tu=67 combat snap to=(12,40,2) run=0 aim=366 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 57, 2] tu=36 spent=31 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000028 n=2 from=(4,57,2) tu=36 combat snap to=(12,40,2) run=0 aim=366 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[4, 57, 2] tu=5 spent=31 dmg=2 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000030 n=1 from=(34,48,2) tu=48 combat snap to=(34,41,2) run=0 aim=427 w=AUX_DOOM_IMP_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=96 turn=1 side=1 what=reaction unit=96 pos=(34,48,2)
+      ~ reaction turn=1 side=1 reactor=96 turn=1 side=1 what=reaction unit=96 pos=(34,48,2)
+      X 1/1 victim=1000030(1) dead at (34,48,2) by 96(0) AUX_TANK_LASER_CANNON dist=8
+      -> pos=[34, 48, 2] tu=17 spent=31 dmg=8 downed=0 fdmg=0 hp_lost=79 down=1 seen=0 spotted=2 
+  H1 D 1000001 n=2 from=(2,37,3) tu=74 patrol walk to=(24,7,2) run=0 aim=366 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[9, 34, 2] tu=30 spent=44 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 9,34,2>9,34,2 d2 bam0 mt1 sz2 tu30/-1 en82/-1 rs0 bu-1
+  H1 D 1000032 n=1 from=(4,30,2) tu=89 patrol walk to=(57,12,3) run=0 aim=366 w=STR_PIR_BLASTER_LAUNCHER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[15, 15, 2] tu=3 spent=86 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 15,15,2>16,15,2 d2 bam0 mt0 sz1 tu3/4 en37/2 rs0 bu-1
+  H1 D 1000033 n=0 from=(4,37,2) tu=89 combat walk to=(9,42,2) run=0 aim=366 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[5, 40, 2] tu=75 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 5,40,2>5,40,2 d3 bam0 mt0 sz1 tu75/-1 en73/-1 rs0 bu-1
+  H1 D 1000033 n=0 from=(5,40,2) tu=75 combat walk to=(5,45,2) run=0 aim=366 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[5, 45, 2] tu=55 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000033 n=1 from=(5,45,2) tu=55 combat auto to=(12,40,2) run=0 aim=366 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[5, 45, 2] tu=27 spent=28 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000033 n=2 from=(5,45,2) tu=27 combat snap to=(12,40,2) run=0 aim=366 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[5, 45, 2] tu=6 spent=21 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  H1 D 1000034 n=1 from=(2,37,2) tu=89 patrol walk to=(12,26,4) run=0 aim=366 w=STR_PLASMA_SCORCHER seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[7, 33, 4] tu=5 spent=84 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 7,33,4>8,34,4 d3 bam0 mt0 sz1 tu5/6 en46/3 rs0 bu-1
+  H1 D 1000035 n=1 from=(24,51,2) tu=91 combat snap to=(34,41,2) run=0 aim=427 w=AUX_DOOM_HELL_BARON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[24, 51, 2] tu=44 spent=47 dmg=17 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=4 
+  H1 D 1000035 n=2 from=(24,51,2) tu=44 escape walk to=(28,53,2) run=0 aim=96 w=AUX_DOOM_HELL_BARON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      ~ reaction turn=1 side=1 reactor=340 turn=1 side=1 what=reaction unit=340 pos=(26,52,2)
+      -> pos=[26, 52, 2] tu=34 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=4 walk.stop.reaction 26,52,2>26,52,2 d3 bam0 mt0 sz1 tu34/-1 en95/-1 rs0 bu-1
+  H1 D 1000001 n=1 from=(9,34,2) tu=30 patrol walk to=(24,7,2) run=0 aim=366 w=AUX_DOOM_CACODEMON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[13, 30, 2] tu=0 spent=30 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 13,30,2>13,29,2 d0 bam0 mt1 sz2 tu0/4 en67/2 rs0 bu-1
+  H1 D 1000033 n=1 from=(5,45,2) tu=6 patrol walk to=(3,5,3) run=0 aim=366 w=STR_PIR_PLASMA_RIFLE seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[5, 44, 2] tu=2 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=3 walk.stop.tu 5,44,2>5,43,2 d0 bam0 mt0 sz1 tu2/4 en61/2 rs0 bu-1
+  H1 D 1000035 n=1 from=(26,52,2) tu=34 escape walk to=(27,51,2) run=0 aim=96 w=AUX_DOOM_HELL_BARON_WEAPON seen=340,184,96,366,363,393,427,472,38,61,392
+      -> pos=[27, 51, 2] tu=28 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=3 
+  p2 D 2 n=2 from=(37,36,2) tu=119 combat auto to=(27,51,2) run=0 aim=1000035 w=STR_SMARTGUN seen=1000003,1000006,1000018,1000020,1000021,1000022,1000026,1000027,1000028,1000033,1000035
+      -> pos=[37, 36, 2] tu=57 spent=62 dmg=82 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  p2 D 38 n=2 from=(24,40,4) tu=66 combat snap to=(20,44,4) run=0 aim=1000006 w=STR_FND seen=1000003,1000006,1000018,1000020,1000021,1000022,1000026,1000027,1000028,1000033,1000035
+      X 2/0 victim=1000006(1) dead at (20,44,4) by 38(0) STR_FND dist=6
+      -> pos=[24, 40, 4] tu=4 spent=62 dmg=36 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  p2 D 61 n=2 from=(24,4,2) tu=112 combat auto to=(23,7,2) run=0 aim=1000016 w=STR_XG_HEAVY seen=1000003,1000016,1000018,1000020,1000021,1000022,1000026,1000027,1000028,1000033,1000035
+      X 2/0 victim=1000016(1) dead at (23,7,2) by 61(0) STR_XG_HEAVY dist=3
+      -> pos=[24, 4, 2] tu=59 spent=53 dmg=37 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  p2 D 392 n=2 from=(41,53,2) tu=21 combat auto to=(27,51,2) run=0 aim=1000035 w=STR_PPSH_4 seen=1000003,1000018,1000020,1000021,1000022,1000026,1000027,1000028,1000032,1000033,1000035
+      -> pos=[41, 53, 2] tu=0 spent=21 dmg=219 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  p2 D 184 n=1 from=(40,43,2) tu=192 combat auto to=(32,51,2) run=0 aim=1000018 w=AUX_TANK_LASER seen=1000003,1000018,1000020,1000021,1000022,1000026,1000027,1000028,1000032,1000033,1000035
+      X 2/0 victim=1000018(1) dead at (32,51,2) by 184(0) AUX_TANK_LASER dist=11
+      -> pos=[40, 43, 2] tu=155 spent=37 dmg=48 downed=1 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  p2 D 184 n=2 from=(40,43,2) tu=155 combat auto to=(28,45,2) run=0 aim=1000022 w=AUX_TANK_LASER seen=1000003,1000020,1000021,1000022,1000026,1000027,1000028,1000032,1000033,1000035
+      X 2/0 victim=1000022(1) dead at (28,45,2) by 184(0) AUX_TANK_LASER dist=12
+      -> pos=[40, 43, 2] tu=130 spent=25 dmg=21 downed=1 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 
+  p2 D 363 n=1 from=(41,54,2) tu=347 combat snap to=(27,51,2) run=0 aim=1000035 w=AUX_ACAR_WEAPON_LASCANNON seen=1000003,1000020,1000021,1000026,1000027,1000028,1000032,1000033,1000035
+      X 2/0 victim=1000035(1) stun at (27,51,2) by 363(0) AUX_ACAR_WEAPON_LASCANNON dist=14
+      -> pos=[41, 54, 2] tu=274 spent=73 dmg=341 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  p2 D 393 n=1 from=(14,41,2) tu=343 combat snap to=(5,44,2) run=0 aim=1000033 w=AUX_ACAR_WEAPON_LASCANNON seen=1000003,1000020,1000021,1000026,1000027,1000028,1000032,1000033
+      X 2/0 victim=1000033(1) dead at (5,44,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=9
+      -> pos=[14, 41, 2] tu=271 spent=72 dmg=138 downed=1 fdmg=0 hp_lost=0 down=0 seen=5 spotted=2 
+  p2 D 393 n=2 from=(14,41,2) tu=271 combat snap to=(2,45,2) run=0 aim=1000026 w=AUX_ACAR_WEAPON_LASCANNON seen=1000003,1000020,1000021,1000026,1000027,1000028,1000032
+      X 2/0 victim=1000026(1) dead at (2,45,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=13
+      -> pos=[14, 41, 2] tu=203 spent=68 dmg=127 downed=1 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  p2 D 393 n=1 from=(14,41,2) tu=203 combat snap to=(4,51,2) run=0 aim=1000020 w=AUX_ACAR_WEAPON_LASCANNON seen=1000003,1000020,1000021,1000027,1000028,1000032
+      X 2/0 victim=1000020(1) dead at (4,51,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=14
+      -> pos=[14, 41, 2] tu=131 spent=72 dmg=126 downed=1 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  p2 D 393 n=2 from=(14,41,2) tu=131 combat aimed to=(9,55,2) run=0 aim=1000027 w=AUX_ACAR_WEAPON_LASCANNON seen=1000003,1000021,1000027,1000028,1000032
+      X 2/0 victim=1000027(1) dead at (9,55,2) by 393(0) AUX_ACAR_WEAPON_LASCANNON dist=15
+      -> pos=[14, 41, 2] tu=7 spent=124 dmg=395 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+      ~ reaction turn=2 side=1 reactor=96 turn=2 side=1 what=reaction unit=96 pos=(23,32,2)

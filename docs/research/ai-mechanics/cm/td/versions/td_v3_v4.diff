@@ -1,0 +1,81 @@
+--- v3/AIModule.cpp
++++ v4/AIModule.cpp
+@@ -981,6 +981,7 @@
+ 	std::map<int, int> orders;        // unit -> the director's orders in this turn (the loop guard)
+ 	std::set<int> reserved;           // tiles a member was sent to in this turn
+ 	std::map<int, Position> parked;   // unit -> the tile it covers or waits on in this turn (held there when it thinks again)
++	std::map<int, Position> walked;   // unit -> where it stood when the director last sent it walking in this turn
+ };
+ TdState td;
+ const int TD_WAIT_LIMIT = 2, TD_ORDER_LIMIT = 4, TD_GROUP_MAX = 4;
+@@ -1175,6 +1176,7 @@
+ 	td.orders.clear();
+ 	td.reserved.clear();
+ 	td.parked.clear();
++	td.walked.clear();
+ 	tdUpdateMemory(save);
+ 	tdContacts(save);
+ 	std::ostringstream head;
+@@ -1301,16 +1303,17 @@
+ 			continue;
+ 		}
+ 		// roles: attack now if two or more can (a strike); otherwise a lone attacker may take its own attack, the rest close in
+-		// out of sight and, with three or more, the one farthest back covers them
++		// out of sight and, with three or more, the one nearest the target that cannot shoot it now covers them (the ground
++		// they cross must be within its sight)
+ 		const int gi = (int)td.groups.size();
+ 		int far = -1;
+ 		if (!g.strike && pool.size() >= 3)
+ 		{
+-			int best = -1;
++			int best = INT_MAX;
+ 			for (size_t k = 0; k < pool.size(); ++k)
+ 			{
+ 				const int d = Position::distanceSq(pool[k]->bu->getPosition(), target.pos);
+-				if (!pool[k]->now[i] && d > best)
++				if (!pool[k]->now[i] && d < best)
+ 				{
+ 					best = d;
+ 					far = (int)k;
+@@ -1416,6 +1419,9 @@
+ 		say("FREE", "limit");
+ 		return;
+ 	}
++	// the director's last walk did not move it (the way was blocked): no more walks of its in this turn (a shot still goes)
++	auto was = td.walked.find(_unit->getId());
++	const bool stuck = was != td.walked.end() && was->second == _unit->getPosition();
+ 	if (_AIMode == AI_COMBAT && action->type == BA_WALK
+ 		&& std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(action->target)) != _reachableWithAttack.end())
+ 	{
+@@ -1451,6 +1457,7 @@
+ 		action->desperate = false;
+ 		action->kneel = kneel;
+ 		action->finalFacing = _save->getTileEngine()->getDirectionTo(to, c.pos);
++		td.walked[_unit->getId()] = _unit->getPosition();
+ 		td.reserved.insert(_save->getTileIndex(to));
+ 		td.orders[_unit->getId()]++;
+ 	};
+@@ -1480,6 +1487,11 @@
+ 			td.orders[_unit->getId()]++;
+ 			g.attacked.insert(_unit->getId());
+ 			say(order, "shot");
++			return;
++		}
++		if (stuck)
++		{
++			say("FREE", "stuck");
+ 			return;
+ 		}
+ 		// a point it reaches with a shot's time units left with the engine's line of fire to the target, in the weapon's range;
+@@ -1517,6 +1529,11 @@
+ 			say((std::string(order) + "WALK").c_str(), "point others=" + std::to_string(bestOthers));
+ 			return;
+ 		}
++	}
++	if (stuck)
++	{
++		say("FREE", "stuck");
++		return;
+ 	}
+ 	// cover: out of the contacts' sight, a shot's time units and kneeling kept, the most of the ground between the target and the
+ 	// group seen (two points on the line to each other member); needs two of them at least

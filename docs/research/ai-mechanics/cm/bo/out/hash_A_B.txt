@@ -1,0 +1,148 @@
+  0 A: 1000000 n=1 act=2 to=(48,3,0)              X: 1000000 n=1 act=2 to=(48,3,0)              hu hi ho hm hr hr0 ha0
+  1 A: 1000000 n=2 act=2 to=(53,38,3)             X: 1000000 n=2 act=2 to=(53,38,3)             hu hi ho hm hr hr0 ha0
+  2 A: 1000001 n=1 act=2 to=(18,43,0)             X: 1000001 n=1 act=2 to=(18,43,0)             hu hi ho hm hr hr0 ha0
+  3 A: 1000001 n=2 act=2 to=(18,43,0)             X: 1000001 n=2 act=2 to=(18,43,0)             hu hi ho hm hr hr0 ha0
+  4 A: 1000005 n=1 act=2 to=(45,55,3)             X: 1000005 n=1 act=2 to=(45,55,3)             hu hi ho hm hr hr0 ha0
+  5 A: 1000005 n=2 act=2 to=(43,57,0)             X: 1000005 n=2 act=2 to=(43,57,0)             hu hi ho hm hr hr0 ha0
+  6 A: 1000006 n=1 act=8 to=(13,51,0)             X: 1000006 n=1 act=8 to=(13,51,0)             hu hi ho hm hr hr0 ha0
+  7 A: 1000006 n=2 act=8 to=(13,51,0)             X: 1000006 n=2 act=8 to=(13,51,0)             hu hi ho hm hr hr0 ha0
+  8 A: 1000008 n=1 act=2 to=(37,67,2)             X: 1000008 n=1 act=2 to=(37,67,2)             hu hi ho hm hr hr0 ha0
+  9 A: 1000008 n=2 act=2 to=(37,67,2)             X: 1000008 n=2 act=2 to=(37,67,2)             hu hi ho hm hr hr0 ha0
+ 10 A: 1000009 n=0 act=2 to=(16,41,0)             X: 1000009 n=0 act=2 to=(16,41,0)             hu hi ho hm hr hr0 ha0
+ 11 A: 1000009 n=1 act=9 to=(13,51,0)             X: 1000009 n=1 act=9 to=(13,51,0)             hu hi ho hm hr hr0 ha0
+ 12 A: 1000010 n=1 act=6 to=(44,24,0)             X: 1000010 n=1 act=6 to=(44,24,0)             hu hi ho hm hr hr0 ha0
+ 13 A: 1000010 n=1 act=2 to=(41,56,0)             X: 1000010 n=1 act=2 to=(41,56,0)             hu hi ho hm hr hr0 ha0
+ 14 A: 1000010 n=2 act=9 to=(44,24,0)             X: 1000010 n=2 act=9 to=(44,24,0)             hu hi ho hm hr hr0 ha0
+ 15 A: 1000011 n=1 act=2 to=(35,24,0)             X: 1000011 n=1 act=2 to=(35,24,0)             hu hi ho hm hr hr0 ha0
+ 16 A: 1000011 n=2 act=6 to=(44,24,0)             X: 1000011 n=2 act=6 to=(44,24,0)             hu hi ho hm hr hr0 ha0
+ 17 A: 1000012 n=0 act=2 to=(5,61,0)              X: 1000012 n=0 act=2 to=(5,61,0)              hu hi ho hm hr hr0 ha0
+ 18 A: 1000012 n=1 act=2 to=(9,13,3)              X: 1000012 n=1 act=2 to=(9,13,3)              hu hi ho hm hr hr0 ha0
+ 19 A: 1000014 n=0 act=2 to=(30,59,0)             X: 1000014 n=0 act=2 to=(30,59,0)             hu hi ho hm hr hr0 ha0
+ 20 A: 1000014 n=0 act=2 to=(28,57,0)             X: 1000014 n=0 act=2 to=(28,57,0)             hu hi ho hm hr hr0 ha0
+ 21 A: 1000014 n=1 act=2 to=(19,16,0)             X: 1000014 n=1 act=2 to=(19,16,0)             hu hi ho hm hr hr0 ha0
+ 22 A: 1000014 n=2 act=2 to=(19,16,0)             X: 1000014 n=2 act=2 to=(19,16,0)             hu hi ho hm hr hr0 ha0
+ 23 A: 1000016 n=0 act=2 to=(6,18,0)              X: 1000016 n=0 act=2 to=(6,18,0)              hu hi ho hm hr hr0 ha0
+ 24 A: 1000016 n=1 act=2 to=(7,18,0)              X: 1000016 n=1 act=2 to=(7,18,0)              hu hi ho hm hr hr0 ha0
+ 25 A: 1000016 n=2 act=2 to=(9,17,0)              X: 1000016 n=2 act=2 to=(9,17,0)              hu hi ho hm hr hr0 ha0
+ 26 A: 1000017 n=1 act=8 to=(52,37,3)             X: 1000017 n=1 act=8 to=(52,37,3)             hu hi ho hm hr hr0 ha0
+ 27 A: 1000017 n=2 act=2 to=(1,1,0)               X: 1000017 n=2 act=2 to=(1,1,0)               hu hi ho hm hr hr0 ha0
+ 28 A: 1000018 n=1 act=2 to=(66,14,0)             X: 1000018 n=1 act=2 to=(66,14,0)             hu hi ho hm hr hr0 ha0
+ 29 A: 1000018 n=2 act=8 to=(42,23,0)             X: 1000018 n=2 act=8 to=(42,23,0)             hu hi ho hm hr hr0 ha0
+ 30 A: 1000019 n=0 act=2 to=(44,68,3)             X: 1000019 n=0 act=2 to=(44,68,3)             hu hi ho hm hr hr0 ha0
+ 31 A: 1000019 n=0 act=2 to=(44,66,3)             X: 1000019 n=0 act=2 to=(44,66,3)             hu hi ho hm hr hr0 ha0
+ 32 A: 1000019 n=1 act=2 to=(63,52,3)             X: 1000019 n=1 act=2 to=(63,52,3)             hu hi ho hm hr hr0 ha0
+ 33 A: 1000020 n=1 act=2 to=(9,61,0)              X: 1000020 n=1 act=2 to=(9,61,0)              hu hi ho hm hr hr0 ha0
+ 34 A: 1000020 n=2 act=2 to=(5,62,0)              X: 1000020 n=2 act=2 to=(5,62,0)              hu hi ho hm hr hr0 ha0
+ 35 A: 1000021 n=1 act=2 to=(5,6,0)               X: 1000021 n=1 act=2 to=(5,6,0)               hu hi ho hm hr hr0 ha0
+ 36 A: 1000022 n=1 act=2 to=(25,19,0)             X: 1000022 n=1 act=2 to=(25,19,0)             hu hi ho hm hr hr0 ha0
+ 37 A: 1000022 n=2 act=9 to=(19,20,0)             X: 1000022 n=2 act=9 to=(19,20,0)             hu hi ho hm hr hr0 ha0
+ 38 A: 1000023 n=0 act=2 to=(51,8,0)              X: 1000023 n=0 act=2 to=(51,8,0)              hu hi ho hm hr hr0 ha0
+ 39 A: 1000023 n=0 act=2 to=(51,5,0)              X: 1000023 n=0 act=2 to=(51,5,0)              hu hi ho hm hr hr0 ha0
+ 40 A: 1000023 n=1 act=2 to=(52,6,0)              X: 1000023 n=1 act=2 to=(52,6,0)              hu hi ho hm hr hr0 ha0
+ 41 A: 1000023 n=1 act=2 to=(54,8,0)              X: 1000023 n=1 act=2 to=(54,8,0)              hu hi ho hm hr hr0 ha0
+ 42 A: 1000023 n=1 act=2 to=(53,8,0)              X: 1000023 n=1 act=2 to=(53,8,0)              hu hi ho hm hr hr0 ha0
+ 43 A: 1000023 n=1 act=2 to=(53,7,0)              X: 1000023 n=1 act=2 to=(53,7,0)              hu hi ho hm hr hr0 ha0
+ 44 A: 1000023 n=2 act=8 to=(37,12,2)             X: 1000023 n=2 act=8 to=(37,12,2)             hu hi ho hm hr hr0 ha0
+ 45 A: 1000024 n=1 act=2 to=(20,5,3)              X: 1000024 n=1 act=2 to=(20,5,3)              hu hi ho hm hr hr0 ha0
+ 46 A: 1000025 n=0 act=2 to=(34,52,0)             X: 1000025 n=0 act=2 to=(34,52,0)             hu hi ho hm hr hr0 ha0
+ 47 A: 1000025 n=0 act=2 to=(35,52,0)             X: 1000025 n=0 act=2 to=(35,52,0)             hu hi ho hm hr hr0 ha0
+ 48 A: 1000025 n=0 act=2 to=(38,53,0)             X: 1000025 n=0 act=2 to=(38,53,0)             hu hi ho hm hr hr0 ha0
+ 49 A: 1000025 n=1 act=8 to=(15,53,0)             X: 1000025 n=1 act=8 to=(15,53,0)             hu hi ho hm hr hr0 ha0
+ 50 A: 1000025 n=2 act=2 to=(14,5,3)              X: 1000025 n=2 act=2 to=(14,5,3)              hu hi ho hm hr hr0 ha0
+ 51 A: 1000026 n=1 act=2 to=(51,35,3)             X: 1000026 n=1 act=2 to=(51,35,3)             hu hi ho hm hr hr0 ha0
+ 52 A: 1000027 n=0 act=2 to=(6,18,0)              X: 1000027 n=0 act=2 to=(6,18,0)              hu hi ho hm hr hr0 ha0
+ 53 A: 1000027 n=1 act=2 to=(25,18,3)             X: 1000027 n=1 act=2 to=(25,18,3)             hu hi ho hm hr hr0 ha0
+ 54 A: 1000027 n=2 act=2 to=(25,18,3)             X: 1000027 n=2 act=2 to=(25,18,3)             hu hi ho hm hr hr0 ha0
+ 55 A: 1000028 n=1 act=6 to=(32,10,2)             X: 1000028 n=1 act=9 to=(25,8,0)              HU hi ho hm hr hr0 ha0
+ 56 A: 1000028 n=2 act=2 to=(8,9,0)               X: 1000028 n=2 act=8 to=(25,8,0)              HU HI HO hm HR HR0 ha0
+ 57 A: 1000029 n=1 act=2 to=(56,3,1)              X: 1000029 n=1 act=2 to=(56,3,1)              HU HI HO HM HR HR0 ha0
+ 58 A: 1000029 n=2 act=8 to=(51,22,0)             X: 1000029 n=2 act=2 to=(56,3,1)              HU HI HO HM HR HR0 HA0
+ 59 A: 1000030 n=1 act=2 to=(22,17,2)             X: 1000030 n=1 act=2 to=(23,14,2)             HU HI HO HM HR HR0 ha0
+ 60 A: 1000032 n=1 act=2 to=(63,50,0)             X: 1000032 n=1 act=2 to=(63,50,0)             HU HI HO HM HR HR0 ha0
+ 61 A: 1000033 n=1 act=2 to=(48,31,0)             X: 1000033 n=0 act=2 to=(34,57,0)             HU HI HO HM HR HR0 ha0
+ 62 A: 1000033 n=2 act=2 to=(48,31,0)             X: 1000033 n=1 act=2 to=(48,31,0)             HU HI HO HM HR HR0 HA0
+ 63 A: 1000034 n=0 act=2 to=(54,27,3)             X: 1000033 n=2 act=2 to=(48,31,0)             HU HI HO HM HR HR0 HA0
+ 64 A: 1000034 n=1 act=6 to=(52,11,3)             X: 1000034 n=0 act=2 to=(54,29,3)             HU HI HO HM HR HR0 HA0
+ 65 A: 1000034 n=2 act=2 to=(54,15,0)             X: 1000034 n=1 act=9 to=(56,20,0)             HU HI HO HM HR HR0 HA0
+ 66 A: 1000036 n=0 act=2 to=(26,15,0)             X: 1000034 n=2 act=2 to=(54,15,0)             HU HI HO HM HR HR0 HA0
+ 67 A: 1000036 n=1 act=9 to=(31,16,0)             X: 1000036 n=0 act=2 to=(26,15,0)             HU HI HO HM HR HR0 HA0
+ 68 A: 1000037 n=2 act=2 to=(69,51,0)             X: 1000036 n=1 act=9 to=(31,16,0)             HU HI HO HM HR HR0 HA0
+ 69 A: 1000038 n=1 act=2 to=(52,52,3)             X: 1000037 n=2 act=0 to=(55,67,0)             HU HI HO HM HR HR0 HA0
+ 70 A: 1000039 n=1 act=2 to=(55,62,0)             X: 1000038 n=0 act=2 to=(5,42,3)              HU HI HO HM HR HR0 HA0
+ 71 A: 1000039 n=2 act=2 to=(24,35,3)             X: 1000038 n=1 act=2 to=(52,52,3)             HU HI HO HM HR HR0 HA0
+ 72 A: 1000040 n=0 act=2 to=(42,58,0)             X: 1000039 n=1 act=2 to=(55,62,0)             HU HI HO HM HR HR0 HA0
+ 73 A: 1000040 n=0 act=2 to=(42,56,0)             X: 1000039 n=2 act=2 to=(32,67,0)             HU HI HO HM HR HR0 HA0
+ 74 A: 1000040 n=0 act=2 to=(41,56,0)             X: 1000040 n=0 act=2 to=(37,58,0)             HU HI HO HM HR HR0 HA0
+ 75 A: 1000040 n=1 act=2 to=(9,33,3)              X: 1000040 n=0 act=2 to=(36,55,0)             HU HI HO HM HR HR0 HA0
+ 76 A: 1000041 n=1 act=2 to=(34,68,2)             X: 1000040 n=0 act=2 to=(36,54,0)             HU HI HO HM HR HR0 HA0
+ 77 A: 1000042 n=1 act=6 to=(37,12,2)             X: 1000040 n=1 act=2 to=(9,33,3)              HU HI HO HM HR HR0 HA0
+ 78 A: 1000042 n=2 act=2 to=(20,18,0)             X: 1000041 n=1 act=2 to=(34,68,2)             HU HI HO HM HR HR0 HA0
+ 79 A: 1000044 n=1 act=2 to=(23,12,3)             X: 1000043 n=1 act=2 to=(5,19,3)              HU HI HO HM HR HR0 HA0
+ 80 A: 1000045 n=1 act=2 to=(65,9,3)              X: 1000043 n=1 act=2 to=(49,34,3)             HU HI HO HM HR HR0 HA0
+ 81 A: 1000045 n=2 act=8 to=(15,53,0)             X: 1000043 n=2 act=8 to=(51,22,0)             HU HI HO HM HR HR0 HA0
+ 82 A: 1000046 n=1 act=2 to=(39,69,0)             X: 1000044 n=1 act=2 to=(23,12,3)             HU HI HO HM HR HR0 HA0
+ 83 A: 1000046 n=2 act=2 to=(35,65,3)             X: 1000045 n=1 act=2 to=(65,9,3)              HU HI HO HM HR HR0 HA0
+ 84 A: 1000047 n=1 act=8 to=(51,22,0)             X: 1000045 n=2 act=8 to=(15,53,0)             HU HI HO HM HR HR0 HA0
+ 85 A: 1000047 n=1 act=2 to=(50,67,0)             X: 1000046 n=0 act=2 to=(39,64,0)             HU HI HO HM HR HR0 HA0
+ 86 A: 1000047 n=2 act=8 to=(42,23,0)             X: 1000046 n=1 act=0 to=(39,64,0)             HU HI HO HM HR HR0 HA0
+ 87 A: 1000049 n=0 act=2 to=(64,11,3)             X: 1000047 n=0 act=2 to=(47,59,0)             HU HI HO HM HR HR0 HA0
+ 88 A: 1000049 n=1 act=2 to=(27,17,2)             X: 1000047 n=1 act=8 to=(42,23,0)             HU HI HO HM HR HR0 HA0
+ 89 A: 1000049 n=2 act=2 to=(27,17,2)             X: 1000047 n=2 act=8 to=(51,22,0)             HU HI HO HM HR HR0 HA0
+ 90 A: 1000050 n=1 act=6 to=(19,20,0)             X: 1000049 n=1 act=2 to=(27,17,2)             HU HI HO HM HR HR0 HA0
+ 91 A: 1000050 n=2 act=0 to=(4,18,0)              X: 1000049 n=2 act=2 to=(27,17,2)             HU HI HO HM HR HR0 HA0
+ 92 A: 1000052 n=1 act=2 to=(49,67,0)             X: 1000050 n=1 act=6 to=(19,20,0)             HU HI HO HM HR HR0 HA0
+ 93 A: 1000052 n=2 act=2 to=(49,67,0)             X: 1000050 n=2 act=2 to=(1,4,2)               HU HI HO HM HR HR0 HA0
+ 94 A: 1000053 n=1 act=7 to=(56,20,0)             X: 1000052 n=1 act=0 to=(7,62,0)              HU HI HO HM HR HR0 HA0
+ 95 A: 1000054 n=2 act=2 to=(35,65,0)             X: 1000053 n=1 act=2 to=(60,60,0)             HU HI HO HM HR HR0 HA0
+ 96 A: 1000055 n=1 act=2 to=(3,7,2)               X: 1000053 n=2 act=7 to=(52,11,3)             HU HI HO HM HR HR0 HA0
+ 97 A: 1000055 n=2 act=6 to=(32,10,2)             X: 1000055 n=1 act=9 to=(25,8,0)              HU HI HO HM HR HR0 HA0
+ 98 A: 1000057 n=1 act=2 to=(18,2,0)              X: 1000055 n=1 act=2 to=(7,5,2)               HU HI HO HM HR HR0 HA0
+ 99 A: 1000057 n=2 act=2 to=(13,1,0)              X: 1000055 n=2 act=2 to=(27,14,1)             HU HI HO HM HR HR0 HA0
+100 A: 1000082 n=1 act=2 to=(65,31,3)             X: 1000057 n=1 act=2 to=(18,9,0)              HU HI HO HM HR HR0 HA0
+101 A: 1000083 n=1 act=2 to=(63,30,0)             X: 1000082 n=1 act=2 to=(69,41,0)             HU HI HO HM HR HR0 ha0
+102 A: 1000083 n=2 act=2 to=(63,30,0)             X: 1000083 n=1 act=2 to=(6,14,0)              HU HI HO HM HR HR0 HA0
+103 A: 1000000 n=1 act=2 to=(40,54,3)             X: 1000000 n=1 act=2 to=(48,3,0)              HU HI HO HM HR HR0 ha0
+104 A: 1000000 n=2 act=0 to=(40,54,3)             X: 1000000 n=2 act=2 to=(44,47,3)             HU HI HO HM HR HR0 HA0
+105 A: 1000001 n=1 act=2 to=(19,48,0)             X: 1000001 n=1 act=2 to=(20,40,0)             HU HI HO HM HR HR0 ha0
+106 A: 1000001 n=2 act=2 to=(9,11,0)              X: 1000001 n=2 act=2 to=(13,48,0)             HU HI HO HM HR HR0 HA0
+107 A: 1000005 n=1 act=2 to=(44,59,0)             X: 1000005 n=1 act=2 to=(45,55,3)             HU HI HO HM HR HR0 ha0
+108 A: 1000005 n=2 act=2 to=(42,58,0)             X: 1000005 n=2 act=2 to=(47,56,0)             HU HI HO HM HR HR0 HA0
+109 A: 1000006 n=1 act=2 to=(35,69,0)             X: 1000006 n=0 act=2 to=(22,39,0)             HU HI HO HM HR HR0 ha0
+110 A: 1000006 n=1 act=2 to=(22,39,0)             X: 1000006 n=1 act=2 to=(22,36,0)             HU HI HO HM HR HR0 HA0
+111 A: 1000006 n=2 act=2 to=(35,69,0)             X: 1000008 n=1 act=2 to=(37,67,2)             HU HI HO HM HR HR0 HA0
+112 A: 1000008 n=0 act=2 to=(33,60,0)             X: 1000008 n=1 act=2 to=(33,60,0)             HU HI HO HM HR HR0 HA0
+113 A: 1000008 n=1 act=2 to=(37,67,2)             X: 1000008 n=2 act=2 to=(37,67,2)             HU HI HO HM HR HR0 HA0
+114 A: 1000008 n=2 act=2 to=(37,67,2)             X: 1000011 n=1 act=2 to=(35,24,0)             HU HI HO HM HR HR0 HA0
+115 A: 1000011 n=1 act=2 to=(35,24,0)             X: 1000016 n=1 act=2 to=(45,11,0)             HU HI HO HM HR HR0 HA0
+116 A: 1000016 n=1 act=2 to=(45,11,0)             X: 1000016 n=2 act=2 to=(45,11,0)             HU HI HO HM HR HR0 HA0
+117 A: 1000017 n=0 act=2 to=(55,39,0)             X: 1000017 n=0 act=2 to=(55,39,0)             HU HI HO HM HR HR0 ha0
+118 A: 1000017 n=1 act=2 to=(1,1,0)               X: 1000017 n=1 act=8 to=(42,23,0)             HU HI HO HM HR HR0 HA0
+119 A: 1000018 n=1 act=8 to=(42,23,0)             X: 1000017 n=2 act=2 to=(1,1,0)               HU HI HO HM HR HR0 HA0
+120 A: 1000018 n=2 act=2 to=(66,14,0)             X: 1000018 n=1 act=2 to=(66,14,0)             HU HI HO HM HR HR0 HA0
+121 A: 1000020 n=0 act=2 to=(4,64,0)              X: 1000020 n=1 act=2 to=(58,67,0)             HU HI HO HM HR HR0 ha0
+122 A: 1000020 n=0 act=2 to=(4,65,0)              X: 1000025 n=1 act=2 to=(14,5,3)              HU HI HO HM HR HR0 HA0
+123 A: 1000020 n=1 act=2 to=(58,67,0)             X: 1000033 n=1 act=2 to=(48,31,0)             HU HI HO HM HR HR0 HA0
+124 A: 1000025 n=1 act=2 to=(14,5,3)              X: 1000037 n=1 act=2 to=(69,51,0)             HU HI HO HM HR HR0 HA0
+125 A: 1000028 n=1 act=8 to=(31,16,0)             X: 1000043 n=1 act=8 to=(42,23,0)             HU HI HO HM HR HR0 HA0
+126 A: 1000028 n=2 act=2 to=(6,3,0)               X: 1000043 n=2 act=2 to=(5,19,3)              HU HI HO HM HR HR0 HA0
+127 A: 1000033 n=0 act=2 to=(40,55,0)             X: 1000045 n=1 act=2 to=(65,9,3)              HU HI HO HM HR HR0 HA0
+128 A: 1000033 n=1 act=2 to=(48,31,0)             X: 1000046 n=1 act=2 to=(39,69,0)             HU HI HO HM HR HR0 HA0
+129 A: 1000034 n=1 act=2 to=(54,15,0)             X: 1000047 n=1 act=2 to=(51,30,0)             HU HI HO HM HR HR0 HA0
+130 A: 1000043 n=0 act=2 to=(49,34,3)             X: 1000050 n=1 act=2 to=(1,4,2)               HU HI HO HM HR HR0 HA0
+131 A: 1000043 n=1 act=8 to=(42,23,0)             X: 1000052 n=0 act=2 to=(8,61,0)              HU HI HO HM HR HR0 HA0
+132 A: 1000043 n=2 act=8 to=(51,22,0)             X: 1000052 n=0 act=2 to=(11,60,0)             HU HI HO HM HR HR0 HA0
+133 A: 1000045 n=1 act=8 to=(42,23,0)             X: 1000052 n=1 act=2 to=(49,67,0)             HU HI HO HM HR HR0 HA0
+134 A: 1000046 n=1 act=2 to=(35,65,3)             X: 1000052 n=2 act=2 to=(49,67,0)             HU HI HO HM HR HR0 HA0
+135 A: 1000046 n=2 act=2 to=(35,65,3)             X: 1000054 n=1 act=2 to=(35,65,0)             HU HI HO HM HR HR0 HA0
+136 A: 1000047 n=1 act=2 to=(51,30,0)             X: 1000054 n=2 act=0 to=(49,60,0)             HU HI HO HM HR HR0 HA0
+137 A: 1000050 n=1 act=2 to=(1,4,2)               X: 1000055 n=1 act=8 to=(32,10,2)             HU HI HO HM HR HR0 HA0
+138 A: 1000050 n=2 act=2 to=(1,4,2)               X: -                                          
+139 A: 1000052 n=1 act=2 to=(49,67,0)             X: -                                          
+140 A: 1000052 n=2 act=2 to=(49,67,0)             X: -                                          
+141 A: 1000054 n=1 act=8 to=(42,23,0)             X: -                                          
+142 A: 1000054 n=2 act=2 to=(35,65,0)             X: -                                          
+143 A: 1000055 n=1 act=2 to=(27,14,1)             X: -                                          
+144 A: 1000055 n=2 act=2 to=(27,14,1)             X: -                                          
+145 A: 1000057 n=1 act=2 to=(15,6,0)              X: -                                          
+146 A: 1000083 n=1 act=2 to=(63,30,0)             X: -                                          
+147 A: 1000083 n=2 act=2 to=(63,30,0)             X: -                                          

@@ -1,0 +1,158 @@
+--- V0/SideCombatDirector.cpp
++++ V01/SideCombatDirector.cpp
+@@ -1078,7 +1078,10 @@
+ 	std::map<int, Position> lastPos;
+ 	std::set<int> seenLast;
+ 	bool seenKnown = false;
+-	int acts = 0, attacks = 0, walks = 0, clears = 0, approaches = 0, thinks = 0, consults = 0, keptSpecial = 0, vetoes = 0, switches = 0, overBudget = 0;
++	BattleUnit *cursor = 0; // where the engine's own round stood when the side took over: the selection goes back there (a jump past it would read as a wrap: AiProbe::secondPassWrapped, and the low ids lose their second pass)
++	int cursorRounds = 0; // the think rounds the unit at the cursor had used when the side took over: it gets the rest of them back, not two new ones
++	bool cursorTaken = false, cursorBack = false;
++	int acts = 0, attacks = 0, walks = 0, clears = 0, approaches = 0, thinks = 0, consults = 0, keptSpecial = 0, vetoes = 0, switches = 0, overBudget = 0, backs = 0;
+ 	long long usTurn = 0, usTotal = 0;
+ 	int calls = 0;
+ 
+@@ -1110,7 +1113,7 @@
+ 		std::ostringstream s;
+ 		s << "\"ev\":\"turn_end\",\"calls\":" << calls << ",\"us\":" << usTurn << ",\"usTotal\":" << usTotal << ",\"acts\":" << acts << ",\"attacks\":" << attacks << ",\"walks\":" << walks
+ 			<< ",\"clears\":" << clears << ",\"approaches\":" << approaches << ",\"thinks\":" << thinks << ",\"consults\":" << consults << ",\"special\":" << keptSpecial
+-			<< ",\"vetoes\":" << vetoes << ",\"switches\":" << switches << ",\"lines\":" << gen.lineChecks << ",\"over\":" << overBudget << ",\"banned\":" << bs.banned.size();
++			<< ",\"vetoes\":" << vetoes << ",\"switches\":" << switches << ",\"lines\":" << gen.lineChecks << ",\"over\":" << overBudget << ",\"banned\":" << bs.banned.size() << ",\"backs\":" << backs;
+ 		journal(s.str());
+ 	}
+ 
+@@ -1128,7 +1131,9 @@
+ 		lastPos.clear();
+ 		seenLast.clear();
+ 		seenKnown = false;
+-		acts = attacks = walks = clears = approaches = thinks = consults = keptSpecial = vetoes = switches = overBudget = 0;
++		cursor = 0;
++		cursorTaken = cursorBack = false;
++		acts = attacks = walks = clears = approaches = thinks = consults = keptSpecial = vetoes = switches = overBudget = backs = 0;
+ 		usTurn = 0;
+ 		calls = 0;
+ 	}
+@@ -1246,6 +1251,33 @@
+ 		return false;
+ 	}
+ 
++	/// The side has nothing to give out: the round goes on from where the engine stood, or from the next that can act if that one is gone.
++	Result handBack(SavedBattleGame *save, BattleUnit *unit, BattleUnit **other)
++	{
++		BattleUnit *c = cursor;
++		cursor = 0;
++		if (!c || c == unit)
++		{
++			return PASS;
++		}
++		std::vector<BattleUnit*> &units = *save->getUnits();
++		for (auto i = std::find(units.begin(), units.end(), c); i != units.end(); ++i)
++		{
++			if ((*i)->isSelectable(FACTION_HOSTILE, true, false))
++			{
++				if (*i == unit)
++				{
++					return PASS;
++				}
++				*other = *i;
++				cursorBack = *i == c;
++				++backs;
++				return SWITCH;
++			}
++		}
++		return PASS;
++	}
++
+ 	Result stepInner(int level, SavedBattleGame *save, BattleUnit *unit, BattleAction *action, BattleUnit **other)
+ 	{
+ 		const int lastActor = pending.on ? pending.actor->getId() : -1;
+@@ -1286,7 +1318,7 @@
+ 		if (bs.targets.empty() || acts > MAX_ACTS_FACTOR * (int)bs.own.size())
+ 		{
+ 			keptOn = false;
+-			return PASS;
++			return handBack(save, unit, other);
+ 		}
+ 		SidePlanner::Plan plan;
+ 		if (keptOn && kept.actor == unit)
+@@ -1300,7 +1332,7 @@
+ 		keptOn = false;
+ 		if (plan.kind == SidePlanner::NONE)
+ 		{
+-			return PASS;
++			return handBack(save, unit, other);
+ 		}
+ 		if (plan.kind == SidePlanner::ATTACK)
+ 		{
+@@ -1316,6 +1348,11 @@
+ 		}
+ 		if (plan.actor != unit)
+ 		{
++			if (!cursor)
++			{
++				cursor = unit;
++				cursorTaken = true;
++			}
+ 			kept = plan;
+ 			keptOn = true;
+ 			++switches;
+@@ -1340,7 +1377,7 @@
+ 			if (!plan.mode.melee && !gen.lineNow(unit, plan.target).line)
+ 			{
+ 				pending.on = false;
+-				return PASS;
++				return handBack(save, unit, other);
+ 			}
+ 			action->type = plan.mode.type;
+ 			action->weapon = plan.mode.weapon;
+@@ -1393,7 +1430,7 @@
+ 		}
+ 		++acts;
+ 		journal(s.str());
+-		if (plan.kind == SidePlanner::ATTACK && special(save, unit) && !consulted.count(unit->getId()))
++		if (special(save, unit) && !consulted.count(unit->getId())) // before any plan: a walk would spend the time units psi and throws need
+ 		{
+ 			consulted.insert(unit->getId());
+ 			++consults;
+@@ -1438,6 +1475,22 @@
+ 	return r;
+ }
+ 
++int roundsAfterSwitch(int rounds)
++{
++	if (ex.cursorTaken)
++	{
++		ex.cursorTaken = false;
++		ex.cursorRounds = rounds;
++		return 0;
++	}
++	if (ex.cursorBack)
++	{
++		ex.cursorBack = false;
++		return ex.cursorRounds;
++	}
++	return 0;
++}
++
+ bool afterThink(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, Result result, const BattleAction &planned)
+ {
+ 	const int level = levelNow();
+@@ -1451,6 +1504,7 @@
+ 		if (action->type == BA_THROW || action->type == BA_PANIC || action->type == BA_MINDCONTROL || action->type == BA_USE || action->type == BA_LAUNCH)
+ 		{
+ 			++ex.keptSpecial;
++			ex.consulted.erase(unit->getId()); // it may have another one left
+ 			ex.pending.kind = 'T';
+ 			ex.pending.target = 0;
+ 			std::ostringstream s;
+--- V0/SideCombatDirector.h
++++ V01/SideCombatDirector.h
+@@ -23,6 +23,8 @@
+ 
+ /// Before a hostile unit thinks.
+ Result step(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, BattleUnit **other);
++/// On SWITCH: the think rounds the newly selected unit starts with. A unit handed the selection back keeps its count, the others start at 0.
++int roundsAfterSwitch(int rounds);
+ /// After the unit thought (PASS, CONSULT): the planned action in place of a consulted plain one, no shot that hurts the side more than the enemy.
+ /// @return true if the action is now the director's.
+ bool afterThink(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, Result result, const BattleAction &planned);

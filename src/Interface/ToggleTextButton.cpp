@@ -18,6 +18,8 @@
  */
 
 #include "ToggleTextButton.h"
+#include "../Engine/HdUi.h"
+#include "Text.h"
 #include "TextButton.h"
 
 
@@ -72,6 +74,17 @@ void ToggleTextButton::setInvertColor(Uint8 color)
 	_invertedColor = color;
 	_fakeGroup = 0;
 	_redraw = true;
+}
+
+void ToggleTextButton::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		TextButton::hdMirror();
+		return;
+	}
+	// a button lit in its graph line's colour (setInvertColor) keeps the letters in that colour, not the theme's (XP-000432)
+	hdMirrorSkin(_isPressed, _isPressed && _invertedColor > -1 ? _invertedColor + 4 : -1);
 }
 
 /// handle draw() in case we need to paint the button a garish color

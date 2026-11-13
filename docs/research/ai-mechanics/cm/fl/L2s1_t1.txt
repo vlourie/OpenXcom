@@ -1,0 +1,939 @@
+      X 1/0 victim=1000062(1) dead at (19,36,2) by 301(0) STR_CD_RIFLE dist=17
+      ~ reaction turn=1 side=0 reactor=1000046 turn=1 side=0 what=reaction unit=1000046 pos=(26,51,1)
+      ~ reaction turn=1 side=0 reactor=1000046 turn=1 side=0 what=reaction unit=1000046 pos=(26,51,1)
+      ~ reaction turn=1 side=0 reactor=1000046 turn=1 side=0 what=reaction unit=1000046 pos=(26,51,1)
+      ~ reaction turn=1 side=0 reactor=1000046 turn=1 side=0 what=reaction unit=1000046 pos=(26,51,1)
+      ~ reaction turn=1 side=0 reactor=1000000 turn=1 side=0 what=reaction unit=1000000 pos=(25,48,0)
+      ~ reaction turn=1 side=0 reactor=1000000 turn=1 side=0 what=reaction unit=1000000 pos=(25,48,0)
+      ~ reaction turn=1 side=0 reactor=1000000 turn=1 side=0 what=reaction unit=1000000 pos=(25,48,0)
+      ~ reaction turn=1 side=0 reactor=1000055 turn=1 side=0 what=reaction unit=1000055 pos=(27,50,1)
+      ~ reaction turn=1 side=0 reactor=1000055 turn=1 side=0 what=reaction unit=1000055 pos=(27,50,1)
+      ~ reaction turn=1 side=0 reactor=1000032 turn=1 side=0 what=reaction unit=1000032 pos=(21,39,0)
+      ~ reaction turn=1 side=0 reactor=1000025 turn=1 side=0 what=reaction unit=1000025 pos=(29,49,0)
+      ~ reaction turn=1 side=0 reactor=1000035 turn=1 side=0 what=reaction unit=1000035 pos=(29,49,0)
+      X 1/0 victim=1000061(1) dead at (15,36,2) by 301(0) STR_CD_RIFLE dist=19
+      ~ reaction turn=1 side=0 reactor=1000035 turn=1 side=0 what=reaction unit=1000035 pos=(25,50,1)
+      ~ reaction turn=1 side=0 reactor=1000035 turn=1 side=0 what=reaction unit=1000035 pos=(25,50,1)
+      ~ reaction turn=1 side=0 reactor=1000035 turn=1 side=0 what=reaction unit=1000035 pos=(25,50,1)
+      ~ reaction turn=1 side=0 reactor=1000035 turn=1 side=0 what=reaction unit=1000035 pos=(25,50,1)
+      ~ reaction turn=1 side=0 reactor=1000032 turn=1 side=0 what=reaction unit=1000032 pos=(27,41,0)
+      ~ reaction turn=1 side=0 reactor=1000032 turn=1 side=0 what=reaction unit=1000032 pos=(27,41,0)
+      ~ reaction turn=1 side=0 reactor=1000032 turn=1 side=0 what=reaction unit=1000032 pos=(27,41,0)
+      X 1/1 victim=1000046(1) stun at (19,36,4) by 335(0) STR_SUPER_MAGNUM dist=13
+P      191 SOLDIER                  pos=(21,32,0) dir=1 tu=169/290 hp=111/111 kneel=0 st=0 w=STR_SWORD rh=STR_SWORD:1 lh=STR_CRYSTAL_SKULL:1 spotted=0 sees=1000017,1000057
+P       91 SOLDIER                  pos=(28,46,0) dir=1 tu=238/285 hp=113/113 kneel=0 st=0 w=STR_SWORD rh=STR_SWORD:1 lh=STR_CRYSTAL_SKULL:1 spotted=0 sees=1000007,1000035
+P      157 SOLDIER                  pos=(29,49,0) dir=2 tu=193/255 hp=91/91 kneel=0 st=0 w=STR_SWORD rh=STR_SWORD:1 lh=STR_POLICE_SHIELD:1 spotted=0 sees=-
+P      324 SOLDIER                  pos=(32,47,0) dir=1 tu=193/246 hp=88/88 kneel=0 st=0 w=STR_SWORD rh=STR_SWORD:1 lh=STR_POLICE_SHIELD:1 spotted=0 sees=1000001,1000032,1000041
+P      344 SOLDIER                  pos=(26,49,0) dir=2 tu=187/222 hp=71/71 kneel=0 st=0 w=STR_NEKO_SWORD rh=STR_NEKO_SWORD:1 lh=STR_POLICE_SHIELD:1 spotted=0 sees=1000032
+P      301 SOLDIER                  pos=(25,50,1) dir=7 tu=9/108 hp=104/104 kneel=0 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- spotted=0 sees=-
+P      335 SOLDIER                  pos=(25,48,0) dir=7 tu=16/83 hp=165/165 kneel=0 st=0 w=STR_SUPER_MAGNUM rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spotted=0 sees=1000000,1000005,1000040,1000046,1000059,1000060
+P      229 SOLDIER                  pos=(27,41,0) dir=0 tu=29/109 hp=119/119 kneel=0 st=0 w=STR_PILLOW_BOOK rh=STR_PILLOW_BOOK:1 lh=STR_CANTEEN_WEED:1 spotted=0 sees=1000059,1000063
+H  1000000 STR_NINJA_GAL            pos=(5,46,0) dir=2 tu=126/126 hp=72/72 mor=92 st=0 w=STR_NINJA_SMG rh=STR_NINJA_SMG:1 lh=STR_WAKIZASHI:1 ammo=1 sees=91,157,324,344,335,229 seenby=1 known=8 near=20
+H  1000001 STR_NINJA_GAL            pos=(55,46,0) dir=0 tu=126/126 hp=72/72 mor=92 st=0 w=STR_BLUNDERBUSS rh=STR_BLUNDERBUSS:1 lh=- ammo=2 sees=- seenby=1 known=8 near=23
+H  1000002 STR_NINJA_GAL            pos=(15,32,2) dir=3 tu=126/126 hp=72/72 mor=92 st=0 w=STR_NINJA_SMG rh=STR_NINJA_SMG:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=6
+H  1000003 STR_NINJA_GAL            pos=(55,26,0) dir=3 tu=126/126 hp=72/72 mor=92 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=31
+H  1000004 STR_NINJA_GAL            pos=(5,26,0) dir=4 tu=126/126 hp=72/72 mor=92 st=0 w=STR_NINJA_SMG rh=STR_NINJA_SMG:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=17
+H  1000005 STR_NINJA_GAL            pos=(5,36,0) dir=1 tu=126/126 hp=72/72 mor=92 st=0 w=STR_NINJA_SMG rh=STR_NINJA_SMG:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=1 known=8 near=16
+H  1000006 STR_NINJA_GAL            pos=(15,36,1) dir=5 tu=126/126 hp=72/72 mor=92 st=0 w=STR_NINJA_SMG rh=STR_NINJA_SMG:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=7
+H  1000007 STR_NINJA_GAL            pos=(28,29,2) dir=2 tu=126/126 hp=72/72 mor=92 st=0 w=STR_BLUNDERBUSS rh=STR_BLUNDERBUSS:1 lh=- ammo=2 sees=- seenby=1 known=8 near=8
+H  1000008 STR_NINJA_GAL            pos=(18,24,1) dir=6 tu=126/126 hp=66/72 mor=92 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=9
+H  1000009 STR_NINJA_GAL            pos=(27,31,1) dir=4 tu=126/126 hp=72/72 mor=92 st=0 w=STR_BLUNDERBUSS rh=STR_BLUNDERBUSS:1 lh=- ammo=2 sees=- seenby=0 known=8 near=6
+H  1000010 STR_NINJA_GAL            pos=(15,33,3) dir=3 tu=126/126 hp=72/72 mor=92 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=6
+H  1000011 STR_NINJA_GAL            pos=(27,28,1) dir=0 tu=126/126 hp=72/72 mor=92 st=0 w=STR_NINJA_SMG rh=STR_NINJA_SMG:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=7
+H  1000012 STR_NINJA_GAL            pos=(15,16,0) dir=0 tu=126/126 hp=72/72 mor=92 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=17
+H  1000013 STR_NINJA_GAL            pos=(21,25,2) dir=1 tu=126/126 hp=72/72 mor=92 st=0 w=STR_NINJA_SMG rh=STR_NINJA_SMG:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=7
+H  1000015 STR_NINJA_GAL            pos=(15,26,2) dir=4 tu=126/126 hp=72/72 mor=92 st=0 w=STR_HAXXOR rh=STR_HAXXOR:1 lh=- ammo=0 sees=- seenby=0 known=8 near=8
+H  1000016 STR_NINJA_WARRIOR        pos=(12,30,2) dir=6 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=9
+H  1000017 STR_NINJA_WARRIOR        pos=(22,31,2) dir=4 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=1 known=8 near=1
+H  1000018 STR_NINJA_WARRIOR        pos=(19,30,2) dir=4 tu=134/134 hp=84/90 mor=99 st=0 w=STR_CD_CANNON rh=STR_CD_CANNON:1 lh=- ammo=1 sees=- seenby=0 known=8 near=3
+H  1000019 STR_NINJA_WARRIOR        pos=(12,5,2) dir=6 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=28
+H  1000020 STR_NINJA_WARRIOR        pos=(25,31,2) dir=5 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=4
+H  1000021 STR_NINJA_WARRIOR        pos=(40,33,2) dir=7 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=15
+H  1000022 STR_NINJA_WARRIOR        pos=(25,28,2) dir=0 tu=134/134 hp=90/90 mor=99 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=- seenby=0 known=8 near=6
+H  1000023 STR_NINJA_WARRIOR        pos=(30,45,0) dir=5 tu=134/134 hp=90/90 mor=99 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=157 seenby=0 known=8 near=2
+H  1000024 STR_NINJA_WARRIOR        pos=(15,4,2) dir=5 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=29
+H  1000025 STR_NINJA_WARRIOR        pos=(27,27,2) dir=4 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=157 seenby=0 known=8 near=8
+H  1000026 STR_NINJA_WARRIOR        pos=(25,29,1) dir=5 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=5
+H  1000027 STR_NINJA_WARRIOR        pos=(25,31,3) dir=1 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_CANNON rh=STR_CD_CANNON:1 lh=- ammo=1 sees=- seenby=0 known=8 near=4
+H  1000029 STR_NINJA_WARRIOR        pos=(28,31,3) dir=7 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=7
+H  1000031 STR_NINJA_WARRIOR        pos=(45,34,2) dir=3 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=18
+H  1000032 STR_NINJA_WARRIOR        pos=(35,45,0) dir=7 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=229 seenby=2 known=8 near=4
+H  1000033 STR_NINJA_WARRIOR        pos=(17,23,3) dir=1 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=10
+H  1000034 STR_NINJA_WARRIOR        pos=(46,34,0) dir=4 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=19
+H  1000035 STR_NINJA_WARRIOR        pos=(29,29,0) dir=4 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=91,157,335 seenby=1 known=8 near=9
+H  1000036 STR_NINJA_WARRIOR        pos=(23,12,0) dir=5 tu=134/134 hp=90/90 mor=99 st=0 w=STR_CD_CANNON rh=STR_CD_CANNON:1 lh=- ammo=1 sees=- seenby=0 known=8 near=20
+H  1000037 STR_NINJA_WARRIOR        pos=(22,27,0) dir=5 tu=134/134 hp=37/90 mor=95 st=0 w=STR_CD_RIFLE rh=STR_CD_RIFLE:1 lh=- ammo=1 sees=- seenby=0 known=8 near=5
+H  1000038 STR_NINJA_ASSAULT        pos=(13,14,3) dir=0 tu=186/186 hp=90/90 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=20
+H  1000039 STR_NINJA_ASSAULT        pos=(3,44,3) dir=4 tu=186/186 hp=90/90 mor=100 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=- seenby=0 known=8 near=22
+H  1000040 STR_NINJA_ASSAULT        pos=(3,34,3) dir=0 tu=186/186 hp=90/90 mor=100 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=- seenby=1 known=8 near=18
+H  1000041 STR_NINJA_ASSAULT        pos=(53,44,3) dir=4 tu=186/186 hp=90/90 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=1 known=8 near=21
+H  1000042 STR_NINJA_ASSAULT        pos=(53,24,3) dir=0 tu=186/186 hp=90/90 mor=100 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=- seenby=0 known=8 near=31
+H  1000043 STR_NINJA_ASSAULT        pos=(3,24,3) dir=6 tu=186/186 hp=90/90 mor=100 st=0 w=STR_GREAT_CLUB rh=STR_GREAT_CLUB:1 lh=- ammo=0 sees=- seenby=0 known=8 near=20
+H  1000044 STR_NINJA_ASSAULT        pos=(24,27,4) dir=5 tu=186/186 hp=90/90 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=6
+H  1000045 STR_NINJA_ASSAULT        pos=(18,23,4) dir=2 tu=186/186 hp=90/90 mor=100 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=- seenby=0 known=8 near=9
+H  1000046 STR_NINJA_ASSAULT        pos=(19,36,4) dir=3 tu=186/186 hp=9/90 mor=93 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=91,157,344,335,229 seenby=1 known=8 near=4
+H  1000047 STR_NINJA_ASSAULT        pos=(12,27,4) dir=3 tu=186/186 hp=90/90 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=10
+H  1000048 STR_NINJA_ASSASSIN       pos=(41,31,0) dir=3 tu=163/163 hp=90/90 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=17
+H  1000049 STR_NINJA_ASSASSIN       pos=(13,1,0) dir=3 tu=163/163 hp=90/90 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=32
+H  1000050 STR_NINJA_ASSASSIN       pos=(38,41,0) dir=5 tu=163/163 hp=90/90 mor=100 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=- seenby=0 known=8 near=8
+H  1000051 STR_NINJA_ASSASSIN       pos=(3,4,0) dir=4 tu=163/163 hp=90/90 mor=100 st=0 w=STR_GOTHIC_HAMMER rh=STR_GOTHIC_HAMMER:1 lh=- ammo=0 sees=- seenby=0 known=8 near=33
+H  1000052 STR_NINJA_ASSASSIN       pos=(13,5,0) dir=3 tu=163/163 hp=90/90 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_WAKIZASHI:1 ammo=1 sees=- seenby=0 known=8 near=28
+H  1000053 STR_NINJA_ASSASSIN       pos=(37,36,0) dir=5 tu=163/163 hp=90/90 mor=100 st=0 w=STR_KATANA rh=STR_KATANA:1 lh=- ammo=0 sees=229 seenby=0 known=8 near=11
+H  1000054 STR_NINJA_MEDIC          pos=(12,31,4) dir=5 tu=149/149 hp=121/121 mor=100 st=0 w=STR_CD_CANNON rh=STR_CD_CANNON:1 lh=- ammo=1 sees=- seenby=0 known=8 near=9
+H  1000055 STR_NINJA_MEDIC          pos=(24,32,4) dir=4 tu=149/149 hp=121/121 mor=100 st=0 w=STR_CD_PISTOL rh=STR_CD_PISTOL:1 lh=STR_SPIKED_MACE:1 ammo=1 sees=- seenby=0 known=8 near=3
+H  1000056 STR_NINJA_MEDIC          pos=(21,25,1) dir=1 tu=149/149 hp=121/121 mor=100 st=0 w=STR_GOTHIC_HAMMER rh=STR_GOTHIC_HAMMER:1 lh=- ammo=0 sees=- seenby=0 known=8 near=7
+H  1000057 STR_NINJA_MEDIC          pos=(21,31,3) dir=5 tu=149/149 hp=121/121 mor=100 st=0 w=STR_CD_CANNON rh=STR_CD_CANNON:1 lh=- ammo=1 sees=- seenby=1 known=8 near=1
+H  1000058 STR_NTURRET_14MM         pos=(23,23,4) dir=1 tu=47/47 hp=242/242 mor=100 st=0 w=AUX_XTURRET_14MMCHAINGUN_WEAPON rh=AUX_XTURRET_14MMCHAINGUN_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=8 near=9
+H  1000059 STR_NTURRET_14MM         pos=(23,35,4) dir=5 tu=47/47 hp=242/242 mor=100 st=0 w=AUX_XTURRET_14MMCHAINGUN_WEAPON rh=AUX_XTURRET_14MMCHAINGUN_WEAPON:1 lh=- ammo=0 sees=- seenby=2 known=8 near=4
+H  1000060 STR_TURRET_MINIGUN_TERRORIST pos=(11,36,2) dir=5 tu=74/74 hp=36/36 mor=100 st=0 w=AUX_TANK_LIGHT_MINIGUN_WEAPON rh=AUX_TANK_LIGHT_MINIGUN_WEAPON:1 lh=- ammo=0 sees=- seenby=1 known=8 near=11
+H  1000063 STR_TURRET_MINIGUN_TERRORIST pos=(27,32,4) dir=4 tu=74/74 hp=36/36 mor=100 st=0 w=AUX_TANK_LIGHT_MINIGUN_WEAPON rh=AUX_TANK_LIGHT_MINIGUN_WEAPON:1 lh=- ammo=0 sees=91,157,344,335,229 seenby=1 known=8 near=6
+H  1000064 STR_TURRET_MINIGUN_TERRORIST pos=(11,23,2) dir=1 tu=74/74 hp=36/36 mor=100 st=0 w=AUX_TANK_LIGHT_MINIGUN_WEAPON rh=AUX_TANK_LIGHT_MINIGUN_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=8 near=13
+H  1000065 STR_TURRET_MINIGUN_TERRORIST pos=(15,23,2) dir=1 tu=74/74 hp=36/36 mor=100 st=0 w=AUX_TANK_LIGHT_MINIGUN_WEAPON rh=AUX_TANK_LIGHT_MINIGUN_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=8 near=11
+H  1000066 STR_TURRET_MINIGUN_TERRORIST pos=(19,23,2) dir=3 tu=74/74 hp=36/36 mor=100 st=0 w=AUX_TANK_LIGHT_MINIGUN_WEAPON rh=AUX_TANK_LIGHT_MINIGUN_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=8 near=9
+H  1000067 STR_TURRET_MINIGUN_TERRORIST pos=(27,27,4) dir=7 tu=74/74 hp=36/36 mor=100 st=0 w=AUX_TANK_LIGHT_MINIGUN_WEAPON rh=AUX_TANK_LIGHT_MINIGUN_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=8 near=8
+  H1 D 1000000 n=1 from=(5,46,0) tu=126 patrol walk to=(26,51,1) run=0 aim=335 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 46, 0] tu=58 spent=68 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=6 spotted=1 walk.stop.reserve 15,46,0>16,46,0 d2 bam0 mt0 sz1 tu58/10 en47/5 rs7 bu-1
+  H1 D 1000000 n=2 from=(15,46,0) tu=58 combat snap to=(25,48,0) run=0 aim=335 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 46, 0] tu=21 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=6 spotted=1 
+  H1 D 1000001 n=1 from=(55,46,0) tu=126 patrol walk to=(14,31,3) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=124 spent=2 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.turnspot 55,46,0>55,46,0 d6 bam0 mt0 sz1 tu124/-1 en80/-1 rs7 bu-1
+  H1 D 1000001 n=2 from=(55,46,0) tu=124 combat aimed to=(32,47,0) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=36 spent=88 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H1 D 1000002 n=1 from=(15,32,2) tu=126 patrol walk to=(15,8,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=52 spent=74 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 19,24,0>19,23,0 d0 bam0 mt0 sz1 tu52/4 en47/2 rs7 bu-1
+  H1 D 1000002 n=2 from=(19,24,0) tu=52 patrol walk to=(15,8,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=52 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 19,24,0>19,23,0 d0 bam0 mt0 sz1 tu52/4 en47/2 rs7 bu-1
+  H1 D 1000003 n=1 from=(55,26,0) tu=126 patrol walk to=(54,34,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 33, 0] tu=76 spent=50 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 55,33,0>55,33,0 d5 bam0 mt0 sz1 tu76/-1 en55/-1 rs7 bu-1
+  H1 D 1000003 n=2 from=(55,33,0) tu=76 patrol walk to=(54,34,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=70 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000004 n=1 from=(5,26,0) tu=126 patrol walk to=(8,40,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[6, 33, 0] tu=81 spent=45 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 walk.stop.turnspot 6,33,0>6,33,0 d3 bam0 mt0 sz1 tu81/-1 en58/-1 rs7 bu-1
+  H1 D 1000004 n=2 from=(6,33,0) tu=81 combat snap to=(27,41,0) run=0 aim=229 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[6, 33, 0] tu=43 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000005 n=1 from=(5,36,0) tu=126 patrol walk to=(1,48,0) run=0 aim=229 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[5, 36, 0] tu=125 spent=1 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 walk.stop.turnspot 5,36,0>5,36,0 d2 bam0 mt0 sz1 tu125/-1 en80/-1 rs7 bu-1
+  H1 D 1000005 n=2 from=(5,36,0) tu=125 combat snap to=(27,41,0) run=0 aim=229 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[5, 36, 0] tu=88 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000006 n=0 from=(15,36,1) tu=126 combat walk to=(11,31,1) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 31, 1] tu=88 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000006 n=0 from=(11,31,1) tu=88 combat walk to=(13,31,1) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 31, 1] tu=80 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 13,31,1>13,31,1 d2 bam0 mt0 sz1 tu80/-1 en59/-1 rs0 bu-1
+  H1 D 1000006 n=1 from=(13,31,1) tu=80 combat snap to=(21,32,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 31, 1] tu=43 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000006 n=2 from=(13,31,1) tu=43 combat snap to=(21,32,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 31, 1] tu=6 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000007 n=1 from=(28,29,2) tu=91 combat throw to=(28,46,0) run=0 aim=91 w=STR_GAS_GRENADE seen=191,91,157,324,344,301,335,229
+      -> pos=[28, 29, 2] tu=39 spent=87 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000007 n=2 from=(28,29,2) tu=39 combat snap to=(29,49,0) run=0 aim=157 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[28, 29, 2] tu=2 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000008 n=1 from=(18,24,1) tu=126 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 24, 1] tu=97 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000008 n=2 from=(18,24,1) tu=97 combat auto to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 24, 1] tu=42 spent=55 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000009 n=1 from=(27,31,1) tu=126 patrol walk to=(8,20,0) run=0 aim=-1 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 30, 1] tu=52 spent=74 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 12,30,1>12,29,1 d0 bam0 mt0 sz1 tu52/4 en45/2 rs7 bu-1
+  H1 D 1000009 n=2 from=(12,30,1) tu=52 escape walk to=(12,32,1) run=0 aim=191 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 32, 1] tu=44 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000010 n=1 from=(15,33,3) tu=126 patrol walk to=(15,32,2) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 32, 2] tu=70 spent=56 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000010 n=1 from=(15,32,2) tu=70 combat walk to=(12,29,2) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=36 spent=34 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000010 n=2 from=(12,29,2) tu=36 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=27 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000011 n=1 from=(27,28,1) tu=126 patrol walk to=(27,31,1) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 28, 1] tu=123 spent=3 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 27,28,1>27,28,1 d3 bam0 mt0 sz1 tu123/-1 en80/-1 rs7 bu-1
+  H1 D 1000011 n=1 from=(27,28,1) tu=123 combat walk to=(24,28,1) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 28, 1] tu=93 spent=30 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 23,28,1>23,28,1 d4 bam0 mt0 sz1 tu93/-1 en69/-1 rs0 bu-1
+  H1 D 1000011 n=2 from=(23,28,1) tu=93 combat walk to=(20,32,0) run=0 aim=191 w=STR_WAKIZASHI seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,32,0)
+      X 1/1 victim=1000011(1) dead at (20,32,0) by 191(0) STR_SWORD dist=1
+      -> pos=[20, 32, 0] tu=2 spent=91 dmg=3 downed=0 fdmg=0 hp_lost=72 down=1 seen=0 spotted=0 
+  H1 D 1000001 n=1 from=(55,46,0) tu=36 patrol walk to=(14,31,3) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=36 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 55,46,0>54,46,0 d6 bam0 mt0 sz1 tu36/6 en80/3 rs7 bu-1
+  H1 D 1000001 n=2 from=(55,46,0) tu=36 patrol walk to=(14,31,3) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=36 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 55,46,0>54,46,0 d6 bam0 mt0 sz1 tu36/6 en80/3 rs7 bu-1
+  H1 D 1000002 n=1 from=(19,24,0) tu=52 escape walk to=(19,20,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 20, 0] tu=26 spent=26 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000003 n=1 from=(54,34,0) tu=70 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=43 spent=27 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000003 n=2 from=(54,34,0) tu=43 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=16 spent=27 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000004 n=1 from=(6,33,0) tu=43 combat snap to=(25,48,0) run=0 aim=335 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[6, 33, 0] tu=5 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000005 n=1 from=(5,36,0) tu=88 combat aimed to=(26,49,0) run=0 aim=344 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[5, 36, 0] tu=42 spent=46 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000005 n=2 from=(5,36,0) tu=42 combat snap to=(25,48,0) run=0 aim=335 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[5, 36, 0] tu=5 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000006 n=1 from=(13,31,1) tu=6 patrol walk to=(41,58,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 31, 1] tu=6 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 13,31,1>14,31,1 d2 bam0 mt0 sz1 tu6/6 en59/3 rs7 bu-1
+  H1 D 1000006 n=2 from=(13,31,1) tu=6 patrol walk to=(41,58,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 31, 1] tu=6 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 13,31,1>14,31,1 d2 bam0 mt0 sz1 tu6/6 en59/3 rs7 bu-1
+  H1 D 1000008 n=1 from=(18,24,1) tu=42 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 24, 1] tu=15 spent=27 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000008 n=2 from=(18,24,1) tu=15 escape walk to=(17,27,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[17, 27, 1] tu=1 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000010 n=1 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>13,30,2 d3 bam0 mt0 sz1 tu9/6 en41/3 rs7 bu-1
+  H1 D 1000010 n=2 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>13,30,2 d3 bam0 mt0 sz1 tu9/6 en41/3 rs7 bu-1
+  H1 D 1000012 n=0 from=(15,16,0) tu=126 combat walk to=(18,20,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 20, 0] tu=93 spent=33 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000012 n=0 from=(18,20,0) tu=93 combat walk to=(19,24,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=70 spent=23 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 19,24,0>19,24,0 d4 bam0 mt0 sz1 tu70/-1 en54/-1 rs0 bu-1
+  H1 D 1000012 n=1 from=(19,24,0) tu=70 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=43 spent=27 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000012 n=2 from=(19,24,0) tu=43 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=16 spent=27 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000013 n=1 from=(21,25,2) tu=126 patrol walk to=(5,26,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=72 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000013 n=2 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000015 n=0 from=(15,26,2) tu=126 combat walk to=(11,28,2) run=0 aim=191 w=STR_HAXXOR seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 28, 2] tu=98 spent=28 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000015 n=1 from=(11,28,2) tu=98 combat snap to=(21,32,0) run=0 aim=191 w=STR_HAXXOR seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 28, 2] tu=53 spent=45 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000015 n=2 from=(11,28,2) tu=53 combat snap to=(21,32,0) run=0 aim=191 w=STR_HAXXOR seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 28, 2] tu=8 spent=45 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000016 n=1 from=(12,30,2) tu=134 combat auto to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 30, 2] tu=72 spent=62 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000016 n=2 from=(12,30,2) tu=72 combat auto to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 30, 2] tu=14 spent=58 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000017 n=1 from=(22,31,2) tu=134 patrol walk to=(12,36,1) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 29, 0] tu=112 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.turnspot 18,29,0>18,29,0 d2 bam0 mt0 sz1 tu112/-1 en89/-1 rs7 bu-1
+  H1 D 1000017 n=2 from=(18,29,0) tu=112 combat auto to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 29, 0] tu=53 spent=59 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000018 n=1 from=(19,30,2) tu=134 patrol walk to=(22,31,2) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[22, 31, 2] tu=120 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000018 n=2 from=(22,31,2) tu=120 escape none to=(22,31,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[22, 31, 2] tu=120 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000019 n=1 from=(12,5,2) tu=134 patrol walk to=(8,30,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=78 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000019 n=2 from=(11,18,0) tu=56 patrol walk to=(8,30,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000020 n=1 from=(25,31,2) tu=134 patrol walk to=(27,31,1) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 34, 1] tu=54 spent=80 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 12,34,1>13,33,1 d1 bam0 mt0 sz1 tu54/6 en66/3 rs7 bu-1
+  H1 D 1000020 n=1 from=(12,34,1) tu=54 combat walk to=(15,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=36 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.turnspot 14,31,0>14,31,0 d2 bam0 mt0 sz1 tu36/-1 en57/-1 rs0 bu-1
+  H1 D 1000020 n=2 from=(14,31,0) tu=36 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000021 n=1 from=(40,33,2) tu=134 escape walk to=(41,36,2) run=0 aim=229 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[41, 36, 2] tu=119 spent=15 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000022 n=1 from=(25,28,2) tu=134 patrol walk to=(27,28,1) run=0 aim=-1 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 28, 2] tu=66 spent=68 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 12,28,2>12,28,2 d3 bam0 mt0 sz1 tu66/-1 en68/-1 rs0 bu-1
+  H1 D 1000022 n=2 from=(12,28,2) tu=66 combat walk to=(22,32,0) run=0 aim=191 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      X 1/1 victim=1000022(1) dead at (20,31,0) by 191(0) STR_SWORD dist=1
+      -> pos=[20, 31, 0] tu=28 spent=38 dmg=3 downed=0 fdmg=0 hp_lost=90 down=1 seen=0 spotted=1 walk.stop.reaction 20,31,0>20,31,0 d3 bam0 mt0 sz1 tu28/-1 en49/-1 rs0 bu-1
+  H1 D 1000001 n=1 from=(55,46,0) tu=36 patrol walk to=(14,31,3) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=36 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 55,46,0>54,46,0 d6 bam0 mt0 sz1 tu36/6 en80/3 rs7 bu-1
+  H1 D 1000001 n=2 from=(55,46,0) tu=36 patrol walk to=(14,31,3) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=36 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 55,46,0>54,46,0 d6 bam0 mt0 sz1 tu36/6 en80/3 rs7 bu-1
+  H1 D 1000003 n=1 from=(54,34,0) tu=16 patrol walk to=(8,48,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,34,0>53,34,0 d6 bam0 mt0 sz1 tu16/6 en52/3 rs7 bu-1
+  H1 D 1000003 n=2 from=(54,34,0) tu=16 patrol walk to=(8,48,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,34,0>53,34,0 d6 bam0 mt0 sz1 tu16/6 en52/3 rs7 bu-1
+  H1 D 1000006 n=1 from=(13,31,1) tu=6 patrol walk to=(41,58,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 31, 1] tu=6 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 13,31,1>14,30,1 d1 bam0 mt0 sz1 tu6/6 en59/3 rs7 bu-1
+  H1 D 1000006 n=2 from=(13,31,1) tu=6 patrol walk to=(41,58,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 31, 1] tu=6 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 13,31,1>14,30,1 d1 bam0 mt0 sz1 tu6/6 en59/3 rs7 bu-1
+  H1 D 1000010 n=1 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>13,30,2 d3 bam0 mt0 sz1 tu9/6 en41/3 rs7 bu-1
+  H1 D 1000010 n=2 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>13,30,2 d3 bam0 mt0 sz1 tu9/6 en41/3 rs7 bu-1
+  H1 D 1000012 n=1 from=(19,24,0) tu=16 patrol walk to=(17,33,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 19,24,0>19,25,0 d4 bam0 mt0 sz1 tu16/4 en54/2 rs7 bu-1
+  H1 D 1000012 n=2 from=(19,24,0) tu=16 patrol walk to=(17,33,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 19,24,0>19,25,0 d4 bam0 mt0 sz1 tu16/4 en54/2 rs7 bu-1
+  H1 D 1000013 n=1 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000013 n=2 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000015 n=1 from=(11,28,2) tu=8 patrol walk to=(15,24,1) run=0 aim=191 w=STR_HAXXOR seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 28, 2] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 11,28,2>12,28,2 d2 bam0 mt0 sz1 tu8/4 en68/2 rs7 bu-1
+  H1 D 1000015 n=2 from=(11,28,2) tu=8 patrol walk to=(15,24,1) run=0 aim=191 w=STR_HAXXOR seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 28, 2] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 11,28,2>12,28,2 d2 bam0 mt0 sz1 tu8/4 en68/2 rs7 bu-1
+  H1 D 1000016 n=1 from=(12,30,2) tu=14 patrol walk to=(12,31,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 30, 2] tu=14 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,30,2>12,31,2 d4 bam0 mt0 sz1 tu14/4 en100/2 rs7 bu-1
+  H1 D 1000016 n=2 from=(12,30,2) tu=14 escape walk to=(14,29,2) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 29, 0] tu=4 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+  H1 D 1000017 n=1 from=(18,29,0) tu=53 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 29, 0] tu=24 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000017 n=2 from=(18,29,0) tu=24 patrol walk to=(12,36,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 29, 0] tu=24 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.reserve 18,29,0>19,30,0 d3 bam0 mt0 sz1 tu24/6 en89/3 rs7 bu-1
+  H1 D 1000018 n=1 from=(22,31,2) tu=120 patrol walk to=(19,30,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 30, 2] tu=106 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000018 n=2 from=(19,30,2) tu=106 patrol walk to=(22,31,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[22, 31, 2] tu=92 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000019 n=1 from=(11,18,0) tu=56 escape none to=(11,18,0) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000020 n=1 from=(14,31,0) tu=7 patrol walk to=(27,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.reserve 14,31,0>15,31,0 d2 bam0 mt0 sz1 tu7/4 en57/2 rs7 bu-1
+  H1 D 1000020 n=2 from=(14,31,0) tu=7 patrol walk to=(27,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.reserve 14,31,0>15,31,0 d2 bam0 mt0 sz1 tu7/4 en57/2 rs7 bu-1
+  H1 D 1000023 n=1 from=(30,45,0) tu=90 combat throw to=(29,49,0) run=0 aim=157 w=STR_EMP_GRENADE seen=191,91,157,324,344,301,335,229
+      -> pos=[30, 45, 0] tu=89 spent=45 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000023 n=2 from=(30,45,0) tu=89 combat walk to=(31,48,0) run=0 aim=324 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=157 turn=1 side=1 what=reaction unit=157 pos=(30,48,0)
+      ~ reaction turn=1 side=1 reactor=157 turn=1 side=1 what=reaction unit=157 pos=(30,48,0)
+      ~ reaction turn=1 side=1 reactor=157 turn=1 side=1 what=reaction unit=157 pos=(30,48,0)
+      ~ reaction turn=1 side=1 reactor=157 turn=1 side=1 what=reaction unit=157 pos=(30,48,0)
+      ~ reaction turn=1 side=1 reactor=157 turn=1 side=1 what=reaction unit=157 pos=(30,48,0)
+      ~ reaction turn=1 side=1 reactor=157 turn=1 side=1 what=reaction unit=157 pos=(30,48,0)
+      ~ reaction turn=1 side=1 reactor=157 turn=1 side=1 what=reaction unit=157 pos=(30,48,0)
+      X 1/1 victim=1000023(1) dead at (30,48,0) by 157(0) STR_SWORD dist=1
+      -> pos=[30, 48, 0] tu=69 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=90 down=1 seen=0 spotted=2 walk.stop.reaction 30,48,0>30,48,0 d4 bam0 mt0 sz1 tu69/-1 en90/-1 rs0 bu-1
+  H1 D 1000001 n=1 from=(55,46,0) tu=36 patrol walk to=(14,31,3) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=36 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 55,46,0>54,46,0 d6 bam0 mt0 sz1 tu36/6 en80/3 rs7 bu-1
+  H1 D 1000001 n=2 from=(55,46,0) tu=36 patrol walk to=(14,31,3) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[55, 46, 0] tu=36 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 55,46,0>54,46,0 d6 bam0 mt0 sz1 tu36/6 en80/3 rs7 bu-1
+  H1 D 1000003 n=1 from=(54,34,0) tu=16 patrol walk to=(8,48,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,34,0>53,34,0 d6 bam0 mt0 sz1 tu16/6 en52/3 rs7 bu-1
+  H1 D 1000003 n=2 from=(54,34,0) tu=16 patrol walk to=(8,48,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,34,0>53,34,0 d6 bam0 mt0 sz1 tu16/6 en52/3 rs7 bu-1
+  H1 D 1000006 n=1 from=(13,31,1) tu=6 escape walk to=(12,31,1) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 31, 1] tu=2 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000010 n=1 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000010 n=2 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000012 n=1 from=(19,24,0) tu=16 patrol walk to=(17,33,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 19,24,0>19,25,0 d4 bam0 mt0 sz1 tu16/4 en54/2 rs7 bu-1
+  H1 D 1000012 n=2 from=(19,24,0) tu=16 escape walk to=(19,23,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 23, 0] tu=12 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000013 n=1 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000013 n=2 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000015 n=1 from=(11,28,2) tu=8 patrol walk to=(15,24,1) run=0 aim=191 w=STR_HAXXOR seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 28, 2] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 11,28,2>12,28,2 d2 bam0 mt0 sz1 tu8/4 en68/2 rs7 bu-1
+  H1 D 1000015 n=2 from=(11,28,2) tu=8 escape walk to=(13,28,2) run=0 aim=191 w=STR_HAXXOR seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 28, 2] tu=0 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000017 n=1 from=(18,29,0) tu=24 escape walk to=(19,31,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 31, 0] tu=14 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+  H1 D 1000018 n=1 from=(22,31,2) tu=92 patrol walk to=(19,30,2) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 30, 2] tu=78 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000018 n=2 from=(19,30,2) tu=78 patrol walk to=(22,31,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[22, 31, 2] tu=64 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000019 n=1 from=(11,18,0) tu=56 patrol walk to=(8,30,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000019 n=2 from=(11,18,0) tu=56 patrol walk to=(8,30,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000020 n=1 from=(14,31,0) tu=7 patrol walk to=(27,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.reserve 14,31,0>15,31,0 d2 bam0 mt0 sz1 tu7/4 en57/2 rs7 bu-1
+  H1 D 1000020 n=2 from=(14,31,0) tu=7 patrol walk to=(27,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.reserve 14,31,0>15,31,0 d2 bam0 mt0 sz1 tu7/4 en57/2 rs7 bu-1
+  H1 D 1000024 n=1 from=(15,4,2) tu=134 patrol walk to=(12,5,2) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 5, 2] tu=115 spent=19 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000024 n=2 from=(12,5,2) tu=115 patrol walk to=(42,36,2) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 12, 0] tu=54 spent=61 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 19,12,0>20,13,0 d3 bam0 mt0 sz1 tu54/9 en63/4 rs7 bu-1
+  H1 D 1000025 n=1 from=(27,27,2) tu=134 combat snap to=(29,49,0) run=0 aim=157 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 27, 2] tu=105 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000025 n=2 from=(27,27,2) tu=105 combat snap to=(29,49,0) run=0 aim=157 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 27, 2] tu=76 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000026 n=1 from=(25,29,1) tu=134 patrol walk to=(27,28,1) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 28, 1] tu=124 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000026 n=1 from=(27,28,1) tu=124 combat walk to=(23,28,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 27, 1] tu=106 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 23,27,1>23,27,1 d5 bam0 mt0 sz1 tu106/-1 en86/-1 rs0 bu-1
+  H1 D 1000026 n=2 from=(23,27,1) tu=106 combat auto to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 27, 1] tu=47 spent=59 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000027 n=1 from=(25,31,3) tu=134 patrol walk to=(25,28,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 28, 3] tu=122 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000027 n=2 from=(25,28,3) tu=122 patrol walk to=(25,31,3) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 31, 3] tu=110 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000029 n=1 from=(28,31,3) tu=134 patrol walk to=(25,28,3) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 28, 3] tu=116 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000029 n=2 from=(25,28,3) tu=116 patrol walk to=(28,31,3) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[28, 31, 3] tu=98 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000031 n=1 from=(45,34,2) tu=134 combat snap to=(27,41,0) run=0 aim=229 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[45, 34, 2] tu=102 spent=32 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000031 n=2 from=(45,34,2) tu=102 combat snap to=(27,41,0) run=0 aim=229 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[45, 34, 2] tu=73 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000032 n=1 from=(35,45,0) tu=134 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[35, 45, 0] tu=103 spent=31 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 
+  H1 D 1000032 n=2 from=(35,45,0) tu=103 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[35, 45, 0] tu=74 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 
+  H1 D 1000033 n=1 from=(17,23,3) tu=134 patrol walk to=(29,12,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 22, 0] tu=54 spent=80 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,22,0>21,21,0 d1 bam0 mt0 sz1 tu54/9 en66/4 rs7 bu-1
+  H1 D 1000033 n=2 from=(20,22,0) tu=54 patrol walk to=(29,12,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 22, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,22,0>21,21,0 d1 bam0 mt0 sz1 tu54/9 en66/4 rs7 bu-1
+  H1 D 1000034 n=1 from=(46,34,0) tu=134 patrol walk to=(12,28,3) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[40, 34, 0] tu=97 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 40,34,0>40,34,0 d6 bam0 mt0 sz1 tu97/-1 en82/-1 rs7 bu-1
+  H1 D 1000034 n=2 from=(40,34,0) tu=97 combat auto to=(27,41,0) run=0 aim=229 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[40, 34, 0] tu=38 spent=59 dmg=0 downed=0 fdmg=75 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000035 n=1 from=(29,29,0) tu=90 combat throw to=(26,49,0) run=0 aim=344 w=STR_EMP_GRENADE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=37 spent=97 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000035 n=2 from=(29,29,0) tu=37 combat snap to=(29,49,0) run=0 aim=157 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=8 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000036 n=1 from=(23,12,0) tu=134 patrol walk to=(11,35,3) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[28, 21, 0] tu=65 spent=69 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 28,21,0>28,21,0 d3 bam0 mt0 sz1 tu65/-1 en68/-1 rs7 bu-1
+  H1 D 1000036 n=2 from=(28,21,0) tu=65 patrol walk to=(11,35,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 22, 0] tu=56 spent=9 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 29,22,0>29,23,0 d4 bam0 mt0 sz1 tu56/6 en64/3 rs7 bu-1
+  H1 D 1000037 n=0 from=(22,27,0) tu=134 combat walk to=(23,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 29, 0] tu=122 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 24,29,0>24,29,0 d4 bam0 mt0 sz1 tu122/-1 en94/-1 rs0 bu-1
+  H1 D 1000037 n=1 from=(24,29,0) tu=122 combat auto to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 29, 0] tu=63 spent=59 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000037 n=2 from=(24,29,0) tu=63 escape walk to=(20,30,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(22,31,0)
+      X 1/1 victim=1000037(1) dead at (22,31,0) by 191(0) STR_SWORD dist=1
+      -> pos=[22, 31, 0] tu=49 spent=14 dmg=1 downed=0 fdmg=0 hp_lost=37 down=1 seen=0 spotted=1 walk.stop.reaction 22,31,0>22,31,0 d6 bam0 mt0 sz1 tu49/-1 en87/-1 rs0 bu-1
+  H1 D 1000001 n=1 from=(55,46,0) tu=36 escape walk to=(50,47,0) run=0 aim=324 w=STR_BLUNDERBUSS seen=191,91,157,324,344,301,335,229
+      -> pos=[50, 47, 0] tu=3 spent=33 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+  H1 D 1000003 n=1 from=(54,34,0) tu=16 patrol walk to=(8,48,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,34,0>53,34,0 d6 bam0 mt0 sz1 tu16/6 en52/3 rs7 bu-1
+  H1 D 1000003 n=2 from=(54,34,0) tu=16 patrol walk to=(8,48,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 34, 0] tu=16 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,34,0>53,34,0 d6 bam0 mt0 sz1 tu16/6 en52/3 rs7 bu-1
+  H1 D 1000010 n=1 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000010 n=2 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000013 n=1 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000013 n=2 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000018 n=1 from=(22,31,2) tu=64 patrol walk to=(19,30,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 31, 2] tu=56 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,31,2>19,30,2 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000018 n=2 from=(20,31,2) tu=56 patrol walk to=(19,30,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 31, 2] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,31,2>19,30,2 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000019 n=1 from=(11,18,0) tu=56 escape none to=(11,18,0) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000020 n=1 from=(14,31,0) tu=7 patrol walk to=(27,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 14,31,0>15,31,0 d2 bam0 mt0 sz1 tu7/4 en57/2 rs7 bu-1
+  H1 D 1000020 n=2 from=(14,31,0) tu=7 patrol walk to=(27,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 14,31,0>15,31,0 d2 bam0 mt0 sz1 tu7/4 en57/2 rs7 bu-1
+  H1 D 1000024 n=1 from=(19,12,0) tu=54 patrol walk to=(42,36,2) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 12, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 19,12,0>20,12,0 d2 bam0 mt0 sz1 tu54/6 en63/3 rs7 bu-1
+  H1 D 1000024 n=2 from=(19,12,0) tu=54 escape none to=(19,12,0) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 12, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000025 n=1 from=(27,27,2) tu=76 patrol walk to=(25,28,2) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 28, 2] tu=66 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000025 n=2 from=(25,28,2) tu=66 patrol walk to=(27,27,2) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 27, 2] tu=56 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000026 n=1 from=(23,27,1) tu=47 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 27, 1] tu=18 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000026 n=2 from=(23,27,1) tu=18 escape walk to=(23,29,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 29, 0] tu=10 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+  H1 D 1000027 n=1 from=(25,31,3) tu=110 patrol walk to=(25,28,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 28, 3] tu=98 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000027 n=2 from=(25,28,3) tu=98 patrol walk to=(25,31,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 31, 3] tu=86 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000029 n=1 from=(28,31,3) tu=98 patrol walk to=(25,28,3) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 28, 3] tu=80 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000029 n=2 from=(25,28,3) tu=80 patrol walk to=(28,31,3) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[28, 31, 3] tu=62 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000031 n=1 from=(45,34,2) tu=73 combat walk to=(40,33,2) run=0 aim=324 w=STR_WAKIZASHI seen=191,91,157,324,344,301,335,229
+      -> pos=[40, 33, 2] tu=40 spent=33 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H1 D 1000031 n=2 from=(40,33,2) tu=40 combat snap to=(27,41,0) run=0 aim=229 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[40, 33, 2] tu=11 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H1 D 1000032 n=1 from=(35,45,0) tu=74 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[35, 45, 0] tu=45 spent=29 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 
+  H1 D 1000032 n=2 from=(35,45,0) tu=45 escape walk to=(34,44,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[34, 44, 0] tu=39 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+  H1 D 1000033 n=1 from=(20,22,0) tu=54 patrol walk to=(29,12,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 22, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,22,0>21,21,0 d1 bam0 mt0 sz1 tu54/9 en66/4 rs7 bu-1
+  H1 D 1000033 n=2 from=(20,22,0) tu=54 patrol walk to=(29,12,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 22, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,22,0>21,21,0 d1 bam0 mt0 sz1 tu54/9 en66/4 rs7 bu-1
+  H1 D 1000034 n=1 from=(40,34,0) tu=38 combat snap to=(27,41,0) run=0 aim=229 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[40, 34, 0] tu=9 spent=29 dmg=0 downed=0 fdmg=13 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000034 n=2 from=(40,34,0) tu=9 escape walk to=(44,38,0) run=0 aim=229 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[42, 34, 0] tu=1 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 42,34,0>43,34,0 d2 bam0 mt0 sz1 tu1/4 en78/2 rs0 bu-1
+  H1 D 1000035 n=1 from=(29,29,0) tu=8 patrol walk to=(27,28,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.reserve 29,29,0>29,30,0 d4 bam0 mt0 sz1 tu8/6 en88/3 rs7 bu-1
+  H1 D 1000035 n=2 from=(29,29,0) tu=8 patrol walk to=(27,28,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.reserve 29,29,0>29,30,0 d4 bam0 mt0 sz1 tu8/6 en88/3 rs7 bu-1
+  H1 D 1000036 n=1 from=(29,22,0) tu=56 patrol walk to=(11,35,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 22, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 29,22,0>29,23,0 d4 bam0 mt0 sz1 tu56/6 en64/3 rs7 bu-1
+  H1 D 1000036 n=2 from=(29,22,0) tu=56 escape none to=(29,22,0) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 22, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000038 n=1 from=(13,14,3) tu=186 patrol walk to=(47,41,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[46, 40, 3] tu=2 spent=184 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 walk.stop.tu 46,40,3>47,41,3 d3 bam0 mt1 sz1 tu2/6 en28/3 rs0 bu-1
+  H1 D 1000039 n=1 from=(3,44,3) tu=186 patrol walk to=(45,34,2) run=0 aim=335 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[3, 44, 3] tu=185 spent=1 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=0 walk.stop.turnspot 3,44,3>3,44,3 d3 bam0 mt1 sz1 tu185/-1 en120/-1 rs0 bu-1
+  H1 D 1000039 n=2 from=(3,44,3) tu=185 patrol walk to=(45,34,2) run=0 aim=191 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[3, 44, 3] tu=184 spent=1 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=0 walk.stop.turnspot 3,44,3>3,44,3 d2 bam0 mt1 sz1 tu184/-1 en120/-1 rs0 bu-1
+  H1 D 1000040 n=1 from=(3,34,3) tu=186 combat walk to=(20,33,0) run=0 aim=191 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[4, 34, 3] tu=182 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 walk.stop.spotted 4,34,3>4,34,3 d2 bam0 mt1 sz1 tu182/-1 en118/-1 rs0 bu-1
+  H1 D 1000040 n=2 from=(4,34,3) tu=123 combat throw to=(25,48,0) run=0 aim=335 w=STR_EMP_GRENADE seen=191,91,157,324,344,301,335,229
+      -> pos=[4, 34, 3] tu=48 spent=134 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000041 n=1 from=(53,44,3) tu=186 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[53, 44, 3] tu=144 spent=42 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000041 n=2 from=(53,44,3) tu=144 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[53, 44, 3] tu=104 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000042 n=1 from=(53,24,3) tu=186 combat walk to=(48,20,3) run=0 aim=324 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[51, 22, 3] tu=174 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 51,22,3>51,22,3 d6 bam0 mt1 sz1 tu174/-1 en114/-1 rs0 bu-1
+  H1 D 1000042 n=2 from=(51,22,3) tu=174 combat walk to=(49,21,3) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[49, 21, 3] tu=164 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000043 n=1 from=(3,24,3) tu=186 patrol walk to=(19,27,1) run=0 aim=191 w=STR_GREAT_CLUB seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 26, 1] tu=100 spent=86 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 15,26,1>15,26,1 d2 bam0 mt1 sz1 tu100/-1 en93/-1 rs0 bu-1
+  H1 D 1000043 n=2 from=(15,26,1) tu=100 combat walk to=(20,33,0) run=0 aim=191 w=STR_KUNG_FU_ALT seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,33,0)
+      X 1/1 victim=1000043(1) dead at (20,33,0) by 191(0) STR_SWORD dist=1
+      -> pos=[20, 33, 0] tu=6 spent=94 dmg=4 downed=0 fdmg=0 hp_lost=90 down=1 seen=0 spotted=1 
+  H1 D 1000003 n=1 from=(54,34,0) tu=16 combat walk to=(54,35,0) run=0 aim=324 w=STR_WAKIZASHI seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 35, 0] tu=10 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000003 n=2 from=(54,35,0) tu=10 patrol walk to=(8,48,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 35, 0] tu=10 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,35,0>53,35,0 d6 bam0 mt0 sz1 tu10/6 en49/3 rs7 bu-1
+  H1 D 1000010 n=1 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000010 n=2 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000013 n=1 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000013 n=2 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=-1 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000018 n=1 from=(20,31,2) tu=56 patrol walk to=(19,30,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 31, 2] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,31,2>19,30,2 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000018 n=2 from=(20,31,2) tu=56 patrol walk to=(19,30,2) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 31, 2] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,31,2>19,30,2 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000019 n=1 from=(11,18,0) tu=56 patrol walk to=(8,30,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000019 n=2 from=(11,18,0) tu=56 patrol walk to=(8,30,0) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000020 n=1 from=(14,31,0) tu=7 patrol walk to=(27,31,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 31, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 14,31,0>15,31,0 d2 bam0 mt0 sz1 tu7/4 en57/2 rs7 bu-1
+  H1 D 1000020 n=2 from=(14,31,0) tu=7 escape walk to=(13,32,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 32, 0] tu=1 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000024 n=0 from=(19,12,0) tu=54 combat walk to=(16,11,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[16, 11, 0] tu=33 spent=21 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000024 n=1 from=(16,11,0) tu=33 patrol walk to=(42,36,2) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[16, 11, 0] tu=33 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 16,11,0>17,11,0 d2 bam0 mt0 sz1 tu33/6 en53/3 rs7 bu-1
+  H1 D 1000024 n=2 from=(16,11,0) tu=33 patrol walk to=(42,36,2) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[16, 11, 0] tu=33 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 16,11,0>17,11,0 d2 bam0 mt0 sz1 tu33/6 en53/3 rs7 bu-1
+  H1 D 1000025 n=1 from=(27,27,2) tu=56 patrol walk to=(25,28,2) run=0 aim=157 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[26, 27, 2] tu=52 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 26,27,2>25,28,2 d5 bam0 mt0 sz1 tu52/6 en88/3 rs7 bu-1
+  H1 D 1000025 n=2 from=(26,27,2) tu=52 patrol walk to=(25,28,2) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[26, 27, 2] tu=52 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 26,27,2>25,28,2 d5 bam0 mt0 sz1 tu52/6 en88/3 rs7 bu-1
+  H1 D 1000027 n=1 from=(25,31,3) tu=86 patrol walk to=(25,28,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 28, 3] tu=74 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000027 n=2 from=(25,28,3) tu=74 patrol walk to=(25,31,3) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[25, 31, 3] tu=62 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000029 n=1 from=(28,31,3) tu=62 patrol walk to=(25,28,3) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 30, 3] tu=56 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 27,30,3>26,29,3 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000029 n=2 from=(27,30,3) tu=56 patrol walk to=(25,28,3) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 30, 3] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 27,30,3>26,29,3 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000031 n=1 from=(40,33,2) tu=11 patrol walk to=(58,20,0) run=0 aim=229 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[40, 33, 2] tu=11 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.reserve 40,33,2>40,32,2 d0 bam0 mt0 sz1 tu11/4 en84/2 rs7 bu-1
+  H1 D 1000031 n=2 from=(40,33,2) tu=11 escape walk to=(39,34,2) run=0 aim=229 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[39, 34, 0] tu=5 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000033 n=1 from=(20,22,0) tu=54 escape none to=(20,22,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 22, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000035 n=1 from=(29,29,0) tu=8 patrol walk to=(27,28,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.reserve 29,29,0>29,30,0 d4 bam0 mt0 sz1 tu8/6 en88/3 rs7 bu-1
+  H1 D 1000035 n=2 from=(29,29,0) tu=8 patrol walk to=(27,28,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.reserve 29,29,0>29,30,0 d4 bam0 mt0 sz1 tu8/6 en88/3 rs7 bu-1
+  H1 D 1000036 n=1 from=(29,22,0) tu=56 patrol walk to=(11,35,3) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 22, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 29,22,0>29,23,0 d4 bam0 mt0 sz1 tu56/6 en64/3 rs7 bu-1
+  H1 D 1000036 n=2 from=(29,22,0) tu=56 patrol walk to=(11,35,3) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 22, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 29,22,0>29,23,0 d4 bam0 mt0 sz1 tu56/6 en64/3 rs7 bu-1
+  H1 D 1000039 n=1 from=(3,44,3) tu=184 patrol walk to=(45,34,2) run=0 aim=191 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[13, 44, 3] tu=144 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 walk.stop.spotted 13,44,3>13,44,3 d2 bam0 mt1 sz1 tu144/-1 en100/-1 rs0 bu-1
+  H1 D 1000039 n=2 from=(13,44,3) tu=144 escape walk to=(10,41,3) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[10, 41, 3] tu=126 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000040 n=1 from=(4,34,3) tu=48 patrol walk to=(11,48,0) run=0 aim=191 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[5, 42, 3] tu=14 spent=34 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 walk.stop.spotted 5,42,3>5,42,3 d3 bam0 mt1 sz1 tu14/-1 en89/-1 rs0 bu-1
+  H1 D 1000040 n=2 from=(5,42,3) tu=14 patrol walk to=(11,48,0) run=0 aim=191 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[7, 44, 3] tu=2 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 walk.stop.tu 7,44,3>8,45,3 d3 bam0 mt1 sz1 tu2/6 en83/3 rs0 bu-1
+  H1 D 1000041 n=1 from=(53,44,3) tu=104 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[53, 44, 3] tu=64 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000041 n=2 from=(53,44,3) tu=64 combat snap to=(32,47,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[53, 44, 3] tu=24 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000042 n=1 from=(49,21,3) tu=164 combat walk to=(47,20,3) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[47, 20, 3] tu=154 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 
+  H1 D 1000042 n=2 from=(47,20,3) tu=154 patrol walk to=(47,51,0) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[47, 51, 0] tu=6 spent=148 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+  H1 D 1000044 n=1 from=(24,27,4) tu=186 patrol walk to=(22,28,3) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[22, 28, 3] tu=152 spent=34 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000044 n=2 from=(22,28,3) tu=152 patrol walk to=(24,27,4) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 27, 4] tu=114 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000045 n=1 from=(18,23,4) tu=186 patrol walk to=(17,23,3) run=0 aim=-1 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[17, 23, 3] tu=126 spent=60 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000045 n=2 from=(17,23,3) tu=126 patrol walk to=(18,23,4) run=0 aim=-1 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 23, 4] tu=60 spent=66 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000047 n=1 from=(12,27,4) tu=186 patrol walk to=(14,24,2) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 24, 2] tu=136 spent=50 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000047 n=1 from=(14,24,2) tu=136 combat walk to=(15,29,2) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 28, 1] tu=86 spent=50 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 14,28,1>14,28,1 d3 bam0 mt1 sz1 tu86/-1 en82/-1 rs0 bu-1
+  H1 D 1000047 n=2 from=(14,28,1) tu=86 combat snap to=(21,32,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[14, 28, 1] tu=46 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000048 n=1 from=(41,31,0) tu=163 combat snap to=(27,41,0) run=0 aim=229 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[41, 31, 0] tu=126 spent=37 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H1 D 1000048 n=2 from=(41,31,0) tu=126 combat walk to=(28,40,0) run=0 aim=229 w=STR_WAKIZASHI seen=191,91,157,324,344,301,335,229
+      -> pos=[37, 34, 0] tu=93 spent=33 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 37,34,0>37,34,0 d5 bam0 mt0 sz1 tu93/-1 en95/-1 rs0 bu-1
+  H1 D 1000049 n=1 from=(13,1,0) tu=163 patrol walk to=(21,33,2) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 17, 0] tu=56 spent=107 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,17,0>10,18,0 d5 bam0 mt0 sz1 tu56/9 en57/4 rs8 bu-1
+  H1 D 1000049 n=2 from=(11,17,0) tu=56 patrol walk to=(21,33,2) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 17, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,17,0>10,18,0 d5 bam0 mt0 sz1 tu56/9 en57/4 rs8 bu-1
+  H1 D 1000050 n=1 from=(38,41,0) tu=163 combat walk to=(39,43,0) run=0 aim=324 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[39, 43, 0] tu=148 spent=15 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H1 D 1000050 n=2 from=(39,43,0) tu=79 combat throw to=(32,47,0) run=0 aim=324 w=STR_HIGH_EXPLOSIVE seen=191,91,157,324,344,301,335,229
+      -> pos=[39, 43, 0] tu=14 spent=134 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H1 D 1000051 n=1 from=(3,4,0) tu=163 patrol walk to=(18,10,0) run=0 aim=191 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      -> pos=[18, 10, 0] tu=55 spent=108 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000051 n=2 from=(18,10,0) tu=55 patrol walk to=(50,20,0) run=0 aim=191 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 14, 0] tu=7 spent=48 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 24,14,0>25,15,0 d3 bam0 mt0 sz1 tu7/9 en37/4 rs0 bu-1
+  H1 D 1000052 n=1 from=(13,5,0) tu=163 patrol walk to=(1,38,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[3, 18, 0] tu=61 spent=102 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 3,18,0>2,19,0 d5 bam0 mt0 sz1 tu61/9 en61/4 rs8 bu-1
+  H1 D 1000052 n=2 from=(3,18,0) tu=61 patrol walk to=(1,38,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[3, 18, 0] tu=61 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 3,18,0>2,19,0 d5 bam0 mt0 sz1 tu61/9 en61/4 rs8 bu-1
+  H1 D 1000053 n=1 from=(37,36,0) tu=163 combat walk to=(28,40,0) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[30, 38, 0] tu=111 spent=52 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 walk.stop.spotted 30,38,0>30,38,0 d5 bam0 mt0 sz1 tu111/-1 en85/-1 rs0 bu-1
+  H1 D 1000053 n=2 from=(30,38,0) tu=111 combat walk to=(28,40,0) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 39, 0] tu=102 spent=9 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 walk.stop.spotted 29,39,0>29,39,0 d5 bam0 mt0 sz1 tu102/-1 en81/-1 rs0 bu-1
+  H1 D 1000054 n=1 from=(12,31,4) tu=149 patrol walk to=(12,27,4) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 27, 4] tu=133 spent=16 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000054 n=2 from=(12,27,4) tu=133 patrol walk to=(12,31,4) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 31, 4] tu=117 spent=16 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000055 n=1 from=(24,32,4) tu=86 combat throw to=(27,41,0) run=0 aim=229 w=STR_SATCHEL_CHARGE seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 32, 4] tu=27 spent=122 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000055 n=2 from=(24,32,4) tu=27 patrol walk to=(17,34,2) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 32, 4] tu=27 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 24,32,4>23,32,4 d6 bam0 mt0 sz1 tu27/4 en100/2 rs7 bu-1
+  H1 D 1000056 n=1 from=(21,25,1) tu=149 patrol walk to=(22,27,0) run=0 aim=-1 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 27, 1] tu=131 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 19,27,1>19,27,1 d4 bam0 mt0 sz1 tu131/-1 en113/-1 rs0 bu-1
+  H1 D 1000056 n=2 from=(19,27,1) tu=131 patrol walk to=(22,27,0) run=0 aim=191 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      -> pos=[22, 27, 0] tu=111 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000057 n=1 from=(21,31,3) tu=149 escape none to=(21,31,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[21, 31, 3] tu=149 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000058 n=1 from=(23,23,4) tu=47 patrol walk to=(21,42,0) run=0 aim=-1 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 23, 4] tu=47 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000058 n=2 from=(23,23,4) tu=47 patrol walk to=(21,42,0) run=0 aim=191 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 23, 4] tu=47 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000059 n=1 from=(23,35,4) tu=47 combat snap to=(29,49,0) run=0 aim=157 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 35, 4] tu=27 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  H1 D 1000059 n=2 from=(23,35,4) tu=27 combat snap to=(29,49,0) run=0 aim=157 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 35, 4] tu=9 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=3 
+  H1 D 1000060 n=1 from=(11,36,2) tu=74 combat snap to=(29,49,0) run=0 aim=157 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 36, 2] tu=50 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000060 n=2 from=(11,36,2) tu=50 combat snap to=(29,49,0) run=0 aim=157 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 36, 2] tu=28 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=3 
+  H1 D 1000063 n=1 from=(27,32,4) tu=74 combat snap to=(29,49,0) run=0 aim=157 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 32, 4] tu=52 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000063 n=2 from=(27,32,4) tu=52 combat snap to=(27,41,0) run=0 aim=229 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 32, 4] tu=30 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000064 n=1 from=(11,23,2) tu=74 patrol walk to=(14,54,0) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000064 n=2 from=(11,23,2) tu=74 escape none to=(11,23,2) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000065 n=1 from=(15,23,2) tu=74 patrol walk to=(13,35,4) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000065 n=2 from=(15,23,2) tu=74 patrol walk to=(13,35,4) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000066 n=1 from=(19,23,2) tu=74 patrol walk to=(21,25,1) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000066 n=2 from=(19,23,2) tu=74 patrol walk to=(21,25,1) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000067 n=1 from=(27,27,4) tu=74 patrol walk to=(22,28,3) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 27, 4] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000067 n=2 from=(27,27,4) tu=74 patrol walk to=(22,28,3) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 27, 4] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000000 n=1 from=(15,46,0) tu=21 escape walk to=(17,44,0) run=0 aim=301 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[16, 45, 0] tu=6 spent=15 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.tu 16,45,0>17,44,0 d1 bam0 mt0 sz1 tu6/12 en40/6 rs0 bu-1
+  H1 D 1000000 n=2 from=(16,45,0) tu=6 escape none to=(16,45,0) run=0 aim=301 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[16, 45, 0] tu=6 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000003 n=1 from=(54,35,0) tu=10 patrol walk to=(8,48,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 35, 0] tu=10 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,35,0>53,35,0 d6 bam0 mt0 sz1 tu10/6 en49/3 rs7 bu-1
+  H1 D 1000003 n=2 from=(54,35,0) tu=10 patrol walk to=(8,48,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[54, 35, 0] tu=10 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 54,35,0>53,35,0 d6 bam0 mt0 sz1 tu10/6 en49/3 rs7 bu-1
+  H1 D 1000010 n=1 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000010 n=2 from=(12,29,2) tu=9 patrol walk to=(15,33,3) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 29, 2] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 12,29,2>12,30,2 d4 bam0 mt0 sz1 tu9/4 en41/2 rs7 bu-1
+  H1 D 1000013 n=1 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000013 n=2 from=(11,25,4) tu=54 patrol walk to=(5,26,0) run=0 aim=191 w=STR_NINJA_SMG seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 25, 4] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,25,4>10,26,4 d5 bam0 mt0 sz1 tu54/6 en54/3 rs7 bu-1
+  H1 D 1000018 n=1 from=(20,31,2) tu=56 patrol walk to=(19,30,2) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 31, 2] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,31,2>19,30,2 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000018 n=2 from=(20,31,2) tu=56 patrol walk to=(19,30,2) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 31, 2] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,31,2>19,30,2 d7 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000019 n=1 from=(11,18,0) tu=56 patrol walk to=(8,30,0) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000019 n=2 from=(11,18,0) tu=56 patrol walk to=(8,30,0) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 18, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,18,0>11,19,0 d4 bam0 mt0 sz1 tu56/6 en61/3 rs7 bu-1
+  H1 D 1000024 n=1 from=(16,11,0) tu=33 patrol walk to=(42,36,2) run=0 aim=-1 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[16, 11, 0] tu=33 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 16,11,0>17,11,0 d2 bam0 mt0 sz1 tu33/6 en53/3 rs7 bu-1
+  H1 D 1000024 n=2 from=(16,11,0) tu=33 patrol walk to=(42,36,2) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[16, 11, 0] tu=33 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 16,11,0>17,11,0 d2 bam0 mt0 sz1 tu33/6 en53/3 rs7 bu-1
+  H1 D 1000025 n=1 from=(26,27,2) tu=52 patrol walk to=(25,28,2) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[26, 27, 2] tu=52 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 26,27,2>25,28,2 d5 bam0 mt0 sz1 tu52/6 en88/3 rs7 bu-1
+  H1 D 1000025 n=2 from=(26,27,2) tu=52 patrol walk to=(25,28,2) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[26, 27, 2] tu=52 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 26,27,2>25,28,2 d5 bam0 mt0 sz1 tu52/6 en88/3 rs7 bu-1
+  H1 D 1000027 n=1 from=(25,31,3) tu=62 patrol walk to=(28,31,3) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 31, 3] tu=54 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 27,31,3>28,31,3 d2 bam0 mt0 sz1 tu54/4 en60/2 rs7 bu-1
+  H1 D 1000027 n=2 from=(27,31,3) tu=54 patrol walk to=(28,31,3) run=0 aim=191 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 31, 3] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 27,31,3>28,31,3 d2 bam0 mt0 sz1 tu54/4 en60/2 rs7 bu-1
+  H1 D 1000029 n=1 from=(27,30,3) tu=56 escape none to=(27,30,3) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 30, 3] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000033 n=1 from=(20,22,0) tu=54 patrol walk to=(29,12,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 22, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,22,0>21,21,0 d1 bam0 mt0 sz1 tu54/9 en66/4 rs7 bu-1
+  H1 D 1000033 n=2 from=(20,22,0) tu=54 patrol walk to=(29,12,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[20, 22, 0] tu=54 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 20,22,0>21,21,0 d1 bam0 mt0 sz1 tu54/9 en66/4 rs7 bu-1
+  H1 D 1000035 n=1 from=(29,29,0) tu=8 patrol walk to=(27,28,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 29,29,0>29,30,0 d4 bam0 mt0 sz1 tu8/6 en88/3 rs7 bu-1
+  H1 D 1000035 n=2 from=(29,29,0) tu=8 patrol walk to=(27,28,1) run=0 aim=191 w=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 29, 0] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.reserve 29,29,0>29,30,0 d4 bam0 mt0 sz1 tu8/6 en88/3 rs7 bu-1
+  H1 D 1000036 n=1 from=(29,22,0) tu=56 patrol walk to=(11,35,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 22, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 29,22,0>29,23,0 d4 bam0 mt0 sz1 tu56/6 en64/3 rs7 bu-1
+  H1 D 1000036 n=2 from=(29,22,0) tu=56 patrol walk to=(11,35,3) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[29, 22, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 29,22,0>29,23,0 d4 bam0 mt0 sz1 tu56/6 en64/3 rs7 bu-1
+  H1 D 1000041 n=1 from=(53,44,3) tu=24 patrol walk to=(11,38,0) run=0 aim=324 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[47, 44, 3] tu=0 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.tu 47,44,3>46,44,3 d6 bam0 mt1 sz1 tu0/4 en108/2 rs0 bu-1
+  H1 D 1000042 n=1 from=(47,51,0) tu=6 patrol walk to=(18,48,0) run=0 aim=324 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[47, 51, 0] tu=4 spent=2 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.turnspot 47,51,0>47,51,0 d6 bam0 mt1 sz1 tu4/-1 en42/-1 rs0 bu-1
+  H1 D 1000044 n=1 from=(24,27,4) tu=114 patrol walk to=(15,4,2) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 4, 4] tu=4 spent=110 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 15,4,4>15,4,3 d9 bam0 mt1 sz1 tu4/8 en37/0 rs0 bu-1
+  H1 D 1000045 n=1 from=(18,23,4) tu=60 patrol walk to=(24,27,4) run=0 aim=-1 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 27, 4] tu=28 spent=32 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000045 n=2 from=(24,27,4) tu=28 patrol walk to=(18,23,4) run=0 aim=191 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 24, 4] tu=2 spent=26 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 19,24,4>18,23,4 d7 bam0 mt1 sz1 tu2/6 en36/3 rs0 bu-1
+  H1 D 1000047 n=1 from=(14,28,1) tu=46 combat walk to=(20,31,0) run=0 aim=191 w=STR_WAKIZASHI seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      X 1/1 victim=1000047(1) dead at (20,31,0) by 191(0) STR_SWORD dist=1
+      -> pos=[20, 31, 0] tu=8 spent=38 dmg=4 downed=0 fdmg=0 hp_lost=90 down=1 seen=0 spotted=1 walk.stop.reaction 20,31,0>20,31,0 d3 bam0 mt1 sz1 tu8/-1 en67/-1 rs0 bu-1
+  H1 D 1000048 n=2 from=(37,34,0) tu=93 combat snap to=(27,41,0) run=0 aim=229 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[37, 34, 0] tu=58 spent=35 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 
+  H1 D 1000049 n=1 from=(11,17,0) tu=56 patrol walk to=(21,33,2) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 17, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,17,0>10,18,0 d5 bam0 mt0 sz1 tu56/9 en57/4 rs8 bu-1
+  H1 D 1000049 n=2 from=(11,17,0) tu=56 patrol walk to=(21,33,2) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 17, 0] tu=56 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 11,17,0>10,18,0 d5 bam0 mt0 sz1 tu56/9 en57/4 rs8 bu-1
+  H1 D 1000050 n=1 from=(39,43,0) tu=14 patrol walk to=(23,51,1) run=0 aim=324 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[38, 44, 0] tu=8 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 walk.stop.spotted 38,44,0>38,44,0 d5 bam0 mt0 sz1 tu8/-1 en84/-1 rs0 bu-1
+  H1 D 1000050 n=2 from=(38,44,0) tu=8 patrol walk to=(23,51,1) run=0 aim=324 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[37, 44, 0] tu=4 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.tu 37,44,0>36,45,0 d5 bam0 mt0 sz1 tu4/6 en82/3 rs0 bu-1
+  H1 D 1000051 n=1 from=(24,14,0) tu=7 patrol walk to=(50,20,0) run=0 aim=191 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 14, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 24,14,0>25,15,0 d3 bam0 mt0 sz1 tu7/9 en37/4 rs0 bu-1
+  H1 D 1000051 n=2 from=(24,14,0) tu=7 escape none to=(24,14,0) run=0 aim=-1 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      -> pos=[24, 14, 0] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000052 n=1 from=(3,18,0) tu=61 patrol walk to=(1,38,0) run=0 aim=-1 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[3, 18, 0] tu=61 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 3,18,0>2,19,0 d5 bam0 mt0 sz1 tu61/9 en61/4 rs8 bu-1
+  H1 D 1000052 n=2 from=(3,18,0) tu=61 patrol walk to=(1,38,0) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[3, 18, 0] tu=61 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 3,18,0>2,19,0 d5 bam0 mt0 sz1 tu61/9 en61/4 rs8 bu-1
+  H1 D 1000053 n=1 from=(29,39,0) tu=102 combat walk to=(28,40,0) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=229 turn=1 side=1 what=reaction unit=229 pos=(28,40,0)
+      ~ reaction turn=1 side=1 reactor=229 turn=1 side=1 what=reaction unit=229 pos=(28,40,0)
+      ~ reaction turn=1 side=1 reactor=229 turn=1 side=1 what=reaction unit=229 pos=(28,40,0)
+      -> pos=[28, 40, 0] tu=9 spent=93 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=2 
+  H1 D 1000053 n=2 from=(28,40,0) tu=9 escape walk to=(27,39,0) run=0 aim=229 w=STR_KATANA seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 39, 0] tu=0 spent=9 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000054 n=1 from=(12,31,4) tu=117 patrol walk to=(12,27,4) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 27, 4] tu=101 spent=16 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000054 n=2 from=(12,27,4) tu=101 patrol walk to=(12,31,4) run=0 aim=-1 w=STR_CD_CANNON seen=191,91,157,324,344,301,335,229
+      -> pos=[12, 31, 4] tu=85 spent=16 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000055 n=1 from=(24,32,4) tu=27 escape walk to=(19,34,4) run=0 aim=191 w=STR_CD_PISTOL seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 34, 4] tu=3 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000056 n=1 from=(22,27,0) tu=111 combat walk to=(19,29,0) run=0 aim=191 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 29, 0] tu=93 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  H1 D 1000056 n=2 from=(19,29,0) tu=93 combat walk to=(22,33,0) run=0 aim=191 w=STR_GOTHIC_HAMMER seen=191,91,157,324,344,301,335,229
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      ~ reaction turn=1 side=1 reactor=191 turn=1 side=1 what=reaction unit=191 pos=(20,31,0)
+      X 1/1 victim=1000056(1) dead at (20,31,0) by 191(0) STR_SWORD dist=1
+      -> pos=[20, 31, 0] tu=83 spent=10 dmg=5 downed=0 fdmg=0 hp_lost=121 down=1 seen=0 spotted=1 walk.stop.reaction 20,31,0>20,31,0 d3 bam0 mt0 sz1 tu83/-1 en89/-1 rs0 bu-1
+  H1 D 1000058 n=1 from=(23,23,4) tu=47 patrol walk to=(21,42,0) run=0 aim=191 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 23, 4] tu=47 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000058 n=2 from=(23,23,4) tu=47 patrol walk to=(21,42,0) run=0 aim=-1 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 23, 4] tu=47 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000059 n=1 from=(23,35,4) tu=9 patrol walk to=(31,28,0) run=0 aim=191 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 35, 4] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000059 n=2 from=(23,35,4) tu=9 patrol walk to=(31,28,0) run=0 aim=191 w=AUX_XTURRET_14MMCHAINGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[23, 35, 4] tu=9 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=1 
+  H1 D 1000060 n=1 from=(11,36,2) tu=28 escape none to=(11,36,2) run=0 aim=157 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 36, 2] tu=28 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H1 D 1000063 n=1 from=(27,32,4) tu=30 escape none to=(27,32,4) run=0 aim=229 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 32, 4] tu=30 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=5 spotted=1 
+  H1 D 1000064 n=1 from=(11,23,2) tu=74 patrol walk to=(14,54,0) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000064 n=2 from=(11,23,2) tu=74 patrol walk to=(14,54,0) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[11, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000065 n=1 from=(15,23,2) tu=74 patrol walk to=(13,35,4) run=0 aim=191 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000065 n=2 from=(15,23,2) tu=74 patrol walk to=(13,35,4) run=0 aim=191 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[15, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000066 n=1 from=(19,23,2) tu=74 patrol walk to=(21,25,1) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000066 n=2 from=(19,23,2) tu=74 patrol walk to=(21,25,1) run=0 aim=191 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[19, 23, 2] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H1 D 1000067 n=1 from=(27,27,4) tu=74 escape none to=(27,27,4) run=0 aim=-1 w=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=191,91,157,324,344,301,335,229
+      -> pos=[27, 27, 4] tu=74 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+      X 1/1 victim=1000053(1) dead at (27,39,0) by 1000007(1) STR_WEAPON_UNKNOWN dist=10
+      X 1/1 victim=1000063(1) dead at (27,32,4) by 1000007(1) STR_WEAPON_UNKNOWN dist=3
+      X 1/1 victim=1000046(1) dead at (19,36,4) by 1000055(1) STR_SATCHEL_CHARGE dist=2
+      X 1/1 victim=1000048(1) dead at (37,34,0) by 1000055(1) STR_SATCHEL_CHARGE dist=18
+      X 1/1 victim=1000032(1) dead at (34,44,0) by 1000050(1) STR_HIGH_EXPLOSIVE dist=3
+      X 1/1 victim=344(0) stun at (26,49,0) by 1000040(1) STR_EMP_GRENADE dist=20
+      X 1/1 victim=335(0) dead at (25,48,0) by 1000035(1) STR_EMP_GRENADE dist=19
+      X 2/0 victim=344(0) dead at (26,49,0) by 1000035(1) STR_EMP_GRENADE dist=20
+      X 2/0 victim=1000000(1) stun at (16,45,0) by 1000055(1) STR_SATCHEL_CHARGE dist=11
+      X 2/0 victim=1000000(1) stun at (16,45,0) by 1000055(1) STR_SATCHEL_CHARGE dist=11
+  p2 D 191 n=2 from=(20,32,0) tu=286 combat hit to=(19,31,0) run=0 aim=1000017 w=STR_SWORD seen=1000001,1000007,1000008,1000016,1000017,1000018,1000020,1000021,1000038,1000041,1000057
+      X 2/0 victim=1000017(1) dead at (19,31,0) by 191(0) STR_SWORD dist=1
+      -> pos=[20, 32, 0] tu=290 spent=-4 dmg=90 downed=1 fdmg=0 hp_lost=3 down=0 seen=5 spotted=3 
+      X 2/0 victim=1000050(1) dead at (37,44,0) by 324(0) STR_SWORD dist=1
+  p2 D 301 n=2 from=(24,48,0) tu=93 combat auto to=(23,35,4) run=0 aim=1000059 w=STR_CD_RIFLE seen=1000001,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000012,1000016,1000018,1000020,1000021,1000026,1000031,1000035,1000038,1000039,1000041,1000042,1000054,1000055,1000057,1000059,1000060
+      -> pos=[24, 48, 0] tu=45 spent=48 dmg=46 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=6 
+      ~ reaction turn=2 side=0 reactor=1000036 turn=2 side=0 what=reaction unit=1000036 pos=(29,32,0)
+      X 2/1 victim=229(0) dead at (29,28,0) by 1000058(1) AUX_XTURRET_14MMCHAINGUN_WEAPON dist=8
+      ~ reaction turn=2 side=1 reactor=301 turn=2 side=1 what=reaction unit=301 pos=(23,35,4)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(22,30,0)
+      X 2/1 victim=1000020(1) stun at (22,30,0) by 191(0) STR_SWORD dist=1
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      ~ reaction turn=2 side=1 reactor=191 turn=2 side=1 what=reaction unit=191 pos=(24,29,0)
+      X 2/1 victim=1000033(1) dead at (24,29,0) by 191(0) STR_SWORD dist=1
+      X 2/1 victim=157(0) stun at (34,46,0) by 1000040(1) STR_EMP_GRENADE dist=18

@@ -1,0 +1,128 @@
+--- c1/base/src/Battlescape/AiProbe.cpp	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/AiProbe.cpp	2026-10-27 14:10:45.628730700 +0200
+@@ -704,6 +704,18 @@
+ 	return on;
+ }
+ 
++/// Stage 0B: OXCE_AI_RELEASE_BASE=1 - the fixes the release gates by BetterAI follow the release formula, not the bench's own
++bool releaseBase()
++{
++	static const bool on = harness() && rawOn("OXCE_AI_RELEASE_BASE");
++	return on;
++}
++
++bool releaseFixes()
++{
++	return Options::oxceBetterAi && Options::oxceBetterAiFixes;
++}
++
+ bool autoClose()
+ {
+ 	static const bool on = harness() || (play() && bot());
+@@ -917,6 +929,21 @@
+ 			playerStartLogged = save->getTurn();
+ 			logState(save, "pstart");
+ 		}
++		// Stage 0B: OXCE_AI_FIXTURE_TURN=<t> - the battle at the start of the player's turn t, saved to OXCE_AI_PROBE_SAVE
++		static const int fixtureTurn = [] { const char *s = getenv("OXCE_AI_FIXTURE_TURN"); return s ? atoi(s) : 0; }();
++		if (fixtureTurn > 0 && save->getSide() == FACTION_PLAYER && save->getTurn() == fixtureTurn
++			&& !state->getBattleGame()->isBusy() && state->allowButtons())
++		{
++			const char *saveAs = getenv("OXCE_AI_PROBE_SAVE");
++			if (saveAs && *saveAs)
++			{
++				state->getGame()->getSavedGame()->save(saveAs, state->getGame()->getMod());
++			}
++			logResult(save, "fixture");
++			phase = FINISHED;
++			state->getGame()->quit();
++			return;
++		}
+ 		if (save->getTurn() > turnsWanted())
+ 		{
+ 			recordEnd(save);
+@@ -1971,7 +1998,7 @@
+ 
+ bool counterFix()
+ {
+-	static const bool on = active(); // clean1: P0-C always in the bench
++	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: P0-C always in the bench
+ 	return on;
+ }
+ 
+@@ -2034,19 +2061,19 @@
+ 
+ bool astarCostFix()
+ {
+-	static const bool on = active(); // clean1: U1 always in the bench
++	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: U1 always in the bench
+ 	return on;
+ }
+ 
+ bool escapeSignFix()
+ {
+-	static const bool on = active(); // clean1: U2 always in the bench
++	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: U2 always in the bench
+ 	return on;
+ }
+ 
+ bool staleEscapeFix()
+ {
+-	static const bool on = active(); // clean1: U3-A and U3-B always in the bench
++	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: U3-A and U3-B always in the bench
+ 	return on;
+ }
+ 
+@@ -2054,19 +2081,19 @@
+ {
+ 	// the play mode has every clean fix on (active()), these with them; the harness only by its switch, so the runs measured
+ 	// before them keep their decisions
+-	static const bool on = play() || (harness() && envOn("OXCE_AI_OXCE_FIXES"));
++	static const bool on = releaseBase() ? releaseFixes() : play() || (harness() && envOn("OXCE_AI_OXCE_FIXES"));
+ 	return on;
+ }
+ 
+ bool upstreamSpot()
+ {
+-	static const bool on = active(); // clean1: upstream 6ee48e7d1 always in the bench
++	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: upstream 6ee48e7d1 always in the bench
+ 	return on;
+ }
+ 
+ bool upstreamVis()
+ {
+-	static const bool on = active(); // clean1: upstream 613ec4a28 always in the bench
++	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: upstream 613ec4a28 always in the bench
+ 	return on;
+ }
+ 
+@@ -4934,7 +4961,7 @@
+ 
+ bool stalePatrolNode()
+ {
+-	static const bool on = active() && envOn("OXCE_AI_STALE_PATROL_NODE");
++	static const bool on = releaseBase() ? releaseFixes() : active() && envOn("OXCE_AI_STALE_PATROL_NODE");
+ 	return on;
+ }
+ 
+@@ -4991,7 +5018,7 @@
+ 
+ int staleExact()
+ {
+-	static const int mode = [] { const int m = stalePatrolNode() ? (int)param("OXCE_AI_STALE_EXACT", 0) : 0; return m >= 0 && m <= 3 ? m : 0; }();
++	static const int mode = [] { const int m = stalePatrolNode() ? (releaseBase() ? 1 : (int)param("OXCE_AI_STALE_EXACT", 0)) : 0; return m >= 0 && m <= 3 ? m : 0; }();
+ 	return mode;
+ }
+ 
+--- c1/base/src/Battlescape/BattlescapeState.cpp	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/BattlescapeState.cpp	2026-10-27 14:38:29.627175400 +0200
+@@ -977,7 +977,8 @@
+ 	_btnReserveKneel->toggle(_save->getKneelReserved());
+ 	_battleGame->setKneelReserved(_save->getKneelReserved());
+ 	// the AI test bench doesn't autosave: its generated battle has a UFO without a mission, which can't be saved
+-	if (_autosave > 0 && !_save->isPreview() && !AiProbe::harness())
++	// (stage 0B: OXCE_AI_AUTOSAVE=1 - the same autosave as the player's game, the snapshot compared with it)
++	if (_autosave > 0 && !_save->isPreview() && (!AiProbe::harness() || getenv("OXCE_AI_AUTOSAVE")))
+ 	{
+ 		int currentTurn = _autosave;
+ 		_autosave = 0;

@@ -1,0 +1,227 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/AiProbe.h	2026-10-30 00:13:37.082664600 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/bo/tree/src/Battlescape/AiProbe.h	2026-10-30 13:13:48.043269100 +0200
+@@ -309,6 +309,12 @@
+ void beforeThink(SavedBattleGame *save, BattleUnit *unit);
+ /// One line per AI decision (after the unit has thought, before the action runs).
+ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
++/// TACTICAL STAGE 2 (GO Vitali 30.10, one battle M3 seed 2015001, enemy turn 2): the experiment's orders, after the unit has
++/// thought. OXCE_AI_ORDER_FIRE=turn:target:unit=type.type,... - the listed shooters fire at the target in that turn, each shot
++/// checked just before it is handed out (target alive and spotted by the side this turn, firearm, ammo, TU, line of fire), the
++/// first failed check ends the unit's order; OXCE_AI_ORDER_AVOID=turn - an attack whose effect on a player unit is nil by the
++/// rules is not made (BA_NONE). Every change and every end of an order is an [AIORDER] line.
++void battleOrder(SavedBattleGame *save, BattleUnit *unit, BattleAction &action);
+ /// One line per unit on the field: position, TU, health, who it sees and who has spotted it.
+ void logState(SavedBattleGame *save, const char *when);
+ /// The smarter enemy under test (OXCE_AI_TACTICS): true for hostile units only.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/AiProbe.cpp	2026-10-30 00:13:37.184689200 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/bo/tree/src/Battlescape/AiProbe.cpp	2026-10-30 13:14:30.169259300 +0200
+@@ -237,6 +237,7 @@
+ void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
+ void beforeThink(SavedBattleGame *, BattleUnit *) {}
+ void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
++void battleOrder(SavedBattleGame *, BattleUnit *, BattleAction &) {}
+ void logState(SavedBattleGame *, const char *) {}
+ bool tactics(const BattleUnit *) { return false; }
+ bool careful(const BattleUnit *) { return false; }
+@@ -3893,6 +3894,190 @@
+ 	pathClose(unit);
+ }
+ 
++namespace
++{
++
++/// TACTICAL STAGE 2: one shooter's fire order - its shot types in turn (BA_*), how many were handed out, whether it ended.
++struct FireOrder
++{
++	std::vector<int> shots;
++	size_t next = 0;
++	bool over = false;
++};
++
++/// TACTICAL STAGE 2: the orders of the run, read once from the environment.
++struct OrderSpec
++{
++	int turn = -1, target = -1, avoidTurn = -1;
++	std::map<int, FireOrder> fire;
++};
++
++OrderSpec &orderSpec()
++{
++	static OrderSpec spec = []
++	{
++		OrderSpec o;
++		if (const char *s = ai3Env("OXCE_AI_ORDER_FIRE"))
++		{
++			const std::string v = s;
++			const size_t a = v.find(':'), b = a == std::string::npos ? a : v.find(':', a + 1);
++			if (b != std::string::npos)
++			{
++				o.turn = atoi(v.substr(0, a).c_str());
++				o.target = atoi(v.substr(a + 1, b - a - 1).c_str());
++				std::stringstream units(v.substr(b + 1));
++				std::string item;
++				while (std::getline(units, item, ','))
++				{
++					const size_t eq = item.find('=');
++					if (eq == std::string::npos)
++						continue;
++					FireOrder f;
++					std::stringstream types(item.substr(eq + 1));
++					std::string t;
++					while (std::getline(types, t, '.'))
++						f.shots.push_back(atoi(t.c_str()));
++					o.fire[atoi(item.substr(0, eq).c_str())] = f;
++				}
++			}
++		}
++		if (const char *s = ai3Env("OXCE_AI_ORDER_AVOID"))
++		{
++			o.avoidTurn = atoi(s);
++		}
++		return o;
++	}();
++	return spec;
++}
++
++/// TACTICAL STAGE 2, arm C: an attack whose effect on the target is nil by the rules - public knowledge, the item's damage type
++/// and the target's armor: the armor's modifier for the damage's resist type is 0, the hit is direct (no blast that reaches
++/// others), and it does nothing to a tile either (no tile damage, no smoke or fire threshold short of the never-default 1000).
++bool nilAttack(const BattleAction &action, const BattleUnit *target)
++{
++	if (!action.weapon || !target)
++		return false;
++	const BattleItem *ammo = action.type == BA_THROW || action.type == BA_HIT ? action.weapon
++		: static_cast<const BattleItem *>(action.weapon)->getAmmoForAction(action.type);
++	if (!ammo)
++		return false;
++	const RuleDamageType *dt = action.type == BA_HIT ? ammo->getRules()->getMeleeType() : ammo->getRules()->getDamageType();
++	return dt && dt->isDirect() && target->getArmor()->getDamageModifier(dt->ResistType) <= 0.0f && dt->ToTile <= 0.0f
++		&& dt->SmokeThreshold >= 1000 && dt->FireThreshold >= 1000;
++}
++
++void orderLine(SavedBattleGame *save, const BattleUnit *unit, const BattleAction &action, const char *arm, const char *status,
++	int idx, int type, int cost, const BattleUnit *target, int wasType, const Position &wasTo)
++{
++	Log(LOG_INFO) << "[AIORDER] turn=" << save->getTurn() << " unit=" << unit->getId() << " n=" << action.number << " arm=" << arm
++		<< " status=" << status << " idx=" << idx << " type=" << type << " cost=" << cost
++		<< " target=" << (target ? target->getId() : -1)
++		<< " tpos=" << (target ? target->getPosition() : Position(-1, -1, -1))
++		<< " since=" << (target ? target->getTurnsSinceSpottedByFaction(FACTION_HOSTILE) : -1)
++		<< " pos=" << unit->getPosition() << " tu=" << unit->getTimeUnits()
++		<< " d0act=" << wasType << " d0to=" << wasTo;
++}
++
++}
++
++void battleOrder(SavedBattleGame *save, BattleUnit *unit, BattleAction &action)
++{
++	OrderSpec &o = orderSpec();
++	if ((o.turn < 0 && o.avoidTurn < 0) || unit->getFaction() != FACTION_HOSTILE || save->getSide() != FACTION_HOSTILE)
++	{
++		return;
++	}
++	const int turn = save->getTurn();
++	const int wasType = action.type;
++	const Position wasTo = action.target;
++	auto it = o.fire.find(unit->getId());
++	if (turn == o.turn && it != o.fire.end() && !it->second.over)
++	{
++		FireOrder &f = it->second;
++		BattleUnit *target = nullptr;
++		for (auto *bu : *save->getUnits())
++		{
++			if (bu->getId() == o.target)
++			{
++				target = bu;
++				break;
++			}
++		}
++		BattleItem *weapon = unit->getMainHandWeapon();
++		int type = f.next < f.shots.size() ? f.shots[f.next] : BA_NONE;
++		int cost = 0;
++		Position kp;
++		int kd = 0;
++		const char *why = nullptr;
++		if (f.next >= f.shots.size())
++			why = "done";
++		else if (!target || target->isOut())
++			why = "cancel.target_out";
++		else if (target->getTurnsSinceSpottedByFaction(FACTION_HOSTILE) != 0)
++			why = "cancel.target_unknown";
++		else if (fairKnowledge() && (!target->getAiSeen(FACTION_HOSTILE, kp, kd) || kp != target->getPosition()))
++			why = "cancel.target_place";
++		else if (!weapon || weapon->getRules()->getBattleType() != BT_FIREARM)
++			why = "cancel.no_weapon";
++		if (!why)
++		{
++			BattleActionCost c((BattleActionType)type, unit, weapon);
++			if ((c.Time <= 0 || !c.haveTU()) && type != BA_SNAPSHOT)
++			{
++				// the planned aimed shot no longer fits: the snap shot the plan falls back on
++				type = BA_SNAPSHOT;
++				c = BattleActionCost(BA_SNAPSHOT, unit, weapon);
++			}
++			cost = c.Time;
++			if (c.Time <= 0 || !c.haveTU())
++				why = "cancel.no_tu";
++			else if (weapon->needsAmmoForAction((BattleActionType)type)
++				&& !static_cast<const BattleItem *>(weapon)->getAmmoForAction((BattleActionType)type))
++				why = "cancel.no_ammo";
++		}
++		if (!why)
++		{
++			BattleAction shot;
++			shot.type = (BattleActionType)type;
++			shot.actor = unit;
++			shot.weapon = weapon;
++			shot.target = target->getPosition();
++			TileEngine *te = save->getTileEngine();
++			Position origin = te->getOriginVoxel(shot, nullptr), scan;
++			if (!te->canTargetUnit(&origin, target->getTile(), &scan, unit, false))
++				why = "cancel.no_lof";
++		}
++		if (why)
++		{
++			f.over = true;
++			orderLine(save, unit, action, "fire", why, (int)f.next, type, cost, target, wasType, wasTo);
++		}
++		else
++		{
++			orderLine(save, unit, action, "fire", "shot", (int)f.next, type, cost, target, wasType, wasTo);
++			++f.next;
++			action.type = (BattleActionType)type;
++			action.target = target->getPosition();
++			action.weapon = weapon;
++			action.finalAction = false;
++			action.desperate = false;
++			action.run = false;
++		}
++	}
++	const bool attack = action.type == BA_AUTOSHOT || action.type == BA_SNAPSHOT || action.type == BA_AIMEDSHOT
++		|| action.type == BA_HIT || action.type == BA_THROW || action.type == BA_LAUNCH;
++	if (turn == o.avoidTurn && attack)
++	{
++		Tile *tile = save->getTile(action.target);
++		BattleUnit *victim = tile ? tile->getUnit() : nullptr;
++		if (victim && victim->getFaction() == FACTION_PLAYER && nilAttack(action, victim))
++		{
++			orderLine(save, unit, action, "avoid", "nil_attack", -1, action.type, 0, victim, wasType, wasTo);
++			action.type = BA_NONE;
++		}
++	}
++}
++
+ void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
+ 	bool dead, int hitSide, bool terrain)
+ {
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/BattlescapeGame.cpp	2026-10-30 00:13:37.116020300 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/bo/tree/src/Battlescape/BattlescapeGame.cpp	2026-10-30 13:14:41.407931800 +0200
+@@ -546,6 +546,8 @@
+ 			action.type = BA_NONE;
+ 		}
+ 	}
++	// TACTICAL STAGE 2 (bench): the experiment's orders replace the action the unit thought of (OXCE_AI_ORDER_*)
++	AiProbe::battleOrder(_save, unit, action);
+ 	AiProbe::logDecision(_save, unit, action);
+ 	AiProbe::blockedStepDecide(_save, unit);
+ 	if (AiProbe::knownOccupantPath())

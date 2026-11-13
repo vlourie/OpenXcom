@@ -1,0 +1,6 @@
+sc2q_Q_L2_s1: hostile attack decisions 255, executed with no time units spent 0
+sc3r_S_L2_s1: hostile attack decisions 155, executed with no time units spent 0
+sc2q_Q_M10_s1: hostile attack decisions 253, executed with no time units spent 0
+sc3r_S_M10_s1: hostile attack decisions 309, executed with no time units spent 3
+d0p_D_L2_s1: hostile attack decisions 255, executed with no time units spent 0
+d0p_D_M10_s1: hostile attack decisions 395, executed with no time units spent 0

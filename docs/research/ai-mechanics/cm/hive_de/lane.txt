@@ -1,0 +1,66 @@
+attacks with a comrade at risk, by class
+   loop, S came later 198
+   loop, S came later dmg 489
+   loop, S came later fdmg 1814
+   loop, S came later fdowned 22
+   loop, S came later hurt 40
+   loop, S in place 268
+   loop, S in place dmg 549
+   loop, S in place fdmg 699
+   loop, S in place fdowned 12
+   loop, S in place hurt 21
+   melee, S came later 110
+   melee, S came later dmg 525
+   melee, S came later fdmg 1860
+   melee, S came later fdowned 30
+   melee, S came later hurt 20
+   melee, S in place 162
+   melee, S in place dmg 955
+   melee, S in place fdmg 391
+   melee, S in place fdowned 6
+   melee, S in place hurt 13
+   not decided yet 645
+   not decided yet dmg 2705
+   not decided yet fdmg 2223
+   not decided yet fdowned 20
+   not decided yet hurt 53
+   other, S came later 1
+   other, S came later dmg 0
+   other, S came later fdmg 0
+   other, S came later fdowned 0
+   other, S came later hurt 0
+   patrol, S came later 107
+   patrol, S came later dmg 810
+   patrol, S came later fdmg 422
+   patrol, S came later fdowned 3
+   patrol, S came later hurt 9
+   patrol, S in place 157
+   patrol, S in place dmg 900
+   patrol, S in place fdmg 408
+   patrol, S in place fdowned 3
+   patrol, S in place hurt 9
+   stood, decided earlier 300
+   stood, decided earlier dmg 1004
+   stood, decided earlier fdmg 1269
+   stood, decided earlier fdowned 18
+   stood, decided earlier hurt 38
+pairs [("('melee', 'S in place')", 211), ("('patrol.node', 'S in place')", 208), ("('patrol.node', 'S came later')", 196), ("('melee', 'S came later')", 151), ("('firepoint', 'S in place')", 90), ("('escape', 'S in place')", 90), ("('firepoint', 'S came later')", 62), ("('escape', 'S came later')", 57), ("('firepoint.random', 'S came later')", 50), ("('firepoint.random', 'S in place')", 43), ("('firepoint.fallback', 'S in place')", 37), ("('firepoint.fallback', 'S came later')", 36), ("('escape.known', 'S came later')", 19), ("('ambush', 'S in place')", 17), ("('ambush', 'S came later')", 13), ("('escape.known', 'S in place')", 12)]
+pairs fdmg [("('melee', 'S came later', 'fdmg')", 2626), ("('firepoint', 'S came later', 'fdmg')", 1699), ("('patrol.node', 'S came later', 'fdmg')", 954), ("('melee', 'S in place', 'fdmg')", 743), ("('firepoint.random', 'S came later', 'fdmg')", 583), ("('patrol.node', 'S in place', 'fdmg')", 577), ("('firepoint', 'S in place', 'fdmg')", 329), ("('firepoint.fallback', 'S came later', 'fdmg')", 322), ("('escape.known', 'S came later', 'fdmg')", 198), ("('escape', 'S in place', 'fdmg')", 189), ("('firepoint.fallback', 'S in place', 'fdmg')", 146), ("('firepoint.random', 'S in place', 'fdmg')", 130)]
+named dead [('not by an attack decision of this turn (reaction, blast chain)', 58), ('not decided yet', 57), ('stood, decided earlier', 23), ('walked by patrol.node, S came later', 9), ('walked by melee, S came later', 7), ('walked by firepoint, S came later', 6), ('walked by patrol.node, S in place', 6), ('walked by escape, S came later', 4), ('walked by melee, S in place', 4), ('no decision of the killer', 3), ('walked by firepoint.random, S came later', 2), ('walked by firepoint, S in place', 2), ('walked by firepoint.random, S in place', 1), ('walked by firepoint.fallback, S in place', 1), ('walked by escape, S in place', 1)]
+by battle [('M2_s1', 38), ('M10_s1', 37), ('M2_s2', 28), ('L7_s1', 19), ('M10_s2', 14), ('L2_s1', 12), ('L2_s2', 12), ('M6_s2', 12), ('L5_s1', 10), ('M5_s1', 9), ('M3_s1', 8), ('L7_s2', 7)]
+  {'b': 'L2_s1', 't': 2, 'S': '1000036', 'Sw': 'STR_CD_CANNON', 'Ssrc': 'sniper', 'Sat': (29, 22, 0), 'to': (34, 46, 0), 'C': '1000035', 'Csrc': 'escape', 'Cfrom': (29, 29, 0), 'Cat': (31, 30, 0), 'Ctu': 72, 'Cspent': 15, 'fdmg': 2, 'dmg': 0}
+  {'b': 'L5_s1', 't': 4, 'S': '1000056', 'Sw': 'STR_KRUGER', 'Ssrc': 'shot', 'Sat': (45, 58, 0), 'to': (45, 22, 0), 'C': '1000005', 'Csrc': 'firepoint.fallback', 'Cfrom': (45, 51, 0), 'Cat': (44, 48, 0), 'Ctu': 121, 'Cspent': 14, 'fdmg': 77, 'dmg': 0}
+  {'b': 'L5_s1', 't': 4, 'S': '1000056', 'Sw': 'STR_KRUGER', 'Ssrc': 'shot', 'Sat': (45, 58, 0), 'to': (45, 22, 0), 'C': '1000023', 'Csrc': 'firepoint', 'Cfrom': (48, 55, 0), 'Cat': (46, 56, 0), 'Ctu': 19, 'Cspent': 10, 'fdmg': 77, 'dmg': 0}
+  {'b': 'L5_s1', 't': 4, 'S': '1000056', 'Sw': 'STR_KRUGER', 'Ssrc': 'shot', 'Sat': (45, 58, 0), 'to': (45, 22, 0), 'C': '1000030', 'Csrc': 'firepoint.random', 'Cfrom': (45, 52, 0), 'Cat': (44, 52, 0), 'Ctu': 29, 'Cspent': 4, 'fdmg': 77, 'dmg': 0}
+  {'b': 'M10_s1', 't': 4, 'S': '1000026', 'Sw': 'STR_CHAINGUN', 'Ssrc': 'shot', 'Sat': (27, 33, 0), 'to': (36, 9, 0), 'C': '1000002', 'Csrc': 'firepoint.fallback', 'Cfrom': (26, 30, 0), 'Cat': (27, 31, 0), 'Ctu': 33, 'Cspent': 6, 'fdmg': 64, 'dmg': 0}
+  {'b': 'M10_s1', 't': 4, 'S': '1000026', 'Sw': 'STR_CHAINGUN', 'Ssrc': 'shot', 'Sat': (27, 33, 0), 'to': (36, 9, 0), 'C': '1000002', 'Csrc': 'firepoint.fallback', 'Cfrom': (26, 30, 0), 'Cat': (27, 31, 0), 'Ctu': 33, 'Cspent': 6, 'fdmg': 5, 'dmg': 0}
+  {'b': 'M10_s1', 't': 8, 'S': '1000036', 'Sw': 'STR_CHAINGUN', 'Ssrc': 'shot', 'Sat': (19, 29, 0), 'to': (35, 16, 0), 'C': '1000021', 'Csrc': 'firepoint', 'Cfrom': (28, 22, 0), 'Cat': (28, 21, 0), 'Ctu': 49, 'Cspent': 4, 'fdmg': 2, 'dmg': 0}
+  {'b': 'M10_s1', 't': 8, 'S': '1000036', 'Sw': 'STR_CHAINGUN', 'Ssrc': 'shot', 'Sat': (19, 29, 0), 'to': (35, 16, 0), 'C': '1000021', 'Csrc': 'firepoint', 'Cfrom': (28, 22, 0), 'Cat': (28, 21, 0), 'Ctu': 49, 'Cspent': 4, 'fdmg': 36, 'dmg': 0}
+  {'b': 'M10_s1', 't': 8, 'S': '1000028', 'Sw': 'STR_CHAINGUN', 'Ssrc': 'shot', 'Sat': (15, 20, 0), 'to': (35, 16, 0), 'C': '1000016', 'Csrc': 'firepoint', 'Cfrom': (27, 18, 0), 'Cat': (26, 17, 0), 'Ctu': 41, 'Cspent': 6, 'fdmg': 34, 'dmg': 0}
+  {'b': 'M10_s1', 't': 16, 'S': '1000015', 'Sw': 'STR_UAC_CARBINE', 'Ssrc': 'shot', 'Sat': (35, 8, 0), 'to': (47, 19, 0), 'C': '1000025', 'Csrc': 'firepoint', 'Cfrom': (46, 18, 0), 'Cat': (46, 20, 0), 'Ctu': 9, 'Cspent': 8, 'fdmg': 20, 'dmg': 0}
+  {'b': 'M10_s1', 't': 21, 'S': '1000030', 'Sw': 'STR_CHAINGUN', 'Ssrc': 'shot', 'Sat': (24, 21, 0), 'to': (47, 19, 0), 'C': '1000028', 'Csrc': 'firepoint', 'Cfrom': (47, 18, 0), 'Cat': (48, 18, 0), 'Ctu': 9, 'Cspent': 4, 'fdmg': 68, 'dmg': 0}
+  {'b': 'M10_s1', 't': 24, 'S': '1000030', 'Sw': 'STR_CHAINGUN', 'Ssrc': 'shot', 'Sat': (22, 24, 0), 'to': (44, 26, 0), 'C': '1000018', 'Csrc': 'firepoint', 'Cfrom': (43, 25, 0), 'Cat': (44, 25, 0), 'Ctu': 9, 'Cspent': 4, 'fdmg': 30, 'dmg': 0}
+  {'b': 'M10_s2', 't': 10, 'S': '1000039', 'Sw': 'STR_HEAVY_CANNON', 'Ssrc': 'shot', 'Sat': (38, 9, 0), 'to': (18, 20, 0), 'C': '1000038', 'Csrc': 'firepoint', 'Cfrom': (18, 19, 0), 'Cat': (17, 19, 0), 'Ctu': 10, 'Cspent': 4, 'fdmg': 6, 'dmg': 0}
+  {'b': 'M10_s2', 't': 10, 'S': '1000042', 'Sw': 'STR_UAC_HEAVY_NAILGUN', 'Ssrc': 'shot', 'Sat': (28, 19, 0), 'to': (18, 20, 0), 'C': '1000038', 'Csrc': 'firepoint', 'Cfrom': (18, 19, 0), 'Cat': (17, 19, 0), 'Ctu': 10, 'Cspent': 4, 'fdmg': 32, 'dmg': 0}
+  {'b': 'M2_s1', 't': 3, 'S': '1000127', 'Sw': 'AUX_TANK_LIGHT_MINIGUN_WEAPON', 'Ssrc': 'sniper', 'Sat': (15, 36, 2), 'to': (40, 58, 0), 'C': '1000040', 'Csrc': 'firepoint.random', 'Cfrom': (15, 42, 2), 'Cat': (18, 39, 2), 'Ctu': 186, 'Cspent': 18, 'fdmg': 53, 'dmg': 0}
+  {'b': 'M2_s1', 't': 9, 'S': '1000127', 'Sw': 'AUX_TANK_LIGHT_MINIGUN_WEAPON', 'Ssrc': 'sniper', 'Sat': (15, 36, 2), 'to': (27, 41, 0), 'C': '1000053', 'Csrc': 'firepoint', 'Cfrom': (19, 32, 0), 'Cat': (18, 37, 0), 'Ctu': 143, 'Cspent': 28, 'fdmg': 5, 'dmg': 0}

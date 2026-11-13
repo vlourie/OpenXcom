@@ -1,0 +1,8 @@
+sf0 XO,XS,XN M6:1 turns=60 runs=3 total=3
+sf1 XN M11:1,L2:1 turns=60 runs=2 total=5
+sfF D,XN M3:1,M3:2,M3:3,M3:4,M8:1,M8:2,M8:3,M8:4,L4:1,L4:2,L4:3,L4:4,L8:1,L8:2,L8:3,L8:4 turns=60 runs=32 total=37
+sfC XO,XS M3:1 turns=60 runs=2 total=39
+sfV XN M3:1 turns=60 runs=1 total=40
+sfG XO,XS M3:1 turns=60 runs=2 total=42
+sfH XN M3:1,M3:2,M3:3,M3:4 turns=60 runs=4 total=46
+sfI XN L8:1,L8:2,L8:3,L8:4 turns=60 runs=4 total=50

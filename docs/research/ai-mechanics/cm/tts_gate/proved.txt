@@ -1,0 +1,17 @@
+   62  0 same-turn opening
+   49  1 a comrade walked off
+   34  2 B still has TU for the shot at the opening
+   12  3 weapon wounded T in the battle
+    5  4 B had no other shot with a line
+    2  5a B fired at T anyway
+    3  5b B did not fire at T in the turn
+    7  x B had another shot with a line at the block
+   15  x B has no TU for a shot by then
+   13  x only by a comrade falling, not walking
+   22  x this weapon never wounded this T in the battle
+
+L9_s2 t2 B1000014(9, 41, 0) tu86>86 T571(12, 38, 0) d5 STR_SONIC_PISTOL 25TU p89 hurtT 14 | walked [(1000003, [10, 38, 0], [15, 37, 0]), (1000005, [11, 39, 0], [10, 42, 0])] | own [22, [14, 40, 0]] fit 24 | B then t2 uNone sp2 dmg0 f0 | later [(2, None, 2, 0), (2, None, 14, 0)]
+L7_s1 t11 B1000019(46, 30, 0) tu23>23 T471(20, 22, 1) d28 STR_LASER_RIFLE_PIR 16TU p86 hurtT 10 | walked [(1000022, [31, 26, 0], [32, 22, 0]), (1000029, [42, 29, 0], [38, 24, 0])] | own [12, [46, 27, 0]] fit 0 | B then t8 u471 sp18 dmg0 f0 | later [(8, 471, 18, 0)]
+M10_s1 t22 B1000047(20, 33, 0) tu42>42 T1(47, 19, 0) d31 AUX_DOOM_IMP_WEAPON 31TU p38 hurtT 9 | walked [(1000018, [33, 26, 0], [35, 27, 0])] | own None fit 0 | B then t8 u1 sp31 dmg0 f9 | later [(2, None, 0, 0), (8, 1, 31, 0), (2, None, 0, 0)]
+M3_s1 t2 B1000008(33, 59, 0) tu21>21 T444(31, 16, 0) d44 AUX_SILACOID_WEAPON 17TU p54 hurtT 118 | walked [(1000011, [34, 57, 0], [38, 57, 0]), (1000025, [33, 55, 0], [38, 53, 0])] | own [8, [31, 59, 0]] fit 0 | B then t2 uNone sp4 dmg0 f0 | later [(2, None, 4, 0), (2, None, 0, 0), (2, None, 0, 0)]
+M3_s2 t4 B1000039(32, 57, 0) tu65>65 T444(20, 9, 0) d50 STR_CANISTER_GUN 23TU p41 hurtT 8 | walked [(1000027, [28, 45, 0], [26, 43, 0])] | own [8, [34, 57, 0]] fit 69 | B then t2 uNone sp60 dmg0 f0 | later [(2, None, 60, 0)]

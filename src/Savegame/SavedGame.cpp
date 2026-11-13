@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <functional>
 #include <ctime>
+#include <future>
 #include "../Engine/Yaml.h"
 #include "../version.h"
 #include "../Engine/Logger.h"
@@ -68,9 +69,83 @@
 #include "ResearchDiary.h"
 #include "../Mod/AlienRace.h"
 #include "RankCount.h"
+#include <cstdlib>
+#include <cstring>
+#define MINIZ_NO_STDIO
+#define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
+#include "../../libs/miniz/miniz.h"
 
 namespace OpenXcom
 {
+
+namespace
+{
+
+/// A save written with oxceCompactSave is the header document as always, the line "---", and then, in place of the
+/// body's text: these 4 bytes, the length of the text (8 bytes, little-endian) and the text packed by deflate (zlib stream).
+/// The header stays plain, so the list of saves reads it as before.
+const char SAVE_PACK_MAGIC[4] = { 'O', 'X', 'Z', '1' };
+const size_t SAVE_PACK_HEAD = sizeof(SAVE_PACK_MAGIC) + 8;
+/// miniz counts in unsigned long, which is 32 bits on Windows
+const size_t SAVE_PACK_MAX = 0x7FFFFFFFu;
+const int SAVE_PACK_LEVEL = 3;
+
+/// Appends the body packed to out. Returns false (out untouched) when it can't, the caller then writes the plain text.
+bool packSaveBody(const std::string &body, std::string &out)
+{
+	if (body.empty() || body.size() > SAVE_PACK_MAX)
+		return false;
+	mz_ulong packedLen = mz_compressBound((mz_ulong)body.size());
+	std::string packed(packedLen, '\0');
+	if (mz_compress2((unsigned char *)&packed[0], &packedLen, (const unsigned char *)body.data(), (mz_ulong)body.size(), SAVE_PACK_LEVEL) != MZ_OK)
+		return false;
+	out.append(SAVE_PACK_MAGIC, sizeof(SAVE_PACK_MAGIC));
+	uint64_t length = body.size();
+	for (int i = 0; i < 8; ++i)
+		out.push_back((char)((length >> (8 * i)) & 0xFF));
+	out.append(packed, 0, packedLen);
+	return true;
+}
+
+/// Gives the file's bytes as the text of the two YAML documents: a plain save as it is, a packed one with its body unpacked.
+RawData unpackSave(RawData raw, const std::string &filepath)
+{
+	const char *data = (const char *)raw.data();
+	const size_t size = raw.size();
+	// the header ends at the first "---" line; a plain save has its body's text there
+	static const char marker[] = "\n---\n";
+	const char *at = nullptr;
+	for (size_t i = 0; i + sizeof(marker) <= size && i < 65536; ++i)
+	{
+		if (data[i] == '\n' && std::memcmp(data + i, marker, sizeof(marker) - 1) == 0)
+		{
+			at = data + i + sizeof(marker) - 1;
+			break;
+		}
+	}
+	if (!at || (size_t)(data + size - at) < SAVE_PACK_HEAD || std::memcmp(at, SAVE_PACK_MAGIC, sizeof(SAVE_PACK_MAGIC)) != 0)
+		return raw;
+	uint64_t length = 0;
+	for (int i = 0; i < 8; ++i)
+		length |= (uint64_t)(unsigned char)at[sizeof(SAVE_PACK_MAGIC) + i] << (8 * i);
+	if (length == 0 || length > SAVE_PACK_MAX)
+		throw Exception("Failed to read " + filepath + ": packed save with a wrong length");
+	const size_t headerLen = (size_t)(at - data);
+	char *text = (char *)std::malloc(headerLen + (size_t)length);
+	if (!text)
+		throw Exception("Failed to read " + filepath + ": out of memory for the unpacked save");
+	std::memcpy(text, data, headerLen);
+	mz_ulong textLen = (mz_ulong)length;
+	const int result = mz_uncompress((unsigned char *)text + headerLen, &textLen, (const unsigned char *)at + SAVE_PACK_HEAD, (mz_ulong)(data + size - at - SAVE_PACK_HEAD));
+	if (result != MZ_OK || textLen != (mz_ulong)length)
+	{
+		std::free(text);
+		throw Exception("Failed to read " + filepath + ": the packed save is damaged");
+	}
+	return RawData(text, headerLen + (size_t)length, +[](void *p) { std::free(p); });
+}
+
+}
 
 const std::string SavedGame::AUTOSAVE_GEOSCAPE = "_autogeo_.asav",
 				  SavedGame::AUTOSAVE_BATTLESCAPE = "_autobattle_.asav",
@@ -94,12 +169,6 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec, const RuleRe
 {
 	auto find = std::lower_bound(vec.begin(), vec.end(), res, researchLess);
 	return find != vec.end() && *find == res;
-}
-
-bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::string &res)
-{
-	auto find = std::find_if(vec.begin(), vec.end(), [&](const RuleResearch* r){ return r->getName() == res; });
-	return find != vec.end();
 }
 
 }
@@ -380,13 +449,24 @@ SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 {
 	std::string filepath = Options::getMasterUserFolder() + filename;
-	YAML::YamlRootNodeReader documents(filepath, false, false);
+	// a save packed by oxceCompactSave is unpacked here; a plain one goes through as it is
+	YAML::YamlRootNodeReader documents(unpackSave(CrossPlatform::readFileRaw(filepath), filepath), filepath, false);
 
 	// Get brief save info
 	const auto& header = documents[0];
 	_time->load(header["time"]);
 	header.readNode("name", _name, filename);
 	header.tryRead("ironman", _ironman);
+	try
+	{
+		header.tryRead("luaTouched", _luaTouched);
+	}
+	catch (const YAML::Exception &e)
+	{
+		// only a mark for a ticket: a broken one is no reason to lose the save
+		Log(LOG_WARNING) << "luaTouched in " << filename << ": " << e.what();
+		_luaTouched.clear();
+	}
 
 	// Get full save data
 	const auto& reader = documents[1].useIndex();
@@ -748,8 +828,17 @@ void saveVector(YAML::YamlNodeWriter& writer, const std::vector<T*>& vector, con
  * Saves a saved game's contents to a YAML file.
  * @param filename YAML filename.
  */
-void SavedGame::save(const std::string &filename, Mod *mod) const
+void SavedGame::save(const std::string &filename, Mod *mod, bool portable) const
 {
+	// oxceCompactSave: kill lists as a table plus numbers, and the body packed. Not for a save the staff must read as
+	// text (portable: the F8 report's snapshot)
+	const bool compact = Options::oxceCompactSave && !portable;
+	struct CompactScope
+	{
+		explicit CompactScope(bool on) { SoldierDiary::setCompactWrite(on); }
+		~CompactScope() { SoldierDiary::setCompactWrite(false); }
+	} compactScope(compact);
+
 	YAML::YamlRootNodeWriter headerWriter;
 	headerWriter.setAsMap();
 	// Saves the brief game info used in the saves list
@@ -775,6 +864,9 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	for (const auto* modInfo : Options::getActiveMods())
 		modsList.push_back(modInfo->getId() + " ver: " + modInfo->getVersion());
 	headerWriter.write("mods", modsList);
+
+	if (!_luaTouched.empty())
+		headerWriter.write("luaTouched", _luaTouched);
 
 	if (_ironman)
 		headerWriter.write("ironman", _ironman);
@@ -909,7 +1001,8 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	finalString.reserve(headerString.yaml.size() + directivesEndMarker.size() + bodyString.yaml.size());
 	finalString += headerString.yaml;
 	finalString	+= directivesEndMarker;
-	finalString += bodyString.yaml;
+	if (!compact || !packSaveBody(bodyString.yaml, finalString))
+		finalString += bodyString.yaml;
 
 	std::string filepath = Options::getMasterUserFolder() + filename;
 	if (!CrossPlatform::writeFile(filepath, finalString))
@@ -1038,6 +1131,15 @@ int64_t SavedGame::getFunds() const
 std::vector<int64_t> &SavedGame::getFundsList()
 {
 	return _funds;
+}
+
+void SavedGame::luaTouch(const std::string &mod, const std::string &word)
+{
+	auto &words = _luaTouched[mod];
+	if (std::find(words.begin(), words.end(), word) == words.end())
+	{
+		words.push_back(word);
+	}
 }
 
 /**
@@ -1794,7 +1896,7 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 		}
 
 		// Remove the already researched topics from the list *UNLESS* they can still give you something more
-		if (isResearched(research->getName(), false))
+		if (isResearched(research, false))
 		{
 			if (hasUndiscoveredGetOneFree(research, true))
 			{
@@ -2025,9 +2127,9 @@ void SavedGame::getDependableCraft(std::vector<RuleCraft *> & dependables, const
 		if (craftItem->getBuyCost() != 0)
 		{
 			const auto& reqs = craftItem->getRequirements();
-			if (std::find(reqs.begin(), reqs.end(), research->getName()) != reqs.end())
+			if (std::find(reqs.begin(), reqs.end(), research) != reqs.end())
 			{
-				if (isResearched(craftItem->getRequirements()))
+				if (isResearched(reqs))
 				{
 					dependables.push_back(craftItem);
 				}
@@ -2048,9 +2150,9 @@ void SavedGame::getDependableFacilities(std::vector<RuleBaseFacility *> & depend
 	{
 		RuleBaseFacility *facilityItem = mod->getBaseFacility(facType);
 		const auto& reqs = facilityItem->getRequirements();
-		if (std::find(reqs.begin(), reqs.end(), research->getName()) != reqs.end())
+		if (std::find(reqs.begin(), reqs.end(), research) != reqs.end())
 		{
-			if (isResearched(facilityItem->getRequirements()))
+			if (isResearched(reqs))
 			{
 				dependables.push_back(facilityItem);
 			}
@@ -2176,16 +2278,6 @@ bool SavedGame::hasUndiscoveredProtectedUnlock(const RuleResearch * r) const
  * @param considerDebugMode Should debug mode be considered or not.
  * @return Whether it's researched or not.
  */
-bool SavedGame::isResearched(const std::string &research, bool considerDebugMode) const
-{
-	//if (research.empty())
-	//	return true;
-	if (considerDebugMode && _debug)
-		return true;
-
-	return haveReserchVector(_discovered, research);
-}
-
 bool SavedGame::isResearched(const RuleResearch *research, bool considerDebugMode) const
 {
 	//if (research.empty())
@@ -2194,24 +2286,6 @@ bool SavedGame::isResearched(const RuleResearch *research, bool considerDebugMod
 		return true;
 
 	return haveReserchVector(_discovered, research);
-}
-
-bool SavedGame::isResearched(const std::vector<std::string> &research, bool considerDebugMode) const
-{
-	if (research.empty())
-		return true;
-	if (considerDebugMode && _debug)
-		return true;
-
-	for (const auto& res : research)
-	{
-		if (!haveReserchVector(_discovered, res))
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 /**
@@ -3149,8 +3223,7 @@ void SavedGame::setDisableSoldierEquipment(bool disableSoldierEquipment)
  */
 bool SavedGame::isManaUnlocked(Mod *mod) const
 {
-	auto& researchName = mod->getManaUnlockResearch();
-	if (Mod::isEmptyRuleName(researchName) || isResearched(researchName))
+	if (!mod->getManaUnlockResearch() || isResearched(mod->getManaUnlockResearch()))
 	{
 		return true;
 	}
@@ -3283,7 +3356,7 @@ bool SavedGame::canSpawnInstantEvent(const RuleEvent* eventRules)
 	}
 
 	bool interrupted = false;
-	if (!eventRules->getInterruptResearch().empty())
+	if (eventRules->getInterruptResearch())
 	{
 		if (isResearched(eventRules->getInterruptResearch(), false))
 		{

@@ -1,0 +1,101 @@
+
+=== L2_s2 turn 2 B 1000020 A 1000023 T 324
+ line 2548 B (45, 31, 2) kneel 0 tu 134 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 5) | A at (45, 29, 1) tu 134 | other lines [] | did t 2 src patrol.node to (48, 29, 2) at None sp 16 dmg 0 f 0
+ line 2553 B (48, 29, 2) kneel 0 tu 118 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 134 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 16 dmg 0 f 0
+ line 3079 B (45, 31, 2) kneel 0 tu 102 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 5) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (48, 29, 2) at None sp 16 dmg 0 f 0
+ line 3083 B (48, 29, 2) kneel 0 tu 86 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 16 dmg 0 f 0
+ line 3491 B (45, 31, 2) kneel 0 tu 70 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 5) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (48, 29, 2) at None sp 16 dmg 0 f 0
+ line 3495 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 3706 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 3709 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 3964 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 3967 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 4223 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 4226 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 4490 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ line 4493 B (48, 29, 2) kneel 0 tu 54 T ((41, 28, 0), 'lof', 0, 'tu', 29, 'p', 71, 'd', 8) | A at (45, 29, 1) tu 18 | other lines [] | did t 2 src patrol.node to (45, 31, 2) at None sp 0 dmg 0 f 0
+ A line 2574 (45, 29, 1) tu 134 did t 7 src sniper to (41, 28, 0) at 324 sp 58 dmg 0 f 0
+ A line 2579 (45, 29, 1) tu 76 did t 7 src sniper to (41, 28, 0) at 324 sp 58 dmg 0 f 0
+ A line 3113 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 3116 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 3503 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 3506 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 3716 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 3719 (45, 29, 1) tu 18 did t 0 src escape.known to (45, 29, 1) at None sp 0 dmg 0 f 0
+ A line 3974 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 3977 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 4233 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 4236 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 4500 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ A line 4503 (45, 29, 1) tu 18 did t 2 src patrol.node to (47, 31, 1) at None sp 0 dmg 0 f 0
+ T's casualty: turn 2 side 0 victim 1000015 dead STR_SWORD
+ T's casualty: turn 2 side 1 victim 1000055 stun STR_SWORD
+ T's casualty: turn 2 side 1 victim 1000057 dead STR_SWORD
+ T's casualty: turn 3 side 0 victim 1000008 dead STR_SWORD
+ T's casualty: turn 3 side 0 victim 1000000 dead STR_SWORD
+ T's casualty: turn 3 side 1 victim 1000023 dead STR_SWORD
+ T's casualty: turn 4 side 0 victim 1000010 dead STR_SWORD
+ T's casualty: turn 4 side 0 victim 1000022 dead STR_SWORD
+ T's casualty: turn 4 side 1 victim 1000055 dead STR_SWORD
+ T: [('pstart', '2', '88/88', '0', '(39,37,0)', 'STR_SWORD'), ('aistart', '2', '88/88', '0', '(41,28,0)', 'STR_SWORD'), ('pstart', '3', '88/88', '0', '(41,28,0)', 'STR_SWORD'), ('aistart', '3', '88/88', '0', '(43,27,1)', 'STR_SWORD'), ('pstart', '4', '85/88', '0', '(43,27,1)', 'STR_SWORD'), ('aistart', '4', '85/88', '0', '(32,35,2)', 'STR_SWORD')]
+
+=== L7_s1 turn 10 B 1000022 A 1000020 T 471
+ line 5398 B (36, 20, 0) kneel 0 tu 119 T ((17, 19, 1), 'lof', 0, 'tu', 28, 'p', 103, 'd', 20) | A at (33, 20, 0) tu 23 | other lines [] | did t 2 src firepoint to (31, 25, 0) at None sp 46 dmg 0 f 0
+ line 5406 B (31, 25, 0) kneel 0 tu 73 T ((17, 19, 1), 'lof', 1, 'tu', 28, 'p', 103, 'd', 16) | A at (33, 20, 0) tu 23 | other lines [(471, 28, 16)] | did t 7 src sniper to (17, 19, 1) at 471 sp 38 dmg 0 f 0
+ line 5411 B (31, 25, 0) kneel 0 tu 35 T ((17, 19, 1), 'lof', 1, 'tu', 28, 'p', 103, 'd', 16) | A at (33, 20, 0) tu 23 | other lines [(471, 28, 16)] | did t 8 src sniper to (17, 19, 1) at 471 sp 28 dmg 0 f 0
+ line 5503 B (31, 25, 0) kneel 0 tu 7 T ((17, 19, 1), 'lof', 1, 'tu', 28, 'p', 103, 'd', 16) | A at (35, 19, 0) tu 5 | other lines [] | did t 2 src escape to (33, 30, 0) at None sp 4 dmg 0 f 0
+ A line 5387 (41, 22, 0) tu 67 did t 2 src firepoint.fallback to (37, 21, 0) at None sp 26 dmg 0 f 0
+ A line 5393 (37, 21, 0) tu 41 did t 2 src patrol.node to (8, 14, 0) at None sp 18 dmg 0 f 0
+ A line 5493 (33, 20, 0) tu 23 did t 2 src firepoint to (32, 20, 0) at None sp 4 dmg 0 f 0
+ A line 5498 (32, 20, 0) tu 19 did t 2 src escape to (35, 19, 0) at None sp 14 dmg 0 f 0
+ T's casualty: turn 9 side 1 victim 1000009 dead AUX_ACAR_WEAPON_LASCANNON
+ T's casualty: turn 9 side 1 victim 1000016 dead AUX_ACAR_WEAPON_LASCANNON
+ T's casualty: turn 12 side 0 victim 1000022 dead AUX_ACAR_WEAPON_LASCANNON
+ T's casualty: turn 12 side 0 victim 1000010 dead AUX_ACAR_WEAPON_LASCANNON
+ T: [('pstart', '10', '49/57', '0', '(17,19,1)', 'AUX_TANK_LASER'), ('aistart', '10', '49/57', '0', '(17,19,1)', 'AUX_TANK_LASER'), ('pstart', '11', '35/57', '0', '(17,19,1)', 'AUX_TANK_LASER'), ('aistart', '11', '35/57', '0', '(20,22,1)', 'AUX_TANK_LASER'), ('pstart', '12', '25/57', '0', '(20,22,1)', 'AUX_TANK_LASER'), ('aistart', '12', '25/57', '0', '(21,23,1)', 'AUX_TANK_LASER')]
+
+=== L7_s1 turn 6 B 1000017 A 1000010 T 471
+ line 3912 B (49, 26, 0) kneel 0 tu 67 T ((27, 33, 1), 'lof', 0, 'tu', 16, 'p', 86, 'd', 24) | A at (46, 26, 0) tu 36 | other lines [] | did t 2 src patrol.node to (5, 59, 0) at None sp 34 dmg 0 f 0
+ line 3917 B (47, 23, 0) kneel 0 tu 33 T ((27, 33, 1), 'lof', 1, 'tu', 16, 'p', 86, 'd', 23) | A at (46, 26, 0) tu 36 | other lines [(471, 16, 23)] | did t 7 src sniper to (27, 33, 1) at 471 sp 24 dmg 0 f 0
+ line 4049 B (47, 23, 0) kneel 0 tu 9 T ((27, 33, 1), 'lof', 1, 'tu', 16, 'p', 86, 'd', 23) | A at (46, 26, 0) tu 13 | other lines [] | did t 2 src patrol.node to (5, 59, 0) at None sp 0 dmg 0 f 0
+ line 4052 B (47, 23, 0) kneel 0 tu 9 T ((27, 33, 1), 'lof', 1, 'tu', 16, 'p', 86, 'd', 23) | A at (46, 26, 0) tu 13 | other lines [] | did t 2 src escape.known to (46, 23, 0) at None sp 4 dmg 0 f 0
+ A line 3842 (45, 24, 0) tu 67 did t 8 src sniper to (27, 33, 1) at 471 sp 21 dmg 0 f 0
+ A line 3847 (45, 24, 0) tu 46 did t 2 src firepoint.fallback to (46, 26, 0) at None sp 10 dmg 0 f 0
+ A line 4012 (46, 26, 0) tu 36 did t 8 src sniper to (27, 33, 1) at 471 sp 23 dmg 0 f 0
+ A line 4018 (46, 26, 0) tu 13 did t 2 src patrol.node to (15, 19, 0) at None sp 0 dmg 0 f 0
+ T's casualty: turn 5 side 0 victim 1000014 dead AUX_ACAR_WEAPON_LASCANNON
+ T's casualty: turn 5 side 0 victim 1000023 dead AUX_ACAR_WEAPON_LASCANNON
+ T's casualty: turn 5 side 0 victim 1000018 dead AUX_ACAR_WEAPON_LASCANNON
+ T's casualty: turn 6 side 0 victim 1000026 dead AUX_ACAR_WEAPON_LASCANNON
+ T: [('pstart', '6', '57/57', '0', '(27,33,1)', 'AUX_TANK_LASER'), ('aistart', '6', '57/57', '0', '(27,33,1)', 'AUX_TANK_LASER'), ('pstart', '7', '57/57', '0', '(27,33,1)', 'AUX_TANK_LASER'), ('aistart', '7', '57/57', '0', '(12,25,1)', 'AUX_TANK_LASER'), ('pstart', '8', '57/57', '0', '(12,25,1)', 'AUX_TANK_LASER'), ('aistart', '8', '57/57', '0', '(16,18,1)', 'AUX_TANK_LASER')]
+
+=== L7_s1 turn 11 B 1000019 A 1000029 T 471
+ line 5671 B (52, 38, 0) kneel 0 tu 67 T ((20, 22, 1), 'lof', 1, 'tu', 16, 'p', 86, 'd', 36) | A at (42, 29, 0) tu 298 | other lines [(471, 16, 36)] | did t 2 src patrol.node to (34, 14, 1) at None sp 44 dmg 0 f 0
+ line 5676 B (46, 30, 0) kneel 0 tu 23 T ((20, 22, 1), 'lof', 0, 'tu', 16, 'p', 86, 'd', 28) | A at (42, 29, 0) tu 298 | other lines [] | did t 2 src patrol.node to (34, 14, 1) at None sp 0 dmg 0 f 0
+ line 5768 B (46, 30, 0) kneel 0 tu 23 T ((20, 22, 1), 'lof', 1, 'tu', 16, 'p', 86, 'd', 28) | A at (38, 24, 0) tu 268 | other lines [(471, 16, 28)] | did t 8 src sniper to (20, 22, 1) at 471 sp 18 dmg 0 f 0
+ A line 5724 (42, 29, 0) tu 298 did t 2 src ambush to (38, 24, 0) at None sp 2 dmg 0 f 0
+ A line 5729 (42, 29, 0) tu 296 did t 2 src ambush to (38, 24, 0) at None sp 28 dmg 0 f 0
+ T's casualty: turn 12 side 0 victim 1000022 dead AUX_ACAR_WEAPON_LASCANNON
+ T's casualty: turn 12 side 0 victim 1000010 dead AUX_ACAR_WEAPON_LASCANNON
+ T: [('pstart', '11', '35/57', '0', '(17,19,1)', 'AUX_TANK_LASER'), ('aistart', '11', '35/57', '0', '(20,22,1)', 'AUX_TANK_LASER'), ('pstart', '12', '25/57', '0', '(20,22,1)', 'AUX_TANK_LASER'), ('aistart', '12', '25/57', '0', '(21,23,1)', 'AUX_TANK_LASER')]
+
+=== M7_s2 turn 3 B 1000022 A 1000002 T 1
+ line 1870 B (42, 31, 0) kneel 0 tu 59 T ((40, 10, 0), 'lof', 1, 'tu', 18, 'p', 44, 'd', 22) | A at (47, 29, 0) tu 9 | other lines [(114, 18, 23), (1, 18, 22), (115, 18, 23)] | did t 2 src firepoint to (42, 33, 0) at None sp 8 dmg 0 f 0
+ line 1876 B (42, 33, 0) kneel 0 tu 51 T ((40, 10, 0), 'lof', 1, 'tu', 18, 'p', 44, 'd', 24) | A at (47, 29, 0) tu 9 | other lines [(114, 18, 25), (1, 18, 24), (115, 18, 25)] | did t 2 src patrol.node to (38, 16, 0) at None sp 26 dmg 0 f 0
+ line 1881 B (47, 30, 0) kneel 0 tu 25 T ((40, 10, 0), 'lof', 0, 'tu', 18, 'p', 44, 'd', 22) | A at (47, 29, 0) tu 9 | other lines [] | did t 2 src patrol.node to (38, 16, 0) at None sp 0 dmg 0 f 0
+ line 2005 B (47, 30, 0) kneel 0 tu 25 T ((40, 10, 0), 'lof', 0, 'tu', 18, 'p', 44, 'd', 22) | A at (47, 29, 0) tu 9 | other lines [] | did t 2 src patrol.node to (38, 16, 0) at None sp 0 dmg 0 f 0
+ line 2008 B (47, 30, 0) kneel 0 tu 25 T ((40, 10, 0), 'lof', 0, 'tu', 18, 'p', 44, 'd', 22) | A at (47, 29, 0) tu 9 | other lines [] | did t 2 src patrol.node to (38, 16, 0) at None sp 0 dmg 0 f 0
+ A line 1616 (43, 36, 0) tu 89 did t 2 src firepoint.fallback to (48, 32, 0) at None sp 28 dmg 0 f 0
+ A line 1622 (48, 32, 0) tu 61 did t 2 src firepoint.fallback to (49, 34, 0) at None sp 10 dmg 0 f 0
+ A line 1628 (49, 34, 0) tu 51 did t 2 src firepoint.fallback to (48, 31, 0) at None sp 14 dmg 0 f 0
+ A line 1633 (48, 31, 0) tu 37 did t 2 src firepoint.fallback to (47, 28, 0) at None sp 10 dmg 0 f 0
+ A line 1638 (47, 29, 0) tu 27 did t 8 src shot to (40, 10, 0) at 1 sp 18 dmg 0 f 0
+ A line 1643 (47, 29, 0) tu 9 did t 2 src patrol.node to (45, 7, 0) at None sp 0 dmg 0 f 0
+ A line 1712 (47, 29, 0) tu 9 did t 2 src patrol.node to (45, 7, 0) at None sp 0 dmg 0 f 0
+ A line 1715 (47, 29, 0) tu 9 did t 2 src patrol.node to (45, 7, 0) at None sp 0 dmg 0 f 0
+ A line 1925 (47, 29, 0) tu 9 did t 2 src patrol.node to (45, 7, 0) at None sp 0 dmg 0 f 0
+ A line 1928 (47, 29, 0) tu 9 did t 2 src patrol.node to (45, 7, 0) at None sp 0 dmg 0 f 0
+ T's casualty: turn 3 side 1 victim 1000008 stun STR_UNARMED_GAUNTLET
+ T: [('pstart', '3', '30/118', '5', '(41,8,0)', '-'), ('aistart', '3', '22/118', '5', '(40,10,0)', '-'), ('pstart', '4', '10/118', '6', '(40,10,0)', '-'), ('aistart', '4', '10/118', '6', '(40,10,0)', '-'), ('pstart', '5', '3/118', '6', '(40,10,0)', '-'), ('aistart', '5', '3/118', '6', '(40,10,0)', '-')]
+
+first decision at an opening, any target: {'attacks': 19, 'dmg': 0, 'fdmg': 9, 'wounding': 0}

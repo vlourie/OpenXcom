@@ -1,0 +1,305 @@
+--- AIModule.d0.cpp	2026-10-30 00:08:33.968005900 +0200
++++ tree/src/Battlescape/AIModule.cpp	2026-10-30 00:11:03.965359000 +0200
+@@ -20,6 +20,7 @@
+ #include <chrono>
+ #include <algorithm>
+ #include <sstream>
++#include <map>
+ #include "AIModule.h"
+ #include "../Savegame/BattleItem.h"
+ #include "../Savegame/Node.h"
+@@ -943,6 +944,270 @@
+ 	return used;
+ }
+ 
++namespace
++{
++
++/// COORDINATED_ENGAGEMENT_V1 (bench): one group per known target and hostile turn - the able hostiles near the place the side
++/// knows the target to be, frozen when the first hostile whose closest known target it is thinks in this turn
++struct CeGroup
++{
++	int id = 0;
++	std::vector<int> members;
++	std::vector<int> attacked; // members whose decision in this turn was an attack, made before the decider's own
++};
++
++struct CeUnit
++{
++	int holdTurn = -1, streak = 0;
++};
++
++struct CeState
++{
++	const SavedBattleGame *save = 0;
++	int turn = -1, nextId = 0;
++	std::map<int, CeGroup> groups; // target id -> its group of this turn
++	std::map<int, CeUnit> units;
++};
++CeState ce;
++
++bool ceAttack(BattleActionType t)
++{
++	return t == BA_THROW || t == BA_AUTOSHOT || t == BA_SNAPSHOT || t == BA_AIMEDSHOT || t == BA_HIT || t == BA_LAUNCH
++		|| t == BA_MINDCONTROL || t == BA_PANIC;
++}
++
++/// A ranged weapon in hand the unit may use, with ammo.
++BattleItem *ceRanged(SavedBattleGame *save, BattleUnit *bu)
++{
++	BattleItem *w = bu->getMainHandWeapon(false);
++	if (!w || w->getRules()->getBattleType() != BT_FIREARM || !save->canUseWeapon(w, bu, false, BA_NONE) || !w->haveAnyAmmo())
++		return 0;
++	return w;
++}
++
++/// Why a live hostile cannot fight for its group, or 0.
++const char *ceUnable(SavedBattleGame *save, BattleUnit *bu)
++{
++	if (bu->getStatus() == STATUS_PANICKING || bu->getStatus() == STATUS_BERSERK)
++		return "panic";
++	if (bu->getAIModule() && bu->getAIModule()->getAIMode() == AI_ESCAPE)
++		return "escape";
++	if (bu->getHealth() < 2 * bu->getBaseStats()->health / 3)
++		return "hurt";
++	if (!ceRanged(save, bu))
++		return "noranged";
++	return 0;
++}
++
++/// Can the unit attack the target now, from where it stands and with the time units it has: a ranged weapon with ammo, a shot
++/// it can pay for, the place the side knows the target to be within the weapon's range and a line to it from its eyes.
++bool ceCanFireNow(SavedBattleGame *save, BattleUnit *bu, BattleUnit *target, Position kp)
++{
++	BattleItem *w = ceRanged(save, bu);
++	if (!w)
++		return false;
++	bool pay = false;
++	for (BattleActionType t : { BA_SNAPSHOT, BA_AUTOSHOT, BA_AIMEDSHOT })
++	{
++		BattleActionCost cost(t, bu, w);
++		pay = pay || (cost.Time > 0 && cost.haveTU());
++	}
++	Tile *tile = save->getTile(kp);
++	if (!pay || !tile || w->getRules()->isOutOfRange(Position::distanceSq(bu->getPosition(), kp)))
++		return false;
++	Position origin = save->getTileEngine()->getSightOriginVoxel(bu);
++	origin.z -= 2;
++	Position voxel;
++	return save->getTileEngine()->canTargetUnit(&origin, tile, &voxel, bu, false, target->getPosition() == kp ? 0 : target);
++}
++
++std::string ceList(const std::vector<int> &ids)
++{
++	std::ostringstream s;
++	for (size_t i = 0; i < ids.size(); ++i)
++		s << (i ? "," : "") << ids[i];
++	return ids.empty() ? "-" : s.str();
++}
++
++}
++
++/**
++ * COORDINATED_ENGAGEMENT_V1 (bench, OXCE_AI_COORD_ENGAGE): the side's commander takes the unit's own decision and checks it
++ * against the group of its closest known target. An attack is never touched (FIRE, counted for the group). A walk that ends
++ * in sight of the known enemies with no shot left after it is the one thing changed: with two or more of the group having
++ * attacked earlier in this turn it goes as it is (JOIN); with fewer, and one at least of the others ready - it attacked in
++ * this turn, or can fire now from where it stands - the unit waits out of sight (HOLD): the ambush setupAmbush found, or
++ * where it stands if no known enemy sees it there. Two turns of HOLD in a row at most. Only what the side knows (validTarget,
++ * knownPos, getSpottingUnits), no random numbers; readiness is what the others did or can do now, never what they will do.
++ * @param action The decision think made; changed only by HOLD.
++ */
++void AIModule::coordEngage(BattleAction *action)
++{
++	if (ce.save != _save)
++	{
++		ce = CeState();
++		ce.save = _save;
++	}
++	const int turn = _save->getTurn();
++	if (ce.turn != turn)
++	{
++		ce.turn = turn;
++		ce.groups.clear();
++	}
++	BattleUnit *target = 0;
++	Position tkp;
++	int best = INT_MAX;
++	for (auto *bu : *_save->getUnits())
++	{
++		if (!validTarget(bu, false, false))
++			continue;
++		const Position kp = knownPos(bu, "ce");
++		if (kp.x < 0)
++			continue;
++		const int d = Position::distanceSq(kp, _unit->getPosition());
++		if (d < best)
++		{
++			best = d;
++			target = bu;
++			tkp = kp;
++		}
++	}
++	if (!target)
++		return;
++	auto g = ce.groups.find(target->getId());
++	if (g == ce.groups.end())
++	{
++		CeGroup ng;
++		ng.id = ++ce.nextId;
++		std::vector<std::pair<int, int>> able;
++		std::ostringstream excl;
++		for (auto *bu : *_save->getUnits())
++		{
++			if (bu->getFaction() != FACTION_HOSTILE || bu->isOut())
++				continue;
++			const Position p = bu->getPosition();
++			if (Position::distance2d(p, tkp) > 12 || std::abs(p.z - tkp.z) > 1)
++				continue;
++			if (const char *why = ceUnable(_save, bu))
++			{
++				excl << (excl.tellp() > 0 ? "," : "") << bu->getId() << ":" << why;
++				continue;
++			}
++			able.push_back(std::make_pair(Position::distanceSq(p, tkp), bu->getId()));
++		}
++		std::sort(able.begin(), able.end());
++		for (size_t i = 0; i < able.size(); ++i)
++		{
++			if (i < 4)
++				ng.members.push_back(able[i].second);
++			else
++				excl << (excl.tellp() > 0 ? "," : "") << able[i].second << ":far";
++		}
++		Log(LOG_INFO) << "[AIPROBE] ce group turn=" << turn << " id=" << ng.id << " target=" << target->getId() << "@" << tkp
++			<< " members=" << ceList(ng.members) << " excluded=" << (excl.tellp() > 0 ? excl.str() : "-");
++		g = ce.groups.insert(std::make_pair(target->getId(), ng)).first;
++	}
++	CeGroup &grp = g->second;
++	const int me = _unit->getId();
++	if (std::find(grp.members.begin(), grp.members.end(), me) == grp.members.end())
++	{
++		AiProbe::tally(_unit, "ce.outside");
++		return;
++	}
++	if (grp.members.size() < 2)
++	{
++		AiProbe::tally(_unit, "ce.solo");
++		return;
++	}
++	std::ostringstream head;
++	head << "[AIPROBE] ce turn=" << turn << " group=" << grp.id << " target=" << target->getId() << " unit=" << me
++		<< " mode=" << "paxe"[_AIMode] << " tu=" << _unit->getTimeUnits();
++	if (ceAttack(action->type))
++	{
++		if (std::find(grp.attacked.begin(), grp.attacked.end(), me) == grp.attacked.end())
++			grp.attacked.push_back(me);
++		AiProbe::tally(_unit, "ce.fire");
++		Log(LOG_INFO) << head.str() << " order=FIRE act=" << (int)action->type;
++		return;
++	}
++	if (action->type != BA_WALK || action->target == _unit->getPosition() || _foundBaseModuleToDestroy || !(_rifle || _blaster)
++		|| (_AIMode != AI_PATROL && _AIMode != AI_COMBAT))
++		return;
++	const int spot = getSpottingUnits(action->target);
++	if (!spot)
++		return;
++	const int index = _save->getTileIndex(action->target);
++	if (std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), index) != _reachableWithAttack.end())
++	{
++		// a shot is left after the walk: an attack this turn is possible, so nothing waits
++		AiProbe::tally(_unit, _AIMode == AI_COMBAT ? "ce.fire.walk" : "ce.free.shot");
++		Log(LOG_INFO) << head.str() << " order=" << (_AIMode == AI_COMBAT ? "FIRE" : "FREE why=shot") << " act=2 to=" << action->target
++			<< " spot=" << spot;
++		return;
++	}
++	std::vector<int> others, ready;
++	for (int id : grp.attacked)
++	{
++		if (id != me)
++			others.push_back(id);
++	}
++	if (others.size() >= 2)
++	{
++		AiProbe::tally(_unit, "ce.join");
++		Log(LOG_INFO) << head.str() << " order=JOIN to=" << action->target << " spot=" << spot << " attacked=" << ceList(others);
++		return;
++	}
++	for (auto *bu : *_save->getUnits())
++	{
++		const int id = bu->getId();
++		if (id == me || bu->isOut() || std::find(grp.members.begin(), grp.members.end(), id) == grp.members.end())
++			continue;
++		if (std::find(others.begin(), others.end(), id) != others.end() || ceCanFireNow(_save, bu, target, tkp))
++			ready.push_back(id);
++	}
++	CeUnit &cu = ce.units[me];
++	const int streak = cu.holdTurn == turn ? cu.streak : cu.holdTurn == turn - 1 ? cu.streak + 1 : 1;
++	const char *why = 0;
++	if (ready.empty())
++		why = "noready";
++	else if (streak > 2)
++		why = "limit";
++	else if (!(_ambushAction.type == BA_WALK && !getSpottingUnits(_ambushAction.target)) && _spottingEnemies)
++		why = "notile";
++	if (why)
++	{
++		AiProbe::tally(_unit, (std::string("ce.free.") + why).c_str());
++		Log(LOG_INFO) << head.str() << " order=FREE why=" << why << " to=" << action->target << " spot=" << spot << " attacked="
++			<< ceList(others) << " ready=" << ceList(ready);
++		return;
++	}
++	const char *kind;
++	const Position walkTo = action->target;
++	if (_ambushAction.type == BA_WALK && !getSpottingUnits(_ambushAction.target))
++	{
++		kind = "ambush";
++		_AIMode = AI_AMBUSH;
++		_reserve = BA_NONE;
++		_unit->setCharging(0);
++		action->type = _ambushAction.type;
++		action->target = _ambushAction.target;
++		action->finalFacing = _ambushAction.finalFacing;
++		action->finalAction = true;
++		action->kneel = _unit->getArmor()->allowsKneeling(false);
++	}
++	else
++	{
++		kind = "stay";
++		action->type = BA_NONE;
++	}
++	cu.holdTurn = turn;
++	cu.streak = streak;
++	AiProbe::tally(_unit, (std::string("ce.hold.") + kind).c_str());
++	Log(LOG_INFO) << head.str() << " order=HOLD kind=" << kind << " streak=" << streak << " walk=" << walkTo << " to=" << action->target
++		<< " spot=" << spot
++		<< " attacked=" << ceList(others) << " ready=" << ceList(ready);
++}
++
+ /**
+  * Runs any code the state needs to keep updating every AI cycle.
+  * @param action (possible) AI action to execute after thinking is done.
+@@ -1321,6 +1586,12 @@
+ 	default:
+ 		break;
+ 	}
++	// COORDINATED_ENGAGEMENT_V1 (bench): no flag - nothing runs
++	static const bool coordEngageOn = AiProbe::active() && (int)AiProbe::param("OXCE_AI_COORD_ENGAGE", 0) != 0;
++	if (coordEngageOn && _unit->getFaction() == FACTION_HOSTILE)
++	{
++		coordEngage(action);
++	}
+ 	if (_AIMode >= AI_PATROL && _AIMode <= AI_ESCAPE)
+ 	{
+ 		AiProbe::chosen(_unit, "paxe"[_AIMode]);
+--- AIModule.d0.h	2026-10-30 00:08:33.989122800 +0200
++++ tree/src/Battlescape/AIModule.h	2026-10-30 00:08:38.967540700 +0200
+@@ -388,6 +388,8 @@
+ 	int getAIMode() const { return _AIMode; }
+ 	/// Is this the walk of a patrol to its node (the probe's slot p, patrol.node)?
+ 	bool isPatrolWalk(const BattleAction &action) const;
++	/// COORDINATED_ENGAGEMENT_V1 (bench, OXCE_AI_COORD_ENGAGE): the side's commander checks this unit's decision against its group.
++	void coordEngage(BattleAction *action);
+ 	/// No more patrol walks for the rest of this unit-turn: it has no step left by energy (bench, ENERGY_PATROL_END_V2).
+ 	void spendPatrol();
+ 	/// The walk being done stopped at a unit on the step in dir: recorded if findFirePoint chose it (bench,

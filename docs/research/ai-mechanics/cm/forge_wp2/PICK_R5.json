@@ -1,0 +1,92 @@
+{
+"run": "R5",
+"decision": 49,
+"decide": {
+"n": "605",
+"h": "33c5d87737f7488",
+"rng": "d24c268811448687",
+"t": "1",
+"s": "1",
+"ev": "decide",
+"unit": "1000006",
+"fac": "1",
+"st": "0",
+"tu": "98",
+"noresel": "0",
+"hide": "0",
+"number": "1",
+"second": "0"
+},
+"act": {
+"n": "607",
+"h": "600ad9f2d3a5f164",
+"rng": "c7bcd5cc1f42ddf4",
+"t": "1",
+"s": "1",
+"ev": "act",
+"unit": "1000006",
+"fac": "1",
+"st": "0",
+"tu": "98",
+"noresel": "0",
+"hide": "0",
+"type": "7",
+"to": "12,17,0",
+"weapon": "STR_PIR_PLASMA_RIFLE",
+"fa": "0",
+"run": "0",
+"number": "1",
+"ai": "6ae4bc3348f79612"
+},
+"own": {
+"id": "32cefbdc514d3150",
+"k": "a",
+"t": 7,
+"to": [
+12,
+17,
+0
+],
+"tu": 31,
+"u": 324,
+"w": "STR_PIR_PLASMA_RIFLE",
+"p": 51,
+"lof": 1,
+"d": 19
+},
+"alternatives": [
+{
+"id": "9d3d5c710216292b",
+"k": "a",
+"t": 8,
+"to": [
+12,
+17,
+0
+],
+"tu": 23,
+"u": 324,
+"w": "STR_PIR_PLASMA_RIFLE",
+"p": 84,
+"lof": 1,
+"d": 19
+},
+{
+"id": "860d554be6cbad6",
+"k": "a",
+"t": 9,
+"to": [
+12,
+17,
+0
+],
+"tu": 41,
+"u": 324,
+"w": "STR_PIR_PLASMA_RIFLE",
+"p": 94,
+"lof": 1,
+"d": 19
+}
+],
+"shots_before": 0
+}

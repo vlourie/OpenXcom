@@ -26,6 +26,7 @@
 #include "RuleInventory.h"
 #include "RuleDamageType.h"
 #include "RuleSoldier.h"
+#include "LuaHost.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Engine/Exception.h"
@@ -969,6 +970,12 @@ int RuleItem::getBuyCostAdjusted(const Base* base, const SavedGame* save) const
 
 	adjusted = ModScript::scriptFunc2<ModScript::BuyCostItem>(this, adjusted, cost, this, save, buyPriceCoefficient);
 
+	if (auto *lua = LuaHost::active())
+	{
+		auto out = std::tie(adjusted, cost);
+		lua->fire(LuaHost::BUY_COST_ITEM, out, { this, save, buyPriceCoefficient });
+	}
+
 	return adjusted;
 }
 
@@ -997,6 +1004,12 @@ int RuleItem::getSellCostAdjusted(const Base* base, const SavedGame* save) const
 	int adjusted = ((int64_t)cost) * sellPriceCoefficient / 100;
 
 	adjusted = ModScript::scriptFunc2<ModScript::SellCostItem>(this, adjusted, cost, this, save, sellPriceCoefficient);
+
+	if (auto *lua = LuaHost::active())
+	{
+		auto out = std::tie(adjusted, cost);
+		lua->fire(LuaHost::SELL_COST_ITEM, out, { this, save, sellPriceCoefficient });
+	}
 
 	return adjusted;
 }

@@ -1,0 +1,14 @@
+# Файлы игры: правка любого из них - только через очередь tools/editq.py (одна сессия за раз).
+# Пути от корня репозитория через /, регистр не важен; * - внутри папки, ** - на любую глубину.
+# Этот же список читает хук очереди (.claude/settings.json -> editq.py hook pre).
+src/**
+CMakeLists.txt
+cmake/**
+bin/common/**
+bin/standard/**
+user/mods/**
+Пиратки/Dioxine_XPiratez/user/mods/**
+Пиратки/Dioxine_XPiratez/common/**
+Пиратки/Dioxine_XPiratez/standard/**
+CHANGELOG.md
+Выпуск/notes/**

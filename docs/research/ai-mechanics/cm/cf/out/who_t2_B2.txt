@@ -1,0 +1,8 @@
+1000036 dead at (26,15,0) by 444 AUX_TANK_CANNON | during 1000036 n=1 act=9 to=(31,16,0) aim=444 from=(26,15,0) | reactions so far: 444,444
+1000042 dead at (25,18,0) by 444 AUX_TANK_CANNON | during 1000036 n=1 act=9 to=(31,16,0) aim=444 from=(26,15,0) | reactions so far: 444,444
+1000048 dead at (27,16,0) by 444 AUX_TANK_CANNON | during 1000036 n=1 act=9 to=(31,16,0) aim=444 from=(26,15,0) | reactions so far: 444,444
+1000051 dead at (24,19,0) by 444 AUX_TANK_CANNON | during 1000036 n=1 act=9 to=(31,16,0) aim=444 from=(26,15,0) | reactions so far: 444,444
+1000029 dead at (60,9,0) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=2 act=7 to=(52,11,3) aim=-1 from=(64,13,0) | reactions so far: -
+1000053 stun at (64,13,0) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=2 act=7 to=(52,11,3) aim=-1 from=(64,13,0) | reactions so far: -
+1000049 dead at (65,13,3) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=2 act=7 to=(52,11,3) aim=-1 from=(64,13,0) | reactions so far: -
+1000053 dead at (64,13,0) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=2 act=7 to=(52,11,3) aim=-1 from=(64,13,0) | reactions so far: -

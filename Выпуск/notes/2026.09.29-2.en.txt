@@ -1,0 +1,2 @@
+— A battle started from the same save now begins the same way every time. The gear from the craft and from base storage used to land on the floor in a new order on each launch, so an enemy choosing between two equally valuable items went for one of them in one game session and for the other in the next. Items now always lie in the mod's list order. The items, their numbers and the rolls stay the same.
+— The last line of openxcom.log is no longer lost when another program has the log open at that moment.

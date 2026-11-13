@@ -75,7 +75,7 @@ enum GameDifficulty : int { DIFF_BEGINNER = 0, DIFF_EXPERIENCED, DIFF_VETERAN, D
 /**
  * Enumerator for the various save types.
  */
-enum SaveType { SAVE_DEFAULT, SAVE_INSTA, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END };
+enum SaveType { SAVE_DEFAULT, SAVE_INSTA, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END, SAVE_BATTLE_END };
 
 /**
  * Enumerator for the current game ending.
@@ -148,6 +148,7 @@ private:
 	std::map<std::string, int> _manufactureRuleStatus;
 	std::map<std::string, int> _researchRuleStatus;
 	std::map<std::string, int> _monthlyPurchaseLimitLog;
+	std::map<std::string, std::vector<std::string>> _luaTouched;
 	std::map<std::string, bool> _hiddenPurchaseItemsMap;
 	std::map<std::string, RuleCraftDeployment> _customRuleCraftDeployments;
 	Base* _previewBase;
@@ -180,6 +181,9 @@ private:
 
 	static SaveInfo getSaveInfo(const std::string &file, Language *lang);
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<SavedGame> &getScriptValuesRaw() const { return _scriptValues; }
+	void luaSetTag(ScriptTag<SavedGame> tag, int val) { _scriptValues.set(tag, val); }
 	static const std::string AUTOSAVE_GEOSCAPE, AUTOSAVE_BATTLESCAPE, QUICKSAVE;
 	/// Creates a new saved game.
 	SavedGame();
@@ -194,7 +198,8 @@ public:
 	void loadTemplates(const YAML::YamlNodeReader& reader, const Mod* mod);
 	void loadUfopediaRuleStatus(const YAML::YamlNodeReader& reader);
 	/// Saves a saved game to YAML.
-	void save(const std::string &filename, Mod *mod) const;
+	/// With portable the save is always plain text of the usual form, whatever oxceCompactSave says.
+	void save(const std::string &filename, Mod *mod, bool portable = false) const;
 	/// Gets the game name.
 	std::string getName() const;
 	/// Sets the game name.
@@ -321,6 +326,10 @@ public:
 	int getUfopediaRuleStatus(const std::string &ufopediaRule);
 	/// Gets the log of monthly purchase limits
 	std::map<std::string, int>& getMonthlyPurchaseLimitLog() { return _monthlyPurchaseLimitLog; }
+	/// A Lua mod did to this campaign what stays when the mod is gone: the mark in the save's header.
+	void luaTouch(const std::string &mod, const std::string &word);
+	/// Which mods, and what they did.
+	const std::map<std::string, std::vector<std::string>> &getLuaTouched() const { return _luaTouched; }
 	/// Gets the list of hidden items
 	const std::map<std::string, bool> &getHiddenPurchaseItems();
 	/// Gets the list of player-defined save-specific RuleCraft '_deployment' overrides
@@ -342,11 +351,7 @@ public:
 	/// Gets if a research still has undiscovered non-disabled "protected unlocks".
 	bool hasUndiscoveredProtectedUnlock(const RuleResearch * r) const;
 	/// Gets if a certain research has been completed.
-	bool isResearched(const std::string &research, bool considerDebugMode = true) const;
-	/// Gets if a certain research has been completed.
 	bool isResearched(const RuleResearch *research, bool considerDebugMode = true) const;
-	/// Gets if a certain list of research topics has been completed.
-	bool isResearched(const std::vector<std::string> &research, bool considerDebugMode = true) const;
 	/// Gets if a certain list of research topics has been completed.
 	bool isResearched(const std::vector<const RuleResearch *> &research, bool considerDebugMode = true, bool skipDisabled = false) const;
 	/// Gets if a certain item has been obtained.

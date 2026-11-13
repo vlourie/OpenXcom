@@ -1,0 +1,156 @@
+﻿battles 46
+
+== Who can hurt the squad {'units_attacked': 1129, 'units_hurt_player': 245, 'attack_tu': 214586, 'attack_tu_units_never_hurt_player': 142567, 'attack_tu_weapons_never_hurt_player': 102024, 'attacks': 5446, 'attacks_weapons_never_hurt_player': 2376, 'player_dmg_stun': 13096, 'top3_share_x1000': 30769}
+  attack TU by units that never hurt a player unit in the battle: 66.4%
+  attack TU by weapons that never hurt a player unit in the battle: 47.5%; attacks 43.6%
+
+== Unit turns: hurter = unit that hurt a player unit at least once in this battle {'nonhurter_unit_turns': 8888, 'nonhurter_no_target': 5742, 'nonhurter_no_target_tu': 294554, 'nonhurter_legal_no_attack': 1046, 'legal_noatt_d08-12': 148, 'legal_noatt_d00-07': 182, 'nonhurter_attack': 2100, 'nonhurter_no_target_known': 5120, 'noatt_end_sees': 749, 'nonhurter_no_target_known_near15': 1959, 'attacked_end_sees_tu_ok': 116, 'noatt_end_sees_tu_ok': 311, 'endok_lastsrc_escape': 104, 'noatt_own_any': 535, 'bound_fire_dmg': 5319, 'bound_own_more': 448, 'bound_own_end': 1151, 'bound_own_any': 1641, 'hurter_unit_turns': 2113, 'hurter_no_target': 809, 'hurter_no_target_tu': 42683, 'hurter_no_target_known': 750, 'hurter_no_target_known_near15': 349, 'hurter_legal_no_attack': 324, 'legal_no_attack_effective_weapon': 812, 'hurter_attack': 980, 'nonhurter_legal_own_no_attack': 213, 'bound_own_start': 757, 'legal_noatt_d13-20': 308, 'legal_noatt_d31+': 393, 'endok_lastsrc_patrol.node': 113, 'endok_lastsrc_ambush': 29, 'legal_noatt_d21-30': 339, 'hurter_legal_own_no_attack': 86, 'endok_lastsrc_escape.known': 53, 'endok_lastsrc_firepoint': 5, 'endok_lastsrc_firepoint.fallback': 5, 'endok_lastsrc_melee': 1, 'endok_lastsrc_firepoint.random': 1}
+  hurter: unit-turns 2113, attack 46.4%, legal but no attack 15.3%, no target 38.3% (known 35.5%, known within 15: 16.5%), TU unused on no target 42683
+  nonhurter: unit-turns 8888, attack 23.6%, legal but no attack 11.8%, no target 64.6% (known 57.6%, known within 15: 22.0%), TU unused on no target 294554
+  legal (side spotted + LOF) no attack, by distance: {'legal_noatt_d00-07': 182, 'legal_noatt_d08-12': 148, 'legal_noatt_d13-20': 308, 'legal_noatt_d21-30': 339, 'legal_noatt_d31+': 393}
+  of them own vision at the start of the turn: hurter 86 nonhurter 213
+  upper bound of the 'fire instead of not firing' lever: 5319 HP against 13096 HP+stun dealt to players by aimed attacks
+  own vision lever (one mean attack): no attack + own vision at turn start: 757 HP; no attack + own vision at turn end with TU for the cheapest attack: 311 unit-turns (of 749 seeing at the end), 1151 HP; either: 535 unit-turns, 1641 HP; attacked, still sees and has TU for one more: 116 unit-turns, 448 HP
+  sees at turn end, TU for a ranged attack, did not attack, last decision: [('patrol.node', 113), ('escape', 104), ('escape.known', 53), ('ambush', 29), ('firepoint', 5), ('firepoint.fallback', 5), ('melee', 1), ('firepoint.random', 1)]
+
+== End-of-turn exposure (hostile at player phase start): units, hp, hp lost, dead; loss %, death %
+  unseen  units=10334 hp=739081 lost=29038 dead=398 loss=3.9% death=3.9%
+  seen    units=1317 hp=95234 lost=27990 dead=336 loss=29.4% death=25.5%
+ Seen at player phase start, by last own decision: n, lost, dead, lost/unit, death%
+  patrol.node            n=   461 lost=  8522 dead=  101 lost/unit=  18.5 death= 21.9%
+  escape                 n=   252 lost=  7624 dead=   87 lost/unit=  30.3 death= 34.5%
+  shot                   n=   197 lost=  3821 dead=   47 lost/unit=  19.4 death= 23.9%
+  sniper                 n=    85 lost=  1826 dead=   20 lost/unit=  21.5 death= 23.5%
+  none                   n=    60 lost=  1502 dead=   30 lost/unit=  25.0 death= 50.0%
+  escape.known           n=    57 lost=   627 dead=   11 lost/unit=  11.0 death= 19.3%
+  ambush                 n=    52 lost=   656 dead=   11 lost/unit=  12.6 death= 21.2%
+  firepoint              n=    47 lost=   849 dead=    6 lost/unit=  18.1 death= 12.8%
+  melee                  n=    38 lost=   694 dead=   10 lost/unit=  18.3 death= 26.3%
+  firepoint.random       n=    28 lost=   268 dead=    4 lost/unit=   9.6 death= 14.3%
+  leeroy                 n=    26 lost=  1201 dead=    6 lost/unit=  46.2 death= 23.1%
+  firepoint.fallback     n=    12 lost=   398 dead=    3 lost/unit=  33.2 death= 25.0%
+  grenade                n=     2 lost=     2 dead=    0 lost/unit=   1.0 death=  0.0%
+
+== Life and chance of the dead {'dead': 1315, 'dead_had_legal_never_attacked': 108, 'dead_attacked': 839, 'dead_never_had_target': 200, 'dead_never_decided': 168}
+
+== Per battle: hostiles attacked / hurt players, TU share of useless units, top3 share
+d0p_D_L10_s1 attacked 11 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_L10_s2 attacked 6 hurt 2 uselessTU% 60 dmg 97 top3% 100
+d0p_D_L11_s1 attacked 23 hurt 2 uselessTU% 91 dmg 62 top3% 100
+d0p_D_L11_s2 attacked 15 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_L12_s1 attacked 15 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_L12_s2 attacked 17 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_L1_s1 attacked 20 hurt 2 uselessTU% 82 dmg 48 top3% 100
+d0p_D_L1_s2 attacked 15 hurt 2 uselessTU% 77 dmg 104 top3% 100
+d0p_D_L2_s1 attacked 52 hurt 12 uselessTU% 70 dmg 377 top3% 77
+d0p_D_L2_s2 attacked 56 hurt 20 uselessTU% 51 dmg 676 top3% 62
+d0p_D_L3_s1 attacked 1 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_L3_s2 attacked 1 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_L4_s1 attacked 17 hurt 3 uselessTU% 67 dmg 274 top3% 100
+d0p_D_L4_s2 attacked 19 hurt 5 uselessTU% 76 dmg 150 top3% 91
+d0p_D_L5_s1 attacked 43 hurt 2 uselessTU% 94 dmg 14 top3% 100
+d0p_D_L5_s2 attacked 47 hurt 2 uselessTU% 96 dmg 32 top3% 100
+d0p_D_L6_s1 attacked 23 hurt 1 uselessTU% 98 dmg 87 top3% 100
+d0p_D_L6_s2 attacked 23 hurt 7 uselessTU% 30 dmg 210 top3% 74
+d0p_D_L7_s1 attacked 29 hurt 11 uselessTU% 65 dmg 225 top3% 51
+d0p_D_L7_s2 attacked 31 hurt 9 uselessTU% 63 dmg 497 top3% 60
+d0p_D_L8_s1 attacked 15 hurt 8 uselessTU% 38 dmg 986 top3% 89
+d0p_D_L8_s2 attacked 19 hurt 5 uselessTU% 71 dmg 1092 top3% 98
+d0p_D_L9_s1 attacked 13 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_L9_s2 attacked 19 hurt 2 uselessTU% 81 dmg 46 top3% 100
+d0p_D_M10_s1 attacked 46 hurt 16 uselessTU% 61 dmg 486 top3% 85
+d0p_D_M10_s2 attacked 45 hurt 12 uselessTU% 70 dmg 372 top3% 63
+d0p_D_M11_s1 attacked 7 hurt 4 uselessTU% 13 dmg 670 top3% 96
+d0p_D_M11_s2 attacked 8 hurt 3 uselessTU% 52 dmg 202 top3% 100
+d0p_D_M12_s1 attacked 2 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_M12_s2 attacked 3 hurt 0 uselessTU% 100 dmg 0 top3% 0
+d0p_D_M2_s1 attacked 64 hurt 12 uselessTU% 68 dmg 740 top3% 79
+d0p_D_M2_s2 attacked 63 hurt 15 uselessTU% 53 dmg 800 top3% 48
+d0p_D_M3_s1 attacked 49 hurt 13 uselessTU% 68 dmg 488 top3% 67
+d0p_D_M3_s2 attacked 48 hurt 11 uselessTU% 71 dmg 407 top3% 78
+d0p_D_M4_s1 attacked 20 hurt 8 uselessTU% 45 dmg 459 top3% 70
+d0p_D_M4_s2 attacked 24 hurt 6 uselessTU% 67 dmg 358 top3% 78
+d0p_D_M5_s1 attacked 37 hurt 2 uselessTU% 95 dmg 171 top3% 100
+d0p_D_M5_s2 attacked 36 hurt 4 uselessTU% 77 dmg 106 top3% 81
+d0p_D_M6_s1 attacked 34 hurt 6 uselessTU% 78 dmg 435 top3% 88
+d0p_D_M6_s2 attacked 32 hurt 15 uselessTU% 44 dmg 790 top3% 39
+d0p_D_M7_s1 attacked 13 hurt 1 uselessTU% 93 dmg 8 top3% 100
+d0p_D_M7_s2 attacked 15 hurt 6 uselessTU% 50 dmg 322 top3% 69
+d0p_D_M8_s1 attacked 15 hurt 1 uselessTU% 40 dmg 43 top3% 100
+d0p_D_M8_s2 attacked 17 hurt 2 uselessTU% 68 dmg 48 top3% 100
+d0p_D_M9_s1 attacked 9 hurt 7 uselessTU% 28 dmg 682 top3% 67
+d0p_D_M9_s2 attacked 12 hurt 6 uselessTU% 47 dmg 532 top3% 66
+
+== Examples
+{"kind": "patrol_known", "battle": "d0p_D_L10_s2", "rec": 225, "turn": 4, "unit": 1000001, "type": "STR_BANDIT_RATMAN", "w": "STR_RUSTY_BLADE", "near": 9, "known": 4, "tu": 74, "pos": [11, 17, 2], "to": [37, 10, 2], "spent": 72, "posafter": [25, 15, 2], "trail": ["walk.stop.tu 25,15,2>26,15,2 d2 bam0 mt0 sz1 tu2/4 en11/2 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L10_s2", "rec": 530, "turn": 12, "unit": 1000001, "type": "STR_BANDIT_RATMAN", "w": "STR_RUSTY_BLADE", "near": 3, "known": 2, "tu": 74, "pos": [23, 34, 3], "to": [8, 24, 3], "spent": 44, "posafter": [22, 36, 2], "trail": ["walk.stop.spotted 22,36,2>22,36,2 d0 bam0 mt0 sz1 tu30/-1 en13/-1 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L11_s1", "rec": 339, "turn": 3, "unit": 1000025, "type": "STR_SMUGGLER_CAPTAIN", "w": "STR_SLUGGA", "near": 12, "known": 2, "tu": 111, "pos": [20, 34, 1], "to": [17, 24, 3], "spent": 46, "posafter": [14, 28, 1], "trail": ["walk.stop.spotted 14,28,1>14,28,1 d0 bam0 mt0 sz1 tu65/-1 en64/-1 rs9 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_L11_s2", "rec": 1511, "turn": 25, "unit": 1000017, "type": "STR_SMUGGLER_GOON", "w": "STR_FLAMETHROWER", "mode": 7, "fdmg": 71, "fdowned": 0, "pos": [34, 41, 1], "to": [40, 41, 1]}
+{"kind": "ff", "battle": "d0p_D_L2_s1", "rec": 160, "turn": 1, "unit": 1000034, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_RIFLE", "mode": 7, "fdmg": 75, "fdowned": 0, "pos": [40, 34, 0], "to": [27, 41, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_L2_s1", "rec": 403, "turn": 2, "unit": 1000018, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_CANNON", "near": 3, "known": 6, "tu": 134, "pos": [20, 31, 2], "to": [19, 30, 2], "spent": 6, "posafter": [19, 30, 2], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_L2_s1", "rec": 404, "turn": 2, "unit": 1000018, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_CANNON", "near": 3, "known": 6, "tu": 128, "pos": [19, 30, 2], "to": [22, 31, 2], "spent": 14, "posafter": [22, 31, 2], "trail": []}
+{"kind": "ff", "battle": "d0p_D_L2_s1", "rec": 409, "turn": 2, "unit": 1000021, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_RIFLE", "mode": 7, "fdmg": 55, "fdowned": 0, "pos": [41, 36, 2], "to": [29, 28, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_L2_s2", "rec": 332, "turn": 2, "unit": 1000016, "type": "STR_NINJA_GAL", "w": "STR_CD_RIFLE", "near": 5, "known": 8, "tu": 126, "pos": [37, 25, 2], "to": [41, 25, 2], "spent": 16, "posafter": [41, 25, 2], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_L2_s2", "rec": 333, "turn": 2, "unit": 1000016, "type": "STR_NINJA_GAL", "w": "STR_CD_RIFLE", "near": 5, "known": 8, "tu": 110, "pos": [41, 25, 2], "to": [37, 25, 2], "spent": 16, "posafter": [37, 25, 2], "trail": []}
+{"kind": "ff", "battle": "d0p_D_L2_s2", "rec": 836, "turn": 3, "unit": 1000009, "type": "STR_NINJA_GAL", "w": "STR_NINJA_SMG", "mode": 8, "fdmg": 67, "fdowned": 1, "pos": [21, 52, 0], "to": [19, 28, 0]}
+{"kind": "ff", "battle": "d0p_D_L2_s2", "rec": 1322, "turn": 5, "unit": 1000043, "type": "STR_NINJA_ASSAULT", "w": "STR_CD_PISTOL", "mode": 8, "fdmg": 71, "fdowned": 1, "pos": [23, 50, 1], "to": [32, 35, 4]}
+{"kind": "patrol_known", "battle": "d0p_D_L4_s1", "rec": 236, "turn": 2, "unit": 1000035, "type": "STR_DOOM_SARGE", "w": "STR_PIR_HEAVY_PLASMA", "near": 12, "known": 17, "tu": 89, "pos": [6, 21, 2], "to": [5, 0, 3], "spent": 30, "posafter": [5, 15, 2], "trail": ["walk.stop.turnspot 5,15,2>5,15,2 d1 bam0 mt0 sz1 tu59/-1 en59/-1 rs0 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_L5_s1", "rec": 940, "turn": 4, "unit": 1000008, "type": "STR_NAZI_SOLDIER", "w": "STR_LUGER", "mode": 8, "fdmg": 45, "fdowned": 1, "pos": [41, 39, 0], "to": [25, 25, 0]}
+{"kind": "ff", "battle": "d0p_D_L5_s1", "rec": 995, "turn": 4, "unit": 1000056, "type": "STR_NAZI_LEADER", "w": "STR_KRUGER", "mode": 8, "fdmg": 77, "fdowned": 1, "pos": [45, 58, 0], "to": [45, 22, 0]}
+{"kind": "ff", "battle": "d0p_D_L5_s2", "rec": 58, "turn": 1, "unit": 1000010, "type": "STR_NAZI_SOLDIER", "w": "STR_LUGER", "mode": 8, "fdmg": 1116, "fdowned": 22, "pos": [30, 36, 1], "to": [37, 33, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_L6_s2", "rec": 385, "turn": 4, "unit": 1000029, "type": "STR_MUTON_LEADER", "w": "STR_GAUSS_SNIPER", "near": 10, "known": 6, "tu": 134, "pos": [32, 11, 0], "to": [27, 11, 0], "spent": 16, "posafter": [28, 11, 0], "trail": ["walk.stop.spotted 28,11,0>28,11,0 d6 bam0 mt0 sz1 tu118/-1 en76/-1 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L6_s2", "rec": 637, "turn": 8, "unit": 1000033, "type": "STR_XTANK_HOVER_GAUSS_TERRORIST", "w": "AUX_XTANK_GAUSS_WEAPON", "near": 12, "known": 3, "tu": 298, "pos": [38, 26, 0], "to": [11, 37, 2], "spent": 146, "posafter": [11, 37, 2], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_L7_s1", "rec": 148, "turn": 2, "unit": 1000007, "type": "STR_MARSEC_SECURITY", "w": "STR_STORM_LASER", "near": 1, "known": 6, "tu": 81, "pos": [50, 21, 0], "to": [44, 41, 0], "spent": 54, "posafter": [55, 27, 0], "trail": ["walk.stop.reserve 55,27,0>55,28,0 d4 bam0 mt0 sz1 tu27/4 en55/2 rs8 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L7_s1", "rec": 168, "turn": 2, "unit": 1000017, "type": "STR_MARSEC_BODYGUARD", "w": "STR_LASER_RIFLE_PIR", "near": 4, "known": 6, "tu": 67, "pos": [47, 16, 1], "to": [51, 14, 1], "spent": 42, "posafter": [51, 14, 1], "trail": []}
+{"kind": "ff", "battle": "d0p_D_L7_s1", "rec": 327, "turn": 3, "unit": 1000010, "type": "STR_MARSEC_BODYGUARD", "w": "STR_HEAVY_LASER_PIR", "mode": 8, "fdmg": 54, "fdowned": 1, "pos": [54, 20, 0], "to": [53, 36, 0]}
+{"kind": "ff", "battle": "d0p_D_L7_s1", "rec": 413, "turn": 4, "unit": 1000004, "type": "STR_MARSEC_SECURITY", "w": "STR_STORM_LASER", "mode": 8, "fdmg": 42, "fdowned": 0, "pos": [45, 25, 0], "to": [30, 34, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_L7_s2", "rec": 169, "turn": 2, "unit": 1000007, "type": "STR_MARSEC_BODYGUARD", "w": "STR_LASER_RIFLE_PIR", "near": 6, "known": 5, "tu": 67, "pos": [9, 35, 1], "to": [52, 17, 0], "spent": 44, "posafter": [11, 30, 0], "trail": ["walk.stop.reserve 11,30,0>12,30,0 d2 bam0 mt0 sz1 tu23/4 en84/2 rs8 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L7_s2", "rec": 182, "turn": 2, "unit": 1000014, "type": "STR_MARSEC_BODYGUARD", "w": "STR_GAUSS_RIFLE", "near": 6, "known": 5, "tu": 67, "pos": [10, 27, 2], "to": [34, 6, 1], "spent": 32, "posafter": [13, 28, 0], "trail": ["walk.stop.turnspot 13,28,0>13,28,0 d3 bam0 mt0 sz1 tu35/-1 en92/-1 rs8 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_L7_s2", "rec": 302, "turn": 3, "unit": 1000012, "type": "STR_MARSEC_BODYGUARD", "w": "STR_GAUSS_RIFLE", "mode": 8, "fdmg": 51, "fdowned": 1, "pos": [14, 32, 0], "to": [14, 31, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_L8_s1", "rec": 206, "turn": 2, "unit": 1000029, "type": "STR_SECTOPOD_TERRORIST", "w": "AUX_SECTOPOD_WEAPON", "near": 9, "known": 5, "tu": 56, "pos": [44, 55, 1], "to": [43, 44, 1], "spent": 20, "posafter": [44, 50, 1], "trail": ["walk.stop.reserve 44,50,1>43,49,1 d7 bam0 mt2 sz2 tu36/6 en80/3 rs7 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L8_s1", "rec": 217, "turn": 3, "unit": 1000001, "type": "STR_ETHEREAL_SOLDIER", "w": "STR_PIR_PLASMA_RIFLE", "near": 8, "known": 3, "tu": 98, "pos": [51, 38, 1], "to": [52, 37, 2], "spent": 3, "posafter": [51, 38, 1], "trail": ["walk.stop.turnspot 51,38,1>51,38,1 d5 bam0 mt1 sz1 tu95/-1 en96/-1 rs7 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L9_s2", "rec": 178, "turn": 2, "unit": 1000016, "type": "STR_AQUATOID_MEDIC", "w": "STR_SONIC_PISTOL", "near": 5, "known": 7, "tu": 86, "pos": [8, 41, 0], "to": [8, 38, 0], "spent": 8, "posafter": [9, 41, 0], "trail": ["walk.stop.spotted 9,41,0>9,41,0 d2 bam0 mt0 sz1 tu78/-1 en68/-1 rs7 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_L9_s2", "rec": 236, "turn": 3, "unit": 1000016, "type": "STR_AQUATOID_MEDIC", "w": "STR_SONIC_PISTOL", "near": 4, "known": 5, "tu": 86, "pos": [4, 40, 0], "to": [8, 38, 0], "spent": 22, "posafter": [8, 38, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M10_s1", "rec": 267, "turn": 2, "unit": 1000043, "type": "STR_DOOM_IMP_TERRORIST", "w": "AUX_DOOM_IMP_WEAPON", "near": 2, "known": 4, "tu": 114, "pos": [37, 6, 0], "to": [20, 2, 0], "spent": 94, "posafter": [20, 2, 0], "trail": []}
+{"kind": "ff", "battle": "d0p_D_M10_s1", "rec": 461, "turn": 3, "unit": 1000037, "type": "STR_DOOM_GUNNER", "w": "STR_UAC_HEAVY_NAILGUN", "mode": 7, "fdmg": 46, "fdowned": 0, "pos": [39, 26, 0], "to": [37, 8, 0]}
+{"kind": "ff", "battle": "d0p_D_M10_s1", "rec": 562, "turn": 4, "unit": 1000037, "type": "STR_DOOM_GUNNER", "w": "STR_UAC_HEAVY_NAILGUN", "mode": 7, "fdmg": 46, "fdowned": 1, "pos": [39, 26, 0], "to": [36, 9, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_M10_s1", "rec": 1095, "turn": 9, "unit": 1000019, "type": "STR_DOOM_SARGE", "w": "STR_GRENADE_LAUNCHER", "near": 1, "known": 2, "tu": 65, "pos": [33, 19, 0], "to": [35, 24, 0], "spent": 40, "posafter": [35, 24, 0], "trail": []}
+{"kind": "ff", "battle": "d0p_D_M10_s2", "rec": 143, "turn": 1, "unit": 1000024, "type": "STR_DOOM_SARGE", "w": "STR_UAC_RIFLE", "mode": 8, "fdmg": 48, "fdowned": 1, "pos": [5, 44, 2], "to": [11, 42, 0]}
+{"kind": "ff", "battle": "d0p_D_M10_s2", "rec": 286, "turn": 2, "unit": 1000010, "type": "STR_DOOM_SOLDIER", "w": "STR_UAC_RIFLE", "mode": 8, "fdmg": 71, "fdowned": 2, "pos": [29, 6, 0], "to": [15, 34, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_M10_s2", "rec": 898, "turn": 7, "unit": 1000055, "type": "STR_DOOM_IMP_TERRORIST", "w": "AUX_DOOM_IMP_WEAPON", "near": 8, "known": 3, "tu": 90, "pos": [20, 23, 0], "to": [14, 42, 1], "spent": 88, "posafter": [15, 39, 1], "trail": ["walk.stop.tu 15,39,1>15,40,1 d4 bam0 mt0 sz1 tu2/4 en48/2 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_M10_s2", "rec": 1359, "turn": 11, "unit": 1000043, "type": "STR_DOOM_GUNNER", "w": "STR_UAC_ROCKET_LAUNCHER", "near": 7, "known": 1, "tu": 47, "pos": [22, 14, 0], "to": [15, 8, 2], "spent": 44, "posafter": [19, 23, 0], "trail": ["walk.stop.tu 19,23,0>18,23,0 d6 bam0 mt0 sz1 tu3/4 en47/2 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_M11_s1", "rec": 274, "turn": 4, "unit": 1000020, "type": "STR_VAMPIRE_BAT_TERRORIST", "w": "AUX_VAMPBAT_WEAPON", "near": 2, "known": 4, "tu": 196, "pos": [28, 6, 0], "to": [26, 47, 0], "spent": 190, "posafter": [26, 47, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M11_s1", "rec": 277, "turn": 4, "unit": 1000024, "type": "STR_VAMPIRE_DUDE", "w": "AUX_VAMPIRE_WEAPON", "near": 2, "known": 4, "tu": 119, "pos": [27, 6, 0], "to": [44, 1, 0], "spent": 82, "posafter": [44, 1, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M11_s2", "rec": 181, "turn": 3, "unit": 1000006, "type": "STR_ZOMBIE_GRUBAS_TERRORIST", "w": "AUX_ZOMBIE_WEAPON", "near": 8, "known": 5, "tu": 65, "pos": [24, 22, 0], "to": [32, 39, 0], "spent": 64, "posafter": [29, 35, 0], "trail": ["walk.stop.tu 29,35,0>30,36,0 d3 bam0 mt0 sz1 tu1/6 en118/3 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_M11_s2", "rec": 243, "turn": 4, "unit": 1000001, "type": "STR_ZOMBIE_STERILE_TERRORIST", "w": "AUX_ZOMBIE_WEAPON", "near": 1, "known": 5, "tu": 59, "pos": [13, 14, 0], "to": [7, 22, 0], "spent": 1, "posafter": [13, 14, 0], "trail": ["walk.stop.turnspot 13,14,0>13,14,0 d0 bam0 mt0 sz1 tu58/-1 en110/-1 rs0 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_M2_s1", "rec": 120, "turn": 1, "unit": 1000053, "type": "STR_NINJA_ASSASSIN", "w": "STR_CD_PISTOL", "mode": 8, "fdmg": 40, "fdowned": 0, "pos": [19, 30, 0], "to": [18, 8, 0]}
+{"kind": "ff", "battle": "d0p_D_M2_s1", "rec": 790, "turn": 3, "unit": 1000127, "type": "STR_TURRET_MINIGUN_TERRORIST", "w": "AUX_TANK_LIGHT_MINIGUN_WEAPON", "mode": 8, "fdmg": 53, "fdowned": 0, "pos": [15, 36, 2], "to": [40, 58, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_M2_s1", "rec": 1438, "turn": 5, "unit": 1000029, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_PISTOL", "near": 10, "known": 3, "tu": 134, "pos": [28, 29, 2], "to": [17, 25, 2], "spent": 56, "posafter": [17, 25, 2], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M2_s1", "rec": 1439, "turn": 5, "unit": 1000029, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_PISTOL", "near": 10, "known": 3, "tu": 78, "pos": [17, 25, 2], "to": [21, 25, 2], "spent": 16, "posafter": [21, 25, 2], "trail": []}
+{"kind": "ff", "battle": "d0p_D_M2_s2", "rec": 963, "turn": 3, "unit": 1000058, "type": "STR_NINJA_MEDIC", "w": "STR_CD_CANNON", "mode": 8, "fdmg": 48, "fdowned": 0, "pos": [6, 35, 0], "to": [39, 51, 1]}
+{"kind": "patrol_known", "battle": "d0p_D_M2_s2", "rec": 1916, "turn": 8, "unit": 1000019, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_CANNON", "near": 10, "known": 3, "tu": 134, "pos": [19, 30, 2], "to": [22, 31, 2], "spent": 14, "posafter": [22, 31, 2], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M2_s2", "rec": 1917, "turn": 8, "unit": 1000019, "type": "STR_NINJA_WARRIOR", "w": "STR_CD_CANNON", "near": 10, "known": 3, "tu": 120, "pos": [22, 31, 2], "to": [19, 30, 2], "spent": 14, "posafter": [19, 30, 2], "trail": []}
+{"kind": "ff", "battle": "d0p_D_M2_s2", "rec": 1965, "turn": 8, "unit": 1000013, "type": "STR_NINJA_GAL", "w": "STR_NINJA_SMG", "mode": 8, "fdmg": 47, "fdowned": 1, "pos": [18, 21, 0], "to": [37, 22, 0]}
+{"kind": "ff", "battle": "d0p_D_M3_s1", "rec": 801, "turn": 7, "unit": 1000054, "type": "STR_ERIDIAN_BEASTMASTER", "w": "STR_SR_RIFLE", "mode": 8, "fdmg": 75, "fdowned": 1, "pos": [39, 61, 0], "to": [45, 27, 0]}
+{"kind": "ff", "battle": "d0p_D_M3_s2", "rec": 167, "turn": 1, "unit": 1000055, "type": "STR_ERIDIAN_BEASTMASTER", "w": "STR_PIR_PLASMA_PISTOL", "mode": 9, "fdmg": 53, "fdowned": 0, "pos": [34, 66, 0], "to": [43, 23, 3]}
+{"kind": "patrol_known", "battle": "d0p_D_M3_s2", "rec": 319, "turn": 2, "unit": 1000004, "type": "STR_CHRYSSALID_TERRORIST", "w": "AUX_CHRYSSALID_WEAPON", "near": 2, "known": 7, "tu": 87, "pos": [4, 37, 0], "to": [14, 41, 1], "spent": 86, "posafter": [15, 38, 0], "trail": ["walk.stop.tu 15,38,0>14,37,0 d7 bam0 mt0 sz1 tu1/6 en82/3 rs0 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_M3_s2", "rec": 355, "turn": 2, "unit": 1000044, "type": "STR_ERIDIAN_SOLDIER", "w": "STR_CANISTER_GUN", "mode": 8, "fdmg": 570, "fdowned": 4, "pos": [41, 27, 0], "to": [29, 28, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_M3_s2", "rec": 787, "turn": 5, "unit": 1000004, "type": "STR_CHRYSSALID_TERRORIST", "w": "AUX_CHRYSSALID_WEAPON", "near": 3, "known": 3, "tu": 48, "pos": [23, 32, 0], "to": [14, 41, 1], "spent": 44, "posafter": [23, 39, 0], "trail": ["walk.stop.tu 23,39,0>22,40,0 d5 bam0 mt0 sz1 tu4/6 en115/3 rs0 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_M4_s2", "rec": 360, "turn": 3, "unit": 1000013, "type": "STR_CYBERDISC_TERRORIST", "w": "AUX_CYBERDISC_WEAPON", "mode": 8, "fdmg": 59, "fdowned": 1, "pos": [33, 28, 3], "to": [2, 26, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_M4_s2", "rec": 376, "turn": 3, "unit": 1000022, "type": "STR_SECTOID_NAVIGATOR", "w": "-", "near": 6, "known": 1, "tu": 81, "pos": [6, 21, 0], "to": [10, 28, 0], "spent": 53, "posafter": [9, 26, 0], "trail": ["walk.stop.reserve 9,26,0>9,27,0 d4 bam0 mt0 sz1 tu28/6 en62/3 rs8 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_M5_s1", "rec": 1041, "turn": 6, "unit": 1000033, "type": "STR_NINJA_WARRIOR", "w": "STR_SLUGGA", "near": 4, "known": 6, "tu": 134, "pos": [42, 23, 0], "to": [42, 24, 0], "spent": 4, "posafter": [42, 24, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M5_s1", "rec": 1042, "turn": 6, "unit": 1000033, "type": "STR_NINJA_WARRIOR", "w": "STR_SLUGGA", "near": 4, "known": 6, "tu": 130, "pos": [42, 24, 0], "to": [42, 22, 0], "spent": 18, "posafter": [42, 22, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M5_s2", "rec": 880, "turn": 5, "unit": 1000036, "type": "STR_NINJA_WARRIOR", "w": "STR_ATG_RIFLE", "near": 11, "known": 8, "tu": 67, "pos": [26, 24, 1], "to": [23, 52, 0], "spent": 24, "posafter": [26, 24, 1], "trail": ["walk.stop.reserve 26,24,1>26,25,1 d4 bam0 mt0 sz1 tu43/4 en100/2 rs7 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_M5_s2", "rec": 904, "turn": 5, "unit": 1000040, "type": "STR_NINJA_WARRIOR", "w": "STR_NINJA_CARBINE", "mode": 8, "fdmg": 75, "fdowned": 1, "pos": [31, 19, 0], "to": [11, 36, 3]}
+{"kind": "patrol_known", "battle": "d0p_D_M6_s1", "rec": 232, "turn": 2, "unit": 1000035, "type": "STR_MUTON_ENGINEER", "w": "STR_GAUSS_RIFLE", "near": 10, "known": 4, "tu": 96, "pos": [18, 20, 0], "to": [17, 19, 0], "spent": 6, "posafter": [17, 19, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M6_s1", "rec": 233, "turn": 2, "unit": 1000035, "type": "STR_MUTON_ENGINEER", "w": "STR_GAUSS_RIFLE", "near": 10, "known": 4, "tu": 90, "pos": [17, 19, 0], "to": [11, 19, 0], "spent": 28, "posafter": [11, 19, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M6_s2", "rec": 208, "turn": 2, "unit": 1000013, "type": "STR_MUTON_NAVIGATOR", "w": "STR_HEAVY_GAUSS", "near": 9, "known": 8, "tu": 111, "pos": [34, 7, 2], "to": [43, 6, 0], "spent": 66, "posafter": [43, 6, 0], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M6_s2", "rec": 218, "turn": 2, "unit": 1000019, "type": "STR_MUTON_NAVIGATOR", "w": "STR_GAUSS_RIFLE", "near": 8, "known": 8, "tu": 111, "pos": [31, 12, 2], "to": [32, 10, 2], "spent": 10, "posafter": [32, 10, 2], "trail": []}
+{"kind": "ff", "battle": "d0p_D_M6_s2", "rec": 1444, "turn": 25, "unit": 1000007, "type": "STR_MUTON_SOLDIER", "w": "STR_GAUSS_PISTOL", "mode": 8, "fdmg": 67, "fdowned": 1, "pos": [28, 14, 0], "to": [15, 17, 0]}
+{"kind": "ff", "battle": "d0p_D_M7_s2", "rec": 305, "turn": 4, "unit": 1000005, "type": "STR_CHURCH_NAVIGATOR", "w": "STR_ROCKET_LAUNCHER", "mode": 9, "fdmg": 73, "fdowned": 1, "pos": [25, 42, 0], "to": [40, 14, 0]}
+{"kind": "patrol_known", "battle": "d0p_D_M7_s2", "rec": 397, "turn": 5, "unit": 1000007, "type": "STR_CHURCH_NAVIGATOR", "w": "STR_LASER_RIFLE_PIR", "near": 6, "known": 1, "tu": 104, "pos": [30, 24, 0], "to": [27, 11, 1], "spent": 100, "posafter": [32, 9, 0], "trail": ["walk.stop.tu 32,9,0>32,10,0 d4 bam0 mt0 sz1 tu4/8 en46/4 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_M7_s2", "rec": 411, "turn": 5, "unit": 1000016, "type": "STR_CHURCH_NAVIGATOR", "w": "STR_HEAVY_CANNON", "near": 3, "known": 1, "tu": 104, "pos": [31, 21, 0], "to": [1, 24, 0], "spent": 104, "posafter": [9, 27, 0], "trail": ["walk.stop.tu 9,27,0>8,27,0 d6 bam0 mt0 sz1 tu0/4 en38/2 rs0 bu-1"]}
+{"kind": "ff", "battle": "d0p_D_M8_s1", "rec": 239, "turn": 2, "unit": 1000036, "type": "STR_NAZI_SS", "w": "STR_RPG", "mode": 8, "fdmg": 90, "fdowned": 1, "pos": [19, 49, 2], "to": [15, 21, 1]}
+{"kind": "patrol_known", "battle": "d0p_D_M9_s1", "rec": 263, "turn": 2, "unit": 1000006, "type": "STR_DEEP_ONE_NOMAD", "w": "STR_BONE_CLUB", "near": 12, "known": 1, "tu": 98, "pos": [39, 55, 0], "to": [31, 39, 1], "spent": 65, "posafter": [35, 43, 1], "trail": ["walk.stop.reserve 35,43,1>34,42,1 d7 bam0 mt1 sz1 tu33/6 en43/3 rs8 bu-1"]}
+{"kind": "patrol_known", "battle": "d0p_D_M9_s1", "rec": 294, "turn": 2, "unit": 1000023, "type": "STR_DEEP_ONE_NOMAD", "w": "STR_BONE_CLUB", "near": 9, "known": 1, "tu": 98, "pos": [44, 54, 4], "to": [47, 43, 5], "spent": 58, "posafter": [47, 43, 5], "trail": []}
+{"kind": "patrol_known", "battle": "d0p_D_M9_s2", "rec": 498, "turn": 2, "unit": 1000033, "type": "STR_DEEP_ONE_NOMAD", "w": "STR_BONE_CLUB", "near": 6, "known": 2, "tu": 50, "pos": [56, 27, 0], "to": [9, 33, 0], "spent": 16, "posafter": [54, 27, 1], "trail": ["walk.stop.reserve 54,27,1>53,27,1 d6 bam0 mt1 sz1 tu34/4 en37/2 rs8 bu-1"]}

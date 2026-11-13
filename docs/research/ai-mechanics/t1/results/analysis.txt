@@ -1,0 +1,158 @@
+== cases.py (existing D0 logs of P0/P1, 48 battles)
+hostile attacks at a unit: 5265, with another seen unit: 4736
+aim is a vehicle: 13; of them a soft player unit seen at most 3 tiles farther: 6
+a seen player unit with hp share < 0.6 of the aim's, at most 3 tiles farther: 486
+aim is a civilian while a player unit is at most 3 tiles farther: 379
+aim faction: player 4637, civilian 628
+per scenario (attacks, softer, civ): L1:215/0/0 L10:32/0/0 L11:148/0/0 L12:91/0/19 L2:397/0/0 L3:2/0/0 L4:95/0/0 L5:324/0/0 L6:261/0/0 L7:414/0/0 L8:150/0/0 L9:56/0/0 M1:332/6/2 M10:621/0/0 M11:37/0/0 M12:13/0/0 M2:974/0/339 M3:282/0/19 M4:142/0/0 M5:217/0/0 M6:313/0/0 M7:68/0/0 M8:57/0/0 M9:24/0/0
+
+== civ.py
+civilian-aimed hostile attacks: 628
+gap to nearest seen player unit (tiles farther than the civilian): {'>8': 135, '<=0': 311, '1-3': 68, '4-8': 95, 'no player seen': 19}
+per scenario, a player unit seen (any gap / <=3): {'L12': (49, 19), 'M1': (23, 2), 'M2': (453, 339), 'M3': (84, 19)}
+by battle: {'D0_L12_s1': 35, 'D0_L12_s2': 14, 'D0_M1_s1': 17, 'D0_M1_s2': 23, 'D0_M2_s1': 251, 'D0_M2_s2': 204, 'D0_M3_s1': 39, 'D0_M3_s2': 45}
+D0_L12_s1: civilians killed by hostiles 25 {'STR_PIRATE_CIV': 20, 'STR_BRUTE_SAILOR_CIV': 5}; player units out 0
+D0_L12_s2: civilians killed by hostiles 19 {'STR_PIRATE_CIV': 19}; player units out 1
+D0_M1_s1: civilians killed by hostiles 22 {'STR_SLAVE_MAID': 2, 'STR_WORKER': 20}; player units out 81
+D0_M1_s2: civilians killed by hostiles 26 {'STR_WORKER': 21, 'STR_SLAVE_MAID': 5}; player units out 72
+D0_M2_s1: civilians killed by hostiles 89 {'STR_GOVT_MP_CIV': 67, 'STR_GOVT_ENFORCER_CIV': 15, 'STR_FIELD_GUN_TERRORIST': 1, 'STR_GOVT_ARMORED_CAR': 2, 'STR_GOVT_ELITE_CIV': 3, 'STR_GOVT_GENERAL_CIV': 1}; player units out 9
+D0_M2_s2: civilians killed by hostiles 78 {'STR_GOVT_MP_CIV': 56, 'STR_GOVT_ENFORCER_CIV': 15, 'STR_GOVT_ARMORED_CAR': 1, 'STR_GOVT_ELITE_CIV': 5, 'STR_GOVT_GENERAL_CIV': 1}; player units out 10
+D0_M3_s1: civilians killed by hostiles 28 {'CIVILIAN_YOUNG_UBER': 3, 'FEMALE_CIVILIAN': 9, 'CIVILIAN_DORF': 1, 'CIVILIAN_MUT_3': 2, 'CIVILIAN_MUT_4': 6, 'CIVILIAN_MUT_5': 2, 'MALE_CIVILIAN': 5}; player units out 7
+D0_M3_s2: civilians killed by hostiles 28 {'FEMALE_CIVILIAN': 7, 'CIVILIAN_DORF': 4, 'CIVILIAN_MUT_3': 8, 'CIVILIAN_MUT_4': 2, 'CIVILIAN_MUT_5': 4, 'CIVILIAN_YOUNG_UBER': 1, 'CIVILIAN_MUT_7': 1, 'MALE_CIVILIAN': 1}; player units out 9
+
+== ident.py E1 E0 (rebuilt exe) vs archived D0
+identical 26, different 0
+
+== targets.py E1 (record only = D0 decisions)
+target picks with a record: {'picks': 3977, 'multi': 1481, 'melee': 3524, 'unmodelled': 438, 'better': 247, 'better_nomelee': 43, 'better_attack': 198, 'better_attack_at_near': 198}
+unmodelled / why: {'near_zero+farther_more_dmg+lower_hpmax': 79, 'area': 438, 'farther_more_dmg+lower_hpmax': 85, 'lower_hpmax': 11, 'farther_more_dmg': 26, 'near_zero+farther_more_dmg': 16, 'near_zero+lower_hpmax': 20, 'civ->player': 1, 'civ->player+farther_more_dmg': 2, 'near_zero': 7}
+best/nearest score ratio: median 20.33, p25 2.93, p75 121.00
+per scenario (clearly better alternative): {'L1': 17, 'L11': 1, 'L12': 21, 'L2': 5, 'L4': 4, 'L6': 25, 'L7': 11, 'L8': 6, 'L9': 5, 'M1': 8, 'M2': 104, 'M3': 12, 'M4': 3, 'M5': 15, 'M6': 2, 'M7': 8}
+examples (attack executed at the nearest while a clearly better legal target was seen): 198
+
+== verify_ev.py E1
+score of the nearest (x1000) -> distinct (turn, shooter, target) attacks, target out by the shooter that turn, of them not dead
+  0          570     1 (0%) not dead 1
+  1-49       142     7 (5%) not dead 3
+  50-199     127    14 (11%) not dead 6
+  200-499     76    15 (20%) not dead 7
+  500+       112    70 (62%) not dead 9
+score 0, by weapon (attacks, out, not dead): {'STR_CD_PISTOL': (54, 0, 0), 'STR_UAC_RIFLE': (52, 0, 0), 'STR_SHOTGUN_PA': (31, 0, 0), 'STR_NINJA_SMG': (28, 0, 0), 'STR_LUGER': (25, 0, 0), 'STR_CHAINGUN': (23, 0, 0), 'STR_NINJA_CARBINE': (22, 0, 0), 'STR_CD_RIFLE': (20, 0, 0), 'STR_UAC_HEAVY_NAILGUN': (19, 0, 0), 'STR_UAC_SHOTGUN': (18, 0, 0), 'STR_BLUNDERBUSS': (18, 0, 0), 'STR_MP40': (17, 0, 0), 'STR_GAUSS_PISTOL': (16, 0, 0), 'STR_GAUSS_RIFLE': (15, 0, 0), 'STR_LASER_RIFLE_PIR': (14, 0, 0)}
+
+== switches.py E2 (pilot)
+records and switches: {'picks': 7357, 'pick_flag': 432, 'switch': 429, 'attack': 372, 'attack_at_new': 338, 'new_civilian': 147, 'new_player': 282, 'out_by_shooter_same_turn': 57, 'attack_at_new_player': 236, 'out_player': 31, 'attack_at_new_civilian': 102, 'out_civilian': 26}
+decision right after a switch (act): {'6': 9, '7': 74, '8': 210, '9': 79, '2': 56, '0': 1}
+switches per scenario: {'L1': 20, 'L10': 0, 'L11': 1, 'L12': 32, 'L2': 21, 'L3': 0, 'L4': 11, 'L5': 1, 'L6': 34, 'L7': 27, 'L8': 16, 'L9': 4, 'M1': 44, 'M10': 11, 'M11': 0, 'M12': 1, 'M2': 143, 'M3': 13, 'M4': 13, 'M5': 19, 'M6': 11, 'M7': 7, 'M8': 0, 'M9': 0}
+
+== sw_walk.py E2
+E2_L1_s1
+  [AITARGET] turn=5 unit=1000015 tu=76 weapon=STR_LASER_RIFLE_PIR melee=1 near=472 best=267 model=1 better=1 pick=1 cands=472:0:6:0:57:0;471:0:14:0:57:0;267:0:18:11:81:137;192:0:8:11:103:108;
+  [AITARGETSET] turn=5 unit=1000015 from=472 to=267
+  [AIDECIDE] turn=5 side=1 unit=1000015 n=2 from=(24,28,0) tu=76 mode=3 act=2 to=(27,28,0) run=0 kneel=0 aim=267 weapon=STR_LASER_RIFLE_PIR seen=472,471,368,267,192 hu=6f45fc549feb65c6 hi=bca24c9448968f3a ho=926e4c86fa207e04 hou=598fb8a1dc1f3222 hm=d67d8b8abe070f3c hr=c3030b0a09b90100 hr0=f4589b497f92b69d ha0=5cca7daf196385a3 ha=a
+E2_L1_s2
+  [AITARGET] turn=3 unit=1000010 tu=67 weapon=STR_HEAVY_CANNON melee=1 near=472 best=192 model=1 better=1 pick=1 cands=472:0:25:4:57:70;471:0:26:4:57:66;192:0:27:20:103:198;
+  [AITARGETSET] turn=3 unit=1000010 from=472 to=192
+  [AIDECIDE] turn=3 side=1 unit=1000010 n=1 from=(10,29,0) tu=67 mode=3 act=2 to=(13,25,0) run=0 kneel=0 aim=192 weapon=STR_HEAVY_CANNON seen=472,471,2,368,267,192 hu=58bdbd5ee2e49414 hi=f594b3da30f7685f ho=7f3f71ad84168634 hou=fd260955722a7379 hm=2c9dcec11c49bbbe hr=75fcb8b967049ae8 hr0=d5880976bf633422 ha0=8314ed65970c43fd ha=6a
+E2_L1_s2
+  [AITARGET] turn=4 unit=1000023 tu=89 weapon=AUX_HDRONE_WEAPON melee=0 near=471 best=2 model=1 better=1 pick=1 cands=471:0:20:2:57:29;2:0:23:24:144:165;
+  [AITARGETSET] turn=4 unit=1000023 from=471 to=2
+  [AIDECIDE] turn=4 side=1 unit=1000023 n=1 from=(14,1,0) tu=89 mode=3 act=2 to=(11,2,0) run=0 kneel=0 aim=2 weapon=AUX_HDRONE_WEAPON seen=472,471,2,368 hu=680b0b2236bb4c26 hi=3e74ddbbb4b7041b ho=6cdb323ddd50ee68 hou=ef754f33ddb8748d hm=ff24886b7f2037e hr=23be1e3de366455 hr0=af986148d785b5c8 ha0=fb9ee41af136b299 ha=e370359e91529f8
+distance gap new - nearest: attacks {'3-6': 103, '>6': 156, '<=2': 113} non-attacks {'>6': 19, '<=2': 19, '3-6': 19}
+
+== repeats.py D0 vs E2 (D1_ = E2)
+D0_L10_s1: turns 10 repeats 100 (10.0/turn) by act {'2': 100} right after a switch {'2': 0}
+D0_L10_s2: turns 14 repeats 108 (7.7/turn) by act {'2': 105, '0': 3} right after a switch {'2': 0, '0': 0}
+D0_L11_s1: turns 60 repeats 705 (11.8/turn) by act {'2': 704, '0': 1} right after a switch {'2': 0, '0': 0}
+D0_L11_s2: turns 60 repeats 999 (16.6/turn) by act {'2': 997, '0': 2} right after a switch {'2': 0, '0': 0}
+D0_L12_s1: turns 8 repeats 84 (10.5/turn) by act {'8': 26, '0': 3, '2': 55} right after a switch {'8': 0, '0': 0, '2': 0}
+D0_L12_s2: turns 13 repeats 132 (10.2/turn) by act {'2': 132} right after a switch {'2': 0}
+D0_L1_s1: turns 14 repeats 43 (3.1/turn) by act {'2': 42, '0': 1} right after a switch {'2': 0, '0': 0}
+D0_L1_s2: turns 17 repeats 56 (3.3/turn) by act {'2': 56} right after a switch {'2': 0}
+D0_L2_s1: turns 8 repeats 265 (33.1/turn) by act {'2': 248, '0': 17} right after a switch {'2': 0, '0': 0}
+D0_L2_s2: turns 17 repeats 470 (27.6/turn) by act {'2': 430, '0': 40} right after a switch {'2': 0, '0': 0}
+D0_L3_s1: turns 1 repeats 0 (0.0/turn) by act {} right after a switch {}
+D0_L3_s2: turns 1 repeats 3 (3.0/turn) by act {'2': 3} right after a switch {'2': 0}
+D0_L4_s1: turns 9 repeats 14 (1.6/turn) by act {'2': 7, '0': 7} right after a switch {'2': 0, '0': 0}
+D0_L4_s2: turns 13 repeats 21 (1.6/turn) by act {'2': 11, '0': 4, '8': 6} right after a switch {'2': 0, '0': 0, '8': 0}
+D0_L5_s1: turns 7 repeats 241 (34.4/turn) by act {'2': 237, '0': 4} right after a switch {'2': 0, '0': 0}
+D0_L5_s2: turns 19 repeats 60 (3.2/turn) by act {'2': 59, '0': 1} right after a switch {'2': 0, '0': 0}
+D0_L6_s1: turns 60 repeats 153 (2.5/turn) by act {'2': 137, '0': 16} right after a switch {'2': 0, '0': 0}
+D0_L6_s2: turns 24 repeats 158 (6.6/turn) by act {'2': 154, '0': 4} right after a switch {'2': 0, '0': 0}
+D0_L7_s1: turns 12 repeats 214 (17.8/turn) by act {'2': 203, '0': 11} right after a switch {'2': 0, '0': 0}
+D0_L7_s2: turns 11 repeats 151 (13.7/turn) by act {'2': 145, '0': 6} right after a switch {'2': 0, '0': 0}
+D0_L8_s1: turns 10 repeats 33 (3.3/turn) by act {'2': 25, '0': 8} right after a switch {'2': 0, '0': 0}
+D0_L8_s2: turns 6 repeats 28 (4.7/turn) by act {'2': 27, '0': 1} right after a switch {'2': 0, '0': 0}
+D0_L9_s1: turns 11 repeats 26 (2.4/turn) by act {'2': 25, '0': 1} right after a switch {'2': 0, '0': 0}
+D0_L9_s2: turns 11 repeats 71 (6.5/turn) by act {'2': 57, '0': 14} right after a switch {'2': 0, '0': 0}
+D0_M10_s1: turns 24 repeats 78 (3.2/turn) by act {'2': 69, '0': 9} right after a switch {'2': 0, '0': 0}
+D0_M10_s2: turns 11 repeats 108 (9.8/turn) by act {'0': 5, '8': 1, '2': 102} right after a switch {'0': 0, '8': 0, '2': 0}
+D0_M11_s1: turns 60 repeats 187 (3.1/turn) by act {'0': 120, '2': 67} right after a switch {'0': 0, '2': 0}
+D0_M11_s2: turns 60 repeats 509 (8.5/turn) by act {'2': 508, '0': 1} right after a switch {'2': 0, '0': 0}
+D0_M12_s1: turns 1 repeats 0 (0.0/turn) by act {} right after a switch {}
+D0_M12_s2: turns 3 repeats 0 (0.0/turn) by act {} right after a switch {}
+D0_M1_s1: turns 13 repeats 225 (17.3/turn) by act {'2': 224, '8': 1} right after a switch {'2': 0, '8': 0}
+D0_M1_s2: turns 13 repeats 193 (14.8/turn) by act {'2': 185, '8': 8} right after a switch {'2': 0, '8': 0}
+D0_M2_s1: turns 16 repeats 336 (21.0/turn) by act {'2': 319, '0': 17} right after a switch {'2': 0, '0': 0}
+D0_M2_s2: turns 26 repeats 335 (12.9/turn) by act {'2': 307, '0': 28} right after a switch {'2': 0, '0': 0}
+D0_M3_s1: turns 20 repeats 55 (2.8/turn) by act {'2': 55} right after a switch {'2': 0}
+D0_M3_s2: turns 5 repeats 37 (7.4/turn) by act {'2': 37} right after a switch {'2': 0}
+D0_M4_s1: turns 3 repeats 46 (15.3/turn) by act {'2': 43, '0': 3} right after a switch {'2': 0, '0': 0}
+D0_M4_s2: turns 3 repeats 113 (37.7/turn) by act {'2': 112, '0': 1} right after a switch {'2': 0, '0': 0}
+D0_M5_s1: turns 18 repeats 218 (12.1/turn) by act {'2': 202, '0': 16} right after a switch {'2': 0, '0': 0}
+D0_M5_s2: turns 10 repeats 320 (32.0/turn) by act {'2': 296, '0': 24} right after a switch {'2': 0, '0': 0}
+D0_M6_s1: turns 18 repeats 97 (5.4/turn) by act {'2': 93, '0': 4} right after a switch {'2': 0, '0': 0}
+D0_M6_s2: turns 28 repeats 167 (6.0/turn) by act {'0': 14, '2': 153} right after a switch {'0': 0, '2': 0}
+D0_M7_s1: turns 2 repeats 19 (9.5/turn) by act {'2': 17, '0': 2} right after a switch {'2': 0, '0': 0}
+D0_M7_s2: turns 5 repeats 40 (8.0/turn) by act {'2': 40} right after a switch {'2': 0}
+D0_M8_s1: turns 7 repeats 59 (8.4/turn) by act {'0': 6, '2': 53} right after a switch {'0': 0, '2': 0}
+D0_M8_s2: turns 5 repeats 17 (3.4/turn) by act {'0': 4, '2': 13} right after a switch {'0': 0, '2': 0}
+D0_M9_s1: turns 2 repeats 97 (48.5/turn) by act {'2': 95, '0': 2} right after a switch {'2': 0, '0': 0}
+D0_M9_s2: turns 2 repeats 71 (35.5/turn) by act {'2': 71} right after a switch {'2': 0}
+D1_L10_s1: turns 10 repeats 100 (10.0/turn) by act {'2': 100} right after a switch {'2': 0}
+D1_L10_s2: turns 14 repeats 108 (7.7/turn) by act {'2': 105, '0': 3} right after a switch {'2': 0, '0': 0}
+D1_L11_s1: turns 60 repeats 944 (15.7/turn) by act {'2': 944} right after a switch {'2': 0}
+D1_L11_s2: turns 60 repeats 999 (16.6/turn) by act {'2': 997, '0': 2} right after a switch {'2': 0, '0': 0}
+D1_L12_s1: turns 8 repeats 106 (13.2/turn) by act {'8': 35, '0': 2, '2': 69} right after a switch {'8': 15, '0': 0, '2': 0}
+D1_L12_s2: turns 10 repeats 135 (13.5/turn) by act {'2': 135} right after a switch {'2': 0}
+D1_L1_s1: turns 9 repeats 39 (4.3/turn) by act {'2': 39} right after a switch {'2': 0}
+D1_L1_s2: turns 16 repeats 48 (3.0/turn) by act {'2': 48} right after a switch {'2': 0}
+D1_L2_s1: turns 60 repeats 1811 (30.2/turn) by act {'2': 1771, '0': 40} right after a switch {'2': 0, '0': 0}
+D1_L2_s2: turns 20 repeats 578 (28.9/turn) by act {'2': 548, '0': 30} right after a switch {'2': 0, '0': 0}
+D1_L3_s1: turns 1 repeats 0 (0.0/turn) by act {} right after a switch {}
+D1_L3_s2: turns 1 repeats 3 (3.0/turn) by act {'2': 3} right after a switch {'2': 0}
+D1_L4_s1: turns 10 repeats 13 (1.3/turn) by act {'2': 4, '0': 8, '8': 1} right after a switch {'2': 0, '0': 0, '8': 0}
+D1_L4_s2: turns 4 repeats 7 (1.8/turn) by act {'2': 7} right after a switch {'2': 0}
+D1_L5_s1: turns 7 repeats 241 (34.4/turn) by act {'2': 237, '0': 4} right after a switch {'2': 0, '0': 0}
+D1_L5_s2: turns 19 repeats 60 (3.2/turn) by act {'2': 59, '0': 1} right after a switch {'2': 0, '0': 0}
+D1_L6_s1: turns 60 repeats 69 (1.1/turn) by act {'2': 64, '0': 3, '10': 2} right after a switch {'2': 0, '0': 0, '10': 0}
+D1_L6_s2: turns 22 repeats 62 (2.8/turn) by act {'2': 59, '0': 3} right after a switch {'2': 0, '0': 0}
+D1_L7_s1: turns 12 repeats 128 (10.7/turn) by act {'2': 117, '0': 11} right after a switch {'2': 0, '0': 0}
+D1_L7_s2: turns 7 repeats 178 (25.4/turn) by act {'2': 169, '0': 9} right after a switch {'2': 0, '0': 0}
+D1_L8_s1: turns 6 repeats 59 (9.8/turn) by act {'2': 36, '0': 23} right after a switch {'2': 0, '0': 0}
+D1_L8_s2: turns 4 repeats 27 (6.8/turn) by act {'0': 3, '2': 24} right after a switch {'0': 0, '2': 0}
+D1_L9_s1: turns 3 repeats 16 (5.3/turn) by act {'2': 16} right after a switch {'2': 0}
+D1_L9_s2: turns 12 repeats 70 (5.8/turn) by act {'2': 51, '0': 17, '7': 2} right after a switch {'2': 0, '0': 0, '7': 0}
+D1_M10_s1: turns 24 repeats 78 (3.2/turn) by act {'2': 69, '0': 9} right after a switch {'2': 0, '0': 0}
+D1_M10_s2: turns 16 repeats 206 (12.9/turn) by act {'2': 205, '0': 1} right after a switch {'2': 0, '0': 0}
+D1_M11_s1: turns 60 repeats 187 (3.1/turn) by act {'0': 120, '2': 67} right after a switch {'0': 0, '2': 0}
+D1_M11_s2: turns 60 repeats 509 (8.5/turn) by act {'2': 508, '0': 1} right after a switch {'2': 0, '0': 0}
+D1_M12_s1: turns 1 repeats 0 (0.0/turn) by act {} right after a switch {}
+D1_M12_s2: turns 3 repeats 0 (0.0/turn) by act {} right after a switch {}
+D1_M1_s1: turns 13 repeats 291 (22.4/turn) by act {'2': 289, '8': 1, '0': 1} right after a switch {'2': 0, '8': 0, '0': 0}
+D1_M1_s2: turns 10 repeats 168 (16.8/turn) by act {'2': 165, '8': 3} right after a switch {'2': 0, '8': 0}
+D1_M2_s1: turns 15 repeats 554 (36.9/turn) by act {'2': 533, '0': 20, '15': 1} right after a switch {'2': 0, '0': 0, '15': 0}
+D1_M2_s2: turns 26 repeats 627 (24.1/turn) by act {'2': 598, '0': 29} right after a switch {'2': 0, '0': 0}
+D1_M3_s1: turns 11 repeats 39 (3.5/turn) by act {'2': 38, '10': 1} right after a switch {'2': 0, '10': 0}
+D1_M3_s2: turns 20 repeats 79 (4.0/turn) by act {'2': 73, '10': 6} right after a switch {'2': 0, '10': 0}
+D1_M4_s1: turns 2 repeats 80 (40.0/turn) by act {'2': 79, '0': 1} right after a switch {'2': 0, '0': 0}
+D1_M4_s2: turns 2 repeats 78 (39.0/turn) by act {'2': 76, '0': 2} right after a switch {'2': 0, '0': 0}
+D1_M5_s1: turns 7 repeats 180 (25.7/turn) by act {'2': 167, '0': 13} right after a switch {'2': 0, '0': 0}
+D1_M5_s2: turns 10 repeats 250 (25.0/turn) by act {'2': 225, '0': 25} right after a switch {'2': 0, '0': 0}
+D1_M6_s1: turns 5 repeats 68 (13.6/turn) by act {'2': 63, '0': 4, '15': 1} right after a switch {'2': 0, '0': 0, '15': 0}
+D1_M6_s2: turns 33 repeats 90 (2.7/turn) by act {'0': 7, '2': 83} right after a switch {'0': 0, '2': 0}
+D1_M7_s1: turns 2 repeats 12 (6.0/turn) by act {'2': 11, '0': 1} right after a switch {'2': 0, '0': 0}
+D1_M7_s2: turns 5 repeats 55 (11.0/turn) by act {'2': 52, '0': 1, '10': 2} right after a switch {'2': 0, '0': 0, '10': 0}
+D1_M8_s1: turns 7 repeats 59 (8.4/turn) by act {'0': 6, '2': 53} right after a switch {'0': 0, '2': 0}
+D1_M8_s2: turns 5 repeats 17 (3.4/turn) by act {'0': 4, '2': 13} right after a switch {'0': 0, '2': 0}
+D1_M9_s1: turns 2 repeats 97 (48.5/turn) by act {'2': 95, '0': 2} right after a switch {'2': 0, '0': 0}
+D1_M9_s2: turns 2 repeats 71 (35.5/turn) by act {'2': 71} right after a switch {'2': 0}

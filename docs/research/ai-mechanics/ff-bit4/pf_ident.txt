@@ -1,0 +1,24 @@
+M1	veto lines 28	DIFF .rec.gz line 4
+M2	veto lines 136	DIFF .rec.gz line 34
+M3	veto lines 149	DIFF .rec.gz line 146
+M4	veto lines 2	DIFF .rec.gz line 33
+M5	veto lines 0	IDENTICAL (7013 lines)
+M6	veto lines 0	IDENTICAL (9132 lines)
+M7	veto lines 0	IDENTICAL (1202 lines)
+M8	veto lines 0	IDENTICAL (2193 lines)
+M9	veto lines 1	DIFF .rec.gz line 206
+M10	veto lines 0	IDENTICAL (8846 lines)
+M11	veto lines 0	IDENTICAL (8556 lines)
+M12	veto lines 0	IDENTICAL (571 lines)
+L1	veto lines 1	DIFF .rec.gz line 180
+L2	veto lines 35	DIFF .rec.gz line 517
+L3	veto lines 0	IDENTICAL (363 lines)
+L4	veto lines 3	DIFF .rec.gz line 48
+L5	veto lines 28	DIFF .rec.gz line 1110
+L6	veto lines 0	IDENTICAL (10242 lines)
+L7	veto lines 78	DIFF .rec.gz line 71
+L8	veto lines 1	DIFF .rec.gz line 1736
+L9	veto lines 0	IDENTICAL (1645 lines)
+L10	veto lines 0	IDENTICAL (2221 lines)
+L11	veto lines 0	IDENTICAL (1649 lines)
+L12	veto lines 4	DIFF .rec.gz line 655

@@ -1,0 +1,1330 @@
+﻿kind	set	verdict	frames_same	frames_differ	frames_missing
+set	ABOMINATION.PCK	DIFFERS	0	12	0
+set	ACAR_BD.PCK	absent in XCF	0	0	0
+set	ANIMATRON_MARAUDER.PCK	absent in XCF	0	0	0
+set	APO_0.PCK	absent in XCF	0	0	0
+set	APO_1.PCK	absent in XCF	0	0	0
+set	APO_2.PCK	absent in XCF	0	0	0
+set	ARMY_AIRBORNE.PCK	absent in XCF	0	0	0
+set	ARMY_BAMBOO.PCK	absent in XCF	0	0	0
+set	ARMY_BUSH.PCK	absent in XCF	0	0	0
+set	ARMY_CHEM.PCK	absent in XCF	0	0	0
+set	ARMY_DARK.PCK	absent in XCF	0	0	0
+set	ARMY_EMPIRE.PCK	absent in XCF	0	0	0
+set	ARMY_ES.PCK	absent in XCF	0	0	0
+set	ARMY_HUBB.PCK	absent in XCF	0	0	0
+set	ARMY_NORD.PCK	absent in XCF	0	0	0
+set	ARMY_REDCOAT.PCK	absent in XCF	0	0	0
+set	ARMY_REDREV.PCK	absent in XCF	0	0	0
+set	ARMY_RUS.PCK	absent in XCF	0	0	0
+set	ARMY_RUS_BOLSHOY.PCK	absent in XCF	0	0	0
+set	ARMY_STEEL.PCK	absent in XCF	0	0	0
+set	ATURRET_BIG.PCK	absent in XCF	0	0	0
+set	ATURRET_SMALL.PCK	absent in XCF	0	0	0
+set	AUR_01.PCK	absent in XCF	0	0	0
+set	AUR_02.PCK	absent in XCF	0	0	0
+set	AVT_1.PCK	absent in XCF	0	0	0
+set	AVT_2.PCK	absent in XCF	0	0	0
+set	BAN_0.PCK	absent in XCF	0	0	0
+set	BAN_1.PCK	absent in XCF	0	0	0
+set	BAN_10.PCK	absent in XCF	0	0	0
+set	BAN_11.PCK	absent in XCF	0	0	0
+set	BAN_12.PCK	absent in XCF	0	0	0
+set	BAN_13.PCK	absent in XCF	0	0	0
+set	BAN_14.PCK	absent in XCF	0	0	0
+set	BAN_15.PCK	absent in XCF	0	0	0
+set	BAN_16.PCK	absent in XCF	0	0	0
+set	BAN_17.PCK	absent in XCF	0	0	0
+set	BAN_18.PCK	absent in XCF	0	0	0
+set	BAN_19.PCK	absent in XCF	0	0	0
+set	BAN_2.PCK	absent in XCF	0	0	0
+set	BAN_3.PCK	absent in XCF	0	0	0
+set	BAN_4.PCK	absent in XCF	0	0	0
+set	BAN_5.PCK	absent in XCF	0	0	0
+set	BAN_6.PCK	absent in XCF	0	0	0
+set	BAN_7.PCK	absent in XCF	0	0	0
+set	BAN_8.PCK	absent in XCF	0	0	0
+set	BAN_9.PCK	absent in XCF	0	0	0
+set	BASEBITS.PCK	same	0	0	0
+set	BATGLAD.PCK	absent in XCF	0	0	0
+set	BEES.PCK	absent in XCF	0	0	0
+set	BFARM_DEF.PCK	absent in XCF	0	0	0
+set	BH_ARMORED.PCK	absent in XCF	0	0	0
+set	BIKE.PCK	absent in XCF	0	0	0
+set	BLACK_CAT.PCK	absent in XCF	0	0	0
+set	BLUE_JELLY.PCK	absent in XCF	0	0	0
+set	BOMBARD.PCK	absent in XCF	0	0	0
+set	BOSSBRAIN.PCK	absent in XCF	0	0	0
+set	BOXX.PCK	absent in XCF	0	0	0
+set	BSAILOR.PCK	absent in XCF	0	0	0
+set	BSM_9.PCK	absent in XCF	0	0	0
+set	BULLFROG.PCK	same	138	0	0
+set	BUTCH.PCK	absent in XCF	0	0	0
+set	BUTCH2.PCK	absent in XCF	0	0	0
+set	CAMERA.PCK	same	19	0	0
+set	CHORT.PCK	absent in XCF	0	0	0
+set	CHUPACABRA.PCK	same	75	0	0
+set	CHUPACABRA_M.PCK	absent in XCF	0	0	0
+set	CLICKOR.PCK	absent in XCF	0	0	0
+set	COPTER.PCK	absent in XCF	0	0	0
+set	COS_0.PCK	absent in XCF	0	0	0
+set	COS_1.PCK	absent in XCF	0	0	0
+set	COS_10.PCK	absent in XCF	0	0	0
+set	COS_11.PCK	absent in XCF	0	0	0
+set	COS_2.PCK	absent in XCF	0	0	0
+set	COS_3.PCK	absent in XCF	0	0	0
+set	COS_4.PCK	absent in XCF	0	0	0
+set	COS_5.PCK	absent in XCF	0	0	0
+set	COS_6.PCK	absent in XCF	0	0	0
+set	COS_7.PCK	absent in XCF	0	0	0
+set	COS_8.PCK	absent in XCF	0	0	0
+set	COS_9.PCK	absent in XCF	0	0	0
+set	CURSOR.PCK	same	17	0	0
+set	CYBERMITE.PCK	same	90	0	0
+set	CYBERPOD_PLASMA.PCK	absent in XCF	0	0	0
+set	CYBODOGE.PCK	absent in XCF	0	0	0
+set	CYBORG.PCK	absent in XCF	0	0	0
+set	CYCLOPS.PCK	absent in XCF	0	0	0
+set	DANCER.PCK	absent in XCF	0	0	0
+set	DEEP_1.PCK	absent in XCF	0	0	0
+set	DEEP_2.PCK	absent in XCF	0	0	0
+set	DEEP_3.PCK	absent in XCF	0	0	0
+set	DEEP_6.PCK	absent in XCF	0	0	0
+set	DEEP_8.PCK	absent in XCF	0	0	0
+set	DEEP_9.PCK	absent in XCF	0	0	0
+set	DEM_0.PCK	absent in XCF	0	0	0
+set	DEM_1.PCK	absent in XCF	0	0	0
+set	DEM_10.PCK	absent in XCF	0	0	0
+set	DEM_2.PCK	absent in XCF	0	0	0
+set	DEM_3.PCK	absent in XCF	0	0	0
+set	DEM_4.PCK	absent in XCF	0	0	0
+set	DEM_5.PCK	absent in XCF	0	0	0
+set	DEM_6.PCK	absent in XCF	0	0	0
+set	DEM_7.PCK	absent in XCF	0	0	0
+set	DEM_8.PCK	absent in XCF	0	0	0
+set	DEM_9.PCK	absent in XCF	0	0	0
+set	DEVASTATOR.PCK	absent in XCF	0	0	0
+set	DOG_TACARMOR.PCK	absent in XCF	0	0	0
+set	DOGE.PCK	DIFFERS	0	75	0
+set	DOGG.PCK	absent in XCF	0	0	0
+set	DOOMYDUMMY.PCK	absent in XCF	0	0	0
+set	DREADKNIGHT.PCK	absent in XCF	0	0	0
+set	DRF_1.PCK	absent in XCF	0	0	0
+set	DRF_CIV.PCK	absent in XCF	0	0	0
+set	DRG_1.PCK	absent in XCF	0	0	0
+set	DRO_1.PCK	absent in XCF	0	0	0
+set	ETHEREAL_CHAIRMAN.PCK	absent in XCF	0	0	0
+set	EYE.PCK	absent in XCF	0	0	0
+set	FLASHBANG.PCK	absent in XCF	0	0	0
+set	GDX_01.PCK	absent in XCF	0	0	0
+set	GDX_02.PCK	absent in XCF	0	0	0
+set	GDX_03.PCK	absent in XCF	0	0	0
+set	GDX_04.PCK	absent in XCF	0	0	0
+set	GDX_L50.PCK	absent in XCF	0	0	0
+set	GHOST_GAL.PCK	absent in XCF	0	0	0
+set	GIANT_BEETLE.PCK	DIFFERS	47	28	0
+set	GIANTRAT.PCK	absent in XCF	0	0	0
+set	GIANTSPIDER.PCK	absent in XCF	0	0	0
+set	GIANTSPIDER_QUEEN.PCK	absent in XCF	0	0	0
+set	GNOME_X2.PCK	absent in XCF	0	0	0
+set	GOV_1.PCK	absent in XCF	0	0	0
+set	GOV_10.PCK	absent in XCF	0	0	0
+set	GOV_11.PCK	absent in XCF	0	0	0
+set	GOV_2.PCK	absent in XCF	0	0	0
+set	GOV_3.PCK	absent in XCF	0	0	0
+set	GOV_4.PCK	absent in XCF	0	0	0
+set	GOV_5.PCK	absent in XCF	0	0	0
+set	GOV_6.PCK	absent in XCF	0	0	0
+set	GOV_7.PCK	absent in XCF	0	0	0
+set	GOV_8.PCK	absent in XCF	0	0	0
+set	GOV_9.PCK	absent in XCF	0	0	0
+set	HALLUCINOID.PCK	same	32	0	0
+set	HANABU.PCK	absent in XCF	0	0	0
+set	HIT.PCK	same	4	0	0
+set	HITLUR.PCK	absent in XCF	0	0	0
+set	HOE_1.PCK	absent in XCF	0	0	0
+set	HOLOGAL.PCK	absent in XCF	0	0	0
+set	HOVERBIKE.PCK	absent in XCF	0	0	0
+set	HUG.PCK	absent in XCF	0	0	0
+set	HUM_1.PCK	absent in XCF	0	0	0
+set	HUM_10.PCK	absent in XCF	0	0	0
+set	HUM_11.PCK	absent in XCF	0	0	0
+set	HUM_12.PCK	absent in XCF	0	0	0
+set	HUM_13.PCK	absent in XCF	0	0	0
+set	HUM_14.PCK	absent in XCF	0	0	0
+set	HUM_2.PCK	absent in XCF	0	0	0
+set	HUM_3.PCK	absent in XCF	0	0	0
+set	HUM_4.PCK	absent in XCF	0	0	0
+set	HUM_5.PCK	absent in XCF	0	0	0
+set	HUM_6.PCK	absent in XCF	0	0	0
+set	HUM_7.PCK	absent in XCF	0	0	0
+set	HUM_9.PCK	absent in XCF	0	0	0
+set	HYBB_00.PCK	absent in XCF	0	0	0
+set	HYBB_01.PCK	absent in XCF	0	0	0
+set	HYENA_RIDER.PCK	absent in XCF	0	0	0
+set	JIM.PCK	absent in XCF	0	0	0
+set	JUNGLEGAL.PCK	absent in XCF	0	0	0
+set	KILLBOT.PCK	absent in XCF	0	0	0
+set	KRAB.PCK	absent in XCF	0	0	0
+set	LIGHTER.PCK	absent in XCF	0	0	0
+set	LOK_1.PCK	absent in XCF	0	0	0
+set	LOK_2.PCK	absent in XCF	0	0	0
+set	MAGGOT.PCK	absent in XCF	0	0	0
+set	MANHACK.PCK	absent in XCF	0	0	0
+set	MAR_0.PCK	absent in XCF	0	0	0
+set	MAR_1.PCK	absent in XCF	0	0	0
+set	MAR_8.PCK	absent in XCF	0	0	0
+set	MAR_9.PCK	absent in XCF	0	0	0
+set	MASTERMIND.PCK	absent in XCF	0	0	0
+set	MEGASCORPION.PCK	same	76	0	0
+set	MEGAZOMBIE.PCK	same	152	0	0
+set	MG.PCK	absent in XCF	0	0	0
+set	MONGORN.PCK	same	75	0	0
+set	MPO_0.PCK	absent in XCF	0	0	0
+set	MPO_1.PCK	absent in XCF	0	0	0
+set	MPO_2.PCK	absent in XCF	0	0	0
+set	MPO_3.PCK	absent in XCF	0	0	0
+set	MRC_0.PCK	absent in XCF	0	0	0
+set	MRC_1.PCK	absent in XCF	0	0	0
+set	MRC_3.PCK	absent in XCF	0	0	0
+set	MRC_4.PCK	absent in XCF	0	0	0
+set	MRC_5.PCK	absent in XCF	0	0	0
+set	MRC_6.PCK	absent in XCF	0	0	0
+set	MRC_7.PCK	absent in XCF	0	0	0
+set	MSDF_TANK.PCK	absent in XCF	0	0	0
+set	MTN_1.PCK	absent in XCF	0	0	0
+set	MTN_2.PCK	absent in XCF	0	0	0
+set	MUT_1.PCK	absent in XCF	0	0	0
+set	MUT_2.PCK	absent in XCF	0	0	0
+set	MUT_3.PCK	absent in XCF	0	0	0
+set	MUT_4.PCK	absent in XCF	0	0	0
+set	MUT_5.PCK	absent in XCF	0	0	0
+set	MUT_6.PCK	absent in XCF	0	0	0
+set	MUT_7.PCK	absent in XCF	0	0	0
+set	NAR_0.PCK	absent in XCF	0	0	0
+set	NAR_1.PCK	absent in XCF	0	0	0
+set	NAZ_1.PCK	absent in XCF	0	0	0
+set	NAZ_10.PCK	absent in XCF	0	0	0
+set	NAZ_2.PCK	absent in XCF	0	0	0
+set	NAZ_4.PCK	absent in XCF	0	0	0
+set	NAZ_5.PCK	absent in XCF	0	0	0
+set	NAZ_6.PCK	absent in XCF	0	0	0
+set	NAZ_7.PCK	absent in XCF	0	0	0
+set	NAZ_8.PCK	absent in XCF	0	0	0
+set	NAZ_9.PCK	absent in XCF	0	0	0
+set	NECR.PCK	absent in XCF	0	0	0
+set	NEKO_HOVER_ARMOR.PCK	absent in XCF	0	0	0
+set	NIN_1.PCK	absent in XCF	0	0	0
+set	NIN_2.PCK	absent in XCF	0	0	0
+set	NIN_3.PCK	absent in XCF	0	0	0
+set	NIN_4.PCK	absent in XCF	0	0	0
+set	NIN_5.PCK	absent in XCF	0	0	0
+set	NUB_7.PCK	absent in XCF	0	0	0
+set	OOZE.PCK	same	9	0	0
+set	PARROT.PCK	absent in XCF	0	0	0
+set	PE.PCK	absent in XCF	0	0	0
+set	PILLBOX.PCK	absent in XCF	0	0	0
+set	PIR_0.PCK	absent in XCF	0	0	0
+set	PIR_1.PCK	absent in XCF	0	0	0
+set	PIR_101.PCK	absent in XCF	0	0	0
+set	PIR_102.PCK	absent in XCF	0	0	0
+set	PIR_104.PCK	absent in XCF	0	0	0
+set	PIR_105.PCK	absent in XCF	0	0	0
+set	PIR_106.PCK	absent in XCF	0	0	0
+set	PIR_108.PCK	absent in XCF	0	0	0
+set	PIR_109.PCK	absent in XCF	0	0	0
+set	PIR_11.PCK	absent in XCF	0	0	0
+set	PIR_111.PCK	absent in XCF	0	0	0
+set	PIR_1111.PCK	absent in XCF	0	0	0
+set	PIR_112.PCK	absent in XCF	0	0	0
+set	PIR_113.PCK	absent in XCF	0	0	0
+set	PIR_114.PCK	absent in XCF	0	0	0
+set	PIR_115.PCK	absent in XCF	0	0	0
+set	PIR_119.PCK	absent in XCF	0	0	0
+set	PIR_12.PCK	absent in XCF	0	0	0
+set	PIR_120.PCK	absent in XCF	0	0	0
+set	PIR_13.PCK	absent in XCF	0	0	0
+set	PIR_133.PCK	absent in XCF	0	0	0
+set	PIR_135.PCK	absent in XCF	0	0	0
+set	PIR_139.PCK	absent in XCF	0	0	0
+set	PIR_14.PCK	absent in XCF	0	0	0
+set	PIR_141.PCK	absent in XCF	0	0	0
+set	PIR_15.PCK	absent in XCF	0	0	0
+set	PIR_150.PCK	absent in XCF	0	0	0
+set	PIR_151.PCK	absent in XCF	0	0	0
+set	PIR_156.PCK	absent in XCF	0	0	0
+set	PIR_16.PCK	absent in XCF	0	0	0
+set	PIR_160.PCK	absent in XCF	0	0	0
+set	PIR_161.PCK	absent in XCF	0	0	0
+set	PIR_162.PCK	absent in XCF	0	0	0
+set	PIR_163.PCK	absent in XCF	0	0	0
+set	PIR_169.PCK	absent in XCF	0	0	0
+set	PIR_17.PCK	absent in XCF	0	0	0
+set	PIR_18.PCK	absent in XCF	0	0	0
+set	PIR_180.PCK	absent in XCF	0	0	0
+set	PIR_185.PCK	absent in XCF	0	0	0
+set	PIR_186.PCK	absent in XCF	0	0	0
+set	PIR_19.PCK	absent in XCF	0	0	0
+set	PIR_199.PCK	absent in XCF	0	0	0
+set	PIR_2.PCK	absent in XCF	0	0	0
+set	PIR_200.PCK	absent in XCF	0	0	0
+set	PIR_208.PCK	absent in XCF	0	0	0
+set	PIR_22.PCK	absent in XCF	0	0	0
+set	PIR_24.PCK	absent in XCF	0	0	0
+set	PIR_240.PCK	absent in XCF	0	0	0
+set	PIR_25.PCK	absent in XCF	0	0	0
+set	PIR_250.PCK	absent in XCF	0	0	0
+set	PIR_26.PCK	absent in XCF	0	0	0
+set	PIR_260.PCK	absent in XCF	0	0	0
+set	PIR_27.PCK	absent in XCF	0	0	0
+set	PIR_28.PCK	absent in XCF	0	0	0
+set	PIR_280.PCK	absent in XCF	0	0	0
+set	PIR_281.PCK	absent in XCF	0	0	0
+set	PIR_29.PCK	absent in XCF	0	0	0
+set	PIR_3.PCK	absent in XCF	0	0	0
+set	PIR_30.PCK	absent in XCF	0	0	0
+set	PIR_301.PCK	absent in XCF	0	0	0
+set	PIR_303.PCK	absent in XCF	0	0	0
+set	PIR_31.PCK	absent in XCF	0	0	0
+set	PIR_313.PCK	absent in XCF	0	0	0
+set	PIR_32.PCK	absent in XCF	0	0	0
+set	PIR_33.PCK	absent in XCF	0	0	0
+set	PIR_34.PCK	absent in XCF	0	0	0
+set	PIR_35.PCK	absent in XCF	0	0	0
+set	PIR_36.PCK	absent in XCF	0	0	0
+set	PIR_360.PCK	absent in XCF	0	0	0
+set	PIR_37.PCK	absent in XCF	0	0	0
+set	PIR_371.PCK	absent in XCF	0	0	0
+set	PIR_373.PCK	absent in XCF	0	0	0
+set	PIR_378.PCK	absent in XCF	0	0	0
+set	PIR_379.PCK	absent in XCF	0	0	0
+set	PIR_38.PCK	absent in XCF	0	0	0
+set	PIR_39.PCK	absent in XCF	0	0	0
+set	PIR_390.PCK	absent in XCF	0	0	0
+set	PIR_391.PCK	absent in XCF	0	0	0
+set	PIR_4.PCK	absent in XCF	0	0	0
+set	PIR_40.PCK	absent in XCF	0	0	0
+set	PIR_400.PCK	absent in XCF	0	0	0
+set	PIR_41.PCK	absent in XCF	0	0	0
+set	PIR_410.PCK	absent in XCF	0	0	0
+set	PIR_411.PCK	absent in XCF	0	0	0
+set	PIR_42.PCK	absent in XCF	0	0	0
+set	PIR_43.PCK	absent in XCF	0	0	0
+set	PIR_44.PCK	absent in XCF	0	0	0
+set	PIR_444.PCK	absent in XCF	0	0	0
+set	PIR_45.PCK	absent in XCF	0	0	0
+set	PIR_450.PCK	absent in XCF	0	0	0
+set	PIR_451.PCK	absent in XCF	0	0	0
+set	PIR_452.PCK	absent in XCF	0	0	0
+set	PIR_454.PCK	absent in XCF	0	0	0
+set	PIR_455.PCK	absent in XCF	0	0	0
+set	PIR_46.PCK	absent in XCF	0	0	0
+set	PIR_460.PCK	absent in XCF	0	0	0
+set	PIR_47.PCK	absent in XCF	0	0	0
+set	PIR_470.PCK	absent in XCF	0	0	0
+set	PIR_48.PCK	absent in XCF	0	0	0
+set	PIR_480.PCK	absent in XCF	0	0	0
+set	PIR_481.PCK	absent in XCF	0	0	0
+set	PIR_482.PCK	absent in XCF	0	0	0
+set	PIR_484.PCK	absent in XCF	0	0	0
+set	PIR_489.PCK	absent in XCF	0	0	0
+set	PIR_49.PCK	absent in XCF	0	0	0
+set	PIR_490.PCK	absent in XCF	0	0	0
+set	PIR_493.PCK	absent in XCF	0	0	0
+set	PIR_494.PCK	absent in XCF	0	0	0
+set	PIR_5.PCK	absent in XCF	0	0	0
+set	PIR_500.PCK	absent in XCF	0	0	0
+set	PIR_501.PCK	absent in XCF	0	0	0
+set	PIR_503.PCK	absent in XCF	0	0	0
+set	PIR_505.PCK	absent in XCF	0	0	0
+set	PIR_506.PCK	absent in XCF	0	0	0
+set	PIR_507.PCK	absent in XCF	0	0	0
+set	PIR_509.PCK	absent in XCF	0	0	0
+set	PIR_510.PCK	absent in XCF	0	0	0
+set	PIR_511.PCK	absent in XCF	0	0	0
+set	PIR_514.PCK	absent in XCF	0	0	0
+set	PIR_515.PCK	absent in XCF	0	0	0
+set	PIR_516.PCK	absent in XCF	0	0	0
+set	PIR_518.PCK	absent in XCF	0	0	0
+set	PIR_519.PCK	absent in XCF	0	0	0
+set	PIR_520.PCK	absent in XCF	0	0	0
+set	PIR_522.PCK	absent in XCF	0	0	0
+set	PIR_523.PCK	absent in XCF	0	0	0
+set	PIR_524.PCK	absent in XCF	0	0	0
+set	PIR_525.PCK	absent in XCF	0	0	0
+set	PIR_526.PCK	absent in XCF	0	0	0
+set	PIR_527.PCK	absent in XCF	0	0	0
+set	PIR_528.PCK	absent in XCF	0	0	0
+set	PIR_529.PCK	absent in XCF	0	0	0
+set	PIR_530.PCK	absent in XCF	0	0	0
+set	PIR_532.PCK	absent in XCF	0	0	0
+set	PIR_533.PCK	absent in XCF	0	0	0
+set	PIR_534.PCK	absent in XCF	0	0	0
+set	PIR_537.PCK	absent in XCF	0	0	0
+set	PIR_540.PCK	absent in XCF	0	0	0
+set	PIR_541.PCK	absent in XCF	0	0	0
+set	PIR_542.PCK	absent in XCF	0	0	0
+set	PIR_543.PCK	absent in XCF	0	0	0
+set	PIR_545.PCK	absent in XCF	0	0	0
+set	PIR_547.PCK	absent in XCF	0	0	0
+set	PIR_548.PCK	absent in XCF	0	0	0
+set	PIR_551.PCK	absent in XCF	0	0	0
+set	PIR_554.PCK	absent in XCF	0	0	0
+set	PIR_555.PCK	absent in XCF	0	0	0
+set	PIR_556.PCK	absent in XCF	0	0	0
+set	PIR_559.PCK	absent in XCF	0	0	0
+set	PIR_560.PCK	absent in XCF	0	0	0
+set	PIR_561.PCK	absent in XCF	0	0	0
+set	PIR_562.PCK	absent in XCF	0	0	0
+set	PIR_563.PCK	absent in XCF	0	0	0
+set	PIR_564.PCK	absent in XCF	0	0	0
+set	PIR_565.PCK	absent in XCF	0	0	0
+set	PIR_566.PCK	absent in XCF	0	0	0
+set	PIR_570.PCK	absent in XCF	0	0	0
+set	PIR_571.PCK	absent in XCF	0	0	0
+set	PIR_572.PCK	absent in XCF	0	0	0
+set	PIR_573.PCK	absent in XCF	0	0	0
+set	PIR_575.PCK	absent in XCF	0	0	0
+set	PIR_578.PCK	absent in XCF	0	0	0
+set	PIR_579.PCK	absent in XCF	0	0	0
+set	PIR_580.PCK	absent in XCF	0	0	0
+set	PIR_581.PCK	absent in XCF	0	0	0
+set	PIR_583.PCK	absent in XCF	0	0	0
+set	PIR_591.PCK	absent in XCF	0	0	0
+set	PIR_595.PCK	absent in XCF	0	0	0
+set	PIR_6.PCK	absent in XCF	0	0	0
+set	PIR_601.PCK	absent in XCF	0	0	0
+set	PIR_602.PCK	absent in XCF	0	0	0
+set	PIR_605.PCK	absent in XCF	0	0	0
+set	PIR_607.PCK	absent in XCF	0	0	0
+set	PIR_609.PCK	absent in XCF	0	0	0
+set	PIR_611.PCK	absent in XCF	0	0	0
+set	PIR_615.PCK	absent in XCF	0	0	0
+set	PIR_616.PCK	absent in XCF	0	0	0
+set	PIR_620.PCK	absent in XCF	0	0	0
+set	PIR_621.PCK	absent in XCF	0	0	0
+set	PIR_627.PCK	absent in XCF	0	0	0
+set	PIR_635.PCK	absent in XCF	0	0	0
+set	PIR_637.PCK	absent in XCF	0	0	0
+set	PIR_662.PCK	absent in XCF	0	0	0
+set	PIR_663.PCK	absent in XCF	0	0	0
+set	PIR_664.PCK	absent in XCF	0	0	0
+set	PIR_665.PCK	absent in XCF	0	0	0
+set	PIR_666.PCK	absent in XCF	0	0	0
+set	PIR_667.PCK	absent in XCF	0	0	0
+set	PIR_668.PCK	absent in XCF	0	0	0
+set	PIR_669.PCK	absent in XCF	0	0	0
+set	PIR_670.PCK	absent in XCF	0	0	0
+set	PIR_672.PCK	absent in XCF	0	0	0
+set	PIR_673.PCK	absent in XCF	0	0	0
+set	PIR_674.PCK	absent in XCF	0	0	0
+set	PIR_675.PCK	absent in XCF	0	0	0
+set	PIR_676.PCK	absent in XCF	0	0	0
+set	PIR_677.PCK	absent in XCF	0	0	0
+set	PIR_682.PCK	absent in XCF	0	0	0
+set	PIR_7.PCK	absent in XCF	0	0	0
+set	PIR_701.PCK	absent in XCF	0	0	0
+set	PIR_702.PCK	absent in XCF	0	0	0
+set	PIR_705.PCK	absent in XCF	0	0	0
+set	PIR_710.PCK	absent in XCF	0	0	0
+set	PIR_715.PCK	absent in XCF	0	0	0
+set	PIR_718.PCK	absent in XCF	0	0	0
+set	PIR_722.PCK	absent in XCF	0	0	0
+set	PIR_725.PCK	absent in XCF	0	0	0
+set	PIR_727.PCK	absent in XCF	0	0	0
+set	PIR_741.PCK	absent in XCF	0	0	0
+set	PIR_8.PCK	absent in XCF	0	0	0
+set	PIR_801.PCK	absent in XCF	0	0	0
+set	PIR_802.PCK	absent in XCF	0	0	0
+set	PIR_806.PCK	absent in XCF	0	0	0
+set	PIR_807.PCK	absent in XCF	0	0	0
+set	PIR_808.PCK	absent in XCF	0	0	0
+set	PIR_810.PCK	absent in XCF	0	0	0
+set	PIR_811.PCK	absent in XCF	0	0	0
+set	PIR_812.PCK	absent in XCF	0	0	0
+set	PIR_813.PCK	absent in XCF	0	0	0
+set	PIR_814.PCK	absent in XCF	0	0	0
+set	PIR_815.PCK	absent in XCF	0	0	0
+set	PIR_816.PCK	absent in XCF	0	0	0
+set	PIR_820.PCK	absent in XCF	0	0	0
+set	PIR_821.PCK	absent in XCF	0	0	0
+set	PIR_822.PCK	absent in XCF	0	0	0
+set	PIR_823.PCK	absent in XCF	0	0	0
+set	PIR_830.PCK	absent in XCF	0	0	0
+set	PIR_832.PCK	absent in XCF	0	0	0
+set	PIR_833.PCK	absent in XCF	0	0	0
+set	PIR_851.PCK	absent in XCF	0	0	0
+set	PIR_852.PCK	absent in XCF	0	0	0
+set	PIR_855.PCK	absent in XCF	0	0	0
+set	PIR_858.PCK	absent in XCF	0	0	0
+set	PIR_859.PCK	absent in XCF	0	0	0
+set	PIR_860.PCK	absent in XCF	0	0	0
+set	PIR_862.PCK	absent in XCF	0	0	0
+set	PIR_865.PCK	absent in XCF	0	0	0
+set	PIR_866.PCK	absent in XCF	0	0	0
+set	PIR_870.PCK	absent in XCF	0	0	0
+set	PIR_9.PCK	absent in XCF	0	0	0
+set	PIR_901.PCK	absent in XCF	0	0	0
+set	PIR_902.PCK	absent in XCF	0	0	0
+set	PIR_903.PCK	absent in XCF	0	0	0
+set	PIR_904.PCK	absent in XCF	0	0	0
+set	PIR_908.PCK	absent in XCF	0	0	0
+set	PIR_910.PCK	absent in XCF	0	0	0
+set	PIR_911.PCK	absent in XCF	0	0	0
+set	PIR_919.PCK	absent in XCF	0	0	0
+set	PIR_920.PCK	absent in XCF	0	0	0
+set	PIR_921.PCK	absent in XCF	0	0	0
+set	PIR_922.PCK	absent in XCF	0	0	0
+set	PIR_923.PCK	absent in XCF	0	0	0
+set	PIR_924.PCK	absent in XCF	0	0	0
+set	PIR_944.PCK	absent in XCF	0	0	0
+set	PIR_960.PCK	absent in XCF	0	0	0
+set	PIR_991.PCK	absent in XCF	0	0	0
+set	PIR_TANK.PCK	absent in XCF	0	0	0
+set	PIR_TANK_L.PCK	absent in XCF	0	0	0
+set	PYRAMID.PCK	absent in XCF	0	0	0
+set	QUAD.PCK	absent in XCF	0	0	0
+set	QUAD_BLACK.PCK	absent in XCF	0	0	0
+set	RAYNERD.PCK	absent in XCF	0	0	0
+set	RCF.PCK	absent in XCF	0	0	0
+set	RDR_1.PCK	absent in XCF	0	0	0
+set	RDR_10.PCK	absent in XCF	0	0	0
+set	RDR_11.PCK	absent in XCF	0	0	0
+set	RDR_2.PCK	absent in XCF	0	0	0
+set	RDR_3.PCK	absent in XCF	0	0	0
+set	RDR_4.PCK	absent in XCF	0	0	0
+set	RDR_5.PCK	absent in XCF	0	0	0
+set	RDR_6.PCK	absent in XCF	0	0	0
+set	RDR_7.PCK	absent in XCF	0	0	0
+set	RDR_8.PCK	absent in XCF	0	0	0
+set	RDR_9.PCK	absent in XCF	0	0	0
+set	REB_1.PCK	absent in XCF	0	0	0
+set	REB_2.PCK	absent in XCF	0	0	0
+set	REB_3.PCK	absent in XCF	0	0	0
+set	REB_4.PCK	absent in XCF	0	0	0
+set	REB_5.PCK	absent in XCF	0	0	0
+set	RECONDRONE.PCK	absent in XCF	0	0	0
+set	RED_MAGE_RITUAL.PCK	absent in XCF	0	0	0
+set	RET_0.PCK	absent in XCF	0	0	0
+set	RET_1.PCK	absent in XCF	0	0	0
+set	RET_11.PCK	absent in XCF	0	0	0
+set	RET_2.PCK	absent in XCF	0	0	0
+set	RET_3.PCK	absent in XCF	0	0	0
+set	RET_4.PCK	absent in XCF	0	0	0
+set	RET_6.PCK	absent in XCF	0	0	0
+set	RET_7.PCK	absent in XCF	0	0	0
+set	RET_8.PCK	absent in XCF	0	0	0
+set	ROBOMAID.PCK	absent in XCF	0	0	0
+set	ROBOPARROT.PCK	absent in XCF	0	0	0
+set	RSSTANKS.PCK	absent in XCF	0	0	0
+set	RYBA.PCK	absent in XCF	0	0	0
+set	SACRIFICE1.PCK	absent in XCF	0	0	0
+set	SCI_0.PCK	absent in XCF	0	0	0
+set	SCI_1.PCK	absent in XCF	0	0	0
+set	SCI_10.PCK	absent in XCF	0	0	0
+set	SCI_11.PCK	absent in XCF	0	0	0
+set	SCI_12.PCK	absent in XCF	0	0	0
+set	SCI_13.PCK	absent in XCF	0	0	0
+set	SCI_14.PCK	absent in XCF	0	0	0
+set	SCI_2.PCK	absent in XCF	0	0	0
+set	SCI_3.PCK	absent in XCF	0	0	0
+set	SCI_4.PCK	absent in XCF	0	0	0
+set	SCI_5.PCK	absent in XCF	0	0	0
+set	SCI_7.PCK	absent in XCF	0	0	0
+set	SCI_8.PCK	absent in XCF	0	0	0
+set	SCI_9.PCK	absent in XCF	0	0	0
+set	SERF.PCK	absent in XCF	0	0	0
+set	SG_U.PCK	absent in XCF	0	0	0
+set	SHAMBLER.PCK	DIFFERS	119	41	0
+set	SHD_ETHEREAL.PCK	absent in XCF	0	0	0
+set	SHD_MUTON.PCK	absent in XCF	0	0	0
+set	SHD_SECTOID.PCK	absent in XCF	0	0	0
+set	SHUTTLE_ATURRET.PCK	absent in XCF	0	0	0
+set	SKELETON.PCK	same	267	0	0
+set	SKELETON_CIV.PCK	absent in XCF	0	0	0
+set	SKELETON_SWAT.PCK	absent in XCF	0	0	0
+set	SLAVE_GOPHER.PCK	absent in XCF	0	0	0
+set	SLAVE_M.PCK	absent in XCF	0	0	0
+set	SLAVE_MAID.PCK	absent in XCF	0	0	0
+set	SLAVE_SKILLED.PCK	absent in XCF	0	0	0
+set	SLAVE_TASKMASTER.PCK	absent in XCF	0	0	0
+set	SLIMEDOGE.PCK	absent in XCF	0	0	0
+set	SMOKE.PCK	DIFFERS	19	31	0
+set	SMU_1.PCK	absent in XCF	0	0	0
+set	SMU_2.PCK	absent in XCF	0	0	0
+set	SMU_3.PCK	absent in XCF	0	0	0
+set	SMU_4.PCK	absent in XCF	0	0	0
+set	SMU_5.PCK	absent in XCF	0	0	0
+set	SNK_3.PCK	absent in XCF	0	0	0
+set	SOL_0.PCK	absent in XCF	0	0	0
+set	SOL_1.PCK	absent in XCF	0	0	0
+set	SOL_2.PCK	absent in XCF	0	0	0
+set	SOL_3.PCK	absent in XCF	0	0	0
+set	SPIDERGIRL.PCK	absent in XCF	0	0	0
+set	SPT_0.PCK	absent in XCF	0	0	0
+set	SPT_1.PCK	absent in XCF	0	0	0
+set	SPT_2.PCK	absent in XCF	0	0	0
+set	SPT_3.PCK	absent in XCF	0	0	0
+set	STYGIAN_GARGOYLE.PCK	absent in XCF	0	0	0
+set	STYGIAN_GUARD.PCK	absent in XCF	0	0	0
+set	STYGIAN_SERF.PCK	absent in XCF	0	0	0
+set	SUCCUBUS.PCK	absent in XCF	0	0	0
+set	SUPER.PCK	absent in XCF	0	0	0
+set	SURVIVOR.PCK	absent in XCF	0	0	0
+set	TEC_0.PCK	absent in XCF	0	0	0
+set	TEC_0A.PCK	absent in XCF	0	0	0
+set	TEC_1.PCK	absent in XCF	0	0	0
+set	TEC_TURRET.PCK	absent in XCF	0	0	0
+set	TENTACLEHIVE.PCK	absent in XCF	0	0	0
+set	TIGER_TURRET.PCK	absent in XCF	0	0	0
+set	TIGER_TURRET_PIR.PCK	absent in XCF	0	0	0
+set	TOMB_GUARD.PCK	DIFFERS	114	169	0
+set	TRD_10.PCK	absent in XCF	0	0	0
+set	TRD_11.PCK	absent in XCF	0	0	0
+set	TRD_12.PCK	absent in XCF	0	0	0
+set	TRD_13.PCK	absent in XCF	0	0	0
+set	TRD_14.PCK	absent in XCF	0	0	0
+set	TRD_15.PCK	absent in XCF	0	0	0
+set	TRD_3.PCK	absent in XCF	0	0	0
+set	TRD_4.PCK	absent in XCF	0	0	0
+set	TRD_5.PCK	absent in XCF	0	0	0
+set	TRD_6.PCK	absent in XCF	0	0	0
+set	TRD_8.PCK	absent in XCF	0	0	0
+set	TRD_9.PCK	absent in XCF	0	0	0
+set	TREE_OF_LIFF.PCK	absent in XCF	0	0	0
+set	TRUCK_TURRET.PCK	absent in XCF	0	0	0
+set	TRUCK_TURRET_RED.PCK	absent in XCF	0	0	0
+set	TURRET_ALLOY.PCK	absent in XCF	0	0	0
+set	TURRET_MINIGUN.PCK	absent in XCF	0	0	0
+set	UAC_SECURITY_DRONE.PCK	absent in XCF	0	0	0
+set	UBR_BLT.PCK	absent in XCF	0	0	0
+set	UBR_CBY.PCK	absent in XCF	0	0	0
+set	VAMP.PCK	absent in XCF	0	0	0
+set	VAMPIRE_BAT.PCK	absent in XCF	0	0	0
+set	VAMPIRE_KNIGHT.PCK	same	283	0	0
+set	VAU_1.PCK	absent in XCF	0	0	0
+set	VAU_2.PCK	absent in XCF	0	0	0
+set	VERDUN.PCK	absent in XCF	0	0	0
+set	WASPITE.PCK	DIFFERS	48	51	0
+set	WHITE_RABBIT.PCK	absent in XCF	0	0	0
+set	WIZ_A30A.PCK	absent in XCF	0	0	0
+set	WIZ_A30D.PCK	absent in XCF	0	0	0
+set	WIZ_A30I.PCK	absent in XCF	0	0	0
+set	WIZ_A30S.PCK	absent in XCF	0	0	0
+set	WIZ_A30U.PCK	absent in XCF	0	0	0
+set	WOLVERIN_EMP.PCK	absent in XCF	0	0	0
+set	WOLVERIN_HMG.PCK	absent in XCF	0	0	0
+set	WOLVERIN_LAUNCHER.PCK	absent in XCF	0	0	0
+set	WOLVERIN_MINIGUN.PCK	absent in XCF	0	0	0
+set	WOLVERIN_SHOOTY.PCK	absent in XCF	0	0	0
+set	WORKER_HAZMAT.PCK	absent in XCF	0	0	0
+set	WRAITH.PCK	absent in XCF	0	0	0
+set	WRAITH_ELITE.PCK	absent in XCF	0	0	0
+set	WRAITH_GUARD.PCK	absent in XCF	0	0	0
+set	X1.PCK	DIFFERS	0	8	0
+set	X_ROB_2.PCK	absent in XCF	0	0	0
+set	XARQUID.PCK	same	128	0	0
+set	XCARS11.PCK	absent in XCF	0	0	0
+set	XCARS_NAZ.PCK	absent in XCF	0	0	0
+set	XCYBS.PCK	absent in XCF	0	0	0
+set	XENFORCER.PCK	absent in XCF	0	0	0
+set	XENFORCER_Z.PCK	absent in XCF	0	0	0
+set	XENO_2.PCK	absent in XCF	0	0	0
+set	XHOVERTANK.PCK	absent in XCF	0	0	0
+set	XNEKO_008.PCK	absent in XCF	0	0	0
+set	XNEKO_009.PCK	absent in XCF	0	0	0
+set	XNEKO_010.PCK	absent in XCF	0	0	0
+set	XNEKO_012.PCK	absent in XCF	0	0	0
+set	XNEKO_015.PCK	absent in XCF	0	0	0
+set	XNEKO_016.PCK	absent in XCF	0	0	0
+set	XNEKO_020.PCK	absent in XCF	0	0	0
+set	XNEKO_025.PCK	absent in XCF	0	0	0
+set	XNEKO_030.PCK	absent in XCF	0	0	0
+set	XNEKO_040.PCK	absent in XCF	0	0	0
+set	XNEKO_041.PCK	absent in XCF	0	0	0
+set	XNEKO_050.PCK	absent in XCF	0	0	0
+set	XNEKO_060.PCK	absent in XCF	0	0	0
+set	XNEKO_061.PCK	absent in XCF	0	0	0
+set	XNEKO_062.PCK	absent in XCF	0	0	0
+set	XNEKO_063.PCK	absent in XCF	0	0	0
+set	XNEKO_064.PCK	absent in XCF	0	0	0
+set	XNEKO_065.PCK	absent in XCF	0	0	0
+set	XNEKO_066.PCK	absent in XCF	0	0	0
+set	XNEKO_067.PCK	absent in XCF	0	0	0
+set	XNEKO_070.PCK	absent in XCF	0	0	0
+set	XNEKO_075.PCK	absent in XCF	0	0	0
+set	XNEKO_077.PCK	absent in XCF	0	0	0
+set	XNEKO_080.PCK	absent in XCF	0	0	0
+set	XNEKO_081.PCK	absent in XCF	0	0	0
+set	XNEKO_090.PCK	absent in XCF	0	0	0
+set	XNEKO_091.PCK	absent in XCF	0	0	0
+set	XNEKO_095.PCK	absent in XCF	0	0	0
+set	XNEKO_096.PCK	absent in XCF	0	0	0
+set	XNEKO_100.PCK	absent in XCF	0	0	0
+set	XNEKO_105.PCK	absent in XCF	0	0	0
+set	XNEKO_120.PCK	absent in XCF	0	0	0
+set	XNEKO_130.PCK	absent in XCF	0	0	0
+set	XNEKO_210.PCK	absent in XCF	0	0	0
+set	XNEKO_211.PCK	absent in XCF	0	0	0
+set	XNEKO_212.PCK	absent in XCF	0	0	0
+set	XNEKO_230.PCK	absent in XCF	0	0	0
+set	XNEKO_235.PCK	absent in XCF	0	0	0
+set	XNEKO_249.PCK	absent in XCF	0	0	0
+set	XNEKO_250.PCK	absent in XCF	0	0	0
+set	XNEKO_252.PCK	absent in XCF	0	0	0
+set	XNEKO_259.PCK	absent in XCF	0	0	0
+set	XNEKO_261.PCK	absent in XCF	0	0	0
+set	XNEKO_301.PCK	absent in XCF	0	0	0
+set	XNEKO_BIKE1.PCK	absent in XCF	0	0	0
+set	XSECT0.PCK	absent in XCF	0	0	0
+set	XSECT1.PCK	absent in XCF	0	0	0
+set	XSECT2.PCK	absent in XCF	0	0	0
+set	XSECT3.PCK	absent in XCF	0	0	0
+set	XSECT4.PCK	absent in XCF	0	0	0
+set	XSECT5.PCK	absent in XCF	0	0	0
+set	XSECT6.PCK	absent in XCF	0	0	0
+set	XSECT7.PCK	absent in XCF	0	0	0
+set	XSECT9.PCK	absent in XCF	0	0	0
+set	XTANKS.PCK	absent in XCF	0	0	0
+set	XTANKS_BLACK.PCK	absent in XCF	0	0	0
+set	XTR_1.PCK	absent in XCF	0	0	0
+set	XTR_3.PCK	absent in XCF	0	0	0
+set	XTR_5.PCK	absent in XCF	0	0	0
+set	XTR_6.PCK	absent in XCF	0	0	0
+set	XTURRET.PCK	absent in XCF	0	0	0
+set	ZBOSS.PCK	absent in XCF	0	0	0
+set	ZDOOMGUY.PCK	absent in XCF	0	0	0
+set	ZOMBIE_BUSTER.PCK	absent in XCF	0	0	0
+set	ZOMBIE_CARRIE.PCK	absent in XCF	0	0	0
+set	ZOMBIE_GRUBAS.PCK	same	283	0	0
+set	ZOMBIE_PIMP.PCK	absent in XCF	0	0	0
+set	ZOMBIE_SADAKO.PCK	absent in XCF	0	0	0
+set	ZOMBIE_STERILE.PCK	same	75	0	0
+set	ZOMBIE_TROOPER_1.PCK	DIFFERS	0	275	0
+set	ZOMBIE_TROOPER_2.PCK	DIFFERS	0	203	0
+terrain	A_BASE	same	85	0	0
+terrain	A_BASE2	same	23	0	0
+terrain	A_BITS	same	8	0	0
+terrain	A_DECOR	not used by XCF	0	0	0
+terrain	A_EXT02	same	40	0	0
+terrain	A_FLOOR	same	18	0	0
+terrain	A_FRN	same	87	0	0
+terrain	A_PODS	same	53	0	0
+terrain	A_WALL02	same	72	0	0
+terrain	ABUNKER	same	67	0	0
+terrain	ACHURCH	not used by XCF	0	0	0
+terrain	ACHURCH2	not used by XCF	0	0	0
+terrain	ACHURCH3	not used by XCF	0	0	0
+terrain	ACHURCH4	not used by XCF	0	0	0
+terrain	AGROUND	not used by XCF	0	0	0
+terrain	ARENA	not used by XCF	0	0	0
+terrain	ASHEN1	not used by XCF	0	0	0
+terrain	ASSAULTBIKE	not used by XCF	0	0	0
+terrain	ASYLUM_WALL	same	47	0	0
+terrain	ATLANTDESERT	not used by XCF	0	0	0
+terrain	ATLANTSEASHORT	not used by XCF	0	0	0
+terrain	ATLANVILLA	same	73	0	0
+terrain	AVENGER	DIFFERS	54	8	0
+terrain	AVENGER_BL2	not used by XCF	0	0	0
+terrain	AVENGER_EDIT	not used by XCF	0	0	0
+terrain	AVENGER_G3	not used by XCF	0	0	0
+terrain	AVENGER_GR	not used by XCF	0	0	0
+terrain	AVENGER_R	not used by XCF	0	0	0
+terrain	BARN	DIFFERS	28	1	0
+terrain	BARN_GROX	not used by XCF	0	0	0
+terrain	BARN_JUNK	same	29	0	0
+terrain	BARN_PP	not used by XCF	0	0	0
+terrain	BARN_VR	not used by XCF	0	0	0
+terrain	BATHBITZ	same	29	0	0
+terrain	BATHBITZ_HT	same	17	0	0
+terrain	BEACH	same	123	0	0
+terrain	BEDS	not used by XCF	0	0	0
+terrain	BLACKFOREST	not used by XCF	0	0	0
+terrain	BLACKFORESTBITS	not used by XCF	0	0	0
+terrain	BLACKJUNGLE	not used by XCF	0	0	0
+terrain	BLANKS	same	2	0	0
+terrain	BLANKS_VR	not used by XCF	0	0	0
+terrain	BLANKSPACE	not used by XCF	0	0	0
+terrain	BOAT_XPZ	not used by XCF	0	0	0
+terrain	BRAIN	same	8	0	0
+terrain	BRAIN2	not used by XCF	0	0	0
+terrain	BRICKBAR	not used by XCF	0	0	0
+terrain	BROWNHILL	not used by XCF	0	0	0
+terrain	C_BITS2	same	8	0	0
+terrain	C_BITS_02	not used by XCF	0	0	0
+terrain	C_BITS_X1	not used by XCF	0	0	0
+terrain	C_EXT02	not used by XCF	0	0	0
+terrain	C_EXT_ENG_E_BLACK	not used by XCF	0	0	0
+terrain	C_EXT_ENG_E_PRPL	not used by XCF	0	0	0
+terrain	C_EXT_ENGINE_E	not used by XCF	0	0	0
+terrain	C_EXT_ENGINE_E_SILVER	not used by XCF	0	0	0
+terrain	C_EXT_ENGINE_S	not used by XCF	0	0	0
+terrain	C_EXT_ENGINE_S_BLACK	same	5	0	0
+terrain	C_EXT_ENGINE_S_RED	same	10	0	0
+terrain	C_EXT_ENGINE_S_SILVER	not used by XCF	0	0	0
+terrain	C_EXT_GLASSWALL	same	5	0	0
+terrain	C_EXT_LANDGEAR	not used by XCF	0	0	0
+terrain	C_EXT_NOSE	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BLACK	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BUMPER	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BUMPER_BLACK	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BUMPER_PRPL	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BUMPER_RED	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BUMPLESS	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BUMPLESS_BLACK	same	28	0	0
+terrain	C_EXT_NOSE_BUMPLESS_GOLD	same	28	0	0
+terrain	C_EXT_NOSE_BUMPLESS_PRPL	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_BUMPLESS_RED	same	28	0	0
+terrain	C_EXT_NOSE_DBLUE	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_PRPL	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_RED	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_SIDE	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_SIDE_BLACK	same	28	0	0
+terrain	C_EXT_NOSE_SIDE_GOLD	same	28	0	0
+terrain	C_EXT_NOSE_SIDE_PRPL	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_SIDE_RED	same	28	0	0
+terrain	C_EXT_NOSE_SIDE_SILVER	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_SILVER	not used by XCF	0	0	0
+terrain	C_EXT_NOSE_SILVERGREEN	not used by XCF	0	0	0
+terrain	C_EXT_ROOF	not used by XCF	0	0	0
+terrain	C_EXT_ROOF_BLACK	same	50	0	0
+terrain	C_EXT_ROOF_BLACK2	not used by XCF	0	0	0
+terrain	C_EXT_ROOF_DBLUE	not used by XCF	0	0	0
+terrain	C_EXT_ROOF_GOLD	same	50	0	0
+terrain	C_EXT_ROOF_PRPL	not used by XCF	0	0	0
+terrain	C_EXT_ROOF_RED	same	50	0	0
+terrain	C_EXT_ROOF_SILVER	same	50	0	0
+terrain	C_EXT_ROOFBITS_SILVER	not used by XCF	0	0	0
+terrain	C_EXT_TURRET_DBLUE	not used by XCF	0	0	0
+terrain	C_EXT_WALL	not used by XCF	0	0	0
+terrain	C_EXT_WALL_ACD_EXTRA	not used by XCF	0	0	0
+terrain	C_EXT_WALL_BLACK	same	49	0	0
+terrain	C_EXT_WALL_BLACK_PURR	same	49	0	0
+terrain	C_EXT_WALL_DBLUE	not used by XCF	0	0	0
+terrain	C_EXT_WALL_GOLD	same	49	0	0
+terrain	C_EXT_WALL_POLICE	not used by XCF	0	0	0
+terrain	C_EXT_WALL_PRPL	not used by XCF	0	0	0
+terrain	C_EXT_WALL_RED	same	49	0	0
+terrain	C_EXT_WALL_SILVER	same	47	0	0
+terrain	C_EXT_XCOM	not used by XCF	0	0	0
+terrain	C_EXT_XCOM_BLACK	not used by XCF	0	0	0
+terrain	C_EXT_XCOM_DARK	same	53	0	0
+terrain	C_INT	same	90	0	0
+terrain	C_INT_CHAIRS	not used by XCF	0	0	0
+terrain	C_INT_ENGINE_E	not used by XCF	0	0	0
+terrain	C_INT_ENGINE_S	same	10	0	0
+terrain	C_INT_HALF	same	51	0	0
+terrain	C_INT_HALF_XCOM	same	51	0	0
+terrain	C_INT_SMALL	not used by XCF	0	0	0
+terrain	C_INT_THIRD	not used by XCF	0	0	0
+terrain	C_INT_XCOM	same	90	0	0
+terrain	C_INT_XCOM_GOLD	not used by XCF	0	0	0
+terrain	C_WALL02	not used by XCF	0	0	0
+terrain	CADILLAC	not used by XCF	0	0	0
+terrain	CAFEENTRY	DIFFERS	6	1	0
+terrain	CARGO1	same	105	0	0
+terrain	CARGO2_IND	same	65	0	0
+terrain	CARGO3	same	13	0	0
+terrain	CATACDECOR	DIFFERS	44	1	0
+terrain	CATACDECOR_CONC	not used by XCF	0	0	0
+terrain	CATACDECOR_DEAD	not used by XCF	0	0	0
+terrain	CATACDECOR_DOOM	not used by XCF	0	0	0
+terrain	CATACOMB	same	80	0	0
+terrain	CAVEAQUA	not used by XCF	0	0	0
+terrain	CAVEBLACK	same	41	0	0
+terrain	CAVEBONE	same	41	0	0
+terrain	CAVEBROWN	same	41	0	0
+terrain	CAVEDOOM	not used by XCF	0	0	0
+terrain	CAVEMARS	not used by XCF	0	0	0
+terrain	CAVEMEAT	not used by XCF	0	0	0
+terrain	CAVEPINK	same	41	0	0
+terrain	CAVERED	same	41	0	0
+terrain	CITYFRNITURE	same	26	0	0
+terrain	COMBITS	same	28	0	0
+terrain	COMDECOR	same	83	0	0
+terrain	COMFRN	same	26	0	0
+terrain	COMFRN2	same	26	0	0
+terrain	COMMERCE	same	117	0	0
+terrain	COMMERCE_MAG	not used by XCF	0	0	0
+terrain	COMMS	not used by XCF	0	0	0
+terrain	COMPLEXBITSMOON	not used by XCF	0	0	0
+terrain	COMPUTERS	same	16	0	0
+terrain	COMROADS	same	24	0	0
+terrain	CONTAINERS	same	23	0	0
+terrain	CORP	same	52	0	0
+terrain	CRASHEDPLANE	not used by XCF	0	0	0
+terrain	CRATES	same	14	0	0
+terrain	CRIBDECOR	same	70	0	0
+terrain	CRYPTEK1	not used by XCF	0	0	0
+terrain	CRYPTEK2	not used by XCF	0	0	0
+terrain	CRYPTEK3	not used by XCF	0	0	0
+terrain	CRYPTEK4	not used by XCF	0	0	0
+terrain	CULTAN	not used by XCF	0	0	0
+terrain	CULTAREA	not used by XCF	0	0	0
+terrain	CULTBITS	not used by XCF	0	0	0
+terrain	CULTDECOR	same	80	0	0
+terrain	CULTEXTRA	same	48	0	0
+terrain	CULTIVAT	same	37	0	0
+terrain	CULTIVAT_PP	not used by XCF	0	0	0
+terrain	CULTIVAT_UBER	not used by XCF	0	0	0
+terrain	CULTIVAT_VR	not used by XCF	0	0	0
+terrain	CULTMACHINES	same	10	0	0
+terrain	CUNTTRYROAD	not used by XCF	0	0	0
+terrain	CUNTTRYROAD_LT	same	21	0	0
+terrain	CYBERWAREAN	same	118	0	0
+terrain	CYBERWAREBITS	same	33	0	0
+terrain	DAWNCARS	not used by XCF	0	0	0
+terrain	DAWNURBAN	not used by XCF	0	0	0
+terrain	DAWNURBITS	not used by XCF	0	0	0
+terrain	DEAD_SEWERS_BITS	not used by XCF	0	0	0
+terrain	DEBRIS40KCUT	not used by XCF	0	0	0
+terrain	DECKSHIPC	same	18	0	0
+terrain	DECORLUX	not used by XCF	0	0	0
+terrain	DELOREAN	not used by XCF	0	0	0
+terrain	DESERT	same	46	0	0
+terrain	DESERTBITS	same	7	0	0
+terrain	DESERTPLANE	not used by XCF	0	0	0
+terrain	DESERTROCKS_RED	not used by XCF	0	0	0
+terrain	DOOM_BASE	not used by XCF	0	0	0
+terrain	DOOM_BASE2	not used by XCF	0	0	0
+terrain	DOOM_FACILITY	not used by XCF	0	0	0
+terrain	DOOM_FRN	not used by XCF	0	0	0
+terrain	DOOM_PIPES	not used by XCF	0	0	0
+terrain	DOOM_PODS	not used by XCF	0	0	0
+terrain	DOOM_WALL02	not used by XCF	0	0	0
+terrain	DOOMDECOR	same	4	0	0
+terrain	DOORS1	same	45	0	0
+terrain	DOORS2	not used by XCF	0	0	0
+terrain	DOORSSEC	same	45	0	0
+terrain	DREAD_BASE	not used by XCF	0	0	0
+terrain	DREAD_PODS	not used by XCF	0	0	0
+terrain	DREAD_WALL02	not used by XCF	0	0	0
+terrain	DREADSHIP	not used by XCF	0	0	0
+terrain	DREADSHIP2	not used by XCF	0	0	0
+terrain	DREAMVILLA	not used by XCF	0	0	0
+terrain	DUNGEON	same	47	0	0
+terrain	DUNGEON_CONC	not used by XCF	0	0	0
+terrain	DUNGEON_DEAD	not used by XCF	0	0	0
+terrain	DUNGEON_VILLA	DIFFERS	17	25	0
+terrain	DUNGEONDOOM	not used by XCF	0	0	0
+terrain	DUNGEONEXTRA	same	6	0	0
+terrain	DUNGEONEXTRA_DOOM	not used by XCF	0	0	0
+terrain	DUSKURBAN	not used by XCF	0	0	0
+terrain	EARTHTEMPLE1	not used by XCF	0	0	0
+terrain	EASTER	not used by XCF	0	0	0
+terrain	EXPEDITION	not used by XCF	0	0	0
+terrain	FLOORHOLE	not used by XCF	0	0	0
+terrain	FLOORSET	not used by XCF	0	0	0
+terrain	FLOORSETSTYX	not used by XCF	0	0	0
+terrain	FLORASET	not used by XCF	0	0	0
+terrain	FOREST	DIFFERS	58	1	0
+terrain	FOREST_NORD	not used by XCF	0	0	0
+terrain	FOREST_SNOW	same	59	0	0
+terrain	FOREST_WASTE	not used by XCF	0	0	0
+terrain	FORESTBITS2	not used by XCF	0	0	0
+terrain	FORESTBITS3	not used by XCF	0	0	0
+terrain	FORESTBITS_SNOW	same	15	0	0
+terrain	FORESTBITSRED	not used by XCF	0	0	0
+terrain	FORESTBITSWASTE	not used by XCF	0	0	0
+terrain	FORESTJUNGLESTYX	not used by XCF	0	0	0
+terrain	FORESTRED	same	59	0	0
+terrain	FORESTSWAMP	same	143	0	0
+terrain	FORESTSWAMP_SNOW	same	142	0	0
+terrain	FORESTSWAMP_WASTE	not used by XCF	0	0	0
+terrain	FORESTSWAMPBITS	same	15	0	0
+terrain	FORESTSWAMPSTYX	not used by XCF	0	0	0
+terrain	FREIGHTER_AGRARIAN	not used by XCF	0	0	0
+terrain	FREIGHTER_CARGO	not used by XCF	0	0	0
+terrain	FREIGHTER_COMMAND	not used by XCF	0	0	0
+terrain	FREIGHTER_COMMAND_2	not used by XCF	0	0	0
+terrain	FREIGHTER_MAIN	not used by XCF	0	0	0
+terrain	FREIGHTER_PASSENGER	not used by XCF	0	0	0
+terrain	FREIGHTER_TECHNICAL	not used by XCF	0	0	0
+terrain	FRN_OLD	not used by XCF	0	0	0
+terrain	FRNITURE	same	26	0	0
+terrain	FRNITURE_WASTE	not used by XCF	0	0	0
+terrain	FRNITURELUX	not used by XCF	0	0	0
+terrain	FRNTURE_GOLD	not used by XCF	0	0	0
+terrain	GDXOPSFLOORS	not used by XCF	0	0	0
+terrain	GDXOPSPORTA	not used by XCF	0	0	0
+terrain	GDXOPSWALLS	not used by XCF	0	0	0
+terrain	GLASSDECOR	not used by XCF	0	0	0
+terrain	GOLDENCLAW	not used by XCF	0	0	0
+terrain	GOTHIC	not used by XCF	0	0	0
+terrain	GOVROADS	same	23	0	0
+terrain	GOVT	DIFFERS	115	8	0
+terrain	GOVTDECOR	DIFFERS	69	1	0
+terrain	GRAVES_RED	not used by XCF	0	0	0
+terrain	GRUNGE5	same	40	0	0
+terrain	HANGAR2_SCI	not used by XCF	0	0	0
+terrain	HIGHSTAR	not used by XCF	0	0	0
+terrain	ICEKING_PODS	not used by XCF	0	0	0
+terrain	ICEKING_RUINS	not used by XCF	0	0	0
+terrain	ICEKING_VILLAGE	not used by XCF	0	0	0
+terrain	ICEKING_WALL02	not used by XCF	0	0	0
+terrain	IDT_ASIA	same	88	0	0
+terrain	IDT_BARNFLOOR	same	29	0	0
+terrain	IDT_FARM	same	60	0	0
+terrain	IDT_FARM_WATER	same	85	0	0
+terrain	IDT_HUMAN	same	105	0	0
+terrain	IDT_ROOF	same	32	0	0
+terrain	IDT_SNOWBARN	not used by XCF	0	0	0
+terrain	IDT_SNOWCULTIVAT	not used by XCF	0	0	0
+terrain	IDT_SNOWROOF	not used by XCF	0	0	0
+terrain	IDT_SNOWVILBAN	not used by XCF	0	0	0
+terrain	INDUSLUM	same	88	0	0
+terrain	ISLANDURBAN1	same	50	0	0
+terrain	ISLANDURBAN2	same	50	0	0
+terrain	ISLANDURBAN3	same	39	0	0
+terrain	JAILBITES	not used by XCF	0	0	0
+terrain	JUNGLE	same	82	0	0
+terrain	JUNGLEBITS	same	85	0	0
+terrain	JUNGLEROCKS	not used by XCF	0	0	0
+terrain	JUNGLESTYX	not used by XCF	0	0	0
+terrain	JUNGLEVINES	DIFFERS	6	3	0
+terrain	JUNGLYROAD	same	22	0	0
+terrain	KITSUNE	same	45	0	0
+terrain	LAM_BASE	not used by XCF	0	0	0
+terrain	LAM_BASE2	not used by XCF	0	0	0
+terrain	LAM_BITS	not used by XCF	0	0	0
+terrain	LAM_EXT02	not used by XCF	0	0	0
+terrain	LAM_FLOOR	not used by XCF	0	0	0
+terrain	LAM_FRN	not used by XCF	0	0	0
+terrain	LAM_PODS	not used by XCF	0	0	0
+terrain	LAM_WALL02	not used by XCF	0	0	0
+terrain	LANTERNS	not used by XCF	0	0	0
+terrain	LAVA	same	67	0	0
+terrain	LAVA_SWAMP	not used by XCF	0	0	0
+terrain	LAVA_SWAMPGREEN	not used by XCF	0	0	0
+terrain	LIFTER	same	16	0	0
+terrain	LIFTER_LOLI	not used by XCF	0	0	0
+terrain	LIGHTNIN	same	55	0	0
+terrain	LIGHTNIN_BL2	not used by XCF	0	0	0
+terrain	LIGHTNIN_G2	not used by XCF	0	0	0
+terrain	LIGHTNIN_GR	not used by XCF	0	0	0
+terrain	LIGHTNIN_R	not used by XCF	0	0	0
+terrain	LIGHTNIN_R2	not used by XCF	0	0	0
+terrain	LINERSHIPA	same	117	0	0
+terrain	LINERSHIPB	same	115	0	0
+terrain	LINERSHIPC	same	40	0	0
+terrain	LINERSHIPD	same	42	0	0
+terrain	LITTLE_BIRD	same	49	0	0
+terrain	MADDECOR	same	87	0	0
+terrain	MADDECOR_WASTE	not used by XCF	0	0	0
+terrain	MAGETOWER0	not used by XCF	0	0	0
+terrain	MAGETOWER1	not used by XCF	0	0	0
+terrain	MANHOLE	not used by XCF	0	0	0
+terrain	MANSION_PAINTINGS	same	20	0	0
+terrain	MANSIONBITS	DIFFERS	21	1	0
+terrain	MANSIONFLOOR_MAG	not used by XCF	0	0	0
+terrain	MANSIONFURNITURE	same	26	0	0
+terrain	MANSIONFURNITURE_MAG	not used by XCF	0	0	0
+terrain	MANSIONGARDEN	same	19	0	0
+terrain	MANSIONGARDEN_MAG	not used by XCF	0	0	0
+terrain	MARS	same	37	0	0
+terrain	MARS_VR	not used by XCF	0	0	0
+terrain	MARSEC_COMPUTERS	not used by XCF	0	0	0
+terrain	MARSEC_EXT_2	not used by XCF	0	0	0
+terrain	MARSEC_FRN	not used by XCF	0	0	0
+terrain	MARSEC_INT_2	not used by XCF	0	0	0
+terrain	MARSEC_NAVIGATION	not used by XCF	0	0	0
+terrain	MARSEC_OPER	not used by XCF	0	0	0
+terrain	MARSEC_PODS	not used by XCF	0	0	0
+terrain	MEDIEVAL	not used by XCF	0	0	0
+terrain	METRO1	not used by XCF	0	0	0
+terrain	METROBITS	not used by XCF	0	0	0
+terrain	METROPIPES	not used by XCF	0	0	0
+terrain	MI8	not used by XCF	0	0	0
+terrain	MI_24_HIND_A	not used by XCF	0	0	0
+terrain	MILBARR	same	58	0	0
+terrain	MILBARRGHOUL	not used by XCF	0	0	0
+terrain	MILEXT	DIFFERS	48	29	0
+terrain	MILINDUSTRIAL	same	18	0	0
+terrain	MILINDUSTRIALGHOUL	not used by XCF	0	0	0
+terrain	MILTECHDIO	not used by XCF	0	0	0
+terrain	MILTECHGHOUL	not used by XCF	0	0	0
+terrain	MILURBAN	same	116	0	0
+terrain	MILURBITSEXT	not used by XCF	0	0	0
+terrain	MILWARE	same	87	0	0
+terrain	MILWAREGHOUL	not used by XCF	0	0	0
+terrain	MOORINGS	not used by XCF	0	0	0
+terrain	MOUNT	same	54	0	0
+terrain	MOUNTGRASS	same	65	0	0
+terrain	MOUNTMOON	same	65	0	0
+terrain	MOUNTMUD	same	65	0	0
+terrain	MOUNTROCK	same	66	0	0
+terrain	MOUNTSAND	same	64	0	0
+terrain	MOUNTSNOW2	not used by XCF	0	0	0
+terrain	MOUNTTROP	same	66	0	0
+terrain	MOUNTWASTE2	not used by XCF	0	0	0
+terrain	MUCONCRETE	not used by XCF	0	0	0
+terrain	MUICE	not used by XCF	0	0	0
+terrain	MUJUNGLE	same	80	0	0
+terrain	MUJUNGLE_2	not used by XCF	0	0	0
+terrain	MUMMY_RUINS	same	88	0	0
+terrain	MUMMY_VILLAGE	same	85	0	0
+terrain	MUSTYX	not used by XCF	0	0	0
+terrain	NECROPOLIS_DECOR	not used by XCF	0	0	0
+terrain	NEOJUNGLE	not used by XCF	0	0	0
+terrain	NINJASPECIALS	not used by XCF	0	0	0
+terrain	NINJATECH	not used by XCF	0	0	0
+terrain	NKF_APC_PIR_BROWN	not used by XCF	0	0	0
+terrain	NUKE1	not used by XCF	0	0	0
+terrain	NUKE2	same	39	0	0
+terrain	NUKE3	same	37	0	0
+terrain	NUKE_CITY	not used by XCF	0	0	0
+terrain	NUKE_CITY_2	same	23	0	0
+terrain	NUKE_UNDERGROUND	not used by XCF	0	0	0
+terrain	NUKE_WATER_2	not used by XCF	0	0	0
+terrain	ORKP_BLACK	not used by XCF	0	0	0
+terrain	OSIRON_FINNIK	same	66	0	0
+terrain	PENTA_X	same	12	0	0
+terrain	PLANE	same	63	0	0
+terrain	PLANE2	not used by XCF	0	0	0
+terrain	PLANE2R	not used by XCF	0	0	0
+terrain	PLANE_VR	not used by XCF	0	0	0
+terrain	POLAR	same	123	0	0
+terrain	POLARPLANE	not used by XCF	0	0	0
+terrain	PORTROADS	same	95	0	0
+terrain	PORTURBITS	same	93	0	0
+terrain	PREDATOR_NAZ	not used by XCF	0	0	0
+terrain	PREDATOR_PIR	not used by XCF	0	0	0
+terrain	PYRAMID_DARK	not used by XCF	0	0	0
+terrain	QTAXI	not used by XCF	0	0	0
+terrain	REDDESERT	not used by XCF	0	0	0
+terrain	REDGATE	not used by XCF	0	0	0
+terrain	RET_BITS	not used by XCF	0	0	0
+terrain	RET_LADDERS	not used by XCF	0	0	0
+terrain	RET_SHIPS	DIFFERS	116	1	0
+terrain	RET_SHIPS_XCOM	not used by XCF	0	0	0
+terrain	RET_WALLS	not used by XCF	0	0	0
+terrain	RITUALS	same	23	0	0
+terrain	ROAD_ONLY_WHITE	not used by XCF	0	0	0
+terrain	ROADS	same	23	0	0
+terrain	ROADS_SNOW	same	19	0	0
+terrain	ROADS_WASTE	not used by XCF	0	0	0
+terrain	ROADSGREEN	not used by XCF	0	0	0
+terrain	ROADSLUX	not used by XCF	0	0	0
+terrain	RUSTSHACKS	not used by XCF	0	0	0
+terrain	RUSTSHACKS2	not used by XCF	0	0	0
+terrain	SANDS	same	22	0	0
+terrain	SAVANNABEACH	same	81	0	0
+terrain	SEABITS	same	3	0	0
+terrain	SEACORAL	not used by XCF	0	0	0
+terrain	SEADEBRIS6	not used by XCF	0	0	0
+terrain	SEADEBRIS6EXT	not used by XCF	0	0	0
+terrain	SEAMADDECOR	not used by XCF	0	0	0
+terrain	SEAMSUNK1	not used by XCF	0	0	0
+terrain	SEAMSUNK2	not used by XCF	0	0	0
+terrain	SEANOM	same	16	0	0
+terrain	SEAORGANIC1XPZ	not used by XCF	0	0	0
+terrain	SEAORGANIC2XPZ	not used by XCF	0	0	0
+terrain	SEAORGANIC3	same	43	0	0
+terrain	SEAROADSDIO	not used by XCF	0	0	0
+terrain	SEAROCKS	same	17	0	0
+terrain	SEASAND	same	22	0	0
+terrain	SEASAND6	not used by XCF	0	0	0
+terrain	SEASUNK6	not used by XCF	0	0	0
+terrain	SEAURBAN	same	144	0	0
+terrain	SEAURBANDIO	not used by XCF	0	0	0
+terrain	SEAURBITSSDIO	not used by XCF	0	0	0
+terrain	SEAWEEDS	same	5	0	0
+terrain	SGR_BASIS	not used by XCF	0	0	0
+terrain	SGR_BOTANICA	not used by XCF	0	0	0
+terrain	SGR_CAVE	not used by XCF	0	0	0
+terrain	SGR_CAVE2	not used by XCF	0	0	0
+terrain	SGR_CAVE3	not used by XCF	0	0	0
+terrain	SGR_COM	not used by XCF	0	0	0
+terrain	SGR_CORRUPTION	not used by XCF	0	0	0
+terrain	SGR_DOORS	not used by XCF	0	0	0
+terrain	SGR_ELECTRONICS	not used by XCF	0	0	0
+terrain	SGR_HABITATION	not used by XCF	0	0	0
+terrain	SGR_INT01	not used by XCF	0	0	0
+terrain	SGR_INT02	not used by XCF	0	0	0
+terrain	SGR_INT03	not used by XCF	0	0	0
+terrain	SGR_MEDBAY	not used by XCF	0	0	0
+terrain	SGR_REACTORS	not used by XCF	0	0	0
+terrain	SGR_SERVICE	not used by XCF	0	0	0
+terrain	SGR_SPECIAL01	not used by XCF	0	0	0
+terrain	SGR_SPECIAL02	not used by XCF	0	0	0
+terrain	SGR_SUBWAY	not used by XCF	0	0	0
+terrain	SGR_TRAIN	not used by XCF	0	0	0
+terrain	SGR_TRAIN2	not used by XCF	0	0	0
+terrain	SGR_WALLS	not used by XCF	0	0	0
+terrain	SGR_WALLS_B	not used by XCF	0	0	0
+terrain	SGR_WALLS_GOLD	not used by XCF	0	0	0
+terrain	SGR_WALLS_P	not used by XCF	0	0	0
+terrain	SHOGG_VILLAGE_PODS	DIFFERS	0	24	0
+terrain	SHOGG_VILLAGE_WALL02	same	70	0	0
+terrain	SIBERIABASE	same	105	0	0
+terrain	SIETCH	not used by XCF	0	0	0
+terrain	SIETCH_DARK	same	80	0	0
+terrain	SIETCHDOOM	not used by XCF	0	0	0
+terrain	SLUM_FURNITURE	same	15	0	0
+terrain	SPACESTATION_EXTRA	not used by XCF	0	0	0
+terrain	SPACESTATION_INT	not used by XCF	0	0	0
+terrain	SPACEVOID	not used by XCF	0	0	0
+terrain	STATION	not used by XCF	0	0	0
+terrain	STATIONBITS	not used by XCF	0	0	0
+terrain	STATIONDECOR	not used by XCF	0	0	0
+terrain	STATIONWALLS	not used by XCF	0	0	0
+terrain	STATUES_NORD	not used by XCF	0	0	0
+terrain	STORMMOUNT	same	29	0	0
+terrain	STRYKER	not used by XCF	0	0	0
+terrain	SUBBITS	same	8	0	0
+terrain	TABLES	not used by XCF	0	0	0
+terrain	TAUROX	not used by XCF	0	0	0
+terrain	TAVERN	same	37	0	0
+terrain	TDPORTAL	DIFFERS	0	8	1
+terrain	TDPORTAL_BLACK	not used by XCF	0	0	0
+terrain	TECHFLOOR	not used by XCF	0	0	0
+terrain	THULBASES01	not used by XCF	0	0	0
+terrain	THULBASES02	not used by XCF	0	0	0
+terrain	THULBASES03	not used by XCF	0	0	0
+terrain	THULBASES04	not used by XCF	0	0	0
+terrain	THULBASES05	not used by XCF	0	0	0
+terrain	TOILET	not used by XCF	0	0	0
+terrain	TRITON_PURR	same	70	0	0
+terrain	TRITON_U	not used by XCF	0	0	0
+terrain	TUNDRAPLANE	not used by XCF	0	0	0
+terrain	U_BASE	same	71	0	0
+terrain	U_BASE2	DIFFERS	20	0	3
+terrain	U_BASE2_VR	not used by XCF	0	0	0
+terrain	U_BASE2GOLD	same	20	0	0
+terrain	U_BASE_B	not used by XCF	0	0	0
+terrain	U_BASE_RET	not used by XCF	0	0	0
+terrain	U_BASE_VR	not used by XCF	0	0	0
+terrain	U_BASECHURCH	not used by XCF	0	0	0
+terrain	U_BASEGOLD	same	71	0	0
+terrain	U_BITS	same	8	0	0
+terrain	U_BITS_B	not used by XCF	0	0	0
+terrain	U_BITS_G	same	8	0	0
+terrain	U_BITS_P	not used by XCF	0	0	0
+terrain	U_BITS_VR	not used by XCF	0	0	0
+terrain	U_BITSGOLD	same	8	0	0
+terrain	U_BITSN	same	12	0	0
+terrain	U_DISEC2	same	22	0	0
+terrain	U_DISEC2GOLD	not used by XCF	0	0	0
+terrain	U_DISEC3GOLD	not used by XCF	0	0	0
+terrain	U_EXT	same	101	0	0
+terrain	U_EXT02	DIFFERS	37	3	0
+terrain	U_EXT02_VR	not used by XCF	0	0	0
+terrain	U_EXT02GOLD	DIFFERS	37	3	0
+terrain	U_EXT_B	not used by XCF	0	0	0
+terrain	U_EXT_G	DIFFERS	33	7	0
+terrain	U_EXT_P	not used by XCF	0	0	0
+terrain	U_EXT_ROOF	same	101	0	0
+terrain	U_FLOOR	same	18	0	0
+terrain	U_FLOORGOLD	same	18	0	0
+terrain	U_FRN	same	87	0	0
+terrain	U_FRNCHURCH	not used by XCF	0	0	0
+terrain	U_OPER2	same	15	0	0
+terrain	U_OPER_G	same	15	0	0
+terrain	U_PLANET_VOID	not used by XCF	0	0	0
+terrain	U_PODS	same	27	0	0
+terrain	U_PODS_B	not used by XCF	0	0	0
+terrain	U_PODS_G	same	27	0	0
+terrain	U_PODS_VR	not used by XCF	0	0	0
+terrain	U_PODSCHURCH	not used by XCF	0	0	0
+terrain	U_PODSGOLD	DIFFERS	11	16	0
+terrain	U_WALL	same	84	0	0
+terrain	U_WALL02	DIFFERS	22	44	0
+terrain	U_WALL02_VR	not used by XCF	0	0	0
+terrain	U_WALL02GOLD	DIFFERS	44	24	4
+terrain	U_WALL_B	not used by XCF	0	0	0
+terrain	U_WALL_G	same	66	0	0
+terrain	U_WALL_G_X	not used by XCF	0	0	0
+terrain	U_WALL_P	not used by XCF	0	0	0
+terrain	U_WALLCHURCH	not used by XCF	0	0	0
+terrain	U_WALLGUILD	not used by XCF	0	0	0
+terrain	UAC_BASE_V	not used by XCF	0	0	0
+terrain	UAC_BITS	same	8	0	0
+terrain	UAC_DECOR_V	not used by XCF	0	0	0
+terrain	UAC_WALL02_V	not used by XCF	0	0	0
+terrain	UFO1	same	27	0	0
+terrain	UFOAA_BITS	not used by XCF	0	0	0
+terrain	UFOAA_EXT	not used by XCF	0	0	0
+terrain	UFOAA_INT	not used by XCF	0	0	0
+terrain	UFOAA_INT02	not used by XCF	0	0	0
+terrain	UFOL83	DIFFERS	54	2	0
+terrain	UFOL83_G	not used by XCF	0	0	0
+terrain	UFOL83_P	not used by XCF	0	0	0
+terrain	UFOL83DIO_B	same	49	0	0
+terrain	UFOL83DIO_B2	not used by XCF	0	0	0
+terrain	UH_1B_HUEY	same	49	0	0
+terrain	URBAN	same	116	0	0
+terrain	URBAN40K	not used by XCF	0	0	0
+terrain	URBAN40K2MOON	not used by XCF	0	0	0
+terrain	URBAN40KN1	not used by XCF	0	0	0
+terrain	URBAN_GOODS	same	116	0	0
+terrain	URBAN_WASTE	not used by XCF	0	0	0
+terrain	URBAN_WASTE_WALLS	not used by XCF	0	0	0
+terrain	URBANLUX	not used by XCF	0	0	0
+terrain	URBANWAR	not used by XCF	0	0	0
+terrain	URBITS	same	25	0	0
+terrain	URBITS40K	same	25	0	0
+terrain	URBITS_INDUSLUM	same	28	0	0
+terrain	URBITS_JUNK	same	25	0	0
+terrain	URBITS_WASTE	not used by XCF	0	0	0
+terrain	URBITSLUX	not used by XCF	0	0	0
+terrain	USOBITS	same	12	0	0
+terrain	USOENTRY	not used by XCF	0	0	0
+terrain	USOEXT2	same	66	0	0
+terrain	USOEXT2BROKEN	not used by XCF	0	0	0
+terrain	USOEXT3	same	25	0	0
+terrain	USOINT1	same	46	0	0
+terrain	USOINT2	same	44	0	0
+terrain	USOINT3	same	33	0	0
+terrain	VILBAN	same	116	0	0
+terrain	VILBITS	same	25	0	0
+terrain	VILFRNITURE	same	109	0	0
+terrain	VILROADS	same	22	0	0
+terrain	WALL_DECO	not used by XCF	0	0	0
+terrain	WALL_DECO_CUT	not used by XCF	0	0	0
+terrain	WAREAN_TEC	not used by XCF	0	0	0
+terrain	WAREBITS	not used by XCF	0	0	0
+terrain	WESTFLOOR	not used by XCF	0	0	0
+terrain	WHITEBASES01	DIFFERS	91	20	0
+terrain	WHITEBASES02	DIFFERS	91	1	0
+terrain	WHITEBASES03	same	98	0	0
+terrain	WHITEBASES04	same	86	0	0
+terrain	WHITEBASES05	same	73	0	0
+terrain	WHITEBITS	same	46	0	0
+terrain	WHITECASTLE	not used by XCF	0	0	0
+terrain	XARMY	DIFFERS	69	14	0
+terrain	XB1BR	not used by XCF	0	0	0
+terrain	XB2BR	DIFFERS	52	62	0
+terrain	XB3BITZ1	same	29	0	0
+terrain	XB3BITZ1_MAG	not used by XCF	0	0	0
+terrain	XB3BITZ2	not used by XCF	0	0	0
+terrain	XB3BITZ3	not used by XCF	0	0	0
+terrain	XBASE1	same	105	0	0
+terrain	XBASE1_AMB	not used by XCF	0	0	0
+terrain	XBASE1_NTR	not used by XCF	0	0	0
+terrain	XBASE2	DIFFERS	57	6	0
+terrain	XBASEN_BEDS	same	16	0	0
+terrain	XBASEN_BITS	same	51	0	0
+terrain	XBITSUFO	same	46	0	0
+terrain	XBR1NEUTRAL	not used by XCF	0	0	0
+terrain	XCARS_BLACK	not used by XCF	0	0	0
+terrain	XCARS_BLACK_CUT	not used by XCF	0	0	0
+terrain	XCOMENTRY	same	3	0	0
+terrain	XCOMEXIT	same	3	0	0
+terrain	XOPSDESERT	not used by XCF	0	0	0
+terrain	XOPSDESERTRED	not used by XCF	0	0	0
+terrain	XOPSDESERTRUINS	not used by XCF	0	0	0
+terrain	XOPSMUJUNGLEADDON	same	24	0	0
+terrain	XOPSMUJUNGLEADDONDARK	not used by XCF	0	0	0
+terrain	XOPSMUJUNGLEADDONSIETCH	not used by XCF	0	0	0
+terrain	XOPSTRANSPORT2	not used by XCF	0	0	0
+terrain	XOPSTRANSPORT2_RED	not used by XCF	0	0	0
+terrain	XOPSTRANSPORT3	not used by XCF	0	0	0
+terrain	XOPSUFOEXT	not used by XCF	0	0	0
+terrain	XOPSUFOFLOOR	same	89	0	0
+terrain	XOPSUFOITEMS1	not used by XCF	0	0	0
+terrain	XOPSUFOITEMS2	not used by XCF	0	0	0
+terrain	XOPSUFOITEMS2SM	same	137	0	0
+terrain	XOPSUFOSMFLOOR	not used by XCF	0	0	0
+terrain	XOPSUFOSUPPLYALT	not used by XCF	0	0	0
+terrain	XOPSUFOWALLS	same	85	0	0
+terrain	XOPSUFOWALLSSM	not used by XCF	0	0	0

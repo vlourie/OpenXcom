@@ -1,0 +1,128 @@
+﻿{
+ "families": {
+  "T": {
+   "signals": [],
+   "points": {
+    "T1": [],
+    "T2": []
+   },
+   "pairs": {
+    "T1": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "T2": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ]
+   }
+  },
+  "P": {
+   "signals": [],
+   "points": {
+    "P1": [],
+    "P2": []
+   },
+   "pairs": {
+    "P1": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "P2": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ]
+   }
+  },
+  "M": {
+   "signals": [],
+   "points": {
+    "M1": [],
+    "M2": []
+   },
+   "pairs": {
+    "M1": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "M2": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ]
+   }
+  }
+ },
+ "placebo": {
+  "T.A": {
+   "signals": [],
+   "points": {
+    "T1": [],
+    "T2": []
+   }
+  },
+  "T.B": {
+   "signals": [],
+   "points": {
+    "T1": [],
+    "T2": []
+   }
+  },
+  "P.A": {
+   "signals": [],
+   "points": {
+    "P1": [],
+    "P2": []
+   }
+  },
+  "P.B": {
+   "signals": [],
+   "points": {
+    "P1": [],
+    "P2": []
+   }
+  },
+  "M.A": {
+   "signals": [],
+   "points": {
+    "M1": [],
+    "M2": []
+   }
+  },
+  "M.B": {
+   "signals": [],
+   "points": {
+    "M1": [],
+    "M2": []
+   }
+  }
+ },
+ "note": "a gate for spending the validation runs, not a claim",
+ "best": null,
+ "placebo_family_signals": 0,
+ "placebo_point_signals": 0,
+ "real_point_signals": 0
+}

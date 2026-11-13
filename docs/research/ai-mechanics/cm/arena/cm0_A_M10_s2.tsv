@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2022002	STR_LOC_DOOMED_FARM2	over	STR_LOC_DOOMED_FARM2	STR_LOC_DOOMED_FARM2	20	5	CULTA	STR_DOOM	STR_AIRTRUCK#1	9	13	5	5	0	5	539	56	30	3	23	0	23	0	48	306	h.rec.in:1295,h.rec.out.M2:7,h.rec.out.a7:3,h.rec.out.a8:6,h.rec.out.a9:3,p.rec.in:123	123	0	0	0	0	48	1314	0	0	0	0	5	54		loss
