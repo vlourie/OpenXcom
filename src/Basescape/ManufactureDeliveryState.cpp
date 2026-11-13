@@ -321,7 +321,7 @@ void ManufactureDeliveryState::think()
  * @param items The kinds and the most of each that can go (more than 0).
  * @param onOk Called with the kinds picked (a number above 0) when OK is clicked, after the window is closed.
  */
-ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk, const std::vector<int> &start, bool allowEmpty) : _to(to), _items(items), _onOk(onOk), _allowEmpty(allowEmpty)
+ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk, const std::vector<int> &start, bool allowEmpty) : _to(to), _items(items), _onOk(onOk), _allowEmpty(allowEmpty), _timerMore(nullptr), _timerLess(nullptr), _sel(0)
 {
 	_screen = false;
 	for (size_t i = 0; i < _items.size(); ++i)
@@ -372,8 +372,13 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 	_lstParts->setSelectable(true);
 	_lstParts->setMargin(8);
 	_lstParts->setArrowColumn(194, ARROW_HORIZONTAL);
+	_lstParts->onLeftArrowPress((ActionHandler)&ManufactureLootPartsState::leftArrowPress);
+	_lstParts->onLeftArrowRelease((ActionHandler)&ManufactureLootPartsState::leftArrowRelease);
 	_lstParts->onLeftArrowClick((ActionHandler)&ManufactureLootPartsState::leftArrowClick);
+	_lstParts->onRightArrowPress((ActionHandler)&ManufactureLootPartsState::rightArrowPress);
+	_lstParts->onRightArrowRelease((ActionHandler)&ManufactureLootPartsState::rightArrowRelease);
 	_lstParts->onRightArrowClick((ActionHandler)&ManufactureLootPartsState::rightArrowClick);
+	_lstParts->onMousePress((ActionHandler)&ManufactureLootPartsState::lstPartsMousePress);
 	_lstParts->onMouseClick((ActionHandler)&ManufactureLootPartsState::lstPartsClick);
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
@@ -388,10 +393,27 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 	_btnCancel->setText(tr("STR_CANCEL"));
 	_btnCancel->onMouseClick((ActionHandler)&ManufactureLootPartsState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&ManufactureLootPartsState::btnCancelClick, Options::keyCancel);
+
+	_timerMore = new Timer(250);
+	_timerMore->onTimer((StateHandler)&ManufactureLootPartsState::onMore);
+	_timerLess = new Timer(250);
+	_timerLess->onTimer((StateHandler)&ManufactureLootPartsState::onLess);
 }
 
 ManufactureLootPartsState::~ManufactureLootPartsState()
 {
+	delete _timerMore;
+	delete _timerLess;
+}
+
+/**
+ * Runs the timers of the arrows (a held arrow keeps changing the number).
+ */
+void ManufactureLootPartsState::think()
+{
+	State::think();
+	_timerMore->think(this, 0);
+	_timerLess->think(this, 0);
 }
 
 /**
@@ -418,7 +440,7 @@ void ManufactureLootPartsState::refresh(size_t row)
  */
 void ManufactureLootPartsState::change(int by)
 {
-	const size_t row = _lstParts->getSelectedRow();
+	const size_t row = _sel;
 	if (row >= _items.size())
 	{
 		return;
@@ -428,12 +450,49 @@ void ManufactureLootPartsState::change(int by)
 }
 
 /**
+ * Left arrow pressed: starts taking away while it is held (XP-000561).
+ */
+void ManufactureLootPartsState::leftArrowPress(Action *action)
+{
+	_sel = _lstParts->getSelectedRow();
+	if (_game->isLeftClick(action, true) && !_timerLess->isRunning()) _timerLess->start();
+}
+
+void ManufactureLootPartsState::leftArrowRelease(Action *action)
+{
+	if (_game->isLeftClick(action, true))
+	{
+		_timerLess->setInterval(250);
+		_timerLess->stop();
+	}
+}
+
+/**
  * Left arrow: one less (the scroll step); right click: none.
  */
 void ManufactureLootPartsState::leftArrowClick(Action *action)
 {
+	_sel = _lstParts->getSelectedRow();
 	if (_game->isRightClick(action, true)) change(-INT_MAX / 2);
 	else if (_game->isLeftClick(action, true)) change(-_game->getScrollStep());
+}
+
+/**
+ * Right arrow pressed: starts adding while it is held (XP-000561).
+ */
+void ManufactureLootPartsState::rightArrowPress(Action *action)
+{
+	_sel = _lstParts->getSelectedRow();
+	if (_game->isLeftClick(action, true) && !_timerMore->isRunning()) _timerMore->start();
+}
+
+void ManufactureLootPartsState::rightArrowRelease(Action *action)
+{
+	if (_game->isLeftClick(action, true))
+	{
+		_timerMore->setInterval(250);
+		_timerMore->stop();
+	}
 }
 
 /**
@@ -441,8 +500,42 @@ void ManufactureLootPartsState::leftArrowClick(Action *action)
  */
 void ManufactureLootPartsState::rightArrowClick(Action *action)
 {
+	_sel = _lstParts->getSelectedRow();
 	if (_game->isRightClick(action, true)) change(INT_MAX / 2);
 	else if (_game->isLeftClick(action, true)) change(_game->getScrollStep());
+}
+
+void ManufactureLootPartsState::onMore()
+{
+	_timerMore->setInterval(50);
+	change(_game->getScrollStep());
+}
+
+void ManufactureLootPartsState::onLess()
+{
+	_timerLess->setInterval(50);
+	change(-_game->getScrollStep());
+}
+
+/**
+ * The wheel over the arrows of a row changes its number by the step of the option (the list itself does not scroll there).
+ */
+void ManufactureLootPartsState::lstPartsMousePress(Action *action)
+{
+	const Uint8 button = action->getDetails()->button.button;
+	if (button != SDL_BUTTON_WHEELUP && button != SDL_BUTTON_WHEELDOWN)
+	{
+		return;
+	}
+	_timerMore->stop();
+	_timerLess->stop();
+	if (Options::changeValueByMouseWheel != 0 &&
+		action->getAbsoluteXMouse() >= _lstParts->getArrowsLeftEdge() &&
+		action->getAbsoluteXMouse() <= _lstParts->getArrowsRightEdge())
+	{
+		_sel = _lstParts->getSelectedRow();
+		change(button == SDL_BUTTON_WHEELUP ? Options::changeValueByMouseWheel : -Options::changeValueByMouseWheel);
+	}
 }
 
 /**

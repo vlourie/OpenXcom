@@ -107,12 +107,22 @@ private:
 	Text *_txtTitle, *_txtTotal, *_txtOnBase;
 	TextList *_lstParts;
 	TextButton *_btnOk, *_btnCancel;
+	Timer *_timerMore, *_timerLess; ///< hold an arrow: the number keeps changing (XP-000561)
+	size_t _sel;                    ///< the row the arrow or the wheel was used on
 	/// Writes the row's number and the total.
 	void refresh(size_t row);
 	/// Changes the selected row's number within 0..most.
 	void change(int by);
+	void leftArrowPress(Action *action);
+	void leftArrowRelease(Action *action);
 	void leftArrowClick(Action *action);
+	void rightArrowPress(Action *action);
+	void rightArrowRelease(Action *action);
 	void rightArrowClick(Action *action);
+	/// The wheel over the arrows changes the number (XP-000561).
+	void lstPartsMousePress(Action *action);
+	void onMore();
+	void onLess();
 	/// Left click on the name: where the item is on all the bases and on the way (as in the stores), XP-000393.
 	void lstPartsClick(Action *action);
 	void btnOkClick(Action *action);
@@ -123,6 +133,7 @@ public:
 	/// `allowEmpty` - OK with nothing picked is also passed on.
 	ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk, const std::vector<int> &start = std::vector<int>(), bool allowEmpty = false);
 	~ManufactureLootPartsState();
+	void think() override;
 };
 
 }
