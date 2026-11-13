@@ -18,6 +18,7 @@
  */
 #include "OptionsAdvancedState.h"
 #include "OptionDetailState.h"
+#include "ErrorMessageState.h"
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -384,6 +385,12 @@ void OptionsAdvancedState::changeSetting(size_t sel, Uint8 button)
 		if (b == &Options::lazyLoadResources && !*b)
 		{
 			Options::reload = true; // reload when turning lazy loading off
+			// how much more memory it takes (XP-000560: X-Piratez with the HD pack, 0.9 GB with it, 5.7 GB without)
+			const RuleInterface *errors = _game->getMod()->getInterface("errorMessages");
+			if (_origin != OPT_BATTLESCAPE)
+				_game->pushState(new ErrorMessageState(tr("STR_LAZY_LOADING_OFF_WARNING"), _palette, errors->getElement("geoscapeColor")->color, "BACK01.SCR", errors->getElement("geoscapePalette")->color));
+			else
+				_game->pushState(new ErrorMessageState(tr("STR_LAZY_LOADING_OFF_WARNING"), _palette, errors->getElement("battlescapeColor")->color, "TAC00.SCR", errors->getElement("battlescapePalette")->color));
 		}
 	}
 	else if (setting->type() == OPTION_INT) // integer variables will need special handling

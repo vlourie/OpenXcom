@@ -347,6 +347,7 @@ en-GB:
 #Options.cpp
   STR_LAZY_LOADING: "Lazy loading"
   STR_LAZY_LOADING_DESC: "If enabled, graphic resources are loaded on-demand. Otherwise everything is loaded at start-up."
+  STR_LAZY_LOADING_OFF_WARNING: "Without lazy loading the game needs about 6 GB of memory instead of 1 GB. With 8 GB or less it may crash."
   STR_VSYNC_FOR_OPENGL: "VSync for OpenGL"
   STR_VSYNC_FOR_OPENGL_DESC: "Turn off for maximum enemy hidden movement speed and (optionally) soldier movement speed. DO NOT set FPS limit to 0. Only applies to OpenGL rendering."
 #==== General ===============
