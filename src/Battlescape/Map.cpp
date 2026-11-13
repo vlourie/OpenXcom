@@ -3253,7 +3253,7 @@ const int HD_STEP_TILES = 2, HD_STEP_MAX = 240, HD_STEP_PER_TILE = 3, HD_STEP_PA
 /// Dents in snow (Options::oxceHdSnowTracks, XP-000563): the flag in a print's `kind` (the look itself is HdFx::Track), how many turns they last (always three,
 /// not Options::oxceHdBloodStepsLife), the caps of the snow's own store (a tile, the map), the cold grey-blue of the dent, the edge softer than the blood's (times),
 /// and the share of the print's opacity.
-const int HD_STEP_SNOW = 16, HD_SNOW_LIFE = 3, HD_SNOW_PER_TILE = 4, HD_SNOW_MAX = 900, HD_SNOW_RGB = 0x4A5570;
+const int HD_STEP_SNOW = 16, HD_SNOW_LIFE = 3, HD_SNOW_PER_TILE = 4, HD_SNOW_MAX = 900, HD_SNOW_RGB = 0x4A5570, HD_SNOW_LIGHT = 170, HD_SNOW_SPREAD = 45;
 const double HD_SNOW_SOFT = 1.8, HD_SNOW_ALPHA = 1.0;
 
 /// Turns a print lasts by the setting (the slider's 11 = always: 0).
@@ -3500,6 +3500,53 @@ void Map::hdLayStep(int index, const HdStep &step)
 }
 
 /**
+ * Options::oxceHdSnowTracks: is the floor of `tile` snow? By the picture of the floor: the diamond (the bottom 16 of 40 rows of the HD frame) is snow
+ * when at least half of its pixels are light and nearly grey (HD_SNOW_LIGHT, HD_SNOW_SPREAD). The set's name does not tell (XP-000563): the snow sets
+ * have dirt, ice-water and wooden floors, MOUNTSNOW2 and POLAR mix them, and the floors of metal, asphalt and buildings never come out white-grey.
+ * Found once for each floor sprite (by its buffer) and kept; no HD frame - not snow (nothing is asked again of a sprite that has none yet).
+ */
+bool Map::hdSnowFloor(const Tile *tile)
+{
+	const SurfaceRaw<const Uint8> sprite = tile->getSprite(O_FLOOR);
+	if (!sprite)
+	{
+		return false;
+	}
+	const void *key = sprite.getBuffer();
+	auto it = _hdSnowFloors.find(key);
+	if (it != _hdSnowFloors.end())
+	{
+		return it->second;
+	}
+	const HdFrame *frame = _canvas->frameOf(sprite);
+	if (!frame || frame->empty() || frame->height < 40)
+	{
+		return false;
+	}
+	size_t seen = 0, snow = 0;
+	for (int y = frame->height * 24 / 40; y < frame->height; ++y)
+	{
+		for (int x = 0; x < frame->width; ++x)
+		{
+			const Uint32 p = frame->pixels[(size_t)y * frame->width + x];
+			if ((p >> 24) <= 200)
+			{
+				continue;
+			}
+			const int r = (p >> 16) & 255, g = (p >> 8) & 255, b = p & 255;
+			++seen;
+			if (std::min(r, std::min(g, b)) >= HD_SNOW_LIGHT && std::max(r, std::max(g, b)) - std::min(r, std::min(g, b)) <= HD_SNOW_SPREAD)
+			{
+				++snow;
+			}
+		}
+	}
+	const bool result = seen > 0 && snow * 2 >= seen;
+	_hdSnowFloors[key] = result;
+	return result;
+}
+
+/**
  * The same for a dent in snow (Options::oxceHdSnowTracks): a tile keeps HD_SNOW_PER_TILE, the map HD_SNOW_MAX - their own, so the snow never pushes the blood out.
  */
 void Map::hdLaySnow(int index, const HdStep &step)
@@ -3658,7 +3705,7 @@ void Map::hdObserveSteps()
 				{
 					const Position at(pos.x + i, pos.y + j, pos.z);
 					const Tile *floorTile = _save->getTile(at);
-					if (!floorTile || floorTile->hasNoFloor(_save) || !HdFx::dryFloor(floorTile))
+					if (!floorTile || floorTile->hasNoFloor(_save) || !HdFx::dryFloor(floorTile) || !hdSnowFloor(floorTile))
 					{
 						continue;
 					}

@@ -356,8 +356,8 @@ OPT int oxceHdBloodStepsLife;
 // HD render (XP-000421): the colour of the soles and drops: 0 by the creature (HdFx::bloodRgb with the table hd/blood.txt, whether "Blood colour by creature" is on or not),
 // 1 red for all
 OPT int oxceHdBloodStepsColor;
-// HD render (XP-000563): in a battle on snow (the weather's biome B_SNOW) every step of a walker leaves a dent of its kind (boot, bare foot, paw, wheels, tracks) on any floor
-// but water and lava, a cold grey-blue, fading over three turns; kept in the Map only, not saved; picture only. Off by default
+// HD render (XP-000563): in a battle on snow (the weather's biome B_SNOW) every step of a walker leaves a dent of its kind (boot, bare foot, paw, wheels, tracks) only on floor
+// that is snow (by the picture of the floor, Map::hdSnowFloor), a cold grey-blue, fading over three turns; kept in the Map only, not saved; picture only. Off by default
 OPT bool oxceHdSnowTracks;
 // HD render (docs/research/battle-weather-2026-11-11.md): the weather of a battle as a picture (rain, thunderstorm, fog, snow, wind,
 // sand storm) by the map's ground, about half of the battles clear; the veil far from the own units; picture only. On by default

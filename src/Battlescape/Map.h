@@ -348,6 +348,10 @@ private:
 	std::unordered_map<int, std::vector<HdStep>> _hdSnowSteps;
 	std::deque<std::pair<int, Uint32>> _hdSnowOrder;
 	size_t _hdSnowCount = 0;
+	/// Is the floor of `tile` snow by its picture (the HD frame of its floor sprite: mostly white-grey)? Found once for each floor sprite and kept
+	/// (by the sprite's buffer); the name of a floor's set does not tell: the snow sets have dirt, ice-water and wooden floors, and the others white ones.
+	bool hdSnowFloor(const Tile *tile);
+	std::unordered_map<const void*, bool> _hdSnowFloors;
 	/// Watches the steps of the units (before a frame is drawn) and lays the soles.
 	void hdObserveSteps();
 	/// HD render (option oxceHdBloodCloud, XP-000557): under water the blood of a hit on flesh is a small see-through cloud (puffs of HdSmoke in the
