@@ -1,0 +1,1 @@
+- HD inventory: on the "Gear backdrop" picture, the shut slots (Thigh, Belt and the like) are no longer drawn as solid dark blue blocks in underwater missions: the picture shows there, as in other missions. Only the picture changes.

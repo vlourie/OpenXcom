@@ -236,12 +236,20 @@ bool Inventory::hdFiller(const Surface *frame) const
 	}
 	const SDL_Color *pal = getPalette();
 	bool black = pal && frame->getWidth() > 0 && frame->getHeight() > 0;
+	// the black of a palette is not always 0,0,0: the sea palette of Piratez has 0,7,12 at the indices 0 and 15 (XP-000565)
+	int limR = 10, limG = 10, limB = 10;
+	if (pal)
+	{
+		limR = std::max(limR, std::max((int)pal[0].r, (int)pal[15].r));
+		limG = std::max(limG, std::max((int)pal[0].g, (int)pal[15].g));
+		limB = std::max(limB, std::max((int)pal[0].b, (int)pal[15].b));
+	}
 	for (int y = 0; black && y < frame->getHeight(); ++y)
 	{
 		for (int x = 0; x < frame->getWidth(); ++x)
 		{
 			const SDL_Color &c = pal[frame->getPixel(x, y)];
-			if (c.r > 10 || c.g > 10 || c.b > 10)
+			if (c.r > limR || c.g > limG || c.b > limB)
 			{
 				black = false;
 				break;
