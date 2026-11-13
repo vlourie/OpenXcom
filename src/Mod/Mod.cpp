@@ -24,6 +24,7 @@
 #include <climits>
 #include <cassert>
 #include <unordered_set>
+#include <set>
 #include "../version.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/FileMap.h"
@@ -616,6 +617,8 @@ Mod::Mod() :
 /**
  * Deletes all the mod data from memory.
  */
+namespace { void userTrialEnd(); } // XP-000547, below with the other own music helpers
+
 Mod::~Mod()
 {
 	delete _muteMusic;
@@ -668,6 +671,8 @@ Mod::~Mod()
 	{
 		delete music;
 	}
+	// XP-000547: the game is closed the normal way (or the mod is loaded again): the own track under trial is cleared
+	userTrialEnd();
 	for (auto& pair : _sounds)
 	{
 		delete pair.second;
@@ -1341,6 +1346,160 @@ const std::map<std::string, Music*> &Mod::getMusicTrackList() const
 	return _musics;
 }
 
+namespace
+{
+// XP-000547: a player's own track the game died on. Before an own track is played its name goes to <user folder>/music_trial.txt;
+// the mark goes when the track has played for a minute, when another track replaces it and when the game is closed the normal way.
+// A mark found at the start means the game stopped while the track played: the name goes to music_skip.txt, and the track is not
+// loaded or played any more (until the player deletes its line).
+std::string s_trialRel;
+Uint32 s_trialStart = 0;
+bool s_staleChecked = false;
+std::vector<std::string> s_skipMem;
+
+std::string userTrialPath() { return Options::getUserFolder() + "music_trial.txt"; }
+std::string userSkipPath() { return Options::getUserFolder() + "music_skip.txt"; }
+
+std::string lowerAscii(std::string s)
+{
+	std::transform(s.begin(), s.end(), s.begin(), [](char c) { return (char)::tolower((unsigned char)c); });
+	return s;
+}
+
+/// The lines of a small text file, without the line ends and the UTF-8 mark; none when it cannot be read.
+std::vector<std::string> userTextLines(const std::string &path)
+{
+	std::vector<std::string> lines;
+	try
+	{
+		if (CrossPlatform::fileExists(path))
+		{
+			auto in = CrossPlatform::readFile(path);
+			std::string line;
+			while (std::getline(*in, line))
+			{
+				while (!line.empty() && (line.back() == '\r' || line.back() == '\n'))
+				{
+					line.pop_back();
+				}
+				if (lines.empty() && line.compare(0, 3, "\xEF\xBB\xBF") == 0)
+				{
+					line.erase(0, 3);
+				}
+				lines.push_back(line);
+			}
+		}
+	}
+	catch (Exception &e)
+	{
+		Log(LOG_WARNING) << "Own music: cannot read '" << path << "': " << e.what();
+	}
+	return lines;
+}
+
+void userTrialEnd()
+{
+	if (!s_trialRel.empty())
+	{
+		CrossPlatform::deleteFile(userTrialPath());
+		s_trialRel.clear();
+	}
+}
+
+void userTrialBegin(const std::string &rel)
+{
+	if (s_trialRel == rel)
+	{
+		return;
+	}
+	if (CrossPlatform::writeFile(userTrialPath(), rel + "\n"))
+	{
+		s_trialRel = rel;
+		s_trialStart = SDL_GetTicks();
+	}
+	else
+	{
+		s_trialRel.clear();
+	}
+}
+
+/// The skip list (the lowercase names): the file, and what could not be written to it in this run.
+std::set<std::string> userSkipList()
+{
+	std::set<std::string> skip;
+	for (const std::string &line : userTextLines(userSkipPath()))
+	{
+		if (!line.empty() && line[0] != '#')
+		{
+			skip.insert(lowerAscii(line));
+		}
+	}
+	for (const std::string &name : s_skipMem)
+	{
+		skip.insert(lowerAscii(name));
+	}
+	return skip;
+}
+
+/// At the first scan of a run: a trial mark left by the previous run goes to the skip list.
+void userTrialCheckStale()
+{
+	if (s_staleChecked)
+	{
+		return;
+	}
+	s_staleChecked = true;
+	const std::string path = userTrialPath();
+	if (!CrossPlatform::fileExists(path))
+	{
+		return;
+	}
+	std::string name;
+	for (const std::string &line : userTextLines(path))
+	{
+		if (name.empty() && !line.empty())
+		{
+			name = line;
+		}
+	}
+	if (!name.empty())
+	{
+		std::vector<std::string> lines = userTextLines(userSkipPath());
+		bool listed = false;
+		for (const std::string &line : lines)
+		{
+			listed = listed || lowerAscii(line) == lowerAscii(name);
+		}
+		if (!listed)
+		{
+			std::string data;
+			for (const std::string &line : lines)
+			{
+				data += line + "\n";
+			}
+			data += name + "\n";
+			if (!CrossPlatform::writeFile(userSkipPath(), data))
+			{
+				s_skipMem.push_back(name);
+			}
+		}
+		Log(LOG_WARNING) << "Own music: '" << name << "' skipped - the game stopped while it played (delete it from music_skip.txt to try again)";
+	}
+	CrossPlatform::deleteFile(path);
+}
+}
+
+/**
+ * XP-000547: called once per frame; an own track that has played for a minute is trusted, its trial mark goes.
+ */
+void Mod::userMusicTick()
+{
+	if (!s_trialRel.empty() && SDL_GetTicks() - s_trialStart >= 60000)
+	{
+		userTrialEnd();
+	}
+}
+
 /**
  * Returns a random music from the mod.
  * The player's own music (XP-000373) takes part when the option is on: its tracks have the category in their keys
@@ -1367,7 +1526,7 @@ Music *Mod::getRandomMusic(const std::string &name) const
 			{
 				for (const auto& track : _userMusic)
 				{
-					known = known || (track.key == name && !track.failed);
+					known = known || (track.key == name && !track.failed && !track.skipped);
 				}
 			}
 			if (!known)
@@ -1396,13 +1555,28 @@ Music *Mod::getRandomMusic(const std::string &name) const
 		}
 		for (;;)
 		{
-			const size_t standard = (Options::oxceUserMusic == 2 && !mine.empty()) ? 0 : music.size();
+			// XP-000547: the skipped tracks (music_skip.txt) stay in the list, so the pick is the same single RNG::seedless call
+			// whatever the skip list is; one that lands on a skipped track moves to the next one that is not, round the list
+			size_t usable = 0;
+			for (const UserTrack* track : mine)
+			{
+				usable += track->skipped ? 0 : 1;
+			}
+			const size_t standard = (Options::oxceUserMusic == 2 && usable > 0) ? 0 : music.size();
 			const size_t total = standard + mine.size();
 			if (total == 0)
 			{
 				return _muteMusic;
 			}
-			const size_t pick = RNG::seedless(0, total - 1);
+			size_t pick = RNG::seedless(0, total - 1);
+			for (size_t step = 0; step < total && pick >= standard && mine[pick - standard]->skipped; ++step)
+			{
+				pick = (pick + 1) % total;
+			}
+			if (pick >= standard && mine[pick - standard]->skipped)
+			{
+				return _muteMusic;
+			}
 			if (pick < standard)
 			{
 				return music[pick];
@@ -1441,6 +1615,8 @@ bool Mod::ensureUserMusic() const
 void Mod::scanUserMusic() const
 {
 	_userMusicScanned = true;
+	userTrialCheckStale();
+	const std::set<std::string> skipList = userSkipList();
 	const std::string root = Options::getUserFolder() + "music";
 	for (const std::string& dir : { root, root + "/geoscape", root + "/battle" })
 	{
@@ -1497,9 +1673,12 @@ void Mod::scanUserMusic() const
 		track.key = std::string(category) + "_USER_" + hex;
 		track.label = f.name;
 		track.path = root + "/" + f.rel;
+		track.rel = f.rel;
+		track.skipped = skipList.count(lowerAscii(f.rel)) > 0;
 		for (auto& old : _userMusic)
 		{
-			if (old.key == track.key)
+			// a skipped track does not take the music of the earlier scan: it is put away below
+			if (old.key == track.key && !track.skipped)
 			{
 				track.music = old.music;
 				old.music = 0;
@@ -1529,6 +1708,15 @@ void Mod::scanUserMusic() const
 	}
 	_userMusic = fresh;
 	Log(LOG_INFO) << "Own music: " << found.size() << " file(s) in '" << root << "'";
+	size_t skippedFiles = 0;
+	for (const auto& f : found)
+	{
+		skippedFiles += skipList.count(lowerAscii(f.rel)) > 0 ? 1 : 0;
+	}
+	if (skippedFiles > 0)
+	{
+		Log(LOG_INFO) << "Own music: " << skippedFiles << " file(s) of them are in music_skip.txt and are not played";
+	}
 }
 
 /**
@@ -1538,13 +1726,23 @@ void Mod::scanUserMusic() const
  */
 Music *Mod::loadUserTrack(UserTrack &track) const
 {
+	if (track.skipped)
+	{
+		return 0;
+	}
 	if (track.music || track.failed)
 	{
+		if (track.music)
+		{
+			userTrialBegin(track.rel);
+		}
 		return track.music;
 	}
 	Music *music = new Music();
 	try
 	{
+		// XP-000547: marked before the file is opened, the death may be in the load too
+		userTrialBegin(track.rel);
 		SDL_RWops *rwops = SDL_RWFromFile(track.path.c_str(), "rb");
 		if (!rwops)
 		{
@@ -1558,6 +1756,10 @@ Music *Mod::loadUserTrack(UserTrack &track) const
 	{
 		Log(LOG_WARNING) << "Own music: cannot load '" << track.path << "': " << e.what();
 		track.failed = true;
+		if (s_trialRel == track.rel)
+		{
+			userTrialEnd();
+		}
 		// not deleted now: a Music stops whatever is playing when it goes
 		_userMusicRetired.push_back(music);
 	}
@@ -1668,6 +1870,16 @@ void Mod::playMusic(const std::string &name, int id)
 			std::ostringstream ss;
 			ss << name << id;
 			music = getMusic(ss.str());
+		}
+		// XP-000547: a track that is not an own one takes the place of the own one under trial
+		bool ownTrack = false;
+		for (const auto& track : _userMusic)
+		{
+			ownTrack = ownTrack || (track.music && track.music == music);
+		}
+		if (!ownTrack)
+		{
+			userTrialEnd();
 		}
 		music->play(loop);
 		if (music != _muteMusic)

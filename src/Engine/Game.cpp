@@ -424,6 +424,10 @@ void Game::run()
 			_fpsCounter->think();
 			_updateNotice->think();
 			_chatNotice->think();
+			if (_mod)
+			{
+				_mod->userMusicTick();
+			}
 			// the HD GPU output keeps the limiter under vsync: a driver set to drop vsync would spin the loop unbounded
 			if (Options::FPS > 0 && !(Screen::useOpenGL() && Options::vSyncForOpenGL))
 			{

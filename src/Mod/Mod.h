@@ -197,9 +197,11 @@ private:
 	/// the hash of the relative path, never the file's name: no name of a rule can then be a part of it. Loaded at the first play.
 	struct UserTrack
 	{
-		std::string key, label, path;
+		std::string key, label, path, rel;
 		Music *music = 0;
 		bool failed = false;
+		/// XP-000547: the game stopped while this track played (user/music_skip.txt): never loaded, never played
+		bool skipped = false;
 	};
 	mutable std::vector<UserTrack> _userMusic;
 	mutable std::vector<Music*> _userMusicRetired;
@@ -583,6 +585,8 @@ public:
 	Music *getUserMusic(const std::string &key) const;
 	/// Scans <user folder>/music again (the jukebox's button): new files appear, the removed ones go.
 	void refreshUserMusic();
+	/// XP-000547: once per frame; an own track that played for a minute is trusted, its trial mark goes.
+	void userMusicTick();
 	/// True when the option is "only own" and there are own tracks of the category.
 	bool userMusicOnly(const std::string &category) const;
 	/// The track name a battle plays: GMTACTIC (a random pick) instead of the saved one when only the own music is wanted.
