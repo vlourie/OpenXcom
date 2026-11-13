@@ -313,6 +313,10 @@ void Inventory::drawGrid()
 			r.y = ruleInv->getY();
 			r.w = RuleInventory::HAND_W * RuleInventory::SLOT_W;
 			r.h = RuleInventory::HAND_H * RuleInventory::SLOT_H;
+			if (shut(r.x, r.y))
+			{
+				continue;
+			}
 			_grid->drawRect(&r, color);
 			r.x++;
 			r.y++;
@@ -508,6 +512,14 @@ void Inventory::drawItems()
 				blocked.push_back(SDL_Rect{ (Sint16)x, (Sint16)y,
 					(Uint16)(invItem->getRules()->getInventoryWidth() * RuleInventory::SLOT_W),
 					(Uint16)(invItem->getRules()->getInventoryHeight() * RuleInventory::SLOT_H) });
+				continue;
+			}
+			if (backdrop && invItem->getSlot()->getType() == INV_HAND && hdFiller(frame))
+			{
+				// a shut hand (INV_NULL_HAND_*): the same, the whole hand box is left as the scene (XP-000565)
+				blocked.push_back(SDL_Rect{ (Sint16)invItem->getSlot()->getX(), (Sint16)invItem->getSlot()->getY(),
+					(Uint16)(RuleInventory::HAND_W * RuleInventory::SLOT_W),
+					(Uint16)(RuleInventory::HAND_H * RuleInventory::SLOT_H) });
 				continue;
 			}
 			if (HdUi::active() && invItem->getSlot()->getType() == INV_SLOT && invItem->getRules()->isFixed() && invItem->getSlot()->getId() == "STR_BACK_PACK")
