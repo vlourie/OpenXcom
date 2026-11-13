@@ -7,3 +7,4 @@
 - HD "Living base", the repulsion shield: the violet dots at the ends of the squares now blink visibly - every 50 seconds three flashes of 2 seconds with a 1 second pause between them: the dots flare up lilac, brighter than usual and with a soft glow around them, instead of dimming. Only the base picture changes.
 - HD interface, paper dolls: helmets, hoods, hats and headscarves (32 items) no longer have a black halo around them, and hair no longer pokes out from under them. Dark items stay as they were. Only the picture changes.
 - Options, "Lazy loading": turning it off now shows a warning that the game then needs about 6 GB of memory instead of 1 GB and may crash with 8 GB or less. The option itself works as before.
+- HD interface, paper dolls with cat ears without clothes (10 bases): the arm and fist are no longer cut off, the right hand and elbow have no stains or fuzz, the edge is smooth. Only the picture changes.
