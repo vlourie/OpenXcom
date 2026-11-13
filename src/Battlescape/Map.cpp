@@ -6711,6 +6711,10 @@ void Map::drawTerrain(HdCanvas *surface)
 					//draw particle clouds behind solder
 					for (const Particle& p : getVaporParticle(tile, 0))
 					{
+						if (_k > 1 && p.isHdShot())
+						{
+							continue; // HD: the vapor of an energy shot with the classic shots (XP-000555)
+						}
 						if (softVapor)
 						{
 							// HD: a soft round puff at the particle's own place, fading smoothly (classic mode keeps the 2x2 pattern)
@@ -6871,6 +6875,10 @@ void Map::drawTerrain(HdCanvas *surface)
 					//draw particle clouds on front of solder
 					for (const Particle& p : getVaporParticle(tile, topLayer ? 3 : 1))
 					{
+						if (_k > 1 && p.isHdShot())
+						{
+							continue; // HD: the vapor of an energy shot with the classic shots (XP-000555)
+						}
 						if (softVapor)
 						{
 							// HD: a soft round puff at the particle's own place, fading smoothly (classic mode keeps the 2x2 pattern)

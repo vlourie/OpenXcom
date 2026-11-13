@@ -40,6 +40,9 @@ private:
 	Uint8 _drift;
 	Uint8 _layerZ;
 	Uint8 _color, _opacity, _size;
+	/// HD render (XP-000555): the vapor of a laser, plasma or gauss shot - with Options::oxceHdClassicShots it is not drawn at k > 1.
+	/// Picture only: set when the particle is made, the particle moves and lives as without it.
+	bool _hdShot = false;
 public:
 	/// Create a particle.
 	Particle(Position voxelPos, Position subVoxelOffset, Position subVoxelVel, Position subVoxelAcc, Uint8 drift, Uint8 color, Uint8 opacity, Uint8 size);
@@ -61,6 +64,10 @@ public:
 	int getSize() const { return _size; }
 	/// Get the color.
 	Uint8 getColor() const { return _color; }
+	/// HD: mark the vapor of an energy shot (XP-000555).
+	void setHdShot() { _hdShot = true; }
+	/// HD: the vapor of an energy shot (XP-000555).
+	bool isHdShot() const { return _hdShot; }
 	/// Get the opacity.
 	Uint8 getOpacity() const { return _screenData.z; }
 	/// Get the remaining life (the opacity level is derived from it): HD fades smoothly by it.

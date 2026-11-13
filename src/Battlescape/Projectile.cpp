@@ -33,6 +33,7 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Options.h"
 #include "../Engine/HdGentle.h"
+#include "../Engine/HdShots.h"
 #include "../fmath.h"
 
 namespace OpenXcom
@@ -722,6 +723,9 @@ void Projectile::addVaporCloud()
 	};
 
 	auto tilePos = voxelPos.toTile();
+	// HD (XP-000555): with the classic shots a laser, plasma or gauss shot leaves no vapor on the screen at k > 1; the particles are made
+	// and move all the same (the generator above is read as before), the map only does not draw the marked ones
+	const bool hdShot = Options::oxceHdClassicShots && HdShots::kindOf(getWeaponRules());
 	for (int i = 0; i != _vaporDensity; ++i)
 	{
 		ModScript::VaporParticleAmmo::Output arg = {
@@ -764,6 +768,10 @@ void Projectile::addVaporCloud()
 		if (varporColor >= 0)
 		{
 			Particle particle = Particle(voxelPos, subVoxelOffset, subVoxelVelocity, subVoxelAcceleration, drift, varporColor, particleLifetime, size);
+			if (hdShot)
+			{
+				particle.setHdShot();
+			}
 			Position tileOffset = particle.updateScreenPosition();
 			_save->getBattleGame()->getMap()->addVaporParticle(tilePos + tileOffset, particle);
 		}
