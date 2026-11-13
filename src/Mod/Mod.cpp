@@ -3584,6 +3584,10 @@ void Mod::loadHdUiArt()
 		{
 			continue;
 		}
+		if (file.size() > 10 && file.substr(file.size() - 10) == ".erase.png")
+		{
+			continue; // a doll layer's erase mask, read with the layer (HdUiArt::composeFrame)
+		}
 		const std::string lower = file.substr(0, file.size() - 4);
 		auto it = names.find(lower);
 		if (it == names.end())

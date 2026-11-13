@@ -497,6 +497,49 @@ bool composeFrame(const Art *art)
 			files.emplace_back(data, size);
 		}
 	}
+	// a layer's erase mask (<layer>.erase.png, its alpha): where the classic layer's black matte hid the layers
+	// under it (hair under a helmet) and the picture leaves the matte out, what lies under it is cleared to the
+	// backdrop, as the matte hid it (XP-000566)
+	std::vector<HdFrame> erases(art->layers.size());
+	std::vector<HdFrame*> eraseTo;
+	std::vector<std::pair<void*, size_t>> eraseFiles;
+	for (size_t i = 0; i < art->layers.size(); ++i)
+	{
+		const std::string &path = art->layers[i]->path;
+		if (path.size() < 5)
+		{
+			continue;
+		}
+		const std::string mask = path.substr(0, path.size() - 4) + ".erase.png";
+		size_t size = 0;
+		void *data = nullptr;
+		if (FileMap::fileExists(mask))
+		{
+			if (SDL_RWops *rw = FileMap::getRWops(mask))
+			{
+				data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+			}
+		}
+		if (data)
+		{
+			eraseTo.push_back(&erases[i]);
+			eraseFiles.emplace_back(data, size);
+		}
+	}
+	if (!eraseFiles.empty())
+	{
+		HdWorkers::instance().run((int)eraseFiles.size(), [&](int i)
+		{
+			if (!HdSprites::decodePng((const unsigned char*)eraseFiles[i].first, eraseFiles[i].second, *eraseTo[i]))
+			{
+				eraseTo[i]->pixels.clear();
+			}
+		});
+		for (const auto &file : eraseFiles)
+		{
+			SDL_free(file.first);
+		}
+	}
 	if (toRead.size() > 1)
 	{
 		std::vector<HdFrame> frames(toRead.size());
@@ -536,14 +579,22 @@ bool composeFrame(const Art *art)
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(H / 64, pool.threads() * 2));
 	const int ox = art->cropX * s, oy = art->cropY * s;
-	for (const Art *layer : art->layers)
+	for (size_t li = 0; li < art->layers.size(); ++li)
 	{
+		const Art *layer = art->layers[li];
 		HdFrame f;
 		// the layer in the doll's reference palette (a layer without one, or a doll without one: as it is)
 		const SDL_Color *colors = art->palette.empty() ? layer->palette.data() : art->palette.data();
 		if (!prepare(layer, s, colors, f))
 		{
 			return false;
+		}
+		const HdFrame &e = erases[li];
+		const bool erase = !e.pixels.empty() && e.width == f.width && e.height == f.height;
+		if (!e.pixels.empty() && !erase)
+		{
+			Log(LOG_WARNING) << "HD interface: the erase mask of " << layer->path << " is " << e.width << "x" << e.height
+				<< ", the layer " << f.width << "x" << f.height << " - not used";
 		}
 		const int lw = std::min(f.width - ox, W), lh = std::min(f.height - oy, H);
 		pool.run(jobs, [&](int job)
@@ -552,6 +603,28 @@ bool composeFrame(const Art *art)
 			{
 				const Uint32 *src = &f.pixels[(size_t)(y + oy) * f.width + ox];
 				Uint32 *dst = &out.pixels[(size_t)y * W];
+				if (erase)
+				{
+					const Uint32 *cut = &e.pixels[(size_t)(y + oy) * e.width + ox];
+					const Uint32 *back = art->backdrop.empty() ? nullptr : &art->backdrop[(size_t)(y / s) * art->baseWidth];
+					for (int x = 0; x < lw; ++x)
+					{
+						const Uint32 c = cut[x] >> 24;
+						if (!c) continue;
+						// towards the backdrop (none: transparent) by the mask, both straight alpha
+						const Uint32 dp = dst[x], tp = back ? back[x / s] : 0u;
+						const Uint32 kd = (dp >> 24) * (255 - c), kt = (tp >> 24) * c, k = kd + kt;
+						if (!k)
+						{
+							dst[x] = 0u;
+							continue;
+						}
+						const Uint32 r = (((dp >> 16) & 0xFF) * kd + ((tp >> 16) & 0xFF) * kt) / k;
+						const Uint32 g = (((dp >> 8) & 0xFF) * kd + ((tp >> 8) & 0xFF) * kt) / k;
+						const Uint32 b = ((dp & 0xFF) * kd + (tp & 0xFF) * kt) / k;
+						dst[x] = ((k / 255) << 24) | (r << 16) | (g << 8) | b;
+					}
+				}
 				for (int x = 0; x < lw; ++x)
 				{
 					const Uint32 sp = src[x], sa = sp >> 24;
