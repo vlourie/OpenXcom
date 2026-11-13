@@ -158,6 +158,9 @@ namespace HdBaseScene
 		float saturation = 0;             ///< from
 		float peak = 1;                   ///< the brightness at the peak
 		int pulses = 1, groups = 1;
+		/// `flash <length> <gap>` after the groups (the shield, ticket 564): the pixels do not go dark but flare up lilac
+		/// with a halo, `pulses` flashes of `flashLength` seconds with `flashGap` seconds between; 0 - the old wave
+		float flashLength = 0, flashGap = 0;
 	};
 
 	/// An eye closing and opening in a fit.
@@ -201,6 +204,7 @@ namespace HdBaseScene
 		Flow flow;
 		std::vector<Spin> spins;
 		float cycle = 0, fit = 0;         ///< seconds from one fit to the next and of a fit; 0 - it moves all the time
+		bool cycleExact = false;          ///< `cycle <period> <length> exact`: the fits come every period, not a little off it
 		std::vector<Glow> glows;
 		std::vector<Lid> lids;
 		std::vector<Sink> sinks;
@@ -270,6 +274,7 @@ namespace HdBaseScene
 		Uint32 next = 0, start = 0;       ///< ms of the display clock: when it is due, when it began
 		Uint32 end = 0;                   ///< ms: when it is over (start + length, or sooner when the work stops)
 		bool on = false;
+		bool exact = false;               ///< the next fit comes a full period after the last began (no +-15%)
 		bool continuous = false;          ///< no `cycle` line: turns of `length` seconds, handed out in order of waiting
 		bool wants = true;                ///< a facility of work or research asks for a place only while it works
 		float act = 0;                    ///< 0 .. 1, worked out by tick
@@ -283,6 +288,8 @@ namespace HdBaseScene
 		int fit = -1;
 		std::vector<Uint32> pixels;       ///< which of the view (y * w + x), picked from the albedo by bake
 		std::vector<unsigned char> group;
+		std::vector<float> halo;          ///< flash only: the glow about the pixels, 0..1, haloW x haloH from (haloX, haloY) in the view
+		int haloX = 0, haloY = 0, haloW = 0, haloH = 0;
 	};
 	struct PlacedLid
 	{

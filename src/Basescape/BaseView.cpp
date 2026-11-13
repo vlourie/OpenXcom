@@ -1284,6 +1284,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					HdBaseScene::Fit F;
 					F.period = scene->cycle;
 					F.length = scene->fit;
+					F.exact = scene->cycleExact;
 					F.seed = (Uint32)number * 2654435761u ^ (Uint32)(fac->getX() * 31 + fac->getY());
 					fit = (int)view.fits.size();
 					view.fits.push_back(F);

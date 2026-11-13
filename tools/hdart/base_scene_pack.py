@@ -251,7 +251,7 @@ EMITS.setdefault("STR_PLASMA_DEFENSES", []).append(("beam", .5, 0.0, .5, 250 / 5
 # CYCLE - период, с, и сколько длится приступ, с; одновременно движутся не больше трёх построек базы, период у
 # каждой своей постройки свой, 30-60 с (тикет 244). Пиксели - пака 128 одноклеточной постройки.
 CYCLE = {
-    "STR_GRAV_SHIELD": (45, 10),             # 237: точки на перекрестиях фиолет -> тёмный -> фиолет, дважды
+    "STR_GRAV_SHIELD": (50, 8, "exact"),     # 564 (вариант A): раз в 50 с ровно, три вспышки по 2 с через 1 с = 8 с
     "STR_FUSION_BALL_DEFENSES": (45, 8),     # 237: шары гаснут до тёмно-оранжевого по четыре, волной по лучам
     "STR_LASER_DEFENSES": (45, 16),          # 244: два качания ствола (период 8 с) раз в 45 с
     "STR_GAUSS_DEFENSES": (45, 16),
@@ -264,9 +264,12 @@ CYCLE = {
 # >1 разгорается), пульсов за приступ, групп по углу вокруг центра рамки (волна по кругу)
 GLOW = {
     # точки на перекрестиях - каждая своей рамкой (glow_blobs): в общей рамке гасла и лавандовая кайма постройки
-    "STR_GRAV_SHIELD": [(12, 12, 104, 104, 285, 35, .08, .25, 2, 1, "blobs", 22.7, 21.5, 24.0)],
+    # 564: пик 1.9 (разгорается, не тускнеет), 3 вспышки; строка flash - GLOW_FLASH ниже
+    "STR_GRAV_SHIELD": [(12, 12, 104, 104, 285, 35, .08, 1.9, 3, 1, "blobs", 22.7, 21.5, 24.0)],
     "STR_FUSION_BALL_DEFENSES": [(13, 13, 88, 88, 18, 14, .60, .55, 1, 4)],
 }
+# Вспышка (HdBaseScene, glow ... flash): длина вспышки и пауза между ними, с; узлы разгораются сиреневым с гало (тикет 564)
+GLOW_FLASH = {"STR_GRAV_SHIELD": (2.0, 1.0)}
 # декодер 23.10 (Vitali, «трубы - все»): вместо разгорания кабелей - сгустки по ним от бака, вид flow (FLOW ниже)
 # Веко: центр, полуоси, морганий за приступ (белок и зрачок внутри оранжевой каймы, сетка 22.10); цвет века -
 # металл купола над глазом (движок берёт его с картинки над эллипсом)
@@ -649,13 +652,15 @@ def extra_lines(t, cols, rows, img=None):
             out.setdefault(key, []).append(line)
     # приступы и их движения (тикеты 237-245) - одноклеточные постройки, клетка 0 0
     if t in CYCLE:
-        out.setdefault((0, 0), []).append("cycle %.1f %.1f" % CYCLE[t])
+        out.setdefault((0, 0), []).append("cycle %.1f %.1f" % CYCLE[t][:2] + (" exact" if len(CYCLE[t]) > 2 else ""))
     for g in GLOW.get(t, []):
         x, y, w, h, hue, tol, sat, peak, pulses, groups = g[:10]
         boxes = glow_blobs(img, cols, g) if len(g) > 10 and g[10] == "blobs" and img is not None else [(x, y, w, h)]
         for bx, by, bw, bh in boxes:
-            out.setdefault((0, 0), []).append("glow %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %d %d"
-                                              % (bx, by, bw, bh, hue, tol, sat, peak, pulses, groups))
+            line = "glow %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %d %d" % (bx, by, bw, bh, hue, tol, sat, peak, pulses, groups)
+            if t in GLOW_FLASH:
+                line += " flash %.1f %.1f" % GLOW_FLASH[t]
+            out.setdefault((0, 0), []).append(line)
     for x, y, rx, ry, blinks in LID.get(t, []):
         out.setdefault((0, 0), []).append("lid %.1f %.1f %.1f %.1f %d" % (x, y, rx, ry, blinks))
     for sink in SINK.get(t, []):

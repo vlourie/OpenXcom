@@ -483,6 +483,8 @@ bool parse(std::istream &in, TileScene &out)
 			{
 				out.cycle = period;
 				out.fit = std::min(length, period);
+				std::string how;
+				out.cycleExact = (words >> how) && how == "exact";
 			}
 		}
 		else if (key == "glow")
@@ -491,6 +493,13 @@ bool parse(std::istream &in, TileScene &out)
 			words >> G.x >> G.y >> G.w >> G.h >> G.hue >> G.tolerance >> G.saturation >> G.peak >> G.pulses >> G.groups;
 			if (words && G.w > 0 && G.h > 0 && G.pulses > 0)
 			{
+				std::string how;
+				float length = 0, gap = 0;
+				if ((words >> how >> length >> gap) && how == "flash" && length > 0 && gap >= 0)
+				{
+					G.flashLength = length;
+					G.flashGap = gap;
+				}
 				G.groups = std::min(16, std::max(1, G.groups));
 				out.glows.push_back(G);
 			}
@@ -618,7 +627,7 @@ void tick(View &view, Uint32 ms)
 			else
 			{
 				// the next one about a period later, a little more or less, so the facilities do not keep step
-				F.next = F.start + (Uint32)(F.period * 1000 * (0.85f + 0.3f * hash1(F.seed, F.start, 2)));
+				F.next = F.start + (Uint32)(F.period * 1000 * (F.exact ? 1.0f : 0.85f + 0.3f * hash1(F.seed, F.start, 2)));
 			}
 		}
 		running += F.on ? 1 : 0;
@@ -693,6 +702,25 @@ float fitWave(float t, float length, int pulses)
 		return 0;
 	}
 	const float s = std::sin(PI * std::max(1, pulses) * t / length);
+	return s * s;
+}
+
+/// The wave of a flash glow (ticket 564): `count` flashes of `flash` seconds (a squared sine, up and down), `gap`
+/// seconds of nothing between them; 0 before, after and in the gaps.
+float flashWave(float t, float flash, float gap, int count)
+{
+	if (t < 0 || flash <= 0)
+	{
+		return 0;
+	}
+	const float step = flash + gap;
+	const int k = (int)(t / step);
+	const float u = t - k * step;
+	if (k >= count || u >= flash)
+	{
+		return 0;
+	}
+	const float s = std::sin(PI * u / flash);
 	return s * s;
 }
 
@@ -1789,6 +1817,12 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 				{
 					continue;
 				}
+				// a flash lights the node only, a disc of 0.38 of the box: the shield's last node has the lavender rim
+				// of the building in its box
+				if (L.flashLength > 0 && (x + 0.5f - mx) * (x + 0.5f - mx) + (y + 0.5f - my) * (y + 0.5f - my) > 0.1444f * L.w * L.w)
+				{
+					continue;
+				}
 				const float r = ((px >> 16) & 0xFF) / 255.0f, g = ((px >> 8) & 0xFF) / 255.0f, bl = (px & 0xFF) / 255.0f;
 				const float hi = std::max(r, std::max(g, bl)), lo = std::min(r, std::min(g, bl)), d = hi - lo;
 				if (hi < 0.3f || d <= 0.0001f || d / hi < L.saturation)
@@ -1806,6 +1840,34 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 				G.pixels.push_back((Uint32)i);
 				const float ang = std::atan2(y + 0.5f - my, x + 0.5f - mx) + PI;
 				G.group.push_back((unsigned char)std::min(L.groups - 1, (int)(ang / (2 * PI) * L.groups)));
+			}
+		}
+		if (L.flashLength > 0 && !G.pixels.empty())
+		{
+			// the halo of a flash: the node's pixels blurred 2.5 pack pixels, over a box 8 wider on each side, up to 1
+			const int pad = (int)std::ceil(8 * view.scale);
+			int bx0 = w, by0 = h, bx1 = 0, by1 = 0;
+			for (const Uint32 p : G.pixels)
+			{
+				bx0 = std::min(bx0, (int)(p % w));
+				bx1 = std::max(bx1, (int)(p % w) + 1);
+				by0 = std::min(by0, (int)(p / w));
+				by1 = std::max(by1, (int)(p / w) + 1);
+			}
+			G.haloX = std::max(0, bx0 - pad);
+			G.haloY = std::max(0, by0 - pad);
+			G.haloW = std::min(w, bx1 + pad) - G.haloX;
+			G.haloH = std::min(h, by1 + pad) - G.haloY;
+			G.halo.assign((size_t)G.haloW * G.haloH, 0.0f);
+			for (const Uint32 p : G.pixels)
+			{
+				G.halo[(size_t)((int)(p / w) - G.haloY) * G.haloW + (int)(p % w) - G.haloX] = 1.0f;
+			}
+			blur(G.halo, G.haloW, G.haloH, 2.5f * view.scale);
+			const float top = *std::max_element(G.halo.begin(), G.halo.end());
+			for (float &v : G.halo)
+			{
+				v = top > 0 ? v / top : 0.0f;
 			}
 		}
 	}
@@ -2021,9 +2083,67 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 		out[1] = (float)((px >> 8) & 0xFF);
 		out[2] = (float)(px & 0xFF);
 	};
+	// the flashes (ticket 564, the shield): the halos of all of them first, then the nodes over them, which flare up
+	// lilac; the glows without `flash` go the old way below
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		for (const PlacedGlow &G : view.glows)
+		{
+			const float ft = G.glow.flashLength > 0 ? fitTime(view, G.fit, ms) : -1;
+			const float a = flashWave(ft, G.glow.flashLength, G.glow.flashGap, G.glow.pulses);
+			if (a < 0.004f)
+			{
+				continue;
+			}
+			if (pass == 0)
+			{
+				if (G.halo.empty())
+				{
+					continue;
+				}
+				mx.begin(view.x + G.haloX, view.y + G.haloY, view.x + G.haloX + G.haloW, view.y + G.haloY + G.haloH);
+				const float halo[3] = { 190.0f, 140.0f, 255.0f };
+				for (int y = 0; y < G.haloH; ++y)
+				{
+					for (int x = 0; x < G.haloW; ++x)
+					{
+						const float v = G.halo[(size_t)y * G.haloW + x];
+						if (v > 0.01f)
+						{
+							mx.put(view.x + G.haloX + x, view.y + G.haloY + y, halo, v * 0.6f * a);
+						}
+					}
+				}
+				mx.end();
+				continue;
+			}
+			int bx0 = view.w, by0 = view.h, bx1 = 0, by1 = 0;
+			for (const auto p : G.pixels)
+			{
+				bx0 = std::min(bx0, (int)(p % view.w));
+				bx1 = std::max(bx1, (int)(p % view.w) + 1);
+				by0 = std::min(by0, (int)(p / view.w));
+				by1 = std::max(by1, (int)(p / view.w) + 1);
+			}
+			mx.begin(view.x + bx0, view.y + by0, view.x + bx1, view.y + by1);
+			const float gain = 1 + (G.glow.peak - 1) * a;
+			const float lilac[3] = { 235.0f, 205.0f, 255.0f };
+			for (const auto p : G.pixels)
+			{
+				float col[3];
+				rgb(view.albedo[p], col);
+				for (int c = 0; c < 3; ++c)
+				{
+					col[c] = std::min(255.0f, col[c] * gain) * (1 - 0.45f * a) + lilac[c] * 0.45f * a;
+				}
+				put((int)(p % view.w), (int)(p / view.w), col);
+			}
+			mx.end();
+		}
+	}
 	for (const PlacedGlow &G : view.glows)
 	{
-		const float ft = fitTime(view, G.fit, ms);
+		const float ft = G.glow.flashLength > 0 ? -1 : fitTime(view, G.fit, ms);
 		if (ft < 0)
 		{
 			continue;
