@@ -98,6 +98,7 @@ set ( battlescape_src
   Battlescape/BriefingState.cpp
   Battlescape/Camera.cpp
   Battlescape/CannotReequipState.cpp
+  Battlescape/ReequipManufactureState.cpp
   Battlescape/CommendationLateState.cpp
   Battlescape/CommendationState.cpp
   Battlescape/ConfirmEndMissionState.cpp

@@ -729,6 +729,16 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 		}
 #endif
 		_screen = SDL_SetVideoMode(width, height, _bpp, _flags);
+		if (_screen == 0 && (_flags & SDL_OPENGL))
+		{
+			// no OpenGL here (an old driver, a remote desktop, SDL dummy): the same display drawn by the processor, not a crash -
+			// oxceHdGpu is on by default since XP-000569; the options keep it off for the next start
+			Log(LOG_ERROR) << SDL_GetError() << " - OpenGL and the HD GPU output off, the display goes to the processor";
+			Options::useOpenGL = false;
+			Options::oxceHdGpu = false;
+			makeVideoFlags();
+			_screen = SDL_SetVideoMode(width, height, _bpp, _flags);
+		}
 		if (_screen == 0)
 		{
 			Log(LOG_ERROR) << SDL_GetError();

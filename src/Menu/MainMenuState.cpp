@@ -47,6 +47,9 @@
 #include "../Engine/FileMap.h"
 #include "../Engine/SDL2Helpers.h"
 #include "../Battlescape/AiProbe.h"
+#include "../Battlescape/CannotReequipState.h"
+#include "../Mod/RuleItem.h"
+#include "../Mod/RuleManufacture.h"
 #include <fstream>
 
 namespace OpenXcom
@@ -279,6 +282,43 @@ MainMenuState::MainMenuState(bool updateCheck)
 }
 
 /**
+ * HD test automation (XP-000573): the "not enough equipment" window of the first base of `save` - five items that a
+ * researched project makes, then one that none does; the click on a row opens where to manufacture it.
+ */
+static void hdReequipTest(Game *game, SavedGame *save)
+{
+	if (!save || save->getBases()->empty())
+	{
+		return;
+	}
+	const Mod *mod = game->getMod();
+	std::vector<ReequipStat> missing;
+	for (const auto &name : mod->getManufactureList())
+	{
+		const RuleManufacture *rule = mod->getManufacture(name);
+		if (missing.size() < 5 && rule && save->isResearched(rule->getRequirements()) && !rule->getProducedItems().empty() && rule->getProducedItems().begin()->first)
+		{
+			missing.push_back(ReequipStat{ rule->getProducedItems().begin()->first->getType(), 1 + (int)missing.size(), "HD test", 0 });
+		}
+	}
+	for (const auto &item : mod->getItemsList())
+	{
+		bool made = false;
+		for (const auto &name : mod->getManufactureList())
+		{
+			const RuleManufacture *rule = mod->getManufacture(name);
+			made = made || (rule && rule->getProducedItems().count(mod->getItem(item)) && save->isResearched(rule->getRequirements()));
+		}
+		if (!made && mod->getItem(item)->isInventoryItem())
+		{
+			missing.push_back(ReequipStat{ item, 2, "HD test", 0 });
+			break;
+		}
+	}
+	game->pushState(new CannotReequipState(missing, save->getBases()->front()));
+}
+
+/**
  * HD test automation (OXCE_HD_START, and the live bench's open command): opens the named screen.
  * @param game Pointer to the core game.
  * @param what The screen.
@@ -310,7 +350,7 @@ bool MainMenuState::hdStart(Game *game, const std::string &what)
 		}
 		nb->btnOkClick(nullptr);
 	}
-	else if (what == "geoscape" || what == "save" || what == "base")
+	else if (what == "geoscape" || what == "save" || what == "base" || (what == "reequip" && !game->getSavedGame()))
 	{
 		// a new game on the geoscape, zoomed a step in, the globe centred on Europe (no base placing)
 		SavedGame *save = game->getMod()->newSave(DIFF_BEGINNER);
@@ -339,6 +379,15 @@ bool MainMenuState::hdStart(Game *game, const std::string &what)
 			// the starting base's screen (its facilities' HD pictures)
 			game->pushState(new BasescapeState(save->getBases()->front(), gs->getGlobe()));
 		}
+		if (what == "reequip")
+		{
+			hdReequipTest(game, save);
+		}
+	}
+	else if (what == "reequip")
+	{
+		// a loaded save (the bench's load): the window over its screen, for its first base, with all its bases
+		hdReequipTest(game, game->getSavedGame());
 	}
 	else if (what == "ufopaedia")
 	{

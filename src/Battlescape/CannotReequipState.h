@@ -39,6 +39,9 @@ class CannotReequipState : public State
 private:
 	std::vector<ReequipStat> _missingItems;
 	Base *_base;
+	/// OXCE-HD (XP-000573): the missing item of each list row - a click opens where to manufacture it
+	std::vector<std::string> _rowItems;
+	Text *_txtHint;
 
 	TextButton *_btnOk, *_btnManufacture, *_btnPurchase;
 	Window *_window;
@@ -57,6 +60,8 @@ public:
 	void btnManufactureClick(Action *action);
 	/// Handler for clicking the Purchase/Hire button.
 	void btnPurchaseClick(Action *action);
+	/// Handler for clicking an item: where to manufacture it (OXCE-HD, XP-000573).
+	void lstItemsClick(Action *action);
 	/// Gets the list of missing items.
 	const std::vector<ReequipStat>& getMissingItems() const;
 	// Decreases the number of missing items by the bought amount.

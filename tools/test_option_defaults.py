@@ -17,6 +17,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 FILE = "src/Engine/Options.cpp"
 # OptionInfo(OPTION_OXCE, "key", &var, default, "STR_...", ...) - умолчание до первой запятой вне кавычек
+# ключи, чьё новое умолчание нарочно только для новых игроков (сохранённый выбор не трогаем) - с решением
+ONLY_NEW_PLAYERS = {
+    "oxceHdGpu",  # Vitali 14.11, тикет XP-000569: вывод через видеокарту по умолчанию новым игрокам
+}
 OPT = re.compile(r'OptionInfo\(\s*OPTION_\w+\s*,\s*"([^"]+)"\s*,\s*&[\w:]+\s*,\s*("[^"]*"|[^,)]+)')
 
 
@@ -40,7 +44,7 @@ def main():
     if len(old) < 100 or len(new) < 100:
         print(f"FAIL: разобрано опций {len(old)} / {len(new)} - регулярка не видит OptionInfo")
         return 1
-    bad = [(k, old[k], new[k]) for k in sorted(old.keys() & new.keys()) if old[k] != new[k]]
+    bad = [(k, old[k], new[k]) for k in sorted(old.keys() & new.keys()) if old[k] != new[k] and k not in ONLY_NEW_PLAYERS]
     print(f"опций: выпуск {base} - {len(old)}, проверяемое - {len(new)}, общих ключей {len(old.keys() & new.keys())}")
     for k, o, n in bad:
         print(f"FAIL: {k}: умолчание {o} -> {n}, а ключ прежний - у игрока останется сохранённое {o}. Смени ключ")
