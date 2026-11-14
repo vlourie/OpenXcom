@@ -27,6 +27,15 @@ PROMOTE = {
     "STR_SR_PISTOL": "laser", "STR_SR_RIFLE": "laser", "STR_SR_SHOTGUN": "laser",
     "STR_KRUGER": "plasma", "STR_IGUN": "plasma", "STR_HAXXOR": "plasma", "STR_HORNET": "plasma",
 }
+# Тикет XP-000570 (Vitali 14.11, вариант B): семья Hell (урон 5 - плазма, лист трассера 1/2/3) стреляет как классическая
+# плазма. В таблице 544 этих стволов нет вовсе, поэтому размер задан здесь тем же правилом, что в weapon_class.py:
+# PISTOL/SMG - малый, вес 25+ - большой, остальное - средний.
+EXTRA = {
+    "STR_HELL_PISTOL": ("plasma", "small"), "STR_HELL_SMG": ("plasma", "small"),
+    "STR_HELL_RIFLE": ("plasma", "medium"), "STR_HELL_SHOTGUN": ("plasma", "medium"),
+    "STR_HELLFIST": ("plasma", "medium"), "STR_HELLGUN": ("plasma", "medium"),
+    "STR_HELL_CHAINGUN": ("plasma", "large"),
+}
 
 
 def main():
@@ -43,6 +52,11 @@ def main():
                 continue
             lines.append((row["item"], cls, row["size"]))
             count[(cls, row["size"])] = count.get((cls, row["size"]), 0) + 1
+    have = {i for i, _, _ in lines}
+    for item, (cls, size) in EXTRA.items():
+        if item not in have:
+            lines.append((item, cls, size))
+            count[(cls, size)] = count.get((cls, size), 0) + 1
     lines.sort()
     text = ["# written by tools/hdart/shots_map.py from weapon_class.tsv (XP-000544): shot <item> laser|plasma|gauss small|medium|large"]
     text += [f"shot {i} {c} {s}" for i, c, s in lines]

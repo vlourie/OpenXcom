@@ -3325,12 +3325,16 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 	const bool body = variant >= 2 && !drops;
 	const int quarter = body ? variant - 2 : 0;
 	const bool right = body ? (((quarter & 1) + (quarter >> 1)) & 1) != 0 : variant != 0;
-	const double sg = right ? 1.0 : -1.0, sc = drops ? 1.0 : (body ? 1.35 : 1.0) * (kind == HdFx::TRACK_BARE || kind == HdFx::TRACK_PAW ? 1.3 : 1.0),
-		off = drops ? 0.0 : sg * (body ? 0.1 : 0.12);
+	double sg = right ? 1.0 : -1.0, sc = drops ? 1.0 : (body ? 1.35 : 1.0) * (kind == HdFx::TRACK_BARE || kind == HdFx::TRACK_PAW ? 1.3 : 1.0),
+		off = drops ? 0.0 : sg * (body ? 0.1 : 0.12), lead = 0.0;
+	// a dent in snow of a one-tile walker (XP-000574, Vitali 14.11): two feet a tile, half the size, one ahead of the other; `variant` says which
+	// foot leads. The blood's prints and the 2x2 bodies keep one print a tile.
+	const bool pair = snow && moves && !body;
+	const double sc1 = sc;
 	struct Oval { double ahead, across, a, b; };
-	Oval ovals[16];
+	Oval ovals[24];
 	int count = 0;
-	auto add = [&](double ahead, double across, double a, double b) { ovals[count++] = Oval{ ahead * sc, off + across * sc, a * sc, b * sc }; };
+	auto add = [&](double ahead, double across, double a, double b) { if (count < 24) ovals[count++] = Oval{ lead + ahead * sc, off + across * sc, a * sc, b * sc }; };
 	// value noise on a grid of a quarter of a tile (the pattern's own), smooth between the nodes
 	auto node = [pat](int ix, int iy) { return (hdStepMix((Uint32)ix * 374761393U + (Uint32)iy * 668265263U + (Uint32)pat * 1274126177U) & 0xFFFF) / 65535.0; };
 	auto wear = [&](double u, double v)
@@ -3363,7 +3367,16 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 			}
 		}
 	}
-	else if (kind == HdFx::TRACK_BARE)
+	else for (int foot = 0; foot < (pair ? 2 : 1); ++foot)
+	{
+	if (pair)
+	{
+		sg = (foot == 0) == right ? 1.0 : -1.0;
+		sc = sc1 * 0.5;
+		off = sg * 0.07;
+		lead = foot == 0 ? 0.2 : -0.2;
+	}
+	if (kind == HdFx::TRACK_BARE)
 	{
 		const double inner[5] = { 0.068, 0.033, 0.002, -0.030, -0.058 }, ahead[5] = { 0.19, 0.18, 0.168, 0.152, 0.132 },
 			r[5] = { 0.04, 0.03, 0.028, 0.025, 0.022 };
@@ -3390,6 +3403,7 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 		add(0.13, 0, 0.21, 0.115);
 		add(-0.04, 0, 0.09, 0.06);
 		add(-0.19, 0, 0.11, 0.095);
+	}
 	}
 	// the lanes of a wheeled or tracked body: two, a body's track apart (one tile for a 2x2 body), seen from this tile's middle
 	const bool wheel = kind == HdFx::TRACK_WHEEL;
