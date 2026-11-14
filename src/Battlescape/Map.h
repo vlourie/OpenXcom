@@ -325,6 +325,9 @@ private:
 	/// The veils of the backdrop's colour over the far cells (by colour and opacity), kept while the battle's map lives.
 	std::unordered_map<unsigned long long, HdFrame> _hdHazeFrames;
 	int _hdGhostState = -1;  ///< -1: floors not looked yet, 0: none (no ground level to go on), 1: _hdGhostFloors are there
+	/// XP-000572: the level of the open sea of the map (-2 not looked yet, -1 none) and its commonest sea cells, most common first
+	int _hdSeaZ = -2;
+	std::vector<Tile*> _hdSeaTiles;
 	/// Options::oxceHdBeyondLook 1: the floor of a palette sprite in greys (made once, kept while the battle's map lives), nullptr if it cannot be made.
 	const HdFrame *hdGrayFloor(HdCanvas *surface, SurfaceRaw<const Uint8> sprite);
 	std::unordered_map<const void*, HdFrame> _hdGrayFrames;

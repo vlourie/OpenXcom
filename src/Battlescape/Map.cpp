@@ -125,6 +125,32 @@ namespace OpenXcom
 namespace
 {
 
+/// XP-000572: a floor of the sea - animated, no one can walk or fly over it
+bool hdSeaFloor(const MapData *data)
+{
+	return data && data->getObjectType() == O_FLOOR && data->getTUCost(MT_WALK) == 255 && data->getTUCost(MT_FLY) == 255
+		&& data->getSprite(0) != data->getSprite(1);
+}
+
+/// XP-000572: open water - a sea floor with nothing on it
+bool hdOpenSea(const Tile *tile)
+{
+	return tile && hdSeaFloor(tile->getMapData(O_FLOOR))
+		&& !tile->getMapData(O_WESTWALL) && !tile->getMapData(O_NORTHWALL) && !tile->getMapData(O_OBJECT);
+}
+
+/// XP-000572: the first floor above this cell is open water - the cell is under the sea
+bool hdUnderSea(SavedBattleGame *save, const Position &pos)
+{
+	for (int z = pos.z + 1; z < save->getMapSizeZ(); ++z)
+	{
+		const Tile *t = save->getTile(Position(pos.x, pos.y, z));
+		if (t && t->getMapData(O_FLOOR))
+			return hdOpenSea(t);
+	}
+	return false;
+}
+
 /// HD render: the battle view zoom steps, percent (Ctrl + mouse wheel goes one step). The view shrinks at most
 /// twice, so the bilinear scale of the canvas to the screen still takes every pixel of it in.
 const int VIEW_ZOOMS[] = { 50, 59, 71, 84, 100, 119, 141, 168, 200 };
@@ -6331,9 +6357,97 @@ void Map::drawTerrain(HdCanvas *surface)
 	{
 		hdWeatherRolls();
 	}
+	// XP-000572: a map with open sea (a ship) - the sea goes on beyond the map's edge on the water's level, HD scale above 1;
+	// looked for once: the map lives for one battle
+	if (_hdSeaZ == -2)
+	{
+		_hdSeaZ = -1;
+		_hdSeaTiles.clear();
+		std::vector<int> perZ(_save->getMapSizeZ(), 0);
+		std::unordered_map<const MapData*, std::pair<int, Tile*>> kinds;
+		for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
+		{
+			Tile *t = _save->getTile(i);
+			if (hdOpenSea(t))
+			{
+				++perZ[t->getPosition().z];
+				auto &k = kinds[t->getMapData(O_FLOOR)];
+				if (!k.second)
+					k.second = t;
+				++k.first;
+			}
+		}
+		for (int z = 0; z < (int)perZ.size(); ++z)
+			if (perZ[z] >= 50 && (_hdSeaZ < 0 || perZ[z] > perZ[_hdSeaZ]))
+				_hdSeaZ = z;
+		std::vector<std::pair<int, Tile*>> order;
+		for (auto &k : kinds)
+			if (k.second.second->getPosition().z == _hdSeaZ)
+				order.push_back(k.second);
+		std::sort(order.begin(), order.end(), [](const std::pair<int, Tile*> &a, const std::pair<int, Tile*> &b) { return a.first > b.first; });
+		for (size_t i = 0; i < order.size() && i < 8; ++i)
+			_hdSeaTiles.push_back(order[i].second);
+	}
+	const bool hdSea = _k > 1 && !turned && _hdSeaZ >= beginZ && _hdSeaZ <= endZ && !_hdSeaTiles.empty();
+	// the sea beyond the edge behind the map goes under the water's level, before it is drawn; the sea before the map after it -
+	// the side of a wave picture under its diamond is black, and the next row of the sea covers it (the map's ring of water too)
+	auto hdDrawSea = [&](int itZ, bool front)
+		{
+			const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY(), R = 48;
+			// the sea of SEAURBAN is one picture cut into 3x3 cells (0..8 of the set): the map lays them by (y % 3, x % 3)
+			static const int PIECE[3][3] = { { 0, 2, 5 }, { 1, 4, 7 }, { 3, 6, 8 } };
+			Tile *rep0 = _hdSeaTiles[0];
+			const MapData *repData = rep0->getMapData(O_FLOOR);
+			if (!repData)
+				return;
+			MapDataSet *seaSet = repData->getDataset();
+			SurfaceSet *seaFrames = seaSet ? seaSet->getSurfaceset() : nullptr;
+			int seaFrame = 0;
+			if (seaFrames)
+			{
+				const void *cur = rep0->getSprite(O_FLOOR).getBuffer();
+				for (int f = 0; f < 8; ++f)
+				{
+					if (SurfaceRaw<const Uint8>(seaFrames->getFrame(repData->getSprite(f))).getBuffer() == cur)
+					{
+						seaFrame = f;
+						break;
+					}
+				}
+			}
+			bool seaPieces = seaFrames && seaSet->getSize() >= 9;
+			for (int i = 0; seaPieces && i < 9; ++i)
+				seaPieces = hdSeaFloor(seaSet->getObject(i)); // the set's first nine are the sea's 3x3 cells, else one picture everywhere
+			for (int y = -R; y < sizeY + R; ++y)
+			{
+				for (int x = -R; x < sizeX + R; ++x)
+				{
+					if ((x >= 0 && x < sizeX && y >= 0 && y < sizeY) || (x >= sizeX || y >= sizeY) != front)
+						continue;
+					Position screen;
+					_camera->convertMapToScreen(Position(x, y, itZ), &screen);
+					screen += cameraPos;
+					if (screen.x <= -_spriteWidth || screen.x >= surface->getWidth() + _spriteWidth ||
+						screen.y <= -_spriteHeight || screen.y >= surface->getHeight() + _spriteHeight)
+						continue;
+					SurfaceRaw<const Uint8> sprite = rep0->getSprite(O_FLOOR);
+					if (seaPieces)
+					{
+						const MapData *piece = seaSet->getObject(PIECE[((y % 3) + 3) % 3][((x % 3) + 3) % 3]);
+						sprite = SurfaceRaw<const Uint8>(seaFrames->getFrame(piece->getSprite(seaFrame)));
+					}
+					if (sprite)
+						surface->blit(sprite, screen.x, screen.y, reShade(rep0), false, _nvColor);
+				}
+			}
+		};
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
+		if (hdSea && itZ == _hdSeaZ)
+			hdDrawSea(itZ, false);
+		if (hdSea && itZ == _hdSeaZ + 1)
+			hdDrawSea(_hdSeaZ, true);
 		for (int viewY = beginY; viewY < rimY; viewY++)
 		{
 			for (int viewX = beginX; viewX < rimX; viewX++)
@@ -6360,6 +6474,13 @@ void Map::drawTerrain(HdCanvas *surface)
 				{
 					bool isUnitMovingNearby = movingUnit && positionInRangeXY(movingUnitPosition, mapPosition, 2);
 
+					// XP-000572: what lies under the sea and is not seen yet stays under the water, not black
+					if (hdSea && !tile->isDiscovered(O_FLOOR) && !tile->isDiscovered(O_WESTWALL) && !tile->isDiscovered(O_NORTHWALL)
+						&& hdUnderSea(_save, mapPosition))
+					{
+						continue;
+					}
+
 					if (tile->isDiscovered(O_FLOOR))
 					{
 						tileShade = reShade(tile);
@@ -6371,6 +6492,16 @@ void Map::drawTerrain(HdCanvas *surface)
 								obstacleShade = getShadePulseForFrame(tileShade, _animFrame);
 							}
 						}
+						if (_hdLightOn)
+						{
+							updateHdLight(tile, tileShade, mapPosition);
+						}
+					}
+					else if (hdSea && hdOpenSea(tile))
+					{
+						// XP-000572: open water (an animated floor no one can walk or fly over, nothing on it) shows before it is seen
+						tileShade = reShade(tile);
+						obstacleShade = tileShade;
 						if (_hdLightOn)
 						{
 							updateHdLight(tile, tileShade, mapPosition);
@@ -7378,6 +7509,8 @@ void Map::drawTerrain(HdCanvas *surface)
 			}
 		}
 	}
+	if (hdSea && _hdSeaZ == endZ)
+		hdDrawSea(_hdSeaZ, true);
 	// XP-000382: the near sides of the fence stand before the map's cells
 	if (hdBorder && Options::oxceHdMapBorder == 2)
 	{
