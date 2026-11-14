@@ -431,6 +431,11 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceVoiceVolume", &oxceVoiceVolume, MIX_MAX_VOLUME, "", "HIDDEN"));
 	// The player's own music from <user folder>/music (XP-000373): 0 off, 1 with the game's tracks, 2 only own; the Audio screen
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUserMusic", &oxceUserMusic, 0, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMusicTrackNotice", &oxceMusicTrackNotice, true, "STR_MUSIC_TRACK_NOTICE", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMusicShuffle", &oxceMusicShuffle, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMusicRepeat", &oxceMusicRepeat, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMusicPlaylistGeo", &oxceMusicPlaylistGeo, "", "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMusicPlaylistBattle", &oxceMusicPlaylistBattle, "", "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHiddenMovementBackgroundChangeFrequency", &oxceHiddenMovementBackgroundChangeFrequency, 1, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryShowUnitSlot", &oxceInventoryShowUnitSlot, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReplaceNotesLink", &oxceReplaceNotesLink, false, "", "HIDDEN"));
@@ -748,6 +753,9 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyNightVisionToggle", &keyNightVisionToggle, SDLK_SCROLLOCK, "STR_TOGGLE_NIGHT_VISION", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyNightVisionHold", &keyNightVisionHold, SDLK_SPACE, "STR_HOLD_NIGHT_VISION", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keySelectMusicTrack", &keySelectMusicTrack, SDLK_END, "STR_SELECT_MUSIC_TRACK", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyMusicNext", &keyMusicNext, SDLK_UNKNOWN, "STR_MUSIC_NEXT_TRACK", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyMusicPrev", &keyMusicPrev, SDLK_UNKNOWN, "STR_MUSIC_PREV_TRACK", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyMusicPause", &keyMusicPause, SDLK_UNKNOWN, "STR_MUSIC_PAUSE", "STR_BATTLESCAPE"));
 }
 
 void createOptionsOTHER()

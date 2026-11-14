@@ -26,6 +26,8 @@ namespace OpenXcom
 
 class Game;
 class Text;
+class ClassicPlateCanvas;
+class PlateCanvas;
 
 /**
  * The plate "a new message" in the top right corner, over every screen (oxceHdChatNotice).
@@ -56,6 +58,11 @@ private:
 	Uint8 _color;
 	/// The width of the plate itself; it sits at the right end of the surface, the rest stays transparent.
 	int _plate;
+	/// XP-000575: the plate is a small dark window (a title strip "envelope, nick, blinking wheel" and a line of the text),
+	/// painted by one layout over a canvas: classic (the nearest colours) or HD (vectors).
+	ClassicPlateCanvas *_classic;
+	bool _blink;
+	void paint(PlateCanvas &canvas);
 	/// Reads the file and, for a new counter, takes its words.
 	void readFile(const std::string &path, Uint32 now);
 public:
@@ -73,6 +80,8 @@ public:
 	void draw() override;
 	/// Puts the plate on the screen, the words on their own so the HD interface draws them with its font.
 	void blit(SDL_Surface *surface) override;
+	/// The HD plate.
+	void hdMirror() override;
 	/// Makes a clean line to show out of a raw one from the file.
 	static std::string clean(const std::string &raw);
 };

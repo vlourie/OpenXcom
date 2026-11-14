@@ -205,6 +205,9 @@ set ( engine_src
   Engine/HdTurnGroups.cpp
   Engine/HdUpdateNotice.cpp
   Engine/HdChatNotice.cpp
+  Engine/HdPlateCanvas.cpp
+  Engine/HdTrackNotice.cpp
+  Interface/MusicNoteButton.cpp
   Engine/HdScreenThemes.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp

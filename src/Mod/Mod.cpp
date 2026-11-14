@@ -44,6 +44,7 @@
 #include "../Engine/HdUi.h"
 #include "../Engine/SDL2Helpers.h"
 #include "../Engine/Music.h"
+#include "../Engine/Language.h"
 #include "../Engine/GMCat.h"
 #include "../Engine/SoundSet.h"
 #include "../Engine/Sound.h"
@@ -1498,6 +1499,15 @@ void Mod::userMusicTick()
 	{
 		userTrialEnd();
 	}
+	// XP-000575: a track of a playlist (played once) has ended - the next one; none left = silence until the screen changes
+	if (Music::takeFinished() && _playlistMode && !Options::mute)
+	{
+		if (!musicStep(1, false))
+		{
+			Music::stop();
+			_playlistMode = false;
+		}
+	}
 }
 
 /**
@@ -1749,6 +1759,7 @@ Music *Mod::loadUserTrack(UserTrack &track) const
 			throw Exception(SDL_GetError());
 		}
 		music->load(rwops);
+		music->setSourcePath(track.path);
 		track.music = music;
 		Log(LOG_INFO) << "Own music: loaded '" << track.path << "'";
 	}
@@ -1857,13 +1868,31 @@ void Mod::playMusic(const std::string &name, int id)
 		}
 
 		Music *music = 0;
+		bool fromPlaylist = false;
 		if (id != 0 && userMusicOnly(name))
 		{
 			id = 0;
 		}
 		if (id == 0)
 		{
-			music = getRandomMusic(name);
+			// XP-000575: the geoscape's and the battle's own playlist, when the player made one (empty = a random track as ever)
+			if (name == "GMGEO" || name == "GMTACTIC")
+			{
+				const int side = name == "GMTACTIC" ? 1 : 0;
+				resetPlaylistOrder();
+				_plPos[side] = -1;
+				std::string listed;
+				music = pickFromPlaylist(side, true, listed);
+				fromPlaylist = music != 0;
+			}
+			if (!fromPlaylist)
+			{
+				music = getRandomMusic(name);
+			}
+			else
+			{
+				loop = 0;
+			}
 		}
 		else
 		{
@@ -1882,6 +1911,7 @@ void Mod::playMusic(const std::string &name, int id)
 			userTrialEnd();
 		}
 		music->play(loop);
+		_playlistMode = fromPlaylist && music != _muteMusic;
 		if (music != _muteMusic)
 		{
 			_playingMusic = name;
@@ -1901,9 +1931,416 @@ void Mod::playMusic(const std::string &name, int id)
 					break;
 				}
 			}
+			_musicHistory.push_back(_currentMusicTrack);
+			if (_musicHistory.size() > 12)
+			{
+				_musicHistory.erase(_musicHistory.begin());
+			}
+			++_musicSerial;
 		}
 		Log(LOG_VERBOSE)<<"Mod::playMusic('" << name << "'): playing " << _playingMusic;
 	}
+}
+
+// ---- XP-000575: the music player (the playlists, the next and the previous track, the pause, the stop) ----
+// The geoscape's and the battle's playlists are strings of keys in options.cfg; the pick is RNG::seedless, the game's
+// own generator is never touched, nothing goes to the save.
+
+std::vector<std::string> Mod::getMusicPlaylist(int side) const
+{
+	std::vector<std::string> keys;
+	const std::string &raw = side == 1 ? Options::oxceMusicPlaylistBattle : Options::oxceMusicPlaylistGeo;
+	size_t from = 0;
+	while (from <= raw.size())
+	{
+		size_t bar = raw.find('|', from);
+		if (bar == std::string::npos)
+		{
+			bar = raw.size();
+		}
+		if (bar > from)
+		{
+			keys.push_back(raw.substr(from, bar - from));
+		}
+		from = bar + 1;
+	}
+	return keys;
+}
+
+void Mod::setMusicPlaylist(int side, const std::vector<std::string> &keys)
+{
+	std::string joined;
+	for (const auto &key : keys)
+	{
+		joined += (joined.empty() ? "" : "|") + key;
+	}
+	(side == 1 ? Options::oxceMusicPlaylistBattle : Options::oxceMusicPlaylistGeo) = joined;
+	resetPlaylistOrder();
+}
+
+void Mod::resetPlaylistOrder()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		_plBag[i].clear();
+		_plBagReady[i] = false;
+	}
+}
+
+bool Mod::musicKeyKnown(const std::string &key) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		if (ensureUserMusic())
+		{
+			for (const auto &track : _userMusic)
+			{
+				if (track.key == key)
+				{
+					return !track.failed && !track.skipped;
+				}
+			}
+		}
+		return false;
+	}
+	return _musics.find(key) != _musics.end();
+}
+
+Music *Mod::getMusicByKey(const std::string &key) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		return getUserMusic(key);
+	}
+	const auto it = _musics.find(key);
+	return it != _musics.end() ? it->second : 0;
+}
+
+double Mod::getMusicLength(const std::string &key) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		static std::map<std::string, double> cache;
+		const auto found = cache.find(key);
+		if (found != cache.end())
+		{
+			return found->second;
+		}
+		for (const auto &track : _userMusic)
+		{
+			if (track.key == key)
+			{
+				return cache[key] = track.music ? track.music->length() : Music::fileLength("", track.path);
+			}
+		}
+		return -1;
+	}
+	const auto it = _musics.find(key);
+	return it != _musics.end() && it->second ? it->second->length() : -1;
+}
+
+std::string Mod::getMusicTitle(const std::string &key, const Language *lang) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		for (const auto &track : _userMusic)
+		{
+			if (track.key == key)
+			{
+				const size_t dot = track.label.rfind('.');
+				return dot != std::string::npos && dot > 0 ? track.label.substr(0, dot) : track.label;
+			}
+		}
+		return std::string();
+	}
+	return lang ? std::string(lang->getString(key)) : key;
+}
+
+int Mod::getMusicSide() const
+{
+	return _playingMusic == "GMGEO" ? 0 : _playingMusic == "GMTACTIC" ? 1 : -1;
+}
+
+Music *Mod::pickFromPlaylist(int side, bool wrap, std::string &key)
+{
+	const std::vector<std::string> list = getMusicPlaylist(side);
+	const int n = (int)list.size();
+	for (int guard = 0; guard < n + 1; ++guard)
+	{
+		std::vector<int> ok;
+		for (int i = 0; i < n; ++i)
+		{
+			if (musicKeyKnown(list[i]))
+			{
+				ok.push_back(i);
+			}
+		}
+		if (ok.empty())
+		{
+			return 0;
+		}
+		int idx = -1;
+		if (Options::oxceMusicShuffle)
+		{
+			std::vector<int> &bag = _plBag[side];
+			if (bag.empty() && (!_plBagReady[side] || wrap))
+			{
+				bag = ok;
+				for (int i = (int)bag.size() - 1; i > 0; --i)
+				{
+					std::swap(bag[i], bag[RNG::seedless(0, i)]);
+				}
+				// no repeat of the track that has just played when the new round begins with it
+				if (bag.size() > 1 && bag.back() == _plPos[side])
+				{
+					std::swap(bag.front(), bag.back());
+				}
+				_plBagReady[side] = true;
+			}
+			if (bag.empty())
+			{
+				return 0;
+			}
+			idx = bag.back();
+			bag.pop_back();
+		}
+		else
+		{
+			const int pos = _plPos[side];
+			for (int c : ok)
+			{
+				if (c > pos)
+				{
+					idx = c;
+					break;
+				}
+			}
+			if (idx < 0 && wrap)
+			{
+				idx = ok.front();
+			}
+			if (idx < 0)
+			{
+				return 0;
+			}
+		}
+		_plPos[side] = idx;
+		if (Music *music = getMusicByKey(list[idx]))
+		{
+			key = list[idx];
+			return music;
+		}
+	}
+	return 0;
+}
+
+void Mod::startMusicKey(Music *music, const std::string &key, int loop)
+{
+	// the same care as playMusic: a track that is not an own one takes the place of the own one under trial
+	bool ownTrack = false;
+	for (const auto &track : _userMusic)
+	{
+		ownTrack = ownTrack || (track.music && track.music == music);
+	}
+	if (!ownTrack)
+	{
+		userTrialEnd();
+	}
+	music->play(loop);
+	setCurrentMusicTrack(key);
+	_playlistMode = loop == 0;
+	if (_musicHistory.empty() || _musicHistory.back() != key)
+	{
+		_musicHistory.push_back(key);
+	}
+	if (_musicHistory.size() > 12)
+	{
+		_musicHistory.erase(_musicHistory.begin());
+	}
+	++_musicSerial;
+}
+
+bool Mod::musicStep(int dir, bool manual)
+{
+	const int side = getMusicSide();
+	if (Options::mute || side < 0)
+	{
+		return false;
+	}
+	std::string key;
+	Music *music = 0;
+	const std::vector<std::string> list = getMusicPlaylist(side);
+	if (dir < 0)
+	{
+		// the track played before: out of the short history; none = the track on from its start
+		while (!music && _musicHistory.size() >= 2)
+		{
+			_musicHistory.pop_back();
+			const std::string back = _musicHistory.back();
+			if (back.find(side == 1 ? "GMTAC" : "GMGEO") != std::string::npos && musicKeyKnown(back))
+			{
+				_musicHistory.pop_back();
+				music = getMusicByKey(back);
+				key = back;
+			}
+		}
+		if (!music)
+		{
+			key = _currentMusicTrack;
+			music = key.empty() ? 0 : getMusicByKey(key);
+		}
+		if (!music)
+		{
+			return false;
+		}
+		int idx = -1;
+		for (size_t i = 0; i < list.size(); ++i)
+		{
+			if (list[i] == key)
+			{
+				idx = (int)i;
+			}
+		}
+		if (idx >= 0)
+		{
+			_plPos[side] = idx;
+		}
+		startMusicKey(music, key, idx >= 0 ? 0 : -1);
+		return true;
+	}
+	bool anyListed = false;
+	for (const auto &k : list)
+	{
+		anyListed = anyListed || musicKeyKnown(k);
+	}
+	if (anyListed)
+	{
+		music = pickFromPlaylist(side, manual || Options::oxceMusicRepeat, key);
+		if (!music)
+		{
+			return false;
+		}
+		startMusicKey(music, key, 0);
+		return true;
+	}
+	// no playlist: another random track of the side (a few tries to get a different one), looped as the game does
+	Music *own = getMusicByKey(_currentMusicTrack);
+	for (int tries = 0; tries < 8; ++tries)
+	{
+		music = getRandomMusic(side == 1 ? "GMTACTIC" : "GMGEO");
+		if (music == _muteMusic || !music)
+		{
+			return false;
+		}
+		if (music != own || tries == 7)
+		{
+			break;
+		}
+	}
+	for (const auto &item : _musics)
+	{
+		if (item.second == music)
+		{
+			key = item.first;
+		}
+	}
+	for (const auto &track : _userMusic)
+	{
+		if (track.music == music)
+		{
+			key = track.key;
+		}
+	}
+	if (key.empty())
+	{
+		return false;
+	}
+	startMusicKey(music, key, -1);
+	return true;
+}
+
+bool Mod::musicPlayKey(const std::string &key, int side)
+{
+	if (Options::mute)
+	{
+		return false;
+	}
+	Music *music = getMusicByKey(key);
+	if (!music)
+	{
+		return false;
+	}
+	const std::vector<std::string> list = getMusicPlaylist(side);
+	int idx = -1;
+	for (size_t i = 0; i < list.size(); ++i)
+	{
+		if (list[i] == key)
+		{
+			idx = (int)i;
+		}
+	}
+	if (idx >= 0)
+	{
+		_plPos[side] = idx;
+		_plBag[side].clear();
+	}
+	if (getMusicSide() != side)
+	{
+		_playingMusic = side == 1 ? "GMTACTIC" : "GMGEO";
+	}
+	startMusicKey(music, key, idx >= 0 ? 0 : -1);
+	return true;
+}
+
+void Mod::musicPlay()
+{
+	if (Options::mute)
+	{
+		return;
+	}
+	if (Music::isOn() && Music::isPaused())
+	{
+		Music::resume();
+		return;
+	}
+	if (!_currentMusicTrack.empty())
+	{
+		if (Music *music = getMusicByKey(_currentMusicTrack))
+		{
+			const int side = getMusicSide();
+			const std::vector<std::string> list = getMusicPlaylist(side < 0 ? 0 : side);
+			const bool listed = side >= 0 && std::find(list.begin(), list.end(), _currentMusicTrack) != list.end();
+			startMusicKey(music, _currentMusicTrack, listed ? 0 : -1);
+			return;
+		}
+	}
+	musicStep(1, true);
+}
+
+void Mod::musicTogglePause()
+{
+	if (Options::mute)
+	{
+		return;
+	}
+	if (!Music::isOn())
+	{
+		musicPlay();
+	}
+	else if (Music::isPaused())
+	{
+		Music::resume();
+	}
+	else
+	{
+		Music::pause();
+	}
+}
+
+void Mod::musicStopNow()
+{
+	Music::stop();
+	_playlistMode = false;
 }
 
 /**

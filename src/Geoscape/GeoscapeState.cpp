@@ -38,6 +38,7 @@
 #include "Globe.h"
 #include "../Interface/ComboBox.h"
 #include "../Interface/Text.h"
+#include "../Interface/MusicNoteButton.h"
 #include "../Interface/TextButton.h"
 #include "../Engine/Timer.h"
 #include "../Savegame/GameTime.h"
@@ -263,6 +264,10 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	add(_txtDay, "text", "geoscape");
 	add(_txtMonth, "text", "geoscape");
 	add(_txtYear, "text", "geoscape");
+	// XP-000575: the note that opens the music player, at the clock's lower right corner
+	_btnMusic = new MusicNoteButton(_game, screenWidth - 11, screenHeight / 2 + 1);
+	add(_btnMusic);
+	_btnMusic->onMouseClick((ActionHandler)&GeoscapeState::btnSelectMusicTrackClick);
 	add(_txtSlacking, "slackingIndicator", "geoscape");
 	add(_txtTraining, "trainingIndicator", "geoscape");
 

@@ -20,7 +20,10 @@
 #include <algorithm>
 #include <vector>
 #include "CrossPlatform.h"
+#include <cmath>
 #include "Game.h"
+#include "HdPlateCanvas.h"
+#include "HdUi.h"
 #include "Language.h"
 #include "Options.h"
 #include "../Interface/Text.h"
@@ -41,9 +44,9 @@ static const size_t MAX_CHARS = 160;
 static const int SURFACE_WIDTH = 200;
 static const int MAX_TEXT = SURFACE_WIDTH - 10;
 /// The plate is one line of the small font with a frame round it.
-static const int PLATE_HEIGHT = 11;
+static const int PLATE_HEIGHT = 26;
 
-HdChatNotice::HdChatNotice(Game *game) : Surface(SURFACE_WIDTH, PLATE_HEIGHT, 0, 0), _game(game), _text(0), _nextLook(0), _until(0), _date(0), _counter(0), _baseline(false), _color(0), _plate(0)
+HdChatNotice::HdChatNotice(Game *game) : Surface(SURFACE_WIDTH, PLATE_HEIGHT, 0, 0), _game(game), _text(0), _nextLook(0), _until(0), _date(0), _counter(0), _baseline(false), _color(0), _plate(0), _classic(0), _blink(true)
 {
 	_visible = false;
 }
@@ -51,6 +54,7 @@ HdChatNotice::HdChatNotice(Game *game) : Surface(SURFACE_WIDTH, PLATE_HEIGHT, 0,
 HdChatNotice::~HdChatNotice()
 {
 	delete _text;
+	delete _classic;
 }
 
 void HdChatNotice::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
@@ -213,6 +217,15 @@ void HdChatNotice::think()
 	{
 		_visible = false;
 	}
+	if (_visible)
+	{
+		const bool blink = (now / 500) % 2 == 0;
+		if (blink != _blink)
+		{
+			_blink = blink;
+			_redraw = true;
+		}
+	}
 	if (now < _nextLook)
 	{
 		return;
@@ -249,34 +262,47 @@ void HdChatNotice::draw()
 		_plate = 0;
 		return;
 	}
-	if (!_text)
+	_plate = getWidth();
+	if (HdUi::active() && HdUi::instance().hasFonts())
 	{
-		_text = new Text(getWidth() - 4, 9, 0, 0);
-		_text->setPalette(getPalette());
-		_text->setColor(_color);
+		return;                                    // the HD plate is painted in hdMirror
 	}
-	_text->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
-	_text->setSmall();
-	_text->setWidth(MAX_TEXT);
+	if (!_classic)
+	{
+		_classic = new ClassicPlateCanvas(this, _game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
+	}
+	_classic->begin();
+	paint(*_classic);
+}
 
-	// cut to the plate's width at a character's edge, "..." in place of the rest
-	std::vector<size_t> edges; // byte offset of every character's end
-	for (size_t i = 0; i < _line.size();)
+/**
+ * The plate as a small dark window in the way of an old messenger's pop-up (XP-000575, the dark variant of the accepted
+ * mock): a frame, a title strip "envelope, the sender's nick, a blinking wheel", under it a line of the text. The words
+ * are cut at a character's edge to the room, "..." for the rest. The plate sits at the surface's right end.
+ */
+void HdChatNotice::paint(PlateCanvas &c)
+{
+	const size_t colon = _line.find(": ");
+	const std::string nick = colon == std::string::npos ? std::string() : _line.substr(0, colon);
+	const std::string body = colon == std::string::npos ? _line : _line.substr(colon + 2);
+	const auto cut = [&](const std::string &text, float room)
 	{
-		const unsigned char c = (unsigned char)_line[i];
-		i += (c < 0x80) ? 1 : (c < 0xE0) ? 2 : 3;
-		edges.push_back(std::min(i, _line.size()));
-	}
-	_shown = _line;
-	_text->setText(_shown);
-	if (_text->getTextWidth() > MAX_TEXT)
-	{
+		if (c.textWidth(text, false) <= room)
+		{
+			return text;
+		}
+		std::vector<size_t> edges; // byte offset of every character's end
+		for (size_t i = 0; i < text.size();)
+		{
+			const unsigned char ch = (unsigned char)text[i];
+			i += (ch < 0x80) ? 1 : (ch < 0xE0) ? 2 : 3;
+			edges.push_back(std::min(i, text.size()));
+		}
 		size_t lo = 0, hi = edges.size(); // the most characters that still fit with the dots
 		while (lo < hi)
 		{
 			const size_t mid = (lo + hi + 1) / 2;
-			_text->setText(_line.substr(0, edges[mid - 1]) + "...");
-			if (_text->getTextWidth() <= MAX_TEXT)
+			if (c.textWidth(text.substr(0, edges[mid - 1]) + "...", false) <= room)
 			{
 				lo = mid;
 			}
@@ -285,31 +311,64 @@ void HdChatNotice::draw()
 				hi = mid - 1;
 			}
 		}
-		_shown = lo == 0 ? std::string("...") : _line.substr(0, edges[lo - 1]) + "...";
-	}
-	_text->setText(_shown);
-	_plate = std::min(getWidth(), _text->getTextWidth() + 6);
-	// the HD interface sets the words in a wider TrueType face inside the text's own width:
-	// the text is as wide as the plate's inside, so a long line condenses instead of running over the frame
-	_text->setWidth(_plate - 5);
-	_text->setText(_shown);
-
-	// the darkest colour of this palette behind the words: every screen has its own palette
-	Uint8 dark = 1;
-	int best = 1 << 30;
-	const SDL_Color *pal = getPalette();
-	for (int i = 1; pal && i < 256; ++i)
+		return lo == 0 ? std::string("...") : text.substr(0, edges[lo - 1]) + "...";
+	};
+	const float maxW = (float)SURFACE_WIDTH;
+	const std::string nickShown = cut(nick, maxW - 16 - 14);
+	const std::string bodyShown = cut(body, maxW - 10);
+	_shown = bodyShown;
+	const float titleW = 16 + c.textWidth(nickShown, false) + 14;
+	const float w = std::min(maxW, std::max(std::max(titleW, std::ceil(c.textWidth(bodyShown, false)) + 10), 60.0f));
+	_plate = (int)w;
+	const float x0 = (float)getWidth() - w;
+	// the frame: light on the top and the left, dark on the bottom and the right
+	c.fill(x0, 0, w, PLATE_HEIGHT, 0xFF0A080E);
+	c.fill(x0, 0, w - 1, PLATE_HEIGHT - 1, 0xFF4B4260);
+	c.fill(x0 + 1, 1, w - 2, PLATE_HEIGHT - 2, 0xFF221D2C);
+	// the title strip, purple to gold along its length
+	const int strips = 8;
+	for (int i = 0; i < strips; ++i)
 	{
-		const int y = pal[i].r * 3 + pal[i].g * 6 + pal[i].b;
-		if (y < best)
-		{
-			best = y;
-			dark = (Uint8)i;
-		}
+		const float a = (w - 4) * i / strips, b = (w - 4) * (i + 1) / strips;
+		c.fill(x0 + 2 + std::floor(a), 2, std::floor(b) - std::floor(a), 10, PlateCanvas::mix(0xFF3A2A5C, 0xFF7D6A2A, (i + 0.5f) / strips));
 	}
-	const int x0 = getWidth() - _plate;
-	drawRect(x0, 0, _plate, PLATE_HEIGHT, _color);
-	drawRect(x0 + 1, 1, _plate - 2, PLATE_HEIGHT - 2, dark);
+	// the envelope: a body and a flap
+	c.fill(x0 + 4, 4, 9, 6, 0xFFE8E2F2);
+	c.triangle(x0 + 4, 4, x0 + 13, 4, x0 + 8.5f, 7.5f, 0xFF8A7FA8);
+	c.text(nickShown, x0 + 16, 3, 0xFFE8E2F2, false);
+	// the wheel blinks: spokes of a ship's wheel in the green of "online"
+	if (_blink)
+	{
+		const float cx = x0 + w - 9, cy = 7.0f;
+		const Uint32 g = 0xFF3CCC3C;
+		const auto bar = [&](float ax, float ay, float bx, float by)
+		{
+			const float dx = by - ay, dy = ax - bx, n = std::sqrt(dx * dx + dy * dy) * 2.0f;
+			const float ox = dx / n, oy = dy / n;
+			c.triangle(ax - ox, ay - oy, ax + ox, ay + oy, bx + ox, by + oy, g);
+			c.triangle(ax - ox, ay - oy, bx + ox, by + oy, bx - ox, by - oy, g);
+		};
+		bar(cx - 4, cy, cx + 4, cy);
+		bar(cx, cy - 4, cx, cy + 4);
+		bar(cx - 3, cy - 3, cx + 3, cy + 3);
+		bar(cx - 3, cy + 3, cx + 3, cy - 3);
+		c.fill(cx - 1.5f, cy - 1.5f, 3, 3, g);
+	}
+	// the text, in its own dark field
+	c.fill(x0 + 2, 13, w - 4, PLATE_HEIGHT - 15, 0xFF0F0D14);
+	c.text(bodyShown, x0 + 5, 14, 0xFFE8E2F2, false);
+}
+
+void HdChatNotice::hdMirror()
+{
+	if (!HdUi::instance().hasFonts() || _line.empty() || !_game->getMod())
+	{
+		Surface::hdMirror();
+		return;
+	}
+	Mod *mod = _game->getMod();
+	HdPlateCanvas canvas((float)getX(), (float)getY(), mod->getFont("FONT_BIG"), mod->getFont("FONT_SMALL"));
+	paint(canvas);
 }
 
 void HdChatNotice::blit(SDL_Surface *surface)
@@ -330,9 +389,6 @@ void HdChatNotice::blit(SDL_Surface *surface)
 	setX(surface->w - getWidth() - 1);
 	setY(0);
 	Surface::blit(surface);
-	_text->setX(getX() + getWidth() - _plate + 3);
-	_text->setY(2);
-	_text->blit(surface);
 }
 
 }

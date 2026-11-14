@@ -70,6 +70,7 @@
 #include "../version.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
+#include "../Interface/MusicNoteButton.h"
 #include "../Interface/Bar.h"
 #include "../Interface/BattlescapeButton.h"
 #include "../Interface/NumberText.h"
@@ -402,6 +403,10 @@ BattlescapeState::BattlescapeState() :
 	add(_btnEndTurn, "buttonEndTurn", "battlescape", _icons);
 	add(_btnAbort, "buttonAbort", "battlescape", _icons);
 	add(_btnStats, "buttonStats", "battlescape", _icons);
+	// XP-000575: the note that opens the music player, in the gap between the soldier's stats and the right hand's item
+	_btnMusic = new MusicNoteButton(_game, x + 271, y + 34);
+	add(_btnMusic);
+	_btnMusic->onMouseClick((ActionHandler)&BattlescapeState::btnSelectMusicTrackClick);
 	add(_txtName, "textName", "battlescape", _icons);
 	// need to do this here, because of TFTD
 	if (_game->getMod()->getSurface("AvatarBackground", false))

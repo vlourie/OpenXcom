@@ -61,7 +61,8 @@ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, k
 	keyBattleShowLayers, keyBattlePanelHide,
 	keyBattleUseSpecial,
 	keyBattleActionItem1, keyBattleActionItem2, keyBattleActionItem3, keyBattleActionItem4, keyBattleActionItem5,
-	keyNightVisionToggle, keyNightVisionHold, keySelectMusicTrack;
+	keyNightVisionToggle, keyNightVisionHold, keySelectMusicTrack,
+	keyMusicNext, keyMusicPrev, keyMusicPause;
 OPT SDLKey keyBasescapeBuildNewBase, keyBasescapeBaseInfo, keyBasescapeSoldiers, keyBasescapeCrafts,
 	keyBasescapeFacilities, keyBasescapeResearch, keyBasescapeManufacture, keyBasescapeTransfer,
 	keyBasescapePurchase, keyBasescapeSell;
@@ -485,6 +486,11 @@ OPT int oxceToggleBrightnessType;
 // The player's own music (XP-000373): files in <user folder>/music (geoscape/, battle/, and the files of the folder itself for both).
 // 0 off (default: nothing is scanned, the music is as it was), 1 with the game's tracks, 2 only the own ones (where there are any).
 OPT int oxceUserMusic;
+// XP-000575, the music player (Geoscape/SelectMusicTrackState): the plate of the track's name for three seconds at every change of track,
+// the playlists of the geoscape and of the battle (the tracks' keys joined with '|'; empty = a random track as ever), shuffle, repeat.
+// All in options.cfg, nothing in the save.
+OPT bool oxceMusicTrackNotice, oxceMusicShuffle, oxceMusicRepeat;
+OPT std::string oxceMusicPlaylistGeo, oxceMusicPlaylistBattle;
 
 OPT bool oxceShowBurningAsWounded;
 OPT bool oxceDisableInfoOnThrowCursor;

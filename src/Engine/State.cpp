@@ -39,6 +39,7 @@
 #include "../Interface/FpsCounter.h"
 #include "HdUpdateNotice.h"
 #include "HdChatNotice.h"
+#include "HdTrackNotice.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleInterface.h"
 
@@ -335,6 +336,7 @@ void State::init()
 	_game->getUpdateNotice()->setColor(_cursorColor);
 	_game->getChatNotice()->setPalette(_palette);
 	_game->getChatNotice()->setColor(_cursorColor);
+	_game->getTrackNotice()->setPalette(_palette);
 
 	// Highest priority: custom sound set explicitly in the code
 	// Medium priority: sound defined by the interface ruleset
@@ -585,6 +587,19 @@ void State::redrawText()
 	}
 }
 
+bool State::hasFocusedTextEdit() const
+{
+	for (auto* surface : _surfaces)
+	{
+		const TextEdit* edit = dynamic_cast<const TextEdit*>(surface);
+		if (edit && edit->isFocused())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 /**
  * does the state only have one text list (to scroll)?
  */
@@ -640,6 +655,7 @@ void State::setModPalette()
 		_game->getFpsCounter()->draw();
 		_game->getUpdateNotice()->setPalette(_palette);
 		_game->getChatNotice()->setPalette(_palette);
+		_game->getTrackNotice()->setPalette(_palette);
 	}
 }
 

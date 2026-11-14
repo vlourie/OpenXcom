@@ -45,6 +45,7 @@ class SurfaceSet;
 class Font;
 class Palette;
 class Music;
+class Language;
 class SoundSet;
 class Sound;
 class CatFile;
@@ -176,6 +177,18 @@ private:
 	Music *_muteMusic;
 	Sound *_muteSound;
 	std::string _playingMusic, _currentMusicTrack;
+	/// XP-000575, the music player: the keys of the tracks played lately (the last is the one on), where the playlist is
+	/// (geoscape, battle), the shuffled rest of a playlist, whether the track on came from a playlist (its end starts the next one).
+	std::vector<std::string> _musicHistory;
+	int _plPos[2] = { -1, -1 };
+	std::vector<int> _plBag[2];
+	bool _plBagReady[2] = { false, false };
+	bool _playlistMode = false;
+	int _musicSerial = 0;
+	/// The next track of the playlist of a side (0 geoscape, 1 battle); null when it has no more (or no known tracks).
+	Music *pickFromPlaylist(int side, bool wrap, std::string &key);
+	/// Starts a track the player's way: its key, the loop (0 = once, a playlist's), the history and the serial.
+	void startMusicKey(Music *music, const std::string &key, int loop);
 
 	std::map<std::string, Palette*> _palettes;
 	std::map<std::string, Font*> _fonts;
@@ -578,6 +591,33 @@ public:
 	void setCurrentMusicTrack(const std::string& currentMusicTrack) { _currentMusicTrack = currentMusicTrack; }
 	/// Plays a particular music.
 	void playMusic(const std::string &name, int id = 0);
+	/// XP-000575, the music player. The playlist of a side (0 geoscape, 1 battle) is kept in options.cfg, never in the save.
+	std::vector<std::string> getMusicPlaylist(int side) const;
+	void setMusicPlaylist(int side, const std::vector<std::string> &keys);
+	/// Does the key name a track that can be played now (a game's, or an own one that is not skipped or broken)?
+	bool musicKeyKnown(const std::string &key) const;
+	/// A track of the game or the player's own by its key (an own one is loaded); null when there is none.
+	Music *getMusicByKey(const std::string &key) const;
+	/// The length of a track in seconds by the header of its file (an own track is not loaded for it); -1 when not known.
+	double getMusicLength(const std::string &key) const;
+	/// What to show for a track's key: the file's name of an own track (no extension), the language's string of the game's.
+	std::string getMusicTitle(const std::string &key, const Language *lang) const;
+	/// The side the music on belongs to: 0 geoscape (GMGEO), 1 battle (GMTACTIC), -1 any other.
+	int getMusicSide() const;
+	/// Next (dir > 0) or previous track; manual = a key or a button (a playlist then goes round even without the repeat).
+	bool musicStep(int dir, bool manual);
+	/// Plays a track at the player's choice; side 0/1 = the list it was taken from.
+	bool musicPlayKey(const std::string &key, int side);
+	/// Play button: continues a paused track, starts the last one again after a stop.
+	void musicPlay();
+	/// Pause button: pauses, or continues when paused; after a stop plays.
+	void musicTogglePause();
+	/// Stop button: the music stops and stays stopped until another one is started.
+	void musicStopNow();
+	/// Counts the starts of a track: the plate of the track's name looks at it for a change.
+	int getMusicSerial() const { return _musicSerial; }
+	/// Drops the shuffled rest of the playlists (the list or the shuffle changed).
+	void resetPlaylistOrder();
 	/// The player's own music (XP-000373) of a category (GMGEO or GMTACTIC) for the jukebox: pairs of key and the file's name.
 	/// Empty when the option is off or the sound is. With the option "only own" and own tracks the game's tracks are not in the list.
 	std::vector<std::pair<std::string, std::string> > getUserMusicList(const std::string &category) const;

@@ -125,6 +125,8 @@ public:
 	void redrawText();
 	/// does the state only have one text list (to scroll)?
 	bool hasOnlyOneScrollableTextList() const;
+	/// XP-000575: is a text edit of this state focused (a key then is a letter, not a command)?
+	bool hasFocusedTextEdit() const;
 	/// center all surfaces relative to the screen.
 	void centerAllSurfaces();
 	/// lower all surfaces by half the screen height.

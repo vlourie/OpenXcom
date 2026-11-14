@@ -33,6 +33,7 @@ class Map;
 class ImageButton;
 class BattlescapeButton;
 class InteractiveSurface;
+class MusicNoteButton;
 class Text;
 class Bar;
 class NumberText;
@@ -75,6 +76,7 @@ private:
 	BattlescapeButton *_btnCtrl, *_btnAlt, *_btnShift, *_btnRMB, *_btnMMB;
 	bool _touchButtonsEnabled;
 	InteractiveSurface *_btnStats;
+	MusicNoteButton *_btnMusic;
 	BattlescapeButton *_btnReserveNone, *_btnReserveSnap, *_btnReserveAimed, *_btnReserveAuto, *_btnReserveKneel, *_btnZeroTUs;
 	InteractiveSurface *_btnLeftHandItem, *_btnRightHandItem;
 

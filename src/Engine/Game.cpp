@@ -49,6 +49,7 @@
 #include "../Interface/FpsCounter.h"
 #include "HdUpdateNotice.h"
 #include "HdChatNotice.h"
+#include "HdTrackNotice.h"
 #include "../Mod/Mod.h"
 #include "../Mod/LuaHost.h"
 #include "../Savegame/SavedGame.h"
@@ -63,6 +64,8 @@
 #include "../Ufopaedia/UfopaediaStartState.h"
 #include "../Menu/NotesState.h"
 #include "../Geoscape/GeoscapeState.h"
+#include "../Geoscape/SelectMusicTrackState.h"
+#include "../Battlescape/BattlescapeState.h"
 #include "../Menu/TestState.h"
 #include "../Battlescape/AiProbe.h"
 #include <algorithm>
@@ -124,6 +127,7 @@ Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0
 	_fpsCounter = new FpsCounter(15, 5, 0, 0);
 	_updateNotice = new HdUpdateNotice(this);
 	_chatNotice = new HdChatNotice(this);
+	_trackNotice = new HdTrackNotice(this);
 
 	// the themes by screen (XP-000484): hd_screen_themes.yml next to options.cfg, read here and on leaving the options window
 	HdScreenThemes::instance().load();
@@ -157,6 +161,7 @@ Game::~Game()
 	delete _fpsCounter;
 	delete _updateNotice;
 	delete _chatNotice;
+	delete _trackNotice;
 
 	Mix_CloseAudio();
 
@@ -367,6 +372,35 @@ void Game::run()
 							}
 						}
 					}
+					// XP-000575, the music player's keys: on every screen, but not while a text is being typed.
+					// The geoscape and the battlescape keep End for their own handlers (the battle's one waits for its allowButtons).
+					if (action.getDetails()->type == SDL_KEYDOWN && _mod && !Options::mute && !isCtrlPressed() && !isAltPressed()
+						&& !_states.back()->hasFocusedTextEdit())
+					{
+						const SDLKey musicKey = action.getDetails()->key.keysym.sym;
+						if (musicKey != SDLK_UNKNOWN && musicKey == Options::keyMusicNext)
+						{
+							_mod->musicStep(1, true);
+							break;
+						}
+						else if (musicKey != SDLK_UNKNOWN && musicKey == Options::keyMusicPrev)
+						{
+							_mod->musicStep(-1, true);
+							break;
+						}
+						else if (musicKey != SDLK_UNKNOWN && musicKey == Options::keyMusicPause)
+						{
+							_mod->musicTogglePause();
+							break;
+						}
+						else if (musicKey != SDLK_UNKNOWN && musicKey == Options::keySelectMusicTrack
+							&& !dynamic_cast<SelectMusicTrackState*>(_states.back())
+							&& !dynamic_cast<GeoscapeState*>(_states.back()) && !dynamic_cast<BattlescapeState*>(_states.back()))
+						{
+							pushState(new SelectMusicTrackState(_save && _save->getSavedBattle() ? SMT_BATTLESCAPE : SMT_GEOSCAPE));
+							break;
+						}
+					}
 					// the feedback key: the report form opens over a paused game and the world never sees the key.
 					// Ctrl goes to the HD dump on the same key, Alt to the debug slow motion
 					if (action.getDetails()->type == SDL_KEYDOWN
@@ -424,6 +458,7 @@ void Game::run()
 			_fpsCounter->think();
 			_updateNotice->think();
 			_chatNotice->think();
+			_trackNotice->think();
 			if (_mod)
 			{
 				_mod->userMusicTick();
@@ -714,6 +749,7 @@ void Game::run()
 				_fpsCounter->blit(_screen->getSurface());
 				_updateNotice->blit(_screen->getSurface());
 				_chatNotice->blit(_screen->getSurface());
+				_trackNotice->blit(_screen->getSurface());
 				_cursor->blit(_screen->getSurface());
 				const Uint32 hdFlipStart = SDL_GetTicks();
 				hdLogDraw1 = std::chrono::steady_clock::now();
