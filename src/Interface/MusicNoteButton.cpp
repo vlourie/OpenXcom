@@ -28,6 +28,7 @@ namespace OpenXcom
 
 MusicNoteButton::MusicNoteButton(Game *game, int x, int y) : InteractiveSurface(9, 9, x, y), _game(game), _classic(0), _down(false)
 {
+	_redraw = true; // XP-000575: without it the classic path never paints the button (k=1 showed nothing)
 }
 
 MusicNoteButton::~MusicNoteButton()
