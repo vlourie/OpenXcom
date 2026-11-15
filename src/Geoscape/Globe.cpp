@@ -2144,7 +2144,8 @@ void Globe::drawHdRadar()
 	ui.setClip(getX(), getY(), getWidth(), getHeight());
 	static const int WAVE_HOURS[] = { 0, 1, 3, 6 };   // oxceHdRadarWaves: all at once, in turn each 1, 3, 6 hours
 	const int waveHours = WAVE_HOURS[std::max(0, std::min(3, Options::oxceHdRadarWaves))];
-	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar, waveHours, Options::oxceHdRadarBeam);
+	const HdRadar::CraftLook look = (HdRadar::CraftLook)std::max(0, std::min(2, Options::oxceHdRadarCraft));
+	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar, waveHours, look);
 	ui.clearClip();
 }
 

@@ -74,7 +74,10 @@ public:
 	};
 	/// How the coverage is drawn: oxceHdRadar 1, 2 and 3.
 	enum Mode { WASH = 1, SWEEP = 2, WAVES = 3 };
-	/// A detection cycle has run: the bases pulse (the craft with WAVES) at the next draw, when the clock is slow.
+	/// How a craft out of its base is drawn, whatever the bases' mode (oxceHdRadarCraft, XP-000576):
+	/// its circle only, the circle with a wave each detection cycle, or with a beam turning round it.
+	enum CraftLook { CRAFT_CIRCLE = 0, CRAFT_WAVE = 1, CRAFT_BEAM = 2 };
+	/// A detection cycle has run: the bases pulse (the craft with CRAFT_WAVE) at the next draw, when the clock is slow.
 	void cycle() { _cyclePending = _slow; note(_cycleTick, _cycleMs); }
 	/// A game hour has run: with WAVES the bases pulse at the next draw, when the clock is slow.
 	void hour() { _hourPending = _slow; note(_hourTick, _hourMs); }
@@ -86,8 +89,8 @@ public:
 	/// Draws the coverage the `mode` way; `minute` is the game time in minutes. Clipped by HdUi's clip.
 	/// WAVES: `waveHours` 0 - every base at once each game hour (the bases tell the time); 1, 3 or 6 - the
 	/// bases in turn, each once in that many hours, spread over ten-minute steps so that few run together.
-	/// `beam` - a craft out turns a beam round its circle instead of sending waves.
-	void draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours = 0, bool beam = false);
+	/// `look` - how a craft out is drawn, the same with every mode.
+	void draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours = 0, CraftLook look = CRAFT_BEAM);
 	/// The enemy's radars (discovered alien bases, hunter-killers): a red line round each circle with a glow
 	/// inside, each on its own. Worked out per pixel only near the rims, so the cost goes with their length.
 	struct Ring

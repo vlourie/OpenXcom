@@ -286,8 +286,8 @@ OPT bool oxceHdPilotVoice;
 OPT int oxceHdRadar;
 // HD globe, radar 3 (waves): when the bases send their waves. 0 = all at once each game hour, 1 = in turn each hour (default), 2 = in turn each 3 hours, 3 = in turn each 6 hours
 OPT int oxceHdRadarWaves;
-// HD globe, radar 3 (waves): a craft out turns a beam round its circle (default) instead of sending a wave each detection cycle
-OPT bool oxceHdRadarBeam;
+// HD globe, radar 1 to 3: how a craft out of its base is drawn, whatever the bases' look (XP-000576). 0 = its circle only, 1 = a wave each detection cycle, 2 = a beam turning round its circle (default)
+OPT int oxceHdRadarCraft;
 // HD interface: the soldier transformation screen names the training paths it closes, the full list on a click (off by default)
 OPT bool oxceHdTrainingBlocks;
 OPT bool oxceHdPathDigits;

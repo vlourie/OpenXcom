@@ -565,19 +565,19 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources, 
 	pool.run(jobs, [&](int job) { rows(_rowA + (int)((long long)n * job / jobs), _rowA + (int)((long long)n * (job + 1) / jobs)); });
 }
 
-void HdRadar::draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours, bool beam)
+void HdRadar::draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours, CraftLook look)
 {
 	if (view.radius <= 1 || view.w <= 0 || view.h <= 0) return;
 	const bool sweep = mode == SWEEP, bare = mode == WAVES;
 	const bool inTurn = bare && waveHours > 0;
-	// a craft's beam: with SWEEP always, with WAVES when asked instead of its waves
-	const bool craftBeam = sweep || (bare && beam);
+	// XP-000576: a craft's look is its own, whatever the bases': its circle, a wave each cycle or a beam
+	const bool craftBeam = look == CRAFT_BEAM, craftWaves = look == CRAFT_WAVE;
 	const Uint32 now = advance();
 	if (_cyclePending)
 	{
 		_cyclePending = false;
 		if (sweep) schedule(sources, now, minute);
-		else if (bare && !beam) scheduleAll(sources, now, minute, false, _cycleMs);
+		if (craftWaves) scheduleAll(sources, now, minute, false, _cycleMs);
 	}
 	if (_hourPending)
 	{
@@ -648,15 +648,15 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			sw.uy = std::sin(sw.angle);
 			sweeps.push_back(sw);
 			grow(sw.cap);
-			if (!bare || beam) continue;
+			if (!craftWaves) continue;
 		}
 		else if (mode == WASH) continue;
 		const auto pulse = _pulses.find(s.id);
 		if (pulse == _pulses.end() || !pulse->second.any) continue;
 		const Pulse &p = pulse->second;
 		const int dur = p.wave ? (int)p.wave : PULSE_MS;
-		// with WAVES one wave, out to the longest range (the craft: its own)
-		const int count = bare ? 1 : std::min((int)s.waves.size(), MAX_WAVES);
+		// with WAVES one wave, out to the longest range; a craft always one, out to its own
+		const int count = bare || craft ? 1 : std::min((int)s.waves.size(), MAX_WAVES);
 		const int first = (int)waves.size();
 		double widest = 0;
 		for (int j = 0; j < count; ++j)

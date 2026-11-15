@@ -474,6 +474,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		if (p == &Options::oxceHdBattleHudColor) return !skin;
 		if (p == &Options::oxceHdWindowThemeColor) return !skin || !Options::oxceHdWindowTheme;
 		if (p == &Options::oxceHdRadarWaves) return Options::oxceHdRadar != 3;
+		if (p == &Options::oxceHdRadarCraft) return Options::oxceHdRadar == 0;
 		if (p == &Options::oxceHdTrunkArmor) return !Options::oxceCollapse;
 		if (p == &Options::oxceHdInvBackdrop) return !Options::oxceHdPictures || Options::oxceHdUi <= 0;
 		if (p == &Options::oxceHdBloodStepsLife || p == &Options::oxceHdBloodStepsColor) return !Options::oxceHdBloodSteps;
@@ -483,7 +484,6 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		const bool *b = info.asBool();
 		if (b == &Options::oxceHdBattleHud || b == &Options::oxceHdWindowTheme) return !skin;
 		if (b == &Options::oxceHdInventoryKeys) return !skin || !Options::oxceHdBattleHud;
-		if (b == &Options::oxceHdRadarBeam) return Options::oxceHdRadar != 3;
 	}
 	return false;
 }
@@ -591,6 +591,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	if (info.asInt() == &Options::oxceHdRadarWaves)
 	{
 		return tr("STR_HD_RADAR_WAVES_" + std::to_string(Options::oxceHdRadarWaves));
+	}
+	if (info.asInt() == &Options::oxceHdRadarCraft)
+	{
+		return tr("STR_HD_RADAR_CRAFT_" + std::to_string(Options::oxceHdRadarCraft));
 	}
 	if (info.asInt() == &Options::oxceHdTrunkArmor)
 	{
@@ -896,6 +900,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // 0 all at once each hour, in turn each 1, 3, 6 hours
 			max = 3;
+		}
+		else if (i == &Options::oxceHdRadarCraft)
+		{
+			min = 0;                                  // a craft out: 0 its circle, 1 a wave each cycle, 2 a beam
+			max = 2;
 		}
 		else if (i == &Options::oxceHdMapRotation)
 		{

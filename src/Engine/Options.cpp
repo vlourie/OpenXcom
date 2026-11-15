@@ -657,7 +657,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPilotVoice", &oxceHdPilotVoice, true, "STR_HD_PILOT_VOICE", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadar", &oxceHdRadar, 0, "STR_HD_RADAR", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarWaves", &oxceHdRadarWaves, 1, "STR_HD_RADAR_WAVES", "STR_HD_GEOSCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarBeam", &oxceHdRadarBeam, true, "STR_HD_RADAR_BEAM", "STR_HD_GEOSCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarCraft", &oxceHdRadarCraft, 2, "STR_HD_RADAR_CRAFT", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTrainingBlocks", &oxceHdTrainingBlocks, false, "STR_HD_TRAINING_BLOCKS", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathDigits", &oxceHdPathDigits, true, "STR_HD_PATH_DIGITS", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathNumSize", &oxceHdPathNumSize, 100, "STR_HD_PATH_NUM_SIZE", "STR_HD_BATTLE_UI"));
