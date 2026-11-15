@@ -32,6 +32,14 @@ RULES_BY_NAME = [
                 "PRAIRIE", "VALLEY", "ROCK", "CRATER"]),
 ]
 ENVIRO_NONE = ("SPACE", "MOON", "MARS", "CYDONIA", "SEA", "SHADOWLANDS", "PSYCHEDELIC", "MAGMA", "LABYRINTH")
+# выбор Vitali 15.11 на странице «Местности без погоды»: открытые карты, которые слова имени уводили в NONE
+CHOSEN = {
+    "CULTA": "STEPPE", "CULTA_UBER": "STEPPE", "GOVT_BASE_DEFENSE": "CITY", "NINJA_BASE_1": "CITY", "NINJA_BASE_2": "CITY",
+    "NINJA_BASE_OUTPOST": "CITY", "NINJA_RAID_SITE": "CITY", "PRECINT13": "CITY", "MAGAZYNMAFII": "CITY", "EMANSION": "CITY",
+    "WINTER_PALACE_WALL": "SNOW", "GOTHIC_LANDING": "CITY", "CHEMTOWN_ARMSFACTORY": "WASTE",
+    "INDUSTRIALSLUM_ESCAPE_TOWER": "CITY", "URBANWAR_ESCAPE_TOWER": "CITY", "DTAVERN": "CITY", "DTAVERNLUX": "CITY",
+    "COMMS_TOWER": "CITY", "TEC_BASE_COURTYARD": "CITY",
+}
 
 
 def terrains():
@@ -69,6 +77,8 @@ def has(up, word):
 def biome(name, enviro):
     up = name.upper()
     env = enviro.upper()
+    if up in CHOSEN:
+        return CHOSEN[up]
     if any(w in env for w in ENVIRO_NONE) and "SEA_SURFACE" not in env:
         return "NONE"
     if "DUST_STORM" in env:
