@@ -933,7 +933,7 @@ void HdShadeRow::blend(int x, Uint32 color, float cov)
 }
 
 void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn,
-	const HdShadeBase *base)
+	const HdShadeBase *base, const std::function<bool(int, int, int, int)> &card)
 {
 	FrameTiming timing(_frameMs);
 	SDL_Surface *dest;
@@ -963,7 +963,13 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 		const int bx1 = std::min(base->x + base->w, x1), by1 = std::min(base->y + base->h, y1);
 		under = bx0 >= bx1 || by0 >= by1 || gpuWorld.wash(base->px, base->w, base->h, base->x, base->y, base->key, base->holes, bx0, by0, bx1, by1);
 	}
-	if (gpuWorld.on(dest))
+	// the card works the blends out itself (HdGpuWorld::radar), or keeps them as steps
+	const bool worked = card && gpuWorld.on(dest) && (!base || under) && card(x0, y0, x1, y1);
+	if (worked && !verifying)
+	{
+		return;
+	}
+	if (!worked && gpuWorld.on(dest))
 	{
 		// on the video card: each row's blends kept, then put in order by pixel (a pixel's own in the order made) -
 		// per row 4 values, per pixel of its stretch where its steps start, the steps (HdGpuWorld::steps)

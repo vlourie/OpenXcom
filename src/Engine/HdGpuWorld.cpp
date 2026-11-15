@@ -19,6 +19,7 @@
 #include "HdGpuWorld.h"
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <iterator>
@@ -45,6 +46,52 @@ HdGpuWorld &HdGpuWorld::instance()
 	return one;
 }
 
+namespace
+{
+
+/// The constants of HdRadar's formulas the card works out (HdGpuWorld::radar), at their places in the shader's `kd`:
+/// capDist's least gradient, Zc's least, limb's start, drawBeam's margins; then fdlibm's arc tangent (pi / 2 and pi
+/// high and low, atan(0.5) and atan(1) high and low, the 11 terms) and HdRadar's PI, TAU and PI / 2.
+const double RADAR_K[] = {
+	1e-4, 0.08, 0.97, 0.999, 0.01, 0.51,
+	1.57079632679489655800e+00, 6.12323399573676603587e-17, 3.14159265358979311600e+00, 1.2246467991473531772e-16,
+	4.63647609000806093515e-01, 7.85398163397448278999e-01, 2.26987774529616870924e-17, 3.06161699786838301793e-17,
+	3.33333333333329318027e-01, -1.99999999998764832476e-01, 1.42857142725034663711e-01, -1.11111104054623557880e-01,
+	9.09088713343650656196e-02, -7.69187620504482999495e-02, 6.66107313738753120669e-02, -5.83357013379057348645e-02,
+	4.97687799461593236017e-02, -3.65315727442169155270e-02, 1.62858201153657823623e-02,
+	3.14159265358979323846, 2 * 3.14159265358979323846, 3.14159265358979323846 / 2 };
+
+}
+
+double HdGpuWorld::atan2(double y, double x)
+{
+	const double *K = RADAR_K, *aT = RADAR_K + 14;
+	const double ay = std::fabs(y), ax = std::fabs(x), hi = std::max(ay, ax);
+	if (hi == 0) return 0;
+	double t = std::min(ay, ax) / hi;
+	int id = -1;
+	if (t >= 0.4375)
+	{
+		if (t < 0.6875)
+		{
+			id = 0;
+			t = (2.0 * t - 1.0) / (2.0 + t);
+		}
+		else
+		{
+			id = 1;
+			t = (t - 1.0) / (t + 1.0);
+		}
+	}
+	const double z = t * t, w = z * z;
+	const double s1 = z * (aT[0] + w * (aT[2] + w * (aT[4] + w * (aT[6] + w * (aT[8] + w * aT[10])))));
+	const double s2 = w * (aT[1] + w * (aT[3] + w * (aT[5] + w * (aT[7] + w * aT[9]))));
+	double a = id < 0 ? t - t * (s1 + s2) : K[10 + id] - ((t * (s1 + s2) - K[12 + id]) - t);
+	if (ay > ax) a = K[6] - (a - K[7]);
+	if (x < 0) a = K[8] - (a - K[9]);
+	return y < 0 ? -a : a;
+}
+
 #ifdef __NO_OPENGL
 
 struct HdGpuWorld::Impl {};
@@ -69,6 +116,7 @@ bool HdGpuWorld::canvasZoomed(unsigned, const SDL_Surface *, const std::vector<i
 unsigned HdGpuWorld::snapshot() { return 0; }
 Uint32 *HdGpuWorld::steps(size_t, size_t, int, int, int, int) { return nullptr; }
 bool HdGpuWorld::wash(const Uint32 *, int, int, int, int, Uint64, const std::vector<Sint32> &, int, int, int, int) { return false; }
+bool HdGpuWorld::radar(const Radar &, int, int, int, int) { return false; }
 bool HdGpuWorld::building(const std::vector<float> &, const float *, int, int, int, int, int) { return false; }
 bool HdGpuWorld::alarm(const std::vector<Uint32> &, const Uint32 *, const Uint32 *, const Uint32 *, int, int, int, int) { return false; }
 void HdGpuWorld::forget() {}
@@ -86,7 +134,9 @@ using hdgl::Atlas;
 using hdgl::Place;
 
 /// The kinds of the writes (the first value of a write's second texel).
-enum Kind { K_FILL, K_COPY, K_ZOOM, K_FRAME, K_PIXELS, K_IMAGE, K_GLYPH, K_SPANS, K_COVER, K_SHADE, K_LIGHT, K_STEPS, K_ALARM, K_WASH };
+enum Kind { K_FILL, K_COPY, K_ZOOM, K_FRAME, K_PIXELS, K_IMAGE, K_GLYPH, K_SPANS, K_COVER, K_SHADE, K_LIGHT, K_STEPS, K_ALARM, K_WASH, K_RADAR };
+/// The words of a radar's head in the data (HdGpuWorld::radar), a sweep, a group and a wave.
+const int RADAR_HEAD = 37, RADAR_SWEEP = 23, RADAR_GROUP = 13, RADAR_WAVE = 7;
 /// The kind of a K_SHADE write for drawBuilding, after HdGpuWorld::Shade's.
 const int S_BUILD = 6;
 
@@ -137,6 +187,7 @@ const char *const VERTEX_SHADER =
 const char *const FRAGMENT_SHADER =
 	"#version 330\n"
 	"#extension GL_ARB_gpu_shader5 : require\n"
+	"#extension GL_ARB_gpu_shader_fp64 : enable\n"
 	"#define FILL 0\n"
 	"#define COPY 1\n"
 	"#define ZOOM 2\n"
@@ -153,6 +204,7 @@ const char *const FRAGMENT_SHADER =
 	"#define STEP_OPAQUE 1u\n"
 	"#define ALARM 12\n"
 	"#define WASH 13\n"
+	"#define RADAR 14\n"
 	// HdGpuWorld::Shade, S_BUILD
 	"#define S_ADD 0\n"
 	"#define S_OVER 1\n"
@@ -169,6 +221,7 @@ const char *const FRAGMENT_SHADER =
 	"uniform sampler2D heldAcc;\n"
 	"uniform sampler2D heldGlow;\n"
 	"uniform usampler2D heldWash;\n"
+	"uniform isampler2D heldDist;\n"
 	"uniform isamplerBuffer ops;\n"
 	"uniform usamplerBuffer data;\n"
 	"uniform isamplerBuffer bins;\n"
@@ -347,6 +400,265 @@ const char *const FRAGMENT_SHADER =
 	"	}\n"
 	"	return out_;\n"
 	"}\n"
+	// HdRadar::draw's steps 2 and 3 (HdGpuWorld::radar): its formulas in double precision, every division, root and
+	// conversion to float rounded as the processor's (the card's own only approximate them)
+	"#ifdef GL_ARB_gpu_shader_fp64\n"
+	"uniform int radarFp64;\n"
+	"double datd(int i) { return packDouble2x32(uvec2(dat(i), dat(i + 1))); }\n"
+	"double up(double v) { uvec2 b = unpackDouble2x32(v); b.x += 1u; if (b.x == 0u) b.y += 1u; return packDouble2x32(b); }\n"
+	"double down(double v) { uvec2 b = unpackDouble2x32(v); if (b.x == 0u) b.y -= 1u; b.x -= 1u; return packDouble2x32(b); }\n"
+	// a / b to the nearest (ties to even): the quotient below it found by the exact remainders, then the nearer one
+	"double ddiv(double a, double b)\n"
+	"{\n"
+	"	if (a == 0.0) return a / b;\n"
+	"	precise double aa = abs(a), bb = abs(b);\n"
+	"	precise double y = 1.0 / bb;\n"
+	"	precise double q = aa * y;\n"
+	"	for (int i = 0; i < 2; ++i) { precise double r = fma(-q, bb, aa); q = fma(r, y, q); }\n"
+	"	for (int i = 0; i < 4 && fma(-q, bb, aa) < 0.0; ++i) q = down(q);\n"
+	"	for (int i = 0; i < 4; ++i) { precise double n = up(q); if (fma(-n, bb, aa) < 0.0) break; q = n; }\n"
+	"	precise double n = up(q);\n"
+	"	precise double rq = fma(-q, bb, aa), rn = fma(n, bb, -aa);\n"
+	"	if (rn < rq || (rn == rq && (unpackDouble2x32(n).x & 1u) == 0u)) q = n;\n"
+	"	return (a < 0.0) != (b < 0.0) ? -q : q;\n"
+	"}\n"
+	// the root to the nearest: the one below it, up when x - s^2 passes s ulp (the midpoint's square is never x)
+	"double dsqrt(double x)\n"
+	"{\n"
+	"	if (x == 0.0) return x;\n"
+	"	precise double s = sqrt(x);\n"
+	"	precise double r = fma(-s, s, x);\n"
+	"	s = fma(r, 0.5 / s, s);\n"
+	"	for (int i = 0; i < 4 && fma(-s, s, x) < 0.0; ++i) s = down(s);\n"
+	"	for (int i = 0; i < 4; ++i) { precise double n = up(s); if (fma(-n, n, x) < 0.0) break; s = n; }\n"
+	"	precise double n = up(s);\n"
+	"	precise double e = fma(-s, s, x), h = s * (n - s);\n"
+	"	if (e > h) s = n;\n"
+	"	return s;\n"
+	"}\n"
+	// (float) of a positive double to the nearest, ties to even
+	"float tofloat(double v)\n"
+	"{\n"
+	"	float f = float(v);\n"
+	"	if (!(v > 0.0) || !(f > 0.0)) return f;\n"
+	"	uint b = floatBitsToUint(f);\n"
+	"	float lo = uintBitsToFloat(b - 1u), hi = uintBitsToFloat(b + 1u);\n"
+	"	precise double ef = abs(v - double(f)), el = abs(v - double(lo)), eh = abs(v - double(hi));\n"
+	"	bool odd = (b & 1u) != 0u;\n"
+	"	if (el < ef || (el == ef && odd)) return lo;\n"
+	"	if (eh < ef || (eh == ef && odd)) return hi;\n"
+	"	return f;\n"
+	"}\n"
+	"float clamp01d(double v) { return v <= 0.0 ? 0.0 : (v >= 1.0 ? 1.0 : tofloat(v)); }\n"
+	"float fdiv(float a, float b) { return tofloat(ddiv(double(a), double(b))); }\n"
+	// HdRadar's constants (RADAR_K) from `k`
+	"double kd(int k, int i) { return datd(k + 2 * i); }\n"
+	// HdGpuWorld::atan2
+	"double atan2d(double y, double x, int k)\n"
+	"{\n"
+	"	precise double ay = abs(y), ax = abs(x);\n"
+	"	precise double hi = max(ay, ax);\n"
+	"	if (hi == 0.0) return 0.0;\n"
+	"	precise double t = ddiv(min(ay, ax), hi);\n"
+	"	int id = -1;\n"
+	"	if (t >= 0.4375)\n"
+	"	{\n"
+	"		if (t < 0.6875) { id = 0; precise double n = 2.0 * t - 1.0, m = 2.0 + t; t = ddiv(n, m); }\n"
+	"		else { id = 1; precise double n = t - 1.0, m = t + 1.0; t = ddiv(n, m); }\n"
+	"	}\n"
+	"	precise double z = t * t, w = z * z;\n"
+	"	precise double s1 = z * (kd(k, 14) + w * (kd(k, 16) + w * (kd(k, 18) + w * (kd(k, 20) + w * (kd(k, 22) + w * kd(k, 24))))));\n"
+	"	precise double s2 = w * (kd(k, 15) + w * (kd(k, 17) + w * (kd(k, 19) + w * (kd(k, 21) + w * kd(k, 23)))));\n"
+	"	precise double a = id < 0 ? t - t * (s1 + s2) : kd(k, 10 + id) - ((t * (s1 + s2) - kd(k, 12 + id)) - t);\n"
+	"	if (ay > ax) a = kd(k, 6) - (a - kd(k, 7));\n"
+	"	if (x < 0.0) a = kd(k, 8) - (a - kd(k, 9));\n"
+	"	return y < 0.0 ? -a : a;\n"
+	"}\n"
+	// HdRadar's limb: the globe's soft edge
+	"float limb(double r2, double radius, int k)\n"
+	"{\n"
+	"	if (!(r2 > kd(k, 2))) return 1.0;\n"
+	"	precise double v = (1.0 - dsqrt(r2)) * radius;\n"
+	"	return clamp01d(v);\n"
+	"}\n"
+	// HdRadar's capDist of the circle at `c` (its centre and cosR first)
+	"double capDist(int c, double X, double Y, double Z, double Zc, double radius, int k)\n"
+	"{\n"
+	"	double cx = datd(c), cy = datd(c + 2), cz = datd(c + 4), cosR = datd(c + 6);\n"
+	"	precise double f = X * cx + Y * cy + Z * cz - cosR;\n"
+	"	precise double px = cz * X, py = cz * Y;\n"
+	"	precise double gx = cx - ddiv(px, Zc), gy = cy - ddiv(py, Zc);\n"
+	"	precise double g2 = gx * gx + gy * gy;\n"
+	"	precise double gl = max(dsqrt(g2), kd(k, 0));\n"
+	"	precise double fr = f * radius;\n"
+	"	return ddiv(fr, gl);\n"
+	"}\n"
+	"uint blendOwn(uint d, uint c) { uint a = c >> 24u; return a != 0u ? blend256(d, c, a + (a >> 7u)) : d; }\n"
+	// HdRadar's washColor, the fill `fc`, the edge `ec`, the glow's part `gw`
+	"uint washColor(double d, float lim, double lineW, double glowLen, bool withFill, uint fc, uint ec, float gw)\n"
+	"{\n"
+	"	precise float fill = withFill ? clamp01d(d + 0.5) * lim : 0.0;\n"
+	"	precise double lv = lineW * 0.5 + 0.5 - abs(d - lineW * 0.5);\n"
+	"	float line = clamp01d(lv);\n"
+	"	precise float glow = 0.0;\n"
+	"	if (d > 0.0 && d < glowLen) { precise double t = 1.0 - ddiv(d, glowLen); glow = tofloat(t * t) * gw; }\n"
+	"	precise float aF = datf(int(fc >> 24u)) * fill;\n"
+	"	precise float aE = datf(int(ec >> 24u)) * max(line, glow) * lim;\n"
+	"	precise float a = 1.0 - (1.0 - aF) * (1.0 - aE);\n"
+	"	if (a < datf(256)) return 0u;\n"
+	"	precise float wn = aF * (1.0 - aE);\n"
+	"	float wf = fdiv(wn, a), we = fdiv(aE, a);\n"
+	"	precise float av = a * 255.0 + 0.5;\n"
+	"	uint o = uint(av) << 24u;\n"
+	"	for (uint s = 0u; s < 24u; s += 8u)\n"
+	"	{\n"
+	"		precise float v = float((fc >> s) & 255u) * wf + float((ec >> s) & 255u) * we + 0.5;\n"
+	"		o |= uint(v) << s;\n"
+	"	}\n"
+	"	return o;\n"
+	"}\n"
+	// HdRadar's drawBeam of the sweep at `s`, the radar's head at `h`
+	"uint beam(uint d, int s, float cov, ivec2 p, int h, int k)\n"
+	"{\n"
+	"	double sx = datd(s + 8), sy = datd(s + 10), angle = datd(s + 12), ux = datd(s + 14), uy = datd(s + 16);\n"
+	"	double beamW = datd(h + 25), trail = datd(h + 33), trailCos2 = datd(h + 35), tau = kd(k, 26);\n"
+	"	precise double dx = double(p.x) + 0.5 - sx, dy = double(p.y) + 0.5 - sy;\n"
+	"	precise double along = dx * ux + dy * uy, crs = ux * dy - uy * dx, d2 = dx * dx + dy * dy;\n"
+	"	precise double aa = along * along, edge = trailCos2 * d2 * kd(k, 3);\n"
+	"	bool wedge = crs <= kd(k, 4) && (d2 < 4.0 || (along > 0.0 && aa > edge));\n"
+	"	precise double hw = beamW * 0.5 + kd(k, 5);\n"
+	"	bool strip = along > -kd(k, 4) && abs(crs) < hw;\n"
+	"	if (!wedge && !strip) return d;\n"
+	// fmod(x, TAU): x lies in (-pi, 3 pi), x - TAU is exact
+	"	precise double delta = angle - atan2d(dy, dx, k);\n"
+	"	if (delta >= tau) delta = delta - tau;\n"
+	"	if (delta < 0.0) delta = delta + tau;\n"
+	"	if (delta < trail)\n"
+	"	{\n"
+	"		precise double t = 1.0 - ddiv(delta, trail);\n"
+	"		precise float c = tofloat(t * t) * cov;\n"
+	"		d = blendPixel(d, dat(h + 29), c);\n"
+	"	}\n"
+	"	precise double sd = delta > kd(k, 25) ? delta - tau : delta;\n"
+	"	if (abs(sd) < kd(k, 27))\n"
+	"	{\n"
+	"		precise double bv = beamW * 0.5 + 0.5 - abs(crs);\n"
+	"		float b = clamp01d(bv);\n"
+	"		if (b > 0.0) { precise float c = b * cov; d = blendPixel(d, dat(h + 30), c); }\n"
+	"	}\n"
+	"	return d;\n"
+	"}\n"
+	// the radar with its head at `h` over pixel p, the bases' distances from `origin`
+	"uint radar(uint d, ivec2 p, int h, ivec2 origin)\n"
+	"{\n"
+	"	int k = int(dat(h + 12)), ox = int(dat(h + 17)), oy = int(dat(h + 18));\n"
+	"	int ry = p.y - oy, rowsAt = int(dat(h + 5));\n"
+	"	if (p.x < int(dat(rowsAt + ry * 2)) || p.x >= int(dat(rowsAt + ry * 2 + 1))) return d;\n"
+	"	double X = datd(int(dat(h + 3)) + (p.x - ox) * 2), Y = datd(int(dat(h + 4)) + ry * 2);\n"
+	"	precise double r2 = X * X + Y * Y;\n"
+	"	if (r2 >= 1.0) return d;\n"
+	"	precise double Z = dsqrt(1.0 - r2);\n"
+	"	precise double Zc = max(Z, kd(k, 1));\n"
+	"	double radius = datd(h + 19), lineW = datd(h + 21), glowLen = datd(h + 23);\n"
+	"	int flags = int(dat(h)), nSweep = int(dat(h + 1)), nGroup = int(dat(h + 2));\n"
+	"	int swAt = int(dat(h + 6)), grAt = int(dat(h + 7)), wvAt = int(dat(h + 8));\n"
+	"	bool bare = (flags & 1) != 0, craftBeam = (flags & 2) != 0;\n"
+	"	ivec4 db = ivec4(int(dat(h + 13)), int(dat(h + 14)), int(dat(h + 15)), int(dat(h + 16)));\n"
+	"	bool drow = p.y >= db.y && p.y < db.w;\n"
+	"	bool dcol = drow && p.x >= db.x && p.x < db.z;\n"
+	"	int dv = dcol ? texelFetch(heldDist, p - origin, 0).r : 0;\n"
+	"	float lim = limb(r2, radius, k);\n"
+	"	uint fc = dat(h + 27), ec = dat(h + 28);\n"
+	"	float gw = uintBitsToFloat(dat(h + 32));\n"
+	// 2. the craft in the row (the first 64 of it), when the pixel is in one's box
+	"	bool inCraft = false;\n"
+	"	for (int i = 0, n = 0; i < nSweep && n < 64 && !inCraft; ++i)\n"
+	"	{\n"
+	"		int s = swAt + i * 23;\n"
+	"		if (p.y < int(dat(s + 19)) || p.y >= int(dat(s + 21))) continue;\n"
+	"		++n;\n"
+	"		inCraft = p.x >= int(dat(s + 18)) && p.x < int(dat(s + 20));\n"
+	"	}\n"
+	"	if (inCraft && bare)\n"
+	"	{\n"
+	"		for (int i = 0, n = 0; i < nSweep && n < 64; ++i)\n"
+	"		{\n"
+	"			int s = swAt + i * 23;\n"
+	"			if (p.y < int(dat(s + 19)) || p.y >= int(dat(s + 21))) continue;\n"
+	"			++n;\n"
+	"			if (p.x < int(dat(s + 18)) || p.x >= int(dat(s + 20))) continue;\n"
+	"			double dd = capDist(s, X, Y, Z, Zc, radius, k);\n"
+	"			if (dd < -lineW - 1.0) continue;\n"
+	"			if (dd <= glowLen + 1.0) d = blendOwn(d, washColor(dd, lim, lineW, glowLen, false, fc, ec, gw));\n"
+	"			if (craftBeam && dat(s + 22) != 0u && dd > -0.5) { precise float cov = clamp01d(dd + 0.5) * lim; d = beam(d, s, cov, p, h, k); }\n"
+	"		}\n"
+	"	}\n"
+	"	else if (inCraft)\n"
+	"	{\n"
+	"		double dB = dcol ? double(dv) * 0.125 : -4000.0;\n"
+	"		double dd = dB;\n"
+	"		for (int i = 0, n = 0; i < nSweep && n < 64; ++i)\n"
+	"		{\n"
+	"			int s = swAt + i * 23;\n"
+	"			if (p.y < int(dat(s + 19)) || p.y >= int(dat(s + 21))) continue;\n"
+	"			++n;\n"
+	"			double dc = p.x >= int(dat(s + 18)) && p.x < int(dat(s + 20)) ? capDist(s, X, Y, Z, Zc, radius, k) : -4000.0;\n"
+	"			dd = max(dd, dc);\n"
+	"		}\n"
+	"		if (!(dd < -lineW - 1.0))\n"
+	"		{\n"
+	"			d = blendOwn(d, washColor(dd, lim, lineW, glowLen, true, fc, ec, gw));\n"
+	"			precise float open = 1.0 - clamp01d(dB + 0.5);\n"
+	"			if (craftBeam && !(open <= uintBitsToFloat(dat(h + 11))))\n"
+	"			{\n"
+	"				for (int i = 0, n = 0; i < nSweep && n < 64; ++i)\n"
+	"				{\n"
+	"					int s = swAt + i * 23;\n"
+	"					if (p.y < int(dat(s + 19)) || p.y >= int(dat(s + 21))) continue;\n"
+	"					++n;\n"
+	"					if (dat(s + 22) == 0u) continue;\n"
+	"					double dc = p.x >= int(dat(s + 18)) && p.x < int(dat(s + 20)) ? capDist(s, X, Y, Z, Zc, radius, k) : -4000.0;\n"
+	"					if (dc <= -0.5) continue;\n"
+	"					precise float cov = clamp01d(dc + 0.5) * open * lim;\n"
+	"					d = beam(d, s, cov, p, h, k);\n"
+	"				}\n"
+	"			}\n"
+	"		}\n"
+	"	}\n"
+	// 3. the waves: a base's inside the bases' coverage only, a craft's inside its own circle
+	"	uint waveColor = dat(h + 9);\n"
+	"	float waveK = uintBitsToFloat(dat(h + 10));\n"
+	"	int lutTop = int(dat(h + 31));\n"
+	"	for (int g = 0; g < nGroup; ++g)\n"
+	"	{\n"
+	"		int e = grAt + g * 13;\n"
+	"		if (p.y < int(dat(e + 7)) || p.y >= int(dat(e + 9)) || p.x < int(dat(e + 6)) || p.x >= int(dat(e + 8))) continue;\n"
+	"		bool craft = dat(e + 12) != 0u;\n"
+	"		if (!craft && !dcol) continue;\n"
+	"		int v = craft ? 64 : dv;\n"
+	"		if (v <= -4) continue;\n"
+	"		precise double c = X * datd(e) + Y * datd(e + 2) + Z * datd(e + 4);\n"
+	"		precise float light = 0.0;\n"
+	"		bool in_ = false;\n"
+	"		for (int i = int(dat(e + 10)), end = int(dat(e + 11)); i < end; ++i)\n"
+	"		{\n"
+	"			int w = wvAt + i * 7;\n"
+	"			double lo = datd(w), hi = datd(w + 2);\n"
+	"			if (c < lo || c > hi) continue;\n"
+	"			in_ = true;\n"
+	"			precise double at = (c - lo) * datd(w + 4);\n"
+	"			float l = datf(int(dat(w + 6)) + min(lutTop, int(at)));\n"
+	"			light = 1.0 - (1.0 - light) * (1.0 - l);\n"
+	"		}\n"
+	"		if (!in_ || light <= 0.0) continue;\n"
+	"		precise float a = light * clamp01d(double(v) * 0.125 + 0.5) * lim;\n"
+	"		precise float a2 = a * float(waveColor >> 24u) * waveK + 0.5;\n"
+	"		uint a256 = uint(a2);\n"
+	"		if (a256 != 0u) d = blend256(d, waveColor, a256);\n"
+	"	}\n"
+	"	return d;\n"
+	"}\n"
+	"#endif\n"
 	"void main()\n"
 	"{\n"
 	"	ivec2 p = ivec2(gl_FragCoord.xy);\n"
@@ -500,6 +812,11 @@ const char *const FRAGMENT_SHADER =
 	"			if (w != 0u) d = blend256(d, w, (w >> 24u) + (w >> 31u));\n"
 	"			break;\n"
 	"		}\n"
+	"#ifdef GL_ARB_gpu_shader_fp64\n"
+	"		case RADAR:\n"
+	"			if (radarFp64 != 0) d = radar(d, p, q.x, q.yz);\n"
+	"			break;\n"
+	"#endif\n"
 	"		}\n"
 	"	}\n"
 	// probe (OXCE_HD_GPU_WORLD=probe): the lowest bit of blue flipped, the control of the dump comparison
@@ -584,6 +901,11 @@ struct HdGpuWorld::Impl
 	int washW = 0, washH = 0;
 	Uint64 washKey = 0, frameWashKey = 0;
 	bool washValid = false, frameWash = false;
+	/// HdRadar's distances of the bases (radar), kept as the wash; the program works the radar out (double precision).
+	GLuint distTex = 0;
+	int distW = 0, distH = 0;
+	Uint64 distKey = 0, frameDistKey = 0;
+	bool distValid = false, frameDist = false, radarOK = false;
 	std::vector<std::vector<int>> lists;
 	std::vector<Sint32> bins;
 	std::vector<Uint32> scratch;
@@ -633,6 +955,11 @@ struct HdGpuWorld::Impl
 		gl.Uniform1i(gl.GetUniformLocation(program, "heldAcc"), 5);
 		gl.Uniform1i(gl.GetUniformLocation(program, "heldGlow"), 6);
 		gl.Uniform1i(gl.GetUniformLocation(program, "heldWash"), 7);
+		gl.Uniform1i(gl.GetUniformLocation(program, "heldDist"), 8);
+		// the radar's part of the program is there only with double precision (GL_ARB_gpu_shader_fp64)
+		const GLint radarAt = gl.GetUniformLocation(program, "radarFp64");
+		radarOK = radarAt >= 0 && envOn("OXCE_HD_GPU_RADAR", true);
+		if (radarAt >= 0) gl.Uniform1i(radarAt, 1);
 		tilesAt = gl.GetUniformLocation(program, "tilesX");
 		probeAt = gl.GetUniformLocation(program, "probe");
 		gl.UseProgram(0);
@@ -668,7 +995,8 @@ struct HdGpuWorld::Impl
 			return false;
 		}
 		Log(LOG_INFO) << "HD GPU world: on, pictures in " << atlas.page << "x" << atlas.page << " layers (up to " << atlas.maxLayers << "), "
-			<< maxTexels << " texels a buffer" << (verify ? ", every frame of the card compared with the processor's" : "")
+			<< maxTexels << " texels a buffer" << (radarOK ? ", the radar worked out on the card" : ", the radar's blends as steps")
+			<< (verify ? ", every frame of the card compared with the processor's" : "")
 			<< (probe ? ", probe on" : "");
 		return true;
 	}
@@ -685,6 +1013,10 @@ struct HdGpuWorld::Impl
 		washTex = 0;
 		washW = washH = 0;
 		washValid = false;
+		if (distTex) glDeleteTextures(1, &distTex);
+		distTex = 0;
+		distW = distH = 0;
+		distValid = radarOK = false;
 		if (snap) glDeleteTextures(1, &snap);
 		snap = 0;
 		snapW = snapH = 0;
@@ -719,6 +1051,7 @@ struct HdGpuWorld::Impl
 		canvasPixels = nullptr;
 		frameLight = false;
 		frameWash = false;
+		frameDist = false;
 		++atlas.clock;
 	}
 
@@ -840,6 +1173,8 @@ struct HdGpuWorld::Impl
 		}
 		gl.ActiveTexture(GL_TEXTURE0 + 7);
 		glBindTexture(GL_TEXTURE_2D, frameWash ? washTex : 0);
+		gl.ActiveTexture(GL_TEXTURE0 + 8);
+		glBindTexture(GL_TEXTURE_2D, frameDist ? distTex : 0);
 		for (int i = 0; i < 3; ++i)
 		{
 			gl.ActiveTexture(GL_TEXTURE0 + 2 + i);
@@ -850,6 +1185,8 @@ struct HdGpuWorld::Impl
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		gl.BindVertexArray(0);
 		const auto t4 = std::chrono::steady_clock::now();
+		gl.ActiveTexture(GL_TEXTURE0 + 8);
+		glBindTexture(GL_TEXTURE_2D, 0);
 		gl.ActiveTexture(GL_TEXTURE0 + 7);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		for (int i = 1; i >= 0; --i)
@@ -1731,6 +2068,155 @@ bool HdGpuWorld::wash(const Uint32 *px, int w, int h, int ox, int oy, Uint64 key
 	q[9] = (Sint32)(holes.size() / 4);
 	q[10] = ox;
 	q[11] = oy;
+	return true;
+}
+
+bool HdGpuWorld::radar(const Radar &r, int x0, int y0, int x1, int y1)
+{
+	Impl &m = *_impl;
+	if (!m.radarOK)
+	{
+		return false;
+	}
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return true;
+	}
+	const size_t W = (size_t)(x1 - x0), H = (size_t)(y1 - y0);
+	bool bad = x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H || r.xs.size() != W || r.ys.size() != H || r.rows.size() != H * 2 || r.lut < 1
+		|| (r.dist && (r.distW <= 0 || r.distH <= 0));
+	for (const RadarGroup &g : r.groups)
+	{
+		bad = bad || g.a < 0 || g.a > g.b || g.b > (int)r.waves.size();
+	}
+	if (bad)
+	{
+		fallBack("a shape out of the world");
+		return false;
+	}
+	// the distances: uploaded when they changed
+	if (r.dist)
+	{
+		if (m.frameDist && m.frameDistKey != r.distKey)
+		{
+			return refuse("two radars in a frame");
+		}
+		if (!m.distValid || m.distKey != r.distKey || m.distW != r.distW || m.distH != r.distH)
+		{
+			const bool fresh = !m.distTex || m.distW != r.distW || m.distH != r.distH;
+			if (!m.distTex)
+			{
+				glGenTextures(1, &m.distTex);
+			}
+			gl.ActiveTexture(GL_TEXTURE0);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+			glBindTexture(GL_TEXTURE_2D, m.distTex);
+			if (fresh)
+			{
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexImage2D(GL_TEXTURE_2D, 0, 0x8233 /* GL_R16I */, r.distW, r.distH, 0, 0x8D94 /* GL_RED_INTEGER */, GL_SHORT, r.dist);
+			}
+			else
+			{
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, r.distW, r.distH, 0x8D94 /* GL_RED_INTEGER */, GL_SHORT, r.dist);
+			}
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+			m.distW = r.distW;
+			m.distH = r.distH;
+			m.distKey = r.distKey;
+			m.distValid = true;
+			++m.stats.uploads;
+			m.stats.uploadBytes += (long long)r.distW * r.distH * 2;
+		}
+		m.frameDist = true;
+		m.frameDistKey = r.distKey;
+	}
+	std::vector<Uint32, NoInit<Uint32>> &d = m.data, top;
+	std::vector<Uint32, NoInit<Uint32>> *to = &d;
+	auto word = [&](Sint32 v) { to->push_back((Uint32)v); };
+	auto real = [&](double v) { Uint32 w[2]; std::memcpy(w, &v, 8); to->push_back(w[0]); to->push_back(w[1]); };
+	auto bits = [&](float v) { Uint32 w; std::memcpy(&w, &v, 4); to->push_back(w); };
+	// the boxes within the rectangle (the shader reads them as they are; a pixel outside is never asked about)
+	auto box = [&](const RadarCap &c)
+	{
+		word(std::max(c.x0, x0));
+		word(std::max(c.y0, y0));
+		word(std::max(std::min(c.x1, x1), x0));
+		word(std::max(std::min(c.y1, y1), y0));
+	};
+	const Sint32 kAt = m.table((const Uint32 *)RADAR_K, (int)(sizeof(RADAR_K) / 4));
+	const Sint32 head = (Sint32)d.size();
+	d.resize(d.size() + RADAR_HEAD, 0);
+	const Sint32 xsAt = (Sint32)d.size();
+	for (double v : r.xs) real(v);
+	const Sint32 ysAt = (Sint32)d.size();
+	for (double v : r.ys) real(v);
+	const Sint32 rowsAt = (Sint32)d.size();
+	for (Sint32 v : r.rows) word(std::max(v, 0));
+	const Sint32 swAt = (Sint32)d.size();
+	for (const RadarSweep &s : r.sweeps)
+	{
+		real(s.cap.cx); real(s.cap.cy); real(s.cap.cz); real(s.cap.cosR);
+		real(s.sx); real(s.sy); real(s.angle); real(s.ux); real(s.uy);
+		box(s.cap);
+		word(s.front ? 1 : 0);
+	}
+	const Sint32 grAt = (Sint32)d.size();
+	for (const RadarGroup &g : r.groups)
+	{
+		real(g.cap.cx); real(g.cap.cy); real(g.cap.cz);
+		box(g.cap);
+		word(g.a); word(g.b);
+		word(g.craft ? 1 : 0);
+	}
+	std::vector<Sint32> luts;
+	for (const RadarWave &w : r.waves)
+	{
+		luts.push_back((Sint32)d.size());
+		d.insert(d.end(), (const Uint32 *)w.light, (const Uint32 *)w.light + r.lut + 1);
+	}
+	const Sint32 wvAt = (Sint32)d.size();
+	for (size_t i = 0; i < r.waves.size(); ++i)
+	{
+		real(r.waves[i].cosLo); real(r.waves[i].cosHi); real(r.waves[i].scale);
+		word(luts[i]);
+	}
+	// the head, its words as the shader's radar() reads them
+	to = &top;
+	word((r.bare ? 1 : 0) | (r.craftBeam ? 2 : 0));
+	word((Sint32)r.sweeps.size()); word((Sint32)r.groups.size());
+	word(xsAt); word(ysAt); word(rowsAt); word(swAt); word(grAt); word(wvAt);
+	word((Sint32)r.wave);
+	bits(256.0f / 255.0f);   // HdRadar's a256 of a wave
+	bits(0.01f);             // the least open sky a beam shows in
+	word(kAt);
+	if (r.dist)
+	{
+		word(std::max(r.distX, x0)); word(std::max(r.distY, y0));
+		word(std::max(std::min(r.distX + r.distW, x1), x0)); word(std::max(std::min(r.distY + r.distH, y1), y0));
+	}
+	else
+	{
+		word(0); word(0); word(0); word(0);
+	}
+	word(x0); word(y0);
+	real(r.radius); real(r.lineW); real(r.glowLen); real(r.beamW);
+	word((Sint32)r.fill); word((Sint32)r.edge); word((Sint32)r.trailColor); word((Sint32)r.beam);
+	word(r.lut);
+	bits(r.glow);
+	real(r.trail); real(r.trailCos2);
+	if (top.size() != (size_t)RADAR_HEAD)
+	{
+		fallBack("a radar head of the wrong size");
+		return false;
+	}
+	std::memcpy(&d[head], top.data(), sizeof(Uint32) * RADAR_HEAD);
+	Sint32 *q = m.push(K_RADAR, x0, y0, x1, y1);
+	q[8] = head;
+	q[9] = r.distX;
+	q[10] = r.distY;
 	return true;
 }
 

@@ -125,6 +125,55 @@ public:
 	/// a = alpha + (alpha >> 7); left out inside `holes` (x0, y0, x1, y1 each). One key a frame.
 	bool wash(const Uint32 *px, int w, int h, int ox, int oy, Uint64 key, const std::vector<Sint32> &holes,
 		int x0, int y0, int x1, int y1);
+	/// HdRadar::draw's steps 2 and 3 (the craft's circles and beams, the waves) worked out by the card itself, with
+	/// the processor's formulas in double precision (division and root rounded as the processor's): only the circles,
+	/// the waves and the bases' distances go there. A circle on the globe: its centre in the view's frame, the cosine
+	/// of its radius, the box of world pixels it takes.
+	struct RadarCap
+	{
+		double cx, cy, cz, cosR;
+		int x0, y0, x1, y1;
+	};
+	struct RadarSweep
+	{
+		RadarCap cap;
+		double sx, sy, angle, ux, uy;  ///< the craft on the screen, its beam's angle and direction
+		bool front;
+	};
+	struct RadarWave
+	{
+		double cosLo, cosHi, scale;
+		const float *light;            ///< lut + 1 values
+	};
+	struct RadarGroup
+	{
+		RadarCap cap;
+		int a, b;                      ///< its waves
+		bool craft;
+	};
+	struct Radar
+	{
+		bool bare = false, craftBeam = false;
+		double radius = 0, lineW = 0, glowLen = 0, beamW = 0, trail = 0, trailCos2 = 0;
+		Uint32 fill = 0, edge = 0, trailColor = 0, beam = 0, wave = 0;
+		int lut = 0;
+		float glow = 0;
+		/// X of every column of [x0, x1), Y of every row of [y0, y1); per row the stretch [xa, xb) on the globe
+		std::vector<double> xs, ys;
+		std::vector<Sint32> rows;
+		/// the bases' distances (1/8 world pixel), distW x distH with the top left at (distX, distY); none: nullptr
+		const Sint16 *dist = nullptr;
+		int distX = 0, distY = 0, distW = 0, distH = 0;
+		Uint64 distKey = 0;
+		std::vector<RadarSweep> sweeps;
+		std::vector<RadarWave> waves;
+		std::vector<RadarGroup> groups;
+	};
+	/// The write over [x0, x1) x [y0, y1) (the tables' rectangle). False: not taken - the card has no double precision
+	/// (on() still true: the blends go as steps) or the frame went back to the processor.
+	bool radar(const Radar &r, int x0, int y0, int x1, int y1);
+	/// The arc tangent of y / x both HdRadar and the card work out (fdlibm's, of + - * / only): the same bits on both.
+	static double atan2(double y, double x);
 	/// HdBaseScene's drawBuilding: `vals` 6 floats a pixel of [x0, x1) x [y0, y1) (reveal, grid, beam, edge, line,
 	/// lift); the glow of the pixel's brightness lum is glowLut[min(lutSize - 1, (int)(lum (lutSize - 1) + 0.5))].
 	bool building(const std::vector<float> &vals, const float *glowLut, int lutSize, int x0, int y0, int x1, int y1);

@@ -207,9 +207,10 @@ public:
 	/// Shades the world rectangle (x, y, w, h) row by row in bands on the render threads: fn(y, x0, x1, row)
 	/// blends into the pixels [x0, x1) of the row, already clipped (HdShadeRow). A per-pixel picture computed in
 	/// place; on the video card the blends go there as steps (HdGpuWorld::steps), and `base` (if any) as the picture
-	/// under them (HdGpuWorld::wash) - fn then leaves it out (HdShadeRow::baseDrawn).
+	/// under them (HdGpuWorld::wash) - fn then leaves it out (HdShadeRow::baseDrawn). `card`, when given, puts the
+	/// same blends to the video card worked out there (x0, y0, x1, y1: the clipped rectangle); false - not taken.
 	void shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn,
-		const HdShadeBase *base = nullptr);
+		const HdShadeBase *base = nullptr, const std::function<bool(int, int, int, int)> &card = nullptr);
 	/// Shades the world rectangle (x, y, w, h) by coverages: fn(y, x0, x1, cov) puts into cov[l * (x1 - x0) + x - x0]
 	/// how much of colors[l] covers pixel x of the row (0: none, the row already clipped, cov zeroed); per pixel the
 	/// `layers` colours are blended in their order. The same picture as shadeRows blending them, but the video card

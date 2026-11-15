@@ -21,6 +21,7 @@
 #include <climits>
 #include <cmath>
 #include <cstdint>
+#include "HdGpuWorld.h"
 #include "HdUi.h"
 #include "HdWorkers.h"
 
@@ -713,14 +714,16 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 		const double dx = px + 0.5 - sw.sx, dy = py + 0.5 - sw.sy;
 		// the beam shows only in the trail's wedge (behind the beam, within TRAIL) and in the strip along it:
 		// that is told without a trig call, with a margin so that the exact test below still decides every pixel
+		const double cross = sw.ux * dy - sw.uy * dx;
 		{
-			const double along = dx * sw.ux + dy * sw.uy, cross = sw.ux * dy - sw.uy * dx;
+			const double along = dx * sw.ux + dy * sw.uy;
 			const double d2 = dx * dx + dy * dy;
 			const bool wedge = cross <= 0.01 && (d2 < 4 || (along > 0 && along * along > TRAIL_COS2 * d2 * 0.999));
 			const bool strip = along > -0.01 && std::fabs(cross) < beamW * 0.5 + 0.51;
 			if (!wedge && !strip) return;
 		}
-		double delta = std::fmod(sw.angle - std::atan2(dy, dx), TAU);
+		// HdGpuWorld's own arc tangent (the card works out the same bits); the beam's distance is |cross| itself
+		double delta = std::fmod(sw.angle - HdGpuWorld::atan2(dy, dx), TAU);
 		if (delta < 0) delta += TAU;
 		if (delta < TRAIL)
 		{
@@ -730,7 +733,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 		const double sd = delta > PI ? delta - TAU : delta;
 		if (std::fabs(sd) < PI / 2)
 		{
-			const double off = std::sqrt(dx * dx + dy * dy) * std::fabs(std::sin(sd));
+			const double off = std::fabs(cross);
 			const float b = clamp01(beamW * 0.5 + 0.5 - off);
 			if (b > 0) row.blend(px, BEAM, b * cov);
 		}
@@ -752,6 +755,66 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			wash.holes.insert(wash.holes.end(), { cap.x0, cap.y0, cap.x1, cap.y1 });
 		}
 	}
+	// steps 2 and 3 worked out by the video card itself (step 1 is the wash above: without it the processor's)
+	auto card = [&](int x0, int y0, int x1, int y1) -> bool
+	{
+		if (!washed && _rowA < _rowB) return false;
+		HdGpuWorld::Radar r;
+		r.bare = bare;
+		r.craftBeam = craftBeam;
+		r.radius = radius;
+		r.lineW = lineW;
+		r.glowLen = glowLen;
+		r.beamW = beamW;
+		r.trail = TRAIL;
+		r.trailCos2 = TRAIL_COS2;
+		r.fill = FILL;
+		r.edge = EDGE;
+		r.trailColor = TRAIL_COLOR;
+		r.beam = BEAM;
+		r.wave = waveColor;
+		r.glow = GLOW;
+		r.lut = Wave::LUT;
+		r.xs.resize(x1 - x0);
+		for (int px = x0; px < x1; ++px) r.xs[px - x0] = (px + 0.5 - view.cx) / radius;
+		r.ys.resize(y1 - y0);
+		r.rows.resize((size_t)(y1 - y0) * 2, 0);
+		for (int py = y0; py < y1; ++py)
+		{
+			const double Y = (py + 0.5 - view.cy) / radius;
+			r.ys[py - y0] = Y;
+			if (Y * Y >= 1) continue;
+			const double half = std::sqrt(1 - Y * Y) * radius;
+			const int xa = std::max(x0, (int)std::floor(view.cx - half));
+			const int xb = std::min(x1, (int)std::ceil(view.cx + half));
+			if (xa >= xb) continue;
+			r.rows[(py - y0) * 2] = xa;
+			r.rows[(py - y0) * 2 + 1] = xb;
+		}
+		if (rowA < rowB)
+		{
+			r.dist = dist + (size_t)rowA * distW;
+			r.distX = distX;
+			r.distY = distY + rowA;
+			r.distW = distW;
+			r.distH = rowB - rowA;
+			r.distKey = _washKey;
+		}
+		auto cap = [](const Cap &c) { return HdGpuWorld::RadarCap{ c.c.x, c.c.y, c.c.z, c.cosR, c.x0, c.y0, c.x1, c.y1 }; };
+		for (const Sweep &sw : sweeps)
+		{
+			r.sweeps.push_back({ cap(sw.cap), sw.sx, sw.sy, sw.angle, sw.ux, sw.uy, sw.front });
+		}
+		for (const Wave &w : waves)
+		{
+			r.waves.push_back({ w.cosLo, w.cosHi, w.scale, w.light });
+		}
+		for (const WaveGroup &g : groups)
+		{
+			r.groups.push_back({ cap(g.cap), g.a, g.b, g.craft });
+		}
+		return HdGpuWorld::instance().radar(r, x0, y0, x1, y1);
+	};
 	HdUi::instance().shadeRows(ux0, uy0, ux1 - ux0, uy1 - uy0, [&](int py, int x0, int x1, HdShadeRow &row)
 	{
 		const double Y = (py + 0.5 - view.cy) / radius;
@@ -925,7 +988,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				if (a256) row.blend256(px, waveColor, a256);
 			}
 		}
-	}, washed ? &wash : nullptr);
+	}, washed ? &wash : nullptr, card);
 }
 
 /**
