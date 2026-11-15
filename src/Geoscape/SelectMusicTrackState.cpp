@@ -29,6 +29,7 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Music.h"
 #include "../Engine/Options.h"
+#include "../Interface/MusicNoteButton.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 #include "../Savegame/SavedGame.h"
@@ -151,6 +152,16 @@ private:
 		return false;
 	}
 	int maxScroll() const { return std::max(0, (int)shown().size() - LIST_ROWS); }
+	/// XP-000577: the scroll bar's runner - its height and its top (base pixels)
+	float thumbH() const { return std::max(6.0f, 74.0f * LIST_ROWS / std::max(1.0f, (float)shown().size())); }
+	float thumbY() const { return PL_Y + 15 + (maxScroll() > 0 ? (74.0f - thumbH()) * (float)_scroll / (float)maxScroll() : 0.0f); }
+	float _grab = 0.0f;
+	void dragScroll(int my)
+	{
+		const float span = 74.0f - thumbH();
+		const float frac = span > 0 ? (my - _grab - (PL_Y + 15)) / span : 0.0f;
+		_scroll = std::max(0, std::min((int)std::floor(frac * maxScroll() + 0.5f), maxScroll()));
+	}
 	void setPlaylist(const std::vector<Row> &rows);
 	void reload();
 	void refresh();
@@ -394,7 +405,7 @@ int MusicPlayerView::hit(int mx, int my, int &row) const
 	}
 	if (s_showPlaylist)
 	{
-		if (Box{ 233, PL_Y + 15, 3, 74 }.has(mx, my) && maxScroll() > 0)
+		if (Box{ 230, PL_Y + 15, 6, 74 }.has(mx, my) && maxScroll() > 0)
 		{
 			return ID_SCROLL;
 		}
@@ -557,7 +568,11 @@ void MusicPlayerView::mousePress(Action *action, State *)
 	}
 	else if (id == ID_SCROLL)
 	{
-		_scroll = std::max(0, std::min(_scroll + (my < PL_Y + 15 + 37 ? -LIST_ROWS : LIST_ROWS), maxScroll()));
+		// XP-000577: the runner is pulled; a press beside it brings its middle there
+		_drag = id;
+		const float top = thumbY(), h = thumbH();
+		_grab = (my >= top && my < top + h) ? my - top : h / 2.0f;
+		dragScroll(my);
 	}
 	_dirty = true;
 }
@@ -570,6 +585,10 @@ void MusicPlayerView::mouseOver(Action *action, State *)
 		if (_drag == ID_VOL)
 		{
 			applyVolume(mx);
+		}
+		else if (_drag == ID_SCROLL)
+		{
+			dragScroll((int)action->getAbsoluteYMouse() - getY());
 		}
 		else
 		{
@@ -707,7 +726,8 @@ void MusicPlayerView::paint(PlateCanvas &c)
 		snprintf(buf, sizeof(buf), "%02d:%02d", s / 60, s % 60);
 		return std::string(buf);
 	}();
-	c.text(clockText, (float)LCD_BOX.x + LCD_BOX.w - 4 - c.textWidth(clockText, true), (float)LCD_BOX.y + 2, C_GREEN, true);
+	// XP-000577: the time in the middle of the screen
+	c.text(clockText, std::floor((float)LCD_BOX.x + (LCD_BOX.w - c.textWidth(clockText, true)) / 2.0f), (float)LCD_BOX.y + 2, C_GREEN, true);
 	// bars for show: they follow the time, not the sound (the mixer gives no levels)
 	for (int i = 0; i < 15; ++i)
 	{
@@ -811,6 +831,9 @@ void MusicPlayerView::paint(PlateCanvas &c)
 	titleBar(c, PL_Y, _cur.header);
 	recess(c, LIST_BOX);
 	const std::vector<Row> &rows = shown();
+	// XP-000577: the numbers' column as wide as the longest number of the list (three digits went over the edge)
+	const float numRight = std::max(20.0f, 8.0f + c.textWidth(std::to_string(rows.size()) + ".", false));
+	const float titleX = numRight + 4.0f;
 	for (size_t r = 0; r < _cur.rowIndex.size(); ++r)
 	{
 		const int idx = _cur.rowIndex[r];
@@ -828,20 +851,18 @@ void MusicPlayerView::paint(PlateCanvas &c)
 		}
 		const Uint32 ink = cur ? C_WHITE : dim ? C_DIM : C_GREEN;
 		const std::string num = std::to_string(idx + 1) + ".";
-		c.text(num, 20 - c.textWidth(num, false), ry + 1, ink, false);
+		c.text(num, numRight - c.textWidth(num, false), ry + 1, ink, false);
 		const float lw = c.textWidth(_cur.rowLen[r], false);
 		const float lx = 229 - lw;
-		c.clip(24, ry, lx - 4 - 24, (float)ROW_H);
-		c.text(_cur.rowTitle[r], 24, ry + 1, ink, false);
+		c.clip(titleX, ry, lx - 4 - titleX, (float)ROW_H);
+		c.text(_cur.rowTitle[r], titleX, ry + 1, ink, false);
 		c.unclip();
 		c.text(_cur.rowLen[r], lx, ry + 1, ink, false);
 	}
 	if (maxScroll() > 0)
 	{
-		const float n = (float)rows.size();
-		const float th = std::max(6.0f, 74.0f * LIST_ROWS / n);
 		c.fill(233, PL_Y + 15, 2, 74, C_SLOT);
-		c.fill(233, PL_Y + 15 + (74.0f - th) * (float)_scroll / (float)maxScroll(), 2, th, C_BEV_D);
+		c.fill(233, thumbY(), 2, thumbH(), C_BEV_D);
 	}
 	// the buttons under the list
 	const auto label = [&](const Box &b, const std::string &text, bool pressed, bool enabled)
@@ -905,9 +926,11 @@ void SelectMusicTrackState::handle(Action *action)
 		return;
 	}
 	State::handle(action);
-	// a right click outside the windows closes them (on the release: the press never reaches the screen below)
-	if (ev->type == SDL_MOUSEBUTTONUP && ev->button.button == SDL_BUTTON_RIGHT
-		&& !_view->covers((int)action->getAbsoluteXMouse(), (int)action->getAbsoluteYMouse()))
+	// a right click outside the windows closes them (on the release: the press never reaches the screen below);
+	// XP-000577: so does a left click on the note that opens them
+	const int ax = (int)action->getAbsoluteXMouse(), ay = (int)action->getAbsoluteYMouse();
+	if (ev->type == SDL_MOUSEBUTTONUP && !_view->covers(ax, ay)
+		&& (ev->button.button == SDL_BUTTON_RIGHT || (ev->button.button == SDL_BUTTON_LEFT && MusicNoteButton::latestAt(ax, ay))))
 	{
 		_game->popState();
 	}

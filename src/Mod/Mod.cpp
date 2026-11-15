@@ -1499,10 +1499,17 @@ void Mod::userMusicTick()
 	{
 		userTrialEnd();
 	}
-	// XP-000575: a track of a playlist (played once) has ended - the next one; none left = silence until the screen changes
+	// XP-000575: a track of a playlist (played once) has ended - the next one; none left = silence until the screen changes;
+	// XP-000577: REP on - the same track once more
 	if (Music::takeFinished() && _playlistMode && !Options::mute)
 	{
-		if (!musicStep(1, false))
+		Music *again = Options::oxceMusicRepeat && !_currentMusicTrack.empty() ? getMusicByKey(_currentMusicTrack) : 0;
+		if (again)
+		{
+			again->play(0);
+			++_musicSerial;
+		}
+		else if (!musicStep(1, false))
 		{
 			Music::stop();
 			_playlistMode = false;
@@ -1888,6 +1895,12 @@ void Mod::playMusic(const std::string &name, int id)
 			if (!fromPlaylist)
 			{
 				music = getRandomMusic(name);
+				// XP-000577: REP off - the side's track plays once and the next one follows (userMusicTick), as in the player
+				if ((name == "GMGEO" || name == "GMTACTIC") && !Options::oxceMusicRepeat && music != _muteMusic)
+				{
+					loop = 0;
+					fromPlaylist = true;
+				}
 			}
 			else
 			{
@@ -2146,9 +2159,11 @@ void Mod::startMusicKey(Music *music, const std::string &key, int loop)
 	{
 		userTrialEnd();
 	}
-	music->play(loop);
+	// XP-000577: the player's tracks play once, the end of each is seen (userMusicTick): REP on - the same once more, off - the next
+	(void)loop;
+	music->play(0);
 	setCurrentMusicTrack(key);
-	_playlistMode = loop == 0;
+	_playlistMode = true;
 	if (_musicHistory.empty() || _musicHistory.back() != key)
 	{
 		_musicHistory.push_back(key);
@@ -2162,6 +2177,7 @@ void Mod::startMusicKey(Music *music, const std::string &key, int loop)
 
 bool Mod::musicStep(int dir, bool manual)
 {
+	(void)manual; // XP-000577: the playlist goes round both ways now
 	const int side = getMusicSide();
 	if (Options::mute || side < 0)
 	{
@@ -2215,7 +2231,7 @@ bool Mod::musicStep(int dir, bool manual)
 	}
 	if (anyListed)
 	{
-		music = pickFromPlaylist(side, manual || Options::oxceMusicRepeat, key);
+		music = pickFromPlaylist(side, true, key); // XP-000577: the playlist goes round (REP repeats the track itself)
 		if (!music)
 		{
 			return false;

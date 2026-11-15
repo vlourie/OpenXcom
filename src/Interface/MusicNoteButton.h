@@ -45,6 +45,8 @@ public:
 	void hdMirror() override;
 	void mousePress(Action *action, State *state) override;
 	void mouseRelease(Action *action, State *state) override;
+	/// XP-000577: the note made last of those alive is under this point (the open player closes on it)
+	static bool latestAt(int ax, int ay);
 };
 
 }

@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "MusicNoteButton.h"
+#include <algorithm>
+#include <vector>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/HdPlateCanvas.h"
@@ -26,14 +28,33 @@
 namespace OpenXcom
 {
 
+namespace
+{
+// XP-000577: the notes alive, the newest last (the battle's over the geoscape's)
+std::vector<MusicNoteButton*> s_notes;
+}
+
 MusicNoteButton::MusicNoteButton(Game *game, int x, int y) : InteractiveSurface(9, 9, x, y), _game(game), _classic(0), _down(false)
 {
 	_redraw = true; // XP-000575: without it the classic path never paints the button (k=1 showed nothing)
+	s_notes.push_back(this);
 }
 
 MusicNoteButton::~MusicNoteButton()
 {
+	s_notes.erase(std::remove(s_notes.begin(), s_notes.end(), this), s_notes.end());
 	delete _classic;
+}
+
+bool MusicNoteButton::latestAt(int ax, int ay)
+{
+	if (s_notes.empty())
+	{
+		return false;
+	}
+	const MusicNoteButton *note = s_notes.back();
+	return note->getVisible() && ax >= note->getX() && ax < note->getX() + (int)note->getWidth()
+		&& ay >= note->getY() && ay < note->getY() + (int)note->getHeight();
 }
 
 void MusicNoteButton::paint(PlateCanvas &c)
