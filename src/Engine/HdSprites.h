@@ -57,9 +57,17 @@ struct HdFrame
 	struct GpuStamp
 	{
 		mutable Uint64 id = 0;
+		/// The place this frame's former pixels went to (HdGpuWorld: new pixels of the same size go there again).
+		mutable Uint64 stale = 0;
 		GpuStamp() = default;
 		GpuStamp(const GpuStamp &) {}
-		GpuStamp &operator=(const GpuStamp &) { id = 0; return *this; }
+		GpuStamp &operator=(const GpuStamp &) { forget(); return *this; }
+		/// A frame moved: its place goes with it (as a former place - its pixels are uploaded again).
+		GpuStamp(GpuStamp &&o) noexcept { take(o); }
+		GpuStamp &operator=(GpuStamp &&o) noexcept { forget(); take(o); return *this; }
+		void forget() const { if (id) stale = id; id = 0; }
+		/// The place of the frame `o` this one replaces becomes this one's former place, unless it has one.
+		void take(const GpuStamp &o) const { if (!id && !stale) stale = o.id ? o.id : o.stale; o.id = 0; o.stale = 0; }
 	} gpu;
 	/// The same for the world drawn by the video card (HdGpuWorld: its own texture array).
 	GpuStamp gpuWorld;
@@ -69,7 +77,7 @@ struct HdFrame
 	/// Recomputes the row spans from the alpha channel (the pixels are new: the video card's copy is dropped).
 	void buildSpans();
 	/// The pixels changed: the video card's copy is not good any more.
-	void touched() { gpu.id = 0; gpuWorld.id = 0; }
+	void touched() { gpu.id = 0; gpuWorld.forget(); }
 	/// True if the frame has any visible pixel.
 	bool empty() const { return pixels.empty(); }
 };

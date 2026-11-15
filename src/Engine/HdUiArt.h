@@ -67,6 +67,7 @@ namespace HdUiArt
 		SDL_Rect opaque = {0, 0, 0, 0};   ///< a composite: where its classic pixels are not transparent
 		int cropX = 0, cropY = 0;         ///< a composite of a part of the layers: where the part starts in them
 		std::vector<Uint32> backdrop;     ///< a composite: the classic image under the layers (baseWidth * baseHeight), or empty
+		size_t order = 0;                 ///< its place among the registered pictures (of one content the later one is used)
 	};
 	/// Where the texts drawn over `art` (its surface of w x h at x, y) land on the picture: the whole
 	/// surface, or only a doll's figure - its canvas is the whole screen, and the texts around it are
@@ -82,6 +83,11 @@ namespace HdUiArt
 	/// Notes the picture of a paper doll's layer (an armor's layersDefinition image) without touching the
 	/// image: the mods have thousands of them, and the image is only loaded when a doll wearing it is shown.
 	void addPending(const std::string &name, const std::string &path, int width, int height, std::vector<SDL_Color> palette);
+	/// Notes the picture of a mod's image that is not loaded yet (lazily loaded resources): it is registered by
+	/// `loaded` when the image is, in its place among the others - the classic image is not loaded for it at start.
+	void addDeferred(const std::string &name, const std::string &path, int width, int height, std::vector<SDL_Color> palette);
+	/// The mod's image `name` has just been loaded: registers its deferred picture, if any.
+	void loaded(const std::string &name, const Surface *base);
 	/// The picture of a paper doll: `composite` holds the classic layers blitted in turn at (0, 0), each given
 	/// as its image and name. The composite's content is registered as a picture made from the layers'
 	/// own pictures (in that order) when first drawn - the classic composite itself matches no picture.

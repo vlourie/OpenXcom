@@ -41,6 +41,7 @@
 #endif
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <psapi.h>
 #include <share.h>
 #include <cstdio>
 #include <shlobj.h>
@@ -1663,8 +1664,21 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	}
 	std::ostringstream msgstream;
 	msgstream << "[" << CrossPlatform::now() << "]" << "\t"
-			  << "[" << Logger::toString(level) << "]" << "\t"
-			  << bare << std::endl;
+			  << "[" << Logger::toString(level) << "]" << "\t";
+#ifdef _WIN32
+	// OXCE_HD_MEMLOG (tools only): the process's private and working memory before each line - which loading
+	// step takes how much
+	static const bool memLog = getenv("OXCE_HD_MEMLOG") != nullptr;
+	if (memLog)
+	{
+		PROCESS_MEMORY_COUNTERS_EX pmc {};
+		if (GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc)))
+		{
+			msgstream << "[mem " << (pmc.PrivateUsage >> 20) << "/" << (pmc.WorkingSetSize >> 20) << "]\t";
+		}
+	}
+#endif
+	msgstream << bare << std::endl;
 	auto msg = msgstream.str();
 
 	int effectiveLevel = Logger::reportingLevel();

@@ -934,9 +934,20 @@ void Mod::lazyLoadSurface(const std::string &name)
 		auto i = _extraSprites.find(name);
 		if (i != _extraSprites.end())
 		{
+			bool fresh = false;
 			for (auto* extraSprites : i->second)
 			{
+				fresh = fresh || !extraSprites->isLoaded();
 				loadExtraSprite(extraSprites);
+			}
+			if (fresh)
+			{
+				// the HD picture of the image, if it has one (HdUiArt::addDeferred)
+				auto surface = _surfaces.find(name);
+				if (surface != _surfaces.end())
+				{
+					HdUiArt::loaded(name, surface->second);
+				}
 			}
 		}
 	}
@@ -3977,8 +3988,7 @@ void Mod::loadHdUiArt()
 	// the screens' theme pictures (hd/UI/screens/screens.txt), the windows' metal frames with them
 	HdScreens::load();
 	// both trees at once: the adult one only holds the pictures that differ
-	const std::vector<std::string> files = HdSprites::artFolder("UI");
-	if (files.empty())
+	const std::vector<std::string> files = HdSprites::artFolder("UI");	if (files.empty())
 	{
 		return;
 	}
@@ -4061,8 +4071,25 @@ void Mod::loadHdUiArt()
 			continue;
 		}
 		const bool layer = layerNames.count(it->second) > 0;
-		Surface *base = layer ? nullptr : getSurface(it->second, false);
-		if (!layer && !base)
+		// an image loaded lazily is not loaded for its picture: the picture is registered when the image is
+		// (lazyLoadSurface) - loading all of them here held 2187 images of X-Piratez from the start (143 MB)
+		bool later = false;
+		if (!layer && Options::lazyLoadResources)
+		{
+			auto sprites = _extraSprites.find(it->second);
+			if (sprites != _extraSprites.end() && !sprites->second.empty())
+			{
+				bool single = true;
+				for (const ExtraSprites *s : sprites->second)
+				{
+					single = single && s->getSingleImage();
+					later = later || !s->isLoaded();
+				}
+				later = later && single;
+			}
+		}
+		Surface *base = layer || later ? nullptr : getSurface(it->second, false);
+		if (!layer && !later && !base)
 		{
 			continue;
 		}
@@ -4105,6 +4132,11 @@ void Mod::loadHdUiArt()
 		{
 			HdUiArt::addPending(it->second, picture, width, height, std::move(palette));
 			++layers;
+		}
+		else if (later)
+		{
+			HdUiArt::addDeferred(it->second, picture, width, height, std::move(palette));
+			++loaded;
 		}
 		else if (HdUiArt::addLazy(it->second, base, picture, width, height, std::move(palette)))
 		{
@@ -4152,8 +4184,7 @@ void Mod::loadHdUiArt()
 	}
 	if (loaded > 0)
 	{
-		Log(LOG_INFO) << "HD interface: " << loaded << " HD picture(s) of interface images";
-	}
+		Log(LOG_INFO) << "HD interface: " << loaded << " HD picture(s) of interface images";	}
 	// hd/UI/FontBig.ttf and FontSmall.ttf, when the mod ships them (the skin's TrueType text)
 	HdUi::instance().loadFonts();
 }

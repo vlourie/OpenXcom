@@ -21,6 +21,7 @@
 #include <cmath>
 #include <chrono>
 #include <cstring>
+#include <sstream>
 #include <unordered_set>
 #include "Logger.h"
 #include "Font.h"
@@ -56,12 +57,65 @@ inline float cornerCoverage(int i, int j, int legs)
 	return 1.0f - (2.0f - s) * (2.0f - s) * 0.5f;
 }
 
+/// Every pixel transparent (index 0).
+bool blankPixels(const Uint8 *pixels, int pitch, int w, int h)
+{
+	for (int y = 0; y < h; ++y)
+	{
+		const Uint8 *row = pixels + (size_t)y * pitch;
+		if (row[0] || memcmp(row, row + 1, w - 1) != 0)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 }
 
 HdUi &HdUi::instance()
 {
 	static HdUi ui;
 	return ui;
+}
+
+std::string HdUi::memoryLine() const
+{
+	auto frameBytes = [](const HdFrame &f)
+	{
+		return f.pixels.capacity() * sizeof(Uint32) + (f.rows.capacity() + f.solid.capacity()) * sizeof(HdFrame::Span);
+	};
+	size_t smooth = 0, sources = 0, sparse = 0, glyphs = 0, fitted = 0, recolored = 0;
+	for (const auto &e : _smooth)
+	{
+		smooth += frameBytes(e.second.frame);
+		sources += e.second.source.capacity();
+	}
+	for (const auto &e : _sparse)
+	{
+		for (const SparsePiece &p : e.second.pieces)
+		{
+			sparse += frameBytes(p.frame);
+		}
+	}
+	for (const auto &e : _glyphs)
+	{
+		glyphs += e.second.value.capacity() + e.second.cov.capacity() + e.second.value2.capacity() + e.second.mix.capacity();
+	}
+	for (const auto &e : _fitted)
+	{
+		fitted += frameBytes(e.second);
+	}
+	for (const auto &e : _recolored)
+	{
+		recolored += frameBytes(e.second);
+	}
+	std::ostringstream s;
+	s << "smoothed " << _smooth.size() << " " << (smooth >> 20) << " MB (+" << (sources >> 20) << " MB sources, counted "
+		<< (_smoothBytes >> 20) << ") | sparse " << _sparse.size() << " " << (sparse >> 20) << " MB | glyphs " << _glyphs.size()
+		<< " " << (glyphs >> 20) << " MB | fitted " << _fitted.size() << " " << (fitted >> 20) << " MB | recolored "
+		<< _recolored.size() << " " << (recolored >> 20) << " MB";
+	return s.str();
 }
 
 bool HdUi::active()
@@ -431,6 +485,8 @@ const HdFrame *HdUi::cache(const Surface *key, Uint64 pixelHash, Uint64 hash, in
 	if (it != _smooth.end())
 	{
 		misses = it->second.artMisses;
+		// the new frame of the surface takes the old one's place on the video card (HdGpuWorld::frame)
+		frame.gpuWorld.take(it->second.frame.gpuWorld);
 		_smoothBytes -= it->second.frame.pixels.size() * 4;
 		_smoothLru.erase(it->second.lru);
 		_smooth.erase(it);
@@ -664,6 +720,13 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			artY = it->second.artY;
 			known = true;
 		}
+		// a surface of the size searched below with nothing on it (all transparent) counts as a part of a picture:
+		// the search found such an empty part in some picture (the strip of the name in the battle's panel in a
+		// corner of a paper doll's), and the text over it has the outline of a text on a picture. The pictures
+		// are registered as their images are loaded now (HdUiArt::addDeferred), so that find would depend on
+		// what has been shown before - kept as it always came out, without the search
+		const bool searched = w >= 24 && h >= 16 && w * h >= 2048;
+		const bool blank = searched && !art && blankPixels(pixels, pitch, w, h);
 		if (!known)
 		{
 			art = HdUiArt::find(pixelHash, w, h);
@@ -682,7 +745,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				_cropMissesArts = HdUiArt::cropCount();
 			}
 			const Uint64 cropKey = pixelHash ^ ((Uint64)w << 48) ^ ((Uint64)h << 32);
-			if (!art && w >= 24 && h >= 16 && w * h >= 2048 && misses < 3 && _cropMisses.count(cropKey) == 0)
+			if (!art && searched && !blank && misses < 3 && _cropMisses.count(cropKey) == 0)
 			{
 				// the whole pack compared against this surface: the only thing left in this path that
 				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
@@ -712,6 +775,12 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				cache(surface, pixelHash, pixelHash ^ 0x5A5A5A5A5A5A5A5AULL, k, HdFrame());
 			}
 			// (with smoothing on, the xBRZ entry made next remembers the miss)
+		}
+		if (!art && blank)
+		{
+			why = "empty";
+			notePicture(x, y, w, h);
+			return;
 		}
 		if (art)
 		{

@@ -143,6 +143,7 @@ bool add(const std::string &name, const Surface *base, HdFrame &&frame, std::vec
 	art->frame = std::move(frame);
 	art->frame.buildSpans();
 	art->palette = std::move(palette);
+	art->order = arts.size();
 	const Art *p = art.get();
 	byContent[Key{ p->hash, bw, bh }] = p;
 	bySurface[base] = p;
@@ -207,12 +208,75 @@ bool addLazy(const std::string &name, const Surface *base, const std::string &pa
 	{
 		return false;
 	}
+	art->order = arts.size();
 	const Art *p = art.get();
 	byContent[Key{ p->hash, p->baseWidth, p->baseHeight }] = p;
 	bySurface[base] = p;
 	sizes.insert(sizeKey(p->baseWidth, p->baseHeight));
 	arts.push_back(std::move(art));
 	return true;
+}
+
+namespace
+{
+
+/// The pictures of mods' images not loaded yet, by image name (see addDeferred): their places in `arts`,
+/// kept as bad (searched by nothing) until the image is loaded, and the picture's size.
+struct Deferred
+{
+	Art *art = nullptr;
+	int width = 0, height = 0;
+};
+std::unordered_map<std::string, Deferred> deferred;
+
+}
+
+void addDeferred(const std::string &name, const std::string &path, int width, int height, std::vector<SDL_Color> palette)
+{
+	// its place now, so findCrop's order and which picture of one content wins stay as when every image was
+	// loaded here: X-Piratez loaded 2187 images at start for this (143 MB) and kept a copy of each (135 MB)
+	std::unique_ptr<Art> art(new Art());
+	art->name = name;
+	art->path = path;
+	art->bad = true;
+	art->palette = std::move(palette);
+	art->order = arts.size();
+	Deferred &d = deferred[name];
+	d.art = art.get();
+	d.width = width;
+	d.height = height;
+	arts.push_back(std::move(art));
+}
+
+void loaded(const std::string &name, const Surface *base)
+{
+	auto it = deferred.find(name);
+	if (it == deferred.end())
+	{
+		return;
+	}
+	const Deferred d = it->second;
+	deferred.erase(it);
+	std::unique_ptr<Art> made = lazyArt(name, base, d.art->path, d.width, d.height, std::move(d.art->palette));
+	if (!made)
+	{
+		return; // stays bad: the sizes do not fit (said by lazyArt), or the image is not a single surface
+	}
+	made->order = d.art->order;
+	*d.art = std::move(*made);
+	const Art *p = d.art;
+	const Key key{ p->hash, p->baseWidth, p->baseHeight };
+	auto content = byContent.find(key);
+	if (content == byContent.end() || content->second->order < p->order)
+	{
+		byContent[key] = p;
+	}
+	auto surface = bySurface.find(base);
+	if (surface == bySurface.end() || surface->second->order < p->order)
+	{
+		bySurface[base] = p;
+	}
+	sizes.insert(sizeKey(p->baseWidth, p->baseHeight));
 }
 
 void addPending(const std::string &name, const std::string &path, int width, int height, std::vector<SDL_Color> palette)
@@ -289,6 +353,7 @@ static void composeArt(const Surface *composite, const std::vector<std::pair<con
 				return;
 			}
 			made->doll = true;
+			made->order = arts.size();
 			art = made.get();
 			// by its image only: a layer is never drawn on its own, and its mostly empty canvas must not
 			// be taken for another image's picture
@@ -373,6 +438,7 @@ static void composeArt(const Surface *composite, const std::vector<std::pair<con
 		art->opaque.h = (Uint16)(oy1 - oy0 + 1);
 	}
 	art->checked = true;   // made of checked pictures: nothing to compare it with
+	art->order = arts.size();
 	const Art *p = art.get();
 	byContent[Key{ hash, bw, bh }] = p;
 	sizes.insert(sizeKey(bw, bh));
@@ -840,6 +906,7 @@ void clear()
 	sizes.clear();
 	arts.clear();
 	pending.clear();
+	deferred.clear();
 	predecoded.clear();
 	dollArts = 0;
 	loadedBytes = 0;

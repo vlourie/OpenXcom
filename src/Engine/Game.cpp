@@ -833,6 +833,13 @@ void Game::run()
 				{
 					Log(LOG_INFO) << "HD frame: " << hdFrames << " fr, worst " << hdWorst << " ms (" << hdWorstState
 						<< "), >=33 ms " << hdSlow << ", >=100 ms " << hdStalls;
+					// what the HD stores hold, every 10 s (measurement of the memory: tools read it)
+					static int hdMemTick = 0;
+					if (++hdMemTick % 5 == 0)
+					{
+						Log(LOG_INFO) << "HD mem: " << HdUi::instance().memoryLine() << " | pictures " << (HdUiArt::bytes() >> 20)
+							<< " MB | packs " << (HdSprites::loadedBytes() >> 20) << " MB";
+					}
 				}
 				hdWatchStart = now; hdWorst = 0; hdSlow = 0; hdStalls = 0; hdFrames = 0;
 			}

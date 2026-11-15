@@ -922,7 +922,11 @@ struct HdGpuWorld::Impl
 		long long card = 0, cpu = 0, ops = 0, maxOps = 0, uploads = 0, uploadBytes = 0, composites = 0;
 		double ms = 0, maxMs = 0;
 		std::map<std::string, long long> why, held;
+		/// the uploads by the writer and size of the picture: what fills the layers (count, bytes)
+		std::map<std::string, std::pair<long long, long long>> kinds;
 	} stats;
+	/// The writer of the next upload (stats only).
+	const char *uploading = "frame";
 
 	bool build()
 	{
@@ -1098,6 +1102,13 @@ struct HdGpuWorld::Impl
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		++stats.uploads;
 		stats.uploadBytes += (long long)w * h * (bytes ? 1 : 4);
+		if (stats.on)
+		{
+			auto &k = stats.kinds[std::string(uploading) + " " + std::to_string(w) + "x" + std::to_string(h)];
+			++k.first;
+			k.second += (long long)w * h * (bytes ? 1 : 4);
+		}
+		uploading = "frame";
 	}
 
 	/// Sorts the writes into the tiles (a write that hides a whole tile drops the ones before it there), uploads
@@ -1253,6 +1264,21 @@ struct HdGpuWorld::Impl
 			<< " | writes " << stats.ops / n << " a frame, up to " << stats.maxOps
 			<< " | uploads " << stats.uploads << " (" << (stats.uploadBytes >> 10) << " KB)"
 			<< " | composite " << stats.ms / n << " ms, up to " << stats.maxMs << " ms";
+		std::vector<std::pair<long long, std::string>> top;
+		for (const auto &k : stats.kinds)
+		{
+			top.emplace_back(k.second.second, k.first + " x" + std::to_string(k.second.first));
+		}
+		std::sort(top.rbegin(), top.rend());
+		std::string kinds;
+		for (size_t i = 0; i < top.size() && i < 8; ++i)
+		{
+			kinds += (kinds.empty() ? "" : ", ") + top[i].second + " " + std::to_string(top[i].first >> 10) + " KB";
+		}
+		if (!kinds.empty())
+		{
+			Log(LOG_INFO) << "HD GPU world uploads: " << kinds << " | layers " << atlas.layers.size() << " of " << atlas.maxLayers;
+		}
 		const bool on = stats.on;
 		stats = Stats();
 		stats.on = on;
@@ -1468,13 +1494,27 @@ bool HdGpuWorld::frame(const HdFrame &f, int fx, int fy, int x0, int y0, int x1,
 			fallBack("a picture bigger than a layer");
 			return false;
 		}
-		Uint64 id = 0;
-		const Atlas::Result r = atlas.place(f.width, f.height, id);
-		if (r != Atlas::PLACED)
+		// a frame drawn anew (touched) takes its former place again when the size is the same and no write of this
+		// flush reads it: a picture that changes every frame (the globe, 13 MB) held a new place each time, and
+		// every old one stayed KEEP flushes - the array grew to 8 layers and the driver's copy of it with it
+		Uint64 id = f.gpuWorld.stale;
+		auto old = id ? atlas.places.find(id) : atlas.places.end();
+		f.gpuWorld.stale = 0;
+		m.uploading = id == 0 ? "frame-new" : "frame";
+		if (old != atlas.places.end() && old->second.w == f.width && old->second.h == f.height && old->second.used != atlas.clock)
 		{
-			return refuse(r == Atlas::GROW ? GROWING : "the pictures' layers are full");
+			pl = atlas.find(id);
 		}
-		pl = &atlas.places[id];
+		else
+		{
+			if (id) m.uploading = old == atlas.places.end() ? "frame-gone" : "frame-moved"; // stats: why it took a new place
+			const Atlas::Result r = atlas.place(f.width, f.height, id);
+			if (r != Atlas::PLACED)
+			{
+				return refuse(r == Atlas::GROW ? GROWING : "the pictures' layers are full");
+			}
+			pl = &atlas.places[id];
+		}
 		m.upload(*pl, f.pixels.data(), f.width, f.width, f.height, false);
 		f.gpuWorld.id = id;
 	}
@@ -1532,6 +1572,7 @@ bool HdGpuWorld::pixels(const Uint8 *pixels, int pitch, int w, int h, int ox, in
 		return true;
 	}
 	const char *why = nullptr;
+	m.uploading = "pixels";
 	const Place *pl = m.transientPlace(pixels, pitch, w, h, true, why);
 	if (!pl)
 	{
@@ -1570,6 +1611,7 @@ bool HdGpuWorld::image(const Uint32 *argb, int pitch, int w, int h, int x, int y
 		return true;
 	}
 	const char *why = nullptr;
+	m.uploading = how == 0 ? "image0" : "image";
 	const Place *pl = m.transientPlace(argb, pitch * 4, w, h, false, why);
 	if (!pl)
 	{
@@ -1592,6 +1634,7 @@ bool HdGpuWorld::glyph(const Uint8 *cov, int pitch, int w, int h, int x, int y, 
 		return true;
 	}
 	const char *why = nullptr;
+	m.uploading = "glyph";
 	const Place *pl = m.transientPlace(cov, pitch, w, h, true, why);
 	if (!pl)
 	{

@@ -101,6 +101,8 @@ class HdUi
 {
 public:
 	static HdUi &instance();
+	/// Measurement: what the interface's caches hold, as one line of MB (the HD perf log).
+	std::string memoryLine() const;
 
 	/// Is the HD interface drawing right now (layered screen, scale >= 2, option on)?
 	static bool active();
