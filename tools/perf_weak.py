@@ -173,6 +173,8 @@ MEM_VARIANTS = {
     "no_voices": "mods:hd_voices_ru=false",
     "no_hd_stack": "mods:hd=false;hd_core=false;hd_voices_ru=false;hd_test_steps=false;intro_voice=false",
     "mode0": "set:oxceHdMode=0;oxceHdUi=0",
+    "lazy_on": "set:lazyLoadResources=true",
+    "lazy_off": "set:lazyLoadResources=false",
 }
 
 
