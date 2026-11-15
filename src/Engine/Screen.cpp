@@ -286,7 +286,12 @@ void Screen::clear()
 	{
 		resetDisplay(true);
 	}
-	Surface::CleanSdlSurface(_surface.get());
+	// the HD interface leaves the classic layer out of the frame (flip, writeHdTestDump) and Surface::blit no longer
+	// copies into it: there is nothing to zero (profile 15.11: the clear was a twelfth of the main thread on the globe)
+	if (!(_layered && HdUi::active()))
+	{
+		Surface::CleanSdlSurface(_surface.get());
+	}
 	// option oxceHdGpu: the video card draws this frame's world (HdGpuWorld) and the processor's stays as it is
 	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
 	const bool onCard = _layered && _world && _world->pixels != _screen->pixels && useHdGpu() && HdUi::active()

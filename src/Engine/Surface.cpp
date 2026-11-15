@@ -719,10 +719,15 @@ void Surface::blit(SDL_Surface *surface)
 		{
 			return;
 		}
-		SDL_Rect target {};
-		target.x = getX();
-		target.y = getY();
-		SDL_BlitSurface(_surface.get(), nullptr, surface, &target);
+		// with the HD interface the classic layer is neither shown (flip) nor dumped (writeHdTestDump) and nothing
+		// reads it back: the copy into it was an eighth of the main thread on the globe (profile 15.11)
+		if (!hdUi)
+		{
+			SDL_Rect target {};
+			target.x = getX();
+			target.y = getY();
+			SDL_BlitSurface(_surface.get(), nullptr, surface, &target);
+		}
 		if (hdUi)
 		{
 			if (_hdKind == HD_NORMAL || _hdKind == HD_PICTURE || !HdUi::skin())

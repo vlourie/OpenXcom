@@ -44,7 +44,13 @@ void HdFrame::buildSpans()
 	touched();
 	rows.resize(height);
 	solid.resize(height);
-	for (int y = 0; y < height; ++y)
+	// the rows are independent: a big frame (the globe, 2304x1440 at k=4, rebuilt with every move of the
+	// terminator) goes over the pool in slices (profile 15.11: a tenth of the main thread on the globe)
+	const int jobs = (long long)width * height >= (1 << 20) ? std::min(8, std::max(1, height / 64)) : 1;
+	HdWorkers::instance().run(jobs, [&](int job)
+	{
+	const int ya = (int)((long long)height * job / jobs), yb = (int)((long long)height * (job + 1) / jobs);
+	for (int y = ya; y < yb; ++y)
 	{
 		const Uint32 *p = row(y);
 		int begin = 0;
@@ -71,6 +77,7 @@ void HdFrame::buildSpans()
 		solid[y].begin = (Uint16)bestBegin;
 		solid[y].end = (Uint16)bestEnd;
 	}
+	});
 }
 
 namespace HdSprites
