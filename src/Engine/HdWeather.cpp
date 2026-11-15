@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <tuple>
 #include <vector>
@@ -153,7 +154,7 @@ namespace
 		switch (kind)
 		{
 		case DRIZZLE:
-			rain(900, 10, 0.8f, 0.18f, 0.88f, 0.93f);
+			rain(1500, 15, 0.8f, 0.27f, 0.88f, 0.93f);   // Vitali 15.11: easier to see, still fainter than rain
 			break;
 		case RAIN:
 			rain(1500, 22, 1.0f, 0.30f, 0.80f, 0.85f);
@@ -370,6 +371,10 @@ namespace
 		Uint32 seed = 0;
 		Look look;
 		Texture tex[3];
+		/// Bumped every time the textures are made anew (the video card's copies of them go).
+		Uint32 version = 0;
+		/// The layers of a kind with its own flakes (ownFlakes): their looks stay in look.layer, look.layers is 0.
+		int flakeLayers = 0;
 		std::vector<float> noise;
 		/// The grid: per node veil alpha, particles, band alpha, tone weight.
 		int gw = 0, gh = 0;
@@ -388,6 +393,120 @@ namespace
 		~BakeTimer() { bakeUs += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count(); }
 	};
 
+	// ---- the snowflakes drawn one by one (flakes()): every flake its own size, fall, sway, turn and shape
+
+	/// The radii of the bank, pixels of scale 4: FLAKE_SIZES levels over FLAKE_R0..FLAKE_R1.
+	const int FLAKE_SIZES = 16;
+	const float FLAKE_R0 = 1.0f, FLAKE_R1 = 6.0f;
+	/// A star's turns over its 60 degrees, its shapes (bare arms, branches halfway, forked tips); a dot is kind 0.
+	const int FLAKE_TURNS = 6;
+	const int FLAKE_STARS = 3;
+	const int FLAKE_KINDS = 1 + FLAKE_STARS * FLAKE_TURNS;
+	/// A flake smaller than this on the canvas (radius, pixels) is a soft dot: a star's arms would be a blur.
+	const float STAR_MIN_PX = 3.0f;
+
+	inline float flakeRadius4(int size) { return FLAKE_R0 + (FLAKE_R1 - FLAKE_R0) * size / (FLAKE_SIZES - 1); }
+
+	/// Distance from (px, py) to the segment (ax, ay) - (bx, by).
+	inline float segDist(float px, float py, float ax, float ay, float bx, float by)
+	{
+		const float dx = bx - ax, dy = by - ay;
+		const float len2 = dx * dx + dy * dy;
+		float t = len2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+		t = t < 0 ? 0 : (t > 1 ? 1 : t);
+		const float ex = px - ax - t * dx, ey = py - ay - t * dy;
+		return std::sqrt(ex * ex + ey * ey);
+	}
+
+	/// Bakes a flake at scale k, white with straight alpha, its middle the frame's middle: a soft dot (shape -1) or a
+	/// six-armed star (shape 0..FLAKE_STARS-1 at turn 0..FLAKE_TURNS-1) - a core, a faint glow, arms thinning to their tips.
+	/// Every edge is a coverage of the distance (no steps, CLAUDE.md rule 12).
+	void bakeFlake(int k, int size, int shape, int turn, HdFrame &f)
+	{
+		const float s = k / LOOK_K;
+		const float R = std::max(0.6f, flakeRadius4(size) * s);
+		const float soft = shape < 0 ? 1.0f + 1.2f * s : 0.9f + 0.06f * R;
+		const int half = (int)std::ceil(R + soft) + 1;
+		f.width = f.height = half * 2;
+		f.generated = true;
+		f.pixels.assign((size_t)f.width * f.height, 0);
+		const float hw = std::max(0.55f, 0.13f * R);
+		const float rot = (turn * (60.0f / FLAKE_TURNS) + 15.0f) * 3.14159265f / 180.0f;
+		float ax[6], ay[6];
+		for (int j = 0; j < 6; ++j)
+		{
+			ax[j] = std::cos(rot + j * 1.04719755f);
+			ay[j] = std::sin(rot + j * 1.04719755f);
+		}
+		for (int y = 0; y < f.height; ++y)
+		{
+			for (int x = 0; x < f.width; ++x)
+			{
+				const float px = x + 0.5f - half, py = y + 0.5f - half;
+				const float d = std::sqrt(px * px + py * py);
+				float a;
+				if (shape < 0)
+				{
+					a = clamp01((R + soft * 0.5f - d) / soft);
+				}
+				else
+				{
+					a = clamp01((0.34f * R + soft * 0.5f - d) / soft);
+					a = std::max(a, 0.42f * clamp01(1 - d / (0.8f * R)));
+					for (int j = 0; j < 6; ++j)
+					{
+						const float along = clamp01((px * ax[j] + py * ay[j]) / R);
+						const float w = hw * (1.0f - 0.4f * along);
+						a = std::max(a, clamp01((w + soft * 0.5f - segDist(px, py, 0, 0, ax[j] * R, ay[j] * R)) / soft));
+						if (shape > 0)
+						{
+							// branches 50 degrees off the arm: halfway along (shape 1) or forking near the tip (shape 2)
+							const float at = shape == 1 ? 0.5f : 0.72f, len = (shape == 1 ? 0.36f : 0.3f) * R;
+							const float bx = ax[j] * R * at, by = ay[j] * R * at;
+							for (int side = -1; side <= 1; side += 2)
+							{
+								const float c = std::cos(0.87f * side), sn = std::sin(0.87f * side);
+								const float ex = ax[j] * c - ay[j] * sn, ey = ax[j] * sn + ay[j] * c;
+								a = std::max(a, clamp01((hw * 0.8f + soft * 0.5f - segDist(px, py, bx, by, bx + ex * len, by + ey * len)) / soft));
+							}
+						}
+					}
+				}
+				const Uint32 al = (Uint32)(a * 255.0f + 0.5f);
+				f.pixels[(size_t)y * f.width + x] = al ? (al << 24) | 0xFFFFFFu : 0;
+			}
+		}
+		f.buildSpans();
+	}
+
+	/// The flakes of a scale: FLAKE_SIZES x FLAKE_KINDS frames, [size * FLAKE_KINDS + kind]; baked on the HD workers on
+	/// first use and kept for the run (the frames never move: the video card keeps its copies by them).
+	struct FlakeBank
+	{
+		std::vector<HdFrame> frames;
+	};
+	std::mutex flakeLock;
+	std::map<int, std::unique_ptr<FlakeBank>> flakeBanks;
+
+	const FlakeBank &flakeBank(int k)
+	{
+		std::lock_guard<std::mutex> guard(flakeLock);
+		std::unique_ptr<FlakeBank> &bank = flakeBanks[k];
+		if (!bank)
+		{
+			BakeTimer timer;
+			bank.reset(new FlakeBank);
+			FlakeBank &b = *bank;
+			b.frames.resize((size_t)FLAKE_SIZES * FLAKE_KINDS);
+			HdWorkers::instance().run(FLAKE_SIZES * FLAKE_KINDS, [&](int i)
+			{
+				const int kind = i % FLAKE_KINDS;
+				bakeFlake(k, i / FLAKE_KINDS, kind == 0 ? -1 : (kind - 1) / FLAKE_TURNS, kind == 0 ? 0 : (kind - 1) % FLAKE_TURNS, b.frames[i]);
+			});
+		}
+		return *bank;
+	}
+
 	void ensure(Air &a, Kind kind, int k, Uint32 seed)
 	{
 		if (a.kind == kind && a.k == k && a.seed == seed)
@@ -399,6 +518,14 @@ namespace
 		a.k = k;
 		a.seed = seed;
 		a.look = lookOf(kind);
+		++a.version;
+		// a kind with its own flakes keeps their looks but bakes no textures: the air pass draws no layers for it
+		a.flakeLayers = 0;
+		if (ownFlakes(kind))
+		{
+			a.flakeLayers = a.look.layers;
+			a.look.layers = 0;
+		}
 		HdWorkers::instance().run(a.look.layers, [&](int i)
 		{
 			bakeLayer(a.look.layer[i], k, hash(seed, 101 + i), a.tex[i]);
@@ -536,19 +663,23 @@ Kind pick(Biome biome, bool cold, Uint32 seed)
 	case B_SWAMP: table = cold ? &coldLand : &swamp; break;
 	default: return CLEAR;
 	}
-	int total = 0;
+	// clear weather is 35% everywhere (Vitali 15.11); the rest keep their proportions between themselves
+	const int CLEAR_PCT = 35;
+	int rest = 0;
 	for (const W &w : *table)
 	{
-		total += w.weight;
+		rest += w.kind == CLEAR ? 0 : w.weight;
 	}
+	const int total = 100 * rest;
 	int roll = (int)(mix(seed ^ 0x5EA7u) % (Uint32)total);
 	for (const W &w : *table)
 	{
-		if (roll < w.weight)
+		const int weight = w.kind == CLEAR ? CLEAR_PCT * rest : (100 - CLEAR_PCT) * w.weight;
+		if (roll < weight)
 		{
 			return w.kind;
 		}
-		roll -= w.weight;
+		roll -= weight;
 	}
 	return CLEAR;
 }
@@ -727,6 +858,136 @@ void prepare(const Scene &s)
 			}
 		}
 	});
+}
+
+bool ownFlakes(Kind kind)
+{
+	// OXCE_HD_SNOW=old: the repeating layers of the air pass (the comparison of the look and the cost)
+	static const bool old = []
+	{
+		const char *e = std::getenv("OXCE_HD_SNOW");
+		return e && std::strcmp(e, "old") == 0;
+	}();
+	return !old && (kind == FLAKES || kind == SNOWFALL);
+}
+
+void flakes(const Scene &s, std::vector<Flake> &out)
+{
+	out.clear();
+	Air &a = air();
+	std::lock_guard<std::mutex> guard(a.lock);
+	if (a.kind != s.kind || a.k != s.k || a.grid.empty() || a.flakeLayers == 0)
+	{
+		return;
+	}
+	const FlakeBank &bank = flakeBank(s.k);
+	const Look &L = a.look;
+	const float sc = s.k / LOOK_K;
+	const double t = s.ms / 1000.0;
+	const float partDim = 0.35f + 0.65f * clamp01(s.day);
+	// the flakes fill a box a margin wider than the canvas, anchored to the map; they wrap round it out of sight
+	const int margin = (int)std::ceil((FLAKE_R1 + 3) * sc) + 4;
+	const double bw = s.width + 2.0 * margin, bh = s.height + 2.0 * margin;
+	const int gw = a.gw, gh = a.gh;
+	for (int i = 0; i < a.flakeLayers; ++i)
+	{
+		const LayerLook &F = L.layer[i];
+		const int n = (int)std::lround(F.count * bw * bh / (sc * sc) / MOCK_AREA);
+		const float tint[3] = { F.color.r * partDim / 255.0f, F.color.g * partDim / 255.0f, F.color.b * partDim / 255.0f };
+		for (int j = 0; j < n; ++j)
+		{
+			const Uint32 h = hash(s.seed, 500 + i, j);
+			const float q = unit(hash(h, 1));
+			const float r4 = F.rmin + (F.rmax - F.rmin) * q * q;
+			// the nearer (bigger) flakes of a layer fall a little faster
+			const float nearer = F.rmax > F.rmin ? (r4 - F.rmin) / (F.rmax - F.rmin) : 0.0f;
+			const double speed = F.speed * (0.75f + 0.5f * unit(hash(h, 2))) * (0.85f + 0.3f * nearer) * sc;
+			const double drift = (unit(hash(h, 3)) - 0.5f) * 0.16f * speed;
+			const double amp = F.sway * (0.4f + 0.9f * unit(hash(h, 4))) * sc;
+			const double period = F.swayPeriod * (0.6f + 0.8f * unit(hash(h, 5)));
+			const double phase = 6.2831853 * unit(hash(h, 6));
+			const double w = t * 6.2831853 / period;
+			const double sway = amp * (std::sin(w + phase) + 0.35 * std::sin(2.7 * w + 2 * phase));
+			double x = std::fmod(unit(hash(h, 7)) * bw + drift * t + sway + s.originX, bw);
+			double y = std::fmod(unit(hash(h, 8)) * bh + speed * t + s.originY, bh);
+			x += x < 0 ? bw : 0;
+			y += y < 0 ? bh : 0;
+			const float cx = (float)(x - margin), cy = (float)(y - margin);
+			// under a roof the flakes thin out as the air's particles do (the grid's second value)
+			const float fx = std::max(0.0f, std::min(gw - 1.001f, cx / GRID)), fy = std::max(0.0f, std::min(gh - 1.001f, cy / GRID));
+			const int ix = (int)fx, iy = (int)fy;
+			const float tx = fx - ix, ty = fy - iy;
+			const float *g0 = &a.grid[((size_t)iy * gw + ix) * 4 + 1], *g1 = g0 + (size_t)gw * 4;
+			const float part = (g0[0] * (1 - tx) + g0[4] * tx) * (1 - ty) + (g1[0] * (1 - tx) + g1[4] * tx) * ty;
+			const float opacity = F.alpha * (0.6f + 0.4f * unit(hash(h, 9))) * s.power * part;
+			if (opacity < 0.02f)
+			{
+				continue;
+			}
+			const int size = std::max(0, std::min(FLAKE_SIZES - 1, (int)std::lround((r4 - FLAKE_R0) / (FLAKE_R1 - FLAKE_R0) * (FLAKE_SIZES - 1))));
+			int kind = 0;
+			if (r4 * sc >= STAR_MIN_PX)
+			{
+				// a star tumbles: a turn of 10 degrees every so often, either way
+				const double spin = (0.3 + 0.9 * unit(hash(h, 10))) * ((hash(h, 11) & 1) ? 1 : -1);
+				const int turn = (int)(((Sint64)(hash(h, 12) % FLAKE_TURNS) + (Sint64)std::floor(t * spin)) % FLAKE_TURNS + FLAKE_TURNS) % FLAKE_TURNS;
+				kind = 1 + (int)(hash(h, 13) % FLAKE_STARS) * FLAKE_TURNS + turn;
+			}
+			const HdFrame &fr = bank.frames[(size_t)size * FLAKE_KINDS + kind];
+			const int px = (int)std::floor(cx) - fr.width / 2, py = (int)std::floor(cy) - fr.height / 2;
+			if (px >= s.width || py >= s.height || px + fr.width <= 0 || py + fr.height <= 0)
+			{
+				continue;
+			}
+			out.push_back(Flake{ &fr, px, py, std::min(1.0f, opacity), { tint[0], tint[1], tint[2] } });
+		}
+	}
+}
+
+bool pass(const Scene &s, Pass &out)
+{
+	Air &a = air();
+	if (a.kind != s.kind || a.k != s.k || a.grid.empty())
+	{
+		return false;
+	}
+	// the same numbers drawRowsScalar starts from, made the same way
+	const Look &L = a.look;
+	const float day = std::max(0.0f, std::min(1.0f, s.day));
+	out.toneW = 0.5f + 0.5f * s.power;
+	out.sat = L.sat;
+	const float veilDim = 0.25f + 0.75f * day, bandDim = 0.3f + 0.7f * day, partDim = 0.35f + 0.65f * day;
+	for (int c = 0; c < 3; ++c)
+	{
+		out.mul[c] = L.mul[c];
+		out.add[c] = L.add[c] * day;
+	}
+	out.veil[0] = L.veilColor.r * veilDim; out.veil[1] = L.veilColor.g * veilDim; out.veil[2] = L.veilColor.b * veilDim;
+	out.band[0] = L.band.color.r * bandDim; out.band[1] = L.band.color.g * bandDim; out.band[2] = L.band.color.b * bandDim;
+	out.haze[0] = L.haze.r * bandDim; out.haze[1] = L.haze.g * bandDim; out.haze[2] = L.haze.b * bandDim;
+	out.hazeA = L.hazeA * s.power;
+	out.flash = L.flash ? s.flash : 0.0f;
+	out.layers = L.layers;
+	out.side = L.layers ? a.tex[0].side : 0;
+	out.version = a.version;
+	for (int i = 0; i < L.layers; ++i)
+	{
+		float ox, oy;
+		layerOffset(L.layer[i], s.k, a.tex[i].side, s.ms, ox, oy);
+		out.tex[i] = a.tex[i].a.data();
+		out.c[i][0] = L.layer[i].color.r * partDim;
+		out.c[i][1] = L.layer[i].color.g * partDim;
+		out.c[i][2] = L.layer[i].color.b * partDim;
+		out.alpha[i] = s.power / 255.0f;
+		out.oy[i] = oy;
+		const int side = a.tex[i].side;
+		const int rx = (int)std::floor(-s.originX - ox);
+		out.x0[i] = ((rx % side) + side) % side;
+	}
+	out.gw = a.gw;
+	out.gh = a.gh;
+	out.grid = a.grid.data();
+	return true;
 }
 
 /// The pass pixel by pixel (the reference: drawRowsSse gives the same bytes, OXCE_HD_WEATHER_PATH=verify checks it).

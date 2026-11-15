@@ -31,6 +31,7 @@
 #include "HdGpu.h"
 #include "HdGpuGl.h"
 #include "HdGpuAtlas.h"
+#include "HdWeather.h"
 #include "HdWorkers.h"
 #include "Logger.h"
 
@@ -64,7 +65,7 @@ using hdgl::Atlas;
 using hdgl::Place;
 
 /// The command kinds of the program (the first value of a command's second texel).
-enum Op { OP_FILL, OP_BACKDROP, OP_BLIT, OP_SCALED, OP_HD, OP_HD_LIT, OP_VAPOR_SOFT, OP_FLASH };
+enum Op { OP_FILL, OP_BACKDROP, OP_BLIT, OP_SCALED, OP_HD, OP_HD_LIT, OP_VAPOR_SOFT, OP_FLASH, OP_WEATHER };
 
 // one quad per command out of six vertex numbers (no vertex buffer): its rectangle is the command's first texel;
 // canvas row 0 is the framebuffer's row 0, so the frame reads back top row first
@@ -94,6 +95,7 @@ const char *const FRAGMENT_SHADER =
 	"#define HD_LIT 5\n"
 	"#define VAPOR_SOFT 6\n"
 	"#define FLASH 7\n"
+	"#define WEATHER 8\n"
 	"flat in int cmd;\n"
 	"uniform sampler2DArray atlas;\n"
 	"uniform sampler2D stream;\n"
@@ -165,6 +167,84 @@ const char *const FRAGMENT_SHADER =
 	"		ivec3 c = ivec3(bytes(texelFetch(under, d, 0)).rgb);\n"
 	"		ivec3 t = min(ivec3(255), c * t3.w / 255 + t3.xyz);\n"
 	"		put(uvec3(c + (((t - c) * m) >> 8)), 255u);\n"
+	"		return;\n"
+	"	}\n"
+	// HdWeather::drawRowsScalar in the same floats, op by op (PRECISE: no fused multiply-add where the card has GLSL 4)
+	"	if (op == WEATHER)\n"
+	"	{\n"
+	"		int e = extras + t2.x;\n"
+	"		vec4 p0 = intBitsToFloat(texelFetch(cmds, e));\n"
+	"		ivec4 i1 = texelFetch(cmds, e + 1), i2 = texelFetch(cmds, e + 2), i3 = texelFetch(cmds, e + 3), i4 = texelFetch(cmds, e + 4);\n"
+	"		vec3 mul = intBitsToFloat(i1.xyz), add = intBitsToFloat(i2.xyz), haze = intBitsToFloat(i3.xyz), veil = intBitsToFloat(i4.xyz);\n"
+	"		vec3 band = intBitsToFloat(texelFetch(cmds, e + 5).xyz);\n"
+	"		ivec4 al = texelFetch(cmds, e + 12);\n"
+	"		int layers = i1.w, gw = i2.w, gh = i3.w, side = al.w;\n"
+	"		PRECISE float gyf = (float(d.y) + 0.5) * 0.125;\n"
+	"		int gy = min(gh - 2, int(gyf));\n"
+	"		PRECISE float ty = gyf - float(gy);\n"
+	"		int gx = d.x / 8;\n"
+	"		int g = e + 13 + gy * gw + gx;\n"
+	"		vec4 a0 = intBitsToFloat(texelFetch(cmds, g)), b0 = intBitsToFloat(texelFetch(cmds, g + 1));\n"
+	"		vec4 a1 = intBitsToFloat(texelFetch(cmds, g + gw)), b1 = intBitsToFloat(texelFetch(cmds, g + gw + 1));\n"
+	"		PRECISE vec4 left = a0 * (1.0 - ty) + a1 * ty;\n"
+	"		PRECISE vec4 right = b0 * (1.0 - ty) + b1 * ty;\n"
+	"		PRECISE vec4 step = (right - left) * 0.125;\n"
+	"		left += step * 0.5;\n"
+	"		for (int i = gx * 8; i < d.x; ++i)\n"
+	"		{\n"
+	"			left += step;\n"
+	"		}\n"
+	"		PRECISE vec3 c = vec3(bytes(texelFetch(under, d, 0)).rgb);\n"
+	"		float va = left.x, part = left.y, ba = left.z, m = left.w;\n"
+	"		if (m > 0.0)\n"
+	"		{\n"
+	"			PRECISE float gray = (c.r + c.g + c.b) * uintBitsToFloat(0x3EAAAAABu);\n"
+	"			PRECISE float w = m * p0.y;\n"
+	"			PRECISE vec3 tc = (vec3(gray) + (c - vec3(gray)) * p0.x) * mul + add;\n"
+	"			c += (tc - c) * w;\n"
+	"			if (p0.z > 0.0)\n"
+	"			{\n"
+	"				PRECISE float h = p0.z * m;\n"
+	"				c += (haze - c) * h;\n"
+	"			}\n"
+	"		}\n"
+	"		if (va > 0.0)\n"
+	"		{\n"
+	"			c += (veil - c) * va;\n"
+	"		}\n"
+	"		if (ba > 0.0)\n"
+	"		{\n"
+	"			c += (band - c) * ba;\n"
+	"		}\n"
+	"		if (part > 0.0)\n"
+	"		{\n"
+	"			for (int i = 0; i < layers; ++i)\n"
+	"			{\n"
+	"				ivec4 lr = texelFetch(cmds, e + 7 + 2 * i);\n"
+	"				int ry = int(floor(float(d.y - i4.w) - intBitsToFloat(lr.x)));\n"
+	"				ry = ry >= 0 ? ry % side : side - 1 - (-ry - 1) % side;\n"
+	"				uint t = bytes(texelFetch(atlas, ivec3(lr.z + (lr.y + d.x) % side, lr.w + ry, al[i]), 0)).r;\n"
+	"				if (t != 0u)\n"
+	"				{\n"
+	"					vec4 lc = intBitsToFloat(texelFetch(cmds, e + 6 + 2 * i));\n"
+	"					PRECISE float a = float(t) * lc.w * part;\n"
+	"					c += (lc.rgb - c) * a;\n"
+	"				}\n"
+	"			}\n"
+	"		}\n"
+	"		if (p0.w > 0.0 && m > 0.0)\n"
+	"		{\n"
+	"			PRECISE float f = p0.w * m;\n"
+	"			c.r += (min(255.0, c.r * 1.9 + 18.0) - c.r) * f;\n"
+	"			c.g += (min(255.0, c.g * 1.95 + 18.0) - c.g) * f;\n"
+	"			c.b += (min(255.0, c.b * 2.15 + 18.0) - c.b) * f;\n"
+	"		}\n"
+	"		uvec3 o;\n"
+	"		for (int ch = 0; ch < 3; ++ch)\n"
+	"		{\n"
+	"			o[ch] = c[ch] < 0.0 ? 0u : (c[ch] > 255.0 ? 255u : uint(c[ch] + 0.5));\n"
+	"		}\n"
+	"		put(o, 255u);\n"
 	"		return;\n"
 	"	}\n"
 	"	ivec2 s = (d - t1.yz) / t2.z + t2.xy;\n"
@@ -302,6 +382,11 @@ struct Shared
 	Atlas atlas;
 	std::unordered_map<IndexedKey, Uint64, IndexedKeyHash> indexed;
 	std::unordered_map<Uint32, Uint64> weights;
+	/// The weather's layers in the atlas (HdWeather::Pass::tex), for the version of its textures.
+	Uint64 weatherIds[3] = {};
+	Uint32 weatherVersion = 0;
+	/// The fragment program is GLSL 4 with `precise` (no fused multiply-add): the weather's floats are the processor's.
+	bool precise = false;
 	/// Flushes drawn by the card, and by the processor while a canvas had a framebuffer (for the frame log).
 	unsigned long long cardFlushes = 0;
 	/// OXCE_HD_GPU_STATS: a line every 5 s - flushes, commands, copies of the canvas, uploads, the wait for frames.
@@ -323,7 +408,12 @@ struct Shared
 		stats.on = envOn("OXCE_HD_GPU_STATS", false);
 		verify = envOn("OXCE_HD_GPU_VERIFY", false);
 		stats.since = std::chrono::steady_clock::now();
-		program =hdgl::program(VERTEX_SHADER, FRAGMENT_SHADER, "the battle canvas");
+		// GLSL 4 where the card has it: `precise` keeps the weather's floats those of the processor (no fused multiply-add)
+		const char *version = (const char *)glGetString(GL_VERSION);
+		precise = version && std::atoi(version) >= 4;
+		const std::string fragment = std::string(precise ? "#version 400\n#define PRECISE precise\n" : "#version 330\n#define PRECISE\n") +
+			(FRAGMENT_SHADER + std::strlen("#version 330\n"));
+		program = hdgl::program(VERTEX_SHADER, fragment.c_str(), "the battle canvas");
 		if (!program)
 		{
 			failed = true;
@@ -414,6 +504,12 @@ struct Shared
 		atlas.release();
 		indexed.clear();
 		weights.clear();
+		for (Uint64 &id : weatherIds)
+		{
+			id = 0;
+		}
+		weatherVersion = 0;
+		precise = false;
 		built = failed = false;
 	}
 };
@@ -722,15 +818,6 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 	const int page = atlas.page;
 	++atlas.clock;
 	bool emptied = false;
-	// the air of the weather (HdWeather) is drawn by the processor's strips: such a flush is not prepared at all
-	for (const Cmd &cmd : canvas._cmds)
-	{
-		if (cmd.type == Cmd::WEATHER)
-		{
-			tellOnce("weather - the processor draws such flushes");
-			return false;
-		}
-	}
 	for (int attempt = 0; attempt < 8; ++attempt)
 	{
 		p.clear();
@@ -953,10 +1040,75 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 				fail = true;
 				continue;
 			case Cmd::WEATHER:
-				// the air of the weather (HdWeather): drawn by the processor's strips
-				why = "weather";
-				fail = true;
-				continue;
+			{
+				// the air of the weather (HdWeather::drawRows): its numbers, the layers' textures in the atlas, the grid
+				if (!shared.precise)
+				{
+					// GLSL below 4 has no `precise`: the card could fuse the floats, the processor draws such flushes
+					why = "weather without GLSL 4";
+					fail = true;
+					continue;
+				}
+				HdWeather::Pass w;
+				if (!HdWeather::pass(*cmd.weather, w))
+				{
+					continue;
+				}
+				if (shared.weatherVersion != w.version)
+				{
+					for (Uint64 &id : shared.weatherIds)
+					{
+						if (id)
+						{
+							atlas.drop(id);
+						}
+						id = 0;
+					}
+					shared.weatherVersion = w.version;
+				}
+				const Place *places[3] = {};
+				for (int i = 0; i < w.layers; ++i)
+				{
+					places[i] = placeFor(shared.weatherIds[i], w.side, w.side, Prepared::UP_INDEXED, w.tex[i], w.side, 0);
+					if (!places[i])
+					{
+						break;
+					}
+				}
+				if (grow || full || fail)
+				{
+					continue;
+				}
+				auto bits = [](float f) { Sint32 i; std::memcpy(&i, &f, 4); return i; };
+				const size_t at = p.extras.size();
+				p.extras.resize(at + (size_t)(13 + w.gw * w.gh) * 4, 0);
+				Sint32 *e = p.extras.data() + at;
+				e[0] = bits(w.sat); e[1] = bits(w.toneW); e[2] = bits(w.hazeA); e[3] = bits(w.flash);
+				for (int c = 0; c < 3; ++c)
+				{
+					e[4 + c] = bits(w.mul[c]);
+					e[8 + c] = bits(w.add[c]);
+					e[12 + c] = bits(w.haze[c]);
+					e[16 + c] = bits(w.veil[c]);
+					e[20 + c] = bits(w.band[c]);
+				}
+				e[7] = w.layers; e[11] = w.gw; e[15] = w.gh; e[19] = cmd.weather->originY;
+				for (int i = 0; i < w.layers; ++i)
+				{
+					Sint32 *l = e + 24 + i * 8;
+					l[0] = bits(w.c[i][0]); l[1] = bits(w.c[i][1]); l[2] = bits(w.c[i][2]); l[3] = bits(w.alpha[i]);
+					l[4] = bits(w.oy[i]); l[5] = w.x0[i]; l[6] = places[i]->x; l[7] = places[i]->y;
+					e[48 + i] = places[i]->layer;
+				}
+				e[51] = w.side;
+				for (size_t n = 0; n < (size_t)w.gw * w.gh * 4; ++n)
+				{
+					e[52 + n] = bits(w.grid[n]);
+				}
+				q[4] = OP_WEATHER;
+				q[8] = (Sint32)(at / 4);
+				break;
+			}
 			}
 			if (x0 >= x1 || y0 >= y1)
 			{
@@ -968,7 +1120,7 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 				p.coversAll = (cmd.type == Cmd::FILL || cmd.type == Cmd::FILL_BACKDROP) && x0 == 0 && y0 == 0 && x1 == W && y1 == H;
 			}
 			p.data.insert(p.data.end(), q, q + 16);
-			p.reads.push_back(cmd.type == Cmd::VAPOR_SOFT || cmd.type == Cmd::FLASH ? 1 : 0);
+			p.reads.push_back(cmd.type == Cmd::VAPOR_SOFT || cmd.type == Cmd::FLASH || cmd.type == Cmd::WEATHER ? 1 : 0);
 		}
 		const size_t texels = (p.data.size() + p.extras.size()) / 4;
 		if (!fail && !grow && !full && shared.maxTexels > 0 && texels > (size_t)shared.maxTexels)

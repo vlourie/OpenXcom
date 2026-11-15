@@ -104,6 +104,39 @@ namespace HdWeather
 	void prepare(const Scene &scene);
 	/// Draws the rows [y0, y1) of a 32-bit canvas (rshift, gshift, bshift: its channel positions) with the scene prepared last.
 	void drawRows(const Scene &scene, Uint32 *pixels, int pitchBytes, int y0, int y1, int rshift, int gshift, int bshift);
+	/// What drawRows starts from for the scene prepared last, for the video card (HdGpuCanvas draws the same pass with
+	/// the same floats): the tone, the colours, the layers' textures and offsets, the grid. false: the pass draws nothing.
+	struct Pass
+	{
+		float sat, toneW, hazeA, flash;
+		float mul[3], add[3], haze[3], veil[3], band[3];
+		/// The layers' repeating textures (side x side alpha), made anew when `version` changes.
+		int layers, side;
+		Uint32 version;
+		const Uint8 *tex[3];
+		/// Per layer: its colour, alpha per texel unit, the fall of its rows (oy) and the texture column of the canvas's x = 0.
+		float c[3][3], alpha[3], oy[3];
+		int x0[3];
+		/// The grid: gw x gh nodes of 4 floats (veil, particles, band, tone weight), a node every 8 canvas pixels.
+		int gw, gh;
+		const float *grid;
+	};
+	bool pass(const Scene &scene, Pass &out);
+	/// A snowflake of this frame (flakes()): its frame of the bank (white, straight alpha), where its top left goes on the
+	/// canvas, its opacity and its light colour (0..1 a channel).
+	struct Flake
+	{
+		const HdFrame *frame;
+		int x, y;
+		float opacity;
+		float tint[3];
+	};
+	/// true: the kind's snow falls as flakes drawn one by one (flakes()), not as the air pass's repeating layers
+	/// (OXCE_HD_SNOW=old: the layers, for the comparison of the look and the cost).
+	bool ownFlakes(Kind kind);
+	/// The snowflakes of the scene prepared last, back to front, each its own size, fall, sway, turn and shape; empty for a
+	/// kind without its own flakes.
+	void flakes(const Scene &scene, std::vector<Flake> &out);
 	/// Sides of a floor's diamond with no open floor beyond (the cover fades out softly there instead of ending on the diamond).
 	enum Side { SIDE_X0 = 1, SIDE_X1 = 2, SIDE_Y0 = 4, SIDE_Y1 = 8 };
 	/// The frame of what lies on the floor of the map cell (x, y) at scale k (the diamond, 32k x 16k, straight alpha), or nullptr

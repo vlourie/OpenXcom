@@ -4813,6 +4813,13 @@ void Map::hdWeatherAir(HdCanvas *surface)
 	s.flash = HdWeather::lightning(_hdWeatherKind, _hdWeatherSeed, s.ms);
 	HdWeather::prepare(s);
 	surface->drawWeather(&s);
+	// the snowflakes one by one over the air: each its own size, fall, sway and turn (HdWeather::flakes)
+	static std::vector<HdWeather::Flake> flakes;
+	HdWeather::flakes(s, flakes);
+	for (const HdWeather::Flake &f : flakes)
+	{
+		surface->blitFrameToned(*f.frame, f.x, f.y, 0.0f, f.tint, f.opacity);
+	}
 	hdWeatherOver(surface);
 	_hdWeatherLastDraw = SDL_GetTicks();
 }
