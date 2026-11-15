@@ -97,7 +97,7 @@ Uint8 visibleNewColor(const SDL_Color *pal, Uint8 normal, Uint8 fromMod)
 
 }
 
-	UfopaediaSelectState::UfopaediaSelectState(const std::string &section, int heightOffset, int windowOffset) : _section(section), _lstScroll(0)
+	UfopaediaSelectState::UfopaediaSelectState(const std::string &section, int heightOffset, int windowOffset, const std::string &search) : _section(section), _lstScroll(0)
 	{
 		_isCommendationsSection = (_section == UFOPAEDIA_COMMENDATIONS);
 		_screen = false;
@@ -161,9 +161,9 @@ Uint8 visibleNewColor(const SDL_Color *pal, Uint8 normal, Uint8 fromMod)
 		_cbxFilter->setOptions(filterOptions, true);
 		_cbxFilter->onChange((ActionHandler)&UfopaediaSelectState::cbxFilterChange);
 
-		_btnQuickSearch->setText(""); // redraw
+		_btnQuickSearch->setText(search); // redraw
 		_btnQuickSearch->onEnter((ActionHandler)&UfopaediaSelectState::btnQuickSearchApply);
-		_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
+		_btnQuickSearch->setVisible(Options::oxceQuickSearchButton || !search.empty());
 
 		_btnOk->onKeyboardRelease((ActionHandler)&UfopaediaSelectState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 	}
@@ -283,7 +283,15 @@ Uint8 visibleNewColor(const SDL_Color *pal, Uint8 normal, Uint8 fromMod)
 
 		_lstSelection->clearList();
 		_article_list.clear();
-		Ufopaedia::list(_game->getSavedGame(), _game->getMod(), _section, _article_list);
+		if (_section.empty())
+		{
+			// OXCE-HD: searched from the start screen - every section's articles, the same ones their own lists show
+			Ufopaedia::listAllSections(_game->getSavedGame(), _game->getMod(), _article_list);
+		}
+		else
+		{
+			Ufopaedia::list(_game->getSavedGame(), _game->getMod(), _section, _article_list);
+		}
 		_filtered_article_list.clear();
 		size_t selectedFilter = _cbxFilter->getSelected();
 		// OXCE-HD: the mod's listOrder groups articles by topic; "alphabetical" sorts by the title the player

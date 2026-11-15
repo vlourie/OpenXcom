@@ -283,6 +283,29 @@ namespace OpenXcom
 	}
 
 	/**
+	 * OXCE-HD: fills an ArticleList with the visible articles of every section the start screen
+	 * has a button for, section by section in the order of the buttons - what list() gives for each of
+	 * them in turn, from one pass over the articles (searching the whole Ufopaedia from its start screen).
+	 * @param save Pointer to saved game.
+	 * @param mod Pointer to mod.
+	 * @param data Article definition list object to fill data in.
+	 */
+	void Ufopaedia::listAllSections(SavedGame *save, Mod *mod, ArticleDefinitionList &data)
+	{
+		auto state = createCommonArticleState(save, mod);
+		for (const auto& section : mod->getUfopaediaCategoryList())
+		{
+			for (auto* a : state->articleList)
+			{
+				if (a->section == section)
+				{
+					data.push_back(a);
+				}
+			}
+		}
+	}
+
+	/**
 	 * Check if this is an invisible commendation article.
 	 * @param save Pointer to saved game.
 	 * @param article Article to check.

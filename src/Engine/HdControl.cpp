@@ -394,14 +394,25 @@ std::string run(Control &c, Game *g, const std::string &line)
 	}
 	if (cmd == "type")
 	{
-		for (const char *p = args.c_str(); *p; ++p)
+		// the text is UTF-8: one key per letter, not per byte, so Cyrillic types as Cyrillic (search in the Ufopaedia)
+		for (const unsigned char *p = (const unsigned char*)args.c_str(); *p; )
 		{
+			Uint32 cp = *p++;
+			int more = cp >= 0xF0 ? 3 : cp >= 0xE0 ? 2 : cp >= 0xC0 ? 1 : 0;
+			if (more)
+			{
+				cp &= 0x3F >> more;
+			}
+			for (; more > 0 && (*p & 0xC0) == 0x80; --more)
+			{
+				cp = (cp << 6) | (*p++ & 0x3F);
+			}
 			SDL_Event ev;
 			memset(&ev, 0, sizeof(ev));
 			ev.type = SDL_KEYDOWN;
 			ev.key.state = SDL_PRESSED;
-			ev.key.keysym.sym = (SDLKey)(unsigned char)*p;
-			ev.key.keysym.unicode = (Uint16)(unsigned char)*p;
+			ev.key.keysym.sym = cp < 0x80 ? (SDLKey)cp : SDLK_UNKNOWN;
+			ev.key.keysym.unicode = (Uint16)cp;
 			SDL_PushEvent(&ev);
 			ev.type = SDL_KEYUP;
 			ev.key.state = SDL_RELEASED;
