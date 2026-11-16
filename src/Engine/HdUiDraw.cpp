@@ -2065,7 +2065,20 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 			// a themed button's label (setLabelTheme) has the theme's colours in place of the palette's
 			// (a plain text under the screen's text theme, XP-000484: the palette's shade with the theme's hue and saturation, same brightness)
 			const Uint32 face = _labelTheme ? _labelFace : rgba(textTheme ? textTint(pal[idx(faceV)]) : pal[idx(faceV)]);
-			const SDL_Color dark = _labelTheme ? _labelShadow : textTheme ? textTint(pal[idx(shadowV)]) : pal[idx(shadowV)];
+			SDL_Color dark = _labelTheme ? _labelShadow : textTheme ? textTint(pal[idx(shadowV)]) : pal[idx(shadowV)];
+			// XP-000582: a high-contrast text (mul 3) has its shade 5 fifteen steps down the ramp, past its end
+			// and into the next one - often as light as the face, and the outline swallowed the digits (the
+			// soldier's max stats). A shadow not clearly darker than the face is the face taken down instead
+			// (an inverted text's light shadow under a dark face is meant: only the contrast ramp is checked)
+			if (!_labelTheme && r.mul > 1)
+			{
+				const SDL_Color fc = textTheme ? textTint(pal[idx(faceV)]) : pal[idx(faceV)];
+				const int lf = fc.r * 3 + fc.g * 6 + fc.b, ld = dark.r * 3 + dark.g * 6 + dark.b;
+				if (ld * 10 > lf * 6)
+				{
+					dark = SDL_Color{ (Uint8)(fc.r * 3 / 10), (Uint8)(fc.g * 3 / 10), (Uint8)(fc.b * 3 / 10), 255 };
+				}
+			}
 			// on a busy picture the shade is taken down to two fifths: an outline the colour of the ramp's
 			// shadow is barely darker than a light photograph
 			const SDL_Color edge = { (Uint8)(dark.r * 2 / 5), (Uint8)(dark.g * 2 / 5), (Uint8)(dark.b * 2 / 5), 255 };

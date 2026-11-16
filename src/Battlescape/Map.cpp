@@ -4598,6 +4598,9 @@ void Map::hdWeatherPick()
 		<< (_hdWeatherExtras.tornado ? (_hdWeatherExtras.tornadoLook ? "grey" : "dust") : "no") << ", bolts " << (_hdWeatherExtras.bolts ? "yes" : "no");
 }
 
+// TEMPDBG 578: the whirl's look for the page frames ("" - on the roof, "old", "fade")
+static std::string hdTwisterMode;
+
 /**
  * HD render (Options::oxceHdWeather): readies the weather of this frame - the strength and the ground of the turn, the
  * open sky of every column (once a turn) and the fields of the veil. False when the frame has no weather.
@@ -4660,6 +4663,22 @@ bool Map::hdWeatherOn(HdCanvas *surface)
 	}
 	// the clock of the fall and the drops; the frame of the render test (hdTestFreeze) is the one at 0, as its animations
 	_hdWeatherScene.ms = _hdTestFrozen ? 0 : SDL_GetTicks();
+	// TEMPDBG 578: OXCE_HD_TWISTER_FILE holds "<mode> <ms>" - the whirl's look and a stopped weather clock for the page frames
+	if (const char *twf = getenv("OXCE_HD_TWISTER_FILE"))
+	{
+		if (FILE *fp = fopen(twf, "r"))
+		{
+			char m[16] = {0};
+			long long at = -1;
+			if (fscanf(fp, "%15s %lld", m, &at) >= 1)
+			{
+				hdTwisterMode = m;
+				if (at >= 0)
+					_hdWeatherScene.ms = (Uint32)at;
+			}
+			fclose(fp);
+		}
+	}
 	_hdWeatherFrameOn = true;
 	return true;
 }
@@ -4991,6 +5010,72 @@ void Map::hdWeatherRollsAt(HdCanvas *surface, const Position &mapPos, const Posi
 }
 
 /**
+ * HD render: where a whirl at the ground point (u, v) stands (ticket XP-000578, a tornado went through ships and houses):
+ * on the top of what the column holds up to the drawn level - a roof, a rock, a hull - in base pixels over the ground;
+ * between the tiles the heights blend, so it climbs a roof over a tile of its way and does not jump. Returns how much of
+ * it shows (1 here; TEMPDBG OXCE_HD_TWISTER=fade: it fades over anything standing, =old: as before).
+ */
+float Map::hdWeatherStand(float u, float v, float &lift)
+{
+	lift = 0;
+	const bool old = hdTwisterMode == "old", fade = hdTwisterMode == "fade";
+	if (old)
+		return 1;
+	const int sx = _save->getMapSizeX(), sy = _save->getMapSizeY(), sz = _save->getMapSizeZ();
+	int topZ = sz - 1;
+	if (!_camera->getShowAllLayers())
+		topZ = std::min(topZ, _camera->getViewLevel());
+	if (_camera->getShowSingleLayer())
+		topZ = -1;
+	// one column: the top of the highest drawn thing in it, a floor (its level) or an object (the top of its shape);
+	// under a roof the view does not draw (a room seen from its floor) it is indoors, -1
+	auto column = [&](int x, int y) -> float
+	{
+		if (x < 0 || y < 0 || x >= sx || y >= sy)
+			return 0;
+		if ((int)_hdWeatherTop.size() == sx * sy && _hdWeatherTop[(size_t)y * sx + x] > topZ)
+			return -1;
+		for (int z = topZ; z >= 0; --z)
+		{
+			Tile *t = _save->getTile(Position(x, y, z));
+			if (!t)
+				continue;
+			int top = -1;
+			if (MapData *o = t->getMapData(O_OBJECT))
+			{
+				for (int layer = 11; layer >= 0; --layer)
+				{
+					if (o->getLoftID(layer) != 0)
+					{
+						top = (layer + 1) * 2;
+						break;
+					}
+				}
+			}
+			if (top < 0 && z > 0 && t->getMapData(O_FLOOR))
+				top = 0;
+			if (top >= 0)
+				return (float)(z * 24 + top);
+		}
+		return 0;
+	};
+	const float fu = u - 0.5f, fv = v - 0.5f;
+	const int x0 = (int)std::floor(fu), y0 = (int)std::floor(fv);
+	const float wu = fu - x0, wv = fv - y0;
+	const float h00 = column(x0, y0), h10 = column(x0 + 1, y0), h01 = column(x0, y0 + 1), h11 = column(x0 + 1, y0 + 1);
+	auto blend = [&](float a, float b, float c, float d) { return (a * (1 - wu) + b * wu) * (1 - wv) + (c * (1 - wu) + d * wu) * wv; };
+	// low things (rubble, a bush) it goes over; fading, from a knee up it is gone; indoors it is gone either way
+	auto open = [fade](float h) { return h < 0 ? 0.0f : (!fade || h <= 6 ? 1.0f : 0.0f); };
+	const float shows = blend(open(h00), open(h10), open(h01), open(h11));
+	if (!fade)
+	{
+		auto top = [](float h) { return std::max(0.0f, h); };
+		lift = blend(top(h00), top(h10), top(h01), top(h11));
+	}
+	return shows;
+}
+
+/**
  * HD render (Options::oxceHdWeather): over the air - the dust devils and the tornado on the ground they stand on, the bolt
  * of a strike; notes for the sound how much of the tornado shows and the new dust devils.
  */
@@ -5014,7 +5099,9 @@ void Map::hdWeatherOver(HdCanvas *surface)
 		const HdWeather::Twister &t = tw[i];
 		// the ground point on the canvas (the inverse of the air's mapping)
 		const float A = t.u - s.cu, B = t.v - s.cv;
-		const int px = (int)std::lround((A - B) * 16 * k), py = (int)std::lround((A + B) * 8 * k);
+		float lift = 0;
+		const float stand = hdWeatherStand(t.u, t.v, lift);
+		const int px = (int)std::lround((A - B) * 16 * k), py = (int)std::lround(((A + B) * 8 - lift) * k);
 		// over the ground the player knows; the tornado thins out over the units, the spotted enemies and the cursor
 		const int bx = (int)std::floor(t.u), by = (int)std::floor(t.v);
 		int known = 0;
@@ -5025,7 +5112,7 @@ void Map::hdWeatherOver(HdCanvas *surface)
 				if (x >= 0 && y >= 0 && x < sx && y < sy && (int)_hdWeatherKnown.size() == sx * sy && _hdWeatherKnown[(size_t)y * sx + x])
 					++known;
 			}
-		float alpha = t.alpha * known / 9.0f;
+		float alpha = t.alpha * known / 9.0f * stand;
 		if (t.big)
 		{
 			alpha *= 0.8f + 0.2f * _hdWeatherPower;

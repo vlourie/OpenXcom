@@ -294,6 +294,7 @@ private:
 	static bool hdWeatherSpot(void *ctx, float px, float py);
 	static float hdWeatherAway(void *ctx, float u, float v);
 	bool hdWeatherFree(int x, int y);
+	float hdWeatherStand(float u, float v, float &lift);
 	HdWeather::Biome _hdWeatherBiome = HdWeather::B_NONE;
 	HdWeather::Extras _hdWeatherExtras;
 	HdWeather::Roll _hdWeatherRoll[HdWeather::ROLLS];
