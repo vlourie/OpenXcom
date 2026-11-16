@@ -168,10 +168,28 @@ void makeStamps(int cell)
 	auto raster = [&](const Oval *ovals, int count, float ang, float *out)
 	{
 		const float ca = std::cos(ang), sa = std::sin(ang);
+		// how far from the middle an oval can reach (turning keeps the distance) and the shadows: a pixel whose
+		// every sample lies beyond them all stays 0, as it came, and is not sampled (most of the square is empty)
+		float reach = 0;
+		for (int n = 0; n < count; ++n)
+		{
+			reach = std::max(reach, std::sqrt(ovals[n].x * ovals[n].x + ovals[n].y * ovals[n].y) + std::max(ovals[n].rx, ovals[n].ry));
+		}
+		const float half = 0.75f / ppu;      // the pixel's half diagonal (0.71) and a margin, in units
 		for (int py = 0; py < S; ++py)
 		{
 			for (int px = 0; px < S; ++px)
 			{
+				const float mx = (px + 0.5f - S / 2.0f) / ppu, my = (py + 0.5f - S / 2.0f) / ppu;
+				bool near = std::sqrt(mx * mx + my * my) <= reach + half + 0.01f;
+				for (const float (&s)[5] : SHADOW)
+				{
+					near = near || std::sqrt((mx - s[0]) * (mx - s[0]) + (my - s[1]) * (my - s[1])) <= std::max(s[2], s[3]) + half + 0.01f;
+				}
+				if (!near)
+				{
+					continue;
+				}
 				float sum[4] = { 0, 0, 0, 0 };
 				for (int sy = 0; sy < AA; ++sy)
 				{

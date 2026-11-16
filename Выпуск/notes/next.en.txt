@@ -1,0 +1,1 @@
+﻿- HD base: the first look at the base screen is almost twice as fast - the first frame of the living base at 2560x1440 takes about 90 ms instead of 180. The base's light and shadows are computed on all cores, the crew figures are made faster, and the facility descriptions and craft lights are read in advance, while the game loads. The picture is the same to the pixel.

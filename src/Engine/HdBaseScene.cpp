@@ -1359,13 +1359,37 @@ void blur(std::vector<float> &v, int w, int h, float sigma)
 			line(&v[(size_t)y * w], out.data(), w, 1);
 			std::copy(out.begin(), out.end(), v.begin() + (size_t)y * w);
 		});
-		HdWorkers::instance().run(w, [&](int x)
+		// the columns in strips of 16 read row by row: one column at a time ran down the memory a row apart;
+		// each column sums in the same order as line() does, so the numbers are the same
+		const int STRIP = 16;
+		HdWorkers::instance().run((w + STRIP - 1) / STRIP, [&](int strip)
 		{
-			std::vector<float> out(h);
-			line(&v[x], out.data(), h, w);
+			const int x0 = strip * STRIP, m = std::min(STRIP, w - x0);
+			auto at = [&](int y) { return &v[(size_t)std::min(h - 1, std::max(0, y)) * w + x0]; };
+			float sum[STRIP];
+			std::fill(sum, sum + STRIP, 0.0f);
+			for (int i = -r; i <= r; ++i)
+			{
+				const float *row = at(i);
+				for (int j = 0; j < m; ++j)
+				{
+					sum[j] += row[j];
+				}
+			}
+			std::vector<float> out((size_t)h * m);
 			for (int y = 0; y < h; ++y)
 			{
-				v[(size_t)y * w + x] = out[y];
+				const float *in = at(y + r + 1), *off = at(y - r);
+				float *o = &out[(size_t)y * m];
+				for (int j = 0; j < m; ++j)
+				{
+					o[j] = sum[j] * inv;
+					sum[j] += in[j] - off[j];
+				}
+			}
+			for (int y = 0; y < h; ++y)
+			{
+				std::copy(&out[(size_t)y * m], &out[(size_t)y * m] + m, &v[(size_t)y * w + x0]);
 			}
 		});
 	}
@@ -1582,7 +1606,9 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	// the rock, a whole-base picture stretched over the view, darkened (base_scene_preview.py rock_image)
 	std::vector<float> ground(n * 3);
 	const bool picture = rock && !rock->empty();
-	for (int y = 0; y < h; ++y)
+	// every pixel on its own, rows over the workers (R-009): the same numbers in any order
+	HdWorkers &workers = HdWorkers::instance();
+	workers.run(h, [&](int y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
@@ -1602,7 +1628,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 				g[2] = 0.15f;
 			}
 		}
-	}
+	});
 	// the shadow the facilities cast to the bottom right and the darkening close to their walls
 	std::vector<float> shadow(n, 0.0f), close = foot;
 	const int sx = (int)std::lround(4 * s), sy = (int)std::lround(5 * s);
@@ -1615,14 +1641,17 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	}
 	blur(shadow, w, h, 7 * s);
 	blur(close, w, h, 12 * s);
-	for (size_t i = 0; i < n; ++i)
+	workers.run(h, [&](int y)
 	{
-		const float k = (1 - 0.55f * shadow[i]) * (1 - 0.35f * close[i]);
-		for (int c = 0; c < 3; ++c)
+		for (size_t i = (size_t)y * w; i < (size_t)(y + 1) * w; ++i)
 		{
-			ground[i * 3 + c] *= k;
+			const float k = (1 - 0.55f * shadow[i]) * (1 - 0.35f * close[i]);
+			for (int c = 0; c < 3; ++c)
+			{
+				ground[i * 3 + c] *= k;
+			}
 		}
-	}
+	});
 	// the cells where nothing stands: a faint mark of the grid where one may build
 	const int a = (int)std::lround(4 * s), b = (int)std::lround(6 * s);
 	for (const SDL_Rect &r : empty)
@@ -1645,24 +1674,27 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	view.ground.height = h;
 	view.ground.pixels.assign(n, 0u);
 	std::vector<float> lum(n);
-	for (size_t i = 0; i < n; ++i)
+	workers.run(h, [&](int y)
 	{
-		const Uint32 px = view.albedo[i];
-		const float al = foot[i];
-		Uint32 g = 0xFF000000u, o = 0xFF000000u;
-		float rgb[3];
-		for (int c = 0; c < 3; ++c)
+		for (size_t i = (size_t)y * w; i < (size_t)(y + 1) * w; ++i)
 		{
-			const int shift = 16 - 8 * c;
-			const float gc = std::min(1.0f, ground[i * 3 + c]);
-			g |= (Uint32)std::lround(gc * 255) << shift;
-			rgb[c] = ((px >> shift) & 0xFF) / 255.0f * al + gc * (1 - al);
-			o |= (Uint32)std::lround(std::min(1.0f, rgb[c]) * 255) << shift;
+			const Uint32 px = view.albedo[i];
+			const float al = foot[i];
+			Uint32 g = 0xFF000000u, o = 0xFF000000u;
+			float rgb[3];
+			for (int c = 0; c < 3; ++c)
+			{
+				const int shift = 16 - 8 * c;
+				const float gc = std::min(1.0f, ground[i * 3 + c]);
+				g |= (Uint32)std::lround(gc * 255) << shift;
+				rgb[c] = ((px >> shift) & 0xFF) / 255.0f * al + gc * (1 - al);
+				o |= (Uint32)std::lround(std::min(1.0f, rgb[c]) * 255) << shift;
+			}
+			view.ground.pixels[i] = g;
+			view.albedo[i] = o;
+			lum[i] = rgb[0] * 0.3f + rgb[1] * 0.55f + rgb[2] * 0.15f;
 		}
-		view.ground.pixels[i] = g;
-		view.albedo[i] = o;
-		lum[i] = rgb[0] * 0.3f + rgb[1] * 0.55f + rgb[2] * 0.15f;
-	}
+	});
 	view.ground.buildSpans();
 	// the relief: light is high, the rim of a facility higher, the rock low; then its slopes
 	std::vector<unsigned char> inside(n);
@@ -1675,16 +1707,19 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	blur(fine, w, h, 1.4f * s);
 	blur(coarse, w, h, 2.0f * s);
 	std::vector<float> height(n);
-	for (size_t i = 0; i < n; ++i)
+	workers.run(h, [&](int y)
 	{
-		const float rim = inside[i] ? std::min(1.0f, std::max(0.0f, 1 - dist[i] / (16 * s))) : 0.0f;
-		const float v = inside[i] ? fine[i] * 0.45f + rim * 0.55f : 0.08f + coarse[i] * 0.25f;
-		height[i] = v * 14 * s;
-	}
+		for (size_t i = (size_t)y * w; i < (size_t)(y + 1) * w; ++i)
+		{
+			const float rim = inside[i] ? std::min(1.0f, std::max(0.0f, 1 - dist[i] / (16 * s))) : 0.0f;
+			const float v = inside[i] ? fine[i] * 0.45f + rim * 0.55f : 0.08f + coarse[i] * 0.25f;
+			height[i] = v * 14 * s;
+		}
+	});
 	std::vector<float> slope = height;
 	blur(slope, w, h, 1.0f * s);
 	view.relief.assign(n * 4, 0.0f);
-	for (int y = 0; y < h; ++y)
+	workers.run(h, [&](int y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
@@ -1697,7 +1732,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 			view.relief[i * 4 + 2] = 1 / len;
 			view.relief[i * 4 + 3] = height[i];
 		}
-	}
+	});
 	// the water: the blue (or green) of a picture well inside its walls, in pools of some size
 	view.water.assign(n, 0.0f);
 	view.waters.clear();

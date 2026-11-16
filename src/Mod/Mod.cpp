@@ -3978,6 +3978,14 @@ void Mod::loadHdUiArt()
 	}
 	HdBase::clear(masterOffset);
 	HdCraftLights::clear(masterOffset);
+	// with HD on the base pictures' folder is read now, with the rest of the loading: on the first look at a
+	// base its 456 descriptions and scenes held the frame ~30 ms (16.11); the crafts' lights likewise.
+	// Otherwise it is read when a base is first shown, as before
+	if (Options::oxceHdMode != 0)
+	{
+		HdBase::scenes();
+		HdCraftLights::has(0);
+	}
 	HdFx::clear();
 	for (const auto &armor : _armors)
 	{
