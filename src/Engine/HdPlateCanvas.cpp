@@ -209,7 +209,13 @@ void ClassicPlateCanvas::text(const std::string &s, float x, float y, Uint32 arg
 			const int dx = ox + sx;
 			if (row[sx] && dx >= _clip.x && dx < _clip.x + _clip.w)
 			{
-				*((Uint8*)dst->pixels + dy * dst->pitch + dx) = index;
+				// only the letter: with setColor(1) a pixel is 1 + shade, shades 1-3 are the letter and
+				// 4-5 its dark outline; one flat colour over the outline too ran the letters together
+				// (Vitali 16.11, variant A of the player page)
+				if (row[sx] - 1 < 4)
+				{
+					*((Uint8*)dst->pixels + dy * dst->pitch + dx) = index;
+				}
 			}
 		}
 	}
