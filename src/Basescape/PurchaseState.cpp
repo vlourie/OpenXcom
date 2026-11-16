@@ -918,6 +918,23 @@ void PurchaseState::btnCancelClick(Action *)
 }
 
 /**
+ * How much one click or one tick of a held arrow changes the quantity:
+ * Shift - by 100, Ctrl - by 10 (ticket XP-000580), else the touch step (1 unless set).
+ */
+static int clickStep(const Game *game)
+{
+	if (game->isShiftPressed())
+	{
+		return 100;
+	}
+	if (game->isCtrlPressed())
+	{
+		return 10;
+	}
+	return game->getScrollStep();
+}
+
+/**
  * Starts increasing the item.
  * @param action Pointer to an action.
  */
@@ -949,7 +966,7 @@ void PurchaseState::lstItemsLeftArrowClick(Action *action)
 	if (_game->isRightClick(action, true)) increaseByValue(INT_MAX);
 	if (_game->isLeftClick(action, true))
 	{
-		increaseByValue(_game->getScrollStep());
+		increaseByValue(clickStep(_game));
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -987,7 +1004,7 @@ void PurchaseState::lstItemsRightArrowClick(Action *action)
 	if (_game->isRightClick(action, true)) decreaseByValue(INT_MAX);
 	if (_game->isLeftClick(action, true))
 	{
-		decreaseByValue(_game->getScrollStep());
+		decreaseByValue(clickStep(_game));
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -1102,7 +1119,7 @@ void PurchaseState::increase()
 {
 	_timerDec->setInterval(50);
 	_timerInc->setInterval(50);
-	increaseByValue(_game->getScrollStep());
+	increaseByValue(clickStep(_game));
 }
 
 /**
@@ -1302,7 +1319,7 @@ void PurchaseState::decrease()
 {
 	_timerInc->setInterval(50);
 	_timerDec->setInterval(50);
-	decreaseByValue(_game->getScrollStep());
+	decreaseByValue(clickStep(_game));
 }
 
 /**
