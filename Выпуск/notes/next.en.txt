@@ -2,3 +2,4 @@
 - Black market purchase: clicking an arrow with Ctrl held changes the quantity by 10, with Shift by 100 (also while the arrow is held). A plain click is still 1, a right click still goes to the limit.
 - HD interface, soldier stats screen: the orange maximum numbers (time units, energy, health, skills, armour) no longer melt into a blob - their outline is now dark instead of the same orange.
 - Battle weather (HD): the tornado no longer passes through buildings and ships. Over a roof, a rock or a hull it rises smoothly and moves along the top, and inside a room whose roof the view level hides it fades out and comes back outside. Its path and speed are unchanged, picture only.
+- Production complete window: the upper buttons (send the loot, keep working) are as wide as the buttons below and stand right over them.
