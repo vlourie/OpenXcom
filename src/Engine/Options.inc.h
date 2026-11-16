@@ -191,6 +191,8 @@ OPT std::string password;
 // HD render: battlescape sprite scale (1 = classic 32x40, 2..4 = HD; needs a 32-bit display), applied at the next battle
 OPT int oxceHdScale;
 OPT bool oxceHdPictures;
+/// HD pictures: the paper dolls (inventory, soldier, Ufopaedia armor pages, the face in the battle's panel) stay classic.
+OPT bool oxceHdClassicDolls;
 OPT bool oxceHdUiSmooth;
 /// HD interface: 0 off, 1 crisp text and nearest-scaled art, 2 crisp text and xBRZ-smoothed art.
 OPT int oxceHdUi;

@@ -745,10 +745,11 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		return;
 	}
 	// a mod reload freed the pictures the cached entries point to
-	if (_artGeneration != HdUiArt::generation())
+	if (_artGeneration != HdUiArt::generation() || _classicDolls != Options::oxceHdClassicDolls)
 	{
 		clearCaches();
 		_artGeneration = HdUiArt::generation();
+		_classicDolls = Options::oxceHdClassicDolls; // a doll smoothed meanwhile is remembered as having no picture
 	}
 	const auto t0 = std::chrono::steady_clock::now();
 	++_calls;
@@ -859,6 +860,12 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				cache(surface, pixelHash, pixelHash ^ 0x5A5A5A5A5A5A5A5AULL, k, HdFrame());
 			}
 			// (with smoothing on, the xBRZ entry made next remembers the miss)
+		}
+		// the player keeps the paper dolls classic: the doll shows as an image without a picture (the answer
+		// above stays cached, so switching the option back needs no new search)
+		if (HdUiArt::hidden(art))
+		{
+			art = nullptr;
 		}
 		if (!art && blank)
 		{
@@ -1032,10 +1039,11 @@ void HdUi::drawSurfaceWorld(const Surface *surface, int wx, int wy, int s, const
 	{
 		return;
 	}
-	if (_artGeneration != HdUiArt::generation())
+	if (_artGeneration != HdUiArt::generation() || _classicDolls != Options::oxceHdClassicDolls)
 	{
 		clearCaches();
 		_artGeneration = HdUiArt::generation();
+		_classicDolls = Options::oxceHdClassicDolls; // a doll smoothed meanwhile is remembered as having no picture
 	}
 	const auto t0 = std::chrono::steady_clock::now();
 	++_calls;
@@ -1127,10 +1135,11 @@ void HdUi::drawSurfaceFit(const Surface *surface, int x, int y, int w, int h)
 	{
 		return;
 	}
-	if (_artGeneration != HdUiArt::generation())
+	if (_artGeneration != HdUiArt::generation() || _classicDolls != Options::oxceHdClassicDolls)
 	{
 		clearCaches();
 		_artGeneration = HdUiArt::generation();
+		_classicDolls = Options::oxceHdClassicDolls; // a doll smoothed meanwhile is remembered as having no picture
 	}
 	if (const SDL_Color *own = paletteOf(surface)) pal = own;
 	const int sw = surface->getWidth(), sh = surface->getHeight();

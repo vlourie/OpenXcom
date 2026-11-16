@@ -62,7 +62,7 @@ static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
 /// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
 static const char *const HD_GRAPHICS_OPTIONS[] = {
 	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdBeyondEdge", "oxceHdBeyondLook", "oxceHdMapBorder", "oxceHdEnemyNumber",
-	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdWindowThemeColor", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
+	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdWindowThemeColor", "oxceHdUiFont", "oxceHdPictures", "oxceHdClassicDolls", "oxceHdUiSmooth" };
 /// The tab open last: the window opens on it again, until the game is closed.
 static int hdTab = 0;
 /// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
@@ -484,6 +484,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		const bool *b = info.asBool();
 		if (b == &Options::oxceHdBattleHud || b == &Options::oxceHdWindowTheme) return !skin;
 		if (b == &Options::oxceHdInventoryKeys) return !skin || !Options::oxceHdBattleHud;
+		if (b == &Options::oxceHdClassicDolls) return !Options::oxceHdPictures;
 	}
 	return false;
 }

@@ -4037,6 +4037,29 @@ void Mod::loadHdUiArt()
 			layerNames.insert(version.second.begin(), version.second.end());
 		}
 	}
+	// the whole paper dolls (an armor without layers): its spriteInv as it is, with .SPK, or with the gender
+	// and the look (InventoryState::init), in lower case - the player may keep them classic (oxceHdClassicDolls)
+	std::unordered_set<std::string> dollLooks;
+	for (const auto &armor : _armors)
+	{
+		std::string look = armor.second->getSpriteInventory();
+		std::transform(look.begin(), look.end(), look.begin(), ::tolower);
+		if (!look.empty()) dollLooks.insert(look);
+	}
+	const auto wholeDoll = [&dollLooks](const std::string &image)
+	{
+		std::string s = image;
+		std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+		if (dollLooks.count(s)) return true;
+		if (s.size() < 5 || s.compare(s.size() - 4, 4, ".spk") != 0) return false;
+		s.resize(s.size() - 4);
+		if (dollLooks.count(s)) return true;
+		size_t digits = s.size();
+		while (digits > 0 && isdigit((unsigned char)s[digits - 1])) --digits;
+		return digits < s.size() && digits >= 2 && (s[digits - 1] == 'm' || s[digits - 1] == 'f')
+			&& dollLooks.count(s.substr(0, digits - 1)) > 0;
+	};
+	std::vector<std::string> dollImages;
 	int loaded = 0, layers = 0;
 	// one pack serves both games: on vanilla nearly every picture of it is unmatched, so one summary line, the names at debug
 	int unmatched = 0;
@@ -4071,6 +4094,10 @@ void Mod::loadHdUiArt()
 			continue;
 		}
 		const bool layer = layerNames.count(it->second) > 0;
+		if (!layer && wholeDoll(it->second))
+		{
+			dollImages.push_back(it->second);
+		}
 		// an image loaded lazily is not loaded for its picture: the picture is registered when the image is
 		// (lazyLoadSurface) - loading all of them here held 2187 images of X-Piratez from the start (143 MB)
 		bool later = false;
@@ -4147,6 +4174,8 @@ void Mod::loadHdUiArt()
 	{
 		Log(LOG_INFO) << "HD interface: " << layers << " paper doll layer picture(s), read when a doll is shown";
 	}
+	Log(LOG_INFO) << "HD interface: " << dollImages.size() << " whole paper doll picture(s)";
+	HdUiArt::setPaperdolls(std::move(dollImages));
 	if (unmatched)
 	{
 		Log(LOG_WARNING) << "HD interface: " << unmatched << " picture(s) in hd/UI match no image of the mods (" << unmatchedNames

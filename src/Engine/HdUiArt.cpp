@@ -897,10 +897,27 @@ const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int
 	return arts[index].get();
 }
 
-namespace { unsigned cleared = 0; }
+namespace
+{
+unsigned cleared = 0;
+/// The mods' images that are whole paper dolls (see setPaperdolls).
+std::unordered_set<std::string> paperdolls;
+}
+
+void setPaperdolls(std::vector<std::string> names)
+{
+	paperdolls.clear();
+	paperdolls.insert(names.begin(), names.end());
+}
+
+bool hidden(const Art *art)
+{
+	return Options::oxceHdClassicDolls && art && (art->doll || paperdolls.count(art->name) > 0);
+}
 
 void clear()
 {
+	paperdolls.clear();
 	byContent.clear();
 	bySurface.clear();
 	sizes.clear();
@@ -1208,7 +1225,7 @@ bool drawIfPicture(const Surface *surface, SDL_Surface *dest)
 		const Uint64 hash = hashPixels((const Uint8*)surface->getBuffer(), surface->getPitch(), w, h);
 		art = find(hash, w, h);
 	}
-	if (!art)
+	if (!art || hidden(art))
 	{
 		return false;
 	}

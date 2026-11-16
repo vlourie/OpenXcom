@@ -549,6 +549,8 @@ en-US:
   STR_HD_ENEMY_NUMBER_2: "Steady"
   STR_HD_PICTURES: "HD pictures"
   STR_HD_PICTURES_DESC: "Pictures of the interface's images that mods ship in hd/UI (Ufopaedia illustrations, screens) are shown in the display's resolution in place of the 8-bit originals; everything else of the interface stays as it is. Needs a 32-bit display (OpenGL or a 32-bit filter)."
+  STR_HD_CLASSIC_DOLLS: "Classic paperdolls"
+  STR_HD_CLASSIC_DOLLS_DESC: "The paperdolls of soldiers and vehicles are shown as the original pictures instead of HD: in the inventory, on the soldier screen, on the Ufopaedia armor pages and the face in the battle panel. All other HD pictures, the interface and the battlescape stay HD. Takes effect at once, no restart."
   STR_HD_BACKDROP: "Gradient beyond the map's edge"
   STR_HD_BACKDROP_DESC: "On = the empty space beyond the battle map's edge is filled with a soft vertical gradient (a little darker at the top, a pale haze at the bottom) around the colour of the ground (by the mod's table hd/backdrop.txt; no line - the environment's background colour), instead of one flat colour. Off = one flat colour, as before. Picture only."
   STR_HD_BEYOND_EDGE: "Ground beyond the map's edge"

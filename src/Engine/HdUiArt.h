@@ -105,6 +105,11 @@ namespace HdUiArt
 	/// The picture of the image these pixels are a part of (a state's copy of a corner of an image):
 	/// the art and the offset of the pixels within its image, or nullptr. Slow (a search): cache the answer.
 	const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY);
+	/// The mods' images that are whole paper dolls (an armor's spriteInv: NAME, NAME.SPK, NAMEF3.SPK...), as the mods name them.
+	void setPaperdolls(std::vector<std::string> names);
+	/// Is this a paper doll's picture (a layer, a composite or a whole doll) while the player keeps the dolls classic
+	/// (oxceHdClassicDolls): then it is not drawn, the classic doll shows as every image without a picture.
+	bool hidden(const Art *art);
 	/// Forgets everything (mod reload).
 	void clear();
 	size_t count();
