@@ -54,6 +54,12 @@ README = """OXCE-HD Launcher {version} - X-Piratez HD Edition
 
 Website, news and support: {site}
 X-Piratez was created by Dioxine: https://www.moddb.com/mods/x-piratez
+
+OXCE-HD is an unofficial fork of OpenXcom Extended (OXCE). It is not made, endorsed or supported
+by the OpenXcom or OXCE developers. Please report problems to us, not to the OpenXcom forum.
+The engine is free software under the GNU GPL v3. Source code of every released build:
+https://github.com/vlourie/OpenXcom (tags hd-<release>). The launcher is a separate program
+that downloads and starts the game.
 """
 
 
