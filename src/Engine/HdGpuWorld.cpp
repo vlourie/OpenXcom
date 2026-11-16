@@ -1501,9 +1501,12 @@ bool HdGpuWorld::frame(const HdFrame &f, int fx, int fy, int x0, int y0, int x1,
 		auto old = id ? atlas.places.find(id) : atlas.places.end();
 		f.gpuWorld.stale = 0;
 		m.uploading = id == 0 ? "frame-new" : "frame";
+		bool patch = false;
 		if (old != atlas.places.end() && old->second.w == f.width && old->second.h == f.height && old->second.used != atlas.clock)
 		{
 			pl = atlas.find(id);
+			// the place still holds the frame before HdSmooth::smoothPatch: only what it redid goes up
+			patch = id == f.patchedOf;
 		}
 		else
 		{
@@ -1515,7 +1518,23 @@ bool HdGpuWorld::frame(const HdFrame &f, int fx, int fy, int x0, int y0, int x1,
 			}
 			pl = &atlas.places[id];
 		}
-		m.upload(*pl, f.pixels.data(), f.width, f.width, f.height, false);
+		if (patch)
+		{
+			for (const SDL_Rect &r : f.patched)
+			{
+				Place part = *pl;
+				part.x += r.x;
+				part.y += r.y;
+				m.uploading = "frame-patch";
+				m.upload(part, f.pixels.data() + (size_t)r.y * f.width + r.x, f.width, r.w, r.h, false);
+			}
+		}
+		else
+		{
+			m.upload(*pl, f.pixels.data(), f.width, f.width, f.height, false);
+		}
+		f.patched.clear();
+		f.patchedOf = 0;
 		f.gpuWorld.id = id;
 	}
 	Sint32 *q = m.push(K_FRAME, x0, y0, x1, y1);

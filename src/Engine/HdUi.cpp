@@ -93,9 +93,13 @@ std::string HdUi::memoryLine() const
 	}
 	for (const auto &e : _sparse)
 	{
-		for (const SparsePiece &p : e.second.pieces)
+		for (const auto &p : e.second.pieces)
 		{
-			sparse += frameBytes(p.frame);
+			sparse += frameBytes(p->frame) + p->source.capacity();
+		}
+		for (const auto &p : e.second.spare)
+		{
+			sparse += frameBytes(p->frame) + p->source.capacity();
 		}
 	}
 	for (const auto &e : _glyphs)
@@ -321,10 +325,15 @@ const HdFrame *HdUi::smoothed(const Surface *surface, int k, const SDL_Color *co
 	{
 		HdFrame &prev = old->second.frame;
 		const size_t bytes = prev.pixels.size() * 4;
-		if (HdSmooth::smoothPatch(pixels, pitch, old->second.source.data(), w, h, colors, k, prev, &redone))
+		// the world's place that holds exactly the pixels before the patch, if any: then only the patch goes up
+		const Uint64 heldAt = prev.gpuWorld.id;
+		std::vector<SDL_Rect> rects;
+		if (HdSmooth::smoothPatch(pixels, pitch, old->second.source.data(), w, h, colors, k, prev, &redone, &rects))
 		{
 			_smoothBytes -= bytes; // the frame moves on to the new entry, cache() finds the old one empty
 			frame = std::move(prev);
+			frame.patchedOf = heldAt;
+			frame.patched.swap(rects);
 		}
 		else
 		{
@@ -383,9 +392,27 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 			_sparse.clear();
 		}
 		SparseEntry &e = _sparse[surface];
+		// the pieces of the content before: one over the same pixels in the same palette comes out the same, so
+		// it is kept with its frame and its place on the video card (a craft on the move changed the radars'
+		// layer, and every piece of it was smoothed and uploaded again: 240 new frames a second, 16.11)
+		SparseEntry before = std::move(e);
 		e = SparseEntry();
 		e.hash = hash;
 		e.k = k;
+		e.palette = HdUiArt::foldPalette(1469598103934665603ULL, colors);
+		std::unordered_map<Uint64, size_t> was, wasSpare;
+		const bool alike = before.k == k && before.palette == e.palette && !before.dense;
+		if (alike)
+		{
+			for (size_t i = 0; i < before.pieces.size(); ++i)
+			{
+				was[((Uint64)(Uint32)before.pieces[i]->ix << 32) | (Uint32)before.pieces[i]->iy] = i;
+			}
+			for (size_t i = 0; i < before.spare.size(); ++i)
+			{
+				wasSpare[((Uint64)(Uint32)before.spare[i]->ix << 32) | (Uint32)before.spare[i]->iy] = i;
+			}
+		}
 		const int T = 16, M = 8;
 		const int tw = (w + T - 1) / T, th = (h + T - 1) / T;
 		std::vector<Uint8> used((size_t)tw * th, 0);
@@ -420,6 +447,7 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 									grown[(size_t)(ty + dy) * tw + tx + dx] = 1;
 			used.swap(grown);
 		}
+		std::vector<SparsePiece*> fresh;
 		for (int ty = 0; ty < th && !e.dense; ++ty)
 		{
 			for (int tx = 0; tx < tw; )
@@ -427,23 +455,78 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 				if (!used[(size_t)ty * tw + tx]) { ++tx; continue; }
 				const int tx0 = tx;
 				while (tx < tw && used[(size_t)ty * tw + tx]) ++tx;
-				SparsePiece p;
-				p.ix = tx0 * T;
-				p.iy = ty * T;
-				p.iw = std::min(w, tx * T) - p.ix;
-				p.ih = std::min(h, (ty + 1) * T) - p.iy;
-				p.ox = std::max(0, p.ix - M);
-				p.oy = std::max(0, p.iy - M);
-				const int ow = std::min(w, p.ix + p.iw + M) - p.ox, oh = std::min(h, p.iy + p.ih + M) - p.oy;
-				if (!HdSmooth::smoothPalette(pixels + (size_t)p.oy * pitch + p.ox, ow, oh, pitch, colors, k, p.frame, false, ow * oh >= 16384))
+				auto p = std::make_unique<SparsePiece>();
+				p->ix = tx0 * T;
+				p->iy = ty * T;
+				p->iw = std::min(w, tx * T) - p->ix;
+				p->ih = std::min(h, (ty + 1) * T) - p->iy;
+				p->ox = std::max(0, p->ix - M);
+				p->oy = std::max(0, p->iy - M);
+				p->ow = std::min(w, p->ix + p->iw + M) - p->ox;
+				p->oh = std::min(h, p->iy + p->ih + M) - p->oy;
+				const Uint64 at = ((Uint64)(Uint32)p->ix << 32) | (Uint32)p->iy;
+				auto a = was.find(at);
+				auto b = wasSpare.find(at);
+				std::unique_ptr<SparsePiece> *now = a != was.end() && before.pieces[a->second] ? &before.pieces[a->second] : nullptr;
+				std::unique_ptr<SparsePiece> *older = b != wasSpare.end() && before.spare[b->second] ? &before.spare[b->second] : nullptr;
+				auto same = [&](const SparsePiece &o)
 				{
-					// half an entry under the full hash would be drawn next time as if it were whole
-					_sparse.erase(surface);
-					return false;
+					bool s = o.iw == p->iw && o.ih == p->ih && o.ox == p->ox && o.oy == p->oy && o.ow == p->ow && o.oh == p->oh;
+					for (int r = 0; s && r < p->oh; ++r)
+					{
+						s = memcmp(o.source.data() + (size_t)r * p->ow, pixels + (size_t)(p->oy + r) * pitch + p->ox, p->ow) == 0;
+					}
+					return s;
+				};
+				std::unique_ptr<SparsePiece> *hit = now && same(**now) ? now : older && same(**older) ? older : nullptr;
+				if (hit)
+				{
+					e.pieces.push_back(std::move(*hit));
+					continue;
 				}
-				p.frame.buildSpans();
+				// changed: its pixels go up into the place of a piece before (same size), not a new one - the kept
+				// pieces pinned every layer and the new ones filled the array (layers full, 16.11). The older look
+				// gives its place: the one just shown stays as the spare
+				if (std::unique_ptr<SparsePiece> *donor = older ? older : now)
+				{
+					p->frame.gpuWorld.take((*donor)->frame.gpuWorld);
+				}
+				p->source.resize((size_t)p->ow * p->oh);
+				for (int r = 0; r < p->oh; ++r)
+				{
+					memcpy(p->source.data() + (size_t)r * p->ow, pixels + (size_t)(p->oy + r) * pitch + p->ox, p->ow);
+				}
+				fresh.push_back(p.get());
 				e.pieces.push_back(std::move(p));
 			}
+		}
+		// what the content before showed and this one did not keep waits for the next change (the older spares go)
+		for (std::unique_ptr<SparsePiece> &q : before.pieces)
+		{
+			if (q && alike && !e.dense)
+			{
+				e.spare.push_back(std::move(q));
+			}
+		}
+		// the new pieces side by side over the pool, each smoothed on its own (as smoothPatch does)
+		std::vector<Uint8> failed(fresh.size(), 0);
+		if (!fresh.empty())
+		{
+			HdWorkers::instance().run((int)fresh.size(), [&](int i)
+			{
+				SparsePiece &p = *fresh[i];
+				failed[i] = !HdSmooth::smoothPalette(pixels + (size_t)p.oy * pitch + p.ox, p.ow, p.oh, pitch, colors, k, p.frame);
+			});
+		}
+		for (size_t i = 0; i < fresh.size(); ++i)
+		{
+			if (failed[i])
+			{
+				// half an entry under the full hash would be drawn next time as if it were whole
+				_sparse.erase(surface);
+				return false;
+			}
+			fresh[i]->frame.buildSpans();
 		}
 		it = _sparse.find(surface);
 	}
@@ -452,8 +535,9 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 		return false;
 	}
 	const SDL_Rect outer = worldClip(dest, k);
-	for (const SparsePiece &p : it->second.pieces)
+	for (const auto &piece : it->second.pieces)
 	{
+		const SparsePiece &p = *piece;
 		SDL_Rect clip;
 		const int x0 = std::max((int)outer.x, (x + p.ix) * k), y0 = std::max((int)outer.y, (y + p.iy) * k);
 		const int x1 = std::min(outer.x + outer.w, (x + p.ix + p.iw) * k), y1 = std::min(outer.y + outer.h, (y + p.iy + p.ih) * k);
@@ -1429,6 +1513,7 @@ void HdUi::clearCaches()
 	_smoothLru.clear();
 	_smoothBytes = 0;
 	_sparse.clear();
+	_cover.clear();
 	_cropMisses.clear();
 	_glyphs.clear();
 	_fitted.clear();

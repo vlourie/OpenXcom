@@ -71,6 +71,11 @@ struct HdFrame
 	} gpu;
 	/// The same for the world drawn by the video card (HdGpuWorld: its own texture array).
 	GpuStamp gpuWorld;
+	/// HdSmooth::smoothPatch redid only these parts (frame pixels) of a frame whose former pixels are whole in the
+	/// world's place `patchedOf`: when the frame goes into that place again, only they are uploaded (HdGpuWorld::frame).
+	/// The globe under a moving terminator changes a third of it, and went up whole (13 MB) a dozen times a second.
+	mutable std::vector<SDL_Rect> patched;
+	mutable Uint64 patchedOf = 0;
 
 	/// Pointer to a row of pixels.
 	const Uint32 *row(int y) const { return pixels.data() + (size_t)y * width; }

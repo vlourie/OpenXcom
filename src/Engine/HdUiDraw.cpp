@@ -1126,7 +1126,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 }
 
 void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn,
-	const int *spans)
+	const int *spans, Uint64 key)
 {
 	FrameTiming timing(_frameMs);
 	SDL_Surface *dest;
@@ -1225,13 +1225,42 @@ void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colo
 		}
 	};
 	auto band = [&](int job) { return y0 + (int)((long long)nRows * job / jobs); };
-	if (jobs > 1)
+	// the same key over the same rectangle: the coverages are those of the last time
+	CoverKept *kept = nullptr;
+	if (onCard && key)
 	{
-		HdWorkers::instance().run(jobs, [&](int job) { rows(band(job), band(job + 1), job); });
+		auto ck = _cover.find(key);
+		if (ck != _cover.end() && ck->second.x0 == x0 && ck->second.y0 == y0 && ck->second.x1 == x1 && ck->second.y1 == y1
+			&& ck->second.layers == layers && ck->second.jobs == jobs)
+		{
+			kept = &ck->second;
+			found = kept->found;
+			foundAt = kept->foundAt;
+			jobCov = kept->jobCov;
+		}
 	}
-	else
+	if (!kept)
 	{
-		rows(y0, y1, 0);
+		if (jobs > 1)
+		{
+			HdWorkers::instance().run(jobs, [&](int job) { rows(band(job), band(job + 1), job); });
+		}
+		else
+		{
+			rows(y0, y1, 0);
+		}
+		if (onCard && key)
+		{
+			if (_cover.size() >= 16)
+			{
+				_cover.clear();
+			}
+			CoverKept &c = _cover[key];
+			c.x0 = x0; c.y0 = y0; c.x1 = x1; c.y1 = y1; c.layers = layers; c.jobs = jobs;
+			c.found = found;
+			c.foundAt = foundAt;
+			c.jobCov = jobCov;
+		}
 	}
 	if (!onCard)
 	{

@@ -290,9 +290,11 @@ bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, co
  * pixels around it. The checkerboard pass and xBRZ look no further than 4 pixels away,
  * so the pieces come out as the whole would.
  */
-bool HdSmooth::smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previous, int bw, int bh, const SDL_Color *colors, int k, HdFrame &frame, int *redone)
+bool HdSmooth::smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previous, int bw, int bh, const SDL_Color *colors, int k, HdFrame &frame, int *redone,
+	std::vector<SDL_Rect> *rects)
 {
 	if (redone) *redone = 0;
+	if (rects) rects->clear();
 	if (k < 2 || k > 6 || bw < 1 || bh < 1 || frame.width != bw * k || frame.height != bh * k || frame.pixels.size() != (size_t)frame.width * frame.height)
 	{
 		return false;
@@ -367,6 +369,18 @@ bool HdSmooth::smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previou
 		}
 	});
 	if (redone) *redone = count;
+	if (rects)
+	{
+		for (const Piece &p : pieces)
+		{
+			SDL_Rect r;
+			r.x = (Sint16)(p.ix * k);
+			r.y = (Sint16)(p.iy * k);
+			r.w = (Uint16)(p.iw * k);
+			r.h = (Uint16)(p.ih * k);
+			rects->push_back(r);
+		}
+	}
 	return true;
 }
 

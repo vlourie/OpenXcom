@@ -20,6 +20,7 @@
 #include <SDL.h>
 #include <functional>
 #include <list>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -217,8 +218,10 @@ public:
 	/// how much of colors[l] covers pixel x of the row (0: none, the row already clipped, cov zeroed); per pixel the
 	/// `layers` colours are blended in their order. The same picture as shadeRows blending them, but the video card
 	/// takes it (HdGpuWorld). `spans`, when given: layer l has coverages only in the rows [spans[2l], spans[2l + 1]).
+	/// `key`, when not 0, stands for everything fn depends on: the same key over the same rectangle again - the
+	/// coverages of the last time are drawn without calling fn (on the video card only).
 	void shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn,
-		const int *spans = nullptr);
+		const int *spans = nullptr, Uint64 key = 0);
 	/// Copies w x h pixels (rows `pitch` apart) as they are into the world rectangle (x, y, w, h), clipped.
 	void copyRows(int x, int y, int w, int h, const Uint32 *src, int pitch);
 	/// Blends 0xAARRGGBB (straight alpha) times `cov` (0..1) into a world pixel.
@@ -421,17 +424,32 @@ private:
 	struct SparsePiece
 	{
 		int ix, iy, iw, ih;               ///< the part of the surface this piece stands for
-		int ox, oy;                       ///< where its frame starts: the part with a margin around it
+		int ox, oy, ow, oh;               ///< where its frame starts: the part with a margin around it, and its size
+		std::vector<Uint8> source;        ///< the surface's pixels of that part, ow x oh: the same again - the same frame
 		HdFrame frame;
 	};
 	struct SparseEntry
 	{
 		Uint64 hash = 0;
+		Uint64 palette = 0;               ///< the palette alone (HdUiArt::foldPalette)
 		int k = 0;
 		bool dense = false;               ///< not worth it: smoothed whole, as before
-		std::vector<SparsePiece> pieces;
+		/// a piece kept from one content to the next stays where it is, with its place on the video card
+		std::vector<std::unique_ptr<SparsePiece>> pieces;
+		/// the pieces of the content before that this one did not keep: the globe's markers blink every 100 ms
+		/// between two looks, and each look comes back as the other one's spare
+		std::vector<std::unique_ptr<SparsePiece>> spare;
 	};
 	std::unordered_map<const Surface*, SparseEntry> _sparse;
+	/// shadeCover's coverages kept under their key (the enemy's circles stand still while the globe does)
+	struct CoverKept
+	{
+		int x0 = 0, y0 = 0, x1 = 0, y1 = 0, layers = 0, jobs = 0;
+		std::vector<Sint32> found;
+		std::vector<Uint32> foundAt;
+		std::vector<std::vector<float>> jobCov;
+	};
+	std::unordered_map<Uint64, CoverKept> _cover;
 	/// The picture of an image scaled to k and re-tinted for the palette, cached under `key`.
 	const HdFrame *prepared(const HdUiArt::Art *art, const Surface *key, int k, const SDL_Color *colors);
 	/// Puts a frame into the smoothed-surface cache under a key (evicting by size).

@@ -40,7 +40,9 @@ namespace HdSmooth
 	/// by smoothing again only the 16x16 tiles that changed and their neighbours; the result is the
 	/// same as smoothing `indices` whole. False, with `frame` untouched, when over a quarter of the
 	/// tiles would have to be redone. From the main thread only (the pieces go over HdWorkers).
-	bool smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previous, int bw, int bh, const SDL_Color *colors, int k, HdFrame &frame, int *redone = nullptr);
+	/// `rects`: the parts of `frame` written again (frame pixels).
+	bool smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previous, int bw, int bh, const SDL_Color *colors, int k, HdFrame &frame, int *redone = nullptr,
+		std::vector<SDL_Rect> *rects = nullptr);
 	/// Is (x, y) inside the classic floor diamond of a bw x bh tile (the bottom 16 rows)?
 	bool inFloorDiamond(int x, int y, int bw, int bh);
 }

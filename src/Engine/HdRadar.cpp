@@ -1067,6 +1067,26 @@ void HdRadar::drawRings(const View &view, const std::vector<Ring> &rings)
 		capRows.push_back(cap.y0);
 		capRows.push_back(cap.y1);
 	}
+	// all the coverages come from: the view and the circles. While neither moves, shadeCover draws the last ones
+	// again instead of working them out per pixel each frame (the globe standing, the clock running, 16.11)
+	Uint64 key = 0x52494e4753ULL ^ 1469598103934665603ULL;
+	auto mix = [&key](const void *p, size_t n)
+	{
+		const Uint8 *b = (const Uint8 *)p;
+		for (size_t i = 0; i < n; ++i) { key ^= b[i]; key *= 1099511628211ULL; }
+	};
+	const double viewD[5] = { view.cenLon, view.cenLat, view.cx, view.cy, view.radius };
+	const int viewI[5] = { view.x, view.y, view.w, view.h, view.k };
+	mix(viewD, sizeof(viewD));
+	mix(viewI, sizeof(viewI));
+	for (const Ring &r : rings)
+	{
+		const double d[3] = { r.lon, r.lat, r.range };
+		mix(d, sizeof(d));
+		const Uint8 ship = r.ship ? 1 : 0;
+		mix(&ship, 1);
+	}
+	key |= 1;
 	HdUi::instance().shadeCover(ux0, uy0, ux1 - ux0, uy1 - uy0, (int)caps.size(), colors.data(), [&](int py, int x0, int x1, float *out)
 	{
 		const int ox = x0, n = x1 - x0;
@@ -1124,7 +1144,7 @@ void HdRadar::drawRings(const View &view, const std::vector<Ring> &rings)
 				}
 			}
 		}
-	}, capRows.data());
+	}, capRows.data(), key);
 }
 
 /**
