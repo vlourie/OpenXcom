@@ -493,7 +493,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftWeaponToggle", &oxceHdCraftWeaponToggle, false, "STR_HD_CRAFT_WEAPON_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftRoute", &oxceHdCraftRoute, false, "STR_HD_CRAFT_ROUTE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGlobeBox", &oxceHdGlobeBox, false, "STR_HD_GLOBE_BOX", "STR_HD_GEOSCAPE")); // OXCE-HD
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFundsToggle", &oxceHdFundsToggle, false, "STR_HD_FUNDS_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFundsToggle", &oxceHdFundsToggle, true, "STR_HD_FUNDS_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdManufactureTop", &oxceHdManufactureTop, false, "STR_HD_MANUFACTURE_TOP", "STR_HD_BASE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdResearchEta", &oxceHdResearchEta, false, "STR_HD_RESEARCH_ETA", "STR_HD_BASE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScrollSplit",&oxceHdScrollSplit, false, "STR_HD_SCROLL_SPLIT", "STR_HD_BATTLE_UI")); // OXCE-HD
@@ -541,7 +541,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGentleAsk", &oxceGentleAsk, true, "", "STR_GENERAL"));
 	// Building collapse (Battlescape/CollapsePilot.h): its own group on the HD tab, off by default
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCollapse", &oxceCollapse, false, "STR_HD_COLLAPSE", "STR_HD_PHYSICS"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCollapseShake", &oxceHdCollapseShake, false, "STR_HD_COLLAPSE_SHAKE", "STR_HD_PHYSICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCollapseShake", &oxceHdCollapseShake, true, "STR_HD_COLLAPSE_SHAKE", "STR_HD_PHYSICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTrunkArmor", &oxceHdTrunkArmor, 0, "STR_HD_TRUNK_ARMOR", "STR_HD_PHYSICS"));
 	// BetterAI (Battlescape/AiProbe.h): the screen the first row of the HD tab opens; the master switch is off by default,
 	// the rows under it are grey while it is off; applies after a restart
@@ -643,23 +643,23 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUpdateNotice", &oxceHdUpdateNotice, true, "STR_HD_UPDATE_NOTICE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdChatNotice", &oxceHdChatNotice, true, "STR_HD_CHAT_NOTICE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftFit", &oxceHdCraftFit, false, "STR_HD_CRAFT_FIT", "STR_HD_INTERFACE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWoundedRed", &oxceHdWoundedRed, false, "STR_HD_WOUNDED_RED", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWoundedRed", &oxceHdWoundedRed, true, "STR_HD_WOUNDED_RED", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftMission", &oxceHdCraftMission, false, "STR_HD_CRAFT_MISSION", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBaseAnim", &oxceHdBaseAnim, true, "STR_HD_BASE_ANIM", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLights", &oxceHdCraftLights, true, "STR_HD_CRAFT_LIGHTS", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLaunch", &oxceHdCraftLaunch, 1, "STR_HD_CRAFT_LAUNCH", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAltInfo", &oxceHdAltInfo, 0, "STR_HD_ALT_INFO", "STR_HD_BATTLE_UI"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAmmoHint", &oxceHdAmmoHint, false, "STR_HD_AMMO_HINT", "STR_HD_BATTLE_UI"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAmmoHint", &oxceHdAmmoHint, true, "STR_HD_AMMO_HINT", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferCost", &oxceHdTransferCost, true, "STR_HD_TRANSFER_COST", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferConfirm", &oxceHdTransferConfirm, true, "STR_HD_TRANSFER_CONFIRM", "STR_HD_BASE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferSides", &oxceHdTransferSides, false, "STR_HD_TRANSFER_SIDES", "STR_HD_BASE")); // XP-000525
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferSides", &oxceHdTransferSides, true, "STR_HD_TRANSFER_SIDES", "STR_HD_BASE")); // XP-000525
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdArmorSortCraft", &oxceHdArmorSortCraft, false, "STR_HD_ARMOR_SORT_CRAFT", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftOutlines", &oxceHdCraftOutlines, true, "STR_HD_CRAFT_OUTLINES", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPilotVoice", &oxceHdPilotVoice, true, "STR_HD_PILOT_VOICE", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadar", &oxceHdRadar, 0, "STR_HD_RADAR", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarWaves", &oxceHdRadarWaves, 1, "STR_HD_RADAR_WAVES", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarCraft", &oxceHdRadarCraft, 2, "STR_HD_RADAR_CRAFT", "STR_HD_GEOSCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTrainingBlocks", &oxceHdTrainingBlocks, false, "STR_HD_TRAINING_BLOCKS", "STR_HD_BASE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTrainingBlocks", &oxceHdTrainingBlocks, true, "STR_HD_TRAINING_BLOCKS", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathDigits", &oxceHdPathDigits, true, "STR_HD_PATH_DIGITS", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathNumSize", &oxceHdPathNumSize, 100, "STR_HD_PATH_NUM_SIZE", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathNumWeight", &oxceHdPathNumWeight, 100, "STR_HD_PATH_NUM_WEIGHT", "STR_HD_BATTLE_UI"));
@@ -1475,6 +1475,14 @@ bool load(const std::string &filename)
 		if (keyBattleHdModeToggle == SDLK_F9 && keyQuickLoad == SDLK_F9)
 		{
 			keyBattleHdModeToggle = SDLK_F11;
+		}
+		// the HD tab has no switch for these any more (docs/HD_MENU.md): always on, whatever options.cfg held
+		for (bool *always : { &oxceHdGroundVariants, &oxceHdHoverBob, &oxceHdAnimHidden, &oxceHdPediaRange, &oxceHdWoundedRed,
+			&oxceHdAmmoHint, &oxceHdTransferCost, &oxceHdTransferSides, &oxceHdTrainingBlocks, &oxceHdFundsToggle,
+			&oxceInventoryUseOnBody, &oxceHdCtrlZoom, &oxceBaseSoldierTypeIcon, &oxceHdCollapseShake, &oxceHdPathDigits,
+			&oxceHdInventoryKeys })
+		{
+			*always = true;
 		}
 
 		mods.clear();

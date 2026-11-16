@@ -20,6 +20,9 @@ FILE = "src/Engine/Options.cpp"
 # ключи, чьё новое умолчание нарочно только для новых игроков (сохранённый выбор не трогаем) - с решением
 ONLY_NEW_PLAYERS = {
     "oxceHdGpu",  # Vitali 14.11, тикет XP-000569: вывод через видеокарту по умолчанию новым игрокам
+    # always_on меню HD: умолчание true, и Options::load() ставит true и поверх сохранённого (старые игроки тоже)
+    "oxceHdWoundedRed", "oxceHdAmmoHint", "oxceHdTransferSides", "oxceHdTrainingBlocks", "oxceHdFundsToggle",
+    "oxceHdCollapseShake",
 }
 OPT = re.compile(r'OptionInfo\(\s*OPTION_\w+\s*,\s*"([^"]+)"\s*,\s*&[\w:]+\s*,\s*("[^"]*"|[^,)]+)')
 

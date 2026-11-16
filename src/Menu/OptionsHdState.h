@@ -36,14 +36,23 @@ class TextButton;
 class OptionsHdState : public OptionsBaseState
 {
 private:
+	/// An entry of a group: kind 0 is an option (index in the group's settings), 1 a row of its own (its marker), 2 a merged row.
+	struct Item
+	{
+		int kind, index;
+	};
 	struct Group
 	{
 		std::string title;
 		std::vector<OptionInfo> settings;
-		/// The tab the group is on.
+		/// The rows of the group in their order: what each is (an option, a row of its own, a merged one) and its index.
+		std::vector<Item> items;
+		/// The tab the group is on (-1: on none, the settings of the BetterAI screen).
 		int tab;
+		/// Is it the HD lab, behind a password?
+		bool lab;
 	};
-	/// What a row of the list is: a header or a blank (-1), the art version (-2) or a setting.
+	/// What a row of the list is: a header or a blank (-1), a row of its own or a merged one (other negative), or a setting.
 	struct Row
 	{
 		int group, index;
@@ -76,6 +85,14 @@ private:
 	void addRow(int group, int index, const std::string &name, const std::string &value, int pair = 0);
 	/// The rows of a setting: one with its short value beside the label, two with a long one under it.
 	void addSettingRow(int group, int index, const std::string &label, bool grey);
+	/// The same for a value that is known (a merged row's).
+	void addValueRow(int group, int index, const std::string &label, const std::string &value, Uint8 color, bool grey);
+	/// The merged rows (several options as one row): a value's name, is it fixed by a mod, grey, the color of its value, a step.
+	std::string mergedValue(int m, int v) const;
+	bool mergedFixed(int m) const;
+	bool mergedGrey(int m) const;
+	Uint8 mergedColor(int m) const;
+	void changeMerged(int m, int increment);
 	/// Is the value too long for the column beside the label (the list puts it under the label then)?
 	bool longValue(const std::string &value) const;
 	/// Writes a setting's value, and its color, in the row (or the pair of rows) the setting is in.

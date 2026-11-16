@@ -26,6 +26,7 @@
 #include "../Engine/HdLab.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/LocalizedText.h"
+#include "../Engine/Logger.h"
 #include "../Engine/Options.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
@@ -45,37 +46,247 @@
 namespace OpenXcom
 {
 
-/// The tabs over the list, three in a row: graphics, battle, interface, geoscape and base, AI and rules, speed.
-static const char *const HD_TABS[] = { "STR_HD_TAB_GRAPHICS", "STR_HD_TAB_BATTLE", "STR_HD_TAB_INTERFACE", "STR_HD_TAB_WORLD", "STR_HD_TAB_AI", "STR_HD_TAB_SPEED" };
-static const int HD_TAB_COUNT = sizeof(HD_TABS) / sizeof(HD_TABS[0]);
-/// The groups of the list, in this order, each on its tab (a title can come twice: its graphics options on the first
-/// tab, the rest on its own); the first one also holds the art version row. The title is a category of Options.cpp.
-static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
-	{ "STR_HD_ART", 0 }, { "STR_HD_GENTLE", 0 }, { "STR_HD_GRAPHICS", 0 },
-	{ "STR_HD_INTERFACE", 0 },
-	{ "STR_HD_BATTLE", 1 }, { "STR_HD_BATTLE_UI", 1 }, { "STR_HD_PHYSICS", 1 },
-	{ "STR_HD_INTERFACE", 2 },
-	{ "STR_HD_GEOSCAPE", 3 }, { "STR_HD_BASE", 3 },
-	{ "STR_HD_AI", 4 }, { "STR_HD_CHALLENGE", 4 }, { "STR_HD_RULES", 4 },
-	{ "STR_HD_SPEED", 5 }, { "STR_HD_LAB", 5 } };
-/// The options of how things look, wherever their category is: they all go on the graphics tab, to the group of their
-/// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
-static const char *const HD_GRAPHICS_OPTIONS[] = {
-	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdBeyondEdge", "oxceHdBeyondLook", "oxceHdMapBorder", "oxceHdEnemyNumber",
-	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdWindowThemeColor", "oxceHdUiFont", "oxceHdPictures", "oxceHdClassicDolls", "oxceHdUiSmooth" };
-/// The tab open last: the window opens on it again, until the game is closed.
-static int hdTab = 0;
-/// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
-static const std::string LAB_CATEGORY = "STR_HD_LAB";
-/// The category of BetterAI (Battlescape/AiProbe.h): its rows are on the BetterAI screen, not in the main list.
-static const std::string AI_CATEGORY = "STR_HD_AI";
 /// Row markers in _rows: ROW_LAB asks for the lab's password, ROW_LAB_LOCK closes the lab again, ROW_BETTERAI opens the
 /// BetterAI screen, ROW_BACK goes back from it.
-/// ROW_CUSTOM opens the window of the player's own colour of the battle panel (under that colour's row); ROW_FACE the window of
-/// the windows' buttons' look (under the row of their theme), ROW_INK the window of their letters (under that row).
+/// ROW_CUSTOM opens the window of the player's own colour of the battle panel; ROW_FACE the window of the windows' buttons'
+/// look, ROW_INK the window of their letters.
 static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10, ROW_SCREENS = -11;
-/// ROW_SCREENS opens the window of the themes by screen (under the row of the windows' own colour; XP-000484).
-/// ROW_WINCUSTOM opens the window of the player's own colour of the windows' metal (under the row of the windows' colour; XP-000479).
+/// ROW_SCREENS opens the window of the themes by screen (XP-000484).
+/// ROW_WINCUSTOM opens the window of the player's own colour of the windows' metal (XP-000479).
+/// ROW_MERGED is a row over several options at once (HD_MERGED); its index in the row is the number in that table.
+static const int ROW_MERGED = -12;
+/// What an entry of a group is: an option (its index in the group's settings), a special row (its marker) or a merged row.
+static const int ITEM_OPTION = 0, ITEM_SPECIAL = 1, ITEM_MERGED = 2;
+
+/// The menu, by hand (docs/HD_MENU.md): tabs over the list, three in a row; in each its groups; in each its rows in this
+/// order. A row is the id of an option (Options.cpp), a "@" row of its own (HD_SPECIAL) or a merged one ("@m_", HD_MERGED).
+/// An option that is in no row is not in the menu.
+struct HdGroupDef { const char *title; std::vector<const char*> rows; };
+struct HdTabDef { const char *title; std::vector<HdGroupDef> groups; };
+static const HdTabDef HD_LAYOUT[] = {
+	{ "STR_HD_T_GRAPHICS", {
+		{ "STR_HD_G_01", { "@art", "oxceAdultAsk", "@m_smooth", "oxceGentle" } },
+		{ "STR_HD_G_02", { "@m_light", "@m_shadow" } },
+		{ "STR_HD_G_03", { "@m_fire", "oxceHdVolumeSmoke", "oxceHdPlainSmoke" } },
+		{ "STR_HD_G_04", { "@m_weather", "@m_tracks" } },
+		{ "STR_HD_G_05", { "@m_edge", "oxceHdMapBorder" } } } },
+	{ "STR_HD_T_BATTLE", {
+		{ "STR_HD_G_06", { "oxceHdFx", "oxceHdHitFlash", "oxceHdClassicShots", "oxceHdQuickFlight", "oxceHdLooseHits", "oxceHdShotCut",
+			"oxceHdKillCam", "oxceHdBlastFall", "@m_blood" } },
+		{ "STR_HD_G_07", { "@m_enemyturn", "oxceHdEnemyNumber", "oxceHdWalkerTurn" } },
+		{ "STR_HD_G_08", { "oxceCollapse", "oxceHdTrunkArmor" } } } },
+	{ "STR_HD_T_AIM", {
+		{ "STR_HD_G_09", { "oxceHdReticle", "oxceHdReticleArtillery", "oxceHdReticleExplosive", "oxceHdReticleDamageColor", "oxceHdAimArc",
+			"oxceHdBlastArea", "oxceHdAimSkillBonus", "oxceHdAltInfo", "@m_nums", "oxceHdPathStretch" } },
+		{ "STR_HD_G_10", { "@m_panel", "@custom", "oxceHdPanelHide" } },
+		{ "STR_HD_G_11", { "oxceHdInvBackdrop", "oxceHdScrollSplit" } } } },
+	{ "STR_HD_T_INTERFACE", {
+		{ "STR_HD_G_12", { "@m_ui", "oxceHdUiSkin", "oxceHdUiFont", "oxceHdPictures", "oxceHdClassicDolls" } },
+		{ "STR_HD_G_13", { "@m_wintheme", "@wincustom", "@screens", "@face", "@ink" } },
+		{ "STR_HD_G_14", { "oxceHdUpdateNotice", "oxceHdChatNotice" } } } },
+	{ "STR_HD_T_WORLD", {
+		{ "STR_HD_G_15", { "oxceHdGlobeScale", "oxceHdCraftOutlines", "@m_radar", "oxceHdRadarCraft", "oxceHdCraftRoute", "oxceHdGlobeBox" } },
+		{ "STR_HD_G_16", { "@m_craftweap", "oxceDogfightHitChance", "oxceHdPilotVoice" } },
+		{ "STR_HD_G_17", { "@m_baseanim", "oxceHdCraftLaunch" } },
+		{ "STR_HD_G_18", { "oxceSoldierListGroupBy", "oxceHdCraftFit", "oxceHdCraftMission", "oxceHdArmorSortCraft" } },
+		{ "STR_HD_G_19", { "oxceTradeConfirm", "oxceTradeStay", "oxceTransferExchange", "oxceHdTransferConfirm" } },
+		{ "STR_HD_G_20", { "oxceHdManufactureTop", "oxceManufactureDelivery", "oxceHdResearchEta" } } } },
+	{ "STR_HD_T_GAME", {
+		{ "STR_HD_G_21", { "@ai" } },
+		{ "STR_HD_G_22", { "oxceNoBattleSaves", "oxceKnowledgeArmor", "oxceCatchThrown" } },
+		{ "STR_HD_G_23", { "oxceHdGpu", "oxceHdThreads", "oxceCompactSave" } },
+		{ "STR_HD_G_24", { "oxceHdMapRotation" } } } } };
+static const int HD_TAB_COUNT = sizeof(HD_LAYOUT) / sizeof(HD_LAYOUT[0]);
+/// The group of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
+static const std::string LAB_GROUP = "STR_HD_G_24";
+/// The rows of their own: the marker they have in _rows.
+static const struct { const char *key; int marker; } HD_SPECIAL[] = {
+	{ "@art", ROW_ART }, { "@ai", ROW_BETTERAI }, { "@custom", ROW_CUSTOM }, { "@wincustom", ROW_WINCUSTOM },
+	{ "@screens", ROW_SCREENS }, { "@face", ROW_FACE }, { "@ink", ROW_INK } };
+
+/// The merged rows: one row over several options, with a value list of its own. They only write the options' values (the
+/// variables and the keys of options.cfg are as ever); none of these options had more to do on a change than the list built again.
+enum { M_SMOOTH, M_UI, M_LIGHT, M_SHADOW, M_FIRE, M_WEATHER, M_BLOOD, M_TRACKS, M_EDGE, M_ENEMYTURN, M_PANEL, M_WINTHEME, M_NUMS,
+	M_CRAFTWEAP, M_RADAR, M_BASEANIM };
+static const struct { const char *key; const char *name; bool isBool; std::vector<const char*> options; } HD_MERGED[] = {
+	{ "@m_smooth", "STR_HD_M_SMOOTH", true, { "oxceHdMode", "oxceHdUiSmooth" } },
+	{ "@m_ui", "STR_HD_UI", true, { "oxceHdUi" } },
+	{ "@m_light", "STR_HD_M_LIGHT", false, { "oxceHdLight", "oxceHdFlashLight" } },
+	{ "@m_shadow", "STR_HD_M_SHADOW", false, { "oxceHdUnitShadow", "oxceHdItemShadow", "oxceHdFloorAo" } },
+	{ "@m_fire", "STR_HD_M_FIRE", false, { "oxceHdFire", "oxceHdVolumeFire" } },
+	{ "@m_weather", "STR_HD_M_WEATHER", false, { "oxceHdWeather", "oxceHdWeatherSound" } },
+	{ "@m_blood", "STR_HD_M_BLOOD", false, { "oxceHdBloodColor", "oxceHdBloodSpray", "oxceHdBloodCloud" } },
+	{ "@m_tracks", "STR_HD_M_TRACKS", false, { "oxceHdBloodSteps", "oxceHdSnowTracks" } },
+	{ "@m_edge", "STR_HD_M_EDGE", false, { "oxceHdBackdrop", "oxceHdBeyondEdge", "oxceHdBeyondLook" } },
+	{ "@m_enemyturn", "STR_HD_M_ENEMY_TURN", false, { "oxceHdEnemyTurn", "oxceHdHiddenMap" } },
+	{ "@m_panel", "STR_HD_M_PANEL", false, { "oxceHdBattleHud", "oxceHdBattleHudColor" } },
+	{ "@m_wintheme", "STR_HD_M_WINTHEME", false, { "oxceHdWindowTheme", "oxceHdWindowThemeColor" } },
+	{ "@m_nums", "STR_HD_M_NUMS", false, { "oxceHdAimNumSize", "oxceHdPathNumSize" } },
+	{ "@m_craftweap", "STR_HD_M_CRAFT_WEAPONS", false, { "oxceCraftWeaponIcons", "oxceHdCraftWeaponToggle" } },
+	{ "@m_radar", "STR_HD_M_RADAR", false, { "oxceHdRadar", "oxceHdRadarWaves" } },
+	{ "@m_baseanim", "STR_HD_M_BASE_ANIM", true, { "oxceHdBaseAnim", "oxceHdCraftLights" } } };
+static const int HD_MERGED_COUNT = sizeof(HD_MERGED) / sizeof(HD_MERGED[0]);
+/// How many values a merged row has.
+static int mergedCount(int m)
+{
+	switch (m)
+	{
+	case M_SMOOTH: case M_UI: case M_BLOOD: case M_BASEANIM: return 2;
+	case M_LIGHT: case M_SHADOW: case M_WEATHER: case M_CRAFTWEAP: return 3;
+	case M_TRACKS: case M_ENEMYTURN: return 4;
+	case M_FIRE: case M_EDGE: return 5;                  // fire: its four styles and the tongues of flame
+	case M_RADAR: return 7;                              // the circles, the wash, the wash with the sweep, the waves in 4 paces
+	case M_PANEL: return 11;                             // classic, then the panel's 10 colours
+	case M_NUMS: return 11;                              // 50..100 percent in steps of 5
+	case M_WINTHEME: return 12;                          // off, then the 11 values of the windows' colour
+	}
+	return 2;
+}
+/// Which value of a merged row the options are at now.
+static int mergedCurrent(int m)
+{
+	using namespace Options;
+	switch (m)
+	{
+	case M_SMOOTH: return oxceHdMode == 2 || (oxceHdMode == 0 && oxceHdUiSmooth) ? 1 : 0;
+	case M_UI: return oxceHdUi > 0 ? 1 : 0;
+	case M_LIGHT: return !oxceHdLight ? 0 : oxceHdFlashLight ? 2 : 1;
+	case M_SHADOW: return oxceHdFloorAo && oxceHdUnitShadow ? 2 : (oxceHdUnitShadow || oxceHdItemShadow) ? 1 : 0;
+	case M_FIRE: return oxceHdVolumeFire ? 4 : std::max(0, std::min(3, oxceHdFire));
+	case M_WEATHER: return !oxceHdWeather ? 0 : oxceHdWeatherSound ? 2 : 1;
+	case M_BLOOD: return (oxceHdBloodColor || oxceHdBloodSpray || oxceHdBloodCloud) ? 1 : 0;
+	case M_TRACKS: return (oxceHdBloodSteps ? 1 : 0) + (oxceHdSnowTracks ? 2 : 0);
+	case M_EDGE: return oxceHdBeyondEdge ? 2 + std::max(0, std::min(2, oxceHdBeyondLook)) : oxceHdBackdrop ? 1 : 0;
+	case M_ENEMYTURN: return oxceHdEnemyTurn == 2 ? 2 : oxceHdEnemyTurn == 3 ? 3 : (oxceHdEnemyTurn == 1 || !oxceHdHiddenMap) ? 0 : 1;
+	case M_PANEL: return !oxceHdBattleHud ? 0 : std::max(0, std::min(9, oxceHdBattleHudColor)) + 1;
+	case M_WINTHEME: return !oxceHdWindowTheme ? 0 : std::max(0, std::min(10, oxceHdWindowThemeColor)) + 1;
+	case M_NUMS: return (std::max(50, std::min(100, oxceHdAimNumSize)) - 50 + 2) / 5;
+	case M_CRAFTWEAP: return !oxceCraftWeaponIcons ? 0 : oxceHdCraftWeaponToggle ? 2 : 1;
+	case M_RADAR: return oxceHdRadar < 3 ? std::max(0, oxceHdRadar) : 3 + std::max(0, std::min(3, oxceHdRadarWaves));
+	case M_BASEANIM: return (oxceHdBaseAnim || oxceHdCraftLights) ? 1 : 0;
+	}
+	return 0;
+}
+/// Puts the options of a merged row at its value v.
+static void mergedSet(int m, int v)
+{
+	using namespace Options;
+	switch (m)
+	{
+	case M_SMOOTH:
+		oxceHdUiSmooth = v != 0;
+		if (oxceHdMode != 0) oxceHdMode = v ? 2 : 1;
+		if (oxceHdUi > 0) oxceHdUi = v ? 2 : 1;
+		break;
+	case M_UI:
+		oxceHdUi = v == 0 ? 0 : mergedCurrent(M_SMOOTH) ? 2 : 1;
+		break;
+	case M_LIGHT:
+		oxceHdLight = v > 0;
+		if (v > 0) oxceHdFlashLight = v == 2;
+		break;
+	case M_SHADOW:
+		oxceHdUnitShadow = oxceHdItemShadow = v > 0;
+		oxceHdFloorAo = v == 2;
+		break;
+	case M_FIRE:
+		if (v < 4)
+		{
+			oxceHdFire = v;
+			oxceHdVolumeFire = false;
+		}
+		else
+		{
+			oxceHdVolumeFire = true;
+		}
+		break;
+	case M_WEATHER:
+		oxceHdWeather = v > 0;
+		if (v > 0) oxceHdWeatherSound = v == 2;
+		break;
+	case M_BLOOD:
+		oxceHdBloodColor = oxceHdBloodSpray = oxceHdBloodCloud = v != 0;
+		break;
+	case M_TRACKS:
+		oxceHdBloodSteps = (v & 1) != 0;
+		oxceHdSnowTracks = (v & 2) != 0;
+		break;
+	case M_EDGE:
+		if (v < 2)
+		{
+			oxceHdBackdrop = v == 1;
+			oxceHdBeyondEdge = false;
+		}
+		else
+		{
+			oxceHdBeyondEdge = true;                      // the backdrop stays as it is
+			oxceHdBeyondLook = v - 2;
+		}
+		break;
+	case M_ENEMYTURN:
+		oxceHdHiddenMap = v > 0;
+		oxceHdEnemyTurn = v >= 2 ? v : 0;
+		break;
+	case M_PANEL:
+		oxceHdBattleHud = v > 0;
+		if (v > 0) oxceHdBattleHudColor = v - 1;
+		break;
+	case M_WINTHEME:
+		oxceHdWindowTheme = v > 0;
+		if (v > 0) oxceHdWindowThemeColor = v - 1;
+		break;
+	case M_NUMS:
+		oxceHdAimNumSize = oxceHdPathNumSize = 50 + v * 5;
+		break;
+	case M_CRAFTWEAP:
+		oxceCraftWeaponIcons = v > 0;
+		if (v > 0) oxceHdCraftWeaponToggle = v == 2;
+		break;
+	case M_RADAR:
+		if (v < 3)
+		{
+			oxceHdRadar = v;
+		}
+		else
+		{
+			oxceHdRadar = 3;
+			oxceHdRadarWaves = v - 3;
+		}
+		break;
+	case M_BASEANIM:
+		oxceHdBaseAnim = oxceHdCraftLights = v != 0;
+		break;
+	}
+}
+/// Is the special row grey (its window opens all the same)? The conditions are those of the rows it stood under.
+static bool specialGrey(int marker)
+{
+	const bool skin = Options::oxceHdUi > 0 && Options::oxceHdUiSkin > 0;
+	switch (marker)
+	{
+	case ROW_CUSTOM: return !skin;
+	case ROW_WINCUSTOM: case ROW_FACE: case ROW_INK: return !skin || !Options::oxceHdWindowTheme;
+	case ROW_SCREENS: return Options::oxceHdUi <= 0 || Options::oxceHdUiSkin <= 0;   // (the themes need the skin; the global switch of the theme they do not)
+	}
+	return false;
+}
+/// The label of the special row (the window it opens is marked by " >" after it).
+static const char *specialLabel(int marker)
+{
+	switch (marker)
+	{
+	case ROW_CUSTOM: return "STR_HD_CUSTOM_COLOR";
+	case ROW_WINCUSTOM: return "STR_HD_WIN_CUSTOM_COLOR";
+	case ROW_SCREENS: return "STR_HD_SCREEN_THEMES";
+	case ROW_FACE: return "STR_HD_BUTTON_FACE";
+	case ROW_INK: return "STR_HD_BUTTON_INK";
+	}
+	return "";
+}
+/// The tab open last: the window opens on it again, until the game is closed.
+static int hdTab = 0;
+/// The category of BetterAI (Battlescape/AiProbe.h): its rows are on the BetterAI screen, not in the main list.
+static const std::string AI_CATEGORY = "STR_HD_AI";
 
 /**
  * Initializes all the elements in the HD Options window.
@@ -113,7 +324,7 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 	for (int t = 0; t < HD_TAB_COUNT; ++t)
 	{
 		_btnTabs[t]->setSmall();
-		_btnTabs[t]->setText(tr(HD_TABS[t]));
+		_btnTabs[t]->setText(tr(HD_LAYOUT[t].title));
 		_btnTabs[t]->setGroup(&_tab);
 		_btnTabs[t]->onMousePress((ActionHandler)&OptionsHdState::btnTabPress, SDL_BUTTON_LEFT);
 	}
@@ -156,52 +367,96 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 		reticleShipped = reticleShipped || FileMap::fileExists(HdSprites::artPath("CURSOR.PCK/reticle_" + style + "/6.png"));
 	}
 
-	for (const auto &c : HD_CATEGORIES)
+	for (int t = 0; t < HD_TAB_COUNT; ++t)
 	{
-		const char *category = c.category;
-		Group group;
-		group.title = category;
-		group.tab = c.tab;
-		for (const auto& optionInfo : Options::getOptionInfo())
+		for (const auto &def : HD_LAYOUT[t].groups)
 		{
-			// the group an option is in: a graphics option on the first tab (the battle ones in the graphics group), the
-			// others where their category is (a category on two tabs: its second entry)
-			bool graphics = false;
-			for (const char *id : HD_GRAPHICS_OPTIONS)
+			Group group;
+			group.title = def.title;
+			group.tab = t;
+			group.lab = group.title == LAB_GROUP;
+			for (const char *row : def.rows)
 			{
-				graphics = graphics || optionInfo.id() == id;
-			}
-			const std::string home = graphics && optionInfo.category() == "STR_HD_BATTLE" ? std::string("STR_HD_GRAPHICS") : optionInfo.category();
-			int homeTab = -1;
-			for (const auto &d : HD_CATEGORIES)
-			{
-				if (home == d.category && (homeTab < 0 || !graphics))
+				const std::string key = row;
+				bool found = false;
+				if (key[0] == '@')
 				{
-					homeTab = d.tab;
-				}
-			}
-			if (optionInfo.type() != OPTION_KEY && !optionInfo.description().empty() && home == category && homeTab == c.tab)
-			{
-				// asking at every start only means something when there is an adult tree to choose
-				// (asBool throws on an option of another type, so the type is checked first)
-				if (optionInfo.type() == OPTION_BOOL && optionInfo.asBool() == &Options::oxceAdultAsk && !_adultShipped)
-				{
+					for (const auto &s : HD_SPECIAL)
+					{
+						if (key == s.key)
+						{
+							group.items.push_back(Item{ ITEM_SPECIAL, s.marker });
+							found = true;
+						}
+					}
+					for (int m = 0; m < HD_MERGED_COUNT; ++m)
+					{
+						if (key == HD_MERGED[m].key)
+						{
+							// a fire style without its pictures in the active mods would change nothing: the row is not offered
+							if (m != M_FIRE || fireShipped)
+							{
+								group.items.push_back(Item{ ITEM_MERGED, m });
+							}
+							found = true;
+						}
+					}
+					if (!found)
+					{
+						Log(LOG_WARNING) << "HD menu: no row " << key;
+					}
 					continue;
 				}
-				if (optionInfo.type() == OPTION_INT && ((optionInfo.asInt() == &Options::oxceHdFire && !fireShipped) ||
-					((optionInfo.asInt() == &Options::oxceHdReticle || optionInfo.asInt() == &Options::oxceHdReticleArtillery
-					|| optionInfo.asInt() == &Options::oxceHdReticleExplosive) && !reticleShipped)))
+				for (const auto& optionInfo : Options::getOptionInfo())
 				{
-					continue;
+					if (optionInfo.id() != key)
+					{
+						continue;
+					}
+					found = true;
+					if (optionInfo.type() == OPTION_KEY || optionInfo.description().empty())
+					{
+						break;
+					}
+					// asking at every start only means something when there is an adult tree to choose
+					// (asBool throws on an option of another type, so the type is checked first)
+					if (optionInfo.type() == OPTION_BOOL && optionInfo.asBool() == &Options::oxceAdultAsk && !_adultShipped)
+					{
+						break;
+					}
+					if (optionInfo.type() == OPTION_INT && (optionInfo.asInt() == &Options::oxceHdReticle || optionInfo.asInt() == &Options::oxceHdReticleArtillery
+						|| optionInfo.asInt() == &Options::oxceHdReticleExplosive) && !reticleShipped)
+					{
+						break;
+					}
+					group.items.push_back(Item{ ITEM_OPTION, (int)group.settings.size() });
+					group.settings.push_back(optionInfo);
+					break;
 				}
-				group.settings.push_back(optionInfo);
+				if (!found)
+				{
+					Log(LOG_WARNING) << "HD menu: no option " << key;
+				}
 			}
+			_groups.push_back(group);
 		}
-		if (group.title == AI_CATEGORY && !group.settings.empty())
+	}
+	// the rows of the BetterAI screen (the @ai row opens it): the options of its category, off every tab
+	Group ai;
+	ai.title = AI_CATEGORY;
+	ai.tab = -1;
+	ai.lab = false;
+	for (const auto& optionInfo : Options::getOptionInfo())
+	{
+		if (optionInfo.category() == AI_CATEGORY && optionInfo.type() != OPTION_KEY && !optionInfo.description().empty())
 		{
-			_aiGroup = (int)_groups.size();
+			ai.settings.push_back(optionInfo);
 		}
-		_groups.push_back(group);
+	}
+	if (!ai.settings.empty())
+	{
+		_aiGroup = (int)_groups.size();
+		_groups.push_back(ai);
 	}
 }
 
@@ -246,17 +501,24 @@ bool OptionsHdState::longValue(const std::string &value) const
 void OptionsHdState::addSettingRow(int group, int index, const std::string &label, bool grey)
 {
 	const OptionInfo &info = _groups[group].settings[index];
-	const std::string value = valueText(info);
+	addValueRow(group, index, label, valueText(info), valueColor(info), grey);
+}
+
+/**
+ * The rows of a setting or of a merged row, whose value and its color are known (see addSettingRow).
+ */
+void OptionsHdState::addValueRow(int group, int index, const std::string &label, const std::string &value, Uint8 color, bool grey)
+{
 	if (!longValue(value))
 	{
 		addRow(group, index, label, value);
-		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, valueColor(info));
+		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, color);
 	}
 	else
 	{
 		addRow(group, index, label, "", 1);
 		addRow(group, index, "   " + value, "", 2);
-		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, valueColor(info));
+		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, color);
 	}
 	if (grey)
 	{
@@ -331,18 +593,10 @@ void OptionsHdState::updateList()
 		return;
 	}
 	const int tab = currentTab();
-	if (_aiGroup >= 0 && _groups[_aiGroup].tab == tab)
-	{
-		// BetterAI opens its own screen from the first row of its tab; the value is its switch's
-		addRow(ROW_BETTERAI, 0, std::string(tr("STR_BETTER_AI")) + " >", Options::oxceBetterAi ? tr("STR_YES") : tr("STR_NO"));
-		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, Options::oxceBetterAi ? _lstOptions->getColor() : _greyedOutColor);
-	}
 	for (size_t g = 0; g < _groups.size(); ++g)
 	{
 		const Group &group = _groups[g];
-		const bool withArt = g == 0;
-		const bool lab = group.title == LAB_CATEGORY;
-		if ((group.settings.empty() && !withArt) || (int)g == _aiGroup || group.tab != tab)
+		if (group.items.empty() || group.tab != tab)
 		{
 			continue;
 		}
@@ -350,70 +604,51 @@ void OptionsHdState::updateList()
 		{
 			addRow(ROW_NONE, 0, "", "");
 		}
-		// a group of one setting that is called as the group is (the gentle mode) is that row alone, without a header over it
-		if (withArt || group.settings.size() != 1 || std::string(tr(group.settings[0].description())) != std::string(tr(group.title)))
-		{
-			addRow(ROW_NONE, 0, tr(group.title), "");
-			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, _colorGroup);
-		}
-		if (withArt)
-		{
-			addRow(ROW_ART, 0, tr("STR_HD_ART_VERSION"), artText());
-		}
-		if (lab && !HdLab::unlocked())
+		addRow(ROW_NONE, 0, tr(group.title), "");
+		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, _colorGroup);
+		if (group.lab && !HdLab::unlocked())
 		{
 			// the lab's rows stay hidden: one row asks for the password
 			addRow(ROW_LAB, 0, tr("STR_HD_LAB_LOCKED"), tr("STR_HD_LAB_ENTER"));
 			continue;
 		}
-		for (size_t i = 0; i < group.settings.size(); ++i)
+		for (const Item &item : group.items)
 		{
-			const OptionInfo &info = group.settings[i];
-			const bool gentle = HdGentle::locks(info);
-			// grey out options a mod, the gentle mode or the battle in progress fixes
-			addSettingRow((int)g, (int)i, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())),
-				gentle || battleLocks(info) || dependsOff(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end());
-			if (info.type() == OPTION_INT && info.asInt() == &Options::oxceHdBattleHudColor)
+			if (item.kind == ITEM_OPTION)
 			{
-				// under the panel's colour: the window where the player makes one of his own
-				addRow(ROW_CUSTOM, 0, std::string(tr("STR_HD_CUSTOM_COLOR")) + " >", "");
-				if (dependsOff(info))
-				{
-					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
-				}
+				const OptionInfo &info = group.settings[item.index];
+				const bool gentle = HdGentle::locks(info);
+				// grey out options a mod, the gentle mode or the battle in progress fixes
+				addSettingRow((int)g, item.index, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())),
+					gentle || battleLocks(info) || dependsOff(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end());
 			}
-			if (info.type() == OPTION_INT && info.asInt() == &Options::oxceHdWindowThemeColor)
+			else if (item.kind == ITEM_MERGED)
 			{
-				// under the windows' colour: the window where the player makes one of his own for them (XP-000479)
-				addRow(ROW_WINCUSTOM, 0, std::string(tr("STR_HD_WIN_CUSTOM_COLOR")) + " >", "");
-				if (dependsOff(info))
-				{
-					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
-				}
-				// and the window of the themes by screen: each screen its own colour, look and letters, or its parent's (XP-000484)
-				addRow(ROW_SCREENS, 0, std::string(tr("STR_HD_SCREEN_THEMES")) + " >", "");
-				if (Options::oxceHdUi <= 0 || Options::oxceHdUiSkin <= 0)   // (the themes need the skin; the global switch of the theme they do not)
-				{
-					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
-				}
+				addValueRow(ROW_MERGED, item.index, tr(HD_MERGED[item.index].name), mergedValue(item.index, mergedCurrent(item.index)),
+					mergedColor(item.index), mergedGrey(item.index));
 			}
-			if (info.type() == OPTION_BOOL && info.asBool() == &Options::oxceHdWindowTheme)
+			else if (item.index == ROW_ART)
 			{
-				// under the windows' buttons' theme: the window of their relief, shape and gloss (XP-000399)
-				addRow(ROW_FACE, 0, std::string(tr("STR_HD_BUTTON_FACE")) + " >", "");
-				if (dependsOff(info) || !Options::oxceHdWindowTheme)
-				{
-					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
-				}
-				// and under it the window of their letters' tone, hue, saturation and brightness (XP-000399)
-				addRow(ROW_INK, 0, std::string(tr("STR_HD_BUTTON_INK")) + " >", "");
-				if (dependsOff(info) || !Options::oxceHdWindowTheme)
+				addRow(ROW_ART, 0, tr("STR_HD_ART_VERSION"), artText());
+			}
+			else if (item.index == ROW_BETTERAI)
+			{
+				// BetterAI opens its own screen; the value is its switch's
+				addRow(ROW_BETTERAI, 0, std::string(tr("STR_BETTER_AI")) + " >", Options::oxceBetterAi ? tr("STR_YES") : tr("STR_NO"));
+				_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, Options::oxceBetterAi ? _lstOptions->getColor() : _greyedOutColor);
+			}
+			else
+			{
+				// a window of its own, opened by the row (the colour of the battle panel, of the windows, the themes by screen,
+				// the buttons' look and letters)
+				addRow(item.index, 0, std::string(tr(specialLabel(item.index))) + " >", "");
+				if (specialGrey(item.index))
 				{
 					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 				}
 			}
 		}
-		if (lab)
+		if (group.lab)
 		{
 			addRow(ROW_LAB_LOCK, 0, tr("STR_HD_LAB_RELOCK"), "");
 		}
@@ -504,6 +739,97 @@ bool OptionsHdState::aiLocks(const OptionInfo &info) const
 bool OptionsHdState::battleLocks(const OptionInfo &info) const
 {
 	return _origin == OPT_BATTLESCAPE && info.type() == OPTION_BOOL && info.asBool() == &Options::oxceNoBattleSaves;
+}
+
+/**
+ * The name of a value of a merged row.
+ */
+std::string OptionsHdState::mergedValue(int m, int v) const
+{
+	if (HD_MERGED[m].isBool)
+	{
+		return v ? tr("STR_YES") : tr("STR_NO");
+	}
+	const std::string n = std::to_string(v);
+	switch (m)
+	{
+	case M_LIGHT: case M_SHADOW: case M_WEATHER: case M_BLOOD: case M_TRACKS: case M_EDGE: case M_ENEMYTURN: case M_CRAFTWEAP:
+		return tr(std::string(HD_MERGED[m].name) + "_" + n);
+	case M_FIRE:
+		return v < 4 ? tr("STR_HD_FIRE_" + n) : tr("STR_HD_M_FIRE_TONGUES");
+	case M_PANEL:
+		return v == 0 ? tr("STR_HD_M_PANEL_CLASSIC") : tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(v - 1));
+	case M_WINTHEME:
+		if (v == 0)
+		{
+			return tr("STR_HD_M_WINTHEME_OFF");
+		}
+		// the value of the windows' colour is v - 1: 0 as the battle panel's, then the panel's names (its value + 1)
+		return v == 1 ? tr("STR_HD_WINDOW_THEME_COLOR_SAME") : tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(std::min(v - 2, 9)));
+	case M_NUMS:
+		return std::to_string(50 + v * 5) + "%";
+	case M_RADAR:
+		if (v < 3)
+		{
+			return tr("STR_HD_RADAR_" + n);
+		}
+		return std::string(tr("STR_HD_M_RADAR_WAVES")) + ": " + std::string(tr("STR_HD_RADAR_WAVES_" + std::to_string(v - 3)));
+	}
+	return n;
+}
+
+/**
+ * Is a merged row fixed by a mod: one of its options is among those the mod fixes?
+ */
+bool OptionsHdState::mergedFixed(int m) const
+{
+	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
+	for (const char *id : HD_MERGED[m].options)
+	{
+		if (fixeduserOptions.find(id) != fixeduserOptions.end())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Is a merged row grey? As the old row it took the place of was: the panel's and the windows' rows without the skin,
+ * the numbers' without the HD font; or a mod fixes one of its options (such a row does not change).
+ */
+bool OptionsHdState::mergedGrey(int m) const
+{
+	const bool skin = Options::oxceHdUi > 0 && Options::oxceHdUiSkin > 0;
+	const bool fonts = skin && Options::oxceHdUiFont > 0;
+	return mergedFixed(m) || (m == M_PANEL && !skin) || (m == M_WINTHEME && !skin) || (m == M_NUMS && !fonts);
+}
+
+/**
+ * The color of a merged row's value: grey when the row is, and a "no" of a yes-no row (as in valueColor).
+ */
+Uint8 OptionsHdState::mergedColor(int m) const
+{
+	if (mergedGrey(m) || (HD_MERGED[m].isBool && mergedCurrent(m) == 0))
+	{
+		return _greyedOutColor;
+	}
+	return _lstOptions->getColor();
+}
+
+/**
+ * Steps a merged row to its next value (or the previous one), round the list; the list is built again, the other rows
+ * can be changed by it (the interface row by the smooth one, the greys).
+ */
+void OptionsHdState::changeMerged(int m, int increment)
+{
+	if (mergedFixed(m))
+	{
+		return;
+	}
+	const int n = mergedCount(m);
+	mergedSet(m, (mergedCurrent(m) + increment + n) % n);
+	updateList();
 }
 
 std::string OptionsHdState::valueText(const OptionInfo &info) const
@@ -695,6 +1021,10 @@ void OptionsHdState::cycleArt(int increment)
 		{
 			Options::oxceHdMode = 2;                  // the default: packs plus xBRZ for the rest
 		}
+		if (Options::oxceHdScale <= 1)
+		{
+			Options::oxceHdScale = 4;                 // the menu has no row of the scale: HD at the scale of 1 shows nothing new
+		}
 		const bool adult = next == 2;
 		if (adult != Options::oxceAdultArt)
 		{
@@ -741,6 +1071,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 	{
 		cycleArt(increment);
 		updateList();                                 // the HD sprites row shows the same option
+		return;
+	}
+	if (row.group == ROW_MERGED)
+	{
+		changeMerged(row.index, increment);
 		return;
 	}
 	if (row.group == ROW_CUSTOM)
@@ -1047,6 +1382,10 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		{
 			desc = tr("STR_HD_BUTTON_INK_DESC");
 		}
+		else if (row.group == ROW_MERGED)
+		{
+			desc = tr(std::string(HD_MERGED[row.index].name) + "_DESC");
+		}
 		else if (row.group == ROW_ART)
 		{
 			desc = tr("STR_HD_ART_VERSION_DESC");
@@ -1087,10 +1426,20 @@ void OptionsHdState::showDetail(size_t sel)
 		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;
 	}
-	const std::string name = row.group == ROW_ART ? tr("STR_HD_ART_VERSION") : tr(_groups[row.group].settings[row.index].description());
+	const std::string name = row.group == ROW_ART ? tr("STR_HD_ART_VERSION") : row.group == ROW_MERGED ? tr(HD_MERGED[row.index].name)
+		: tr(_groups[row.group].settings[row.index].description());
 	_game->pushState(new OptionDetailState(_origin, name, rowDescription(sel),
 		[this, sel, row](Uint8 b)
 		{
+			if (row.group == ROW_MERGED)
+			{
+				// (the list is built again by a change, so the row is told by its number, not by its place in the list)
+				if (b != 0)
+				{
+					changeMerged(row.index, b == SDL_BUTTON_LEFT ? 1 : -1);
+				}
+				return std::make_pair(mergedValue(row.index, mergedCurrent(row.index)), mergedColor(row.index) == _greyedOutColor ? _greyedOutColor : (Uint8)0);
+			}
 			if (b != 0)
 			{
 				changeSetting(sel, b);
