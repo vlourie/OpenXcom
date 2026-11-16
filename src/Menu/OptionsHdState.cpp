@@ -20,6 +20,7 @@
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
+#include "../Engine/CrossPlatform.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdGentle.h"
@@ -50,7 +51,9 @@ namespace OpenXcom
 /// BetterAI screen, ROW_BACK goes back from it.
 /// ROW_CUSTOM opens the window of the player's own colour of the battle panel; ROW_FACE the window of the windows' buttons'
 /// look, ROW_INK the window of their letters.
-static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10, ROW_SCREENS = -11;
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10, ROW_SCREENS = -11, ROW_GUIDE = -12;
+/// ROW_GUIDE opens the guide to this menu on the site in the player's browser.
+static const char *const HD_GUIDE_URL = "https://x-piratez.mywire.org:8443/hd-wiki/index.html";
 /// ROW_SCREENS opens the window of the themes by screen (XP-000484).
 /// ROW_WINCUSTOM opens the window of the player's own colour of the windows' metal (XP-000479).
 /// ROW_MERGED is a row over several options at once (HD_MERGED); its index in the row is the number in that table.
@@ -65,7 +68,7 @@ struct HdGroupDef { const char *title; std::vector<const char*> rows; };
 struct HdTabDef { const char *title; std::vector<HdGroupDef> groups; };
 static const HdTabDef HD_LAYOUT[] = {
 	{ "STR_HD_T_GRAPHICS", {
-		{ "STR_HD_G_01", { "@art", "oxceAdultAsk", "@m_smooth", "oxceGentle" } },
+		{ "STR_HD_G_01", { "@guide", "@art", "oxceAdultAsk", "@m_smooth", "oxceGentle" } },
 		{ "STR_HD_G_02", { "@m_light", "@m_shadow" } },
 		{ "STR_HD_G_03", { "@m_fire", "oxceHdVolumeSmoke", "oxceHdPlainSmoke" } },
 		{ "STR_HD_G_04", { "@m_weather", "@m_tracks" } },
@@ -102,7 +105,7 @@ static const std::string LAB_GROUP = "STR_HD_G_24";
 /// The rows of their own: the marker they have in _rows.
 static const struct { const char *key; int marker; } HD_SPECIAL[] = {
 	{ "@art", ROW_ART }, { "@ai", ROW_BETTERAI }, { "@custom", ROW_CUSTOM }, { "@wincustom", ROW_WINCUSTOM },
-	{ "@screens", ROW_SCREENS }, { "@face", ROW_FACE }, { "@ink", ROW_INK } };
+	{ "@screens", ROW_SCREENS }, { "@face", ROW_FACE }, { "@ink", ROW_INK }, { "@guide", ROW_GUIDE } };
 
 /// The merged rows: one row over several options, with a value list of its own. They only write the options' values (the
 /// variables and the keys of options.cfg are as ever); none of these options had more to do on a change than the list built again.
@@ -280,6 +283,7 @@ static const char *specialLabel(int marker)
 	case ROW_SCREENS: return "STR_HD_SCREEN_THEMES";
 	case ROW_FACE: return "STR_HD_BUTTON_FACE";
 	case ROW_INK: return "STR_HD_BUTTON_INK";
+	case ROW_GUIDE: return "STR_HD_GUIDE";
 	}
 	return "";
 }
@@ -1094,6 +1098,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		_game->pushState(new OptionsScreenThemesState(_origin));
 		return;
 	}
+	if (row.group == ROW_GUIDE)
+	{
+		CrossPlatform::openExplorer(HD_GUIDE_URL);
+		return;
+	}
 	if (row.group == ROW_FACE)
 	{
 		_game->pushState(new OptionsButtonFaceState(_origin));
@@ -1374,6 +1383,10 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		{
 			desc = tr("STR_HD_SCREEN_THEMES_DESC");
 		}
+		else if (row.group == ROW_GUIDE)
+		{
+			desc = tr("STR_HD_GUIDE_DESC");
+		}
 		else if (row.group == ROW_FACE)
 		{
 			desc = tr("STR_HD_BUTTON_FACE_DESC");
@@ -1421,7 +1434,7 @@ void OptionsHdState::showDetail(size_t sel)
 	{
 		return;
 	}
-	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM || row.group == ROW_WINCUSTOM || row.group == ROW_SCREENS || row.group == ROW_FACE || row.group == ROW_INK)
+	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM || row.group == ROW_WINCUSTOM || row.group == ROW_SCREENS || row.group == ROW_FACE || row.group == ROW_INK || row.group == ROW_GUIDE)
 	{
 		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;
