@@ -3,3 +3,4 @@
 - HD interface, soldier stats screen: the orange maximum numbers (time units, energy, health, skills, armour) no longer melt into a blob - their outline is now dark instead of the same orange.
 - Battle weather (HD): the tornado no longer passes through buildings and ships. Over a roof, a rock or a hull it rises smoothly and moves along the top, and inside a room whose roof the view level hides it fades out and comes back outside. Its path and speed are unchanged, picture only.
 - Production complete window: the upper buttons (send the loot, keep working) are as wide as the buttons below and stand right over them.
+- HD M.E.R.C. soldiers in dark armour (and the ogre vindicator of the same base) are no longer lighter than their corpse: the HD frames are darkened to the brightness of the classic ones, same drawing.
