@@ -277,7 +277,7 @@ MainMenuState::MainMenuState(bool updateCheck)
 	_txtTitle->setBig();
 	std::ostringstream title;
 	title << tr("STR_OPENXCOM").arg(Options::getActiveMasterInfo()->getVersionDisplay()) << Unicode::TOK_NL_SMALL;
-	title << "OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT;
+	title << OXCE_HD_VERSION_TITLE;
 	_txtTitle->setText(title.str());
 }
 

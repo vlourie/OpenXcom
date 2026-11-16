@@ -626,6 +626,35 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
     }
     if ($data.Count) { $ver += ("данные движка: {0}" -f ($data -join ', ')) }
     $ver | Set-Content -LiteralPath (Join-Path $stageDir 'HD_VERSION.txt') -Encoding UTF8
+
+    # GPL v3, параграфы 4-6: вместе с exe игрок получает текст лицензии и ясное указание, где исходник
+    # именно этой сборки (docs/QA/license-audit-2026-11-16.md). Только когда в стейдже есть наш exe.
+    if ($exeName) {
+        $lic = Join-Path $repoDir 'LICENSE.txt'
+        if (-not (Test-Path -LiteralPath $lic)) { throw "нет $lic - без текста GPL выпуск с exe не собирать" }
+        Copy-Item -LiteralPath $lic -Destination (Join-Path $stageDir 'LICENSE.txt') -Force
+        $src = if ($hash -match '^[0-9a-f]+$') { "https://github.com/vlourie/OpenXcom/commit/$hash" } else { 'https://github.com/vlourie/OpenXcom (branch hd-render)' }
+        $notice = @(
+            'OXCE-HD - an unofficial fork of OpenXcom Extended 8.7.1 (https://github.com/MeridianOXC/OpenXcom).',
+            'Modified by the OXCE-HD team since September 2026: a 32-bit HD rendering layer, HD interface,',
+            'battle effects, voices and Lua mods. The list of changes is in the Git history and CHANGELOG.md.',
+            '',
+            "$exeName is free software under the GNU General Public License version 3, see LICENSE.txt.",
+            'It comes with NO WARRANTY.',
+            '',
+            'Source code of this exact build:',
+            "  $src",
+            'Every release is also tagged hd-<release> in https://github.com/vlourie/OpenXcom',
+            '',
+            'OXCE-HD is not made, endorsed or supported by the OpenXcom or OXCE developers, nor by Dioxine.',
+            'Please report problems to us, not to the OpenXcom forum:',
+            '  https://x-piratez.mywire.org:8443/tickets/new  (or "Report a problem" in the launcher)',
+            '',
+            'XPiratezLauncher.exe, xp-bootstrap.exe and their libraries are a separate program: they only download',
+            'and start the game and are not part of the engine. X-Piratez is a mod by Dioxine and its contributors.'
+        )
+        $notice | Set-Content -LiteralPath (Join-Path $stageDir 'OXCE-HD-README.txt') -Encoding UTF8
+    }
 }
 
 # ---------------------------------------------------------------- шаги

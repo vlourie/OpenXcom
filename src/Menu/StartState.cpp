@@ -262,7 +262,7 @@ void StartState::animate()
 	if (loading == LOADING_STARTED)
 	{
 		std::ostringstream ss;
-		ss << "Loading OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT << "...";
+		ss << "Loading " << OXCE_HD_VERSION_TITLE << "...";
 		if (Options::reload)
 		{
 			if (Options::oxceStartUpTextMode < 2)

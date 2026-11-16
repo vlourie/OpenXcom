@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	if (!Options::init())
 		return EXIT_SUCCESS;
 	std::ostringstream title;
-	title << "OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT;
+	title << OXCE_HD_VERSION_TITLE << OPENXCOM_VERSION_GIT;
 	Options::baseXResolution = Options::displayWidth;
 	Options::baseYResolution = Options::displayHeight;
 

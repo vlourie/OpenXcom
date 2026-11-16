@@ -136,7 +136,7 @@ PauseState::PauseState(OptionsOrigin origin) : _origin(origin)
 	_txtTitle->setText(tr("STR_OPTIONS_UC"));
 
 	std::ostringstream title;
-	title << "OpenXcom " << OPENXCOM_VERSION_SHORT;
+	title << OXCE_HD_VERSION_TITLE;
 	_txtVersion->setText(title.str());
 	_txtVersion->setAlign(ALIGN_CENTER);
 

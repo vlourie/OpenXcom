@@ -1554,9 +1554,10 @@ void crashDump(void *ex, const std::string &err)
 	stackTrace(0);
 #endif
 	std::ostringstream msg;
-	msg << "OpenXcom has crashed: " << error.str() << std::endl;
+	msg << "OXCE-HD has crashed: " << error.str() << std::endl;
 	msg << "Log file: " << getLogFileName() << std::endl;
-	msg << "If this error was unexpected, please report it on the OpenXcom forum (OXCE board)." << std::endl;
+	msg << "This is OXCE-HD, an unofficial build: please do not report this on the OpenXcom forum." << std::endl;
+	msg << "Report it to us: the launcher's \"Report a problem\" or https://x-piratez.mywire.org:8443/tickets/new" << std::endl;
 	msg << "The following can help us solve the problem:" << std::endl;
 	msg << "1. a saved game from just before the crash (helps 98%)" << std::endl;
 	msg << "2. a detailed description how to reproduce the crash (helps 80%)" << std::endl;
