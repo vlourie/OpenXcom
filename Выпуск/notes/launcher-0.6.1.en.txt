@@ -1,0 +1,3 @@
+﻿- Launcher 0.6.1: under the list of builds the launcher now says whose engine it runs - OXCE-HD, an unofficial fork of OpenXcom Extended under the GNU GPL v3, not made or supported by the OpenXcom or OXCE developers - and gives a link to the source code of the installed engine build.
+- Launcher 0.6.1: the licences of the components the launcher is built from now come with it (THIRD-PARTY-NOTICES.txt and LICENSE-livekit-ffi.md beside the exe); a link under the list of builds opens them.
+- Engine source for this build: https://github.com/vlourie/OpenXcom (tags hd-<release>).
