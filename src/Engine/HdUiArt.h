@@ -117,6 +117,8 @@ namespace HdUiArt
 	size_t cropCount();
 	/// Grows with every clear(): whoever keeps an Art pointer drops it when this changes.
 	unsigned generation();
+	/// Grows with every picture registered after the start (loaded()): an answer of find() remembered before it may be another now.
+	unsigned version();
 	/// Bytes of the pictures loaded now (the budget is 768 MB).
 	size_t bytes();
 

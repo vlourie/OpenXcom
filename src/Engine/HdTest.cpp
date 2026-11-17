@@ -61,9 +61,10 @@ bool savePngRgb(const std::string &filename, SDL_Surface *surface)
 	std::vector<unsigned char> rgb;
 	rgb.resize((size_t)w * h * 3);
 
-	if (SDL_MUSTLOCK(surface))
+	if (SDL_MUSTLOCK(surface) && SDL_LockSurface(surface) < 0)
 	{
-		SDL_LockSurface(surface);
+		Log(LOG_ERROR) << "HdTest: the surface cannot be locked, no dump " << filename;
+		return false;
 	}
 
 	const Uint8 *pixels = (const Uint8*)surface->pixels;

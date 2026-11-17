@@ -628,6 +628,8 @@ public:
 	int reShadeMinimap(int maxShade) const;
 	/// HD render test: freeze all animation for one drawn frame and optionally dump the map surface.
 	void hdTestFreeze(const std::string &mapDumpPath);
+	/// The test bench's command `cloud`: a blood cloud on the selected unit (a hit cannot be aimed in a hidden run); false when there is none to put.
+	bool hdTestBloodCloud();
 	/// HD render test: true while the frozen frame has not been drawn yet.
 	bool isHdTestFrozen() const { return _hdTestFrozen; }
 	/// Is night vision currently on?

@@ -799,11 +799,19 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		auto it = _smooth.find(surface);
 		if (it != _smooth.end() && it->second.k == k && it->second.pixelHash == pixelHash)
 		{
-			// the same content as last time: the answer is known (a picture, or none)
-			art = it->second.art;
-			artX = it->second.artX;
-			artY = it->second.artY;
-			known = true;
+			// the same content as last time: the answer is known (a picture, or none). Pictures are registered as their
+			// images are loaded (HdUiArt::loaded): when one came since, the content is asked for again (a hash lookup,
+			// not the scan below), and the entry is made anew only when the answer is another picture - so what a
+			// surface shows does not depend on which screens were opened before
+			const HdUiArt::Art *fresh = it->second.artVersion == HdUiArt::version() ? it->second.art : HdUiArt::find(pixelHash, w, h);
+			if (!fresh || fresh == it->second.art)
+			{
+				it->second.artVersion = HdUiArt::version();
+				art = it->second.art;
+				artX = it->second.artX;
+				artY = it->second.artY;
+				known = true;
+			}
 		}
 		// a surface of the size searched below with nothing on it (all transparent) counts as a part of a picture:
 		// the search found such an empty part in some picture (the strip of the name in the battle's panel in a

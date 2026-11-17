@@ -1225,13 +1225,13 @@ bool loadPng(const std::string &path, HdFrame &frame)
 		return false;
 	}
 	size_t size = 0;
-	void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+	// freed whichever way the function is left (decodePng allocates: std::bad_alloc)
+	const std::unique_ptr<void, void(*)(void*)> data(SDL_LoadFile_RW(rw, &size, SDL_TRUE), [](void *p) { SDL_free(p); });
 	if (!data)
 	{
 		return false;
 	}
-	const bool ok = decodePng((const unsigned char*)data, size, frame);
-	SDL_free(data);
+	const bool ok = decodePng((const unsigned char*)data.get(), size, frame);
 	if (!ok)
 	{
 		Log(LOG_ERROR) << "HD sprite " << path << " cannot be decoded";
@@ -1243,6 +1243,22 @@ bool decodePng(const unsigned char *data, size_t size, HdFrame &frame)
 {
 	std::vector<unsigned char> image;
 	unsigned width = 0, height = 0;
+	// the size by the header first: a picture is decoded to RGBA and copied (8 bytes a pixel for a moment, on several threads
+	// at once), and a file of a mod may say anything. 8192 x 8192 is 16 times the largest frame the game is drawn in
+	{
+		lodepng::State header;
+		const unsigned bad = lodepng_inspect(&width, &height, &header, data, size);
+		if (bad)
+		{
+			Log(LOG_ERROR) << "HD sprite PNG: " << lodepng_error_text(bad);
+			return false;
+		}
+		if (width > 16384 || height > 16384 || (unsigned long long)width * height > 8192ull * 8192ull)
+		{
+			Log(LOG_ERROR) << "HD sprite PNG: " << width << "x" << height << " is too large, not loaded";
+			return false;
+		}
+	}
 	const unsigned error = lodepng::decode(image, width, height, data, size, LCT_RGBA, 8);
 	if (error)
 	{

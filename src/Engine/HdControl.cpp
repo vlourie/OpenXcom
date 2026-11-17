@@ -502,6 +502,16 @@ std::string run(Control &c, Game *g, const std::string &line)
 	{
 		return stateLine(g);
 	}
+	if (cmd == "cloud")
+	{
+		// a blood cloud on the selected unit (option oxceHdBloodCloud, under water): what OXCE_HD_CLOUD_TEST did from inside the map's drawing
+		BattlescapeState *bs = dynamic_cast<BattlescapeState*>(g->getStates().back());
+		if (!bs)
+		{
+			return "err cloud: not in a battle";
+		}
+		return bs->getMap()->hdTestBloodCloud() ? "ok" : "err cloud: the option is off, the battle is not under water or no unit is selected";
+	}
 	if (cmd == "mapcheck")
 	{
 		// does a point of the screen pick the cell that is drawn under it? A grid of points, each to its cell and

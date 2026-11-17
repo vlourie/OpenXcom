@@ -3996,7 +3996,8 @@ void Mod::loadHdUiArt()
 	// the screens' theme pictures (hd/UI/screens/screens.txt), the windows' metal frames with them
 	HdScreens::load();
 	// both trees at once: the adult one only holds the pictures that differ
-	const std::vector<std::string> files = HdSprites::artFolder("UI");	if (files.empty())
+	const std::vector<std::string> files = HdSprites::artFolder("UI");
+	if (files.empty())
 	{
 		return;
 	}

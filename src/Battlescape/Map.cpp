@@ -5916,26 +5916,24 @@ void Map::hdNoteBloodCloud(const Explosion *explosion, std::vector<std::pair<con
  * blood's colour, see-through, that spread from the hit and melt away; each is a few blits of a frame, no pass over the screen. Only where the
  * player sees the tile. A cloud goes when its time is up, at the end of the turn (the turn or the side changes), and with the option or under no water.
  */
+bool Map::hdTestBloodCloud()
+{
+	if (!Options::oxceHdBloodCloud || _save->getDepth() == 0 || !_save->getSelectedUnit())
+	{
+		return false;
+	}
+	HdBloodCloud cloud;
+	cloud.voxel = _save->getSelectedUnit()->getPosition().toVoxel() + Position(8, 8, 12);
+	cloud.rgb = 0xA01818;
+	cloud.stamp = _save->getTurn() * 4 + (int)_save->getSide();
+	cloud.born = SDL_GetTicks();
+	cloud.seed = cloudMix((unsigned int)cloud.born);
+	_hdBloodClouds.push_back(cloud);
+	return true;
+}
+
 void Map::hdDrawBloodClouds(HdCanvas *surface)
 {
-	// the test bench (OXCE_HD_CLOUD_TEST=<flag file>): while the file exists a cloud is put on the selected unit and the file goes (a hit cannot be
-	// aimed in a hidden run); nothing without the variable
-	static const char *const cloudFlag = getenv("OXCE_HD_CLOUD_TEST");
-	if (cloudFlag && Options::oxceHdBloodCloud && _save->getDepth() > 0 && _save->getSelectedUnit())
-	{
-		if (FILE *f = fopen(cloudFlag, "rb"))
-		{
-			fclose(f);
-			remove(cloudFlag);
-			HdBloodCloud cloud;
-			cloud.voxel = _save->getSelectedUnit()->getPosition().toVoxel() + Position(8, 8, 12);
-			cloud.rgb = 0xA01818;
-			cloud.stamp = _save->getTurn() * 4 + (int)_save->getSide();
-			cloud.born = SDL_GetTicks();
-			cloud.seed = cloudMix((unsigned int)cloud.born);
-			_hdBloodClouds.push_back(cloud);
-		}
-	}
 	if (_hdBloodClouds.empty())
 	{
 		return;

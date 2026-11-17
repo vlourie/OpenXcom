@@ -390,7 +390,10 @@ void Screen::composeSmooth(SDL_Surface *dst, const Uint32 *lut, int srcW, int sr
 	{
 		return;
 	}
-	if (SDL_MUSTLOCK(dst)) SDL_LockSurface(dst);
+	if (SDL_MUSTLOCK(dst) && SDL_LockSurface(dst) < 0)
+	{
+		return; // no pixels to write to: the frame goes without this layer
+	}
 	Uint8 *dstPixels = (Uint8*)dst->pixels;
 	const int dstPitch = dst->pitch;
 	pool.run(jobs, [&](int job)
@@ -532,7 +535,10 @@ void Screen::composeInto(SDL_Surface *dst) const
 	{
 		return;
 	}
-	if (SDL_MUSTLOCK(dst)) SDL_LockSurface(dst);
+	if (SDL_MUSTLOCK(dst) && SDL_LockSurface(dst) < 0)
+	{
+		return; // no pixels to write to: the frame goes without this layer
+	}
 	const Uint8 *srcPixels = (const Uint8*)_surface->pixels;
 	Uint8 *dstPixels = (Uint8*)dst->pixels;
 	const int srcPitch = _surface->pitch;

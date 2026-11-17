@@ -228,6 +228,8 @@ struct Deferred
 	int width = 0, height = 0;
 };
 std::unordered_map<std::string, Deferred> deferred;
+/// Pictures registered after the start (see version()).
+unsigned registered = 0;
 
 }
 
@@ -264,6 +266,7 @@ void loaded(const std::string &name, const Surface *base)
 	}
 	made->order = d.art->order;
 	*d.art = std::move(*made);
+	++registered;
 	const Art *p = d.art;
 	const Key key{ p->hash, p->baseWidth, p->baseHeight };
 	auto content = byContent.find(key);
@@ -962,6 +965,11 @@ SDL_Rect pictureArea(const Art *art, int x, int y, int w, int h)
 unsigned generation()
 {
 	return cleared;
+}
+
+unsigned version()
+{
+	return registered;
 }
 
 size_t bytes()
