@@ -85,7 +85,7 @@ static const HdTabDef HD_LAYOUT[] = {
 		{ "STR_HD_G_11", { "oxceHdInvBackdrop", "oxceHdScrollSplit" } } } },
 	{ "STR_HD_T_INTERFACE", {
 		{ "STR_HD_G_12", { "@m_ui", "oxceHdUiSkin", "oxceHdUiFont", "oxceHdPictures", "oxceHdClassicDolls" } },
-		{ "STR_HD_G_13", { "@m_wintheme", "@wincustom", "@screens", "@face", "@ink" } },
+		{ "STR_HD_G_13", { "@m_wintheme", "@wincustom", "@screens", "@face", "@ink", "oxceHdButtonTextSize" } },
 		{ "STR_HD_G_14", { "oxceHdUpdateNotice", "oxceHdChatNotice" } } } },
 	{ "STR_HD_T_WORLD", {
 		{ "STR_HD_G_15", { "oxceHdGlobeScale", "oxceHdCraftOutlines", "@m_radar", "oxceHdRadarCraft", "oxceHdCraftRoute", "oxceHdGlobeBox" } },
@@ -714,6 +714,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		if (p == &Options::oxceHdPathNumSize || p == &Options::oxceHdPathNumWeight) return !Options::oxceHdPathDigits || !fonts;
 		if (p == &Options::oxceHdAimNumSize || p == &Options::oxceHdAimNumWeight) return !fonts;
 		if (p == &Options::oxceHdBattleHudColor) return !skin;
+		if (p == &Options::oxceHdButtonTextSize) return !fonts;
 		if (p == &Options::oxceHdWindowThemeColor) return !skin || !Options::oxceHdWindowTheme;
 		if (p == &Options::oxceHdRadarWaves) return Options::oxceHdRadar != 3;
 		if (p == &Options::oxceHdRadarCraft) return Options::oxceHdRadar == 0;
@@ -960,6 +961,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 		|| info.asInt() == &Options::oxceHdAimNumSize || info.asInt() == &Options::oxceHdAimNumWeight)
 	{
 		return std::to_string(std::max(50, std::min(100, *info.asInt()))) + "%";
+	}
+	if (info.asInt() == &Options::oxceHdButtonTextSize)
+	{
+		return std::to_string(std::max(60, std::min(100, *info.asInt()))) + "%";
 	}
 	// the same names as the geoscape scale in the video options: "3x" = a globe pixel is 3 display pixels
 	if (info.asInt() == &Options::oxceHdGlobeScale)
@@ -1289,6 +1294,12 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			*i += increment * 4;                      // percent of the usual, in steps of 5
 			min = 50;
+			max = 100;
+		}
+		else if (i == &Options::oxceHdButtonTextSize)
+		{
+			*i += increment * 4;                      // percent of the usual, in steps of 5
+			min = 60;
 			max = 100;
 		}
 		else if (i == &Options::oxceHdGlobeScale)

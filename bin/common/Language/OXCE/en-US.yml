@@ -893,6 +893,8 @@ en-US:
   STR_HD_BUTTON_INK_BTN: "Text of the buttons"
   STR_HD_BUTTON_INK_SAT: "Text saturation"
   STR_HD_BUTTON_INK_SAMPLE: "Sample"
+  STR_HD_BUTTON_TEXT_SIZE: "Buttons' text size"
+  STR_HD_BUTTON_TEXT_SIZE_DESC: "How large the labels on the buttons of all windows are, in percent of the usual (100% = as before, down to 60%). Smaller labels leave room between the text and the button's edges. Left click makes them larger, right click smaller. Works when the HD interface fonts are on. Only a picture."
   STR_HD_INK_TONE_AUTO: "Auto"
   STR_HD_INK_TONE_LIGHT: "Light"
   STR_HD_INK_TONE_DARK: "Dark"

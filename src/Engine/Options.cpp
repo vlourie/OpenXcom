@@ -630,6 +630,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonFace", &oxceHdButtonFace, 0));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonShape", &oxceHdButtonShape, 0));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonGloss", &oxceHdButtonGloss, 40));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonTextSize", &oxceHdButtonTextSize, 100, "STR_HD_BUTTON_TEXT_SIZE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonInkHue", &oxceHdButtonInkHue, 0));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonInkLight", &oxceHdButtonInkLight, 50));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonInkTone", &oxceHdButtonInkTone, 0));

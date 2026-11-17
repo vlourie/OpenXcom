@@ -326,6 +326,8 @@ OPT int oxceHdButtonShape;
 OPT int oxceHdButtonGloss;
 // The same window (XP-000411): the buttons' letters (and arrows) in the theme's metal - a hue 1-360 degrees (0 = as before, picked by the
 // cap) and a brightness 0-100 (50 = as before); kept readable against the cap; picture only
+// HD interface, modern skin with TrueType: the size of the buttons' labels in percent of the usual, 60..100 (100 = as it was); picture only
+OPT int oxceHdButtonTextSize;
 OPT int oxceHdButtonInkHue;
 OPT int oxceHdButtonInkLight;
 // The same letters, the window "Buttons' text" (XP-000399): the tone 0 auto (the theme picks light or dark by the cap, and keeps the letters

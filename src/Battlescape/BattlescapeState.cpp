@@ -267,6 +267,7 @@ BattlescapeState::BattlescapeState() :
 	for (int i = 0; i < VISIBLE_MAX; ++i)
 	{
 		_numVisibleUnit[i]->setHdBox(_btnVisibleUnit[i]->getX() - _numVisibleUnit[i]->getX(), _btnVisibleUnit[i]->getY() - _numVisibleUnit[i]->getY(), 15, 12);
+		_numVisibleUnit[i]->setHdPlate(_btnVisibleUnit[i]);
 	}
 	_warning = new WarningMessage(224, 24, x + 48, y + 32);
 	_btnLaunch = new BattlescapeButton(32, 24, screenWidth - 32, 0); // we need screenWidth, because that is independent of the black bars on the screen

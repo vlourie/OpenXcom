@@ -18,7 +18,9 @@
  */
 #include "TextButton.h"
 #include <cstring>
+#include <algorithm>
 #include "../Engine/HdUi.h"
+#include "../Engine/Options.h"
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include "Text.h"
@@ -313,7 +315,12 @@ void TextButton::hdMirrorSkin(bool pressed, int inkIndex)
 		}
 	}
 	HdUi::instance().setButtonLabel(true);   // (the screen's text colour is for plain texts, not for the buttons' labels)
+	// the player's size of the buttons' labels (oxceHdButtonTextSize, percent; TrueType only), on top of the button's own
+	const float ownScale = _text->getHdCapScale();
+	const int pct = std::max(60, std::min(100, Options::oxceHdButtonTextSize));
+	if (pct != 100) _text->setHdCapScale(ownScale * pct / 100.0f);
 	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight(), getWidth() >= 40 ? 3 : 2);
+	if (pct != 100) _text->setHdCapScale(ownScale);
 	HdUi::instance().setButtonLabel(false);
 	HdUi::instance().setLabelTheme(false);
 }

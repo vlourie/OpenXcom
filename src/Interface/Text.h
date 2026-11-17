@@ -120,6 +120,7 @@ public:
 	/// HD interface: the TrueType letters set this much smaller than the classic font's capitals
 	/// (rows stacked a classic line apart, as the geoscape's clock: the TrueType line has no gap).
 	void setHdCapScale(float s) { _hdCapScale = s; }
+	float getHdCapScale() const { return _hdCapScale; }
 	/// HD interface, TrueType letters only: the text is drawn this many base pixels away from its classic place
 	/// (the classic layer and the mouse keep the place; rows given the room the pixel font did not need).
 	void setHdShift(int dx, int dy) { _hdShiftX = dx; _hdShiftY = dy; }
