@@ -175,8 +175,31 @@ void HdTurn::syncHd(const void *key, Entry &e, int kind)
 	out.pixels.resize(hd->pixels.size());
 	transform(hd->pixels.data(), hd->width, out.pixels.data(), hd->width, hd->height, kind, [](Uint32 p) { return (p >> 24) >= 128; });
 	out.buildSpans();
+	const int width = hd->width, height = hd->height;
+	const bool generated = hd->generated, ownColour = hd->ownColour;
 	e.from = hd;
 	HdSprites::set(e.pixels.data(), std::move(out));
+	// a floor turned with the map keeps its pack variants (the ground pattern), turned the same way
+	if (kind >= 1 && kind <= 3 && !generated)
+	{
+		const int slots = HdSprites::variantCount(key);
+		for (int v = 1; v <= slots; ++v)
+		{
+			const HdFrame *variant = HdSprites::findVariant(key, v);
+			if (!variant || variant->width != width || variant->height != height)
+			{
+				break; // the pattern takes the variants up to the first gap (Canvas32::groundFrameFor)
+			}
+			HdFrame turned;
+			turned.width = width;
+			turned.height = height;
+			turned.generated = variant->generated;
+			turned.ownColour = ownColour;
+			turned.pixels.resize(variant->pixels.size());
+			transform(variant->pixels.data(), width, turned.pixels.data(), width, height, kind, [](Uint32 p) { return (p >> 24) >= 128; });
+			HdSprites::setVariant(e.pixels.data(), v, std::move(turned));
+		}
+	}
 }
 
 SurfaceRaw<const Uint8> HdTurn::mirrored(SurfaceRaw<const Uint8> src, bool hd)
@@ -212,13 +235,13 @@ SurfaceRaw<const Uint8> HdTurn::floorTurned(SurfaceRaw<const Uint8> src, int qua
 	return SurfaceRaw<const Uint8>(e.pixels.data(), e.width, e.height, e.width);
 }
 
-SurfaceRaw<const Uint8> HdTurn::painted(SurfaceRaw<const Uint8> src, int quarters)
+SurfaceRaw<const Uint8> HdTurn::painted(SurfaceRaw<const Uint8> src, int quarters, int part)
 {
-	if (!src || quarters < 1 || quarters > 3 || !HdSprites::anyViews())
+	if (!src || quarters < 1 || quarters > 3 || part < 0 || part > 3 || !HdSprites::anyViews())
 	{
 		return SurfaceRaw<const Uint8>();
 	}
-	std::unique_ptr<Entry> &slot = _frames[3 + quarters][src.getBuffer()];
+	std::unique_ptr<Entry> &slot = _frames[4 + (quarters - 1) * 4 + part][src.getBuffer()];
 	if (!slot)
 	{
 		slot.reset(new Entry());
@@ -226,7 +249,7 @@ SurfaceRaw<const Uint8> HdTurn::painted(SurfaceRaw<const Uint8> src, int quarter
 		e.width = src.getWidth();
 		e.height = src.getHeight();
 		e.pixels.resize((size_t)e.width * e.height);
-		e.painted = HdSprites::setView(e.pixels.data(), src.getBuffer(), quarters);
+		e.painted = HdSprites::setView(e.pixels.data(), src.getBuffer(), quarters, part);
 		e.made = e.painted;
 		if (e.painted)
 		{

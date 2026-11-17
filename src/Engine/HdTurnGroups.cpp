@@ -159,7 +159,7 @@ bool HdTurnGroups::active(int i, int rot, HdTurn *turn, bool hd)
 		for (Tile *t : g.tiles)
 		{
 			const SurfaceRaw<const Uint8> sprite = t->getSprite(O_OBJECT);
-			if (sprite && turn->painted(sprite, rot))
+			if (sprite && turn->painted(sprite, rot, O_OBJECT))
 			{
 				painted = 1;
 				break;

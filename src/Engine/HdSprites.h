@@ -143,6 +143,9 @@ namespace HdSprites
 	/// setLazy: another painting of the same ground (hd/TERRAIN/<set>/<index>.v1.png). The renderer
 	/// picks the variant of a map cell, or blends two, by a smooth pattern over the map.
 	void setVariantLazy(const void *key, int variant, const std::string &path, Uint32 offset, Uint32 size, int width, int height);
+	/// Registers variant `variant` of a palette frame's HD frame from memory (like set): the variants of a floor
+	/// turned with the map (HdTurn), which no file holds.
+	void setVariant(const void *key, int variant, HdFrame &&frame);
 	/// The number of variant slots of a palette frame's HD frame (0 = no variants; a slot may be empty).
 	int variantCount(const void *key);
 	/// Finds variant `variant` of a palette frame's HD frame (0 = the frame itself, see find), or nullptr.
@@ -165,8 +168,10 @@ namespace HdSprites
 	/// HD lab (the turned battle map, HdTurn): registers the painted view of palette frame `key` at turn `rot`
 	/// (1..3) - hd/TERRAIN/<set>/<index>.r<R>.png - as the lazy HD frame of `proxy`, the palette frame the
 	/// turned map draws instead (a copy the size of the original). False, with nothing registered, when the
-	/// frame has no view painted for that turn.
-	bool setView(const void *proxy, const void *key, int rot);
+	/// frame has no view painted for that turn. `part` (TilePart, 0..3) is what the frame stands as there: a view
+	/// painted for that part - <index>.r<R>f|w|n|o.png (floor, west wall, north wall, object) - goes before the
+	/// one painted for any part (one frame may serve a north door and the open state of a west one).
+	bool setView(const void *proxy, const void *key, int rot, int part);
 	/// Is a painted view registered for any frame? (Without one the turned map never asks setView.)
 	bool anyViews();
 	/// Is a frame registered at all? Unlike find, this never reads a file, so it can be asked about

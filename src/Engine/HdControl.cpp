@@ -40,6 +40,10 @@
 #include "RNG.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
+#include "../Battlescape/BattlescapeState.h"
+#include "../Battlescape/Map.h"
+#include "../Battlescape/Camera.h"
+#include "../Battlescape/Position.h"
 #include "../Menu/LoadGameState.h"
 #include "../Menu/MainMenuState.h"
 
@@ -490,6 +494,53 @@ std::string run(Control &c, Game *g, const std::string &line)
 	if (cmd == "state")
 	{
 		return stateLine(g);
+	}
+	if (cmd == "mapcheck")
+	{
+		// does a point of the screen pick the cell that is drawn under it? A grid of points, each to its cell and
+		// back to the cell's floor diamond; said for the view as it is turned now (HD lab)
+		BattlescapeState *bs = dynamic_cast<BattlescapeState*>(g->getStates().back());
+		if (!bs)
+		{
+			return "err mapcheck: not in a battle";
+		}
+		const Camera *cam = bs->getMap()->getCamera();
+		const int sw = bs->getMap()->getSpriteWidth(), sh = bs->getMap()->getSpriteHeight();
+		const Position off = cam->getMapOffset();
+		int tested = 0, missed = 0;
+		double worst = 0;
+		for (int sy = 0; sy < bs->getMap()->getHeight(); sy += 7)
+		{
+			for (int sx = 0; sx < bs->getMap()->getWidth(); sx += 11)
+			{
+				int mx = 0, my = 0;
+				cam->convertScreenToMap(sx, sy, &mx, &my);
+				if (mx < 0 || my < 0 || mx >= cam->getMapSizeX() || my >= cam->getMapSizeY())
+				{
+					continue;
+				}
+				// the first row and column of the view also take the points just off the map (the division
+				// rounds towards zero there, as in the original game): not counted
+				const Position view = cam->worldToView(Position(mx, my, 0));
+				if (view.x == 0 || view.y == 0)
+				{
+					continue;
+				}
+				Position p;
+				cam->convertMapToScreen(Position(mx, my, cam->getViewLevel()), &p);
+				const double cx = p.x + off.x + sw / 2.0, cy = p.y + off.y + sh - sw / 4.0;
+				const double d = std::abs(sx + 0.5 - cx) / (sw / 2.0) + std::abs(sy + 0.5 - cy) / (sw / 4.0);
+				++tested;
+				worst = std::max(worst, d);
+				if (d > 1.1)
+				{
+					++missed;
+				}
+			}
+		}
+		std::ostringstream out;
+		out << "mapcheck rot=" << cam->getRotation() << " tested=" << tested << " missed=" << missed << " worst=" << worst;
+		return out.str();
 	}
 	if (cmd == "load")
 	{

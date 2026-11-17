@@ -2519,6 +2519,7 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 	job.x = _groundX;
 	job.y = _groundY;
 	job.z = _groundZ;
+	job.rot = _groundRot;
 	job.seed = _groundSeed;
 	job.tone = tone;
 	job.cached = !clash;
@@ -2557,6 +2558,15 @@ void Canvas32::makeGround(const GroundJob &job) const
 		{
 			float u, v;
 			groundPoint(job.x, job.y, bw, bh, bx, by, u, v);
+			if (job.rot)
+			{
+				// a frame turned with the map (HD lab): the point of the world cell this pixel shows
+				const float a = u - job.x - 0.5f, b = v - job.y - 0.5f;
+				const float wa = job.rot == 1 ? b : job.rot == 2 ? -a : -b;
+				const float wb = job.rot == 1 ? -a : job.rot == 2 ? -b : a;
+				u = job.x + 0.5f + wa;
+				v = job.y + 0.5f + wb;
+			}
 			level[(size_t)by * bw + bx] = groundLevel(job.seed, u, v, job.z, count);
 			ragged[(size_t)by * bw + bx] = groundRagged(job.seed, u, v, job.z);
 		}

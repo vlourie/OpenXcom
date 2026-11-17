@@ -171,8 +171,9 @@ namespace
 		std::string path; ///< empty: no view painted for that turn
 		int width = 0, height = 0;
 	};
-	/// The views of a frame, slot R - 1 for turn R.
-	std::unordered_map<const void*, std::array<ViewFile, 3>> views;
+	/// The views of a frame, slot (R - 1) * 5 + p for turn R: p 0 the view of any part (<index>.r<R>.png), 1..4
+	/// the view of the frame standing as a floor, a west wall, a north wall or an object (<index>.r<R>f|w|n|o.png).
+	std::unordered_map<const void*, std::array<ViewFile, 15>> views;
 	/// Changes only when the addressed wall frames do (the map rebuilds its field then, see HdWallField::update).
 	unsigned wallsGeneration = 1;
 	/// Frames at most this big are dots, not pictures (makeDots): the bullet tracer is 3x3.
@@ -506,6 +507,33 @@ void setVariantLazy(const void *key, int variant, const std::string &path, Uint3
 	++registryGeneration;
 }
 
+void setVariant(const void *key, int variant, HdFrame &&frame)
+{
+	if (!key || variant < 1 || variant > MAX_VARIANTS || frame.pixels.empty())
+	{
+		return;
+	}
+	beforeChange();
+	frame.buildSpans();
+	std::vector<Entry> &slots = variants[key];
+	if ((int)slots.size() < variant)
+	{
+		slots.resize(variant);
+	}
+	Entry &entry = slots[variant - 1];
+	if (!entry.path.empty() && !entry.frame.pixels.empty())
+	{
+		loadedTotal -= bytesOf(entry.frame);
+	}
+	entry = Entry();
+	entry.width = frame.width;
+	entry.height = frame.height;
+	entry.key = key;
+	entry.frame = std::move(frame);
+	noteKey(key);
+	++registryGeneration;
+}
+
 int variantCount(const void *key)
 {
 	if (variants.empty())
@@ -628,18 +656,28 @@ bool registered(const void *key)
 	return !registry.empty() && registry.find(key) != registry.end();
 }
 
-bool setView(const void *proxy, const void *key, int rot)
+bool setView(const void *proxy, const void *key, int rot, int part)
 {
-	if (!proxy || rot < 1 || rot > 3 || views.empty())
+	if (!proxy || rot < 1 || rot > 3 || part < 0 || part > 3 || views.empty())
 	{
 		return false;
 	}
 	auto it = views.find(key);
-	if (it == views.end() || it->second[rot - 1].path.empty())
+	if (it == views.end())
 	{
 		return false;
 	}
-	const ViewFile &view = it->second[rot - 1];
+	// the view painted for the part the frame stands as, else the one painted for any part
+	const ViewFile *found = &it->second[(rot - 1) * 5 + 1 + part];
+	if (found->path.empty())
+	{
+		found = &it->second[(rot - 1) * 5];
+	}
+	if (found->path.empty())
+	{
+		return false;
+	}
+	const ViewFile &view = *found;
 	setLazy(proxy, view.path, 0, 0, view.width, view.height);
 	// the picture belongs to the frame: recoloured and lit as its own picture is
 	Entry &entry = registry[proxy];
@@ -1816,11 +1854,18 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 		{
 			continue;
 		}
-		int variant = 0, view = 0;
+		int variant = 0, view = 0, viewPart = 0;
 		const std::string rest = file.substr(dot);
 		if (rest.size() == 7 && rest.compare(0, 2, ".r") == 0 && rest[2] >= '1' && rest[2] <= '3' && rest.compare(3, 4, ".png") == 0)
 		{
 			view = rest[2] - '0';
+		}
+		else if (rest.size() == 8 && rest.compare(0, 2, ".r") == 0 && rest[2] >= '1' && rest[2] <= '3' && rest.compare(4, 4, ".png") == 0
+			&& std::strchr("fwno", rest[3]))
+		{
+			// "<index>.r<R><p>.png": the view of the frame standing as a floor (f), a west (w) or a north (n) wall, an object (o)
+			view = rest[2] - '0';
+			viewPart = 1 + (int)(std::strchr("fwno", rest[3]) - "fwno");
 		}
 		else if (rest != ".png")
 		{
@@ -1865,7 +1910,7 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 		}
 		if (view > 0)
 		{
-			ViewFile &slot = views[frame->getBuffer()][view - 1];
+			ViewFile &slot = views[frame->getBuffer()][(view - 1) * 5 + viewPart];
 			slot.path = path;
 			slot.width = fw;
 			slot.height = fh;

@@ -57,9 +57,9 @@ class HdTurn
 		/// The painted view of the original is registered for it (HdSprites::setView).
 		bool painted = false;
 	};
-	/// [0] mirrored frames, [1..3] floors turned by that many quarters, [4..6] the painted views of turns 1..3;
-	/// by the original's buffer.
-	std::unordered_map<const void*, std::unique_ptr<Entry>> _frames[7];
+	/// [0] mirrored frames, [1..3] floors turned by that many quarters, [4 + (R - 1) * 4 + part] the painted views
+	/// of turn R (1..3) for the frame standing as that part; by the original's buffer.
+	std::unordered_map<const void*, std::unique_ptr<Entry>> _frames[16];
 	/// Makes the entry of a frame (kind 0 mirror, 1..3 quarters).
 	Entry &entry(SurfaceRaw<const Uint8> src, int kind);
 	/// Registers the HD frame of the original changed the same way (or drops it when the original has none).
@@ -73,8 +73,9 @@ public:
 	/// (grass, rubble) would be squashed, so it is drawn as it is.
 	SurfaceRaw<const Uint8> floorTurned(SurfaceRaw<const Uint8> src, int quarters, bool hd);
 	/// The frame whose HD frame is the view of `src` painted for turn `quarters` (1..3), or a null frame
-	/// when none is painted or its picture cannot be read (then the computed frame is drawn).
-	SurfaceRaw<const Uint8> painted(SurfaceRaw<const Uint8> src, int quarters);
+	/// when none is painted or its picture cannot be read (then the computed frame is drawn). `part` (TilePart)
+	/// is what the frame stands as: a view painted for that part goes before the one painted for any.
+	SurfaceRaw<const Uint8> painted(SurfaceRaw<const Uint8> src, int quarters, int part);
 	/// How many frames were made (all kinds).
 	size_t count() const;
 };

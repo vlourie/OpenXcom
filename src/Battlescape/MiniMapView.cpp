@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../fmath.h"
+#include <algorithm>
 #include "MiniMapView.h"
 #include "MiniMapState.h"
 #include "Pathfinding.h"
@@ -66,8 +67,10 @@ MiniMapView::MiniMapView(int w, int h, int x, int y, Game * game, Camera * camer
  */
 void MiniMapView::draw()
 {
-	int _startX = _camera->getCenterPosition().x - ((getWidth() / CELL_WIDTH) / 2);
-	int _startY = _camera->getCenterPosition().y - ((getHeight() / CELL_HEIGHT) / 2);
+	// HD lab: the map turned to another side - the cells go as the view has them (the same unturned)
+	const Position viewCenter = _camera->worldToView(_camera->getCenterPosition());
+	int _startX = viewCenter.x - ((getWidth() / CELL_WIDTH) / 2);
+	int _startY = viewCenter.y - ((getHeight() / CELL_HEIGHT) / 2);
 
 	InteractiveSurface::draw();
 	if (!_set)
@@ -90,7 +93,7 @@ void MiniMapView::draw()
 			int px = _startX;
 			for (int x = 0; x < getWidth(); x += CELL_WIDTH)
 			{
-				Position p(px, py, lvl);
+				Position p = _camera->viewToWorld(Position(px, py, lvl));
 				Tile *t = _battleGame->getTile(p);
 				if (!t)
 				{
@@ -125,8 +128,19 @@ void MiniMapView::draw()
 				{
 					int frame = t->getUnit()->getMiniMapSpriteIndex();
 					int size = t->getUnit()->getArmor()->getSize();
+					if (_camera->getRotation() != 0)
+					{
+						// the quarter of a big unit is its place on the screen: its offset in the view from the unit's corner there
+						const Position a = _camera->worldToView(t->getUnit()->getPosition());
+						const Position b = _camera->worldToView(t->getUnit()->getPosition() + Position(size - 1, size - 1, 0));
+						frame += (py - std::min(a.y, b.y)) * size;
+						frame += px - std::min(a.x, b.x);
+					}
+					else
+					{
 					frame += (t->getPosition().y - t->getUnit()->getPosition().y) * size;
 					frame += t->getPosition().x - t->getUnit()->getPosition().x;
+					}
 					frame += _frame * size * size;
 					Surface * s = _set->getFrame(frame);
 					if (size > 1 && t->getUnit()->getFaction() == FACTION_NEUTRAL)
@@ -310,8 +324,10 @@ void MiniMapView::mouseClick(Action *action, State *state)
 		int xOff = (origX / CELL_WIDTH) - ((getWidth() / 2) / CELL_WIDTH);
 		int yOff = (origY / CELL_HEIGHT) - ((getHeight() / 2) / CELL_HEIGHT);
 		// center the camera on this new position
-		int newX = _camera->getCenterPosition().x + xOff;
-		int newY = _camera->getCenterPosition().y + yOff;
+		// (HD lab: the offset is in the view's cells - a step of the map turned with it; the same unturned)
+		const Position step = _camera->viewStepToWorld(Position(xOff, yOff, 0));
+		int newX = _camera->getCenterPosition().x + step.x;
+		int newY = _camera->getCenterPosition().y + step.y;
 		_camera->centerOnPosition(Position(newX,newY,_camera->getViewLevel()));
 		_redraw = true;
 	}
@@ -380,6 +396,25 @@ void MiniMapView::mouseOver(Action *action, State *state)
 		newX = _posBeforeMouseScrolling.x + _mouseScrollX / action->getXScale() / 4;
 		newY = _posBeforeMouseScrolling.y + _mouseScrollY / action->getYScale() / 4;
 
+		if (_camera->getRotation() != 0)
+		{
+			// HD lab: the drag is in the view's cells - a step of the map turned with it; past the map's edge it is not taken
+			auto turnedTo = [&]()
+			{
+				const Position step = _camera->viewStepToWorld(Position((int)(_mouseScrollX / action->getXScale() / 4), (int)(_mouseScrollY / action->getYScale() / 4), 0));
+				newX = _posBeforeMouseScrolling.x + step.x;
+				newY = _posBeforeMouseScrolling.y + step.y;
+			};
+			turnedTo();
+			if (newX < -1 || _camera->getMapSizeX() < newX || newY < -1 || _camera->getMapSizeY() < newY)
+			{
+				_mouseScrollX -= scrollX;
+				_mouseScrollY -= scrollY;
+				turnedTo();
+			}
+		}
+		else
+		{
 		// Keep the limits...
 		if (newX < -1 || _camera->getMapSizeX() < newX)
 		{
@@ -390,6 +425,7 @@ void MiniMapView::mouseOver(Action *action, State *state)
 		{
 			_mouseScrollY -= scrollY;
 			newY = _posBeforeMouseScrolling.y + _mouseScrollY / 4;
+		}
 		}
 
 		// Scrolling

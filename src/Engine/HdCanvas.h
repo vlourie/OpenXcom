@@ -233,7 +233,7 @@ public:
 	/// of that place, or a blend of two at the edge of a patch (no effect on the classic canvas). The
 	/// pattern runs along a scale with the frame itself in the middle, the odd variants on one side of it
 	/// (v1 next to it, v3 beyond) and the even ones on the other (v2, v4).
-	virtual void setGroundCell(bool on, int x, int y, int z) {}
+	virtual void setGroundCell(bool on, int x, int y, int z, int rot = 0) {}
 	/// HD render: the seed of this battle's pattern of ground variants.
 	virtual void setGroundSeed(Uint32 seed) {}
 	/// HD render: the blits that follow draw variant `variant` of a pack frame when it has one (0 = the
@@ -566,6 +566,8 @@ private:
 	/// Ground variants: the map cell the next floor blits belong to (see setGroundCell).
 	bool _groundOn = false;
 	int _groundX = 0, _groundY = 0, _groundZ = 0;
+	/// The quarters the floor frame is turned by with the map (HD lab, HdTurn): the pattern stays with the world.
+	int _groundRot = 0;
 	Uint32 _groundSeed = 0;
 	/// The variant the next blits draw (setFrameVariant).
 	int _frameVariant = 0;
@@ -611,6 +613,8 @@ private:
 		const HdFrame *frames[16];
 		int count;
 		int x, y, z;
+		/// The quarters the frames are turned by with the map (0: not turned).
+		int rot;
 		Uint32 seed;
 		/// The shade made into the blend (GROUND_RAW: none).
 		int tone;
@@ -672,7 +676,7 @@ public:
 	void setHdMode(int mode) override;
 	int getHdMode() const override { return _hdMode; }
 	void setLight(const HdLight *light) override;
-	void setGroundCell(bool on, int x, int y, int z) override { _groundOn = on; _groundX = x; _groundY = y; _groundZ = z; }
+	void setGroundCell(bool on, int x, int y, int z, int rot = 0) override { _groundOn = on; _groundX = x; _groundY = y; _groundZ = z; _groundRot = rot & 3; }
 	void setGroundSeed(Uint32 seed) override;
 	void setFrameVariant(int variant) override { _frameVariant = variant; }
 	void setWallField(const HdWallField *field) override { _wallField = field; }

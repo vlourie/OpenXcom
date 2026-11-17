@@ -6316,12 +6316,20 @@ void Map::drawTerrain(HdCanvas *surface)
 			if (!sprite)
 				continue;
 			// a view painted for this turn stands as it is drawn: already on the diagonal of its slot
-			const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(sprite, rot) : SurfaceRaw<const Uint8>();
+			const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(sprite, rot, part) : SurfaceRaw<const Uint8>();
 			if (view)
 				sprite = view;
 			else if (left != (part == O_WESTWALL))
 				sprite = _turn->mirrored(sprite, hdFrames);
 			int shade = getWallShade(part, owner);
+			// a wall standing on the far tile of its edge is seen from this cell: known (the sight of this cell
+			// discovers it) while its own tile is not, it is lit as this cell is, not black
+			if (!owner->isDiscovered(O_FLOOR) && owner->isDiscovered(part))
+			{
+				Tile *front = _save->getTile(mapPosition);
+				if (front && front != owner && front->isDiscovered(O_FLOOR))
+					shade = reShade(front);
+			}
 			if (owner->getObstacle(part))
 				shade = getShadePulseForFrame(shade, _animFrame);
 			surface->blit(sprite, screenPosition.x, screenPosition.y - owner->getYOffset(part) * _k, shade, !left && leftDrawn, _nvColor);
@@ -6332,7 +6340,7 @@ void Map::drawTerrain(HdCanvas *surface)
 	// its own place in the cell (no mirror, no shift); else the frame goes with its edge (turnedObject)
 	auto objectTurned = [&](TurnedObject &placed, SurfaceRaw<const Uint8> sprite) -> SurfaceRaw<const Uint8>
 	{
-		const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(sprite, rot) : SurfaceRaw<const Uint8>();
+		const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(sprite, rot, O_OBJECT) : SurfaceRaw<const Uint8>();
 		if (view)
 		{
 			placed.dx = 0;
@@ -6596,17 +6604,18 @@ void Map::drawTerrain(HdCanvas *surface)
 						// HD lab: a flat floor turns with the map, unless a view is painted for this turn
 						if (turned)
 						{
-							const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(tmpSurface, rot) : SurfaceRaw<const Uint8>();
+							const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(tmpSurface, rot, O_FLOOR) : SurfaceRaw<const Uint8>();
 							tmpSurface = view ? view : _turn->floorTurned(tmpSurface, rot, hdFrames);
 						}
 						// HD render: a floor with pack variants shows the one the ground pattern puts here
-						if (_hdGroundVariants && !turned)
-							surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z);
+						// (turned: the turned frame carries the variants turned too, the pattern stays with the world cell)
+						if (_hdGroundVariants)
+							surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z, rot);
 						if (tile->getObstacle(O_FLOOR))
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, obstacleShade, false, _nvColor);
 						else
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, tileShade, false, _nvColor);
-						if (_hdGroundVariants && !turned)
+						if (_hdGroundVariants)
 							surface->setGroundCell(false, 0, 0, 0);
 						// HD render: the shade of the corners - the floor darkens softly beside the walls and objects on it
 						if (Options::oxceHdFloorAo && surface->getHdMode() != HD_MODE_NEAREST && !turned && tile->isDiscovered(O_FLOOR))
