@@ -2316,7 +2316,8 @@ void Globe::drawHdLabels()
 		text->setColor(kept.color);
 		text->setText(kept.text);
 		text->draw();
-		text->hdDrawAt(_countries->getX() + kept.x, _countries->getY() + kept.y);
+		// cut at the globe's edge like the classic _countries surface (XP-000594), not over the side panel
+		text->hdDrawAt(_countries->getX() + kept.x, _countries->getY() + kept.y, getX(), getY(), getWidth(), getHeight(), 0, true);
 	}
 }
 

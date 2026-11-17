@@ -664,7 +664,7 @@ void Text::forEachGlyph(const std::function<void(Font*, UCode, int, int, int, in
  * The HD interface's text: the same layout, every glyph rendered from the
  * font's bitmap with smooth edges at the world scale.
  */
-void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, int padX)
+void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, int padX, bool cutOnly)
 {
 	if (_text.empty() || _font == 0)
 	{
@@ -685,7 +685,7 @@ void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, 
 	// the room the line may lay itself out in: its own width, cut down by whatever the caller clipped.
 	// Widgets whose columns overlap on paper (the battle action menu) hand every column the room up to
 	// the next one, so a line condenses into its column instead of running over the neighbour's text.
-	const int roomW = std::max(1, std::min(getWidth(), cx1 - ox));
+	const int roomW = cutOnly ? getWidth() : std::max(1, std::min(getWidth(), cx1 - ox));
 	const SDL_Color *colors = HdUi::paletteOf(this);
 	if (HdUi::skin() && ui.hasFonts() && _lang->getTextDirection() == DIRECTION_LTR)
 	{
