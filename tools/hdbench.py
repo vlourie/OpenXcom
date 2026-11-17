@@ -407,7 +407,7 @@ def main():
     s.add_argument("--exe", default=str(hidden_game.EXE))
     s.add_argument("--save", default="NoCodexCatZ.sav", help="сейв установки или путь; пусто - главное меню")
     s.add_argument("--set", default="", help="опции игры: a=1;b=false")
-    s.add_argument("--user", default="", help="папка пользователя стенда (по умолчанию %TEMP%/oxce_bench_<имя>)")
+    s.add_argument("--user", default="", help="папка пользователя стенда (по умолчанию %%TEMP%%/oxce_bench_<имя>)")
     s.add_argument("--mods-dir", default="")
     s.add_argument("--mods", default="")
     s.add_argument("--master", default="")
