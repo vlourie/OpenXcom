@@ -3590,143 +3590,199 @@ void Map::drawTerrain(HdCanvas *surface)
 	}
 	if (pathfinderTurnedOn)
 	{
-		if (_numWaypid)
-		{
-			_numWaypid->setBordered(true); // give it a border for the pathfinding display, makes it more visible on snow, etc.
-		}
-		for (int itZ = beginZ; itZ <= endZ; itZ++)
-		{
-			for (int itX = beginX; itX <= endX; itX++)
-			{
-				for (int itY = beginY; itY <= endY; itY++)
-				{
-					// HD lab: itX, itY go over the cells of the view
-					mapPosition = turned ? _camera->viewToWorld(Position(itX, itY, itZ)) : Position(itX, itY, itZ);
-					_camera->convertMapToScreen(mapPosition, &screenPosition);
-					screenPosition += _camera->getMapOffset();
+		drawPathPreview(surface, _numWaypid, beginX, endX, beginY, endY, beginZ, endZ, turned);
+	}
 
-					// only render cells that are inside the surface
-					if (screenPosition.x > -_spriteWidth && screenPosition.x < surface->getWidth() + _spriteWidth &&
-						screenPosition.y > -_spriteHeight && screenPosition.y < surface->getHeight() + _spriteHeight )
+	drawSelectedArrow(surface);
+
+	// Draw the indicator number above the units seen directly by the selected unit
+	drawUnitMarkers(surface);
+
+	// gentle mode: where the reaction fire came from (drawn while the shot flies too, the cursor is off then)
+	// HD render: the flight arc of what is aimed, on top of the map
+	drawAimArc(surface);
+
+	drawGentleArrows(surface);
+
+	// Draw motion scanner arrows
+	drawScannerArrows(surface);
+	delete _numWaypid;
+
+	// Draw craft deployment preview arrows
+	drawDeployArrows(surface);
+
+	// HD render (oxceHdBloodCloud, XP-000557): the clouds of blood under water, under the hits' own pictures
+	hdDrawBloodClouds(surface);
+	drawExplosions(surface);
+
+	// HD render (Options::oxceHdWeather): the air of the weather over the whole map; the muzzle flashes shine through it
+	if (hdWeather)
+	{
+		hdWeatherAir(surface);
+	}
+
+	// HD render: muzzle flashes, on their own clock (see hdMuzzle)
+	drawMuzzleFlashes(surface);
+
+	surface->unlock();
+}
+
+/**
+ * The path preview over the map: the arrows of the steps and the numbers of time units and energy left.
+ * @param surface The canvas.
+ * @param _numWaypid The number drawn on the steps (made by drawTerrain for this frame).
+ * @param beginX, endX, beginY, endY, beginZ, endZ The cells of the view that are drawn.
+ * @param turned The view is turned (HD lab).
+ */
+void Map::drawPathPreview(HdCanvas *surface, NumberText *_numWaypid, int beginX, int endX, int beginY, int endY, int beginZ, int endZ, bool turned)
+{
+	Position mapPosition, screenPosition;
+	Tile *tile;
+	SurfaceRaw<const Uint8> tmpSurface;
+	if (_numWaypid)
+	{
+		_numWaypid->setBordered(true); // give it a border for the pathfinding display, makes it more visible on snow, etc.
+	}
+	for (int itZ = beginZ; itZ <= endZ; itZ++)
+	{
+		for (int itX = beginX; itX <= endX; itX++)
+		{
+			for (int itY = beginY; itY <= endY; itY++)
+			{
+				// HD lab: itX, itY go over the cells of the view
+				mapPosition = turned ? _camera->viewToWorld(Position(itX, itY, itZ)) : Position(itX, itY, itZ);
+				_camera->convertMapToScreen(mapPosition, &screenPosition);
+				screenPosition += _camera->getMapOffset();
+
+				// only render cells that are inside the surface
+				if (screenPosition.x > -_spriteWidth && screenPosition.x < surface->getWidth() + _spriteWidth &&
+					screenPosition.y > -_spriteHeight && screenPosition.y < surface->getHeight() + _spriteHeight )
+				{
+					tile = _save->getTile(mapPosition);
+					if (!tile || !tile->isDiscovered(O_FLOOR) || tile->getPreview() == -1)
+						continue;
+					int adjustment = -tile->getTerrainLevel() * _k;
+					if (_previewSettingArrows)
 					{
-						tile = _save->getTile(mapPosition);
-						if (!tile || !tile->isDiscovered(O_FLOOR) || tile->getPreview() == -1)
-							continue;
-						int adjustment = -tile->getTerrainLevel() * _k;
-						if (_previewSettingArrows)
+						if (itZ > 0 && tile->hasNoFloor(_save))
 						{
-							if (itZ > 0 && tile->hasNoFloor(_save))
-							{
-								tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(23);
-								if (tmpSurface)
-								{
-									surface->blit(tmpSurface, screenPosition.x, screenPosition.y + 2 * _k, 0, false, tile->getMarkerColor());
-								}
-							}
-							int overlay = turnedDir(tile->getPreview()) + 12;
-							tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(overlay);
+							tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(23);
 							if (tmpSurface)
 							{
-								blitPathArrow(surface, tmpSurface, screenPosition.x, screenPosition.y - adjustment, tile->getMarkerColor(), tile, mapPosition);
+								surface->blit(tmpSurface, screenPosition.x, screenPosition.y + 2 * _k, 0, false, tile->getMarkerColor());
 							}
 						}
-
-						if ((_previewSettingTu || _previewSettingEnergy) && (tile->getTUMarker() > -1 || tile->getEnergyMarker() > -1))
+						int overlay = turnedDir(tile->getPreview()) + 12;
+						tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(overlay);
+						if (tmpSurface)
 						{
-							int off = (tile->getTUMarker() > 9 ? 5 : 3) * _k;
-							int offE = (tile->getEnergyMarker() > 9 ? 5 : 3) * _k;
-							int mcolor = _previewSettingArrows ? 0 : tile->getMarkerColor();
-							if (_previewSettingArrows)
+							blitPathArrow(surface, tmpSurface, screenPosition.x, screenPosition.y - adjustment, tile->getMarkerColor(), tile, mapPosition);
+						}
+					}
+
+					if ((_previewSettingTu || _previewSettingEnergy) && (tile->getTUMarker() > -1 || tile->getEnergyMarker() > -1))
+					{
+						int off = (tile->getTUMarker() > 9 ? 5 : 3) * _k;
+						int offE = (tile->getEnergyMarker() > 9 ? 5 : 3) * _k;
+						int mcolor = _previewSettingArrows ? 0 : tile->getMarkerColor();
+						if (_previewSettingArrows)
+						{
+							adjustment += 7 * _k;
+						}
+						if (_save->getSelectedUnit() && _save->getSelectedUnit()->isBigUnit())
+						{
+							adjustment += 1 * _k;
+							if (!_previewSettingArrows)
 							{
 								adjustment += 7 * _k;
 							}
-							if (_save->getSelectedUnit() && _save->getSelectedUnit()->isBigUnit())
+						}
+						if (_hdLabelsOn && Options::oxceHdPathDigits)
+						{
+							// HD interface: the numbers in the TrueType face, centred where the classic digits stand;
+							// the destination (preview 10, the path's last step) larger than the steps on the way.
+							// Colours: the bordered digit's face and outer edge, in the ramp blitClassic recolours to
+							const bool last = tile->getPreview() == 10;
+							const SDL_Color *pal = getPalette();
+							const int faceIdx = _numWaypid->getColor() + 1;
+							const int ramp = mcolor ? (mcolor - 1) << 4 : faceIdx & 0xF0, shade = faceIdx & 0x0F;
+							const bool both = _previewSettingTu && _previewSettingEnergy;
+							const int sizePct = std::max(50, std::min(100, Options::oxceHdPathNumSize));
+							const int weightPct = std::max(50, std::min(100, Options::oxceHdPathNumWeight));
+							auto put = [&](int value, int classicY, int lastLift)
 							{
-								adjustment += 1 * _k;
-								if (!_previewSettingArrows)
+								if (value < 0) return;
+								HdLabel label;
+								label.text = Unicode::convUtf8ToUtf32(std::to_string(value));
+								label.x = screenPosition.x + 16 * _k - _k / 2;
+								label.y = screenPosition.y + classicY - adjustment + (last ? -lastLift : 1 * _k);
+								label.cap = last ? 7.0f : 5.0f;
+								if (sizePct != 100)
 								{
-									adjustment += 7 * _k;
+									// smaller by the player's percent, the baseline stays where it was
+									const float smaller = label.cap * sizePct / 100.0f;
+									label.y += (int)std::lround((label.cap - smaller) * _k);
+									label.cap = smaller;
 								}
+								label.weight = weightPct / 100.0f;
+								label.centre = true;
+								label.face = HdUi::rgba(pal[(Uint8)(ramp + shade)]);
+								label.edge = HdUi::rgba(pal[(Uint8)(ramp + std::min(shade + 11, 15))]);
+								_hdLabels.push_back(label);
+							};
+							if (_previewSettingTu)
+							{
+								put(tile->getTUMarker(), (both ? 22 : 29) * _k, (both ? 2 : 1) * _k);
 							}
-							if (_hdLabelsOn && Options::oxceHdPathDigits)
+							if (_previewSettingEnergy)
 							{
-								// HD interface: the numbers in the TrueType face, centred where the classic digits stand;
-								// the destination (preview 10, the path's last step) larger than the steps on the way.
-								// Colours: the bordered digit's face and outer edge, in the ramp blitClassic recolours to
-								const bool last = tile->getPreview() == 10;
-								const SDL_Color *pal = getPalette();
-								const int faceIdx = _numWaypid->getColor() + 1;
-								const int ramp = mcolor ? (mcolor - 1) << 4 : faceIdx & 0xF0, shade = faceIdx & 0x0F;
-								const bool both = _previewSettingTu && _previewSettingEnergy;
-								const int sizePct = std::max(50, std::min(100, Options::oxceHdPathNumSize));
-								const int weightPct = std::max(50, std::min(100, Options::oxceHdPathNumWeight));
-								auto put = [&](int value, int classicY, int lastLift)
-								{
-									if (value < 0) return;
-									HdLabel label;
-									label.text = Unicode::convUtf8ToUtf32(std::to_string(value));
-									label.x = screenPosition.x + 16 * _k - _k / 2;
-									label.y = screenPosition.y + classicY - adjustment + (last ? -lastLift : 1 * _k);
-									label.cap = last ? 7.0f : 5.0f;
-									if (sizePct != 100)
-									{
-										// smaller by the player's percent, the baseline stays where it was
-										const float smaller = label.cap * sizePct / 100.0f;
-										label.y += (int)std::lround((label.cap - smaller) * _k);
-										label.cap = smaller;
-									}
-									label.weight = weightPct / 100.0f;
-									label.centre = true;
-									label.face = HdUi::rgba(pal[(Uint8)(ramp + shade)]);
-									label.edge = HdUi::rgba(pal[(Uint8)(ramp + std::min(shade + 11, 15))]);
-									_hdLabels.push_back(label);
-								};
-								if (_previewSettingTu)
-								{
-									put(tile->getTUMarker(), (both ? 22 : 29) * _k, (both ? 2 : 1) * _k);
-								}
-								if (_previewSettingEnergy)
-								{
-									put(tile->getEnergyMarker(), 29 * _k, 1 * _k);
-								}
+								put(tile->getEnergyMarker(), 29 * _k, 1 * _k);
 							}
-							else if (_previewSettingTu)
+						}
+						else if (_previewSettingTu)
+						{
+							_numWaypid->setValue(tile->getTUMarker());
+							_numWaypid->draw();
+							if (_previewSettingEnergy)
 							{
-								_numWaypid->setValue(tile->getTUMarker());
-								_numWaypid->draw();
-								if (_previewSettingEnergy)
-								{
-									// TU
-									surface->blitClassic(_numWaypid, screenPosition.x + 16 * _k - off, screenPosition.y + (22 * _k - adjustment), _k, 0, mcolor);
-									// and Energy
-									_numWaypid->setValue(tile->getEnergyMarker());
-									_numWaypid->draw();
-									surface->blitClassic(_numWaypid, screenPosition.x + 16 * _k - offE, screenPosition.y + (29 * _k - adjustment), _k, 0, mcolor);
-								}
-								else
-								{
-									// only TU
-									surface->blitClassic(_numWaypid, screenPosition.x + 16 * _k - off, screenPosition.y + (29 * _k - adjustment), _k, 0, mcolor);
-								}
-							}
-							else if (_previewSettingEnergy)
-							{
-								// only Energy
+								// TU
+								surface->blitClassic(_numWaypid, screenPosition.x + 16 * _k - off, screenPosition.y + (22 * _k - adjustment), _k, 0, mcolor);
+								// and Energy
 								_numWaypid->setValue(tile->getEnergyMarker());
 								_numWaypid->draw();
 								surface->blitClassic(_numWaypid, screenPosition.x + 16 * _k - offE, screenPosition.y + (29 * _k - adjustment), _k, 0, mcolor);
 							}
+							else
+							{
+								// only TU
+								surface->blitClassic(_numWaypid, screenPosition.x + 16 * _k - off, screenPosition.y + (29 * _k - adjustment), _k, 0, mcolor);
+							}
+						}
+						else if (_previewSettingEnergy)
+						{
+							// only Energy
+							_numWaypid->setValue(tile->getEnergyMarker());
+							_numWaypid->draw();
+							surface->blitClassic(_numWaypid, screenPosition.x + 16 * _k - offE, screenPosition.y + (29 * _k - adjustment), _k, 0, mcolor);
 						}
 					}
 				}
 			}
 		}
-		if (_numWaypid)
-		{
-			_numWaypid->setBordered(false); // make sure we remove the border in case it's being used for missile waypoints.
-		}
 	}
+	if (_numWaypid)
+	{
+		_numWaypid->setBordered(false); // make sure we remove the border in case it's being used for missile waypoints.
+	}
+}
 
+/**
+ * The arrow over the selected unit.
+ * @param surface The canvas.
+ */
+void Map::drawSelectedArrow(HdCanvas *surface)
+{
+	Position screenPosition;
 	auto* selectedUnit = _save->getSelectedUnit();
 	if (selectedUnit && (_save->getSide() == FACTION_PLAYER || _save->getDebugMode()) && selectedUnit->getPosition().z <= _camera->getViewLevel())
 	{
@@ -3747,8 +3803,15 @@ void Map::drawTerrain(HdCanvas *surface)
 			surface->blitClassic(_arrow, screenPosition.x + offset.x + (_spriteWidth / 2) - (_arrow->getWidth() / 2) * _k, screenPosition.y + offset.y - _arrow->getHeight() * _k + getArrowBobForFrame(_animFrame, _k), _k);
 		}
 	}
+}
 
-	// Draw the indicator number above the units seen directly by the selected unit
+/**
+ * The numbers above the units the selected unit sees.
+ * @param surface The canvas.
+ */
+void Map::drawUnitMarkers(HdCanvas *surface)
+{
+	Position screenPosition;
 	if (_numUnitMarker && (_save->getSide() == FACTION_PLAYER || _save->getDebugMode()) && this->getCursorType() != CT_NONE)
 	{
 		for (int i = 0; i < UNIT_MARKER_MAX; ++i)
@@ -3804,14 +3867,15 @@ void Map::drawTerrain(HdCanvas *surface)
 			surface->blitClassic(_numUnitMarker, markerX, markerY, _k);
 		}
 	}
+}
 
-	// gentle mode: where the reaction fire came from (drawn while the shot flies too, the cursor is off then)
-	// HD render: the flight arc of what is aimed, on top of the map
-	drawAimArc(surface);
-
-	drawGentleArrows(surface);
-
-	// Draw motion scanner arrows
+/**
+ * The arrows over the units found by the motion scanner and over the player's units with a marker (Alt held).
+ * @param surface The canvas.
+ */
+void Map::drawScannerArrows(HdCanvas *surface)
+{
+	Position screenPosition;
 	if (_isAltPressed && _save->getSide() == FACTION_PLAYER && this->getCursorType() != CT_NONE)
 	{
 		for (auto* myUnit : *_save->getUnits())
@@ -3863,9 +3927,15 @@ void Map::drawTerrain(HdCanvas *surface)
 			}
 		}
 	}
-	delete _numWaypid;
+}
 
-	// Draw craft deployment preview arrows
+/**
+ * The arrows over the craft's tiles in the deployment preview (Alt held).
+ * @param surface The canvas.
+ */
+void Map::drawDeployArrows(HdCanvas *surface)
+{
+	Position screenPosition;
 	if (_isAltPressed && _save->isPreview() && this->getCursorType() != CT_NONE)
 	{
 		for (auto& pos : _save->getCraftTiles())
@@ -3883,9 +3953,16 @@ void Map::drawTerrain(HdCanvas *surface)
 			}
 		}
 	}
+}
 
-	// HD render (oxceHdBloodCloud, XP-000557): the clouds of blood under water, under the hits' own pictures
-	hdDrawBloodClouds(surface);
+/**
+ * The explosions and hits in view: the screen's flash of a big one, the HD clips of the combat effects or the classic frames.
+ * @param surface The canvas.
+ */
+void Map::drawExplosions(HdCanvas *surface)
+{
+	Position bulletPositionScreen;
+	SurfaceRaw<const Uint8> tmpSurface;
 	std::vector<std::pair<const Explosion*, int>> cloudHits;
 
 	// check if we got big explosions
@@ -3997,14 +4074,15 @@ void Map::drawTerrain(HdCanvas *surface)
 	{
 		_hdCloudSeen.clear();
 	}
+}
 
-	// HD render (Options::oxceHdWeather): the air of the weather over the whole map; the muzzle flashes shine through it
-	if (hdWeather)
-	{
-		hdWeatherAir(surface);
-	}
-
-	// HD render: muzzle flashes, on their own clock (see hdMuzzle)
+/**
+ * HD render: the muzzle flashes, on their own clock (see hdMuzzle).
+ * @param surface The canvas.
+ */
+void Map::drawMuzzleFlashes(HdCanvas *surface)
+{
+	Position bulletPositionScreen;
 	if (Options::oxceHdFx && surface->getHdMode() != HD_MODE_NEAREST)
 	{
 		std::vector<std::pair<const HdFx::Live*, const HdFrame*>> flashes;
@@ -4021,8 +4099,6 @@ void Map::drawTerrain(HdCanvas *surface)
 			surface->blitFrame(*f.second, bulletPositionScreen.x - f.second->width / 2, bulletPositionScreen.y - f.second->height / 2);
 		}
 	}
-
-	surface->unlock();
 }
 
 /**

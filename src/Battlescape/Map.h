@@ -457,6 +457,15 @@ private:
 	void updateAimHints(HdCanvas *surface);
 	/// Draws the arc on top of the map.
 	void drawAimArc(HdCanvas *surface);
+	/// The parts of drawTerrain drawn after the tiles: the path preview, the arrow over the selected unit, the numbers of the units seen,
+	/// the arrows of the motion scanner and of the deployment preview, the explosions, the muzzle flashes.
+	void drawPathPreview(HdCanvas *surface, NumberText *_numWaypid, int beginX, int endX, int beginY, int endY, int beginZ, int endZ, bool turned);
+	void drawSelectedArrow(HdCanvas *surface);
+	void drawUnitMarkers(HdCanvas *surface);
+	void drawScannerArrows(HdCanvas *surface);
+	void drawDeployArrows(HdCanvas *surface);
+	void drawExplosions(HdCanvas *surface);
+	void drawMuzzleFlashes(HdCanvas *surface);
 	/// HD render: "+N" under the reticle at canvas (x, y) - the power the shooter's stats add (option oxceHdAimSkillBonus).
 	void drawSkillBonus(HdCanvas *surface, int x, int y);
 	Text *_txtSkillBonus = nullptr;
