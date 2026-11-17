@@ -6465,6 +6465,25 @@ void Map::drawTerrain(HdCanvas *surface)
 		std::sort(order.begin(), order.end(), [](const std::pair<int, Tile*> &a, const std::pair<int, Tile*> &b) { return a.first > b.first; });
 		for (size_t i = 0; i < order.size() && i < 8; ++i)
 			_hdSeaTiles.push_back(order[i].second);
+		// XP-000591: the sea goes on only beyond the edge's cells that are the sea (a harbour has it on one side, a ship all
+		// round): an edge cell counts when open sea is within 2 cells of it, so a pier or a boat at the edge leaves no gap
+		const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY();
+		_hdSeaEdge.assign((size_t)sizeX * sizeY, 0);
+		for (int y = 0; _hdSeaZ >= 0 && y < sizeY; ++y)
+		{
+			for (int x = 0; x < sizeX; ++x)
+			{
+				if (x > 2 && x < sizeX - 3 && y > 2 && y < sizeY - 3)
+					continue;
+				for (int ny = std::max(0, y - 2); ny <= std::min(sizeY - 1, y + 2) && !_hdSeaEdge[(size_t)y * sizeX + x]; ++ny)
+					for (int nx = std::max(0, x - 2); nx <= std::min(sizeX - 1, x + 2); ++nx)
+						if (hdOpenSea(_save->getTile(Position(nx, ny, _hdSeaZ))))
+						{
+							_hdSeaEdge[(size_t)y * sizeX + x] = 1;
+							break;
+						}
+			}
+		}
 	}
 	const bool hdSea = _k > 1 && !turned && _hdSeaZ >= beginZ && _hdSeaZ <= endZ && !_hdSeaTiles.empty();
 	// the sea beyond the edge behind the map goes under the water's level, before it is drawn; the sea before the map after it -
@@ -6501,6 +6520,10 @@ void Map::drawTerrain(HdCanvas *surface)
 				for (int x = -R; x < sizeX + R; ++x)
 				{
 					if ((x >= 0 && x < sizeX && y >= 0 && y < sizeY) || (x >= sizeX || y >= sizeY) != front)
+						continue;
+					// the edge's cell the sea goes on from (XP-000591): the nearest one, past a corner the corner's
+					const int ex = std::max(0, std::min(sizeX - 1, x)), ey = std::max(0, std::min(sizeY - 1, y));
+					if (!_hdSeaEdge[(size_t)ey * sizeX + ex])
 						continue;
 					Position screen;
 					_camera->convertMapToScreen(Position(x, y, itZ), &screen);

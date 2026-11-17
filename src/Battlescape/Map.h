@@ -329,6 +329,7 @@ private:
 	/// XP-000572: the level of the open sea of the map (-2 not looked yet, -1 none) and its commonest sea cells, most common first
 	int _hdSeaZ = -2;
 	std::vector<Tile*> _hdSeaTiles;
+	std::vector<char> _hdSeaEdge; // XP-000591: by the map's cell, is open sea near it on the water's level (only the edge's are read)
 	/// Options::oxceHdBeyondLook 1: the floor of a palette sprite in greys (made once, kept while the battle's map lives), nullptr if it cannot be made.
 	const HdFrame *hdGrayFloor(HdCanvas *surface, SurfaceRaw<const Uint8> sprite);
 	std::unordered_map<const void*, HdFrame> _hdGrayFrames;
