@@ -28,4 +28,16 @@ class SavedBattleGame;
 /// HD: true when the battle is on an orbital map (no sun there: no HD shadows, no weather).
 bool hdOrbitalMap(const SavedBattleGame *save);
 
+/// The shade of the corners on the floor (Map::hdFloorAo): the opacity of the darkest level, the levels of the grid,
+/// the share of the own object's lower voxels above which the floor is not seen, the voxels above a plate below which what
+/// stands on it is thin (Map::hdAoShape), the most looks kept for a battle.
+const int FLOOR_AO_ALPHA = 135;
+const int FLOOR_AO_LEVELS = 16;
+const int FLOOR_AO_HIDDEN = 230;
+const int FLOOR_AO_THIN = 64;
+const size_t FLOOR_AO_MAX_FRAMES = 2048;
+
+/// HD: the floor diamond of a tile in one colour (defined in MapEdge.cpp).
+void fillDiamond(HdFrame &f, Uint32 rgb, int alpha, int k);
+
 }

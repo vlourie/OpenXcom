@@ -119,6 +119,7 @@ set ( battlescape_src
   Battlescape/KnowledgeArmor.cpp
   Battlescape/Map.cpp
   Battlescape/MapWeather.cpp
+  Battlescape/MapEdge.cpp
   Battlescape/MedikitState.cpp
   Battlescape/MedikitView.cpp
   Battlescape/MeleeAttackBState.cpp
