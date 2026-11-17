@@ -3133,255 +3133,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					// Draw cursor front
 					if (_cursorType != CT_NONE && _selectorX > itX - _cursorSize && _selectorY > itY - _cursorSize && _selectorX < itX+1 && _selectorY < itY+1 && !_save->getBattleState()->getMouseOverIcons())
 					{
-						if (_camera->getViewLevel() == itZ)
-						{
-							int reticleColor = 0;
-							if (_cursorType != CT_AIM && !explosiveReticle)
-							{
-								if (unit && (unit->getVisible() || _save->getDebugMode()))
-									frameNumber = 3 + halfAnimFrameRest; // yellow box
-								else
-									frameNumber = 3; // red box
-							}
-							else
-							{
-								if (unit && (unit->getVisible() || _save->getDebugMode()))
-								{
-									frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs, in the shot's damage colour
-									reticleColor = reticleColorGroup(_game->getMod(), _save->getBattleGame()->getCurrentAction(), getPalette());
-								}
-								else
-									frameNumber = 6; // red static crosshairs (no target: keeps its red)
-							}
-							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
-
-							// UFO extender accuracy: display adjusted accuracy value on crosshair in real-time.
-							if (_cursorType >= CT_AIM && _showInfoOnCursor && (_cursorType != CT_THROW || !Options::oxceDisableInfoOnThrowCursor))
-							{
-								BattleAction *action = _save->getBattleGame()->getCurrentAction();
-								const RuleItem *weapon = action->weapon->getRules();
-								std::ostringstream ss;
-								BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(*action);
-								int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY,itZ));
-								int distance = (int)std::ceil(sqrt(float(distanceSq)));
-
-								if (_cursorType == CT_AIM || _cursorType == CT_THROW)
-								{
-									int accuracy = BattleUnit::getFiringAccuracy(attack, _game->getMod());
-
-									{
-										int upperLimit, lowerLimit;
-										int dropoff = weapon->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), action->type);
-
-										// at this point, let's assume the shot is adjusted and set the text amber.
-										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
-
-										if (distance > upperLimit)
-										{
-											accuracy -= (distance - upperLimit) * dropoff;
-										}
-										else if (distance < lowerLimit)
-										{
-											accuracy -= (lowerLimit - distance) * dropoff;
-										}
-										else
-										{
-											// no adjustment made? set it to green.
-											_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
-										}
-									}
-
-									// Include LOS penalty for tiles in the unit's current view range
-									// Don't recalculate LOS for outside of the current FOV
-									int noLOSAccuracyPenalty = action->weapon->getRules()->getNoLOSAccuracyPenalty(_game->getMod());
-									if (noLOSAccuracyPenalty != -1)
-									{
-										bool hasLOS = false;
-										if (Position(itX, itY, itZ) == _cacheCursorPosition && _isCtrlPressed == _cacheIsCtrlPressed && _cacheHasLOS != -1)
-										{
-											// use cached result
-											hasLOS = (_cacheHasLOS == 1);
-										}
-										else
-										{
-											// recalculate
-											if (unit && (unit->getVisible() || _save->getDebugMode()))
-											{
-												hasLOS = _save->getTileEngine()->visible(action->actor, tile);
-											}
-											else
-											{
-												hasLOS = _save->getTileEngine()->isTileInLOS(action, tile, true);
-											}
-											// remember
-											_cacheIsCtrlPressed = _isCtrlPressed;
-											_cacheCursorPosition = Position(itX, itY, itZ);
-											_cacheHasLOS = hasLOS ? 1 : 0;
-										}
-
-										if (!hasLOS)
-										{
-											accuracy = accuracy * noLOSAccuracyPenalty / 100;
-											_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
-										}
-									}
-
-									bool outOfRange = action->type == BA_THROW
-										? weapon->isOutOfThrowRange(distanceSq, _save->getDepth())
-										: weapon->isOutOfRange(distanceSq);
-
-									// zero accuracy or out of range: set it red.
-									if (accuracy <= 0 || outOfRange)
-									{
-										accuracy = 0;
-										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::red - 1) - 1);
-									}
-									ss << accuracy;
-									ss << "%";
-								}
-
-								//TODO: merge this code with `InventoryState::calculateCurrentDamageTooltip` as 90% is same or should be same
-								// display additional damage and psi-effectiveness info (Alt held, or always: HD option)
-								if (_isAltPressed || (Options::oxceHdAltInfo & 2))
-								{
-									// step 1: determine rule
-									const RuleItem *rule;
-									if (weapon->getBattleType() == BT_PSIAMP)
-									{
-										rule = weapon;
-									}
-									else if (action->weapon->needsAmmoForAction(action->type))
-									{
-										auto* ammo = attack.damage_item;
-										if (ammo != nullptr)
-										{
-											rule = ammo->getRules();
-										}
-										else
-										{
-											rule = 0; // empty weapon = no rule
-										}
-									}
-									else
-									{
-										rule = weapon;
-									}
-
-									// step 2: check if unlocked
-									if (_cacheActiveWeaponUfopediaArticleUnlocked == -1)
-									{
-										_cacheActiveWeaponUfopediaArticleUnlocked = 0;
-										if (_game->getSavedGame()->getMonthsPassed() == -1)
-										{
-											_cacheActiveWeaponUfopediaArticleUnlocked = 1; // new battle mode
-										}
-										else if (rule)
-										{
-											_cacheActiveWeaponUfopediaArticleUnlocked = 1; // assume unlocked
-											ArticleDefinition *article = _game->getMod()->getUfopaediaArticle(rule->getType(), false);
-											if (article && !Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
-											{
-												_cacheActiveWeaponUfopediaArticleUnlocked = 0; // ammo/weapon locked
-											}
-											if (rule->getType() != weapon->getType())
-											{
-												article = _game->getMod()->getUfopaediaArticle(weapon->getType(), false);
-												if (article && !Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
-												{
-													_cacheActiveWeaponUfopediaArticleUnlocked = 0; // weapon locked
-												}
-											}
-										}
-									}
-
-									// step 3: calculate and draw
-									if (rule && _cacheActiveWeaponUfopediaArticleUnlocked == 1)
-									{
-										if (rule->getBattleType() == BT_PSIAMP)
-										{
-											float attackStrength = BattleUnit::getPsiAccuracy(attack);
-											float defenseStrength = 30.0f; // indicator ignores: +victim->getArmor()->getPsiDefence(victim);
-
-											float dis = Position::distance(action->actor->getPosition().toVoxel(), Position(itX, itY, itZ).toVoxel());
-											int min = attackStrength - defenseStrength - rule->getPsiAccuracyRangeReduction(dis);
-											int max = min + 55;
-											if (max <= 0)
-											{
-												ss << "0%";
-											}
-											else
-											{
-												ss << min << "-" << max << "%";
-											}
-										}
-										if (rule->getBattleType() != BT_PSIAMP || action->type == BA_USE)
-										{
-											int totalDamage = 0;
-											if (weapon->getIgnoreAmmoPower())
-											{
-												totalDamage += weapon->getPowerBonus(attack);
-												totalDamage -= weapon->getPowerRangeReduction(distance * 16);
-											}
-											else
-											{
-												totalDamage += rule->getPowerBonus(attack);
-												totalDamage -= rule->getPowerRangeReduction(distance * 16);
-											}
-											if (totalDamage < 0) totalDamage = 0;
-											if (_cursorType != CT_WAYPOINT)
-												ss << "\n";
-											ss << rule->getDamageType()->getRandomDamage(totalDamage, 1);
-											ss << "-";
-											ss << rule->getDamageType()->getRandomDamage(totalDamage, 2);
-											if (rule->getDamageType()->RandomType == DRT_UFO_WITH_TWO_DICE)
-												ss << "*";
-										}
-									}
-									else
-									{
-										ss << "\n?-?";
-									}
-								}
-
-								_txtAccuracy->setText(ss.str());
-								drawAccuracy(surface, screenPosition.x, screenPosition.y);
-							}
-							// HD render: what the shooter's stats add to the power of the aimed attack
-							if (_cursorType == CT_AIM || _cursorType == CT_THROW)
-							{
-								drawSkillBonus(surface, screenPosition.x, screenPosition.y);
-							}
-						}
-						else if (_camera->getViewLevel() > itZ)
-						{
-							frameNumber = 5; // blue box
-							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
-						}
-						if (!_isAltPressed && _cursorType > CT_AIM && _camera->getViewLevel() == itZ)
-						{
-							bool ignore = false;
-							if (_cursorType == CT_PSI || _cursorType == CT_WAYPOINT)
-							{
-								BattleAction* action = _save->getBattleGame()->getCurrentAction();
-								int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY, itZ));
-								if (action->weapon->getRules()->isOutOfRange(distanceSq))
-								{
-									// weapon doesn't work at this distance, just draw a normal cursor with a red 0% hint text
-									ignore = true;
-									_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::red - 1) - 1);
-									_txtAccuracy->setText("0%");
-									drawAccuracy(surface, screenPosition.x, screenPosition.y);
-								}
-							}
-							if (!ignore)
-							{
-								int frame[6] = { 0, 0, 0, 11, 13, 15 };
-								tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frame[_cursorType] + (_animFrame / 4) % 2);
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
-							}
-						}
+						drawCursorFront(surface, tile, unit, screenPosition, itX, itY, itZ, explosiveReticle);
 					}
 
 					// Draw waypoints if any on this tile
@@ -3463,6 +3215,273 @@ void Map::drawTerrain(HdCanvas *surface)
 	drawMuzzleFlashes(surface);
 
 	surface->unlock();
+}
+
+/**
+ * The front cursor on its tile: the box or the crosshairs (in the colour of the shot's damage), the accuracy and the damage of the aimed
+ * attack by the crosshairs, the cursors of the special actions. Called by drawTerrain for the tiles under the cursor.
+ * @param surface The canvas.
+ * @param tile The tile.
+ * @param unit The unit of the tile (or the one drawn there), if any.
+ * @param screenPosition The tile on the canvas.
+ * @param itX, itY, itZ The tile on the map.
+ * @param explosiveReticle A thrown explosive is drawn with the reticle frames (oxceHdReticleExplosive).
+ */
+void Map::drawCursorFront(HdCanvas *surface, Tile *tile, BattleUnit *unit, const Position &screenPosition, int itX, int itY, int itZ, bool explosiveReticle)
+{
+	const int halfAnimFrame = (_animFrame / 2) % 4;
+	const int halfAnimFrameRest = (_animFrame % 2);
+	int frameNumber = 0;
+	SurfaceRaw<const Uint8> tmpSurface;
+	if (_camera->getViewLevel() == itZ)
+	{
+		int reticleColor = 0;
+		if (_cursorType != CT_AIM && !explosiveReticle)
+		{
+			if (unit && (unit->getVisible() || _save->getDebugMode()))
+				frameNumber = 3 + halfAnimFrameRest; // yellow box
+			else
+				frameNumber = 3; // red box
+		}
+		else
+		{
+			if (unit && (unit->getVisible() || _save->getDebugMode()))
+			{
+				frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs, in the shot's damage colour
+				reticleColor = reticleColorGroup(_game->getMod(), _save->getBattleGame()->getCurrentAction(), getPalette());
+			}
+			else
+				frameNumber = 6; // red static crosshairs (no target: keeps its red)
+		}
+		tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
+		surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
+
+		// UFO extender accuracy: display adjusted accuracy value on crosshair in real-time.
+		if (_cursorType >= CT_AIM && _showInfoOnCursor && (_cursorType != CT_THROW || !Options::oxceDisableInfoOnThrowCursor))
+		{
+			BattleAction *action = _save->getBattleGame()->getCurrentAction();
+			const RuleItem *weapon = action->weapon->getRules();
+			std::ostringstream ss;
+			BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(*action);
+			int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY,itZ));
+			int distance = (int)std::ceil(sqrt(float(distanceSq)));
+
+			if (_cursorType == CT_AIM || _cursorType == CT_THROW)
+			{
+				int accuracy = BattleUnit::getFiringAccuracy(attack, _game->getMod());
+
+				{
+					int upperLimit, lowerLimit;
+					int dropoff = weapon->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), action->type);
+
+					// at this point, let's assume the shot is adjusted and set the text amber.
+					_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
+
+					if (distance > upperLimit)
+					{
+						accuracy -= (distance - upperLimit) * dropoff;
+					}
+					else if (distance < lowerLimit)
+					{
+						accuracy -= (lowerLimit - distance) * dropoff;
+					}
+					else
+					{
+						// no adjustment made? set it to green.
+						_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
+					}
+				}
+
+				// Include LOS penalty for tiles in the unit's current view range
+				// Don't recalculate LOS for outside of the current FOV
+				int noLOSAccuracyPenalty = action->weapon->getRules()->getNoLOSAccuracyPenalty(_game->getMod());
+				if (noLOSAccuracyPenalty != -1)
+				{
+					bool hasLOS = false;
+					if (Position(itX, itY, itZ) == _cacheCursorPosition && _isCtrlPressed == _cacheIsCtrlPressed && _cacheHasLOS != -1)
+					{
+						// use cached result
+						hasLOS = (_cacheHasLOS == 1);
+					}
+					else
+					{
+						// recalculate
+						if (unit && (unit->getVisible() || _save->getDebugMode()))
+						{
+							hasLOS = _save->getTileEngine()->visible(action->actor, tile);
+						}
+						else
+						{
+							hasLOS = _save->getTileEngine()->isTileInLOS(action, tile, true);
+						}
+						// remember
+						_cacheIsCtrlPressed = _isCtrlPressed;
+						_cacheCursorPosition = Position(itX, itY, itZ);
+						_cacheHasLOS = hasLOS ? 1 : 0;
+					}
+
+					if (!hasLOS)
+					{
+						accuracy = accuracy * noLOSAccuracyPenalty / 100;
+						_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
+					}
+				}
+
+				bool outOfRange = action->type == BA_THROW
+					? weapon->isOutOfThrowRange(distanceSq, _save->getDepth())
+					: weapon->isOutOfRange(distanceSq);
+
+				// zero accuracy or out of range: set it red.
+				if (accuracy <= 0 || outOfRange)
+				{
+					accuracy = 0;
+					_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::red - 1) - 1);
+				}
+				ss << accuracy;
+				ss << "%";
+			}
+
+			//TODO: merge this code with `InventoryState::calculateCurrentDamageTooltip` as 90% is same or should be same
+			// display additional damage and psi-effectiveness info (Alt held, or always: HD option)
+			if (_isAltPressed || (Options::oxceHdAltInfo & 2))
+			{
+				// step 1: determine rule
+				const RuleItem *rule;
+				if (weapon->getBattleType() == BT_PSIAMP)
+				{
+					rule = weapon;
+				}
+				else if (action->weapon->needsAmmoForAction(action->type))
+				{
+					auto* ammo = attack.damage_item;
+					if (ammo != nullptr)
+					{
+						rule = ammo->getRules();
+					}
+					else
+					{
+						rule = 0; // empty weapon = no rule
+					}
+				}
+				else
+				{
+					rule = weapon;
+				}
+
+				// step 2: check if unlocked
+				if (_cacheActiveWeaponUfopediaArticleUnlocked == -1)
+				{
+					_cacheActiveWeaponUfopediaArticleUnlocked = 0;
+					if (_game->getSavedGame()->getMonthsPassed() == -1)
+					{
+						_cacheActiveWeaponUfopediaArticleUnlocked = 1; // new battle mode
+					}
+					else if (rule)
+					{
+						_cacheActiveWeaponUfopediaArticleUnlocked = 1; // assume unlocked
+						ArticleDefinition *article = _game->getMod()->getUfopaediaArticle(rule->getType(), false);
+						if (article && !Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
+						{
+							_cacheActiveWeaponUfopediaArticleUnlocked = 0; // ammo/weapon locked
+						}
+						if (rule->getType() != weapon->getType())
+						{
+							article = _game->getMod()->getUfopaediaArticle(weapon->getType(), false);
+							if (article && !Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
+							{
+								_cacheActiveWeaponUfopediaArticleUnlocked = 0; // weapon locked
+							}
+						}
+					}
+				}
+
+				// step 3: calculate and draw
+				if (rule && _cacheActiveWeaponUfopediaArticleUnlocked == 1)
+				{
+					if (rule->getBattleType() == BT_PSIAMP)
+					{
+						float attackStrength = BattleUnit::getPsiAccuracy(attack);
+						float defenseStrength = 30.0f; // indicator ignores: +victim->getArmor()->getPsiDefence(victim);
+
+						float dis = Position::distance(action->actor->getPosition().toVoxel(), Position(itX, itY, itZ).toVoxel());
+						int min = attackStrength - defenseStrength - rule->getPsiAccuracyRangeReduction(dis);
+						int max = min + 55;
+						if (max <= 0)
+						{
+							ss << "0%";
+						}
+						else
+						{
+							ss << min << "-" << max << "%";
+						}
+					}
+					if (rule->getBattleType() != BT_PSIAMP || action->type == BA_USE)
+					{
+						int totalDamage = 0;
+						if (weapon->getIgnoreAmmoPower())
+						{
+							totalDamage += weapon->getPowerBonus(attack);
+							totalDamage -= weapon->getPowerRangeReduction(distance * 16);
+						}
+						else
+						{
+							totalDamage += rule->getPowerBonus(attack);
+							totalDamage -= rule->getPowerRangeReduction(distance * 16);
+						}
+						if (totalDamage < 0) totalDamage = 0;
+						if (_cursorType != CT_WAYPOINT)
+							ss << "\n";
+						ss << rule->getDamageType()->getRandomDamage(totalDamage, 1);
+						ss << "-";
+						ss << rule->getDamageType()->getRandomDamage(totalDamage, 2);
+						if (rule->getDamageType()->RandomType == DRT_UFO_WITH_TWO_DICE)
+							ss << "*";
+					}
+				}
+				else
+				{
+					ss << "\n?-?";
+				}
+			}
+
+			_txtAccuracy->setText(ss.str());
+			drawAccuracy(surface, screenPosition.x, screenPosition.y);
+		}
+		// HD render: what the shooter's stats add to the power of the aimed attack
+		if (_cursorType == CT_AIM || _cursorType == CT_THROW)
+		{
+			drawSkillBonus(surface, screenPosition.x, screenPosition.y);
+		}
+	}
+	else if (_camera->getViewLevel() > itZ)
+	{
+		frameNumber = 5; // blue box
+		tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
+		surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+	}
+	if (!_isAltPressed && _cursorType > CT_AIM && _camera->getViewLevel() == itZ)
+	{
+		bool ignore = false;
+		if (_cursorType == CT_PSI || _cursorType == CT_WAYPOINT)
+		{
+			BattleAction* action = _save->getBattleGame()->getCurrentAction();
+			int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY, itZ));
+			if (action->weapon->getRules()->isOutOfRange(distanceSq))
+			{
+				// weapon doesn't work at this distance, just draw a normal cursor with a red 0% hint text
+				ignore = true;
+				_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::red - 1) - 1);
+				_txtAccuracy->setText("0%");
+				drawAccuracy(surface, screenPosition.x, screenPosition.y);
+			}
+		}
+		if (!ignore)
+		{
+			int frame[6] = { 0, 0, 0, 11, 13, 15 };
+			tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frame[_cursorType] + (_animFrame / 4) % 2);
+			surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+		}
+	}
 }
 
 /**

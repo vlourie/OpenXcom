@@ -471,6 +471,8 @@ private:
 	void hdFindClassicShot(HdClassicShot &classicShot, bool turned, bool hdFrames);
 	void hdFindSea();
 	void hdDrawSea(HdCanvas *surface, const Position &cameraPos, int itZ, bool front);
+	/// The parts of drawTerrain's tile loop: the front cursor of the tile under the cursor.
+	void drawCursorFront(HdCanvas *surface, Tile *tile, BattleUnit *unit, const Position &screenPosition, int itX, int itY, int itZ, bool explosiveReticle);
 	/// HD render: "+N" under the reticle at canvas (x, y) - the power the shooter's stats add (option oxceHdAimSkillBonus).
 	void drawSkillBonus(HdCanvas *surface, int x, int y);
 	Text *_txtSkillBonus = nullptr;
