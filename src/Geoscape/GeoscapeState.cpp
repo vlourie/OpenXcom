@@ -83,6 +83,7 @@
 #include "UfoLostState.h"
 #include "CraftPatrolState.h"
 #include "../Engine/HdCraftRoute.h"
+#include "../Engine/HdUi.h"
 #include "LowFuelState.h"
 #include "MultipleTargetsState.h"
 #include "SelectDestinationState.h"
@@ -202,6 +203,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_txtMonth = new Text(29, 8, screenWidth-32, screenHeight/2-6);
 	_txtYear = new Text(59, 8, screenWidth-61, screenHeight/2+1);
 	_txtFunds = new Text(59, 8, screenWidth-61, screenHeight/2-27);
+	_txtHdTime = new Text(59, 8, screenWidth-61, screenHeight/2-20);
 
 	int slackingIndicatorOffset = _game->getMod()->getInterface("geoscape")->getElement("slackingIndicator")->custom;
 	_txtSlacking = new Text(59, 17, screenWidth - 61, screenHeight / 2 - 100 + slackingIndicatorOffset);
@@ -264,6 +266,9 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	add(_txtDay, "text", "geoscape");
 	add(_txtMonth, "text", "geoscape");
 	add(_txtYear, "text", "geoscape");
+	add(_txtHdTime, "text", "geoscape");
+	_txtHdTime->setAlign(ALIGN_CENTER);
+	_txtHdTime->setVisible(false);
 	// XP-000575: the note that opens the music player, at the clock's lower right corner
 	_btnMusic = new MusicNoteButton(_game, screenWidth - 11, screenHeight / 2 + 1);
 	add(_btnMusic);
@@ -441,6 +446,12 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 		_txtMinSep->setY(_txtMinSep->getY()+6);
 		_txtMinSep->setSmall();
 		_txtSec->setX(_txtSec->getX()-10);
+	}
+	// HD interface: the clock's small rows stand a classic line (7 pixels) apart; TrueType letters as tall as the
+	// pixel font's capitals, without its dark edge, ran into each other - set at 72% (Vitali 17.11); the big hour stays
+	for (Text *t : { _txtFunds, _txtHour, _txtHourSep, _txtMin, _txtMinSep, _txtSec, _txtWeekday, _txtDay, _txtMonth, _txtYear, _txtHdTime })
+	{
+		if (t->getHeight() <= 8 || Options::showFundsOnGeoscape) t->setHdCapScale(0.72f);
 	}
 
 	_gameTimer->onTimer((StateHandler)&GeoscapeState::timeAdvance);
@@ -902,6 +913,12 @@ void GeoscapeState::timeDisplay()
 	std::ostringstream ss3;
 	ss3 << _game->getSavedGame()->getTime()->getHour();
 	_txtHour->setText(ss3.str());
+
+	// HD interface with funds shown: the time as one line in place of the three texts
+	const bool hdTime = Options::showFundsOnGeoscape && HdUi::active();
+	_txtHdTime->setVisible(hdTime);
+	for (Text *t : { _txtHour, _txtHourSep, _txtMin, _txtMinSep, _txtSec }) t->setVisible(!hdTime);
+	if (hdTime) _txtHdTime->setText(ss3.str() + ":" + ss2.str() + ":" + ss.str());
 
 	std::ostringstream ss4;
 	ss4 << _game->getSavedGame()->getTime()->getDayString(_game->getLanguage());

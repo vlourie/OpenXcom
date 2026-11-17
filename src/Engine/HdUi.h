@@ -253,7 +253,7 @@ public:
 	/// The capitals are centred in the classic line box (in the text's box when it is a single line of about
 	/// that height). A line too wide for the rectangle is condensed, then set smaller; one too tall for it (a
 	/// big label in a low button) is set smaller too.
-	void drawTtfLine(const std::vector<TextRun> &runs, int originX, int originY, int textW, int textH, int align, bool singleLine, const SDL_Color *pal);
+	void drawTtfLine(const std::vector<TextRun> &runs, int originX, int originY, int textW, int textH, int align, bool singleLine, const SDL_Color *pal, float capScale = 1.0f);
 	/// Draws a string with a TrueType font at base position (x, y = the top of a classic glyph cell of the
 	/// font), capitals `capHeight` base pixels tall; colours 0xAARRGGBB, shadow 0 = none.
 	void drawTtfString(const UString &s, bool big, float capHeight, int x, int y, Uint32 face, Uint32 shadow);

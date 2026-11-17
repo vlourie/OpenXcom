@@ -732,7 +732,7 @@ void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, 
 		});
 		for (const auto &line : lines)
 		{
-			ui.drawTtfLine(line, ox + pad, oy, roomW - 2 * pad, getHeight(), (int)_align, lines.size() == 1, colors);
+			ui.drawTtfLine(line, ox + pad, oy, roomW - 2 * pad, getHeight(), (int)_align, lines.size() == 1, colors, _hdCapScale);
 		}
 		ui.clearClip();
 		return;

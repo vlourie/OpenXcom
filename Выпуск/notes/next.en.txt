@@ -6,3 +6,4 @@
 - HD paper doll of the Sear Armor in the inventory: the visor and the chest gem are redrawn after the classic one - a narrow red visor and a red gem in a grey setting instead of a blurred blot.
 - Black market and selling: Aye with nothing chosen now closes the window like Begone instead of opening it again; after a real deal the window still stays open on the same base.
 - HD interface, Geoscape: zoomed in, the names of countries, cities and bases no longer run over the side panel (clock, date, buttons) - they are cut at the globe's edge, as in the classic game.
+- HD interface, Geoscape: the clock and date on the side panel are set smaller, so the rows no longer run into each other; with funds shown, the time is one line (14:16:55) without gaps at the colons.

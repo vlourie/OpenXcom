@@ -56,6 +56,9 @@ private:
 	InteractiveSurface *_btnRotateLeft, *_btnRotateRight, *_btnRotateUp, *_btnRotateDown, *_btnZoomIn, *_btnZoomOut;
 	MusicNoteButton *_btnMusic;
 	Text *_txtFunds, *_txtHour, *_txtHourSep, *_txtMin, *_txtMinSep, *_txtSec, *_txtWeekday, *_txtDay, *_txtMonth, *_txtYear;
+	/// HD interface, funds on the geoscape: the time as one line (the classic hour, minutes and seconds
+	/// are three texts laid out for the pixel font; set in TrueType they stood apart around the colons)
+	Text *_txtHdTime = nullptr;
 	Timer *_gameTimer, *_zoomInEffectTimer, *_zoomOutEffectTimer, *_dogfightStartTimer, *_dogfightTimer;
 	bool _pause, _zoomInEffectDone, _zoomOutEffectDone;
 	Text *_txtDebug;

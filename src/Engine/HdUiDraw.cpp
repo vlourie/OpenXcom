@@ -1904,7 +1904,7 @@ void HdUi::drawTtfCaret(const UString &value, size_t pos, const Font *classic, i
  * fonts: the runs' natural widths are summed, the line is placed by the
  * alignment within the text's width, condensed when it would not fit.
  */
-void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int originY, int textW, int textH, int align, bool singleLine, const SDL_Color *pal)
+void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int originY, int textW, int textH, int align, bool singleLine, const SDL_Color *pal, float capScale)
 {
 	FrameTiming timing(_frameMs);
 	SDL_Surface *dest;
@@ -1924,7 +1924,7 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	std::vector<Part> parts(runs.size());
 	// a line taller than its rectangle allows (the capitals plus a little room; the classic big font is
 	// crammed into 13-pixel buttons): set smaller
-	float shrink = 1.0f;
+	float shrink = capScale;
 	for (const TextRun &r : runs)
 	{
 		const FontMetrics &m = metrics(r.font);

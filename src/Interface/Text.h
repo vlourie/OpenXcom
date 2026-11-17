@@ -51,6 +51,7 @@ private:
 	TextVAlign _valign;
 	Uint8 _color, _color2;
 	int _scrollY;
+	float _hdCapScale = 1.0f;
 	/// Lays the glyphs out as draw() does and reports each: fn(font, code, x, y, color, mul, mid).
 	void forEachGlyph(const std::function<void(Font*, UCode, int, int, int, int, int)> &fn) const;
 
@@ -115,6 +116,9 @@ public:
 	/// cut to its own rectangle and, when given (w > 0), to the holder's rectangle. `cutOnly`: the holder
 	/// only cuts the letters, the line keeps its own room (a globe label at the globe's edge, XP-000594).
 	void hdDrawAt(int x, int y, int clipX = 0, int clipY = 0, int clipW = 0, int clipH = 0, int padX = 0, bool cutOnly = false);
+	/// HD interface: the TrueType letters set this much smaller than the classic font's capitals
+	/// (rows stacked a classic line apart, as the geoscape's clock: the TrueType line has no gap).
+	void setHdCapScale(float s) { _hdCapScale = s; }
 	/// Sets the text's scrollable setting.
 	void setScrollable(bool scroll);
 	/// Special handling for mouse presses.
