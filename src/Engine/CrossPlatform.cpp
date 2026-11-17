@@ -26,6 +26,7 @@
 #include <fstream>
 #include <string>
 #include <list>
+#include <mutex>
 #include <stdint.h>
 #include <time.h>
 #include <signal.h>
@@ -1687,6 +1688,11 @@ void log(int level, const std::ostringstream& baremsgstream) {
 		fwrite(msg.c_str(), msg.size(), 1, stderr);
 		fflush(stderr);
 	}
+	// the HD render threads log too (a failed job, an unreadable picture): the buffer below is one list for all of
+	// them, and two lines at once broke the heap (found with injected faults, 17.11); the same thread may come here
+	// again from the crash handler
+	static std::recursive_mutex logLock;
+	std::lock_guard<std::recursive_mutex> logGuard(logLock);
 	if (logBuffer.size() > LOG_BUFFER_LIMIT) { // drop earliest message so as to not eat all memory
 		logBuffer.pop_front();
 	}

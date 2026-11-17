@@ -69,6 +69,9 @@ private:
 	std::atomic<long long> _workNs { 0 };
 	/// Jobs of the running batch that ended with an exception.
 	std::atomic<int> _failed { 0 };
+	/// Their numbers: each is run once more by the caller when the batch is over (see run).
+	std::vector<int> _failedJobs;
+	std::mutex _failMutex;
 	/// The work one woken thread must get for its wake to pay (OXCE_HD_POOL_GRAIN_US for tests), nanoseconds.
 	long long _grainNs = 0;
 
@@ -87,8 +90,12 @@ public:
 	int threads() const { return (int)_threads.size() + 1; }
 	/// Runs fn(0) .. fn(jobs - 1) across the pool and returns when all have finished. The jobs must not
 	/// depend on which thread runs them: a batch of little work runs on fewer threads, or on the caller alone.
-	/// A job that throws is logged and the rest still run (an exception must not leave a render thread); the answer
-	/// is false then: what the batch was making is not whole, and a caller that keeps it (a cache) must drop it.
+	/// A job that throws is logged and the rest still run (an exception must not leave a render thread); when the
+	/// batch is over it is run once more on the caller's thread - most call sites keep what the batch made (a
+	/// palette table, a smoothed set, an icon) and a fault that passes, memory short for a moment with every
+	/// thread at work, must not leave a hole there for good. So a job must be able to start anew after it threw.
+	/// The answer is false when a job failed twice: what the batch was making is not whole, and a caller that
+	/// keeps it (a cache) must drop it.
 	bool run(int jobs, const std::function<void(int)> &fn);
 };
 

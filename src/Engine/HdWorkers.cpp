@@ -149,6 +149,8 @@ int HdWorkers::takeJobs(const std::function<void(int)> &fn, int jobs, long long 
 		if (!runJob(fn, i))
 		{
 			++_failed;
+			std::lock_guard<std::mutex> lock(_failMutex);
+			_failedJobs.push_back(i);
 		}
 		++taken;
 	}
@@ -203,7 +205,7 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 		bool whole = true;
 		for (int i = 0; i < jobs; ++i)
 		{
-			whole = runJob(fn, i) && whole;
+			whole = (runJob(fn, i) || runJob(fn, i)) && whole; // a job that threw: once more (see run in the header)
 		}
 		return whole;
 	}
@@ -227,6 +229,7 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 		_slots = want;
 		_workNs = 0;
 		_failed = 0;
+		_failedJobs.clear();
 		++_generation;
 	}
 	if (want == (int)_threads.size())
@@ -265,7 +268,18 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 		cost.workNs += _workNs;
 		reportStats();
 	}
-	return _failed == 0;
+	if (_failed == 0)
+	{
+		return true;
+	}
+	// the jobs that threw, once more and one at a time: the workers are done with the batch, the list is ours
+	int again = 0;
+	for (int i : _failedJobs)
+	{
+		again += !runJob(fn, i);
+	}
+	Log(again ? LOG_ERROR : LOG_WARNING) << "HD render: " << _failedJobs.size() << " failed job(s) run again, " << again << " failed again";
+	return again == 0;
 }
 
 void HdWorkers::reportStats()
