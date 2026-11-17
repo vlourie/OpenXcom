@@ -3043,6 +3043,26 @@ void Canvas32::makeJobs()
 		// frame's commands still point at the entries, so they are let go at the end of the flush, all of them,
 		// the way they go when the pack's frames change (forgetChanged)
 		Log(LOG_ERROR) << "HD canvas: a ground blend or shaded copy was not made - the cached ones are made anew";
+		// which of them it was is not known: every one of this batch that is not a whole frame becomes an empty
+		// one of its size, so that this frame's commands draw nothing of it instead of reading past its rows
+		auto whole_or_empty = [](HdFrame *f)
+		{
+			const size_t rows = (size_t)std::max(0, f->height), px = (size_t)std::max(0, f->width) * rows;
+			if (f->pixels.size() != px || f->rows.size() != rows || f->solid.size() != rows)
+			{
+				f->pixels.assign(px, 0);
+				f->rows.assign(rows, HdFrame::Span{0, 0});
+				f->solid.assign(rows, HdFrame::Span{0, 0});
+			}
+		};
+		for (const GroundJob &job : _groundJobs)
+		{
+			whole_or_empty(job.out);
+		}
+		for (const TonedJob &job : _tonedJobs)
+		{
+			whole_or_empty(job.out);
+		}
 		_changedAll = true;
 		_tonedStale = true;
 	}
