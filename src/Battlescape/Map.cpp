@@ -2742,163 +2742,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					// check if we got bullet && it is in Field Of View
 					if (_projectile && _projectileInFOV)
 					{
-						tmpSurface = nullptr;
-						BattleItem* item = _projectile->getItem();
-						if (item)
-						{
-							Position voxelPos = _projectile->getPosition();
-							// draw shadow on the floor
-							voxelPos.z = _save->getTileEngine()->castedShade(voxelPos);
-							if (viewCellOf(voxelPos).x >= viewX &&
-								viewCellOf(voxelPos).y >= viewY &&
-								viewCellOf(voxelPos).x <= viewX+1 &&
-								viewCellOf(voxelPos).y <= viewY+1 &&
-								voxelPos.z / 24 == itZ &&
-								_save->getTileEngine()->isVoxelVisible(voxelPos))
-							{
-								_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
-
-								itemSprite.drawShadow(item,
-									bulletPositionScreen.x - 16 * _k,
-									bulletPositionScreen.y - 26 * _k
-								);
-							}
-
-							voxelPos = _projectile->getPosition();
-							// draw thrown object
-							if (viewCellOf(voxelPos).x >= viewX &&
-								viewCellOf(voxelPos).y >= viewY &&
-								viewCellOf(voxelPos).x <= viewX+1 &&
-								viewCellOf(voxelPos).y <= viewY+1 &&
-								voxelPos.z / 24 == itZ &&
-								_save->getTileEngine()->isVoxelVisible(voxelPos))
-							{
-								_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
-
-								itemSprite.draw(item,
-									bulletPositionScreen.x - 16 * _k,
-									bulletPositionScreen.y - 26 * _k,
-									tileShade
-								);
-								if (_gentleFlying)
-								{
-									noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
-								}
-							}
-						}
-						else
-						{
-							// draw bullet on the correct tile
-							if (classicShot.active)
-							{
-								// HD render (XP-000544): the pieces of the shot whose step of the way is in this tile (see above); the order
-								// is the stamps' - head first when the shot goes away from the viewer, tail first when it comes
-								if (classicShot.shot && viewX >= classicShot.lowX && viewX <= classicShot.highX && viewY >= classicShot.lowY && viewY <= classicShot.highY)
-								{
-									const int count = (int)classicShot.shot->pieces.size();
-									for (int n = 0; n < count; ++n)
-									{
-										const int j = _projectile->isReversed() ? count - 1 - n : n;
-										const HdShots::Piece &piece = classicShot.shot->pieces[j];
-										if (classicShot.back[j] < 0 || piece.frame.empty())
-										{
-											continue;
-										}
-										const Position voxelPos = _projectile->getPosition(1 - classicShot.back[j]);
-										if (voxelPos.x / 16 == itX &&
-											voxelPos.y / 16 == itY &&
-											voxelPos.z / 24 == itZ &&
-											_save->getTileEngine()->isVoxelVisible(voxelPos))
-										{
-											surface->blitFrame(piece.frame, classicShot.head.x + piece.dx, classicShot.head.y + piece.dy);
-											if (_gentleFlying)
-											{
-												_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
-												noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
-											}
-										}
-									}
-								}
-							}
-							else if (viewX >= bulletLowX && viewX <= bulletHighX && viewY >= bulletLowY && viewY <= bulletHighY)
-							{
-								int begin = 0;
-								int end = BULLET_SPRITES;
-								int direction = 1;
-								if (_projectile->isReversed())
-								{
-									begin = BULLET_SPRITES - 1;
-									end = -1;
-									direction = -1;
-								}
-
-								for (int i = begin; i != end; i += direction)
-								{
-									tmpSurface = _projectileSet->getFrame(_projectile->getParticle(i));
-									if (tmpSurface)
-									{
-										Position voxelPos = _projectile->getPosition(1 - bulletBack(i));
-										// HD render: one voxel of the trail is k screen pixels and the tracer sprite is
-										// only three base pixels wide, so its thirty-five stamps are a row of separate
-										// dots with gaps between them. In HD the step to the next voxel is filled with
-										// stamps of the same sprite and the shot reads as one beam; the classic path
-										// draws the single stamp it always drew
-										Position trail = Position(0, 0, 0);
-										int steps = 1;
-										// (a tiny frame without a dot is one hd/FX/weapons.txt leaves classic: its bars stay one a voxel)
-										if (surface->getHdMode() != HD_MODE_NEAREST && (HdSprites::registered(tmpSurface.getBuffer()) || tmpSurface.getWidth() > 4 * _k || bulletSpan > BULLET_SPRITES))
-										{
-											Position from, to;
-											_camera->convertVoxelToScreen(voxelPos, &from);
-											_camera->convertVoxelToScreen(_projectile->getPosition(1 - bulletBack(i + 1)), &to);
-											const int gap = std::max(std::abs(to.x - from.x), std::abs(to.y - from.y));
-											// a stamp every third of the sprite: closer is wasted work, wider leaves a gap
-											const int stride = std::max(1, tmpSurface.getWidth() / 3);
-											steps = std::max(1, std::min(4, (gap + stride - 1) / stride));
-											trail = to - from;
-										}
-										// k times the original half size (a 3x3 bullet frame is centred on 1, not on 6 at 4x)
-										const int halfX = (tmpSurface.getWidth() / _k / 2) * _k;
-										const int halfY = (tmpSurface.getHeight() / _k / 2) * _k;
-										// draw shadow on the floor
-										voxelPos.z = _save->getTileEngine()->castedShade(voxelPos);
-										if (voxelPos.x / 16 == itX &&
-											voxelPos.y / 16 == itY &&
-											voxelPos.z / 24 == itZ &&
-											_save->getTileEngine()->isVoxelVisible(voxelPos))
-										{
-											_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
-											for (int s = 0; s < steps; ++s)
-											{
-												surface->blit(tmpSurface,
-													bulletPositionScreen.x - halfX + trail.x * s / steps,
-													bulletPositionScreen.y - halfY + trail.y * s / steps, 16, false, _nvColor);
-											}
-										}
-
-										// draw bullet itself
-										voxelPos = _projectile->getPosition(1 - bulletBack(i));
-										if (voxelPos.x / 16 == itX &&
-											voxelPos.y / 16 == itY &&
-											voxelPos.z / 24 == itZ &&
-											_save->getTileEngine()->isVoxelVisible(voxelPos))
-										{
-											_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
-											for (int s = 0; s < steps; ++s)
-											{
-												surface->blit(tmpSurface,
-													bulletPositionScreen.x - halfX + trail.x * s / steps,
-													bulletPositionScreen.y - halfY + trail.y * s / steps, 0, false, _nvColor);
-											}
-											if (_gentleFlying)
-											{
-												noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
-											}
-										}
-									}
-								}
-							}
-						}
+						drawProjectile(surface, itemSprite, classicShot, turned, viewX, viewY, itX, itY, itZ, tileShade, bulletLowX, bulletLowY, bulletHighX, bulletHighY, bulletSpan);
 					}
 
 					//draw particle clouds
@@ -3215,6 +3059,188 @@ void Map::drawTerrain(HdCanvas *surface)
 	drawMuzzleFlashes(surface);
 
 	surface->unlock();
+}
+
+/**
+ * The projectile on a tile: a thrown item with its shadow, the pieces of a classic shot or the stamps of a bullet's trail whose
+ * step of the way is in this tile. Called by drawTerrain for every tile while a projectile flies in view.
+ * @param surface The canvas.
+ * @param itemSprite The drawer of items of this frame.
+ * @param classicShot The classic shot of this frame (hdFindClassicShot).
+ * @param turned The view is turned.
+ * @param viewX, viewY The tile in the view.
+ * @param itX, itY, itZ The tile on the map.
+ * @param tileShade The shade of the tile.
+ * @param bulletLowX, bulletLowY, bulletHighX, bulletHighY The view cells the trail of the bullet covers.
+ * @param bulletSpan The voxels of the way the stamps of the trail are spread over.
+ */
+void Map::drawProjectile(HdCanvas *surface, ItemSprite &itemSprite, const HdClassicShot &classicShot, bool turned, int viewX, int viewY, int itX, int itY, int itZ, int tileShade, int bulletLowX, int bulletLowY, int bulletHighX, int bulletHighY, int bulletSpan)
+{
+	SurfaceRaw<const Uint8> tmpSurface;
+	Position bulletPositionScreen;
+	const auto bulletBack = [&](int i) { return i * bulletSpan / BULLET_SPRITES; }; // voxels behind the head of stamp i
+	auto viewCellOf = [&](const Position &voxel)
+	{
+		const Position cell(voxel.x / 16, voxel.y / 16, 0);
+		return turned ? _camera->worldToView(cell) : cell;
+	};
+	tmpSurface = nullptr;
+	BattleItem* item = _projectile->getItem();
+	if (item)
+	{
+		Position voxelPos = _projectile->getPosition();
+		// draw shadow on the floor
+		voxelPos.z = _save->getTileEngine()->castedShade(voxelPos);
+		if (viewCellOf(voxelPos).x >= viewX &&
+			viewCellOf(voxelPos).y >= viewY &&
+			viewCellOf(voxelPos).x <= viewX+1 &&
+			viewCellOf(voxelPos).y <= viewY+1 &&
+			voxelPos.z / 24 == itZ &&
+			_save->getTileEngine()->isVoxelVisible(voxelPos))
+		{
+			_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
+
+			itemSprite.drawShadow(item,
+				bulletPositionScreen.x - 16 * _k,
+				bulletPositionScreen.y - 26 * _k
+			);
+		}
+
+		voxelPos = _projectile->getPosition();
+		// draw thrown object
+		if (viewCellOf(voxelPos).x >= viewX &&
+			viewCellOf(voxelPos).y >= viewY &&
+			viewCellOf(voxelPos).x <= viewX+1 &&
+			viewCellOf(voxelPos).y <= viewY+1 &&
+			voxelPos.z / 24 == itZ &&
+			_save->getTileEngine()->isVoxelVisible(voxelPos))
+		{
+			_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
+
+			itemSprite.draw(item,
+				bulletPositionScreen.x - 16 * _k,
+				bulletPositionScreen.y - 26 * _k,
+				tileShade
+			);
+			if (_gentleFlying)
+			{
+				noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
+			}
+		}
+	}
+	else
+	{
+		// draw bullet on the correct tile
+		if (classicShot.active)
+		{
+			// HD render (XP-000544): the pieces of the shot whose step of the way is in this tile (see above); the order
+			// is the stamps' - head first when the shot goes away from the viewer, tail first when it comes
+			if (classicShot.shot && viewX >= classicShot.lowX && viewX <= classicShot.highX && viewY >= classicShot.lowY && viewY <= classicShot.highY)
+			{
+				const int count = (int)classicShot.shot->pieces.size();
+				for (int n = 0; n < count; ++n)
+				{
+					const int j = _projectile->isReversed() ? count - 1 - n : n;
+					const HdShots::Piece &piece = classicShot.shot->pieces[j];
+					if (classicShot.back[j] < 0 || piece.frame.empty())
+					{
+						continue;
+					}
+					const Position voxelPos = _projectile->getPosition(1 - classicShot.back[j]);
+					if (voxelPos.x / 16 == itX &&
+						voxelPos.y / 16 == itY &&
+						voxelPos.z / 24 == itZ &&
+						_save->getTileEngine()->isVoxelVisible(voxelPos))
+					{
+						surface->blitFrame(piece.frame, classicShot.head.x + piece.dx, classicShot.head.y + piece.dy);
+						if (_gentleFlying)
+						{
+							_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
+							noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
+						}
+					}
+				}
+			}
+		}
+		else if (viewX >= bulletLowX && viewX <= bulletHighX && viewY >= bulletLowY && viewY <= bulletHighY)
+		{
+			int begin = 0;
+			int end = BULLET_SPRITES;
+			int direction = 1;
+			if (_projectile->isReversed())
+			{
+				begin = BULLET_SPRITES - 1;
+				end = -1;
+				direction = -1;
+			}
+
+			for (int i = begin; i != end; i += direction)
+			{
+				tmpSurface = _projectileSet->getFrame(_projectile->getParticle(i));
+				if (tmpSurface)
+				{
+					Position voxelPos = _projectile->getPosition(1 - bulletBack(i));
+					// HD render: one voxel of the trail is k screen pixels and the tracer sprite is
+					// only three base pixels wide, so its thirty-five stamps are a row of separate
+					// dots with gaps between them. In HD the step to the next voxel is filled with
+					// stamps of the same sprite and the shot reads as one beam; the classic path
+					// draws the single stamp it always drew
+					Position trail = Position(0, 0, 0);
+					int steps = 1;
+					// (a tiny frame without a dot is one hd/FX/weapons.txt leaves classic: its bars stay one a voxel)
+					if (surface->getHdMode() != HD_MODE_NEAREST && (HdSprites::registered(tmpSurface.getBuffer()) || tmpSurface.getWidth() > 4 * _k || bulletSpan > BULLET_SPRITES))
+					{
+						Position from, to;
+						_camera->convertVoxelToScreen(voxelPos, &from);
+						_camera->convertVoxelToScreen(_projectile->getPosition(1 - bulletBack(i + 1)), &to);
+						const int gap = std::max(std::abs(to.x - from.x), std::abs(to.y - from.y));
+						// a stamp every third of the sprite: closer is wasted work, wider leaves a gap
+						const int stride = std::max(1, tmpSurface.getWidth() / 3);
+						steps = std::max(1, std::min(4, (gap + stride - 1) / stride));
+						trail = to - from;
+					}
+					// k times the original half size (a 3x3 bullet frame is centred on 1, not on 6 at 4x)
+					const int halfX = (tmpSurface.getWidth() / _k / 2) * _k;
+					const int halfY = (tmpSurface.getHeight() / _k / 2) * _k;
+					// draw shadow on the floor
+					voxelPos.z = _save->getTileEngine()->castedShade(voxelPos);
+					if (voxelPos.x / 16 == itX &&
+						voxelPos.y / 16 == itY &&
+						voxelPos.z / 24 == itZ &&
+						_save->getTileEngine()->isVoxelVisible(voxelPos))
+					{
+						_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
+						for (int s = 0; s < steps; ++s)
+						{
+							surface->blit(tmpSurface,
+								bulletPositionScreen.x - halfX + trail.x * s / steps,
+								bulletPositionScreen.y - halfY + trail.y * s / steps, 16, false, _nvColor);
+						}
+					}
+
+					// draw bullet itself
+					voxelPos = _projectile->getPosition(1 - bulletBack(i));
+					if (voxelPos.x / 16 == itX &&
+						voxelPos.y / 16 == itY &&
+						voxelPos.z / 24 == itZ &&
+						_save->getTileEngine()->isVoxelVisible(voxelPos))
+					{
+						_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
+						for (int s = 0; s < steps; ++s)
+						{
+							surface->blit(tmpSurface,
+								bulletPositionScreen.x - halfX + trail.x * s / steps,
+								bulletPositionScreen.y - halfY + trail.y * s / steps, 0, false, _nvColor);
+						}
+						if (_gentleFlying)
+						{
+							noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 /**

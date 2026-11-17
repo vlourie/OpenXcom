@@ -55,6 +55,7 @@ class HdCanvas;
 class HdTurn;
 class HdTurnGroups;
 struct HdClassicShot;
+class ItemSprite;
 
 enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
 enum TilePart : int;
@@ -473,6 +474,8 @@ private:
 	void hdDrawSea(HdCanvas *surface, const Position &cameraPos, int itZ, bool front);
 	/// The parts of drawTerrain's tile loop: the front cursor of the tile under the cursor.
 	void drawCursorFront(HdCanvas *surface, Tile *tile, BattleUnit *unit, const Position &screenPosition, int itX, int itY, int itZ, bool explosiveReticle);
+	/// The parts of drawTerrain's tile loop: the projectile on a tile.
+	void drawProjectile(HdCanvas *surface, ItemSprite &itemSprite, const HdClassicShot &classicShot, bool turned, int viewX, int viewY, int itX, int itY, int itZ, int tileShade, int bulletLowX, int bulletLowY, int bulletHighX, int bulletHighY, int bulletSpan);
 	/// HD render: "+N" under the reticle at canvas (x, y) - the power the shooter's stats add (option oxceHdAimSkillBonus).
 	void drawSkillBonus(HdCanvas *surface, int x, int y);
 	Text *_txtSkillBonus = nullptr;
