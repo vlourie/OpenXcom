@@ -18,6 +18,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
+#include "../Engine/HdShots.h"
+
 namespace OpenXcom
 {
 
@@ -67,5 +70,30 @@ const double HD_SNOW_SOFT = 1.8, HD_SNOW_ALPHA = 1.0;
 /// Bloody footprints: turns a print lasts by the setting, the age tier of a print (defined in MapSteps.cpp).
 int hdStepLife();
 int hdStepTier(int age);
+
+// HD render (XP-000544, Options::oxceHdClassicShots): the shot of a laser, plasma or gauss weapon as the classic game drew it - a flat
+// beam, a ball with a tail of beads, a capsule in coils of air - instead of the 35 stamps of its tracer. Picture only: nothing below
+// reads the shot's way any other way than the stamps did (the positions of its steps), the camera above has already moved.
+// The shot is a row of pieces that do not overlap (HdShots); piece j stands where the way is `back[j]` steps behind the head
+// and is stamped in the tile of that step, like a stamp of the tracer, so walls and units cover it the same way.
+// `active`: this shot is drawn so, and the classic stamps are not (even when nothing is to be seen yet: the first step)
+struct HdClassicShot
+{
+	bool active = false;
+	const HdShots::Shot *shot = nullptr;
+	Position head;                  // the head on the map surface
+	std::vector<int> back;          // steps behind the head of every piece, -1: before the muzzle, not drawn
+	int lowX = 16000, lowY = 16000, highX = 0, highY = 0;   // the tiles of the pieces, in the view's tiles
+};
+
+static const int ArrowBobOffsets[8] = {0,1,2,1,0,1,2,1};
+
+static const int ArrowColorsUFO[4]  = { 6,  3, 14, 4 }; // white,    red, blue, green
+static const int ArrowColorsTFTD[4] = { 4, 11, 16, 6 }; // white, orange, blue, green
+
+/// The sea of the battle (XP-000572), MapOverlay.cpp: a floor of the sea, open water, a cell under the sea.
+bool hdSeaFloor(const MapData *data);
+bool hdOpenSea(const Tile *tile);
+bool hdUnderSea(SavedBattleGame *save, const Position &pos);
 
 }
