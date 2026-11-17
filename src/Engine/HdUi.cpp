@@ -863,7 +863,8 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		}
 		// the player keeps the paper dolls classic: the doll shows as an image without a picture (the answer
 		// above stays cached, so switching the option back needs no new search)
-		if (HdUiArt::hidden(art))
+		// likewise the pictures of hd/UI with "HD pictures" off (XP-000586: the Ufopaedia showed them with the option off)
+		if (HdUiArt::hidden(art) || !Options::oxceHdPictures)
 		{
 			art = nullptr;
 		}

@@ -235,7 +235,9 @@ void Screen::flip()
 			{
 				gpu.upload(_world.get());
 			}
-			gpu.present(getWidth(), getHeight(), _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, Options::useOpenGLSmoothing);
+			// smoothing is an option of the OpenGL output: with SDL chosen the picture stays sharp, as it was before
+			// the card's output (XP-000586: the world of 480x270 stretched to 2560x1377 linearly without the HD interface)
+			gpu.present(getWidth(), getHeight(), _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, Options::useOpenGL && Options::useOpenGLSmoothing);
 		}
 		else if (getWidth() != _world->w || getHeight() != _world->h || useOpenGL())
 		{
