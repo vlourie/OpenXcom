@@ -303,7 +303,10 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 
 	for (int t = 0; t < HD_TAB_COUNT; ++t)
 	{
-		_btnTabs.push_back(new TextButton(64, 12, 94 + (t % 3) * 68, 8 + (t / 3) * 13));
+		// a pixel apart both ways, as the categories on the left (they stood 4 apart across and 1 down), and the
+		// label a step smaller than a category's: a tab is the lesser button
+		_btnTabs.push_back(new TextButton(66, 12, 94 + (t % 3) * 67, 8 + (t / 3) * 13));
+		_btnTabs.back()->setHdCapScale(0.85f);
 	}
 	_tab = _btnTabs[std::max(0, std::min(HD_TAB_COUNT - 1, hdTab))];
 	_lstOptions = new TextList(200, 112, 94, 34);

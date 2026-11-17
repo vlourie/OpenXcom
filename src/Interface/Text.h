@@ -52,6 +52,7 @@ private:
 	Uint8 _color, _color2;
 	int _scrollY;
 	float _hdCapScale = 1.0f;
+	int _hdShiftX = 0, _hdShiftY = 0;
 	/// Lays the glyphs out as draw() does and reports each: fn(font, code, x, y, color, mul, mid).
 	void forEachGlyph(const std::function<void(Font*, UCode, int, int, int, int, int)> &fn) const;
 
@@ -119,6 +120,9 @@ public:
 	/// HD interface: the TrueType letters set this much smaller than the classic font's capitals
 	/// (rows stacked a classic line apart, as the geoscape's clock: the TrueType line has no gap).
 	void setHdCapScale(float s) { _hdCapScale = s; }
+	/// HD interface, TrueType letters only: the text is drawn this many base pixels away from its classic place
+	/// (the classic layer and the mouse keep the place; rows given the room the pixel font did not need).
+	void setHdShift(int dx, int dy) { _hdShiftX = dx; _hdShiftY = dy; }
 	/// Sets the text's scrollable setting.
 	void setScrollable(bool scroll);
 	/// Special handling for mouse presses.

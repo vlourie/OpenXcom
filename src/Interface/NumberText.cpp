@@ -293,6 +293,11 @@ void NumberText::hdMirror()
 		ui.drawCounter(s, getX(), getY(), 5.0f, face, plate, edge);
 		return;
 	}
+	if (_hdBoxW > 0 && _hdBoxH > 0)
+	{
+		ui.drawTtfCentred(s, false, 5.0f, getX() + _hdBoxX, getY() + _hdBoxY, _hdBoxW, _hdBoxH, face, _bordered ? 0xE0000000u : 0x90000000u);
+		return;
+	}
 	ui.drawTtfString(s, false, 5.0f, getX(), getY() - 2, face, _bordered ? 0xE0000000u : 0x90000000u);
 }
 

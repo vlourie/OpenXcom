@@ -750,6 +750,11 @@ void Text::hdMirror()
 	{
 		Surface::hdMirror();
 	}
+	if ((_hdShiftX || _hdShiftY) && HdUi::skin() && HdUi::instance().hasFonts())
+	{
+		hdDrawAt(getX() + _hdShiftX, getY() + _hdShiftY);
+		return;
+	}
 	hdDrawAt(getX(), getY());
 }
 

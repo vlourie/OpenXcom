@@ -263,6 +263,11 @@ BattlescapeState::BattlescapeState() :
 		_numVisibleUnit[i] = new NumberText(15, 12, _btnVisibleUnit[i]->getX() + 6 , _btnVisibleUnit[i]->getY() + 4);
 	}
 	_numVisibleUnit[9]->setX(_numVisibleUnit[9]->getX() - 2); // center number 10
+	// HD interface: the TrueType digit in the middle of its marker, not at the classic digit's corner
+	for (int i = 0; i < VISIBLE_MAX; ++i)
+	{
+		_numVisibleUnit[i]->setHdBox(_btnVisibleUnit[i]->getX() - _numVisibleUnit[i]->getX(), _btnVisibleUnit[i]->getY() - _numVisibleUnit[i]->getY(), 15, 12);
+	}
 	_warning = new WarningMessage(224, 24, x + 48, y + 32);
 	_btnLaunch = new BattlescapeButton(32, 24, screenWidth - 32, 0); // we need screenWidth, because that is independent of the black bars on the screen
 	_btnLaunch->setVisible(false);

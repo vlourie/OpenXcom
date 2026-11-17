@@ -30,6 +30,7 @@
 #include "../Interface/TextList.h"
 #include "../Engine/Options.h"
 #include "../Engine/HdGentle.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/Action.h"
 #include <algorithm>
 
@@ -50,6 +51,19 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 	_btnOXC = new TextButton(70, 16, 94, 8);
 	_btnOXCE = new TextButton(70, 16, 168, 8);
 	_btnOTHER = new TextButton(70, 16, 242, 8);
+	if (HdUi::active())
+	{
+		// HD interface: the tabs a pixel apart, as the categories on the left (the classic screen keeps its 4),
+		// and their labels a step smaller than a category's
+		int tabX = 94;
+		for (TextButton *btn : { _btnOXC, _btnOXCE, _btnOTHER })
+		{
+			btn->setWidth(72);
+			btn->setX(tabX);
+			btn->setHdCapScale(0.85f);
+			tabX += 73;
+		}
+	}
 	_lstOptions = new TextList(200, 120, 94, 26);
 
 	_owner = _btnOXC;

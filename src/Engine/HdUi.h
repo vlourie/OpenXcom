@@ -257,6 +257,9 @@ public:
 	/// Draws a string with a TrueType font at base position (x, y = the top of a classic glyph cell of the
 	/// font), capitals `capHeight` base pixels tall; colours 0xAARRGGBB, shadow 0 = none.
 	void drawTtfString(const UString &s, bool big, float capHeight, int x, int y, Uint32 face, Uint32 shadow);
+	/// The same string in the middle of the base rectangle (x, y, w, h), placed by world pixels: a digit in a
+	/// small box stands a base pixel off its middle when placed by base pixels (the spotted units' markers).
+	void drawTtfCentred(const UString &s, bool big, float capHeight, int x, int y, int w, int h, Uint32 face, Uint32 shadow);
 	/// A label lying on the battle map, in the heavy TrueType face: the lines of `s` from the world point
 	/// (wx, wy) = the top left of the classic text, capitals `capHeight` and lines `lineH` base pixels apart.
 	/// Every letter gets an outline of its own: what is under it is the map's picture, not a panel.

@@ -34,7 +34,11 @@ private:
 	Surface *_borderedChars[10];
 	bool _bordered;
 	Uint8 _color;
+	int _hdBoxX = 0, _hdBoxY = 0, _hdBoxW = 0, _hdBoxH = 0;
 public:
+	/// HD interface, TrueType digits: the number stands in the middle of this box, given from the number's own
+	/// corner (the spotted units' markers: the classic digit is put at a fixed corner of the button).
+	void setHdBox(int dx, int dy, int w, int h) { _hdBoxX = dx; _hdBoxY = dy; _hdBoxW = w; _hdBoxH = h; }
 	/// Creates a new number text with the specified size and position.
 	NumberText(int width, int height, int x = 0, int y = 0);
 	/// Cleans up the number text.

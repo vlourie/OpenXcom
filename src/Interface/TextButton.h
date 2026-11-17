@@ -58,6 +58,8 @@ public:
 	~TextButton();
 	/// Sets the text button's color.
 	void setColor(Uint8 color) override;
+	/// HD interface: the label's TrueType letters set this much smaller (Text::setHdCapScale).
+	void setHdCapScale(float s);
 	/// Gets the text button's color.
 	Uint8 getColor() const;
 	/// Sets the text button's text color.

@@ -204,6 +204,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_txtYear = new Text(59, 8, screenWidth-61, screenHeight/2+1);
 	_txtFunds = new Text(59, 8, screenWidth-61, screenHeight/2-27);
 	_txtHdTime = new Text(59, 8, screenWidth-61, screenHeight/2-20);
+	_txtHdDate = new Text(59, 8, screenWidth-61, screenHeight/2-6);
 
 	int slackingIndicatorOffset = _game->getMod()->getInterface("geoscape")->getElement("slackingIndicator")->custom;
 	_txtSlacking = new Text(59, 17, screenWidth - 61, screenHeight / 2 - 100 + slackingIndicatorOffset);
@@ -269,6 +270,9 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	add(_txtHdTime, "text", "geoscape");
 	_txtHdTime->setAlign(ALIGN_CENTER);
 	_txtHdTime->setVisible(false);
+	add(_txtHdDate, "text", "geoscape");
+	_txtHdDate->setAlign(ALIGN_CENTER);
+	_txtHdDate->setVisible(false);
 	// XP-000575: the note that opens the music player, at the clock's lower right corner
 	_btnMusic = new MusicNoteButton(_game, screenWidth - 11, screenHeight / 2 + 1);
 	add(_btnMusic);
@@ -449,9 +453,17 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	}
 	// HD interface: the clock's small rows stand a classic line (7 pixels) apart; TrueType letters as tall as the
 	// pixel font's capitals, without its dark edge, ran into each other - set at 72% (Vitali 17.11); the big hour stays
-	for (Text *t : { _txtFunds, _txtHour, _txtHourSep, _txtMin, _txtMinSep, _txtSec, _txtWeekday, _txtDay, _txtMonth, _txtYear, _txtHdTime })
+	for (Text *t : { _txtFunds, _txtHour, _txtHourSep, _txtMin, _txtMinSep, _txtSec, _txtWeekday, _txtDay, _txtMonth, _txtYear, _txtHdTime, _txtHdDate })
 	{
 		if (t->getHeight() <= 8 || Options::showFundsOnGeoscape) t->setHdCapScale(0.72f);
+	}
+	// and the rows are given the room the panel has above and below the clock: the big hour's TrueType digits
+	// stand lower in their box than the pixel font's and reached the weekday (the classic layer keeps its rows)
+	if (!Options::showFundsOnGeoscape)
+	{
+		for (Text *t : { _txtHour, _txtHourSep, _txtMin, _txtMinSep, _txtSec }) t->setHdShift(0, -2);
+		_txtHdDate->setHdShift(0, 1);
+		_txtYear->setHdShift(0, 2);
 	}
 
 	_gameTimer->onTimer((StateHandler)&GeoscapeState::timeAdvance);
@@ -927,6 +939,14 @@ void GeoscapeState::timeDisplay()
 	_txtWeekday->setText(tr(_game->getSavedGame()->getTime()->getWeekdayString()));
 
 	_txtMonth->setText(tr(_game->getSavedGame()->getTime()->getMonthString()));
+
+	// HD interface: the day and the month as one centred line - each centred in its own half of the row, the
+	// TrueType words (narrower than the pixel font's) stood a dozen pixels apart
+	const bool hdDate = HdUi::active() && HdUi::skin() && HdUi::instance().hasFonts();
+	_txtHdDate->setVisible(hdDate);
+	_txtDay->setVisible(!hdDate);
+	_txtMonth->setVisible(!hdDate);
+	if (hdDate) _txtHdDate->setText(_txtDay->getText() + " " + _txtMonth->getText());
 
 	std::ostringstream ss5;
 	ss5 << _game->getSavedGame()->getTime()->getYear();

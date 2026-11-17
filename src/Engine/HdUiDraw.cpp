@@ -1725,6 +1725,58 @@ void HdUi::drawTtfString(const UString &s, bool big, float capHeight, int x, int
 	}
 }
 
+void HdUi::drawTtfCentred(const UString &s, bool big, float capHeight, int x, int y, int w, int h, Uint32 face, Uint32 shadow)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	HdFont &f = font(big);
+	const float px = f.sizeForCapHeight(capHeight * k);
+	// the ink, not the advances: a digit's side bearings are not equal ("1")
+	float pen = 0.0f, ink0 = 0.0f, ink1 = 0.0f;
+	bool any = false;
+	UCode prev = 0;
+	for (UCode c : s)
+	{
+		if (prev) pen += f.kern(prev, c, px);
+		const HdFont::Glyph &g = f.glyph(c, px);
+		if (g.w > 0)
+		{
+			const float l = pen + g.xoff, r = l + g.w;
+			ink0 = any ? std::min(ink0, l) : l;
+			ink1 = any ? std::max(ink1, r) : r;
+			any = true;
+		}
+		pen += g.advance;
+		prev = c;
+	}
+	if (!any) return;
+	const float start = x * k + ((float)w * k - (ink1 - ink0)) * 0.5f - ink0;
+	const int baseline = (int)std::lround(y * k + ((float)h + capHeight) * 0.5f * k);
+	const int shadowOff = std::max(1, k / 2);
+	for (int pass = (shadow >> 24) ? 0 : 1; pass < 2; ++pass)
+	{
+		pen = start;
+		prev = 0;
+		for (UCode c : s)
+		{
+			if (prev) pen += f.kern(prev, c, px);
+			const HdFont::Glyph &g = f.glyph(c, px);
+			if (g.w > 0)
+			{
+				const int gx = (int)std::lround(pen) + g.xoff + (pass == 0 ? shadowOff : 0);
+				const int gy = baseline + g.yoff + (pass == 0 ? shadowOff : 0);
+				blendGlyph(dest, clip, g, gx, gy, pass == 0 ? shadow : face);
+			}
+			pen += g.advance;
+			prev = c;
+		}
+	}
+}
+
 /// Thinner strokes: the glyph's edge pixels are made lighter (a coverage gamma above the usual 0.85), so the
 /// stroke loses about (1 - weight) of its width, a stroke being some 0.2 of the cap height; the full pixels stay.
 /// Null = the usual coverage (weight 1). The table is per thread and kept for the last weight asked.

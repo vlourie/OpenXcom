@@ -156,6 +156,11 @@ void TextButton::setHighContrast(bool contrast)
  * Changes the text of the button label.
  * @param text Text string.
  */
+void TextButton::setHdCapScale(float s)
+{
+	_text->setHdCapScale(s);
+}
+
 void TextButton::setText(const std::string &text)
 {
 	_text->setText(text);
