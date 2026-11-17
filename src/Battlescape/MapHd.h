@@ -52,4 +52,10 @@ inline int unitShadowStrength(int globalShade)
 /// HD: the soft shadow under a unit (defined in MapShadows.cpp).
 const HdFrame &unitShadow(int size, int part, int k, int strength);
 
+class Mod;
+struct BattleAction;
+
+/// The palette group of the aiming reticle by the weapon's damage type (defined in MapAim.cpp).
+int reticleColorGroup(const Mod *mod, BattleAction *action, const SDL_Color *pal);
+
 }
