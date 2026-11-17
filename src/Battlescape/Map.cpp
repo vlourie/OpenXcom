@@ -1950,6 +1950,21 @@ void drawFireTongues(HdCanvas *surface, const Tile *tile, Position screen, int k
 }
 }
 
+// HD render (XP-000544, Options::oxceHdClassicShots): the shot of a laser, plasma or gauss weapon as the classic game drew it - a flat
+// beam, a ball with a tail of beads, a capsule in coils of air - instead of the 35 stamps of its tracer. Picture only: nothing below
+// reads the shot's way any other way than the stamps did (the positions of its steps), the camera above has already moved.
+// The shot is a row of pieces that do not overlap (HdShots); piece j stands where the way is `back[j]` steps behind the head
+// and is stamped in the tile of that step, like a stamp of the tracer, so walls and units cover it the same way.
+// `active`: this shot is drawn so, and the classic stamps are not (even when nothing is to be seen yet: the first step)
+struct HdClassicShot
+{
+	bool active = false;
+	const HdShots::Shot *shot = nullptr;
+	Position head;                  // the head on the map surface
+	std::vector<int> back;          // steps behind the head of every piece, -1: before the muzzle, not drawn
+	int lowX = 16000, lowY = 16000, highX = 0, highY = 0;   // the tiles of the pieces, in the view's tiles
+};
+
 void Map::drawTerrain(HdCanvas *surface)
 {
 	_isAltPressed = _game->isAltPressed(true);
@@ -2123,85 +2138,8 @@ void Map::drawTerrain(HdCanvas *surface)
 		}
 	}
 
-	// HD render (XP-000544, Options::oxceHdClassicShots): the shot of a laser, plasma or gauss weapon as the classic game drew it - a flat
-	// beam, a ball with a tail of beads, a capsule in coils of air - instead of the 35 stamps of its tracer. Picture only: nothing below
-	// reads the shot's way any other way than the stamps did (the positions of its steps), the camera above has already moved.
-	// The shot is a row of pieces that do not overlap (HdShots); piece j stands where the way is `back[j]` steps behind the head
-	// and is stamped in the tile of that step, like a stamp of the tracer, so walls and units cover it the same way.
-	// `active`: this shot is drawn so, and the classic stamps are not (even when nothing is to be seen yet: the first step)
-	struct ClassicShot
-	{
-		bool active = false;
-		const HdShots::Shot *shot = nullptr;
-		Position head;                  // the head on the map surface
-		std::vector<int> back;          // steps behind the head of every piece, -1: before the muzzle, not drawn
-		int lowX = 16000, lowY = 16000, highX = 0, highY = 0;   // the tiles of the pieces, in the view's tiles
-	} classicShot;
-	if (Options::oxceHdClassicShots && _projectile && !_projectile->getItem() && _projectileInFOV && _explosions.empty() &&
-		_projectileSet && _k > 1 && hdFrames && _projectile->getParticle(0) != Mod::NO_SURFACE)
-	{
-		HdShots::newFrame();
-		const HdShots::Kind kind = HdShots::kindOf(_projectile->getWeaponRules());
-		if (kind)
-		{
-			const HdShots::Colours &colours = HdShots::coloursOf(_projectileSet, _projectile->getParticle(0), getPalette());
-			if (colours.valid)
-			{
-				classicShot.active = true;
-				const int flown = _projectile->getFlown();
-				// the way on the screen: its direction and how many pixels a step of it is
-				const int ref = std::min(flown + 1, 48);
-				Position tail;
-				_camera->convertVoxelToScreen(_projectile->getPosition(1), &classicShot.head);
-				_camera->convertVoxelToScreen(_projectile->getPosition(1 - ref), &tail);
-				const double vx = classicShot.head.x - tail.x, vy = classicShot.head.y - tail.y;
-				const double len = std::sqrt(vx * vx + vy * vy);
-				if (flown > 0 && len >= 2.0)
-				{
-					const double perStep = len / ref;
-					const int angle = (int)std::lround(std::atan2(vy, vx) / (2 * 3.14159265358979323846) * HdShots::ANGLES);
-					int pieces = 0;
-					if (kind.cls == HdShots::LASER)
-					{
-						// as long as the jump of a frame, or the beam's own length: no gap between two frames, no blinking (XP-000310)
-						const int steps = std::max(HdShots::laserNominalVoxels(kind.size), _projectile->getSpeed());
-						pieces = HdShots::laserPieces((int)std::ceil(steps * perStep), _k);
-					}
-					classicShot.shot = HdShots::shot(kind, colours, _k, angle, pieces);
-					if (classicShot.shot)
-					{
-						const int count = (int)classicShot.shot->pieces.size();
-						classicShot.back.assign(count, -1);
-						const double seg = HdShots::pieceLength(_k);
-						for (int j = 0; j < count; ++j)
-						{
-							const int back = (int)std::lround((j + 0.5) * seg / perStep);
-							if (back > flown + 1)
-							{
-								continue;           // before the muzzle
-							}
-							classicShot.back[j] = back;
-							const Position bp = _projectile->getPosition(1 - back);
-							classicShot.lowX = std::min(classicShot.lowX, (int)bp.x);
-							classicShot.lowY = std::min(classicShot.lowY, (int)bp.y);
-							classicShot.highX = std::max(classicShot.highX, (int)bp.x);
-							classicShot.highY = std::max(classicShot.highY, (int)bp.y);
-						}
-						classicShot.lowX /= 16; classicShot.lowY /= 16; classicShot.highX /= 16; classicShot.highY /= 16;
-						if (turned)
-						{
-							const Position a = _camera->worldToView(Position(classicShot.lowX, classicShot.lowY, 0));
-							const Position b = _camera->worldToView(Position(classicShot.highX, classicShot.highY, 0));
-							classicShot.lowX = std::min(a.x, b.x);
-							classicShot.highX = std::max(a.x, b.x);
-							classicShot.lowY = std::min(a.y, b.y);
-							classicShot.highY = std::max(a.y, b.y);
-						}
-					}
-				}
-			}
-		}
-	}
+	HdClassicShot classicShot;
+	hdFindClassicShot(classicShot, turned, hdFrames);
 
 	// get corner map coordinates to give rough boundaries in which tiles to redraw are
 	_camera->convertScreenToView(0, 0, &beginX, &dummy);
@@ -2409,116 +2347,16 @@ void Map::drawTerrain(HdCanvas *surface)
 	// looked for once: the map lives for one battle
 	if (_hdSeaZ == -2)
 	{
-		_hdSeaZ = -1;
-		_hdSeaTiles.clear();
-		std::vector<int> perZ(_save->getMapSizeZ(), 0);
-		std::unordered_map<const MapData*, std::pair<int, Tile*>> kinds;
-		for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
-		{
-			Tile *t = _save->getTile(i);
-			if (hdOpenSea(t))
-			{
-				++perZ[t->getPosition().z];
-				auto &k = kinds[t->getMapData(O_FLOOR)];
-				if (!k.second)
-					k.second = t;
-				++k.first;
-			}
-		}
-		for (int z = 0; z < (int)perZ.size(); ++z)
-			if (perZ[z] >= 50 && (_hdSeaZ < 0 || perZ[z] > perZ[_hdSeaZ]))
-				_hdSeaZ = z;
-		std::vector<std::pair<int, Tile*>> order;
-		for (auto &k : kinds)
-			if (k.second.second->getPosition().z == _hdSeaZ)
-				order.push_back(k.second);
-		std::sort(order.begin(), order.end(), [](const std::pair<int, Tile*> &a, const std::pair<int, Tile*> &b) { return a.first > b.first; });
-		for (size_t i = 0; i < order.size() && i < 8; ++i)
-			_hdSeaTiles.push_back(order[i].second);
-		// XP-000591: the sea goes on only beyond the edge's cells that are the sea (a harbour has it on one side, a ship all
-		// round): an edge cell counts when open sea is within 2 cells of it, so a pier or a boat at the edge leaves no gap
-		const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY();
-		_hdSeaEdge.assign((size_t)sizeX * sizeY, 0);
-		for (int y = 0; _hdSeaZ >= 0 && y < sizeY; ++y)
-		{
-			for (int x = 0; x < sizeX; ++x)
-			{
-				if (x > 2 && x < sizeX - 3 && y > 2 && y < sizeY - 3)
-					continue;
-				for (int ny = std::max(0, y - 2); ny <= std::min(sizeY - 1, y + 2) && !_hdSeaEdge[(size_t)y * sizeX + x]; ++ny)
-					for (int nx = std::max(0, x - 2); nx <= std::min(sizeX - 1, x + 2); ++nx)
-						if (hdOpenSea(_save->getTile(Position(nx, ny, _hdSeaZ))))
-						{
-							_hdSeaEdge[(size_t)y * sizeX + x] = 1;
-							break;
-						}
-			}
-		}
+		hdFindSea();
 	}
 	const bool hdSea = _k > 1 && !turned && _hdSeaZ >= beginZ && _hdSeaZ <= endZ && !_hdSeaTiles.empty();
-	// the sea beyond the edge behind the map goes under the water's level, before it is drawn; the sea before the map after it -
-	// the side of a wave picture under its diamond is black, and the next row of the sea covers it (the map's ring of water too)
-	auto hdDrawSea = [&](int itZ, bool front)
-		{
-			const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY(), R = 48;
-			// the sea of SEAURBAN is one picture cut into 3x3 cells (0..8 of the set): the map lays them by (y % 3, x % 3)
-			static const int PIECE[3][3] = { { 0, 2, 5 }, { 1, 4, 7 }, { 3, 6, 8 } };
-			Tile *rep0 = _hdSeaTiles[0];
-			const MapData *repData = rep0->getMapData(O_FLOOR);
-			if (!repData)
-				return;
-			MapDataSet *seaSet = repData->getDataset();
-			SurfaceSet *seaFrames = seaSet ? seaSet->getSurfaceset() : nullptr;
-			int seaFrame = 0;
-			if (seaFrames)
-			{
-				const void *cur = rep0->getSprite(O_FLOOR).getBuffer();
-				for (int f = 0; f < 8; ++f)
-				{
-					if (SurfaceRaw<const Uint8>(seaFrames->getFrame(repData->getSprite(f))).getBuffer() == cur)
-					{
-						seaFrame = f;
-						break;
-					}
-				}
-			}
-			bool seaPieces = seaFrames && seaSet->getSize() >= 9;
-			for (int i = 0; seaPieces && i < 9; ++i)
-				seaPieces = hdSeaFloor(seaSet->getObject(i)); // the set's first nine are the sea's 3x3 cells, else one picture everywhere
-			for (int y = -R; y < sizeY + R; ++y)
-			{
-				for (int x = -R; x < sizeX + R; ++x)
-				{
-					if ((x >= 0 && x < sizeX && y >= 0 && y < sizeY) || (x >= sizeX || y >= sizeY) != front)
-						continue;
-					// the edge's cell the sea goes on from (XP-000591): the nearest one, past a corner the corner's
-					const int ex = std::max(0, std::min(sizeX - 1, x)), ey = std::max(0, std::min(sizeY - 1, y));
-					if (!_hdSeaEdge[(size_t)ey * sizeX + ex])
-						continue;
-					Position screen;
-					_camera->convertMapToScreen(Position(x, y, itZ), &screen);
-					screen += cameraPos;
-					if (screen.x <= -_spriteWidth || screen.x >= surface->getWidth() + _spriteWidth ||
-						screen.y <= -_spriteHeight || screen.y >= surface->getHeight() + _spriteHeight)
-						continue;
-					SurfaceRaw<const Uint8> sprite = rep0->getSprite(O_FLOOR);
-					if (seaPieces)
-					{
-						const MapData *piece = seaSet->getObject(PIECE[((y % 3) + 3) % 3][((x % 3) + 3) % 3]);
-						sprite = SurfaceRaw<const Uint8>(seaFrames->getFrame(piece->getSprite(seaFrame)));
-					}
-					if (sprite)
-						surface->blit(sprite, screen.x, screen.y, reShade(rep0), false, _nvColor);
-				}
-			}
-		};
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
 		if (hdSea && itZ == _hdSeaZ)
-			hdDrawSea(itZ, false);
+			hdDrawSea(surface, cameraPos, itZ, false);
 		if (hdSea && itZ == _hdSeaZ + 1)
-			hdDrawSea(_hdSeaZ, true);
+			hdDrawSea(surface, cameraPos, _hdSeaZ, true);
 		for (int viewY = beginY; viewY < rimY; viewY++)
 		{
 			for (int viewX = beginX; viewX < rimX; viewX++)
@@ -3582,7 +3420,7 @@ void Map::drawTerrain(HdCanvas *surface)
 		}
 	}
 	if (hdSea && _hdSeaZ == endZ)
-		hdDrawSea(_hdSeaZ, true);
+		hdDrawSea(surface, cameraPos, _hdSeaZ, true);
 	// XP-000382: the near sides of the fence stand before the map's cells
 	if (hdBorder && Options::oxceHdMapBorder == 2)
 	{
@@ -3625,6 +3463,197 @@ void Map::drawTerrain(HdCanvas *surface)
 	drawMuzzleFlashes(surface);
 
 	surface->unlock();
+}
+
+/**
+ * HD render (Options::oxceHdClassicShots): works out the classic shot of this frame - the pieces of the shot in flight and the tiles they stand in.
+ * @param classicShot The shot (not active when this frame has none).
+ * @param turned The view is turned (HD lab).
+ * @param hdFrames The canvas draws HD frames.
+ */
+void Map::hdFindClassicShot(HdClassicShot &classicShot, bool turned, bool hdFrames)
+{
+	if (Options::oxceHdClassicShots && _projectile && !_projectile->getItem() && _projectileInFOV && _explosions.empty() &&
+		_projectileSet && _k > 1 && hdFrames && _projectile->getParticle(0) != Mod::NO_SURFACE)
+	{
+		HdShots::newFrame();
+		const HdShots::Kind kind = HdShots::kindOf(_projectile->getWeaponRules());
+		if (kind)
+		{
+			const HdShots::Colours &colours = HdShots::coloursOf(_projectileSet, _projectile->getParticle(0), getPalette());
+			if (colours.valid)
+			{
+				classicShot.active = true;
+				const int flown = _projectile->getFlown();
+				// the way on the screen: its direction and how many pixels a step of it is
+				const int ref = std::min(flown + 1, 48);
+				Position tail;
+				_camera->convertVoxelToScreen(_projectile->getPosition(1), &classicShot.head);
+				_camera->convertVoxelToScreen(_projectile->getPosition(1 - ref), &tail);
+				const double vx = classicShot.head.x - tail.x, vy = classicShot.head.y - tail.y;
+				const double len = std::sqrt(vx * vx + vy * vy);
+				if (flown > 0 && len >= 2.0)
+				{
+					const double perStep = len / ref;
+					const int angle = (int)std::lround(std::atan2(vy, vx) / (2 * 3.14159265358979323846) * HdShots::ANGLES);
+					int pieces = 0;
+					if (kind.cls == HdShots::LASER)
+					{
+						// as long as the jump of a frame, or the beam's own length: no gap between two frames, no blinking (XP-000310)
+						const int steps = std::max(HdShots::laserNominalVoxels(kind.size), _projectile->getSpeed());
+						pieces = HdShots::laserPieces((int)std::ceil(steps * perStep), _k);
+					}
+					classicShot.shot = HdShots::shot(kind, colours, _k, angle, pieces);
+					if (classicShot.shot)
+					{
+						const int count = (int)classicShot.shot->pieces.size();
+						classicShot.back.assign(count, -1);
+						const double seg = HdShots::pieceLength(_k);
+						for (int j = 0; j < count; ++j)
+						{
+							const int back = (int)std::lround((j + 0.5) * seg / perStep);
+							if (back > flown + 1)
+							{
+								continue;           // before the muzzle
+							}
+							classicShot.back[j] = back;
+							const Position bp = _projectile->getPosition(1 - back);
+							classicShot.lowX = std::min(classicShot.lowX, (int)bp.x);
+							classicShot.lowY = std::min(classicShot.lowY, (int)bp.y);
+							classicShot.highX = std::max(classicShot.highX, (int)bp.x);
+							classicShot.highY = std::max(classicShot.highY, (int)bp.y);
+						}
+						classicShot.lowX /= 16; classicShot.lowY /= 16; classicShot.highX /= 16; classicShot.highY /= 16;
+						if (turned)
+						{
+							const Position a = _camera->worldToView(Position(classicShot.lowX, classicShot.lowY, 0));
+							const Position b = _camera->worldToView(Position(classicShot.highX, classicShot.highY, 0));
+							classicShot.lowX = std::min(a.x, b.x);
+							classicShot.highX = std::max(a.x, b.x);
+							classicShot.lowY = std::min(a.y, b.y);
+							classicShot.highY = std::max(a.y, b.y);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/**
+ * XP-000572: looks for the open sea of the map - the level of the water, the tiles the sea beyond the edge is drawn with, the edge's cells it goes on from (XP-000591).
+ * Once a battle (_hdSeaZ == -2: not looked for yet).
+ */
+void Map::hdFindSea()
+{
+	_hdSeaZ = -1;
+	_hdSeaTiles.clear();
+	std::vector<int> perZ(_save->getMapSizeZ(), 0);
+	std::unordered_map<const MapData*, std::pair<int, Tile*>> kinds;
+	for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
+	{
+		Tile *t = _save->getTile(i);
+		if (hdOpenSea(t))
+		{
+			++perZ[t->getPosition().z];
+			auto &k = kinds[t->getMapData(O_FLOOR)];
+			if (!k.second)
+				k.second = t;
+			++k.first;
+		}
+	}
+	for (int z = 0; z < (int)perZ.size(); ++z)
+		if (perZ[z] >= 50 && (_hdSeaZ < 0 || perZ[z] > perZ[_hdSeaZ]))
+			_hdSeaZ = z;
+	std::vector<std::pair<int, Tile*>> order;
+	for (auto &k : kinds)
+		if (k.second.second->getPosition().z == _hdSeaZ)
+			order.push_back(k.second);
+	std::sort(order.begin(), order.end(), [](const std::pair<int, Tile*> &a, const std::pair<int, Tile*> &b) { return a.first > b.first; });
+	for (size_t i = 0; i < order.size() && i < 8; ++i)
+		_hdSeaTiles.push_back(order[i].second);
+	// XP-000591: the sea goes on only beyond the edge's cells that are the sea (a harbour has it on one side, a ship all
+	// round): an edge cell counts when open sea is within 2 cells of it, so a pier or a boat at the edge leaves no gap
+	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY();
+	_hdSeaEdge.assign((size_t)sizeX * sizeY, 0);
+	for (int y = 0; _hdSeaZ >= 0 && y < sizeY; ++y)
+	{
+		for (int x = 0; x < sizeX; ++x)
+		{
+			if (x > 2 && x < sizeX - 3 && y > 2 && y < sizeY - 3)
+				continue;
+			for (int ny = std::max(0, y - 2); ny <= std::min(sizeY - 1, y + 2) && !_hdSeaEdge[(size_t)y * sizeX + x]; ++ny)
+				for (int nx = std::max(0, x - 2); nx <= std::min(sizeX - 1, x + 2); ++nx)
+					if (hdOpenSea(_save->getTile(Position(nx, ny, _hdSeaZ))))
+					{
+						_hdSeaEdge[(size_t)y * sizeX + x] = 1;
+						break;
+					}
+		}
+	}
+}
+
+/**
+ * XP-000572: the sea beyond the map's edge on the water's level. The sea behind the map goes under the water's level, before it is drawn; the sea
+ * before the map after it - the side of a wave picture under its diamond is black, and the next row of the sea covers it (the map's ring of water too).
+ * @param surface The canvas.
+ * @param cameraPos The camera's offset on the canvas.
+ * @param itZ The level of the water.
+ * @param front The part before the map (else the part behind it).
+ */
+void Map::hdDrawSea(HdCanvas *surface, const Position &cameraPos, int itZ, bool front)
+{
+	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY(), R = 48;
+	// the sea of SEAURBAN is one picture cut into 3x3 cells (0..8 of the set): the map lays them by (y % 3, x % 3)
+	static const int PIECE[3][3] = { { 0, 2, 5 }, { 1, 4, 7 }, { 3, 6, 8 } };
+	Tile *rep0 = _hdSeaTiles[0];
+	const MapData *repData = rep0->getMapData(O_FLOOR);
+	if (!repData)
+		return;
+	MapDataSet *seaSet = repData->getDataset();
+	SurfaceSet *seaFrames = seaSet ? seaSet->getSurfaceset() : nullptr;
+	int seaFrame = 0;
+	if (seaFrames)
+	{
+		const void *cur = rep0->getSprite(O_FLOOR).getBuffer();
+		for (int f = 0; f < 8; ++f)
+		{
+			if (SurfaceRaw<const Uint8>(seaFrames->getFrame(repData->getSprite(f))).getBuffer() == cur)
+			{
+				seaFrame = f;
+				break;
+			}
+		}
+	}
+	bool seaPieces = seaFrames && seaSet->getSize() >= 9;
+	for (int i = 0; seaPieces && i < 9; ++i)
+		seaPieces = hdSeaFloor(seaSet->getObject(i)); // the set's first nine are the sea's 3x3 cells, else one picture everywhere
+	for (int y = -R; y < sizeY + R; ++y)
+	{
+		for (int x = -R; x < sizeX + R; ++x)
+		{
+			if ((x >= 0 && x < sizeX && y >= 0 && y < sizeY) || (x >= sizeX || y >= sizeY) != front)
+				continue;
+			// the edge's cell the sea goes on from (XP-000591): the nearest one, past a corner the corner's
+			const int ex = std::max(0, std::min(sizeX - 1, x)), ey = std::max(0, std::min(sizeY - 1, y));
+			if (!_hdSeaEdge[(size_t)ey * sizeX + ex])
+				continue;
+			Position screen;
+			_camera->convertMapToScreen(Position(x, y, itZ), &screen);
+			screen += cameraPos;
+			if (screen.x <= -_spriteWidth || screen.x >= surface->getWidth() + _spriteWidth ||
+				screen.y <= -_spriteHeight || screen.y >= surface->getHeight() + _spriteHeight)
+				continue;
+			SurfaceRaw<const Uint8> sprite = rep0->getSprite(O_FLOOR);
+			if (seaPieces)
+			{
+				const MapData *piece = seaSet->getObject(PIECE[((y % 3) + 3) % 3][((x % 3) + 3) % 3]);
+				sprite = SurfaceRaw<const Uint8>(seaFrames->getFrame(piece->getSprite(seaFrame)));
+			}
+			if (sprite)
+				surface->blit(sprite, screen.x, screen.y, reShade(rep0), false, _nvColor);
+		}
+	}
 }
 
 /**

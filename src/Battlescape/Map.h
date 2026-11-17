@@ -54,6 +54,7 @@ class NumberText;
 class HdCanvas;
 class HdTurn;
 class HdTurnGroups;
+struct HdClassicShot;
 
 enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
 enum TilePart : int;
@@ -466,6 +467,10 @@ private:
 	void drawDeployArrows(HdCanvas *surface);
 	void drawExplosions(HdCanvas *surface);
 	void drawMuzzleFlashes(HdCanvas *surface);
+	/// What drawTerrain prepares before the tiles: the classic shot of this frame (oxceHdClassicShots), the open sea of the map and the sea beyond the edge.
+	void hdFindClassicShot(HdClassicShot &classicShot, bool turned, bool hdFrames);
+	void hdFindSea();
+	void hdDrawSea(HdCanvas *surface, const Position &cameraPos, int itZ, bool front);
 	/// HD render: "+N" under the reticle at canvas (x, y) - the power the shooter's stats add (option oxceHdAimSkillBonus).
 	void drawSkillBonus(HdCanvas *surface, int x, int y);
 	Text *_txtSkillBonus = nullptr;
