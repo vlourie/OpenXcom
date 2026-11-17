@@ -119,6 +119,7 @@ set ( battlescape_src
   Battlescape/KnowledgeArmor.cpp
   Battlescape/Map.cpp
   Battlescape/MapWeather.cpp
+  Battlescape/MapFx.cpp
   Battlescape/MapLight.cpp
   Battlescape/MapSteps.cpp
   Battlescape/MapAim.cpp

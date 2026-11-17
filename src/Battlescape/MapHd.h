@@ -23,7 +23,7 @@ namespace OpenXcom
 
 class SavedBattleGame;
 
-/// What the files of the Map's HD drawing share (Map.cpp, MapWeather.cpp): defined in Map.cpp.
+/// What the files of the Map's HD drawing share (Map.cpp and Map*.cpp); included after Map.h. Defined in Map.cpp unless said otherwise.
 
 /// HD: true when the battle is on an orbital map (no sun there: no HD shadows, no weather).
 bool hdOrbitalMap(const SavedBattleGame *save);
