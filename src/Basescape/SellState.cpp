@@ -922,7 +922,9 @@ void SellState::sell()
 	{
 		_debriefingState->hideSellTransferButtons();
 	}
-	if (_debriefingState || !baseSwitchAllowed() || !Options::oxceTradeStay)
+	// nothing sold (XP-000593): the screen just closes, there is nothing to go on with
+	const bool sold = std::any_of(_items.begin(), _items.end(), [](const TransferRow &r) { return r.amount > 0; });
+	if (_debriefingState || !sold || !baseSwitchAllowed() || !Options::oxceTradeStay)
 	{
 		_game->popState();
 		return;

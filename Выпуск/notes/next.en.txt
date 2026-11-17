@@ -4,3 +4,4 @@
 - HD paper doll of the Triarius power armour (inventory and Ufopaedia): 30% less gloss, the shading, colour and eyes are unchanged.
 - HD battle on a map by the water (a harbour): the sea beyond the map's edge is drawn only on the sides where the edge is water; beyond a land edge there is plain ground. A ship in the open sea is still surrounded by water.
 - HD paper doll of the Sear Armor in the inventory: the visor and the chest gem are redrawn after the classic one - a narrow red visor and a red gem in a grey setting instead of a blurred blot.
+- Black market and selling: Aye with nothing chosen now closes the window like Begone instead of opening it again; after a real deal the window still stays open on the same base.

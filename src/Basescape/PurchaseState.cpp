@@ -897,7 +897,9 @@ void PurchaseState::purchase()
 			}
 		}
 	}
-	if (_parent || !baseSwitchAllowed() || !Options::oxceTradeStay)
+	// nothing bought (XP-000593): the screen just closes, there is nothing to go on with
+	const bool bought = std::any_of(_items.begin(), _items.end(), [](const TransferRow &r) { return r.amount > 0; });
+	if (_parent || !bought || !baseSwitchAllowed() || !Options::oxceTradeStay)
 	{
 		_game->popState();
 		return;
