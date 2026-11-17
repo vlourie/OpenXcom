@@ -389,9 +389,9 @@ void draw(SDL_Surface *world, int index, int x, int y, int k, Status status, Uin
 	}
 	// each hangar keeps its own rhythm
 	const float t = (float)ticks / 1000.0f + (float)(seed % 997u) * 0.0371f;
-	if (SDL_MUSTLOCK(world))
+	if (SDL_MUSTLOCK(world) && SDL_LockSurface(world) < 0)
 	{
-		SDL_LockSurface(world);
+		return; // no pixels to write to: the lights are left out of this frame
 	}
 	for (const Light &light : *lights)
 	{
@@ -425,9 +425,9 @@ void drawFuel(SDL_Surface *world, int x, int y, int k, int percent, Uint32 seed,
 	// full: the bulbs swap green and gold every half second, neighbours opposite
 	const float t = (float)ticks / 1000.0f + (float)(seed % 997u) * 0.0371f;
 	const int swap = (int)(t / 0.5f) & 1;
-	if (SDL_MUSTLOCK(world))
+	if (SDL_MUSTLOCK(world) && SDL_LockSurface(world) < 0)
 	{
-		SDL_LockSurface(world);
+		return; // no pixels to write to: the bulbs are left out of this frame
 	}
 	for (int i = 0; i < 5; ++i)
 	{

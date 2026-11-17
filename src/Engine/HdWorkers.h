@@ -67,6 +67,8 @@ private:
 	std::unordered_map<const std::type_info*, Cost> _costs;
 	/// Processor time the threads of the running batch spent in its jobs, nanoseconds.
 	std::atomic<long long> _workNs { 0 };
+	/// Jobs of the running batch that ended with an exception.
+	std::atomic<int> _failed { 0 };
 	/// The work one woken thread must get for its wake to pay (OXCE_HD_POOL_GRAIN_US for tests), nanoseconds.
 	long long _grainNs = 0;
 
@@ -85,7 +87,9 @@ public:
 	int threads() const { return (int)_threads.size() + 1; }
 	/// Runs fn(0) .. fn(jobs - 1) across the pool and returns when all have finished. The jobs must not
 	/// depend on which thread runs them: a batch of little work runs on fewer threads, or on the caller alone.
-	void run(int jobs, const std::function<void(int)> &fn);
+	/// A job that throws is logged and the rest still run (an exception must not leave a render thread); the answer
+	/// is false then: what the batch was making is not whole, and a caller that keeps it (a cache) must drop it.
+	bool run(int jobs, const std::function<void(int)> &fn);
 };
 
 }

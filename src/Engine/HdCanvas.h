@@ -589,6 +589,8 @@ private:
 		size_t lru = 0;
 		/// The shade made into the blend (a TonedKey shade, GROUND_RAW: none).
 		int tone = 0;
+		/// The turn of the view the blend was made for (0..3): the pattern is laid out by it.
+		int rot = 0;
 	};
 	/// The tone of a ground blend drawn as it is (gradient light, a recolour, shade 0 in white light).
 	static const int GROUND_RAW = 0x7FFF << 8;

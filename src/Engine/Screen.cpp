@@ -1019,6 +1019,7 @@ void Screen::writeHdTestDump()
 	{
 		return;
 	}
+	bool written = true;
 	if (_layered && _world)
 	{
 		// the frame as the player will see it: world layer with the classic layer composed on top
@@ -1045,13 +1046,21 @@ void Screen::writeHdTestDump()
 			if (!gpu.readBack(tmp.get()))
 			{
 				Log(LOG_ERROR) << "HD GPU: the test dump could not be read back from the framebuffer";
+				written = false;
 			}
 		}
-		HdTest::savePngRgb(_hdTestDumpPath, tmp.get());
+		written = written && HdTest::savePngRgb(_hdTestDumpPath, tmp.get());
 	}
 	else
 	{
-		HdTest::savePngRgb(_hdTestDumpPath, _surface.get());
+		written = HdTest::savePngRgb(_hdTestDumpPath, _surface.get());
+	}
+	if (!written)
+	{
+		// no file is better than a wrong one: a frame that is not the card's, a half-written PNG or the file of
+		// an earlier dump would pass for this frame in a comparison (the bench reports a missing file)
+		remove(_hdTestDumpPath.c_str());
+		Log(LOG_ERROR) << "HD test: the dump " << _hdTestDumpPath << " was not written";
 	}
 	_hdTestDumpPath.clear();
 }

@@ -1251,7 +1251,10 @@ bool drawIfPicture(const Surface *surface, SDL_Surface *dest)
 	{
 		return false;
 	}
-	if (SDL_MUSTLOCK(world)) SDL_LockSurface(world);
+	if (SDL_MUSTLOCK(world) && SDL_LockSurface(world) < 0)
+	{
+		return false; // not drawn here: the caller shows the image the classic way
+	}
 	blendInto(world, *f, surface->getX() * k, surface->getY() * k, nullptr);
 	if (SDL_MUSTLOCK(world)) SDL_UnlockSurface(world);
 	const SDL_Rect area = pictureArea(art, surface->getX(), surface->getY(), w, h);

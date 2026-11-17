@@ -277,22 +277,44 @@ namespace
 			return false;
 		}
 		bool ok = true;
-		if (entry.size > 0)
+		// the file and SDL's buffer are let go whatever happens below (no memory for the bytes throws)
+		struct FreeSdl { void operator()(void *p) const { SDL_free(p); } };
+		try
 		{
-			data.resize(entry.size);
-			ok = SDL_RWseek(rw, entry.offset, RW_SEEK_SET) >= 0 && (long long)SDL_RWread(rw, data.data(), 1, entry.size) == (long long)entry.size;
-			SDL_RWclose(rw);
-		}
-		else
-		{
-			size_t size = 0;
-			void *whole = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
-			ok = whole != nullptr;
-			if (whole)
+			if (entry.size > 0)
 			{
-				data.assign((const unsigned char*)whole, (const unsigned char*)whole + size);
-				SDL_free(whole);
+				struct CloseRw { void operator()(SDL_RWops *p) const { SDL_RWclose(p); } };
+				std::unique_ptr<SDL_RWops, CloseRw> file(rw);
+				// the place and the size come from the pack's table: a picture that is not inside the file is not
+				// read (and no memory is taken for it - a broken table may name 4 GB)
+				const long long end = SDL_RWseek(rw, 0, RW_SEEK_END);
+				ok = end >= 0 && (long long)entry.offset + (long long)entry.size <= end;
+				if (ok)
+				{
+					data.resize(entry.size);
+					ok = SDL_RWseek(rw, entry.offset, RW_SEEK_SET) >= 0 && (long long)SDL_RWread(rw, data.data(), 1, entry.size) == (long long)entry.size;
+				}
 			}
+			else
+			{
+				size_t size = 0;
+				std::unique_ptr<void, FreeSdl> whole(SDL_LoadFile_RW(rw, &size, SDL_TRUE));
+				ok = whole != nullptr;
+				if (whole)
+				{
+					data.assign((const unsigned char*)whole.get(), (const unsigned char*)whole.get() + size);
+				}
+			}
+		}
+		catch (const std::exception &e)
+		{
+			Log(LOG_ERROR) << "HD sprite: " << entry.path << " not read: " << e.what();
+			data.clear();
+			ok = false;
+		}
+		if (!ok)
+		{
+			data.clear();
 		}
 		return ok;
 	}
@@ -451,10 +473,15 @@ namespace
 	}
 
 	/// Forgets the addressed wall pictures of a key (both slots, their loaded bytes included).
-	void dropWalls(const void *key)
+	/// Forgets the wall variants of a frame: of both faces, or of one (`only` - WALL_WEST or WALL_NORTH).
+	void dropWalls(const void *key, int only = 0)
 	{
 		for (auto &part : walls)
 		{
+			if (only && &part != &walls[only - 1])
+			{
+				continue;
+			}
 			auto it = part.find(key);
 			if (it == part.end())
 			{
@@ -1447,14 +1474,15 @@ namespace
 			return 0;
 		}
 		const Uint32 packScale = readU32(head + 8), baseW = readU32(head + 12), baseH = readU32(head + 16), count = readU32(head + 20);
-		if (packScale < 1 || packScale > 16 || baseW == 0 || baseH == 0 || count > 1000000)
+		// the sizes are a file's word: bounded before any arithmetic on them
+		if (packScale < 1 || packScale > 16 || baseW == 0 || baseH == 0 || baseW > 65536 || baseH > 65536 || count > 1000000)
 		{
 			SDL_RWclose(rw);
 			Log(LOG_WARNING) << "HD sprites: " << path << " has a bad header - ignored";
 			return 0;
 		}
 		const int frameW = surfaceSet->getWidth(), frameH = surfaceSet->getHeight();
-		if ((int)baseW * scale != frameW || (int)baseH * scale != frameH)
+		if ((long long)baseW * scale != frameW || (long long)baseH * scale != frameH)
 		{
 			SDL_RWclose(rw);
 			Log(LOG_WARNING) << "HD sprites: " << path << " holds frames of " << baseW << "x" << baseH
@@ -1468,14 +1496,22 @@ namespace
 			Log(LOG_WARNING) << "HD sprites: " << path << " is cut short - ignored";
 			return 0;
 		}
+		// the pictures lie after the table and inside the file: an entry that says otherwise is not registered
+		const long long fileEnd = SDL_RWseek(rw, 0, RW_SEEK_END);
+		const long long tableEnd = (long long)sizeof(head) + (long long)table.size();
 		SDL_RWclose(rw);
-		int registered = 0;
+		int registered = 0, outside = 0;
 		for (Uint32 i = 0; i < count; ++i)
 		{
 			const unsigned char *e = &table[(size_t)i * 12];
 			const Uint32 index = readU32(e), offset = readU32(e + 4), size = readU32(e + 8);
 			if (index >= surfaceSet->getTotalFrames() || size == 0)
 			{
+				continue;
+			}
+			if (fileEnd < 0 || (long long)offset < tableEnd || (long long)offset + (long long)size > fileEnd)
+			{
+				++outside;
 				continue;
 			}
 			Surface *frame = surfaceSet->getFrame((int)index);
@@ -1485,6 +1521,10 @@ namespace
 			}
 			setLazy(frame->getBuffer(), path, offset, size, frame->getWidth(), frame->getHeight());
 			++registered;
+		}
+		if (outside)
+		{
+			Log(LOG_WARNING) << "HD sprites: " << path << " - " << outside << " picture(s) lie outside the file, not registered";
 		}
 		if ((int)packScale != scale)
 		{
@@ -1791,7 +1831,8 @@ namespace
 			const std::string slot = pair.part == WALL_WEST ? "west" : "north";
 			const void *key = frame->getBuffer();
 			noteKey(key);
-			dropWalls(key);
+			// the face being registered alone: a frame may be given both as a west and as a north wall
+			dropWalls(key, pair.part);
 			WallSlots &wall = walls[pair.part - 1][key];
 			wall.n = pair.n;
 			wall.label = setName + " " + std::to_string(pair.frame) + ":" + slot;

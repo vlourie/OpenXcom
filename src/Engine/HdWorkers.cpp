@@ -122,11 +122,12 @@ HdWorkers::~HdWorkers()
 
 // an exception must not leave a render thread (std::terminate, no line in the log): the frame is finished
 // without this slice - a hole in the frame is better than a dead game
-static inline void runJob(const std::function<void(int)> &fn, int i)
+static inline bool runJob(const std::function<void(int)> &fn, int i)
 {
 	try
 	{
 		fn(i);
+		return true;
 	}
 	catch (const std::exception &e)
 	{
@@ -136,6 +137,7 @@ static inline void runJob(const std::function<void(int)> &fn, int i)
 	{
 		Log(LOG_ERROR) << "HD render: job " << i << " failed";
 	}
+	return false;
 }
 
 int HdWorkers::takeJobs(const std::function<void(int)> &fn, int jobs, long long &ns)
@@ -144,7 +146,10 @@ int HdWorkers::takeJobs(const std::function<void(int)> &fn, int jobs, long long 
 	int taken = 0;
 	for (int i = _next.fetch_add(1); i < jobs; i = _next.fetch_add(1))
 	{
-		runJob(fn, i);
+		if (!runJob(fn, i))
+		{
+			++_failed;
+		}
 		++taken;
 	}
 	ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
@@ -184,22 +189,23 @@ void HdWorkers::workerLoop()
 	}
 }
 
-void HdWorkers::run(int jobs, const std::function<void(int)> &fn)
+bool HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 {
 	if (jobs <= 0)
 	{
-		return;
+		return true;
 	}
 	// the pool runs one batch at a time: a call from a job, or from another thread while a batch runs
 	// (the data loading thread of the start screen), runs its jobs itself
 	bool idle = false;
 	if (_threads.empty() || jobs == 1 || !_busy.compare_exchange_strong(idle, true))
 	{
+		bool whole = true;
 		for (int i = 0; i < jobs; ++i)
 		{
-			runJob(fn, i);
+			whole = runJob(fn, i) && whole;
 		}
-		return;
+		return whole;
 	}
 	struct Release { std::atomic<bool> &busy; ~Release() { busy = false; } } release{ _busy };
 	// only as many workers are woken as there are jobs besides the caller's: waking the whole pool for the
@@ -220,6 +226,7 @@ void HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 		_next = 0;
 		_slots = want;
 		_workNs = 0;
+		_failed = 0;
 		++_generation;
 	}
 	if (want == (int)_threads.size())
@@ -258,6 +265,7 @@ void HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 		cost.workNs += _workNs;
 		reportStats();
 	}
+	return _failed == 0;
 }
 
 void HdWorkers::reportStats()

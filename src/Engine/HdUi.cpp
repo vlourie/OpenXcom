@@ -509,7 +509,8 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 			}
 		}
 		// the new pieces side by side over the pool, each smoothed on its own (as smoothPatch does)
-		std::vector<Uint8> failed(fresh.size(), 0);
+		// (failed until done: a piece whose job threw - the pool logs it and goes on - stays failed)
+		std::vector<Uint8> failed(fresh.size(), 1);
 		if (!fresh.empty())
 		{
 			HdWorkers::instance().run((int)fresh.size(), [&](int i)
@@ -901,8 +902,11 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				clip.w = (Uint16)std::max(0, x1 - clip.x);
 				clip.h = (Uint16)std::max(0, y1 - clip.y);
 				drawPlaced(dest, *frame, (x - artX) * k, (y - artY) * k, clip);
+				return;
 			}
-			return;
+			// the picture could not be made (a broken file, no memory): the image is not left out of the screen -
+			// it is drawn below the way an image without a picture is, smoothed or as the classic pixels
+			why = "picture failed";
 		}
 	}
 	if (!oversize && smooth && k >= 2 && k <= 6)

@@ -557,6 +557,11 @@ std::string run(Control &c, Game *g, const std::string &line)
 		}
 		std::ostringstream out;
 		out << "mapcheck rot=" << cam->getRotation() << " tested=" << tested << " missed=" << missed << " worst=" << worst;
+		// no point (or a handful) on the map is no check at all: said as an error, not as "missed=0"
+		if (tested < 16)
+		{
+			return "err " + out.str() + ": too few points on the map";
+		}
 		return out.str();
 	}
 	if (cmd == "load")
@@ -598,6 +603,7 @@ void finish(Control &c, Game *g)
 {
 	const std::string name = c.dir + "/done." + std::to_string(c.batch);
 	const std::string tmp = name + ".tmp";
+	bool written = false;
 	{
 		std::ofstream out(tmp.c_str(), std::ios::binary);
 		for (const std::string &r : c.results)
@@ -605,11 +611,19 @@ void finish(Control &c, Game *g)
 			out << r << "\n";
 		}
 		out << "end\n";
+		out.flush();
+		written = out.good();
 	}
 	remove(name.c_str());
-	if (rename(tmp.c_str(), name.c_str()) != 0)
+	if (!written || rename(tmp.c_str(), name.c_str()) != 0)
 	{
-		Log(LOG_ERROR) << "HdControl: cannot write " << name;
+		// the answers are not lost with the file: they go to the log, where the client's timeout sends its reader
+		Log(LOG_ERROR) << "HdControl: cannot write " << name << " - the answers of batch " << c.batch << ":";
+		for (const std::string &r : c.results)
+		{
+			Log(LOG_ERROR) << "HdControl:   " << r;
+		}
+		remove(tmp.c_str());
 	}
 	c.results.clear();
 	c.batch = 0;

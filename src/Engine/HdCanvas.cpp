@@ -2477,12 +2477,14 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 	Uint64 hkey = (Uint64)(uintptr_t)key * 0x9E3779B97F4A7C15ULL;
 	hkey ^= ((Uint64)(Uint32)_groundX << 42) ^ ((Uint64)(Uint32)_groundY << 21) ^ (Uint64)(Uint32)_groundZ ^ ((Uint64)_groundSeed * 0xC2B2AE3D27D4EB4FULL);
 	hkey ^= (Uint64)(Uint32)tone * 0xFF51AFD7ED558CCDULL;
+	// the turn of the view shapes the blend (makeGround): a part of what it is cached by (nothing for the view unturned)
+	hkey ^= (Uint64)(Uint32)_groundRot * 0xD6E8FEB86659FD93ULL;
 	toned = tone != GROUND_RAW;
 	auto it = _ground.find(hkey);
 	if (it != _ground.end() && !changed)
 	{
 		GroundEntry &e = it->second;
-		if (e.src == key && e.x == _groundX && e.y == _groundY && e.z == _groundZ && e.tone == tone && e.generation == generation)
+		if (e.src == key && e.x == _groundX && e.y == _groundY && e.z == _groundZ && e.tone == tone && e.rot == _groundRot && e.generation == generation)
 		{
 			e.lru = ++_groundClock;
 			return &e.frame;
@@ -2503,6 +2505,7 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 		e.y = _groundY;
 		e.z = _groundZ;
 		e.tone = tone;
+		e.rot = _groundRot;
 		e.generation = generation;
 		e.lru = ++_groundClock;
 		out = &e.frame;
@@ -3025,13 +3028,23 @@ void Canvas32::makeJobs()
 	}
 	HdDrawTimer timer(HdDrawStats::frame.tonedUs);
 	HdWorkers &pool = HdWorkers::instance();
+	bool whole = true;
 	if (!_groundJobs.empty())
 	{
-		pool.run((int)_groundJobs.size(), [&](int i) { makeGround(_groundJobs[i]); });
+		whole = pool.run((int)_groundJobs.size(), [&](int i) { makeGround(_groundJobs[i]); }) && whole;
 	}
 	if (!_tonedJobs.empty())
 	{
-		pool.run((int)_tonedJobs.size(), [&](int i) { makeToned(_tonedJobs[i]); });
+		whole = pool.run((int)_tonedJobs.size(), [&](int i) { makeToned(_tonedJobs[i]); }) && whole;
+	}
+	if (!whole)
+	{
+		// a picture was not made (the pool has logged why) and its entry sits in the cache as if it were: this
+		// frame's commands still point at the entries, so they are let go at the end of the flush, all of them,
+		// the way they go when the pack's frames change (forgetChanged)
+		Log(LOG_ERROR) << "HD canvas: a ground blend or shaded copy was not made - the cached ones are made anew";
+		_changedAll = true;
+		_tonedStale = true;
 	}
 	_groundJobs.clear();
 	_tonedJobs.clear();
