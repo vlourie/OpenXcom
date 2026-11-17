@@ -109,11 +109,12 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_btnGotoBase = new TextButton(118, 18, 162, 174);
 	_btnSummary = new TextButton(118, 18, 162, 174);
 	// the loot button takes the left half of Keep Working's place (all of it when Keep Working is not shown);
-	// the two halves are as wide as the buttons under them and stand right over them (ticket XP-000581)
-	_btnKeepWorking = new TextButton(loot && canKeepWorking ? 118 : 236, 18, loot && canKeepWorking ? 162 : 40, 152);
+	// the two halves are as wide as the buttons under them and stand right over them (ticket XP-000581); a single one
+	// spans both buttons under it, 40..280 (ticket XP-000588)
+	_btnKeepWorking = new TextButton(loot && canKeepWorking ? 118 : 240, 18, loot && canKeepWorking ? 162 : 40, 152);
 	if (loot)
 	{
-		_btnLoot = new TextButton(canKeepWorking ? 118 : 236, 18, 40, 152);
+		_btnLoot = new TextButton(canKeepWorking ? 118 : 240, 18, 40, 152);
 	}
 	_txtMessage = new Text(246, 110, 37, 35);
 	_txtNext = new Text(236, 9, 40, 142);

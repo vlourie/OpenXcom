@@ -1,0 +1,4 @@
+﻿- GPU output with the SDL output selected: without the HD interface the picture is no longer blurred - the frame is stretched pixel by pixel, as in the classic game. Smoothing is used only with the OpenGL output and its smoothing selected.
+- HD interface: with the "HD pictures" option off the Ufopaedia shows the classic illustrations, not the HD art.
+- Production complete window: a single upper button (send the loot or keep working) now spans exactly both buttons below it.
+- HD paper doll of the Triarius power armour (inventory and Ufopaedia): 30% less gloss, the shading, colour and eyes are unchanged.
