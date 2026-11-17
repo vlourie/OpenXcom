@@ -2171,14 +2171,6 @@ void Map::drawTerrain(HdCanvas *surface)
 	// see-through, so the frame shows. Walls, units and items in front still cover it, as in the classic frame.
 	// Only while the battle cursor is shown (not in a projectile's flight, the enemy's turn, nor over the icons).
 	const bool cursorFadeOn = hdFrames && _cursorType != CT_NONE && !_save->getBattleState()->getMouseOverIcons();
-	const auto cursorFade = [&](int tx, int ty, int tz)
-	{
-		if (!cursorFadeOn || (tz != _camera->getViewLevel() && tz != _camera->getViewLevel() + 1))
-			return 1.0f;
-		if (tx < _selectorX - _cursorSize || tx > _selectorX + 1 || ty < _selectorY - _cursorSize || ty > _selectorY + 1)
-			return 1.0f;
-		return 0.4f;
-	};
 
 	if (!_waypoints.empty() || (pathfinderTurnedOn && (_previewSettingTu || _previewSettingEnergy)))
 	{
@@ -2601,40 +2593,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						{
 							drawTurnedWalls();
 						}
-						// Draw west wall
-						// HD render: the wall blits are labelled with their cell for the SCC addressing (paths W1, W2, N1..N4);
-						// the obstacle test hook only takes the obstacle path in the drawing, the tile is not touched
-						const bool addressObstacle = addressObstacleEvery > 0 && (mapPosition.x * 7 + mapPosition.y * 3 + mapPosition.z) % addressObstacleEvery == 0;
-						tmpSurface = turned ? SurfaceRaw<const Uint8>() : tile->getSprite(O_WESTWALL);
-						if (tmpSurface)
-						{
-							int wallShade = getWallShade(O_WESTWALL, tile);
-							const bool obstacle = tile->getObstacle(O_WESTWALL) || addressObstacle;
-							if (_hdTerrainAddress)
-								surface->setCellAddress(HdSprites::WALL_WEST, mapPosition.x, mapPosition.y, mapPosition.z, obstacle ? 2 : 1);
-							if (obstacle)
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_WESTWALL) * _k, obstacleShade, false, _nvColor);
-							else
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_WESTWALL) * _k, wallShade, false, _nvColor);
-							if (_hdTerrainAddress)
-								surface->setCellAddress(0, 0, 0, 0, 0);
-						}
-						// Draw north wall
-						tmpSurface = turned ? SurfaceRaw<const Uint8>() : tile->getSprite(O_NORTHWALL);
-						if (tmpSurface)
-						{
-							int wallShade = getWallShade(O_NORTHWALL, tile);
-							const bool obstacle = tile->getObstacle(O_NORTHWALL) || addressObstacle;
-							const bool half = bool(tile->getSprite(O_WESTWALL));
-							if (_hdTerrainAddress)
-								surface->setCellAddress(HdSprites::WALL_NORTH, mapPosition.x, mapPosition.y, mapPosition.z, (obstacle ? 5 : 3) + (half ? 1 : 0));
-							if (obstacle)
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, obstacleShade, half, _nvColor);
-							else
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, wallShade, half, _nvColor);
-							if (_hdTerrainAddress)
-								surface->setCellAddress(0, 0, 0, 0, 0);
-						}
+						drawTileWalls(surface, tile, mapPosition, screenPosition, turned, obstacleShade, addressObstacleEvery);
 						// Draw object
 						tmpSurface = tile->getSprite(O_OBJECT);
 						if (tmpSurface && !(turned && groupDrawn(_save->getTileIndex(mapPosition))))
@@ -2679,63 +2638,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						BattleItem* item = tile->getTopItem();
 						if (item)
 						{
-							// HD render: the item's shadow first, at the same place (from its frame's alpha, Map::hdItemShadow); not
-							// under a piece of a big unit's body: the piece drawn later would shade the one beside it (Vitali 30.10)
-							const BattleUnit *body = item->getUnit();
-							if (Options::oxceHdItemShadow && surface->getHdMode() != HD_MODE_NEAREST && !turned
-								&& !(body && body->getArmor()->getSize() > 1))
-							{
-								const Surface *floorSprite = itemSprite.getFloorSprite(item, tileShade);
-								if (const HdFrame *shadow = floorSprite ? hdItemShadow(surface, floorSprite) : nullptr)
-									surface->blitFrame(*shadow, screenPosition.x - 3 * _k, screenPosition.y + (tile->getTerrainLevel() - 3) * _k);
-							}
-							itemSprite.draw(item,
-								screenPosition.x,
-								screenPosition.y + tile->getTerrainLevel() * _k,
-								tileShade
-							);
-							if (_anyIndicator)
-							{
-								BattleUnit *itemUnit = item->getUnit();
-								if (itemUnit && itemUnit->getStatus() == STATUS_UNCONSCIOUS && itemUnit->indicatorsAreEnabled())
-								{
-									// the same pulse as the indicators on the inventory's ground grid (Inventory::drawItems); mode 0 keeps the classic still shade
-									static const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
-									const bool still = surface->getHdMode() == HD_MODE_NEAREST;
-									const int indicatorShade = still ? tileShade : std::min(15, tileShade + Pulsate[_animFrame % 8]);
-									// the phases share the classic pixels, so mode 0 would draw the same with any of them
-									auto phase = [&](const std::vector<Surface*> &frames) { return frames[still ? 0 : _animFrame % frames.size()]; };
-									if (!_burnIndicator.empty() && itemUnit->getFire() > 0)
-									{
-										surface->blit(phase(_burnIndicator),
-											screenPosition.x,
-											screenPosition.y + tile->getTerrainLevel() * _k,
-											indicatorShade);
-									}
-									// XP-000533: the HD drops of one who bleeds are not drawn under water (the classic still image stays)
-									else if (!_woundIndicator.empty() && itemUnit->getFatalWounds() > 0 && !(_save->getDepth() > 0 && !still))
-									{
-										surface->blit(phase(_woundIndicator),
-											screenPosition.x,
-											screenPosition.y + tile->getTerrainLevel() * _k,
-											indicatorShade);
-									}
-									else if (!_shockIndicator.empty() && itemUnit->hasNegativeHealthRegen())
-									{
-										surface->blit(phase(_shockIndicator),
-											screenPosition.x,
-											screenPosition.y + tile->getTerrainLevel() * _k,
-											indicatorShade);
-									}
-									else if (!_stunIndicator.empty())
-									{
-										surface->blit(phase(_stunIndicator),
-											screenPosition.x,
-											screenPosition.y + tile->getTerrainLevel() * _k,
-											indicatorShade);
-									}
-								}
-							}
+							drawFloorItem(surface, itemSprite, tile, item, screenPosition, tileShade, turned);
 						}
 					}
 
@@ -2803,116 +2706,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					// Draw smoke/fire
 					if (tile->getSmoke() && tile->isDiscovered(O_FLOOR))
 					{
-						frameNumber = 0;
-						int shade = 0;
-						if (!tile->getFire())
-						{
-							if (_save->getDepth() > 0)
-							{
-								frameNumber += Mod::UNDERWATER_SMOKE_OFFSET;
-							}
-							else
-							{
-								frameNumber += Mod::SMOKE_OFFSET;
-							}
-							if (Mod::EXTENDED_SMOKE_OFFSET == 0)
-							{
-								frameNumber += int(floor((tile->getSmoke() / 6.0) - 0.1)); // see http://www.ufopaedia.org/images/c/cb/Smoke.gif
-							}
-							else if (Mod::EXTENDED_SMOKE_OFFSET == 1)
-							{
-								frameNumber += int(floor((tile->getSmoke() / 6.0) - 0.1)) * 4;
-							}
-							else // if (Mod::EXTENDED_SMOKE_OFFSET == 2)
-							{
-								frameNumber += (tile->getSmoke() - 1) / 5 * 4;
-							}
-							shade = tileShade;
-						}
-
-						// HD render: every tile animates by its own clock and at the pace of the options
-						// (hdEnviClock); the classic frame of mode 0 stays the stock one
-						const bool hdEnvi = surface->getHdMode() != HD_MODE_NEAREST;
-						const int enviClock = hdEnvi ? hdEnviClock(_animFrame, tile->getPosition(),
-							tile->getFire() ? Options::oxceHdFirePace : Options::oxceHdSmokePace) : 0;
-						const int enviHalf = hdEnvi ? (enviClock / 2) % 4 : halfAnimFrame;
-						const int enviRest = hdEnvi ? enviClock % 2 : halfAnimFrameRest;
-						if (enviHalf + tile->getAnimationOffset() > 3)
-						{
-							frameNumber += enviHalf + tile->getAnimationOffset() - 4;
-						}
-						else
-						{
-							frameNumber += enviHalf + tile->getAnimationOffset();
-						}
-						tmpSurface = _game->getMod()->getHdSurfaceSet("SMOKE.PCK")->getFrame(frameNumber);
-						if (hdEnvi)
-						{
-							// HD render: the fire burns on the tile's surface (a raised object, a bank), as the
-							// items lying there are drawn, not sunk into it; on the odd animation tick the
-							// pack's in-between picture of the frame (variant 1), if it has one, doubles the
-							// fire's frame rate; a fire style of oxceHdFire takes the pack's variants 2s and 2s + 1
-							// instead (a pack without them keeps its own fire)
-							// (option oxceHdVolumeSmoke: puffs instead of the pack's smoke, soot over its fire; not under
-							// night vision nor water, which keep the pack's frame)
-							// (option oxceHdVolumeFire: tongues of flame instead of the pack's fire, under the same limits)
-							// (oxceHdVolumeSmoke 2, the veil: the pack's own smoke frame, see-through, under the puffs, in the tile's
-							// colours - a smoke without gaps, as under night vision; a burning tile keeps its fire and soot)
-							const bool puffs = Options::oxceHdVolumeSmoke > 0 && !_nvColor && _save->getDepth() == 0;
-							const bool tongues = tile->getFire() && Options::oxceHdVolumeFire && !_nvColor && _save->getDepth() == 0;
-							const int variant = tile->getFire() ? (enviRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
-							if (tongues)
-							{
-								drawFireTongues(surface, tile, screenPosition, _k, enviClock, cursorFade(itX, itY, itZ));
-							}
-							else if (!puffs || tile->getFire())
-							{
-								if (variant)
-									surface->setFrameVariant(variant);
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y + (tile->getFire() ? tile->getTerrainLevel() * _k : 0), shade, false, _nvColor);
-								if (variant)
-									surface->setFrameVariant(0);
-							}
-							if (puffs)
-							{
-								if (_hdLightOn)
-								{
-									updateHdLight(tile, tileShade, mapPosition);
-								}
-								if (Options::oxceHdVolumeSmoke >= 2 && !tile->getFire())
-								{
-									if (const HdFrame *veil = surface->frameOf(tmpSurface))
-									{
-										// one flat light over the tile: the centre node of its light field
-										static const float white[3] = { 1, 1, 1 };
-										const float *veilTint = _hdLightOn ? _hdLight.tint[4] : white;
-										surface->blitFrameToned(*veil, screenPosition.x, screenPosition.y,
-											_hdLightOn ? _hdLight.shade[4] : (float)tileShade, veilTint,
-											SMOKE_VEIL_OPACITY * cursorFade(itX, itY, itZ));
-									}
-								}
-								int crowd = 0;
-								if (!tile->getFire())
-								{
-									for (int dy = -1; dy <= 1; ++dy)
-									{
-										for (int dx = -1; dx <= 1; ++dx)
-										{
-											const Tile *nb = (dx || dy) ? _save->getTile(Position(itX + dx, itY + dy, itZ)) : nullptr;
-											if (nb && (nb->getSmoke() > 0 || nb->getFire() > 0))
-											{
-												++crowd;
-											}
-										}
-									}
-								}
-								drawSmokePuffs(surface, tile, screenPosition, _k, enviClock, _hdLightOn ? &_hdLight : nullptr, tileShade, cursorFade(itX, itY, itZ), crowd);
-							}
-						}
-						else
-						{
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, shade, false, _nvColor);
-						}
+						drawSmokeFire(surface, tile, mapPosition, screenPosition, itX, itY, itZ, tileShade, cursorFadeOn);
 					}
 
 					//draw particle clouds on front of solder
@@ -3059,6 +2853,262 @@ void Map::drawTerrain(HdCanvas *surface)
 	drawMuzzleFlashes(surface);
 
 	surface->unlock();
+}
+
+/**
+ * The west and the north wall of a tile (the turned view draws its walls by the edges of the view cell and passes these by).
+ * @param surface The canvas.
+ * @param tile The tile.
+ * @param mapPosition The tile on the map.
+ * @param screenPosition The tile on the canvas.
+ * @param turned The view is turned.
+ * @param obstacleShade The shade of a part marked as an obstacle.
+ * @param addressObstacleEvery The test hook of the SCC addressing: every n-th cell takes the obstacle path (0 - none).
+ */
+void Map::drawTileWalls(HdCanvas *surface, Tile *tile, const Position &mapPosition, const Position &screenPosition, bool turned, int obstacleShade, int addressObstacleEvery)
+{
+	SurfaceRaw<const Uint8> tmpSurface;
+	// Draw west wall
+	// HD render: the wall blits are labelled with their cell for the SCC addressing (paths W1, W2, N1..N4);
+	// the obstacle test hook only takes the obstacle path in the drawing, the tile is not touched
+	const bool addressObstacle = addressObstacleEvery > 0 && (mapPosition.x * 7 + mapPosition.y * 3 + mapPosition.z) % addressObstacleEvery == 0;
+	tmpSurface = turned ? SurfaceRaw<const Uint8>() : tile->getSprite(O_WESTWALL);
+	if (tmpSurface)
+	{
+		int wallShade = getWallShade(O_WESTWALL, tile);
+		const bool obstacle = tile->getObstacle(O_WESTWALL) || addressObstacle;
+		if (_hdTerrainAddress)
+			surface->setCellAddress(HdSprites::WALL_WEST, mapPosition.x, mapPosition.y, mapPosition.z, obstacle ? 2 : 1);
+		if (obstacle)
+			surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_WESTWALL) * _k, obstacleShade, false, _nvColor);
+		else
+			surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_WESTWALL) * _k, wallShade, false, _nvColor);
+		if (_hdTerrainAddress)
+			surface->setCellAddress(0, 0, 0, 0, 0);
+	}
+	// Draw north wall
+	tmpSurface = turned ? SurfaceRaw<const Uint8>() : tile->getSprite(O_NORTHWALL);
+	if (tmpSurface)
+	{
+		int wallShade = getWallShade(O_NORTHWALL, tile);
+		const bool obstacle = tile->getObstacle(O_NORTHWALL) || addressObstacle;
+		const bool half = bool(tile->getSprite(O_WESTWALL));
+		if (_hdTerrainAddress)
+			surface->setCellAddress(HdSprites::WALL_NORTH, mapPosition.x, mapPosition.y, mapPosition.z, (obstacle ? 5 : 3) + (half ? 1 : 0));
+		if (obstacle)
+			surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, obstacleShade, half, _nvColor);
+		else
+			surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, wallShade, half, _nvColor);
+		if (_hdTerrainAddress)
+			surface->setCellAddress(0, 0, 0, 0, 0);
+	}
+}
+
+/**
+ * The item on top of the floor of a tile: its shadow, the item, the indicator of an unconscious unit lying there.
+ * @param surface The canvas.
+ * @param itemSprite The drawer of items of this frame.
+ * @param tile The tile.
+ * @param item The top item of the tile.
+ * @param screenPosition The tile on the canvas.
+ * @param tileShade The shade of the tile.
+ * @param turned The view is turned.
+ */
+void Map::drawFloorItem(HdCanvas *surface, ItemSprite &itemSprite, Tile *tile, BattleItem *item, const Position &screenPosition, int tileShade, bool turned)
+{
+	// HD render: the item's shadow first, at the same place (from its frame's alpha, Map::hdItemShadow); not
+	// under a piece of a big unit's body: the piece drawn later would shade the one beside it (Vitali 30.10)
+	const BattleUnit *body = item->getUnit();
+	if (Options::oxceHdItemShadow && surface->getHdMode() != HD_MODE_NEAREST && !turned
+		&& !(body && body->getArmor()->getSize() > 1))
+	{
+		const Surface *floorSprite = itemSprite.getFloorSprite(item, tileShade);
+		if (const HdFrame *shadow = floorSprite ? hdItemShadow(surface, floorSprite) : nullptr)
+			surface->blitFrame(*shadow, screenPosition.x - 3 * _k, screenPosition.y + (tile->getTerrainLevel() - 3) * _k);
+	}
+	itemSprite.draw(item,
+		screenPosition.x,
+		screenPosition.y + tile->getTerrainLevel() * _k,
+		tileShade
+	);
+	if (_anyIndicator)
+	{
+		BattleUnit *itemUnit = item->getUnit();
+		if (itemUnit && itemUnit->getStatus() == STATUS_UNCONSCIOUS && itemUnit->indicatorsAreEnabled())
+		{
+			// the same pulse as the indicators on the inventory's ground grid (Inventory::drawItems); mode 0 keeps the classic still shade
+			static const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
+			const bool still = surface->getHdMode() == HD_MODE_NEAREST;
+			const int indicatorShade = still ? tileShade : std::min(15, tileShade + Pulsate[_animFrame % 8]);
+			// the phases share the classic pixels, so mode 0 would draw the same with any of them
+			auto phase = [&](const std::vector<Surface*> &frames) { return frames[still ? 0 : _animFrame % frames.size()]; };
+			if (!_burnIndicator.empty() && itemUnit->getFire() > 0)
+			{
+				surface->blit(phase(_burnIndicator),
+					screenPosition.x,
+					screenPosition.y + tile->getTerrainLevel() * _k,
+					indicatorShade);
+			}
+			// XP-000533: the HD drops of one who bleeds are not drawn under water (the classic still image stays)
+			else if (!_woundIndicator.empty() && itemUnit->getFatalWounds() > 0 && !(_save->getDepth() > 0 && !still))
+			{
+				surface->blit(phase(_woundIndicator),
+					screenPosition.x,
+					screenPosition.y + tile->getTerrainLevel() * _k,
+					indicatorShade);
+			}
+			else if (!_shockIndicator.empty() && itemUnit->hasNegativeHealthRegen())
+			{
+				surface->blit(phase(_shockIndicator),
+					screenPosition.x,
+					screenPosition.y + tile->getTerrainLevel() * _k,
+					indicatorShade);
+			}
+			else if (!_stunIndicator.empty())
+			{
+				surface->blit(phase(_stunIndicator),
+					screenPosition.x,
+					screenPosition.y + tile->getTerrainLevel() * _k,
+					indicatorShade);
+			}
+		}
+	}
+}
+
+/**
+ * The smoke and the fire of a tile: the pack's frame, or in HD the tongues of flame, the puffs and the veil of the options.
+ * @param surface The canvas.
+ * @param tile The tile.
+ * @param mapPosition The tile on the map.
+ * @param screenPosition The tile on the canvas.
+ * @param itX, itY, itZ The tile on the map.
+ * @param tileShade The shade of the tile.
+ * @param cursorFadeOn The volumetric smoke and fire by the cursor are drawn see-through (XP-000451).
+ */
+void Map::drawSmokeFire(HdCanvas *surface, Tile *tile, const Position &mapPosition, const Position &screenPosition, int itX, int itY, int itZ, int tileShade, bool cursorFadeOn)
+{
+	const int halfAnimFrame = (_animFrame / 2) % 4;
+	const int halfAnimFrameRest = (_animFrame % 2);
+	int frameNumber = 0;
+	SurfaceRaw<const Uint8> tmpSurface;
+	const auto cursorFade = [&](int tx, int ty, int tz)
+	{
+		if (!cursorFadeOn || (tz != _camera->getViewLevel() && tz != _camera->getViewLevel() + 1))
+			return 1.0f;
+		if (tx < _selectorX - _cursorSize || tx > _selectorX + 1 || ty < _selectorY - _cursorSize || ty > _selectorY + 1)
+			return 1.0f;
+		return 0.4f;
+	};
+	frameNumber = 0;
+	int shade = 0;
+	if (!tile->getFire())
+	{
+		if (_save->getDepth() > 0)
+		{
+			frameNumber += Mod::UNDERWATER_SMOKE_OFFSET;
+		}
+		else
+		{
+			frameNumber += Mod::SMOKE_OFFSET;
+		}
+		if (Mod::EXTENDED_SMOKE_OFFSET == 0)
+		{
+			frameNumber += int(floor((tile->getSmoke() / 6.0) - 0.1)); // see http://www.ufopaedia.org/images/c/cb/Smoke.gif
+		}
+		else if (Mod::EXTENDED_SMOKE_OFFSET == 1)
+		{
+			frameNumber += int(floor((tile->getSmoke() / 6.0) - 0.1)) * 4;
+		}
+		else // if (Mod::EXTENDED_SMOKE_OFFSET == 2)
+		{
+			frameNumber += (tile->getSmoke() - 1) / 5 * 4;
+		}
+		shade = tileShade;
+	}
+
+	// HD render: every tile animates by its own clock and at the pace of the options
+	// (hdEnviClock); the classic frame of mode 0 stays the stock one
+	const bool hdEnvi = surface->getHdMode() != HD_MODE_NEAREST;
+	const int enviClock = hdEnvi ? hdEnviClock(_animFrame, tile->getPosition(),
+		tile->getFire() ? Options::oxceHdFirePace : Options::oxceHdSmokePace) : 0;
+	const int enviHalf = hdEnvi ? (enviClock / 2) % 4 : halfAnimFrame;
+	const int enviRest = hdEnvi ? enviClock % 2 : halfAnimFrameRest;
+	if (enviHalf + tile->getAnimationOffset() > 3)
+	{
+		frameNumber += enviHalf + tile->getAnimationOffset() - 4;
+	}
+	else
+	{
+		frameNumber += enviHalf + tile->getAnimationOffset();
+	}
+	tmpSurface = _game->getMod()->getHdSurfaceSet("SMOKE.PCK")->getFrame(frameNumber);
+	if (hdEnvi)
+	{
+		// HD render: the fire burns on the tile's surface (a raised object, a bank), as the
+		// items lying there are drawn, not sunk into it; on the odd animation tick the
+		// pack's in-between picture of the frame (variant 1), if it has one, doubles the
+		// fire's frame rate; a fire style of oxceHdFire takes the pack's variants 2s and 2s + 1
+		// instead (a pack without them keeps its own fire)
+		// (option oxceHdVolumeSmoke: puffs instead of the pack's smoke, soot over its fire; not under
+		// night vision nor water, which keep the pack's frame)
+		// (option oxceHdVolumeFire: tongues of flame instead of the pack's fire, under the same limits)
+		// (oxceHdVolumeSmoke 2, the veil: the pack's own smoke frame, see-through, under the puffs, in the tile's
+		// colours - a smoke without gaps, as under night vision; a burning tile keeps its fire and soot)
+		const bool puffs = Options::oxceHdVolumeSmoke > 0 && !_nvColor && _save->getDepth() == 0;
+		const bool tongues = tile->getFire() && Options::oxceHdVolumeFire && !_nvColor && _save->getDepth() == 0;
+		const int variant = tile->getFire() ? (enviRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
+		if (tongues)
+		{
+			drawFireTongues(surface, tile, screenPosition, _k, enviClock, cursorFade(itX, itY, itZ));
+		}
+		else if (!puffs || tile->getFire())
+		{
+			if (variant)
+				surface->setFrameVariant(variant);
+			surface->blit(tmpSurface, screenPosition.x, screenPosition.y + (tile->getFire() ? tile->getTerrainLevel() * _k : 0), shade, false, _nvColor);
+			if (variant)
+				surface->setFrameVariant(0);
+		}
+		if (puffs)
+		{
+			if (_hdLightOn)
+			{
+				updateHdLight(tile, tileShade, mapPosition);
+			}
+			if (Options::oxceHdVolumeSmoke >= 2 && !tile->getFire())
+			{
+				if (const HdFrame *veil = surface->frameOf(tmpSurface))
+				{
+					// one flat light over the tile: the centre node of its light field
+					static const float white[3] = { 1, 1, 1 };
+					const float *veilTint = _hdLightOn ? _hdLight.tint[4] : white;
+					surface->blitFrameToned(*veil, screenPosition.x, screenPosition.y,
+						_hdLightOn ? _hdLight.shade[4] : (float)tileShade, veilTint,
+						SMOKE_VEIL_OPACITY * cursorFade(itX, itY, itZ));
+				}
+			}
+			int crowd = 0;
+			if (!tile->getFire())
+			{
+				for (int dy = -1; dy <= 1; ++dy)
+				{
+					for (int dx = -1; dx <= 1; ++dx)
+					{
+						const Tile *nb = (dx || dy) ? _save->getTile(Position(itX + dx, itY + dy, itZ)) : nullptr;
+						if (nb && (nb->getSmoke() > 0 || nb->getFire() > 0))
+						{
+							++crowd;
+						}
+					}
+				}
+			}
+			drawSmokePuffs(surface, tile, screenPosition, _k, enviClock, _hdLightOn ? &_hdLight : nullptr, tileShade, cursorFade(itX, itY, itZ), crowd);
+		}
+	}
+	else
+	{
+		surface->blit(tmpSurface, screenPosition.x, screenPosition.y, shade, false, _nvColor);
+	}
 }
 
 /**
