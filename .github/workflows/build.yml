@@ -1,0 +1,65 @@
+# The build check of OXCE-HD: every push that touches the engine is compiled from scratch the way the project is
+# built at home (MSYS2 MinGW64, CMake + Ninja, docs/SETUP.md). It checks that the code compiles and links; the
+# picture checks (Ctrl+F8 dumps, the hidden bench) need the game's data, which is not in the repository, and run locally.
+name: Build
+
+on:
+  push:
+    branches: [hd-render, oxce-plus]
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows (MSYS2 MinGW64)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-SDL
+            mingw-w64-x86_64-SDL_image
+            mingw-w64-x86_64-SDL_mixer
+            mingw-w64-x86_64-SDL_gfx
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-yaml-cpp
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: ninja -C build openxcom
+
+      - name: Check the executable
+        run: test -s build/bin/openxcom.exe && ls -l build/bin/openxcom.exe
