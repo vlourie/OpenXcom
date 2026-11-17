@@ -40,4 +40,16 @@ const size_t FLOOR_AO_MAX_FRAMES = 2048;
 /// HD: the floor diamond of a tile in one colour (defined in MapEdge.cpp).
 void fillDiamond(HdFrame &f, Uint32 rgb, int alpha, int k);
 
+/// How strong the shadows of units are at the battle's global shade (0 day .. 15 night), 0..UNIT_SHADOW_STEPS: full up to
+/// shade 4, then weaker by a step per shade and none from shade 10 on (no sun at night, ticket XP-000447). Whole steps, so
+/// the cached frames come in a few strengths only.
+const int UNIT_SHADOW_STEPS = 6;
+inline int unitShadowStrength(int globalShade)
+{
+	return std::max(0, std::min(UNIT_SHADOW_STEPS, 10 - globalShade));
+}
+
+/// HD: the soft shadow under a unit (defined in MapShadows.cpp).
+const HdFrame &unitShadow(int size, int part, int k, int strength);
+
 }
