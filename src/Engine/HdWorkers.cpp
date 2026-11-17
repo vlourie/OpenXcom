@@ -80,9 +80,20 @@ HdWorkers::HdWorkers()
 	}
 	_grainNs = grainUs * 1000;
 	_stats = getenv("OXCE_HD_POOL_STATS") != nullptr;
-	for (int i = 1; i < n; ++i)
+	// a thread the system refuses must not leave the constructor as an exception (the threads made before it are
+	// joinable: std::terminate) - the pool works with those it got, down to the caller alone
+	try
 	{
-		_threads.emplace_back(&HdWorkers::workerLoop, this);
+		_threads.reserve(n - 1);
+		for (int i = 1; i < n; ++i)
+		{
+			_threads.emplace_back(&HdWorkers::workerLoop, this);
+		}
+	}
+	catch (const std::exception &e)
+	{
+		Log(LOG_ERROR) << "HD render: thread " << (_threads.size() + 2) << " of " << n << " not started: " << e.what();
+		n = (int)_threads.size() + 1;
 	}
 	Log(LOG_INFO) << "HD render: " << n << " render thread(s)";
 	// the settings that decide how heavy a frame is: without them a log from another machine

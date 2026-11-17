@@ -5907,7 +5907,7 @@ void Map::hdNoteBloodCloud(const Explosion *explosion, std::vector<std::pair<con
 	cloud.rgb = explosion->getHdBlood() >= 0 ? explosion->getHdBlood() : 0xA01818;
 	cloud.stamp = _save->getTurn() * 4 + (int)_save->getSide();
 	cloud.born = SDL_GetTicks();
-	cloud.seed = cloudMix((unsigned int)(at.x * 73856093) ^ (unsigned int)(at.y * 19349663) ^ (unsigned int)(at.z * 83492791) ^ (unsigned int)(cloud.stamp * 2654435761U) ^ cloud.born);
+	cloud.seed = cloudMix((unsigned int)at.x * 73856093u ^ (unsigned int)at.y * 19349663u ^ (unsigned int)at.z * 83492791u ^ (unsigned int)cloud.stamp * 2654435761u ^ cloud.born);
 	_hdBloodClouds.push_back(cloud);
 }
 

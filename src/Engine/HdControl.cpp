@@ -62,7 +62,8 @@ struct Control
 	int batch = 0;                    // the batch being run, 0 - none
 	std::deque<std::string> queue;
 	std::vector<std::string> results;
-	Uint32 lastPoll = 0, waitUntil = 0;
+	// the waits are kept as a start and a length, compared by difference: SDL's 32-bit clock wraps after 49.7 days
+	Uint32 lastPoll = 0, waitFrom = 0, waitFor = 0;
 	int modFrames = 0;                // frames left until a held Ctrl/Shift/Alt is let go
 	int sinceInput = 99;              // drawn frames since the last input command: a shot needs the screen to settle
 	unsigned frames = 0, seenFrames = 0;   // drawn frames; the commands go one per drawn frame
@@ -70,12 +71,13 @@ struct Control
 	Uint8 pendingButton = 0;          // a click's button, pushed on the frame after its motion
 	int pendingX = 0, pendingY = 0;
 	std::string waitState;            // waitstate: the class the top state has to become
-	Uint32 waitStateUntil = 0;
+	Uint32 waitStateFrom = 0, waitStateFor = 0;
 	std::string shotPath;
 	// record: frames dumped one after another while the display clock steps by the frame, not the wall -
 	// a clip without jerks however long a frame takes to write
 	std::string recordDir, recordPath, nightBefore;
-	int recordLeft = 0, recordIndex = 0;
+	int recordLeft = 0, recordIndex = 0, recordMissing = 0;
+	std::string recordFirstMissing;
 	double recordStep = 0, nightFrom = -1, nightTo = -1;
 	bool recordClock = false, hadNight = false;
 	Uint32 recordStart = 0, recordNow = 0;
@@ -427,7 +429,8 @@ std::string run(Control &c, Game *g, const std::string &line)
 	}
 	if (cmd == "wait")
 	{
-		c.waitUntil = SDL_GetTicks() + (Uint32)std::max(0, atoi(args.c_str()));
+		c.waitFrom = SDL_GetTicks();
+		c.waitFor = (Uint32)std::max(0, atoi(args.c_str()));
 		return "ok";
 	}
 	if (cmd == "waitstate")
@@ -440,7 +443,8 @@ std::string run(Control &c, Game *g, const std::string &line)
 		{
 			return "err waitstate: class name expected";
 		}
-		c.waitStateUntil = SDL_GetTicks() + (Uint32)std::max(0L, ms);
+		c.waitStateFrom = SDL_GetTicks();
+		c.waitStateFor = (Uint32)std::max(0L, ms);
 		return "";
 	}
 	if (cmd == "shot")
@@ -475,6 +479,9 @@ std::string run(Control &c, Game *g, const std::string &line)
 		c.hadNight = had != nullptr;
 		c.nightBefore = had ? had : "";
 		c.recordIndex = 0;
+		c.recordMissing = 0;
+		c.recordFirstMissing.clear();
+		c.recordPath.clear();
 		c.recordStep = 1000.0 / fps;
 		c.recordStart = SDL_GetTicks();
 		c.recordClock = true;
@@ -711,7 +718,7 @@ void step(Game *g)
 		{
 			c.results.push_back("ok");
 		}
-		else if (now >= c.waitStateUntil)
+		else if ((Uint32)(now - c.waitStateFrom) >= c.waitStateFor)
 		{
 			c.results.push_back("err waitstate: top is " + top + ", not " + c.waitState);
 		}
@@ -739,6 +746,15 @@ void step(Game *g)
 		{
 			return;
 		}
+		// every frame is checked once its dump is over, not the last one alone: a clip with holes is not "ok"
+		if (!c.recordPath.empty() && !fileExists(c.recordPath))
+		{
+			if (c.recordMissing++ == 0)
+			{
+				c.recordFirstMissing = c.recordPath;
+			}
+		}
+		c.recordPath.clear();
 		if (c.recordLeft == 0)
 		{
 			// the last frame is written: back to the wall clock and the night as it was
@@ -747,8 +763,8 @@ void step(Game *g)
 			{
 				putNight(c.hadNight ? c.nightBefore : "");
 			}
-			c.results.push_back(fileExists(c.recordPath) ? "ok record " + std::to_string(c.recordIndex) + " frames"
-				: "err record: frame not written " + c.recordPath);
+			c.results.push_back(c.recordMissing == 0 ? "ok record " + std::to_string(c.recordIndex) + " frames"
+				: "err record: " + std::to_string(c.recordMissing) + " of " + std::to_string(c.recordIndex) + " frame(s) not written, first " + c.recordFirstMissing);
 			return;
 		}
 		// this turn's frame is drawn at this clock and written after the states are blitted (Screen::writeHdTestDump)
@@ -778,7 +794,7 @@ void step(Game *g)
 		c.results.push_back(fileExists(c.shotPath) ? "ok" : "err shot: file not written " + c.shotPath);
 		return;
 	}
-	if (now < c.waitUntil)
+	if ((Uint32)(now - c.waitFrom) < c.waitFor)
 	{
 		return;
 	}

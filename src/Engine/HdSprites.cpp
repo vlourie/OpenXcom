@@ -1088,12 +1088,21 @@ void setRecolour(Recolour fn)
 		HdWorkers::instance().run((int)todo.size(), [&](int i)
 		{
 			fn(todo[i]->key, todo[i]->frame);
+			todo[i]->recoloured = true;
 		});
+		// a frame whose recolouring failed (the pool logs it and goes on) is half done: it goes, read again from the file when drawn
 		for (Entry *entry : todo)
 		{
-			entry->recoloured = true;
+			if (entry->recoloured)
+			{
+				++recoloured;
+			}
+			else
+			{
+				loadedTotal -= bytesOf(entry->frame);
+				entry->frame = HdFrame();
+			}
 		}
-		recoloured = todo.size();
 	}
 	noteAll();
 	++registryGeneration;
