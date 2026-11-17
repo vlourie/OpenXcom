@@ -480,6 +480,10 @@ private:
 	void drawTileWalls(HdCanvas *surface, Tile *tile, const Position &mapPosition, const Position &screenPosition, bool turned, int obstacleShade, int addressObstacleEvery);
 	void drawFloorItem(HdCanvas *surface, ItemSprite &itemSprite, Tile *tile, BattleItem *item, const Position &screenPosition, int tileShade, bool turned);
 	void drawSmokeFire(HdCanvas *surface, Tile *tile, const Position &mapPosition, const Position &screenPosition, int itX, int itY, int itZ, int tileShade, bool cursorFadeOn);
+	/// The parts of drawTerrain's tile loop: the floor of a tile, the marks on it, the back cursor.
+	void drawTileFloor(HdCanvas *surface, Tile *tile, SurfaceRaw<const Uint8> tmpSurface, const Position &mapPosition, const Position &screenPosition, int tileShade, int obstacleShade, bool turned, bool hdFrames, int rot, bool hdWeather);
+	void drawFloorMarks(HdCanvas *surface, Tile *tile, const Position &mapPosition, const Position &screenPosition, bool turned);
+	void drawCursorBack(HdCanvas *surface, BattleUnit *unit, const Position &screenPosition, int itZ, bool explosiveReticle);
 	/// HD render: "+N" under the reticle at canvas (x, y) - the power the shooter's stats add (option oxceHdAimSkillBonus).
 	void drawSkillBonus(HdCanvas *surface, int x, int y);
 	Text *_txtSkillBonus = nullptr;

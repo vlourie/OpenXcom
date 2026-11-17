@@ -1982,7 +1982,6 @@ void Map::drawTerrain(HdCanvas *surface)
 	// HD render: combat effect clips not drawn for a while go, before this frame records any
 	HdFx::trim();
 	HdFx::clearTips();
-	int frameNumber = 0;
 	SurfaceRaw<const Uint8> tmpSurface;
 	Tile *tile;
 	int beginX = 0, endX = _save->getMapSizeX() - 1;
@@ -2018,8 +2017,6 @@ void Map::drawTerrain(HdCanvas *surface)
 	}
 	unitSprite.setDirectionShift(2 * rot);
 
-	const int halfAnimFrame = (_animFrame / 2) % 4;
-	const int halfAnimFrameRest = (_animFrame % 2);
 	// HD render: a thrown explosive with a reticle style of its own (oxceHdReticleExplosive) is drawn with the reticle
 	// frames instead of the throw box; the throw mark stays over it
 	const bool explosiveReticle = _cursorType == CT_THROW && _aimKind == AIM_EXPLOSIVE && Options::oxceHdReticleExplosive > 0
@@ -2424,81 +2421,9 @@ void Map::drawTerrain(HdCanvas *surface)
 					tmpSurface = tile->getSprite(O_FLOOR);
 					if (tmpSurface)
 					{
-						// HD lab: a flat floor turns with the map, unless a view is painted for this turn
-						if (turned)
-						{
-							const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(tmpSurface, rot, O_FLOOR) : SurfaceRaw<const Uint8>();
-							tmpSurface = view ? view : _turn->floorTurned(tmpSurface, rot, hdFrames);
-						}
-						// HD render: a floor with pack variants shows the one the ground pattern puts here
-						// (turned: the turned frame carries the variants turned too, the pattern stays with the world cell)
-						if (_hdGroundVariants)
-							surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z, rot);
-						if (tile->getObstacle(O_FLOOR))
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, obstacleShade, false, _nvColor);
-						else
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, tileShade, false, _nvColor);
-						if (_hdGroundVariants)
-							surface->setGroundCell(false, 0, 0, 0);
-						// HD render: the shade of the corners - the floor darkens softly beside the walls and objects on it
-						if (Options::oxceHdFloorAo && surface->getHdMode() != HD_MODE_NEAREST && !turned && tile->isDiscovered(O_FLOOR))
-						{
-							if (const HdFrame *ao = hdFloorAo(tile, mapPosition))
-								surface->blitFrame(*ao, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
-						}
-						// HD render (Options::oxceHdWeather): the wet, the puddles, the snow and the drops on an open floor
-						if (hdWeather && !turned && tile->isDiscovered(O_FLOOR))
-						{
-							hdWeatherGround(surface, tile, mapPosition, screenPosition, tileShade);
-						}
+						drawTileFloor(surface, tile, tmpSurface, mapPosition, screenPosition, tileShade, obstacleShade, turned, hdFrames, rot, hdWeather);
 					}
-					// HD render: the shadow of a unit hanging above this floor (Map::hdGatherFlierShadows), under all that stands here
-					if (!_hdFlierShadows.empty())
-					{
-						auto shadows = _hdFlierShadows.find(_save->getTileIndex(mapPosition));
-						if (shadows != _hdFlierShadows.end())
-						{
-							for (const HdFrame *piece : shadows->second)
-								surface->blitFrame(*piece, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
-						}
-					}
-					// HD render (Options::oxceHdBloodSteps, XP-000421): a bloody sole on this floor, after the floor, before what lies and stands here;
-					// only on a floor the player has discovered, three tiers of opacity by the age in turns (all the prints of the tile, the oldest first);
-					// they last Options::oxceHdBloodStepsLife turns (11 = always)
-					// XP-000563 (Options::oxceHdSnowTracks): the dents in snow, the same way, under the blood; they last three turns (HD_SNOW_LIFE, age = tier)
-					if (!_hdSnowSteps.empty() && !turned && _save->getDepth() == 0)
-					{
-						auto dent = _hdSnowSteps.find(_save->getTileIndex(mapPosition));
-						if (dent != _hdSnowSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
-						{
-							for (const HdStep &s : dent->second)
-							{
-								const int age = _save->getTurn() - s.turn;
-								if (age >= 0 && age < HD_SNOW_LIFE)
-								{
-									surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, std::min(2, age), s.pattern), screenPosition.x,
-										screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
-								}
-							}
-						}
-					}
-					if (!_hdSteps.empty() && !turned && _save->getDepth() == 0)
-					{
-						auto step = _hdSteps.find(_save->getTileIndex(mapPosition));
-						if (step != _hdSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
-						{
-							const int life = hdStepLife();
-							for (const HdStep &s : step->second)
-							{
-								const int age = _save->getTurn() - s.turn;
-								if (age >= 0 && (life == 0 || age < life))
-								{
-									surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, hdStepTier(age), s.pattern), screenPosition.x,
-										screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
-								}
-							}
-						}
-					}
+					drawFloorMarks(surface, tile, mapPosition, screenPosition, turned);
 
 					// HD render: the explosion area of what is aimed, on the floor of every tile it reaches that the player
 					// has seen (not in the air above a level): the colour of the damage type, the stronger the power the denser;
@@ -2539,35 +2464,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					// Draw cursor back
 					if (_cursorType != CT_NONE && _selectorX > itX - _cursorSize && _selectorY > itY - _cursorSize && _selectorX < itX+1 && _selectorY < itY+1 && !_save->getBattleState()->getMouseOverIcons())
 					{
-						if (_camera->getViewLevel() == itZ)
-						{
-							int reticleColor = 0;
-							if (_cursorType != CT_AIM && !explosiveReticle)
-							{
-								if (unit && (unit->getVisible() || _save->getDebugMode()))
-									frameNumber = halfAnimFrameRest; // yellow box
-								else
-									frameNumber = 0; // red box
-							}
-							else
-							{
-								if (unit && (unit->getVisible() || _save->getDebugMode()))
-								{
-									frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs, in the shot's damage colour
-									reticleColor = reticleColorGroup(_game->getMod(), _save->getBattleGame()->getCurrentAction(), getPalette());
-								}
-								else
-									frameNumber = 6; // red static crosshairs (no target: keeps its red)
-							}
-							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
-						}
-						else if (_camera->getViewLevel() > itZ)
-						{
-							frameNumber = 2; // blue box
-							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
-						}
+						drawCursorBack(surface, unit, screenPosition, itZ, explosiveReticle);
 					}
 
 					if (isUnitMovingNearby)
@@ -2853,6 +2750,157 @@ void Map::drawTerrain(HdCanvas *surface)
 	drawMuzzleFlashes(surface);
 
 	surface->unlock();
+}
+
+/**
+ * The floor of a tile: its frame (turned with the view, with the variant of the ground pattern), the shade of the corners and
+ * the weather on it.
+ * @param surface The canvas.
+ * @param tile The tile.
+ * @param tmpSurface The sprite of the floor.
+ * @param mapPosition The tile on the map.
+ * @param screenPosition The tile on the canvas.
+ * @param tileShade The shade of the tile.
+ * @param obstacleShade The shade of a part marked as an obstacle.
+ * @param turned The view is turned.
+ * @param hdFrames The canvas draws the HD frames (not mode 0).
+ * @param rot The turn of the view.
+ * @param hdWeather The weather is drawn on the ground.
+ */
+void Map::drawTileFloor(HdCanvas *surface, Tile *tile, SurfaceRaw<const Uint8> tmpSurface, const Position &mapPosition, const Position &screenPosition, int tileShade, int obstacleShade, bool turned, bool hdFrames, int rot, bool hdWeather)
+{
+	// HD lab: a flat floor turns with the map, unless a view is painted for this turn
+	if (turned)
+	{
+		const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(tmpSurface, rot, O_FLOOR) : SurfaceRaw<const Uint8>();
+		tmpSurface = view ? view : _turn->floorTurned(tmpSurface, rot, hdFrames);
+	}
+	// HD render: a floor with pack variants shows the one the ground pattern puts here
+	// (turned: the turned frame carries the variants turned too, the pattern stays with the world cell)
+	if (_hdGroundVariants)
+		surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z, rot);
+	if (tile->getObstacle(O_FLOOR))
+		surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, obstacleShade, false, _nvColor);
+	else
+		surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, tileShade, false, _nvColor);
+	if (_hdGroundVariants)
+		surface->setGroundCell(false, 0, 0, 0);
+	// HD render: the shade of the corners - the floor darkens softly beside the walls and objects on it
+	if (Options::oxceHdFloorAo && surface->getHdMode() != HD_MODE_NEAREST && !turned && tile->isDiscovered(O_FLOOR))
+	{
+		if (const HdFrame *ao = hdFloorAo(tile, mapPosition))
+			surface->blitFrame(*ao, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+	}
+	// HD render (Options::oxceHdWeather): the wet, the puddles, the snow and the drops on an open floor
+	if (hdWeather && !turned && tile->isDiscovered(O_FLOOR))
+	{
+		hdWeatherGround(surface, tile, mapPosition, screenPosition, tileShade);
+	}
+}
+
+/**
+ * The marks on the floor of a tile, under all that lies and stands there: the shadows of the units hanging above it, the dents
+ * in snow, the bloody soles.
+ * @param surface The canvas.
+ * @param tile The tile.
+ * @param mapPosition The tile on the map.
+ * @param screenPosition The tile on the canvas.
+ * @param turned The view is turned.
+ */
+void Map::drawFloorMarks(HdCanvas *surface, Tile *tile, const Position &mapPosition, const Position &screenPosition, bool turned)
+{
+	// HD render: the shadow of a unit hanging above this floor (Map::hdGatherFlierShadows), under all that stands here
+	if (!_hdFlierShadows.empty())
+	{
+		auto shadows = _hdFlierShadows.find(_save->getTileIndex(mapPosition));
+		if (shadows != _hdFlierShadows.end())
+		{
+			for (const HdFrame *piece : shadows->second)
+				surface->blitFrame(*piece, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+		}
+	}
+	// HD render (Options::oxceHdBloodSteps, XP-000421): a bloody sole on this floor, after the floor, before what lies and stands here;
+	// only on a floor the player has discovered, three tiers of opacity by the age in turns (all the prints of the tile, the oldest first);
+	// they last Options::oxceHdBloodStepsLife turns (11 = always)
+	// XP-000563 (Options::oxceHdSnowTracks): the dents in snow, the same way, under the blood; they last three turns (HD_SNOW_LIFE, age = tier)
+	if (!_hdSnowSteps.empty() && !turned && _save->getDepth() == 0)
+	{
+		auto dent = _hdSnowSteps.find(_save->getTileIndex(mapPosition));
+		if (dent != _hdSnowSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
+		{
+			for (const HdStep &s : dent->second)
+			{
+				const int age = _save->getTurn() - s.turn;
+				if (age >= 0 && age < HD_SNOW_LIFE)
+				{
+					surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, std::min(2, age), s.pattern), screenPosition.x,
+						screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
+				}
+			}
+		}
+	}
+	if (!_hdSteps.empty() && !turned && _save->getDepth() == 0)
+	{
+		auto step = _hdSteps.find(_save->getTileIndex(mapPosition));
+		if (step != _hdSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
+		{
+			const int life = hdStepLife();
+			for (const HdStep &s : step->second)
+			{
+				const int age = _save->getTurn() - s.turn;
+				if (age >= 0 && (life == 0 || age < life))
+				{
+					surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, hdStepTier(age), s.pattern), screenPosition.x,
+						screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
+				}
+			}
+		}
+	}
+}
+
+/**
+ * The back cursor on its tile: the far half of the box or of the crosshairs, behind what stands on the tile.
+ * @param surface The canvas.
+ * @param unit The unit of the tile, if any.
+ * @param screenPosition The tile on the canvas.
+ * @param itZ The level of the tile.
+ * @param explosiveReticle A thrown explosive is drawn with the reticle frames (oxceHdReticleExplosive).
+ */
+void Map::drawCursorBack(HdCanvas *surface, BattleUnit *unit, const Position &screenPosition, int itZ, bool explosiveReticle)
+{
+	const int halfAnimFrame = (_animFrame / 2) % 4;
+	const int halfAnimFrameRest = (_animFrame % 2);
+	int frameNumber = 0;
+	SurfaceRaw<const Uint8> tmpSurface;
+	if (_camera->getViewLevel() == itZ)
+	{
+		int reticleColor = 0;
+		if (_cursorType != CT_AIM && !explosiveReticle)
+		{
+			if (unit && (unit->getVisible() || _save->getDebugMode()))
+				frameNumber = halfAnimFrameRest; // yellow box
+			else
+				frameNumber = 0; // red box
+		}
+		else
+		{
+			if (unit && (unit->getVisible() || _save->getDebugMode()))
+			{
+				frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs, in the shot's damage colour
+				reticleColor = reticleColorGroup(_game->getMod(), _save->getBattleGame()->getCurrentAction(), getPalette());
+			}
+			else
+				frameNumber = 6; // red static crosshairs (no target: keeps its red)
+		}
+		tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
+		surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
+	}
+	else if (_camera->getViewLevel() > itZ)
+	{
+		frameNumber = 2; // blue box
+		tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
+		surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+	}
 }
 
 /**
