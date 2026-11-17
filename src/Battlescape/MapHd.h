@@ -58,4 +58,14 @@ struct BattleAction;
 /// The palette group of the aiming reticle by the weapon's damage type (defined in MapAim.cpp).
 int reticleColorGroup(const Mod *mod, BattleAction *action, const SDL_Color *pal);
 
+/// Dents in snow (Options::oxceHdSnowTracks, XP-000563): the flag in a print's `kind` (the look itself is HdFx::Track), how many turns they last (always three,
+/// not Options::oxceHdBloodStepsLife), the caps of the snow's own store (a tile, the map), the cold grey-blue of the dent, the edge softer than the blood's (times),
+/// and the share of the print's opacity.
+const int HD_STEP_SNOW = 16, HD_SNOW_LIFE = 3, HD_SNOW_PER_TILE = 4, HD_SNOW_MAX = 900, HD_SNOW_RGB = 0x4A5570, HD_SNOW_LIGHT = 170, HD_SNOW_SPREAD = 45;
+const double HD_SNOW_SOFT = 1.8, HD_SNOW_ALPHA = 1.0;
+
+/// Bloody footprints: turns a print lasts by the setting, the age tier of a print (defined in MapSteps.cpp).
+int hdStepLife();
+int hdStepTier(int age);
+
 }
