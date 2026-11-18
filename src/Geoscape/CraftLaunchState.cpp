@@ -519,7 +519,7 @@ bool CraftLaunchState::makeAlarm(int ms, int k, Alarm &alarm) const
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = y1 - y0;
 	const int jobs = std::max(1, std::min(rows / 16, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = y0 + (int)((long long)rows * job / jobs);
 		const int yb = y0 + (int)((long long)rows * (job + 1) / jobs);
@@ -579,7 +579,7 @@ void CraftLaunchState::drawAlarm(const Alarm &alarm)
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = alarm.y1 - alarm.y0;
 	const int jobs = std::max(1, std::min(rows / 16, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = alarm.y0 + (int)((long long)rows * job / jobs);
 		const int yb = alarm.y0 + (int)((long long)rows * (job + 1) / jobs);

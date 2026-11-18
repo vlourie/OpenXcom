@@ -829,7 +829,7 @@ void prepare(const Scene &s)
 	const float ragDx = (float)std::fmod(t * 20 * sc, 1.0e6), bandDx = (float)std::fmod(t * L.band.vx * sc, 1.0e6), bandDy = (float)std::fmod(t * L.band.vy * sc, 1.0e6);
 	const int rowsPerJob = 8;
 	const int jobs = (a.gh + rowsPerJob - 1) / rowsPerJob;
-	HdWorkers::instance().run(jobs, [&](int job)
+	HdWorkers::instance().runCounted(jobs, [&](int job)
 	{
 		for (int gy = job * rowsPerJob; gy < std::min(a.gh, (job + 1) * rowsPerJob); ++gy)
 		{

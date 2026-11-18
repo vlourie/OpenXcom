@@ -537,7 +537,7 @@ namespace
 		const float baseY = L.height + 3;
 		const Uint32 started = SDL_GetTicks();
 		std::vector<HdFrame> bank(L.frames);
-		HdWorkers::instance().run(L.frames, [&](int f)
+		HdWorkers::instance().runCounted(L.frames, [&](int f)
 		{
 			Paint p(W, H);
 			const float rho = 2 * PI * f / L.frames;

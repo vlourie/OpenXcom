@@ -100,13 +100,30 @@ public:
 	/// keeps it (a cache) must drop it.
 	/// tries: how many times the caller runs a failed job again - more than once only where the batch is made
 	/// once and cannot be made anew (ONCE: a set scaled in place as it is loaded, the palette table of a battle).
-	bool run(int jobs, const std::function<void(int)> &fn, int tries = 1);
+	/// The contract of every call site, held by the compiler: the answer of run() must be looked at. What is kept
+	/// (a cache, a table, a picture) is published only when it is whole; a batch whose answer cannot reach the one
+	/// who keeps the result goes through runCounted() and the keeper stands a Whole over the making.
+	[[nodiscard]] bool run(int jobs, const std::function<void(int)> &fn, int tries = 1);
 	/// NO_RETRY: a job that adds to what is already there (recolours a frame in place) cannot start anew after it
 	/// threw half way - it is not run again, the answer is false at the first failure.
 	enum { NO_RETRY = 0, ONCE = 6 };
-	/// How many batches were left not whole so far (run answered false). A cache made of several batches, or
-	/// through helpers that do not pass the answer on, compares the count before and after and drops what it made.
-	static unsigned holes() { return _holes; }
+	/// run() for a batch whose answer is of no use where it is called: what it draws lives one frame and is drawn
+	/// anew, or it is a helper (the spans of a frame, the rows of an icon) of something made under a Whole - the
+	/// failure is counted, and the Whole of whoever keeps the result sees it.
+	void runCounted(int jobs, const std::function<void(int)> &fn, int tries = 1) { (void)run(jobs, fn, tries); }
+	/// Stands over the making of something that is kept: ok() is false when any batch run since it was made (or
+	/// since reset()) was left not whole - here, in a helper, or in another cache this one is made of. Then what
+	/// was made is not published: dropped, or marked to be made anew when asked for next. A foreign hole can only
+	/// make it say false once too often (the thing is made once more), never true wrongly.
+	class Whole
+	{
+	private:
+		unsigned _at;
+	public:
+		Whole() : _at(_holes) {}
+		bool ok() const { return _at == _holes; }
+		void reset() { _at = _holes; }
+	};
 };
 
 }

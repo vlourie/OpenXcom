@@ -710,7 +710,7 @@ void HdUi::fillRoundRect(float x0, float y0, float x1, float y1, float radius, U
 	{
 		HdWorkers &pool = HdWorkers::instance();
 		const int jobs = std::max(1, std::min(n / 32, pool.threads() * 2));
-		pool.run(jobs, [&](int job) { rows(ya + (int)((long long)n * job / jobs), ya + (int)((long long)n * (job + 1) / jobs)); });
+		pool.runCounted(jobs, [&](int job) { rows(ya + (int)((long long)n * job / jobs), ya + (int)((long long)n * (job + 1) / jobs)); });
 	}
 	else
 	{
@@ -1048,7 +1048,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 		};
 		if (jobs > 1)
 		{
-			pool.run(jobs, record);
+			pool.runCounted(jobs, record);
 		}
 		else
 		{
@@ -1089,7 +1089,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 				};
 				if (jobs > 1)
 				{
-					pool.run(jobs, place);
+					pool.runCounted(jobs, place);
 				}
 				else
 				{
@@ -1117,7 +1117,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 	};
 	if (jobs > 1)
 	{
-		pool.run(jobs, draw);
+		pool.runCounted(jobs, draw);
 	}
 	else
 	{
@@ -1376,7 +1376,7 @@ void HdUi::copyRows(int x, int y, int w, int h, const Uint32 *src, int pitch)
 	{
 		HdWorkers &pool = HdWorkers::instance();
 		const int jobs = std::max(1, std::min(n / 16, pool.threads() * 4));
-		pool.run(jobs, [&](int job) { rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs)); });
+		pool.runCounted(jobs, [&](int job) { rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs)); });
 	}
 	else
 	{

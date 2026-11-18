@@ -104,7 +104,7 @@ void bands(int n, const std::function<void(int, int)> &fn, int tries = 1)
 	}
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(n / 16, pool.threads() * 4));
-	pool.run(jobs, [&](int job) { fn((int)((long long)n * job / jobs), (int)((long long)n * (job + 1) / jobs)); }, tries);
+	pool.runCounted(jobs, [&](int job) { fn((int)((long long)n * job / jobs), (int)((long long)n * (job + 1) / jobs)); }, tries);
 }
 
 /// Three box blurs of radius r one after another (about a Gaussian of sigma r), opaque pixels, in place.
@@ -230,7 +230,7 @@ const Prepared *prepare(int theme, int W, int H, int k)
 	prepared.emplace_front();
 	Prepared &p = prepared.front();
 	p.theme = theme; p.w = W; p.h = H; p.k = k;
-	const unsigned holes = HdWorkers::holes();
+	const HdWorkers::Whole allWhole;
 	p.sharp.resize((size_t)W * H);
 	// the picture is a backdrop: its own colours a little muted, its light well below the text's, darker
 	// to the corners and in the frame's shadow along the edge
@@ -268,7 +268,7 @@ const Prepared *prepare(int theme, int W, int H, int k)
 		}
 	}, HdWorkers::NO_RETRY); // in place: a band darkened once must not be darkened again (not whole - prepared anew, below)
 	Log(LOG_INFO) << "HD screens: " << pictures[theme] << " prepared at " << W << "x" << H << " in " << (SDL_GetTicks() - t0) << " ms (read " << (tLoad - t0) << ", fit " << (tFit - tLoad) << ")";
-	if (holes != HdWorkers::holes())
+	if (!allWhole.ok())
 	{
 		p.k = 0; // a batch of the pool was left not whole: shown now, not found again - prepared anew
 	}
@@ -430,7 +430,7 @@ bool drawBackdrop(const void *owner, const std::string &interfaceName, int x, in
 		p->composed.resize((size_t)W * H);
 		p->veil = v.hash;
 		const float inv = 1.0f / k;
-		const unsigned holes = HdWorkers::holes();
+		const HdWorkers::Whole allWhole;
 		bands(H, [&](int a, int b)
 		{
 			for (int ly = a; ly < b; ++ly)
@@ -461,7 +461,7 @@ bool drawBackdrop(const void *owner, const std::string &interfaceName, int x, in
 				}
 			}
 		});
-		if (holes != HdWorkers::holes())
+		if (!allWhole.ok())
 		{
 			p->veil = ~v.hash; // a batch of the pool was left not whole: mixed anew at the next frame
 		}
@@ -585,12 +585,12 @@ void drawFrame(int x, int y, int w, int h, int inset, bool thin, Uint32 accent)
 						out[(size_t)yy * sw + xx] = shade(sx + xx, sy + yy);
 			});
 		};
-		const unsigned holes = HdWorkers::holes();
+		const HdWorkers::Whole allWhole;
 		strip(f->top, 0, 0, W, B);
 		strip(f->bottom, 0, H - B, W, B);
 		strip(f->left, 0, B, B, H - 2 * B);
 		strip(f->right, W - B, B, B, H - 2 * B);
-		if (holes != HdWorkers::holes())
+		if (!allWhole.ok())
 		{
 			f->k = 0; // a batch of the pool was left not whole: drawn now, not found again - made anew
 		}

@@ -1026,7 +1026,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 	{
 		std::vector<HdGpuWorld::Lamp> lamps(lit.size());
 		std::vector<HdGpuWorld::Pipe> pipes(flows.size());
-		HdWorkers::instance().run((int)(lit.size() + flows.size()), [&](int i)
+		HdWorkers::instance().runCounted((int)(lit.size() + flows.size()), [&](int i)
 		{
 			if (i < (int)lit.size())
 			{
@@ -1086,7 +1086,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		const Uint64 cardKey = held.w == w ? held.key : ~held.key;
 		handed = gw.light(cardKey, held.acc, held.glow, ax0, ay0, w, rows, lamps, pipes, curve, LUT_SIZE, LUT_STEPS) && !gw.verifying();
 	}
-	HdWorkers::instance().run(handed ? 0 : bands, [&](int band)
+	HdWorkers::instance().runCounted(handed ? 0 : bands, [&](int band)
 	{
 		// per row: the light falling on the pictures (ambient + lamps) and the halo over them
 		std::vector<float> acc((size_t)w * 3), glow((size_t)w * 3);
@@ -1285,7 +1285,7 @@ void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, floa
 		// on the video card: the values of every pixel worked out here, the pixel there
 		static std::vector<float> vals;
 		vals.resize((size_t)bw * (y1 - y0) * 6);
-		HdWorkers::instance().run(bands, [&](int band)
+		HdWorkers::instance().runCounted(bands, [&](int band)
 		{
 			const int ya = y0 + band * BAND, yb = std::min(y1, ya + BAND);
 			for (int y = ya; y < yb; ++y)
@@ -1302,7 +1302,7 @@ void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, floa
 		{
 			return;
 		}
-		HdWorkers::instance().run(bands, [&](int band)
+		HdWorkers::instance().runCounted(bands, [&](int band)
 		{
 			const int ya = y0 + band * BAND, yb = std::min(y1, ya + BAND);
 			for (int y = ya; y < yb; ++y)
@@ -1317,7 +1317,7 @@ void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, floa
 		});
 		return;
 	}
-	HdWorkers::instance().run(bands, [&](int band)
+	HdWorkers::instance().runCounted(bands, [&](int band)
 	{
 		const int ya = y0 + band * BAND, yb = std::min(y1, ya + BAND);
 		float v[6];
@@ -1357,7 +1357,7 @@ void blur(std::vector<float> &v, int w, int h, float sigma)
 	};
 	for (int pass = 0; pass < 3; ++pass)
 	{
-		HdWorkers::instance().run(h, [&](int y)
+		HdWorkers::instance().runCounted(h, [&](int y)
 		{
 			std::vector<float> out(w);
 			line(&v[(size_t)y * w], out.data(), w, 1);
@@ -1366,7 +1366,7 @@ void blur(std::vector<float> &v, int w, int h, float sigma)
 		// the columns in strips of 16 read row by row: one column at a time ran down the memory a row apart;
 		// each column sums in the same order as line() does, so the numbers are the same
 		const int STRIP = 16;
-		HdWorkers::instance().run((w + STRIP - 1) / STRIP, [&](int strip)
+		HdWorkers::instance().runCounted((w + STRIP - 1) / STRIP, [&](int strip)
 		{
 			const int x0 = strip * STRIP, m = std::min(STRIP, w - x0);
 			auto at = [&](int y) { return &v[(size_t)std::min(h - 1, std::max(0, y)) * w + x0]; };
@@ -1612,7 +1612,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	const bool picture = rock && !rock->empty();
 	// every pixel on its own, rows over the workers (R-009): the same numbers in any order
 	HdWorkers &workers = HdWorkers::instance();
-	workers.run(h, [&](int y)
+	workers.runCounted(h, [&](int y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
@@ -1645,7 +1645,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	}
 	blur(shadow, w, h, 7 * s);
 	blur(close, w, h, 12 * s);
-	workers.run(h, [&](int y)
+	workers.runCounted(h, [&](int y)
 	{
 		for (size_t i = (size_t)y * w; i < (size_t)(y + 1) * w; ++i)
 		{
@@ -1678,7 +1678,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	view.ground.height = h;
 	view.ground.pixels.assign(n, 0u);
 	std::vector<float> lum(n);
-	workers.run(h, [&](int y)
+	workers.runCounted(h, [&](int y)
 	{
 		for (size_t i = (size_t)y * w; i < (size_t)(y + 1) * w; ++i)
 		{
@@ -1711,7 +1711,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	blur(fine, w, h, 1.4f * s);
 	blur(coarse, w, h, 2.0f * s);
 	std::vector<float> height(n);
-	workers.run(h, [&](int y)
+	workers.runCounted(h, [&](int y)
 	{
 		for (size_t i = (size_t)y * w; i < (size_t)(y + 1) * w; ++i)
 		{
@@ -1723,7 +1723,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 	std::vector<float> slope = height;
 	blur(slope, w, h, 1.0f * s);
 	view.relief.assign(n * 4, 0.0f);
-	workers.run(h, [&](int y)
+	workers.runCounted(h, [&](int y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
@@ -1972,7 +1972,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 			continue;
 		}
 		mx.begin(x0, y0, x1, y1);
-		HdWorkers::instance().run(y1 - y0, [&](int row)
+		HdWorkers::instance().runCounted(y1 - y0, [&](int row)
 		{
 			const int y = y0 + row;
 			const float vy = (y - W.box.y) / s;
@@ -2875,7 +2875,7 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 		const bool verify = gw.verifying();
 		struct Patch { int box[4]; bool any; std::vector<float> k; };
 		std::vector<Patch> patches(blobs.size());
-		HdWorkers::instance().run((int)blobs.size(), [&](int i)
+		HdWorkers::instance().runCounted((int)blobs.size(), [&](int i)
 		{
 			const Blob &b = blobs[i];
 			Patch &pt = patches[i];
@@ -2909,7 +2909,7 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 	}
 	// a band draws the blobs that reach into it, in the same order as every other band (as blob's reach)
 	const int bands = first < blobs.size() ? (ay1 - ay0 + BAND - 1) / BAND : 0;
-	HdWorkers::instance().run(bands, [&](int band)
+	HdWorkers::instance().runCounted(bands, [&](int band)
 	{
 		const int y0 = ay0 + band * BAND, y1 = std::min(ay1, y0 + BAND);
 		for (size_t i = first; i < blobs.size(); ++i)

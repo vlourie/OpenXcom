@@ -270,7 +270,7 @@ void HdVideo::drawFitted(const Uint32 *src, int w, int h, double rx, double ry, 
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = dest->h;
 	const int jobs = std::max(1, std::min(rows / 32, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = (int)((long long)rows * job / jobs);
 		const int yb = (int)((long long)rows * (job + 1) / jobs);

@@ -219,7 +219,7 @@ const Bank &bankOf(int k)
 		bank->dx.resize(count * 2);
 		bank->dy.resize(count * 2);
 		bank->reachOf.assign(count, -1e9f);
-		HdWorkers::instance().run(count, [&](int i)
+		HdWorkers::instance().runCounted(count, [&](int i)
 		{
 			std::vector<Uint32> full((size_t)W * H);
 			bake(k, i / (SIZES * LIFE), i / LIFE % SIZES, i % LIFE, full.data());

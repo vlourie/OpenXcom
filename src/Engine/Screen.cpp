@@ -310,7 +310,7 @@ void Screen::clear()
 			// than it saved (the base 5.2 -> 6.3 ms)
 			Uint8 *pixels = (Uint8*)world->pixels;
 			const int jobs = std::min(pool.threads(), 8);
-			pool.run(jobs, [&](int job) { memset(pixels + bytes * job / jobs, 0, bytes * (job + 1) / jobs - bytes * job / jobs); });
+			pool.runCounted(jobs, [&](int job) { memset(pixels + bytes * job / jobs, 0, bytes * (job + 1) / jobs - bytes * job / jobs); });
 		}
 		else
 		{
@@ -377,7 +377,7 @@ void Screen::composeSmooth(SDL_Surface *dst, const Uint32 *lut, int srcW, int sr
 	}
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(srcH / 16, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = (int)((long long)srcH * job / jobs);
 		const int yb = (int)((long long)srcH * (job + 1) / jobs);
@@ -396,7 +396,7 @@ void Screen::composeSmooth(SDL_Surface *dst, const Uint32 *lut, int srcW, int sr
 	}
 	Uint8 *dstPixels = (Uint8*)dst->pixels;
 	const int dstPitch = dst->pitch;
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = (int)((long long)H * job / jobs);
 		const int yb = (int)((long long)H * (job + 1) / jobs);
@@ -546,7 +546,7 @@ void Screen::composeInto(SDL_Surface *dst) const
 	// bands of base rows, on the render threads
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(srcH / 8, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = (int)((long long)srcH * job / jobs);
 		const int yb = (int)((long long)srcH * (job + 1) / jobs);

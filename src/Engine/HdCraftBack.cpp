@@ -292,9 +292,9 @@ const Surface *get(Mod *mod, const std::string &craftType, const SDL_Color *pale
 		{
 			entry.shown.push_back(std::move(entry.surface));
 		}
-		const unsigned holes = HdWorkers::holes();
+		const HdWorkers::Whole allWhole;
 		entry.surface.reset(build(mod, craftType, palette));
-		entry.holed = holes != HdWorkers::holes();
+		entry.holed = !allWhole.ok();
 	}
 	return it->second.surface.get();
 }

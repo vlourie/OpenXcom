@@ -47,7 +47,7 @@ void HdFrame::buildSpans()
 	// the rows are independent: a big frame (the globe, 2304x1440 at k=4, rebuilt with every move of the
 	// terminator) goes over the pool in slices (profile 15.11: a tenth of the main thread on the globe)
 	const int jobs = (long long)width * height >= (1 << 20) ? std::min(8, std::max(1, height / 64)) : 1;
-	HdWorkers::instance().run(jobs, [&](int job)
+	HdWorkers::instance().runCounted(jobs, [&](int job)
 	{
 	const int ya = (int)((long long)height * job / jobs), yb = (int)((long long)height * (job + 1) / jobs);
 	for (int y = ya; y < yb; ++y)
@@ -149,8 +149,20 @@ namespace
 		bool ownColour = false;    ///< color.txt of the set keeps the frame's own colours (HdFrame::ownColour)
 		const void *key = nullptr; ///< the key of the frame it belongs to (a variant and a wall slot: the frame's)
 		bool recoloured = false;   ///< the loaded picture went through the recolouring (setRecolour)
+		Uint64 stamp = 0;          ///< when the picture of the key, or its variants, were last registered (see find with a stamp)
 	};
 	std::unordered_map<const void*, Entry> registry;
+	/// The count the stamps are taken from, and the stamp of the last change of the recolouring (it changes every picture).
+	Uint64 stampClock = 0, recolourStamp = 0;
+	/// The variants of a key changed: whoever made something of the key's pictures makes it anew.
+	void stampKey(const void *key)
+	{
+		auto it = registry.find(key);
+		if (it != registry.end())
+		{
+			it->second.stamp = ++stampClock;
+		}
+	}
 	/// the variants of a registered frame: slot n - 1 holds variant n (an empty path = no such variant)
 	std::unordered_map<const void*, std::vector<Entry>> variants;
 	const int MAX_VARIANTS = 15;
@@ -406,6 +418,7 @@ void set(const void *key, HdFrame &&frame)
 	entry.width = frame.width;
 	entry.height = frame.height;
 	entry.frame = std::move(frame);
+	entry.stamp = ++stampClock;
 	noteKey(key);
 	++registryGeneration;
 }
@@ -429,6 +442,7 @@ void setLazy(const void *key, const std::string &path, Uint32 offset, Uint32 siz
 	entry.width = width;
 	entry.height = height;
 	entry.key = key;
+	entry.stamp = ++stampClock;
 	noteKey(key);
 	++registryGeneration;
 }
@@ -470,6 +484,7 @@ namespace
 			}
 		}
 		variants.erase(it);
+		stampKey(key);
 	}
 
 	/// Forgets the addressed wall pictures of a key (both slots, their loaded bytes included).
@@ -530,6 +545,7 @@ void setVariantLazy(const void *key, int variant, const std::string &path, Uint3
 	entry.width = width;
 	entry.height = height;
 	entry.key = key;
+	stampKey(key);
 	noteKey(key);
 	++registryGeneration;
 }
@@ -557,6 +573,7 @@ void setVariant(const void *key, int variant, HdFrame &&frame)
 	entry.height = frame.height;
 	entry.key = key;
 	entry.frame = std::move(frame);
+	stampKey(key);
 	noteKey(key);
 	++registryGeneration;
 }
@@ -652,6 +669,13 @@ void setAddressFile(const std::string &name)
 
 const HdFrame *find(const void *key)
 {
+	Uint64 stamp;
+	return find(key, stamp);
+}
+
+const HdFrame *find(const void *key, Uint64 &stamp)
+{
+	stamp = 0;
 	if (registry.empty())
 	{
 		return nullptr;
@@ -662,6 +686,7 @@ const HdFrame *find(const void *key)
 		return nullptr;
 	}
 	Entry &entry = it->second;
+	stamp = std::max(entry.stamp, recolourStamp);
 	entry.lru = ++clock;
 	if (entry.frame.pixels.empty())
 	{
@@ -931,7 +956,7 @@ int preload(const SurfaceSet *surfaceSet)
 	}
 	std::vector<HdFrame> frames(todo.size());
 	std::vector<char> ok(todo.size(), -1); // -1: the job did not end (it threw) - the frame is left to be read when asked for
-	HdWorkers::instance().run((int)todo.size(), [&](int i)
+	HdWorkers::instance().runCounted((int)todo.size(), [&](int i)
 	{
 		ok[i] = !todo[i]->failed && decodeShown(*todo[i], blobs[i], frames[i]);
 	});
@@ -1087,6 +1112,7 @@ void setRecolour(Recolour fn)
 		return;
 	}
 	beforeChange();
+	recolourStamp = ++stampClock;
 	// what the previous recolouring made goes: read again from the files when drawn
 	size_t dropped = 0;
 	forEachLazy([&](Entry &entry)
@@ -1112,7 +1138,7 @@ void setRecolour(Recolour fn)
 				todo.push_back(&entry);
 			}
 		});
-		HdWorkers::instance().run((int)todo.size(), [&](int i)
+		HdWorkers::instance().runCounted((int)todo.size(), [&](int i)
 		{
 			fn(todo[i]->key, todo[i]->frame);
 			todo[i]->recoloured = true;
@@ -1220,7 +1246,7 @@ size_t scanPictures(const std::vector<const SurfaceSet*> &sets, const std::funct
 				}
 			}
 		}
-		HdWorkers::instance().run((int)n, [&](int i)
+		HdWorkers::instance().runCounted((int)n, [&](int i)
 		{
 			const Item &item = items[first + i];
 			if (own[i])
@@ -1266,6 +1292,46 @@ bool loadPng(const std::string &path, HdFrame &frame)
 	return ok;
 }
 
+namespace
+{
+	/// The memory of the pictures being decoded at this moment, all threads together: a picture takes 8 bytes a pixel
+	/// while it is decoded, and every thread of the pool may be decoding one. The pictures of our packs (4 MB at
+	/// most) never reach the limit; a mod's pack of huge ones (64 Mpx each is let in) would take gigabytes at once -
+	/// there the threads wait for one another. One picture is always let through, whatever its size.
+	class DecodeRoom
+	{
+	private:
+		std::mutex _mutex;
+		std::condition_variable _freed;
+		size_t _held = 0;
+		const size_t _limit = HdWorkers::cacheBudget((size_t)512 << 20);
+	public:
+		void take(size_t bytes)
+		{
+			std::unique_lock<std::mutex> lock(_mutex);
+			_freed.wait(lock, [&] { return _held == 0 || _held + bytes <= _limit; });
+			_held += bytes;
+		}
+		void give(size_t bytes)
+		{
+			{
+				std::lock_guard<std::mutex> lock(_mutex);
+				_held -= bytes;
+			}
+			_freed.notify_all();
+		}
+	};
+	DecodeRoom decodeRoom;
+	struct DecodeHold
+	{
+		const size_t bytes;
+		explicit DecodeHold(size_t n) : bytes(n) { decodeRoom.take(bytes); }
+		~DecodeHold() { decodeRoom.give(bytes); }
+		DecodeHold(const DecodeHold &) = delete;
+		DecodeHold &operator=(const DecodeHold &) = delete;
+	};
+}
+
 bool decodePng(const unsigned char *data, size_t size, HdFrame &frame)
 {
 	std::vector<unsigned char> image;
@@ -1286,6 +1352,7 @@ bool decodePng(const unsigned char *data, size_t size, HdFrame &frame)
 			return false;
 		}
 	}
+	const DecodeHold room((size_t)width * height * 8);
 	const unsigned error = lodepng::decode(image, width, height, data, size, LCT_RGBA, 8);
 	if (error)
 	{

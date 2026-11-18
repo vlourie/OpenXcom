@@ -596,7 +596,7 @@ bool composeFrame(const Art *art)
 	}
 	if (!eraseFiles.empty())
 	{
-		HdWorkers::instance().run((int)eraseFiles.size(), [&](int i)
+		HdWorkers::instance().runCounted((int)eraseFiles.size(), [&](int i)
 		{
 			if (!HdSprites::decodePng((const unsigned char*)eraseFiles[i].first.get(), eraseFiles[i].second, *eraseTo[i]))
 			{
@@ -609,7 +609,7 @@ bool composeFrame(const Art *art)
 	{
 		std::vector<HdFrame> frames(toRead.size());
 		std::vector<char> ok(toRead.size(), 0);
-		HdWorkers::instance().run((int)toRead.size(), [&](int i)
+		HdWorkers::instance().runCounted((int)toRead.size(), [&](int i)
 		{
 			ok[i] = HdSprites::decodePng((const unsigned char*)files[i].first.get(), files[i].second, frames[i]) ? 1 : 0;
 		});
@@ -659,7 +659,7 @@ bool composeFrame(const Art *art)
 				<< ", the layer " << f.width << "x" << f.height << " - not used";
 		}
 		const int lw = std::min(f.width - ox, W), lh = std::min(f.height - oy, H);
-		pool.run(jobs, [&](int job)
+		pool.runCounted(jobs, [&](int job)
 		{
 			for (int y = (int)((long long)lh * job / jobs), last = (int)((long long)lh * (job + 1) / jobs); y < last; ++y)
 			{
@@ -727,7 +727,7 @@ const HdFrame &frame(const Art *art)
 	{
 		return art->frame;
 	}
-	const unsigned holes = HdWorkers::holes();
+	const HdWorkers::Whole allWhole;
 	// room for it: drop the pictures drawn longest ago (never the ones given as frames)
 	const size_t need = (size_t)art->baseWidth * art->scale * art->baseHeight * art->scale * 4;
 	while (loadedBytes + need > budget)
@@ -751,7 +751,7 @@ const HdFrame &frame(const Art *art)
 		{
 			art->frame.buildSpans();
 			loadedBytes += art->frame.pixels.size() * 4;
-			art->holed = holes != HdWorkers::holes();
+			art->holed = !allWhole.ok();
 			// measurement: every layer's picture is read (when not held already) and blended on the main thread
 			const Uint32 loadMs = SDL_GetTicks() - loadStart;
 			if (loadMs >= 20)
@@ -779,7 +779,7 @@ const HdFrame &frame(const Art *art)
 	{
 		art->frame.buildSpans();
 		loadedBytes += art->frame.pixels.size() * 4;
-		art->holed = holes != HdWorkers::holes();
+		art->holed = !allWhole.ok();
 		// measurement: a picture is read and unpacked the moment it is first drawn, on the main
 		// thread. A big one is a visible freeze, and nothing in the log said so before
 		const Uint32 loadMs = SDL_GetTicks() - loadStart;
@@ -881,7 +881,7 @@ const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int
 	};
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(count / 16, pool.threads() * 4));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		for (int i = (int)((long long)count * job / jobs), last = (int)((long long)count * (job + 1) / jobs); i < last && i < best.load(); ++i)
 		{
@@ -1013,9 +1013,9 @@ const HdFrame *preparedFrame(const Art *art, int k, const SDL_Color *colors)
 	p->art = art;
 	p->key = key;
 	p->lru = ++preparedClock;
-	const unsigned holes = HdWorkers::holes();
+	const HdWorkers::Whole allWhole;
 	// a batch of the pool left not whole: not kept (as a picture that cannot be prepared), asked for again at the next frame
-	if (!prepare(art, k, colors, p->frame) || holes != HdWorkers::holes())
+	if (!prepare(art, k, colors, p->frame) || !allWhole.ok())
 	{
 		return nullptr;
 	}
@@ -1123,7 +1123,7 @@ bool prepare(const Art *art, int k, const SDL_Color *colors, HdFrame &out)
 	};
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(H / 64, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		rows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs));
 	});
@@ -1188,7 +1188,7 @@ void blendInto(SDL_Surface *dest, const HdFrame &f, int x, int y, const SDL_Rect
 	}
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(n / 64, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
 	});

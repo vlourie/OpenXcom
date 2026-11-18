@@ -52,6 +52,8 @@ class HdTurn
 		int width = 0, height = 0;
 		/// The HD frame of the original the registered one was made from (nullptr: none registered).
 		const HdFrame *from = nullptr;
+		/// The stamp the original's pictures had then (HdSprites::find): another one - made anew.
+		Uint64 stamp = 0;
 		/// The frame differs from the original (a floor with relief is not turned; a frame without a painted view).
 		bool made = true;
 		/// The painted view of the original is registered for it (HdSprites::setView).

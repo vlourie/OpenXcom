@@ -152,21 +152,28 @@ HdTurn::Entry &HdTurn::entry(SurfaceRaw<const Uint8> src, int kind)
 
 void HdTurn::syncHd(const void *key, Entry &e, int kind)
 {
-	const HdFrame *hd = HdSprites::find(key);
+	Uint64 stamp = 0;
+	const HdFrame *hd = HdSprites::find(key, stamp);
 	if (hd && (hd->width != e.width || hd->height != e.height))
 	{
 		hd = nullptr;
 	}
-	if (hd == e.from)
+	// (the address alone is not enough: a key registered anew keeps its frame where it was, with other pixels)
+	if (hd == e.from && (!hd || stamp == e.stamp))
 	{
 		return;
+	}
+	if (e.from)
+	{
+		// with its variants: the original may have fewer now, and the ground pattern would take the former ones
+		HdSprites::remove(e.pixels.data());
+		e.from = nullptr;
 	}
 	if (!hd)
 	{
-		HdSprites::remove(e.pixels.data());
-		e.from = nullptr;
 		return;
 	}
+	e.stamp = stamp;
 	HdFrame out;
 	out.width = hd->width;
 	out.height = hd->height;

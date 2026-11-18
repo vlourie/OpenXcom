@@ -402,7 +402,7 @@ void install(const SDL_Color *shown, const SDL_Color *base, const std::vector<co
 	}
 	// the table: at the cell centres, the grid's shift blended into M1t by the weight
 	table.assign(lut.size(), 0.0f);
-	HdWorkers::instance().run(TN, [&](int r)
+	HdWorkers::instance().runCounted(TN, [&](int r)
 	{
 		const double cell = 256.0 / TN;
 		for (int g = 0; g < TN; ++g)

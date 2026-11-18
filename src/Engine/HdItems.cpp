@@ -242,7 +242,7 @@ int recolour(HdFrame &frame, const std::vector<Uint8> &index, int bw, int bh, in
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(H / 16, pool.threads() * 2));
 	std::vector<int> lonely(jobs, 0);
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		for (int y = H * job / jobs, yEnd = H * (job + 1) / jobs; y < yEnd; ++y)
 		{
@@ -359,7 +359,7 @@ std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int 
 		uses.splice(uses.begin(), uses, got->second.use);
 		return got->second.frame;
 	}
-	const unsigned holes = HdWorkers::holes();
+	const HdWorkers::Whole allWhole;
 	HdFrame frame;
 	if (!HdSprites::loadPng(path, frame) || frame.empty())
 	{
@@ -415,7 +415,7 @@ std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int 
 	{
 		frame.buildSpans();
 	}
-	if (holes != HdWorkers::holes())
+	if (!allWhole.ok())
 	{
 		return nullptr; // a batch of the pool was left not whole: the classic frame now, the picture is read anew when asked for
 	}

@@ -236,7 +236,7 @@ void HdUi::drawPixels(const Uint8 *pixels, int pitch, int w, int h, int x, int y
 	{
 		HdWorkers &pool = HdWorkers::instance();
 		const int jobs = std::max(1, std::min(n / 16, pool.threads() * 2));
-		pool.run(jobs, [&](int job)
+		pool.runCounted(jobs, [&](int job)
 		{
 			rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
 		});
@@ -513,7 +513,7 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 		std::vector<Uint8> failed(fresh.size(), 1);
 		if (!fresh.empty())
 		{
-			HdWorkers::instance().run((int)fresh.size(), [&](int i)
+			HdWorkers::instance().runCounted((int)fresh.size(), [&](int i)
 			{
 				SparsePiece &p = *fresh[i];
 				failed[i] = !HdSmooth::smoothPalette(pixels + (size_t)p.oy * pitch + p.ox, p.ow, p.oh, pitch, colors, k, p.frame);
@@ -623,9 +623,9 @@ const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k
 		return &e->frame;
 	}
 	HdFrame frame;
-	const unsigned holes = HdWorkers::holes();
+	const HdWorkers::Whole allWhole;
 	// a batch of the pool left not whole: not kept (as a picture that cannot be prepared), asked for again at the next frame
-	if (!HdUiArt::prepare(art, k, colors, frame) || holes != HdWorkers::holes())
+	if (!HdUiArt::prepare(art, k, colors, frame) || !allWhole.ok())
 	{
 		return nullptr;
 	}
@@ -850,9 +850,9 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
 				// branch below, which made the log name the wrong culprit
 				const auto cropStart = std::chrono::steady_clock::now();
-				const unsigned holes = HdWorkers::holes();
+				const HdWorkers::Whole allWhole;
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
-				holed = !art && holes != HdWorkers::holes();
+				holed = !art && !allWhole.ok();
 				if (!art && !holed) // a search left not whole is not remembered as a miss
 				{
 					if (_cropMisses.size() >= 65536) _cropMisses.clear();
@@ -1134,7 +1134,7 @@ void HdUi::drawSurfaceWorld(const Surface *surface, int wx, int wy, int s, const
 			{
 				HdWorkers &pool = HdWorkers::instance();
 				const int jobs = std::max(1, std::min(n / 32, pool.threads() * 2));
-				pool.run(jobs, [&](int job)
+				pool.runCounted(jobs, [&](int job)
 				{
 					rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
 				});

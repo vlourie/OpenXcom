@@ -1428,9 +1428,9 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 		}
 	}
 	const Uint32 t0 = SDL_GetTicks();
-	const unsigned holes = HdWorkers::holes();
+	const HdWorkers::Whole allWhole;
 	HdBaseScene::bake(view, rock, empty, waters);
-	if (holes != HdWorkers::holes())
+	if (!allWhole.ok())
 	{
 		made.key.clear(); // a batch of the pool was left not whole: baked anew at the next frame
 	}

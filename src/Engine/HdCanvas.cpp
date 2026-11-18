@@ -1577,7 +1577,7 @@ void Canvas32::flush()
 		{
 			gpuCanvas.take(*this, true);
 		}
-		pool.run(strips, [&](int strip)
+		pool.runCounted(strips, [&](int strip)
 		{
 			const auto stripStart = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 			const int y0 = (int)((long long)_height * strip / strips);
@@ -1841,7 +1841,7 @@ void Canvas32::copyTo(SDL_Surface *dest, int x, int y)
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = y1 - y0;
 	const int jobs = std::max(1, std::min(rows / 32, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = y0 + (int)((long long)rows * job / jobs);
 		const int yb = y0 + (int)((long long)rows * (job + 1) / jobs);
@@ -1958,7 +1958,7 @@ void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, int w, int h, double 
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = y1 - y0;
 	const int jobs = std::max(1, std::min(rows / 32, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	pool.runCounted(jobs, [&](int job)
 	{
 		const int ya = y0 + (int)((long long)rows * job / jobs);
 		const int yb = y0 + (int)((long long)rows * (job + 1) / jobs);

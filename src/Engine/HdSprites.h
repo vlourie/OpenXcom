@@ -139,6 +139,10 @@ namespace HdSprites
 	void setLazy(const void *key, const std::string &path, Uint32 offset, Uint32 size, int width, int height);
 	/// Finds the HD frame of a palette frame (reading it from its file if needed), or nullptr.
 	const HdFrame *find(const void *key);
+	/// The same, and in `stamp` a number that changes whenever the key gets another picture or other variants, or
+	/// the recolouring changes (0: no such key). The address of a frame says nothing of this: a key registered
+	/// anew keeps its frame where it was. What is made of a key's pictures (HdTurn) is made anew when it changes.
+	const HdFrame *find(const void *key, Uint64 &stamp);
 	/// Registers variant `variant` (1, 2, ...) of the HD frame of a palette frame, kept in a file like
 	/// setLazy: another painting of the same ground (hd/TERRAIN/<set>/<index>.v1.png). The renderer
 	/// picks the variant of a map cell, or blends two, by a smooth pattern over the map.

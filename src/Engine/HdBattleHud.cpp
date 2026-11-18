@@ -1120,7 +1120,7 @@ std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vect
 	};
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(H / 8, pool.threads() * 2));
-	pool.run(jobs, [&](int job) { rows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
+	pool.runCounted(jobs, [&](int job) { rows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
 	return out;
 }
 
@@ -1160,7 +1160,7 @@ int metalScale = 0, metalTheme = -1;
 std::unordered_map<Uint64, std::vector<Uint32>> metalCache;
 // the pictures being made (asked for and not found: the caller makes one and stores it) with the pool's count of
 // batches left not whole at that moment, and those stored with a hole: such a one is made anew when asked for next
-std::vector<std::pair<Uint64, unsigned>> metalMaking;
+std::vector<std::pair<Uint64, HdWorkers::Whole>> metalMaking;
 std::unordered_set<Uint64> metalHoled;
 
 std::vector<Uint32> *metalCached(Uint64 key, int k)
@@ -1178,7 +1178,7 @@ std::vector<Uint32> *metalCached(Uint64 key, int k)
 	{
 		if (metalCache.count(metalMaking[i].first))
 		{
-			if (metalMaking[i].second != HdWorkers::holes())
+			if (!metalMaking[i].second.ok())
 			{
 				metalHoled.insert(metalMaking[i].first);
 			}
@@ -1192,7 +1192,7 @@ std::vector<Uint32> *metalCached(Uint64 key, int k)
 	}
 	if (metalMaking.size() < 64)
 	{
-		metalMaking.emplace_back(key, HdWorkers::holes());
+		metalMaking.emplace_back(key, HdWorkers::Whole());
 	}
 	return nullptr;
 }
@@ -1327,12 +1327,12 @@ const Raster &halo(HdBattleHud::Icon icon, int w, int h, int k, float shrink)
 	const Uint64 key = ((Uint64)drawnSigns() << 51) | ((Uint64)std::lround(shrink * 100.0f) << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	auto found = halos.find(key);
 	if (found != halos.end() && found->second.whole) return found->second;
-	const unsigned holes = HdWorkers::holes();
+	const HdWorkers::Whole allWhole;
 	const Raster &pic = raster(icon, w, h, k, shrink, true);
 	const std::vector<float> soft = softCover(pic, std::max(1, (int)std::lround(0.7f * k)));
 	Raster &r = halos[key];
 	r.colored.clear();
-	r.whole = holes == HdWorkers::holes(); // made of a pictogram with holes: made anew when asked for next
+	r.whole = allWhole.ok(); // made of a pictogram with holes: made anew when asked for next
 	r.w = pic.w;
 	r.h = pic.h;
 	r.cov.resize(soft.size());
@@ -1795,7 +1795,7 @@ const std::vector<Uint32> &wellFloor(int w, int h, int k, Uint32 base)
 	};
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(h / 8, pool.threads() * 2));
-	pool.run(jobs, [&](int job) { rows((int)((long long)h * job / jobs), (int)((long long)h * (job + 1) / jobs)); });
+	pool.runCounted(jobs, [&](int job) { rows((int)((long long)h * job / jobs), (int)((long long)h * (job + 1) / jobs)); });
 	return metalCache[key] = out;
 }
 
@@ -2455,8 +2455,8 @@ std::vector<Uint32> castFace(int W, int H, float k, int face, int shape, float g
 	std::vector<Uint32> out(n, 0);
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(H / 8, pool.threads() * 2));
-	pool.run(jobs, [&](int job) { shapeRows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
-	pool.run(jobs, [&](int job) { shadeRows(out, (int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
+	pool.runCounted(jobs, [&](int job) { shapeRows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
+	pool.runCounted(jobs, [&](int job) { shadeRows(out, (int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
 	return out;
 }
 
@@ -2504,9 +2504,9 @@ void HdBattleHud::drawFace(int x, int y, int w, int h, bool pressed, bool over, 
 	auto found = faces.cache.find(key);
 	if (found == faces.cache.end())
 	{
-		const unsigned holes = HdWorkers::holes();
+		const HdWorkers::Whole allWhole;
 		found = faces.cache.emplace(key, castFace(W, H, (float)k, face, shape, (float)gloss / 100.0f, pressed, over, faces.lut)).first;
-		holed = holed || holes != HdWorkers::holes();
+		holed = holed || !allWhole.ok();
 		++faceCasts;
 	}
 	HdUi::instance().drawImage(found->second.data(), W, H, x * k, y * k);

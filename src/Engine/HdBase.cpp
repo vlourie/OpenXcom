@@ -570,7 +570,7 @@ void preload(const std::vector<Want> &want, int scale, bool allPhases)
 			job.data = rw ? SDL_LoadFile_RW(rw, &job.size, SDL_TRUE) : nullptr;
 		}
 	}
-	HdWorkers::instance().run((int)jobs.size(), [&jobs](int i)
+	HdWorkers::instance().runCounted((int)jobs.size(), [&jobs](int i)
 	{
 		Job &job = jobs[i];
 		if (!job.file.empty())

@@ -808,7 +808,7 @@ int Zoom::_zoomSurfaceY(SDL_Surface * src, SDL_Surface * dst, int flipx, int fli
 		Uint8 *dp = (Uint8*)dst->pixels;
 		HdWorkers &pool = HdWorkers::instance();
 		const int jobs = std::max(1, std::min(dh / 16, pool.threads() * 2));
-		pool.run(jobs, [&](int job)
+		pool.runCounted(jobs, [&](int job)
 		{
 			const int ya = (int)((long long)dh * job / jobs);
 			const int yb = (int)((long long)dh * (job + 1) / jobs);
