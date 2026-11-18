@@ -1028,7 +1028,15 @@ void Screen::writeHdTestDump()
 		std::tie(tmpBuffer, tmp) = Surface::NewPair32Bit(_world->w, _world->h);
 		SDL_SetColorKey(tmp.get(), 0, 0);
 		// a world the card draws is read back from its framebuffer as drawn so far
+		// (asked first whether this frame is the card's: readInto answers false both for a frame that is not and for
+		// one that could not be read, and the processor's world of a card's frame is not the frame)
+		const bool cardFrame = HdGpuWorld::instance().on(_world.get());
 		const bool onCard = HdGpuWorld::instance().readInto(tmp.get());
+		if (cardFrame && !onCard)
+		{
+			Log(LOG_ERROR) << "HD GPU: the card's frame could not be read back for the test dump";
+			written = false;
+		}
 		if (!onCard)
 		{
 			SDL_BlitSurface(_world.get(), 0, tmp.get(), 0);

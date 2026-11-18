@@ -388,6 +388,7 @@ private:
 	bool _classicDolls = false;       ///< Options::oxceHdClassicDolls the entries were made with
 	std::unordered_set<Uint64> _cropMisses; ///< contents searched for a picture in vain (by pixels and size)
 	size_t _cropMissesArts = 0;       ///< the pack size they were searched in
+	std::unordered_set<const Surface*> _cropAgain; ///< surfaces whose search was left not whole (a failed job): searched again whatever is remembered
 	std::unordered_map<GlyphKey, Glyph, GlyphKeyHash> _glyphs;
 	std::unordered_map<Uint64, HdFrame> _fitted; ///< drawSurfaceFit: by content, palette, size and scale
 	bool _recolor = false;                       ///< drawSurface casts what it draws in the theme's metal (drawSurfaceThemed)

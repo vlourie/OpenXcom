@@ -800,7 +800,8 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		int artX = 0, artY = 0;
 		bool known = false;
 		auto it = _smooth.find(surface);
-		if (it != _smooth.end() && it->second.k == k && it->second.pixelHash == pixelHash)
+		// (not when the last search of this surface was left not whole: the entry made after it remembers "no picture")
+		if (it != _smooth.end() && it->second.k == k && it->second.pixelHash == pixelHash && (_cropAgain.empty() || _cropAgain.count(surface) == 0))
 		{
 			// the same content as last time: the answer is known (a picture, or none). Pictures are registered as their
 			// images are loaded (HdUiArt::loaded): when one came since, the content is asked for again (a hash lookup,
@@ -828,7 +829,9 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			art = HdUiArt::find(pixelHash, w, h);
 			// a part of an image: searched for surfaces of some size, and not for ever for a surface
 			// whose content keeps changing (counters, bars: they are never a picture)
-			const int misses = it == _smooth.end() ? 0 : it->second.artMisses;
+			const bool again = !_cropAgain.empty() && _cropAgain.erase(surface) > 0;
+			const int misses = it == _smooth.end() || again ? 0 : it->second.artMisses;
+			bool holed = false;
 			// the scan costs 100-300 ms against the pack of X-Piratez (1675 pictures), and the misses above
 			// are counted per surface: a surface made anew for every frame (an item in the inventory, the
 			// item of a Ufopaedia page) was scanned again every frame. So a content once searched in vain
@@ -849,10 +852,17 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				const auto cropStart = std::chrono::steady_clock::now();
 				const unsigned holes = HdWorkers::holes();
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
-				if (!art && holes == HdWorkers::holes()) // a search left not whole is not remembered as a miss
+				holed = !art && holes != HdWorkers::holes();
+				if (!art && !holed) // a search left not whole is not remembered as a miss
 				{
 					if (_cropMisses.size() >= 65536) _cropMisses.clear();
 					_cropMisses.insert(cropKey);
+				}
+				else if (holed)
+				{
+					// nor by the surface's entry (made below, or by the smoothing): the surface is searched again next time
+					if (_cropAgain.size() >= 4096) _cropAgain.clear();
+					_cropAgain.insert(surface);
 				}
 				const double cropMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - cropStart).count();
 				if (cropMs >= 5) { why = "crop scan"; cropped = true; }

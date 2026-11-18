@@ -95,7 +95,7 @@ inline Uint32 pack(float r, float g, float b)
 }
 
 /// Runs fn(a, b) over [0, n) in bands on the render threads.
-void bands(int n, const std::function<void(int, int)> &fn)
+void bands(int n, const std::function<void(int, int)> &fn, int tries = 1)
 {
 	if (n < 64)
 	{
@@ -104,7 +104,7 @@ void bands(int n, const std::function<void(int, int)> &fn)
 	}
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(n / 16, pool.threads() * 4));
-	pool.run(jobs, [&](int job) { fn((int)((long long)n * job / jobs), (int)((long long)n * (job + 1) / jobs)); });
+	pool.run(jobs, [&](int job) { fn((int)((long long)n * job / jobs), (int)((long long)n * (job + 1) / jobs)); }, tries);
 }
 
 /// Three box blurs of radius r one after another (about a Gaussian of sigma r), opaque pixels, in place.
@@ -266,7 +266,7 @@ const Prepared *prepare(int theme, int W, int H, int k)
 			const Uint32 c = p.frosted[i];
 			p.frosted[i] = pack(((c >> 16) & 0xFF) * 0.6f, ((c >> 8) & 0xFF) * 0.6f, (c & 0xFF) * 0.6f);
 		}
-	});
+	}, HdWorkers::NO_RETRY); // in place: a band darkened once must not be darkened again (not whole - prepared anew, below)
 	Log(LOG_INFO) << "HD screens: " << pictures[theme] << " prepared at " << W << "x" << H << " in " << (SDL_GetTicks() - t0) << " ms (read " << (tLoad - t0) << ", fit " << (tFit - tLoad) << ")";
 	if (holes != HdWorkers::holes())
 	{

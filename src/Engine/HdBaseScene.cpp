@@ -996,6 +996,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 						acc[i * 3 + 1] = amb[1];
 						acc[i * 3 + 2] = amb[2];
 					}
+					std::fill(glow, glow + (size_t)w * 3, 0.0f); // the lamps add to it: a job run again starts from nothing
 					const float *rrow = reliefRow(y);
 					for (const Lit &L : resting)
 					{
@@ -1080,7 +1081,10 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		});
 		// a pipe out of the area adds nothing
 		pipes.erase(std::remove_if(pipes.begin(), pipes.end(), [](const HdGpuWorld::Pipe &P) { return P.kwd.empty(); }), pipes.end());
-		handed = gw.light(held.key, held.acc, held.glow, ax0, ay0, w, rows, lamps, pipes, curve, LUT_SIZE, LUT_STEPS) && !gw.verifying();
+		// a resting light that is not whole (made anew at the next frame, under the same key) goes to the card under
+		// another key: the card keeps what it was given by its key, and would keep the holed one for good
+		const Uint64 cardKey = held.w == w ? held.key : ~held.key;
+		handed = gw.light(cardKey, held.acc, held.glow, ax0, ay0, w, rows, lamps, pipes, curve, LUT_SIZE, LUT_STEPS) && !gw.verifying();
 	}
 	HdWorkers::instance().run(handed ? 0 : bands, [&](int band)
 	{

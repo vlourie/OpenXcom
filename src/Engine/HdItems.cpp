@@ -310,7 +310,7 @@ int recolour(HdFrame &frame, const std::vector<Uint8> &index, int bw, int bh, in
 				row[x] = (a << 24) | (o[0] << 16) | (o[1] << 8) | o[2];
 			}
 		}
-	});
+	}, HdWorkers::NO_RETRY); // in place: a band moved to the shown palette once must not be moved again (the caller drops a picture not whole)
 	int total = 0;
 	for (int l : lonely)
 	{

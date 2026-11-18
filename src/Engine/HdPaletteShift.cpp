@@ -144,7 +144,7 @@ namespace
 			d[i - 1][2] = (double)shown[i].b - base[i].b;
 		}
 		const double cell = 256.0 / TN;
-		HdWorkers::instance().run(TN, [&](int r)
+		const auto slab = [&](int r)
 		{
 			double d2[255];
 			for (int g = 0; g < TN; ++g)
@@ -174,7 +174,16 @@ namespace
 					out[2] = (float)(s[2] / sw);
 				}
 			}
-		}, HdWorkers::ONCE); // made once for the battle
+		};
+		if (!HdWorkers::instance().run(TN, slab, HdWorkers::ONCE)) // made once for the battle
+		{
+			// which slabs it was the pool does not say: each once more here (it writes its cells, the same whether
+			// made once or twice) - a table with a hole would colour a part of every picture of the battle wrong
+			for (int r = 0; r < TN; ++r)
+			{
+				try { slab(r); } catch (...) {}
+			}
+		}
 	}
 
 	/// One BR sample: the mean colour of a block of a picture and the classic index under it.
@@ -287,13 +296,17 @@ void install(const SDL_Color *shown, const SDL_Color *base, const std::vector<co
 			line = buf;
 		}
 		std::lock_guard<std::mutex> guard(lock);
-		byPlace.emplace_back(place, std::move(samples));
+		// the samples last: a job that threw is run again, and must not have left its samples here the first time
 		if (dump)
 		{
 			placeLines.emplace_back(place, std::move(line));
 		}
+		byPlace.emplace_back(place, std::move(samples));
 	});
-	std::sort(byPlace.begin(), byPlace.end(), [](const std::pair<size_t, std::vector<Sample>> &a, const std::pair<size_t, std::vector<Sample>> &b) { return a.first < b.first; });
+	std::stable_sort(byPlace.begin(), byPlace.end(), [](const std::pair<size_t, std::vector<Sample>> &a, const std::pair<size_t, std::vector<Sample>> &b) { return a.first < b.first; });
+	// one set of samples per picture: a job of the pool that threw is run again, and what it left here the first
+	// time would count the picture twice (6.5% of a battle's frame came out in other colours, test 18.11)
+	byPlace.erase(std::unique(byPlace.begin(), byPlace.end(), [](const std::pair<size_t, std::vector<Sample>> &a, const std::pair<size_t, std::vector<Sample>> &b) { return a.first == b.first; }), byPlace.end());
 	const auto t2 = std::chrono::steady_clock::now();
 
 	// splat into the 32^3 grid: dR dG dB of the classic shift and the weight

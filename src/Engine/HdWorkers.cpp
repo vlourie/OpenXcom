@@ -133,11 +133,12 @@ static inline bool runJob(const std::function<void(int)> &fn, int i)
 	}
 	catch (const std::exception &e)
 	{
-		Log(LOG_ERROR) << "HD render: job " << i << " failed: " << e.what();
+		// the line itself takes memory, and the job most likely failed for want of it: nothing may leave this handler
+		try { Log(LOG_ERROR) << "HD render: job " << i << " failed: " << e.what(); } catch (...) {}
 	}
 	catch (...)
 	{
-		Log(LOG_ERROR) << "HD render: job " << i << " failed";
+		try { Log(LOG_ERROR) << "HD render: job " << i << " failed"; } catch (...) {}
 	}
 	return false;
 }
@@ -152,7 +153,7 @@ int HdWorkers::takeJobs(const std::function<void(int)> &fn, int jobs, long long 
 		{
 			++_failed;
 			std::lock_guard<std::mutex> lock(_failMutex);
-			_failedJobs.push_back(i);
+			_failedJobs.push_back(i); // room for every job was made by run: no memory is asked for here
 		}
 		++taken;
 	}
@@ -205,16 +206,36 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn, int tries)
 	if (_threads.empty() || jobs == 1 || !_busy.compare_exchange_strong(idle, true))
 	{
 		std::vector<int> failed;
+		bool lost = false; // a failed job whose number could not be kept (no memory for the list)
 		for (int i = 0; i < jobs; ++i)
 		{
 			if (!runJob(fn, i))
 			{
-				failed.push_back(i);
+				try { failed.push_back(i); } catch (...) { lost = true; }
 			}
+		}
+		if (lost)
+		{
+			++_holes;
+			return false;
 		}
 		return failed.empty() || again(fn, failed, tries);
 	}
 	struct Release { std::atomic<bool> &busy; ~Release() { busy = false; } } release{ _busy };
+	// room for the number of every job, before a worker is woken: a job fails for want of memory as a rule, and
+	// noting it must not ask for more (an exception out of a worker ends the game; out of the caller it would
+	// leave run with the workers still at fn)
+	try
+	{
+		_failedJobs.clear();
+		_failedJobs.reserve(jobs);
+	}
+	catch (...)
+	{
+		try { Log(LOG_ERROR) << "HD render: no memory for a batch of " << jobs << " job(s), not run"; } catch (...) {}
+		++_holes;
+		return false;
+	}
 	// only as many workers are woken as there are jobs besides the caller's: waking the whole pool for the
 	// frame clear's 8 slices cost the main thread a fifth of its work on the base (profile 27.10);
 	// and only as many as the work this call site gave last time pays for, one grain each besides the caller's
@@ -289,7 +310,7 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn, int tries)
 bool HdWorkers::again(const std::function<void(int)> &fn, std::vector<int> &failed, int tries)
 {
 	const size_t first = failed.size();
-	for (int t = 0; t < std::max(1, tries) && !failed.empty(); ++t)
+	for (int t = 0; t < tries && !failed.empty(); ++t)
 	{
 		if (t > 0)
 		{
@@ -297,7 +318,11 @@ bool HdWorkers::again(const std::function<void(int)> &fn, std::vector<int> &fail
 		}
 		failed.erase(std::remove_if(failed.begin(), failed.end(), [&](int i) { return runJob(fn, i); }), failed.end());
 	}
-	Log(failed.empty() ? LOG_WARNING : LOG_ERROR) << "HD render: " << first << " failed job(s) run again, " << failed.size() << " failed again";
+	try
+	{
+		Log(failed.empty() ? LOG_WARNING : LOG_ERROR) << "HD render: " << first << " failed job(s) run again, " << failed.size() << " failed again";
+	}
+	catch (...) {}
 	if (!failed.empty())
 	{
 		++_holes;

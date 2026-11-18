@@ -267,12 +267,12 @@ bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, co
 	const int jobs = threaded ? std::max(1, std::min(bh / 16, pool.threads() * 2)) : 1;
 	if (jobs > 1)
 	{
-		pool.run(jobs, [&](int job)
+		return pool.run(jobs, [&](int job)
 		{
 			const int ya = (int)((long long)bh * job / jobs);
 			const int yb = (int)((long long)bh * (job + 1) / jobs);
 			xbrz::scale((size_t)k, base.data(), out.pixels.data(), bw, bh, xbrz::ARGB, xbrz::ScalerCfg(), ya, yb);
-		}, HdWorkers::ONCE); // the callers keep the frame (the sprites of a battle, the interface's mirror)
+		}, HdWorkers::ONCE); // the callers keep the frame (the sprites of a battle, the interface's mirror): not whole - not smoothed
 	}
 	else
 	{

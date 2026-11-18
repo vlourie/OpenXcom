@@ -1116,7 +1116,7 @@ void setRecolour(Recolour fn)
 		{
 			fn(todo[i]->key, todo[i]->frame);
 			todo[i]->recoloured = true;
-		});
+		}, HdWorkers::NO_RETRY); // in place: a frame recoloured half way must not go through the colours again
 		// a frame whose recolouring failed (the pool logs it and goes on) is half done: it goes, read again from the file when drawn
 		for (Entry *entry : todo)
 		{
@@ -1443,7 +1443,13 @@ bool pngSize(const std::string &path, int &width, int &height)
 	unsigned char head[24];
 	const long long got = SDL_RWread(rw, head, 1, sizeof(head)); // SDL 1.2 returns -1 on error
 	SDL_RWclose(rw);
-	if (got < (long long)sizeof(head) || memcmp(head + 12, "IHDR", 4) != 0)
+	static const unsigned char PNG_SIGNATURE[8] = { 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A };
+	if (got < (long long)sizeof(head) || memcmp(head, PNG_SIGNATURE, 8) != 0 || memcmp(head + 12, "IHDR", 4) != 0)
+	{
+		return false;
+	}
+	// PNG allows up to 2^31 - 1 a side: a file that says more is not one (and the shifts below would go negative)
+	if ((head[16] & 0x80) || (head[20] & 0x80))
 	{
 		return false;
 	}
@@ -1666,8 +1672,14 @@ namespace
 		{
 			return false;
 		}
-		width = (int)(readU32(head + 8) * readU32(head + 12));
-		height = (int)(readU32(head + 8) * readU32(head + 16));
+		// the limits of registerPackFile: the products below must not wrap
+		const Uint32 packScale = readU32(head + 8), baseW = readU32(head + 12), baseH = readU32(head + 16);
+		if (packScale < 1 || packScale > 16 || baseW == 0 || baseH == 0 || baseW > 65536 || baseH > 65536)
+		{
+			return false;
+		}
+		width = (int)(packScale * baseW);
+		height = (int)(packScale * baseH);
 		return width > 0 && height > 0;
 	}
 

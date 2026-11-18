@@ -545,8 +545,15 @@ bool composeFrame(const Art *art)
 {
 	// the layers' files unpacked side by side: one after another on the main thread a doll of 9 layers took
 	// 400-700 ms (lodepng, 1280x800 each). Read here, unpacked on the workers, taken by frame() as if loaded
+	// (the bytes of a file are let go whichever way this function is left: what follows asks for memory)
+	typedef std::unique_ptr<void, void(*)(void*)> FileBytes;
+	const auto readFile = [](const std::string &path, size_t &size)
+	{
+		SDL_RWops *rw = FileMap::getRWops(path);
+		return FileBytes(rw ? SDL_LoadFile_RW(rw, &size, SDL_TRUE) : nullptr, [](void *p) { SDL_free(p); });
+	};
 	std::vector<const Art*> toRead;
-	std::vector<std::pair<void*, size_t>> files;
+	std::vector<std::pair<FileBytes, size_t>> files;
 	for (const Art *layer : art->layers)
 	{
 		if (layer->bad || !layer->frame.pixels.empty() || layer->path.empty() || predecoded.count(layer)
@@ -555,23 +562,18 @@ bool composeFrame(const Art *art)
 			continue;
 		}
 		size_t size = 0;
-		void *data = nullptr;
-		if (SDL_RWops *rw = FileMap::getRWops(layer->path))
-		{
-			data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
-		}
+		FileBytes data = readFile(layer->path, size);
 		if (data)
 		{
-			toRead.push_back(layer);
-			files.emplace_back(data, size);
+			files.emplace_back(std::move(data), size);
+			toRead.push_back(layer); // after its bytes: the two lists go by the same numbers
 		}
-	}
-	// a layer's erase mask (<layer>.erase.png, its alpha): where the classic layer's black matte hid the layers
+	}	// a layer's erase mask (<layer>.erase.png, its alpha): where the classic layer's black matte hid the layers
 	// under it (hair under a helmet) and the picture leaves the matte out, what lies under it is cleared to the
 	// backdrop, as the matte hid it (XP-000566)
 	std::vector<HdFrame> erases(art->layers.size());
 	std::vector<HdFrame*> eraseTo;
-	std::vector<std::pair<void*, size_t>> eraseFiles;
+	std::vector<std::pair<FileBytes, size_t>> eraseFiles;
 	for (size_t i = 0; i < art->layers.size(); ++i)
 	{
 		const std::string &path = art->layers[i]->path;
@@ -581,33 +583,27 @@ bool composeFrame(const Art *art)
 		}
 		const std::string mask = path.substr(0, path.size() - 4) + ".erase.png";
 		size_t size = 0;
-		void *data = nullptr;
+		FileBytes data(nullptr, [](void *p) { SDL_free(p); });
 		if (FileMap::fileExists(mask))
 		{
-			if (SDL_RWops *rw = FileMap::getRWops(mask))
-			{
-				data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
-			}
+			data = readFile(mask, size);
 		}
 		if (data)
 		{
+			eraseFiles.emplace_back(std::move(data), size);
 			eraseTo.push_back(&erases[i]);
-			eraseFiles.emplace_back(data, size);
 		}
 	}
 	if (!eraseFiles.empty())
 	{
 		HdWorkers::instance().run((int)eraseFiles.size(), [&](int i)
 		{
-			if (!HdSprites::decodePng((const unsigned char*)eraseFiles[i].first, eraseFiles[i].second, *eraseTo[i]))
+			if (!HdSprites::decodePng((const unsigned char*)eraseFiles[i].first.get(), eraseFiles[i].second, *eraseTo[i]))
 			{
 				eraseTo[i]->pixels.clear();
 			}
 		});
-		for (const auto &file : eraseFiles)
-		{
-			SDL_free(file.first);
-		}
+		eraseFiles.clear();
 	}
 	if (toRead.size() > 1)
 	{
@@ -615,7 +611,7 @@ bool composeFrame(const Art *art)
 		std::vector<char> ok(toRead.size(), 0);
 		HdWorkers::instance().run((int)toRead.size(), [&](int i)
 		{
-			ok[i] = HdSprites::decodePng((const unsigned char*)files[i].first, files[i].second, frames[i]) ? 1 : 0;
+			ok[i] = HdSprites::decodePng((const unsigned char*)files[i].first.get(), files[i].second, frames[i]) ? 1 : 0;
 		});
 		for (size_t i = 0; i < toRead.size(); ++i)
 		{
@@ -625,10 +621,7 @@ bool composeFrame(const Art *art)
 			}
 		}
 	}
-	for (const auto &file : files)
-	{
-		SDL_free(file.first);
-	}
+	files.clear();
 	const int s = art->scale, W = art->baseWidth * s, H = art->baseHeight * s;
 	HdFrame out;
 	out.width = W;
@@ -712,7 +705,7 @@ bool composeFrame(const Art *art)
 					dst[x] = (oa << 24) | (r << 16) | (g << 8) | b;
 				}
 			}
-		});
+		}, HdWorkers::NO_RETRY); // blended in place: rows done twice would lay the layer twice (frame() makes a holed one anew)
 	}
 	art->frame = std::move(out);
 	return true;

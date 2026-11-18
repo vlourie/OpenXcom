@@ -264,7 +264,7 @@ void SurfaceSet::hdScaleInPlace(int scale)
 		}
 	}
 	const int jobs = (int)std::min<size_t>(_frames.size(), 64);
-	HdWorkers::instance().run(jobs, [&](int job)
+	const bool whole = HdWorkers::instance().run(jobs, [&](int job)
 	{
 		for (size_t i = job; i < _frames.size(); i += jobs)
 		{
@@ -274,6 +274,18 @@ void SurfaceSet::hdScaleInPlace(int scale)
 			}
 		}
 	}, HdWorkers::ONCE); // the set is scaled once for the whole game: a hole here cannot be made good later
+	if (!whole)
+	{
+		// which frames it was the pool does not say: each once more here, one at a time (a copy of pixels, the same
+		// whether made once or twice), before the set takes the new frames
+		for (size_t i = 0; i < _frames.size(); ++i)
+		{
+			if (_frames[i])
+			{
+				try { HdBlit::upscaleFrame(scaled[i].getSurface(), _frames[i].getSurface(), scale); } catch (...) {}
+			}
+		}
+	}
 	_frames.swap(scaled);
 	_width *= scale;
 	_height *= scale;

@@ -101,7 +101,9 @@ public:
 	/// tries: how many times the caller runs a failed job again - more than once only where the batch is made
 	/// once and cannot be made anew (ONCE: a set scaled in place as it is loaded, the palette table of a battle).
 	bool run(int jobs, const std::function<void(int)> &fn, int tries = 1);
-	enum { ONCE = 6 };
+	/// NO_RETRY: a job that adds to what is already there (recolours a frame in place) cannot start anew after it
+	/// threw half way - it is not run again, the answer is false at the first failure.
+	enum { NO_RETRY = 0, ONCE = 6 };
 	/// How many batches were left not whole so far (run answered false). A cache made of several batches, or
 	/// through helpers that do not pass the answer on, compares the count before and after and drops what it made.
 	static unsigned holes() { return _holes; }
