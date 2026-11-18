@@ -971,6 +971,24 @@ void Game::popState()
 }
 
 /**
+ * Pops every state and deletes them at once, not at the start of the next cycle: for the HD test bench, which
+ * replaces the saved game right after (a state's destructor may look into the save it was opened on).
+ * Only between cycles (HdControl::step): no state's code may be running.
+ */
+void Game::dropStates()
+{
+	while (!_states.empty())
+	{
+		popState();
+	}
+	while (!_deleted.empty())
+	{
+		delete _deleted.back();
+		_deleted.pop_back();
+	}
+}
+
+/**
  * Sets a new saved game for the game to use.
  * @param save Pointer to the saved game.
  */

@@ -572,6 +572,12 @@ std::string run(Control &c, Game *g, const std::string &line)
 	if (cmd == "open")
 	{
 		c.sinceInput = 0;
+		// these start a new game: the screens of the running one go first, while its save is alive (the base
+		// screen's destructor looks its base up in the save and deleted it a second time, R-508)
+		if (g->getSavedGame() && (args == "geoscape" || args == "save" || args == "base"))
+		{
+			g->dropStates();
+		}
 		return MainMenuState::hdStart(g, args) ? "ok" : "err open: geoscape|base|battle|load|newbattle|options|save|ufopaedia";
 	}
 	if (cmd == "savefile")

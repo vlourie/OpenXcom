@@ -97,6 +97,8 @@ public:
 	void pushState(State *state);
 	/// Pops the last state from the state stack.
 	void popState();
+	/// Pops every state and deletes them at once (the HD test bench, between cycles only).
+	void dropStates();
 	/// Gets the currently loaded language.
 	Language *getLanguage() const { return _lang; }
 	/// Gets the currently loaded saved game.
