@@ -41,6 +41,9 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Battlescape/BattlescapeState.h"
+#include "../Battlescape/BattlescapeGame.h"
+#include "../Battlescape/BattleState.h"
+#include "../Savegame/BattleUnit.h"
 #include "../Battlescape/Map.h"
 #include "../Battlescape/Camera.h"
 #include "../Battlescape/Position.h"
@@ -81,6 +84,11 @@ struct Control
 	double recordStep = 0, nightFrom = -1, nightTo = -1;
 	bool recordClock = false, hadNight = false;
 	Uint32 recordStart = 0, recordNow = 0;
+	// the battle's actions seen since its start (state prints them): a blind scenario learns whether its clicks
+	// became shots and explosions. Read only, nothing of the battle is touched.
+	const SavedBattleGame *watchBattle = nullptr;
+	std::vector<const BattleState*> watchSeen;
+	std::map<std::string, int> watchCount;
 };
 
 Control &ctl()
@@ -103,6 +111,50 @@ std::string className(const State *s)
 	free(d);
 	const size_t p = n.rfind("::");
 	return p == std::string::npos ? n : n.substr(p + 2);
+}
+
+std::string shortName(const std::type_info &ti)
+{
+	int status = 0;
+	char *d = abi::__cxa_demangle(ti.name(), nullptr, nullptr, &status);
+	std::string n = (status == 0 && d) ? d : ti.name();
+	free(d);
+	const size_t p = n.rfind("::");
+	return p == std::string::npos ? n : n.substr(p + 2);
+}
+
+// Counts the battle's action states (ProjectileFlyBState, ExplosionBState, UnitDieBState ...) as they come into
+// the queue. Compared by address with the queue of the cycle before: an action that came and went within one
+// cycle, or took the address of one just deleted, is not counted - the numbers are a lower bound.
+void watchBattle(Control &c, Game *g)
+{
+	const SavedBattleGame *sb = g->getSavedGame() ? g->getSavedGame()->getSavedBattle() : nullptr;
+	if (sb != c.watchBattle)
+	{
+		c.watchBattle = sb;
+		c.watchSeen.clear();
+		c.watchCount.clear();
+	}
+	const BattlescapeGame *bg = sb ? sb->getBattleGame() : nullptr;
+	if (!bg)
+	{
+		c.watchSeen.clear();
+		return;
+	}
+	std::vector<const BattleState*> now;
+	for (const BattleState *s : bg->getStates())
+	{
+		if (!s)
+		{
+			continue;
+		}
+		now.push_back(s);
+		if (std::find(c.watchSeen.begin(), c.watchSeen.end(), s) == c.watchSeen.end())
+		{
+			++c.watchCount[shortName(typeid(*s))];
+		}
+	}
+	c.watchSeen.swap(now);
 }
 
 // OXCE_HD_BASE_NIGHT (HdBaseScene::nightAt reads it on every frame): a value, or "" to take it away
@@ -235,6 +287,27 @@ std::string stateLine(Game *g)
 		// the state of the game's random numbers and the save's animation frame: checks that the picture's animation
 		// (XP-000097) does not touch the battle
 		out << " seed=" << RNG::getSeed() << " animFrame=" << sb->getAnimFrame();
+		// units still standing by side (player/hostile/neutral) and the actions counted by watchBattle()
+		int alive[3] = {0, 0, 0};
+		for (const BattleUnit *bu : *g->getSavedGame()->getSavedBattle()->getUnits())
+		{
+			const int f = (int)bu->getFaction();
+			if (f >= 0 && f < 3 && !bu->isOut())
+			{
+				++alive[f];
+			}
+		}
+		out << " alive=" << alive[0] << "/" << alive[1] << "/" << alive[2] << " acts=";
+		bool firstAct = true;
+		for (const auto &a : ctl().watchCount)
+		{
+			out << (firstAct ? "" : ",") << a.first << ":" << a.second;
+			firstAct = false;
+		}
+		if (firstAct)
+		{
+			out << "none";
+		}
 	}
 	else if (g->getSavedGame())
 	{
@@ -736,6 +809,7 @@ void step(Game *g)
 			c.dir.pop_back();
 		}
 	}
+	watchBattle(c, g);
 	const Uint32 now = SDL_GetTicks();
 	if (c.batch == 0)
 	{
