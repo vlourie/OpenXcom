@@ -588,6 +588,11 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES 
   set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wignored-qualifiers\ )
   set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused-parameter\ )
   set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-inline\ )
+  # the answer of a [[nodiscard]] function left unlooked at (HdWorkers::run: a batch that is not whole would be
+  # kept) stops the build. Windows only: elsewhere the C library marks its own functions the same way
+  if ( WIN32 )
+    set_property ( SOURCE ${cxx_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Werror=unused-result\ )
+  endif ()
   if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
     # apple clang 11.0 goes crazy with -Wshadow on the yaml-cpp source code
     set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wshadow\ )

@@ -1,0 +1,221 @@
+# The checks of OXCE-HD beyond "it compiles" (audit A02-018): the game built as Debug and as Release, the game built
+# with the address and undefined-behaviour sanitizers, the tests that need no data of the game (tests/) plain and
+# under the sanitizers, cppcheck and clang-tidy. The same steps run at home with tools/ci_checks.py.
+#
+# What is NOT here and why: the picture checks and the sanitizer RUN of the game need the game's data, which is not
+# in the repository (they run at home: the hidden bench, tools/hdbench.py). The answer of HdWorkers::run() left
+# unlooked at stops every build of the game by itself (-Werror=unused-result, src/CMakeLists.txt).
+#
+# The Linux job (thread sanitizer; address + leak) is an inquiry, not a gate: it was written without a Linux machine
+# at hand and has not run yet, so its failure does not fail the checks until it is seen green once.
+name: Checks
+
+on:
+  push:
+    branches: [hd-render, oxce-plus]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/checks.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The SDL 1.2 family at the versions the releases are built with (see build.yml for the reason)
+  SDL_PACKAGES: >-
+    SDL-1.2.15+r419+gef3a6c05-1
+    SDL_image-1.2.12-8
+    SDL_mixer-1.2.12-10
+    SDL_gfx-2.0.27-1
+    libmikmod-3.3.13-1
+
+jobs:
+  game:
+    name: Game, ${{ matrix.build }} (MinGW64 gcc)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [Debug, Release]
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-yaml-cpp
+      - name: Install SDL 1.2 (the versions of the release build)
+        run: |
+          for p in $SDL_PACKAGES; do
+            pacman -U --noconfirm --needed "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-$p-any.pkg.tar.zst"
+          done
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build }}
+      - name: Build
+        run: ninja -C build openxcom
+      - name: Check the executable
+        run: test -s build/bin/openxcom.exe && ls -l build/bin/openxcom.exe
+
+  game-sanitizers:
+    name: Game with ASan + UBSan (CLANG64, build only)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >-
+            mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-ninja
+            mingw-w64-clang-x86_64-pkgconf
+            mingw-w64-clang-x86_64-zlib
+            mingw-w64-clang-x86_64-yaml-cpp
+      - name: Install SDL 1.2 (the versions of the release build)
+        run: |
+          for p in $SDL_PACKAGES; do
+            pacman -U --noconfirm --needed "https://repo.msys2.org/mingw/clang64/mingw-w64-clang-x86_64-$p-any.pkg.tar.zst"
+          done
+      # (tests/shim: <alloca.h> for the YAML headers under clang on Windows)
+      - name: Configure
+        run: |
+          flags="-fsanitize=address,undefined -fno-omit-frame-pointer -isystem $(cygpath -m "$PWD")/tests/shim"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_FLAGS="$flags" -DCMAKE_CXX_FLAGS="$flags" -DCMAKE_CXX_FLAGS_DEBUG="-O1 -g -DNDEBUG" -DCMAKE_C_FLAGS_DEBUG="-O1 -g -DNDEBUG"
+      - name: Build
+        run: ninja -C build openxcom
+      - name: Check the executable
+        run: test -s build/bin/openxcom.exe && ls -l build/bin/openxcom.exe
+
+  tests:
+    name: Tests, ${{ matrix.name }}
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc
+            msystem: MINGW64
+            prefix: mingw-w64-x86_64
+            repo: mingw64
+            options: ''
+          - name: clang, ASan + UBSan
+            msystem: CLANG64
+            prefix: mingw-w64-clang-x86_64
+            repo: clang64
+            options: '-DCMAKE_CXX_COMPILER=clang++ -DHD_TEST_SANITIZE=address,undefined'
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            ${{ matrix.prefix }}-${{ matrix.msystem == 'CLANG64' && 'clang' || 'gcc' }}
+            ${{ matrix.prefix }}-cmake
+            ${{ matrix.prefix }}-ninja
+      - name: Install SDL 1.2 (headers only are used)
+        run: pacman -U --noconfirm --needed "https://repo.msys2.org/mingw/${{ matrix.repo }}/${{ matrix.prefix }}-SDL-1.2.15+r419+gef3a6c05-1-any.pkg.tar.zst"
+      - name: Build
+        run: |
+          cmake -S tests -B build-tests -G Ninja ${{ matrix.options }}
+          ninja -C build-tests
+      - name: Run
+        run: ctest --test-dir build-tests --output-on-failure
+
+  static:
+    name: cppcheck and clang-tidy
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >-
+            mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-clang-tools-extra
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-ninja
+            mingw-w64-clang-x86_64-cppcheck
+      - name: Install SDL 1.2 (headers only are used)
+        run: pacman -U --noconfirm --needed "https://repo.msys2.org/mingw/clang64/mingw-w64-clang-x86_64-SDL-1.2.15+r419+gef3a6c05-1-any.pkg.tar.zst"
+      # the level "error" over the whole HD layer; what was looked at and is not one is in tests/cppcheck-suppress.txt
+      - name: cppcheck
+        run: |
+          cppcheck -j 4 --quiet --std=c++17 --language=c++ --error-exitcode=1 \
+            --suppressions-list=tests/cppcheck-suppress.txt \
+            '--template={file}:{line}: {severity}: {id}: {message}' \
+            -D_WIN32 -D__MINGW32__ '-DC4_SUPPRESS_WARNING_GCC_WITH_PUSH(x)=' '-DC4_SUPPRESS_WARNING_GCC_POP=' '-DSDL_VERSION_ATLEAST(a,b,c)=0' \
+            src/Engine/Hd*.cpp
+      # the pool and its test, over the compile commands of the tests (tests/clang-tidy.yml says which checks)
+      - name: clang-tidy
+        run: |
+          cmake -S tests -B build-tests -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          clang-tidy --quiet --config-file=tests/clang-tidy.yml -p build-tests src/Engine/HdWorkers.cpp tests/hdworkers_test.cpp
+
+  linux-sanitizers:
+    name: Tests on Linux, ${{ matrix.sanitize }} (inquiry, not a gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        # address on Linux brings the leak sanitizer with it
+        sanitize: ['thread', 'address,undefined']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build libsdl1.2-dev
+      - name: Build
+        run: |
+          cmake -S tests -B build-tests -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DHD_TEST_SANITIZE=${{ matrix.sanitize }}
+          ninja -C build-tests
+      - name: Run
+        env:
+          TSAN_OPTIONS: halt_on_error=1
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-tests --output-on-failure

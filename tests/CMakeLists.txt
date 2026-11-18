@@ -1,0 +1,35 @@
+# The tests of OXCE-HD that need no data of the game: a project of its own, the game's build does not know it.
+#   cmake -S tests -B build-tests -G Ninja && ninja -C build-tests && ctest --test-dir build-tests --output-on-failure
+# With sanitizers: -DHD_TEST_SANITIZE=address,undefined (anywhere clang or gcc has them) or =thread (Linux).
+cmake_minimum_required ( VERSION 3.10 )
+project ( OxceHdTests CXX )
+
+set ( CMAKE_CXX_STANDARD 17 )
+set ( CMAKE_CXX_STANDARD_REQUIRED ON )
+if ( NOT CMAKE_BUILD_TYPE )
+  set ( CMAKE_BUILD_TYPE RelWithDebInfo )
+endif ()
+set ( HD_TEST_SANITIZE "" CACHE STRING "Sanitizers for the tests: address,undefined or thread" )
+
+find_package ( SDL REQUIRED )
+find_package ( Threads REQUIRED )
+enable_testing ()
+
+add_executable ( hdworkers_test hdworkers_test.cpp stubs.cpp ../src/Engine/HdWorkers.cpp )
+# (the options' header takes the YAML library of the game: headers only, nothing of it is linked)
+target_include_directories ( hdworkers_test PRIVATE ${SDL_INCLUDE_DIR} ../libs/rapidyaml )
+if ( WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+  target_include_directories ( hdworkers_test SYSTEM PRIVATE shim )
+endif ()
+target_link_libraries ( hdworkers_test PRIVATE Threads::Threads )
+if ( WIN32 )
+  target_link_libraries ( hdworkers_test PRIVATE psapi )
+endif ()
+# the answer of HdWorkers::run() left unlooked at is an error here as it is in the game (src/CMakeLists.txt)
+target_compile_options ( hdworkers_test PRIVATE -Wall -Wextra -Wno-unused-parameter -Werror=unused-result )
+if ( HD_TEST_SANITIZE )
+  target_compile_options ( hdworkers_test PRIVATE -fsanitize=${HD_TEST_SANITIZE} -fno-omit-frame-pointer -g )
+  target_link_options ( hdworkers_test PRIVATE -fsanitize=${HD_TEST_SANITIZE} )
+endif ()
+add_test ( NAME hdworkers COMMAND hdworkers_test )
+set_tests_properties ( hdworkers PROPERTIES TIMEOUT 300 )

@@ -1,0 +1,30 @@
+// What cppcheck says of the HD layer at the level "error" and is not one: looked at by hand 2026-11-18, each with
+// the reason. A new line here needs its reason too; a finding that is real is fixed, not listed.
+// (tools/ci_checks.py and .github/workflows/checks.yml pass this file with --suppressions-list.)
+
+// not the HD layer: the script engine of OXCE and the font library, taken as they are
+syntaxError:src/Engine/Script.h
+missingReturn:src/Engine/Script.h
+*:src/Engine/stb_truetype.h
+
+// HdRadar: lo2/hi2 keep +-1e30 only when no sample was a number, and that row is skipped the line above the cast
+floatConversionOverflow:src/Engine/HdRadar.cpp
+
+// HdGpuCanvas: at most one readback waits when a buffer is looked for (the second is dropped first), so one of
+// the three buffers is always free
+arrayIndexOutOfBounds:src/Engine/HdGpuCanvas.cpp
+
+// HdUiArt: the picture lives in the heap and is moved into the list, the pointer taken before stays good
+invalidLifetime:src/Engine/HdUiArt.cpp
+
+// HdSprites: a pair whose main picture was not found is marked bad and left before the iterator is read
+derefInvalidIterator:src/Engine/HdSprites.cpp
+
+// HdUiDraw: the row has at least one step here (the empty row is left above), so xa and xb are set
+integerOverflow:src/Engine/HdUiDraw.cpp
+
+// libraries of others, taken as they are
+*:libs/*
+
+// HdWeather: the rows are read under the same count of layers that filled them two loops above
+uninitvar:src/Engine/HdWeather.cpp
