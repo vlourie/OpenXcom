@@ -588,6 +588,7 @@ const HdFrame *HdUi::cache(const Surface *key, Uint64 pixelHash, Uint64 hash, in
 	e.artX = artX;
 	e.artY = artY;
 	e.artMisses = art ? 0 : misses + 1;
+	e.artVersion = HdUiArt::version(); // the answer was looked for just now, among the pictures known now
 	e.frame = std::move(frame);
 	_smoothLru.push_front(key);
 	e.lru = _smoothLru.begin();
@@ -799,6 +800,8 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		const HdUiArt::Art *art = nullptr;
 		int artX = 0, artY = 0;
 		bool known = false;
+		const HdUiArt::Art *late = nullptr; // a part of a picture registered after the surface's answer was remembered
+		int lateX = 0, lateY = 0;
 		auto it = _smooth.find(surface);
 		// (not when the last search of this surface was left not whole: the entry made after it remembers "no picture")
 		if (it != _smooth.end() && it->second.k == k && it->second.pixelHash == pixelHash && (_cropAgain.empty() || _cropAgain.count(surface) == 0))
@@ -807,10 +810,38 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			// images are loaded (HdUiArt::loaded): when one came since, the content is asked for again (a hash lookup,
 			// not the scan below), and the entry is made anew only when the answer is another picture - so what a
 			// surface shows does not depend on which screens were opened before
-			const HdUiArt::Art *fresh = it->second.artVersion == HdUiArt::version() ? it->second.art : HdUiArt::find(pixelHash, w, h);
-			if (!fresh || fresh == it->second.art)
+			const unsigned version = HdUiArt::version();
+			const HdUiArt::Art *fresh = it->second.art;
+			bool checked = true;
+			if (it->second.artVersion != version)
 			{
-				it->second.artVersion = HdUiArt::version();
+				if (const HdUiArt::Art *whole = HdUiArt::find(pixelHash, w, h))
+				{
+					fresh = whole;
+				}
+				else if (w >= 24 && h >= 16 && w * h >= 2048 && !blankPixels(pixels, pitch, w, h))
+				{
+					// a part of a picture registered since (A02-014): the answer "no picture" (or "a part of that
+					// one") was given before it came. Only the pictures registered since are compared, and one of
+					// them is taken only when it stands before the one known - what the whole search would answer
+					const HdWorkers::Whole allWhole;
+					int lx = 0, ly = 0;
+					const HdUiArt::Art *part = HdUiArt::findCrop(pixels, pitch, w, h, lx, ly, (long long)it->second.artVersion);
+					if (part && (!fresh || part->order < fresh->order))
+					{
+						fresh = late = part;
+						lateX = lx;
+						lateY = ly;
+					}
+					checked = part || allWhole.ok(); // a search left not whole is made again at the next draw
+				}
+			}
+			if (fresh == it->second.art)
+			{
+				if (checked)
+				{
+					it->second.artVersion = version;
+				}
 				art = it->second.art;
 				artX = it->second.artX;
 				artY = it->second.artY;
@@ -827,6 +858,12 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		if (!known)
 		{
 			art = HdUiArt::find(pixelHash, w, h);
+			if (!art && late)
+			{
+				art = late;
+				artX = lateX;
+				artY = lateY;
+			}
 			// a part of an image: searched for surfaces of some size, and not for ever for a surface
 			// whose content keeps changing (counters, bars: they are never a picture)
 			const bool again = !_cropAgain.empty() && _cropAgain.erase(surface) > 0;
@@ -844,19 +881,27 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				_cropMissesArts = HdUiArt::cropCount();
 			}
 			const Uint64 cropKey = pixelHash ^ ((Uint64)w << 48) ^ ((Uint64)h << 32);
-			if (!art && searched && !blank && misses < 3 && _cropMisses.count(cropKey) == 0)
+			// (a content searched in vain is searched again only among the pictures registered since, A02-014)
+			const unsigned version = HdUiArt::version();
+			const auto missed = _cropMisses.find(cropKey);
+			const long long missedAt = missed == _cropMisses.end() ? -1 : (long long)missed->second;
+			if (!art && searched && !blank && misses < 3 && missedAt != (long long)version)
 			{
 				// the whole pack compared against this surface: the only thing left in this path that
 				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
 				// branch below, which made the log name the wrong culprit
 				const auto cropStart = std::chrono::steady_clock::now();
 				const HdWorkers::Whole allWhole;
-				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
+				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY, missedAt);
 				holed = !art && !allWhole.ok();
 				if (!art && !holed) // a search left not whole is not remembered as a miss
 				{
 					if (_cropMisses.size() >= 65536) _cropMisses.clear();
-					_cropMisses.insert(cropKey);
+					_cropMisses[cropKey] = version;
+				}
+				else if (art && missedAt >= 0)
+				{
+					_cropMisses.erase(cropKey);
 				}
 				else if (holed)
 				{

@@ -43,6 +43,8 @@ struct HdFrame;
  * The frames are made on first use and kept until the map goes: the canvas keys its caches by the
  * frame buffer (span tables, smoothed frames) for the whole battle, so a buffer may not be freed and
  * its address reused while the battle lasts. Nothing is made while the map is not turned.
+ * The HD frames registered for them (sixteen times the pixels, four bytes each) have a memory budget:
+ * over it, the ones of the views not on the screen go, longest unused first (frame()).
  */
 class HdTurn
 {
@@ -58,7 +60,16 @@ class HdTurn
 		bool made = true;
 		/// The painted view of the original is registered for it (HdSprites::setView).
 		bool painted = false;
+		/// Bytes of the HD frame registered for it with its variants (pixels and span tables); 0 with none.
+		size_t hdBytes = 0;
+		/// The drawn frame (frame()) that asked for it last.
+		unsigned use = 0;
 	};
+	/// Bytes of all the HD frames made here and registered now, and the number of the frame being drawn.
+	size_t _hdBytes = 0;
+	unsigned _tick = 1;
+	/// frame() looks for views to drop again once the bytes are above this (nothing to drop: not every frame).
+	size_t _checkAbove = 0;
 	/// [0] mirrored frames, [1..3] floors turned by that many quarters, [4 + (R - 1) * 4 + part] the painted views
 	/// of turn R (1..3) for the frame standing as that part; by the original's buffer.
 	std::unordered_map<const void*, std::unique_ptr<Entry>> _frames[16];
@@ -80,6 +91,13 @@ public:
 	SurfaceRaw<const Uint8> painted(SurfaceRaw<const Uint8> src, int quarters, int part);
 	/// How many frames were made (all kinds).
 	size_t count() const;
+	/// A frame of the map is about to be drawn (call before its first drawing command). While the HD frames made
+	/// here are over their memory budget, the ones asked for longest ago go - never the ones the frame drawn last
+	/// showed - until a quarter under it; they are made anew when a view asks again. Turning the map costs nothing
+	/// while everything fits.
+	void frame();
+	/// Bytes of the HD frames made here and registered now.
+	size_t hdBytes() const { return _hdBytes; }
 };
 
 }

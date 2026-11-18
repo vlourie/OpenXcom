@@ -386,7 +386,7 @@ private:
 	size_t _smoothBytes = 0;
 	unsigned _artGeneration = 0;      ///< HdUiArt::generation() the entries' art pointers belong to
 	bool _classicDolls = false;       ///< Options::oxceHdClassicDolls the entries were made with
-	std::unordered_set<Uint64> _cropMisses; ///< contents searched for a picture in vain (by pixels and size)
+	std::unordered_map<Uint64, unsigned> _cropMisses; ///< contents searched for a picture in vain (by pixels and size), and the HdUiArt::version() they were searched at
 	size_t _cropMissesArts = 0;       ///< the pack size they were searched in
 	std::unordered_set<const Surface*> _cropAgain; ///< surfaces whose search was left not whole (a failed job): searched again whatever is remembered
 	std::unordered_map<GlyphKey, Glyph, GlyphKeyHash> _glyphs;

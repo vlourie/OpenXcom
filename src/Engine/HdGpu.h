@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <SDL.h>
+#include <string>
 
 namespace OpenXcom
 {
@@ -61,6 +62,10 @@ public:
 	void present(int displayW, int displayH, int top, int bottom, int left, int right, bool linear);
 	/// Reads the framebuffer back into a 32-bit surface of the world's size (the HD test dump).
 	bool readBack(SDL_Surface *out);
+	/// How many errors the driver has told of since the last call (GL debug output: an upload or an update of a
+	/// texture that failed, whoever made it), with the text of the first one. Always 0 where the driver does not
+	/// tell (older than OpenGL 4.3 without GL_KHR_debug). Costs nothing in the frame: no glGetError (R-519).
+	static unsigned takeErrors(std::string &first);
 };
 
 }

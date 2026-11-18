@@ -1887,6 +1887,10 @@ void Map::drawTerrain(HdCanvas *surface)
 	{
 		_turn = new HdTurn();
 	}
+	if (_turn)
+	{
+		_turn->frame(); // before the first command of this frame: turned HD frames over their budget go here
+	}
 	if (turned && !_turnGroups)
 	{
 		_turnGroups = new HdTurnGroups();

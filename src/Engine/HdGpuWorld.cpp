@@ -897,6 +897,7 @@ struct HdGpuWorld::Impl
 	Uint64 heldKey = 0, frameKey = 0;
 	bool heldValid = false, frameLight = false;
 	bool restFailed = false;          // the card could not make the textures of the light at rest: not tried again
+	int cardErrors = 0;               // how often the driver told of errors (HdGpu::takeErrors); kept over release()
 	/// HdRadar's wash (wash): the picture, its key and size; the key of this frame's (one a frame, as the light).
 	GLuint washTex = 0;
 	int washW = 0, washH = 0;
@@ -1313,6 +1314,20 @@ bool HdGpuWorld::begin(SDL_Surface *world)
 	HdGpu &gpu = HdGpu::instance();
 	if (m.wait > 0 || !gpu.current() || !world || world->format->BytesPerPixel != 4 || world->w != gpu.width() || world->h != gpu.height())
 	{
+		return false;
+	}
+	// what the driver told of since the last frame (HdGpu::takeErrors, A03-006): something on the card may be not
+	// what was sent - an update of a texture as well as its making, in any of the calls. Everything of the world
+	// on the card is dropped and made anew, the processor draws this frame; the third time it draws for good
+	std::string told;
+	if (const unsigned errors = HdGpu::takeErrors(told))
+	{
+		const bool last = ++m.cardErrors >= 3;
+		Log(LOG_ERROR) << "HD GPU world: the driver told of " << errors << " error(s) (" << told << ") - "
+			<< (last ? "the processor draws the world from now on" : "what is on the card is made anew");
+		m.release();
+		m.built = m.failed = last;
+		m.dirty = true;
 		return false;
 	}
 	if (!m.built)

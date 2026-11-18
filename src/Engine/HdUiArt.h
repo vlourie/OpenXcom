@@ -69,6 +69,7 @@ namespace HdUiArt
 		int cropX = 0, cropY = 0;         ///< a composite of a part of the layers: where the part starts in them
 		std::vector<Uint32> backdrop;     ///< a composite: the classic image under the layers (baseWidth * baseHeight), or empty
 		size_t order = 0;                 ///< its place among the registered pictures (of one content the later one is used)
+		unsigned since = 0;               ///< version() it was registered at (0: at the start), see findCrop
 	};
 	/// Where the texts drawn over `art` (its surface of w x h at x, y) land on the picture: the whole
 	/// surface, or only a doll's figure - its canvas is the whole screen, and the texts around it are
@@ -105,7 +106,8 @@ namespace HdUiArt
 	const Art *find(const Surface *base);
 	/// The picture of the image these pixels are a part of (a state's copy of a corner of an image):
 	/// the art and the offset of the pixels within its image, or nullptr. Slow (a search): cache the answer.
-	const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY);
+	/// With `newerThan` (a version() the pixels were searched at in vain): only the pictures registered since.
+	const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY, long long newerThan = -1);
 	/// The mods' images that are whole paper dolls (an armor's spriteInv: NAME, NAME.SPK, NAMEF3.SPK...), as the mods name them.
 	void setPaperdolls(std::vector<std::string> names);
 	/// Is this a paper doll's picture (a layer, a composite or a whole doll) while the player keeps the dolls classic

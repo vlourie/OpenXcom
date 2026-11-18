@@ -267,6 +267,7 @@ void loaded(const std::string &name, const Surface *base)
 	made->order = d.art->order;
 	*d.art = std::move(*made);
 	++registered;
+	d.art->since = registered;
 	const Art *p = d.art;
 	const Key key{ p->hash, p->baseWidth, p->baseHeight };
 	auto content = byContent.find(key);
@@ -833,7 +834,7 @@ const Art *find(const Surface *base)
 /**
  * The picture of the image these pixels are a part of (a state's copy of a corner of an image).
  */
-const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY)
+const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY, long long newerThan)
 {
 	if (w < 8 || h < 8)
 	{
@@ -849,7 +850,7 @@ const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int
 	{
 		const Art &art = *arts[index];
 		const int bw = art.baseWidth, bh = art.baseHeight;
-		if (art.bad || art.doll || bw < w || bh < h || (bw == w && bh == h))
+		if (art.bad || art.doll || bw < w || bh < h || (bw == w && bh == h) || (long long)art.since <= newerThan)
 		{
 			return false;
 		}

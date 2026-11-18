@@ -18,6 +18,7 @@
  */
 #include "HdGpu.h"
 #include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <cstring>
 #include "Logger.h"
@@ -55,6 +56,7 @@ void HdGpu::release() {}
 void HdGpu::upload(const SDL_Surface *) {}
 void HdGpu::present(int, int, int, int, int, int, bool) {}
 bool HdGpu::readBack(SDL_Surface *) { return false; }
+unsigned HdGpu::takeErrors(std::string &) { return 0; }
 
 #else
 
@@ -67,6 +69,25 @@ namespace
 {
 
 using hdgl::gl;
+
+// what the driver told of (HdGpu::takeErrors). The driver may call from a thread of its own: counters only, and
+// the text of the first error is written once, before the count that lets it be read
+std::atomic<unsigned> toldErrors(0);
+std::atomic<bool> toldFirst(false);
+char toldText[240] = {};
+
+void APIENTRY onGlMessage(GLenum, GLenum type, GLuint, GLenum, GLsizei, const char *message, const void *)
+{
+	if (type != 0x824C /* GL_DEBUG_TYPE_ERROR */)
+	{
+		return;
+	}
+	if (!toldFirst.exchange(true) && message)
+	{
+		std::strncpy(toldText, message, sizeof(toldText) - 1);
+	}
+	++toldErrors;
+}
 
 template <typename F>
 bool find(F &fn, const char *name)
@@ -173,7 +194,39 @@ bool HdGpu::load()
 	{
 		find(gl.CopyImageSubData, "glCopyImageSubData");
 	}
+	// the driver's own word of its errors (A03-006): every upload and update of a texture, without glGetError in
+	// the frame. Errors only, and not synchronous - the driver keeps its own thread (R-519)
+	if (major * 10 + minor >= 43 || (extensions && std::strstr((const char *)extensions, "GL_KHR_debug")))
+	{
+		if (find(gl.DebugMessageCallback, "glDebugMessageCallback") && find(gl.DebugMessageControl, "glDebugMessageControl"))
+		{
+			gl.DebugMessageCallback(onGlMessage, nullptr);
+			gl.DebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+			gl.DebugMessageControl(GL_DONT_CARE, 0x824C /* GL_DEBUG_TYPE_ERROR */, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+			glEnable(0x92E0 /* GL_DEBUG_OUTPUT */);
+		}
+		else
+		{
+			gl.DebugMessageCallback = nullptr;
+		}
+	}
 	return ok;
+}
+
+unsigned HdGpu::takeErrors(std::string &first)
+{
+	const unsigned n = toldErrors.exchange(0);
+	if (n)
+	{
+		first = toldText;
+		toldFirst = false;
+		// the error flag of the context stays set until it is read, and the next reader would take it for its own
+		// (the read-back of the test dump failed after an error told of here). Only on this rare way, not in a frame
+		for (int i = 0; i < 16 && glGetError() != GL_NO_ERROR; ++i)
+		{
+		}
+	}
+	return n;
 }
 
 bool HdGpu::build()

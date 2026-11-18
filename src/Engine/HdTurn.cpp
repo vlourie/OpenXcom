@@ -17,9 +17,13 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "HdTurn.h"
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include "HdSprites.h"
+#include "HdWorkers.h"
+#include "Logger.h"
 
 namespace OpenXcom
 {
@@ -115,10 +119,24 @@ bool flat(SurfaceRaw<const Uint8> src)
 	return outside * 100 <= seen * 3;
 }
 
+/// The memory budget of the HD frames made for the turned views: 384 MB with 16 GB of memory or more, less with
+/// less (HdWorkers::cacheBudget); OXCE_HD_TURN_BUDGET=<MB> overrides it (tests of the dropping).
+size_t turnBudget()
+{
+	static const size_t budget = []
+	{
+		const char *env = getenv("OXCE_HD_TURN_BUDGET");
+		return env && atoi(env) > 0 ? (size_t)atoi(env) << 20 : HdWorkers::cacheBudget((size_t)384 << 20);
+	}();
+	return budget;
+}
+
 }
 
 HdTurn::~HdTurn()
 {
+	Log(LOG_INFO) << "HD turn: " << count() << " frame(s) were made for the turned views, " << (_hdBytes >> 10)
+		<< " KB of HD frames registered for them at the end (budget " << (turnBudget() >> 20) << " MB)";
 	for (auto &frames : _frames)
 	{
 		for (auto &pair : frames)
@@ -152,6 +170,7 @@ HdTurn::Entry &HdTurn::entry(SurfaceRaw<const Uint8> src, int kind)
 
 void HdTurn::syncHd(const void *key, Entry &e, int kind)
 {
+	e.use = _tick;
 	Uint64 stamp = 0;
 	const HdFrame *hd = HdSprites::find(key, stamp);
 	if (hd && (hd->width != e.width || hd->height != e.height))
@@ -168,6 +187,8 @@ void HdTurn::syncHd(const void *key, Entry &e, int kind)
 		// with its variants: the original may have fewer now, and the ground pattern would take the former ones
 		HdSprites::remove(e.pixels.data());
 		e.from = nullptr;
+		_hdBytes -= e.hdBytes;
+		e.hdBytes = 0;
 	}
 	if (!hd)
 	{
@@ -185,6 +206,9 @@ void HdTurn::syncHd(const void *key, Entry &e, int kind)
 	const int width = hd->width, height = hd->height;
 	const bool generated = hd->generated, ownColour = hd->ownColour;
 	e.from = hd;
+	// the two span tables of a frame have a span a row
+	const size_t spanBytes = 2 * (size_t)height * sizeof(HdFrame::Span);
+	e.hdBytes = out.pixels.size() * sizeof(Uint32) + (out.rows.size() + out.solid.size()) * sizeof(HdFrame::Span);
 	HdSprites::set(e.pixels.data(), std::move(out));
 	// a floor turned with the map keeps its pack variants (the ground pattern), turned the same way
 	if (kind >= 1 && kind <= 3 && !generated)
@@ -204,9 +228,55 @@ void HdTurn::syncHd(const void *key, Entry &e, int kind)
 			turned.ownColour = ownColour;
 			turned.pixels.resize(variant->pixels.size());
 			transform(variant->pixels.data(), width, turned.pixels.data(), width, height, kind, [](Uint32 p) { return (p >> 24) >= 128; });
+			e.hdBytes += turned.pixels.size() * sizeof(Uint32) + spanBytes;
 			HdSprites::setVariant(e.pixels.data(), v, std::move(turned));
 		}
 	}
+	_hdBytes += e.hdBytes;
+}
+
+void HdTurn::frame()
+{
+	const size_t budget = turnBudget();
+	if (_hdBytes > budget && _hdBytes > _checkAbove)
+	{
+		// only what the frame drawn last did not ask for: the view on the screen is never made anew frame after
+		// frame, and no command of a frame can point at what goes (the registry runs the waiting ones first anyway)
+		std::vector<Entry*> old;
+		for (int kind = 0; kind < 4; ++kind)
+		{
+			for (auto &pair : _frames[kind])
+			{
+				if (pair.second->from && pair.second->use != _tick)
+				{
+					old.push_back(pair.second.get());
+				}
+			}
+		}
+		std::sort(old.begin(), old.end(), [](const Entry *a, const Entry *b) { return a->use < b->use; });
+		const size_t before = _hdBytes, target = budget - budget / 4;
+		size_t dropped = 0;
+		for (Entry *e : old)
+		{
+			if (_hdBytes <= target)
+			{
+				break;
+			}
+			HdSprites::remove(e->pixels.data());
+			e->from = nullptr;
+			_hdBytes -= e->hdBytes;
+			e->hdBytes = 0;
+			++dropped;
+		}
+		// what is left is on the screen: look again only when more is made
+		_checkAbove = _hdBytes > budget ? _hdBytes : 0;
+		if (dropped)
+		{
+			Log(LOG_INFO) << "HD turn: " << (before >> 20) << " MB of turned frames over the budget of " << (budget >> 20)
+				<< " MB - " << dropped << " frame(s) of the views not on the screen dropped, " << (_hdBytes >> 20) << " MB kept";
+		}
+	}
+	++_tick;
 }
 
 SurfaceRaw<const Uint8> HdTurn::mirrored(SurfaceRaw<const Uint8> src, bool hd)

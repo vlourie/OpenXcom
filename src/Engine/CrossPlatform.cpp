@@ -1480,10 +1480,10 @@ std::string now()
 #else
 	char buffer[MAX_LEN];
 	time_t rawtime;
-	struct tm *timeinfo;
+	struct tm timeinfo {};
 	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(buffer, MAX_LEN, "%d-%m-%Y_%H-%M-%S", timeinfo);
+	localtime_r(&rawtime, &timeinfo); // every thread that logs comes here: localtime() shares one buffer
+	strftime(buffer, MAX_LEN, "%d-%m-%Y_%H-%M-%S", &timeinfo);
 	sprintf(result, "%s", buffer);
 #endif
 	return result;
@@ -1635,12 +1635,18 @@ static bool logToFile(const std::string& filename, const std::string& data) {
 }
 
 static const size_t LOG_BUFFER_LIMIT = 1<<10;
-static std::list<std::pair<int, std::string>> logBuffer;
-static std::string logFileName;
-// The buffer and the name above are one state for every thread that logs (the HD render threads do: a failed job,
-// an unreadable picture); the same thread may come again from the crash handler, hence recursive
-static std::recursive_mutex logLock;
-const std::string& getLogFileName() { return logFileName; }
+// The buffer, the name and the lock are one state for every thread that logs (the HD render threads do: a failed job,
+// an unreadable picture); the same thread may come again from the crash handler, hence recursive. They are never
+// destroyed: the crash handlers leave by exit() on whatever thread crashed, and the other threads still log while
+// the statics of the program are being taken down
+static std::list<std::pair<int, std::string>> &logBuffer = *new std::list<std::pair<int, std::string>>();
+static std::string &logFileName = *new std::string();
+static std::recursive_mutex &logLock = *new std::recursive_mutex();
+std::string getLogFileName() {
+	// a copy made under the lock: the name is changed by setLogFileName() while other threads log
+	std::lock_guard<std::recursive_mutex> logGuard(logLock);
+	return logFileName;
+}
 
 /**
  * Setting the log file name and setting the effective reportingLevel

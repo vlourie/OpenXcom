@@ -174,6 +174,11 @@ struct Functions
 	/// again (Atlas::grow); null where the driver has not got it.
 	void (APIENTRY *CopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint,
 		GLsizei, GLsizei, GLsizei) = nullptr;
+	/// glDebugMessageCallback and glDebugMessageControl (OpenGL 4.3, GL_KHR_debug): the driver tells of its errors
+	/// itself, so no glGetError is needed in the frame (R-519); null where the driver has not got them.
+	void (APIENTRY *DebugMessageCallback)(void (APIENTRY *)(GLenum, GLenum, GLuint, GLenum, GLsizei, const char *, const void *),
+		const void *) = nullptr;
+	void (APIENTRY *DebugMessageControl)(GLenum, GLenum, GLenum, GLsizei, const GLuint *, GLboolean) = nullptr;
 };
 
 /// The functions, loaded by HdGpu::setup.
