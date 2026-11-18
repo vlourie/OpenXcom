@@ -990,9 +990,20 @@ std::pair<std::string, std::string> timeToString(time_t time)
 	GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &st, NULL, localTime, 25);
 #endif*/
 
-	struct tm *timeinfo = localtime(&(time));
-	strftime(localDate, 25, "%Y-%m-%d", timeinfo);
-	strftime(localTime, 25, "%H:%M", timeinfo);
+	// a file time the C library cannot convert (before 1970 on Windows, a broken stamp) gives no date, not a crash;
+	// the buffer is our own: localtime() shares one with every other caller
+	struct tm timeinfo {};
+#ifdef _WIN32
+	const bool known = localtime_s(&timeinfo, &time) == 0;
+#else
+	const bool known = localtime_r(&time, &timeinfo) != nullptr;
+#endif
+	if (!known)
+	{
+		return std::make_pair(std::string(), std::string());
+	}
+	strftime(localDate, 25, "%Y-%m-%d", &timeinfo);
+	strftime(localTime, 25, "%H:%M", &timeinfo);
 
 	return std::make_pair(localDate, localTime);
 }

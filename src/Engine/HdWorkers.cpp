@@ -314,7 +314,12 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn, int tries)
 		++cost.batches;
 		cost.woken += want;
 		cost.workNs += _workNs;
-		reportStats();
+		// the report allocates and logs: its failure must not leave run() nor cancel the retry of the failed jobs below
+		try
+		{
+			reportStats();
+		}
+		catch (...) {}
 	}
 	if (_failed == 0)
 	{
