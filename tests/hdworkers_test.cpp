@@ -19,6 +19,20 @@ using OpenXcom::HdWorkers;
 // 1 - the next operator new of this thread throws std::bad_alloc, and the counter falls to 0.
 static thread_local int refuseNew = 0;
 
+// The thread sanitizer has its own operator new, and a second one does not link: there the refusal of memory is
+// not played (noMemoryForTheNote runs under gcc and under ASan + UBSan).
+#if defined(__SANITIZE_THREAD__)
+#define OWN_NEW 0
+#elif defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+#define OWN_NEW 0
+#endif
+#endif
+#ifndef OWN_NEW
+#define OWN_NEW 1
+#endif
+
+#if OWN_NEW
 void *operator new(std::size_t size)
 {
 	if (refuseNew > 0 && --refuseNew == 0)
@@ -41,6 +55,7 @@ void operator delete(void *p, std::size_t) noexcept
 {
 	std::free(p);
 }
+#endif
 
 namespace
 {
@@ -267,6 +282,11 @@ void twoThreadsAtOnce()
 /// must still run whole, and no exception may leave run() (AUDIT-04 2).
 void noMemoryForTheNote()
 {
+	if (!OWN_NEW)
+	{
+		std::printf("no memory for the note: not played under the thread sanitizer\n");
+		return;
+	}
 	HdWorkers &pool = HdWorkers::instance();
 	if (pool.threads() < 2)
 	{
