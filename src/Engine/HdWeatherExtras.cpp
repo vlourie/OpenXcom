@@ -594,7 +594,7 @@ namespace
 				}
 			}
 			p.toFrame(bank[f]);
-		});
+		}, HdWorkers::ONCE); // the set is baked once for the whole game
 		Log(LOG_INFO) << "HD weather: " << (big ? "tornado" : "dust devil") << " frames x" << k << " (" << L.frames << ", " << W << "x" << H
 			<< ") baked in " << (SDL_GetTicks() - started) << " ms";
 		std::lock_guard<std::mutex> guard(twisterLock);

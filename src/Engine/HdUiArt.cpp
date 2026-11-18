@@ -723,10 +723,18 @@ bool composeFrame(const Art *art)
 const HdFrame &frame(const Art *art)
 {
 	art->lru = ++clock;
+	if (art->holed)
+	{
+		// read or composed while a batch of the pool was left not whole: shown as it came out then, made anew now
+		art->holed = false;
+		loadedBytes -= art->frame.pixels.size() * 4;
+		art->frame = HdFrame();
+	}
 	if (art->bad || !art->frame.pixels.empty() || (art->path.empty() && art->layers.empty()))
 	{
 		return art->frame;
 	}
+	const unsigned holes = HdWorkers::holes();
 	// room for it: drop the pictures drawn longest ago (never the ones given as frames)
 	const size_t need = (size_t)art->baseWidth * art->scale * art->baseHeight * art->scale * 4;
 	while (loadedBytes + need > budget)
@@ -750,6 +758,7 @@ const HdFrame &frame(const Art *art)
 		{
 			art->frame.buildSpans();
 			loadedBytes += art->frame.pixels.size() * 4;
+			art->holed = holes != HdWorkers::holes();
 			// measurement: every layer's picture is read (when not held already) and blended on the main thread
 			const Uint32 loadMs = SDL_GetTicks() - loadStart;
 			if (loadMs >= 20)
@@ -777,6 +786,7 @@ const HdFrame &frame(const Art *art)
 	{
 		art->frame.buildSpans();
 		loadedBytes += art->frame.pixels.size() * 4;
+		art->holed = holes != HdWorkers::holes();
 		// measurement: a picture is read and unpacked the moment it is first drawn, on the main
 		// thread. A big one is a visible freeze, and nothing in the log said so before
 		const Uint32 loadMs = SDL_GetTicks() - loadStart;
@@ -1010,7 +1020,9 @@ const HdFrame *preparedFrame(const Art *art, int k, const SDL_Color *colors)
 	p->art = art;
 	p->key = key;
 	p->lru = ++preparedClock;
-	if (!prepare(art, k, colors, p->frame))
+	const unsigned holes = HdWorkers::holes();
+	// a batch of the pool left not whole: not kept (as a picture that cannot be prepared), asked for again at the next frame
+	if (!prepare(art, k, colors, p->frame) || holes != HdWorkers::holes())
 	{
 		return nullptr;
 	}

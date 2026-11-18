@@ -51,6 +51,8 @@ size_t HdWorkers::cacheBudget(size_t bytes)
 #endif
 }
 
+std::atomic<unsigned> HdWorkers::_holes { 0 };
+
 HdWorkers &HdWorkers::instance()
 {
 	static HdWorkers pool;
@@ -191,7 +193,7 @@ void HdWorkers::workerLoop()
 	}
 }
 
-bool HdWorkers::run(int jobs, const std::function<void(int)> &fn)
+bool HdWorkers::run(int jobs, const std::function<void(int)> &fn, int tries)
 {
 	if (jobs <= 0)
 	{
@@ -202,12 +204,15 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 	bool idle = false;
 	if (_threads.empty() || jobs == 1 || !_busy.compare_exchange_strong(idle, true))
 	{
-		bool whole = true;
+		std::vector<int> failed;
 		for (int i = 0; i < jobs; ++i)
 		{
-			whole = (runJob(fn, i) || runJob(fn, i)) && whole; // a job that threw: once more (see run in the header)
+			if (!runJob(fn, i))
+			{
+				failed.push_back(i);
+			}
 		}
-		return whole;
+		return failed.empty() || again(fn, failed, tries);
 	}
 	struct Release { std::atomic<bool> &busy; ~Release() { busy = false; } } release{ _busy };
 	// only as many workers are woken as there are jobs besides the caller's: waking the whole pool for the
@@ -272,14 +277,32 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 	{
 		return true;
 	}
-	// the jobs that threw, once more and one at a time: the workers are done with the batch, the list is ours
-	int again = 0;
-	for (int i : _failedJobs)
+	// the workers are done with the batch, the list is ours
+	return again(fn, _failedJobs, tries);
+}
+
+/**
+ * The jobs that threw, once more and one at a time on the caller's thread; a batch that is made once and never
+ * again (tries > 1: a set scaled as it is loaded) gets more tries, a little apart - memory short for a moment.
+ * @return Did every job end well.
+ */
+bool HdWorkers::again(const std::function<void(int)> &fn, std::vector<int> &failed, int tries)
+{
+	const size_t first = failed.size();
+	for (int t = 0; t < std::max(1, tries) && !failed.empty(); ++t)
 	{
-		again += !runJob(fn, i);
+		if (t > 0)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
+		}
+		failed.erase(std::remove_if(failed.begin(), failed.end(), [&](int i) { return runJob(fn, i); }), failed.end());
 	}
-	Log(again ? LOG_ERROR : LOG_WARNING) << "HD render: " << _failedJobs.size() << " failed job(s) run again, " << again << " failed again";
-	return again == 0;
+	Log(failed.empty() ? LOG_WARNING : LOG_ERROR) << "HD render: " << first << " failed job(s) run again, " << failed.size() << " failed again";
+	if (!failed.empty())
+	{
+		++_holes;
+	}
+	return failed.empty();
 }
 
 void HdWorkers::reportStats()

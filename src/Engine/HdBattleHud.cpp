@@ -23,6 +23,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include "HdFont.h"
 #include "HdSprites.h"
 #include "HdUi.h"
@@ -782,6 +783,7 @@ struct Raster
 	int w = 0, h = 0;
 	std::vector<Uint8> cov;
 	std::unordered_map<Uint32, std::vector<Uint32>> colored;
+	bool whole = true; ///< false: a batch of the pool was left not whole - made anew when asked for next
 };
 
 int cacheScale = 0;
@@ -799,8 +801,9 @@ const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, float shrink =
 	const bool drawn = drawnSigns();
 	const Uint64 key = ((Uint64)drawn << 51) | ((Uint64)cast << 50) | ((Uint64)std::lround(shrink * 100.0f) << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	auto found = cache.find(key);
-	if (found != cache.end()) return found->second;
+	if (found != cache.end() && found->second.whole) return found->second;
 	Raster &r = cache[key];
+	r.colored.clear();
 	r.w = w * k;
 	r.h = h * k;
 	r.cov.assign((size_t)r.w * r.h, 0);
@@ -840,7 +843,7 @@ const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, float shrink =
 	};
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(r.h / 8, pool.threads() * 2));
-	pool.run(jobs, [&](int job) { rows((int)((long long)r.h * job / jobs), (int)((long long)r.h * (job + 1) / jobs)); });
+	r.whole = pool.run(jobs, [&](int job) { rows((int)((long long)r.h * job / jobs), (int)((long long)r.h * (job + 1) / jobs)); });
 	return r;
 }
 
@@ -1155,6 +1158,10 @@ std::vector<float> softCover(const Raster &pic, int rb)
 
 int metalScale = 0, metalTheme = -1;
 std::unordered_map<Uint64, std::vector<Uint32>> metalCache;
+// the pictures being made (asked for and not found: the caller makes one and stores it) with the pool's count of
+// batches left not whole at that moment, and those stored with a hole: such a one is made anew when asked for next
+std::vector<std::pair<Uint64, unsigned>> metalMaking;
+std::unordered_set<Uint64> metalHoled;
 
 std::vector<Uint32> *metalCached(Uint64 key, int k)
 {
@@ -1162,11 +1169,32 @@ std::vector<Uint32> *metalCached(Uint64 key, int k)
 	if (k != metalScale || themeNow != metalTheme)
 	{
 		metalCache.clear();
+		metalMaking.clear();
+		metalHoled.clear();
 		metalScale = k;
 		metalTheme = themeNow;
 	}
+	for (size_t i = metalMaking.size(); i-- > 0;)
+	{
+		if (metalCache.count(metalMaking[i].first))
+		{
+			if (metalMaking[i].second != HdWorkers::holes())
+			{
+				metalHoled.insert(metalMaking[i].first);
+			}
+			metalMaking.erase(metalMaking.begin() + i);
+		}
+	}
 	auto found = metalCache.find(key);
-	return found != metalCache.end() ? &found->second : nullptr;
+	if (found != metalCache.end() && !metalHoled.erase(key))
+	{
+		return &found->second;
+	}
+	if (metalMaking.size() < 64)
+	{
+		metalMaking.emplace_back(key, HdWorkers::holes());
+	}
+	return nullptr;
 }
 
 /// The light in a key that is on without a colour of its own (the unit kneels).
@@ -1298,10 +1326,13 @@ const Raster &halo(HdBattleHud::Icon icon, int w, int h, int k, float shrink)
 	}
 	const Uint64 key = ((Uint64)drawnSigns() << 51) | ((Uint64)std::lround(shrink * 100.0f) << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	auto found = halos.find(key);
-	if (found != halos.end()) return found->second;
+	if (found != halos.end() && found->second.whole) return found->second;
+	const unsigned holes = HdWorkers::holes();
 	const Raster &pic = raster(icon, w, h, k, shrink, true);
 	const std::vector<float> soft = softCover(pic, std::max(1, (int)std::lround(0.7f * k)));
 	Raster &r = halos[key];
+	r.colored.clear();
+	r.whole = holes == HdWorkers::holes(); // made of a pictogram with holes: made anew when asked for next
 	r.w = pic.w;
 	r.h = pic.h;
 	r.cov.resize(soft.size());
@@ -2452,11 +2483,13 @@ void HdBattleHud::drawFace(int x, int y, int w, int h, bool pressed, bool over, 
 	const int gloss = std::min(std::max(Options::oxceHdButtonGloss, 0), 100);
 	// the casts go with the colours (the metal's shades are read here, on the main thread) and the scale
 	const int themeNow = windowThemeKey();
-	if (k != faceScale || faceCasts > 256 || faceSets.size() > 8)
+	static bool holed = false; // a cast was made while a batch of the pool was left not whole: all are made anew
+	if (k != faceScale || faceCasts > 256 || faceSets.size() > 8 || holed)
 	{
 		faceSets.clear();
 		faceCasts = 0;
 		faceScale = k;
+		holed = false;
 	}
 	auto set = faceSets.find(themeNow);
 	if (set == faceSets.end())
@@ -2471,7 +2504,9 @@ void HdBattleHud::drawFace(int x, int y, int w, int h, bool pressed, bool over, 
 	auto found = faces.cache.find(key);
 	if (found == faces.cache.end())
 	{
+		const unsigned holes = HdWorkers::holes();
 		found = faces.cache.emplace(key, castFace(W, H, (float)k, face, shape, (float)gloss / 100.0f, pressed, over, faces.lut)).first;
+		holed = holed || holes != HdWorkers::holes();
 		++faceCasts;
 	}
 	HdUi::instance().drawImage(found->second.data(), W, H, x * k, y * k);

@@ -623,7 +623,9 @@ const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k
 		return &e->frame;
 	}
 	HdFrame frame;
-	if (!HdUiArt::prepare(art, k, colors, frame))
+	const unsigned holes = HdWorkers::holes();
+	// a batch of the pool left not whole: not kept (as a picture that cannot be prepared), asked for again at the next frame
+	if (!HdUiArt::prepare(art, k, colors, frame) || holes != HdWorkers::holes())
 	{
 		return nullptr;
 	}
@@ -845,8 +847,9 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
 				// branch below, which made the log name the wrong culprit
 				const auto cropStart = std::chrono::steady_clock::now();
+				const unsigned holes = HdWorkers::holes();
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
-				if (!art)
+				if (!art && holes == HdWorkers::holes()) // a search left not whole is not remembered as a miss
 				{
 					if (_cropMisses.size() >= 65536) _cropMisses.clear();
 					_cropMisses.insert(cropKey);

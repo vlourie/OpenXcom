@@ -984,7 +984,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		{
 			held.acc.assign((size_t)w * rows * 3, 0.0f);
 			held.glow.assign((size_t)w * rows * 3, 0.0f);
-			HdWorkers::instance().run(bands, [&](int band)
+			const bool whole = HdWorkers::instance().run(bands, [&](int band)
 			{
 				const int y0 = ay0 + band * BAND, y1 = std::min(ay1, y0 + BAND);
 				for (int y = y0; y < y1; ++y)
@@ -1004,7 +1004,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 				}
 			});
 			held.key = key;
-			held.w = w;
+			held.w = whole ? w : 0; // not whole: made anew at the next frame
 			held.h = rows;
 			rebuilt = true;
 		}

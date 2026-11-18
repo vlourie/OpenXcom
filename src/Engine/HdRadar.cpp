@@ -563,7 +563,10 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources, 
 	const int n = _rowB - _rowA;
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(n / 8, pool.threads() * 4));
-	pool.run(jobs, [&](int job) { rows(_rowA + (int)((long long)n * job / jobs), _rowA + (int)((long long)n * (job + 1) / jobs)); });
+	if (!pool.run(jobs, [&](int job) { rows(_rowA + (int)((long long)n * job / jobs), _rowA + (int)((long long)n * (job + 1) / jobs)); }))
+	{
+		_distKey.clear(); // not whole: made anew at the next frame
+	}
 }
 
 void HdRadar::draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours, CraftLook look)

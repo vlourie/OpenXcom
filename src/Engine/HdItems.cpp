@@ -359,6 +359,7 @@ std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int 
 		uses.splice(uses.begin(), uses, got->second.use);
 		return got->second.frame;
 	}
+	const unsigned holes = HdWorkers::holes();
 	HdFrame frame;
 	if (!HdSprites::loadPng(path, frame) || frame.empty())
 	{
@@ -413,6 +414,10 @@ std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int 
 	if (!frame.empty())
 	{
 		frame.buildSpans();
+	}
+	if (holes != HdWorkers::holes())
+	{
+		return nullptr; // a batch of the pool was left not whole: the classic frame now, the picture is read anew when asked for
 	}
 	uses.push_front(key);
 	Ready &stored = ready[key];

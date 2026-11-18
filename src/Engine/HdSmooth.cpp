@@ -272,7 +272,7 @@ bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, co
 			const int ya = (int)((long long)bh * job / jobs);
 			const int yb = (int)((long long)bh * (job + 1) / jobs);
 			xbrz::scale((size_t)k, base.data(), out.pixels.data(), bw, bh, xbrz::ARGB, xbrz::ScalerCfg(), ya, yb);
-		});
+		}, HdWorkers::ONCE); // the callers keep the frame (the sprites of a battle, the interface's mirror)
 	}
 	else
 	{
@@ -358,7 +358,7 @@ bool HdSmooth::smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previou
 	}
 	// the pieces write rows of their own tiles only, so they go over the pool side by side
 	const int w = bw * k;
-	HdWorkers::instance().run((int)pieces.size(), [&](int i)
+	if (!HdWorkers::instance().run((int)pieces.size(), [&](int i)
 	{
 		const Piece &p = pieces[i];
 		HdFrame part;
@@ -367,7 +367,10 @@ bool HdSmooth::smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previou
 		{
 			memcpy(&frame.pixels[(size_t)y * w + (size_t)p.ix * k], &part.pixels[(size_t)(y - p.oy * k) * part.width + (size_t)(p.ix - p.ox) * k], (size_t)p.iw * k * sizeof(Uint32));
 		}
-	});
+	}))
+	{
+		return false; // a piece was left not smoothed: the caller smooths the whole surface (as when no patch is possible)
+	}
 	if (redone) *redone = count;
 	if (rects)
 	{

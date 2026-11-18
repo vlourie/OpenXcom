@@ -230,6 +230,7 @@ const Prepared *prepare(int theme, int W, int H, int k)
 	prepared.emplace_front();
 	Prepared &p = prepared.front();
 	p.theme = theme; p.w = W; p.h = H; p.k = k;
+	const unsigned holes = HdWorkers::holes();
 	p.sharp.resize((size_t)W * H);
 	// the picture is a backdrop: its own colours a little muted, its light well below the text's, darker
 	// to the corners and in the frame's shadow along the edge
@@ -267,6 +268,10 @@ const Prepared *prepare(int theme, int W, int H, int k)
 		}
 	});
 	Log(LOG_INFO) << "HD screens: " << pictures[theme] << " prepared at " << W << "x" << H << " in " << (SDL_GetTicks() - t0) << " ms (read " << (tLoad - t0) << ", fit " << (tFit - tLoad) << ")";
+	if (holes != HdWorkers::holes())
+	{
+		p.k = 0; // a batch of the pool was left not whole: shown now, not found again - prepared anew
+	}
 	return &p;
 }
 
@@ -425,6 +430,7 @@ bool drawBackdrop(const void *owner, const std::string &interfaceName, int x, in
 		p->composed.resize((size_t)W * H);
 		p->veil = v.hash;
 		const float inv = 1.0f / k;
+		const unsigned holes = HdWorkers::holes();
 		bands(H, [&](int a, int b)
 		{
 			for (int ly = a; ly < b; ++ly)
@@ -455,6 +461,10 @@ bool drawBackdrop(const void *owner, const std::string &interfaceName, int x, in
 				}
 			}
 		});
+		if (holes != HdWorkers::holes())
+		{
+			p->veil = ~v.hash; // a batch of the pool was left not whole: mixed anew at the next frame
+		}
 	}
 	// opaque: a plain copy of the rows under the clip
 	const int X = x * k, Y = y * k;
@@ -575,10 +585,15 @@ void drawFrame(int x, int y, int w, int h, int inset, bool thin, Uint32 accent)
 						out[(size_t)yy * sw + xx] = shade(sx + xx, sy + yy);
 			});
 		};
+		const unsigned holes = HdWorkers::holes();
 		strip(f->top, 0, 0, W, B);
 		strip(f->bottom, 0, H - B, W, B);
 		strip(f->left, 0, B, B, H - 2 * B);
 		strip(f->right, W - B, B, B, H - 2 * B);
+		if (holes != HdWorkers::holes())
+		{
+			f->k = 0; // a batch of the pool was left not whole: drawn now, not found again - made anew
+		}
 	}
 	const int X = x * k, Y = y * k;
 	ui.drawImage(f->top.data(), W, B, X, Y);

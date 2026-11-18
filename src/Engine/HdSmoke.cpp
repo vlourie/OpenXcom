@@ -189,7 +189,7 @@ const HdFrame &frame(int k, int kind, int shape, int life)
 		bank.reset(new Bank);
 		const int count = KINDS * SHAPES * LIFE, S = SIDE * k;
 		bank->frames.resize(count);
-		HdWorkers::instance().run(count, [&](int i)
+		const bool whole = HdWorkers::instance().run(count, [&](int i)
 		{
 			HdFrame &f = bank->frames[i];
 			f.width = S;
@@ -198,7 +198,14 @@ const HdFrame &frame(int k, int kind, int shape, int life)
 			f.pixels.assign((size_t)S * S, 0);
 			bake(k, i / (SHAPES * LIFE), i / LIFE % SHAPES, i % LIFE, f.pixels.data());
 			f.buildSpans();
-		});
+		}, HdWorkers::ONCE); // the bank is baked once for the whole game
+		for (HdFrame &f : bank->frames)
+		{
+			if (!whole && (int)f.rows.size() != f.height)
+			{
+				f = HdFrame(); // left half made (its rows were not counted): an empty frame, nothing is drawn of it
+			}
+		}
 		bakedMs += (int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
 	}
 	return bank->frames[(kind * SHAPES + shape) * LIFE + life];

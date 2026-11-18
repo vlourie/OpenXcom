@@ -1241,15 +1241,16 @@ void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colo
 	}
 	if (!kept)
 	{
+		bool whole = true;
 		if (jobs > 1)
 		{
-			HdWorkers::instance().run(jobs, [&](int job) { rows(band(job), band(job + 1), job); });
+			whole = HdWorkers::instance().run(jobs, [&](int job) { rows(band(job), band(job + 1), job); });
 		}
 		else
 		{
 			rows(y0, y1, 0);
 		}
-		if (onCard && key)
+		if (onCard && key && whole) // not whole: not kept, found anew at the next frame
 		{
 			if (_cover.size() >= 16)
 			{

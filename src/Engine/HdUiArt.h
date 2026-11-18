@@ -60,6 +60,7 @@ namespace HdUiArt
 		Uint64 hash = 0;                  ///< HdUiArt::hashPixels of the classic image
 		mutable bool checked = false;     ///< the picture was compared with the image it replaces
 		mutable bool bad = false;         ///< it turned out to be a picture of something else (not used)
+		mutable bool holed = false;       ///< its frame was made while a batch of the pool was left not whole: made anew when asked for next
 		std::vector<Uint8> base;          ///< the classic image's pixels (baseWidth * baseHeight)
 		std::vector<SDL_Color> palette;   ///< the reference palette (empty: no re-tinting)
 		std::vector<const Art*> layers;   ///< a composed picture: made from these when first drawn (see composeLayers)

@@ -266,7 +266,7 @@ const Bank &bankOf(int k)
 				bank->dx[i * 2 + m] = m ? W - x1 : x0;
 				bank->dy[i * 2 + m] = y0;
 			}
-		});
+		}, HdWorkers::ONCE); // the bank is baked once for the whole game
 		bank->left.assign(SHAPES * SIZES * 2, 0);
 		bank->right.assign(SHAPES * SIZES * 2, 0);
 		for (int i = 0; i < count * 2; ++i)

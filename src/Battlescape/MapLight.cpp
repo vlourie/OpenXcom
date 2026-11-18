@@ -392,11 +392,15 @@ void Map::hdAddFlashLit(const Position &voxel, double area, const double rgb[3])
 	sight.size = Position(hi.x - lo.x + 1, hi.y - lo.y + 1, hi.z - lo.z + 1);
 	sight.bits.assign((size_t)sight.size.x * sight.size.y * sight.size.z, 0);
 	const int cells = (int)sight.bits.size();
-	HdWorkers::instance().run(cells, [&](int i)
+	if (!HdWorkers::instance().run(cells, [&](int i)
 	{
 		const Position at(lo.x + i % sight.size.x, lo.y + (i / sight.size.x) % sight.size.y, lo.z + i / (sight.size.x * sight.size.y));
 		sight.bits[i] = hdFlashNodes(voxel, at);
-	});
+	}))
+	{
+		// not whole: forgotten (the flash lights nothing this frame) and counted anew at the next one
+		_hdFlashSight.erase(std::make_tuple(voxel.x, voxel.y, voxel.z));
+	}
 }
 
 /**

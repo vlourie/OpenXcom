@@ -77,7 +77,7 @@ void HdFrame::buildSpans()
 		solid[y].begin = (Uint16)bestBegin;
 		solid[y].end = (Uint16)bestEnd;
 	}
-	});
+	}, HdWorkers::ONCE); // the frame is kept by whoever made it: its rows must be whole
 }
 
 namespace HdSprites
@@ -930,7 +930,7 @@ int preload(const SurfaceSet *surfaceSet)
 		}
 	}
 	std::vector<HdFrame> frames(todo.size());
-	std::vector<char> ok(todo.size(), 0);
+	std::vector<char> ok(todo.size(), -1); // -1: the job did not end (it threw) - the frame is left to be read when asked for
 	HdWorkers::instance().run((int)todo.size(), [&](int i)
 	{
 		ok[i] = !todo[i]->failed && decodeShown(*todo[i], blobs[i], frames[i]);
@@ -938,7 +938,7 @@ int preload(const SurfaceSet *surfaceSet)
 	int loaded = 0;
 	for (size_t i = 0; i < todo.size(); ++i)
 	{
-		if (todo[i]->failed)
+		if (todo[i]->failed || ok[i] < 0)
 		{
 			continue; // could not be opened (already told)
 		}
@@ -1231,7 +1231,7 @@ size_t scanPictures(const std::vector<const SurfaceSet*> &sets, const std::funct
 			{
 				fn(first + i, *item.classic, frames[i]);
 			}
-		});
+		}, HdWorkers::ONCE); // what fn gathers is kept for the battle (the palette shift)
 	}
 	return items.size();
 }

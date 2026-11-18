@@ -42,6 +42,7 @@
 #include "../Engine/HdSmooth.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/HdUiArt.h"
+#include "../Engine/HdWorkers.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Screen.h"
 #include "../Savegame/GameTime.h"
@@ -1427,7 +1428,12 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 		}
 	}
 	const Uint32 t0 = SDL_GetTicks();
+	const unsigned holes = HdWorkers::holes();
 	HdBaseScene::bake(view, rock, empty, waters);
+	if (holes != HdWorkers::holes())
+	{
+		made.key.clear(); // a batch of the pool was left not whole: baked anew at the next frame
+	}
 	Log(LOG_INFO) << "HdBaseScene: the living base baked " << view.w << "x" << view.h << " in " << SDL_GetTicks() - t0
 		<< " ms, " << view.waters.size() << " waters, " << view.spins.size() << " spins, " << view.flows.size() << " flows";
 	return &made.view;

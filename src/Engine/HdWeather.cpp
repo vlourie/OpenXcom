@@ -498,11 +498,18 @@ namespace
 			bank.reset(new FlakeBank);
 			FlakeBank &b = *bank;
 			b.frames.resize((size_t)FLAKE_SIZES * FLAKE_KINDS);
-			HdWorkers::instance().run(FLAKE_SIZES * FLAKE_KINDS, [&](int i)
+			const bool whole = HdWorkers::instance().run(FLAKE_SIZES * FLAKE_KINDS, [&](int i)
 			{
 				const int kind = i % FLAKE_KINDS;
 				bakeFlake(k, i / FLAKE_KINDS, kind == 0 ? -1 : (kind - 1) / FLAKE_TURNS, kind == 0 ? 0 : (kind - 1) % FLAKE_TURNS, b.frames[i]);
-			});
+			}, HdWorkers::ONCE); // the bank is baked once for the whole game
+			for (HdFrame &f : b.frames)
+			{
+				if (!whole && (int)f.rows.size() != f.height)
+				{
+					f = HdFrame(); // left half made (its rows were not counted): an empty frame, nothing is drawn of it
+				}
+			}
 		}
 		return *bank;
 	}
@@ -526,10 +533,15 @@ namespace
 			a.flakeLayers = a.look.layers;
 			a.look.layers = 0;
 		}
-		HdWorkers::instance().run(a.look.layers, [&](int i)
+		if (!HdWorkers::instance().run(a.look.layers, [&](int i)
 		{
 			bakeLayer(a.look.layer[i], k, hash(seed, 101 + i), a.tex[i]);
-		});
+		}))
+		{
+			// a texture was left half made: no layers are drawn this frame, and all are baked anew at the next one
+			a.look.layers = 0;
+			a.k = 0;
+		}
 		a.noise = bakeNoise(hash(seed, 77));
 	}
 

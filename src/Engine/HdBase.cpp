@@ -511,6 +511,7 @@ void preload(const std::vector<Want> &want, int scale, bool allPhases)
 		size_t size;
 		HdFrame frame;
 		bool ok;
+		bool done = false;  ///< the job ran to its end
 	};
 	std::vector<Job> jobs;
 	for (const Want &one : want)
@@ -574,6 +575,7 @@ void preload(const std::vector<Want> &want, int scale, bool allPhases)
 		Job &job = jobs[i];
 		if (!job.file.empty())
 		{
+			SDL_free(job.data); // run again after it threw: what it read the first time
 			SDL_RWops *rw = SDL_RWFromFile(job.file.c_str(), "rb");
 			job.data = rw ? SDL_LoadFile_RW(rw, &job.size, SDL_TRUE) : nullptr;
 		}
@@ -582,11 +584,16 @@ void preload(const std::vector<Want> &want, int scale, bool allPhases)
 		{
 			fit(job.frame, job.w, job.h);
 		}
+		job.done = true;
 	});
 	size_t read = 0;
 	for (Job &job : jobs)
 	{
 		SDL_free(job.data);
+		if (!job.done)
+		{
+			continue; // the job threw: nothing is stored (an empty frame would say "no picture"), it is read when asked for
+		}
 		if (!job.ok)
 		{
 			Log(LOG_WARNING) << "HD base: cannot read " << *job.piece.path;

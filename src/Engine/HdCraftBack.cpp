@@ -52,6 +52,8 @@ const float LOW = 0.005f, HIGH = 0.995f, GAMMA = 0.9f, TOP = 0.80f, VIGNETTE = 0
 struct Entry
 {
 	std::unique_ptr<Surface> surface;   ///< nullptr: the craft has no article picture
+	bool holed = false;                 ///< made while a batch of the pool was left not whole: made anew when asked for next
+	std::vector<std::unique_ptr<Surface>> shown; ///< those made before it: a window may still show one
 };
 // by craft type and palette; the surfaces are the keys of their HD pictures in HdUiArt, so one is
 // never freed while HdUiArt can still hold it (only all at once, when HdUiArt is cleared). Never
@@ -247,12 +249,13 @@ Surface *build(Mod *mod, const std::string &craftType, const SDL_Color *palette)
 		HdWorkers &pool = HdWorkers::instance();
 		const int H = WH * s;
 		const int jobs = std::max(1, std::min(H / 32, pool.threads() * 2));
-		pool.run(jobs, [&](int job)
+		const bool whole = pool.run(jobs, [&](int job)
 		{
 			rows(H * job / jobs, H * (job + 1) / jobs);
 		});
 		std::vector<SDL_Color> ref(palette, palette + 256);
-		if (!HdUiArt::add("geocraft_" + craftType, back, std::move(frame), std::move(ref)))
+		// not whole: the classic picture this time (get makes the window's background anew when asked for next)
+		if (!whole || !HdUiArt::add("geocraft_" + craftType, back, std::move(frame), std::move(ref)))
 		{
 			s = 0;
 		}
@@ -278,10 +281,20 @@ const Surface *get(Mod *mod, const std::string &craftType, const SDL_Color *pale
 	}
 	const auto key = std::make_pair(craftType, HdUiArt::foldPalette(1469598103934665603ULL, palette));
 	auto it = cache.find(key);
-	if (it == cache.end())
+	if (it == cache.end() || it->second.holed)
 	{
-		it = cache.emplace(key, Entry()).first;
-		it->second.surface.reset(build(mod, craftType, palette));
+		if (it == cache.end())
+		{
+			it = cache.emplace(key, Entry()).first;
+		}
+		Entry &entry = it->second;
+		if (entry.surface)
+		{
+			entry.shown.push_back(std::move(entry.surface));
+		}
+		const unsigned holes = HdWorkers::holes();
+		entry.surface.reset(build(mod, craftType, palette));
+		entry.holed = holes != HdWorkers::holes();
 	}
 	return it->second.surface.get();
 }

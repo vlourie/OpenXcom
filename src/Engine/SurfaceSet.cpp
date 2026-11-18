@@ -273,7 +273,7 @@ void SurfaceSet::hdScaleInPlace(int scale)
 				HdBlit::upscaleFrame(scaled[i].getSurface(), _frames[i].getSurface(), scale);
 			}
 		}
-	});
+	}, HdWorkers::ONCE); // the set is scaled once for the whole game: a hole here cannot be made good later
 	_frames.swap(scaled);
 	_width *= scale;
 	_height *= scale;

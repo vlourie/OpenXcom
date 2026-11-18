@@ -174,7 +174,7 @@ namespace
 					out[2] = (float)(s[2] / sw);
 				}
 			}
-		});
+		}, HdWorkers::ONCE); // made once for the battle
 	}
 
 	/// One BR sample: the mean colour of a block of a picture and the classic index under it.
@@ -430,7 +430,7 @@ void install(const SDL_Color *shown, const SDL_Color *base, const std::vector<co
 				}
 			}
 		}
-	});
+	}, HdWorkers::ONCE); // made once for the battle
 	terrainKeys.clear();
 	for (const SurfaceSet *set : terrain)
 	{

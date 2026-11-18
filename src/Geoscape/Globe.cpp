@@ -2589,7 +2589,7 @@ void Globe::drawHdEarth(int w, int h, double f)
 	_hdEarth->lock();
 	HdWorkers &pool = HdWorkers::instance();
 	const int jobs = std::max(1, std::min(h / 16, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
+	_hdEarthDirty = !pool.run(jobs, [&](int job) // not whole: drawn anew at the next frame
 	{
 		ShaderMove<Uint8> dest = ShaderSurface(_hdEarth);
 		dest.setDomain(GraphSubset(std::make_pair(0, w), std::make_pair(h * job / jobs, h * (job + 1) / jobs)));

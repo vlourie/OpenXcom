@@ -293,7 +293,10 @@ void makeStamps(int cell)
 			}
 		}
 	}
-	HdWorkers::instance().run((int)figures.size(), [&](int i) { raster(figures[i].ovals, 5, figures[i].ang, figures[i].out); });
+	if (!HdWorkers::instance().run((int)figures.size(), [&](int i) { raster(figures[i].ovals, 5, figures[i].ang, figures[i].out); }))
+	{
+		stamps.cell = -1; // not whole: made anew at the next call
+	}
 }
 
 typedef std::pair<int, int> Cell;

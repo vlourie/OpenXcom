@@ -72,6 +72,8 @@ private:
 	/// Their numbers: each is run once more by the caller when the batch is over (see run).
 	std::vector<int> _failedJobs;
 	std::mutex _failMutex;
+	static std::atomic<unsigned> _holes;
+	bool again(const std::function<void(int)> &fn, std::vector<int> &failed, int tries);
 	/// The work one woken thread must get for its wake to pay (OXCE_HD_POOL_GRAIN_US for tests), nanoseconds.
 	long long _grainNs = 0;
 
@@ -96,7 +98,13 @@ public:
 	/// thread at work, must not leave a hole there for good. So a job must be able to start anew after it threw.
 	/// The answer is false when a job failed twice: what the batch was making is not whole, and a caller that
 	/// keeps it (a cache) must drop it.
-	bool run(int jobs, const std::function<void(int)> &fn);
+	/// tries: how many times the caller runs a failed job again - more than once only where the batch is made
+	/// once and cannot be made anew (ONCE: a set scaled in place as it is loaded, the palette table of a battle).
+	bool run(int jobs, const std::function<void(int)> &fn, int tries = 1);
+	enum { ONCE = 6 };
+	/// How many batches were left not whole so far (run answered false). A cache made of several batches, or
+	/// through helpers that do not pass the answer on, compares the count before and after and drops what it made.
+	static unsigned holes() { return _holes; }
 };
 
 }
