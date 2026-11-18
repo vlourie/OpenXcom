@@ -1,0 +1,1 @@
+﻿Craft window (base - craft): the blinking HD lights of the craft no longer appear before the craft itself - they light up once the window has fully opened (ticket XP-000599).

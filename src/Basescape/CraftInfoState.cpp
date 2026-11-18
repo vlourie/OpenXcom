@@ -679,7 +679,7 @@ void CraftInfoState::blit()
 {
 	State::blit();
 	Screen *screen = Screen::current();
-	if (!_craft || !_sprite->getVisible() || !Options::oxceHdPictures || !Options::oxceHdCraftLights || !screen || !screen->isLayered())
+	if (!_craft || !_sprite->getVisible() || _sprite->getHidden() || !Options::oxceHdPictures || !Options::oxceHdCraftLights || !screen || !screen->isLayered())
 	{
 		return;
 	}

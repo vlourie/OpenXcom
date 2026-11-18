@@ -321,6 +321,8 @@ public:
 	}
 	/// Sets the surface's special hidden flag.
 	void setHidden(bool hidden);
+	/// Gets the surface's special hidden flag (set while a window pops up, State::hideAll).
+	bool getHidden() const { return _hidden; }
 	/// Locks the surface.
 	void lock();
 	/// Unlocks the surface.
