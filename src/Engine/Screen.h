@@ -39,7 +39,7 @@ class Action;
 class Screen
 {
 private:
-	SDL_Surface *_screen;
+	SDL_Surface *_screen = nullptr;       ///< asked "is there a display" by resetDisplay() and allocateWorld() before the first SDL_SetVideoMode
 	int _bpp;
 	int _baseWidth, _baseHeight;
 	double _scaleX, _scaleY;
