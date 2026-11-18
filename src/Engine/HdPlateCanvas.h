@@ -75,6 +75,8 @@ public:
 	/// Takes the fonts and the language of the state; the canvas owns two Text objects for the words.
 	ClassicPlateCanvas(Surface *surface, Font *big, Font *small, Language *lang);
 	~ClassicPlateCanvas();
+	ClassicPlateCanvas(const ClassicPlateCanvas &) = delete; // owns the two Text objects: a copy would delete them twice
+	ClassicPlateCanvas &operator=(const ClassicPlateCanvas &) = delete;
 	/// Starts a new picture on the surface's palette (call before painting).
 	void begin();
 	void fill(float x, float y, float w, float h, Uint32 argb) override;

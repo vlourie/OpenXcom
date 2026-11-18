@@ -47,6 +47,17 @@ namespace HdUiArt
 namespace
 {
 
+/// A part of a picture narrower or lower than this is not looked for: too small to be sure of.
+constexpr int MIN_CROP_SIDE = 8;
+/// The search for a part: not fewer pictures than this to a job, not more jobs than this to a thread.
+constexpr int CROP_PICTURES_PER_JOB = 16, CROP_JOBS_PER_THREAD = 4;
+/// Rows of a picture shared out between the workers: not fewer rows than this to a job, not more jobs than this to a thread.
+constexpr int ROWS_PER_JOB = 64, ROW_JOBS_PER_THREAD = 2;
+/// Fewer rows than this are blended by the caller: the pool would cost more than the rows.
+constexpr int MIN_ROWS_FOR_POOL = 256;
+/// The loading of a picture is noted in the log from this many milliseconds.
+constexpr Uint32 SLOW_LOAD_MS = 20;
+
 struct Key
 {
 	Uint64 hash;
@@ -641,7 +652,7 @@ bool composeFrame(const Art *art)
 		}
 	}
 	HdWorkers &pool = HdWorkers::instance();
-	const int jobs = std::max(1, std::min(H / 64, pool.threads() * 2));
+	const int jobs = std::max(1, std::min(H / ROWS_PER_JOB, pool.threads() * ROW_JOBS_PER_THREAD));
 	const int ox = art->cropX * s, oy = art->cropY * s;
 	for (size_t li = 0; li < art->layers.size(); ++li)
 	{
@@ -756,7 +767,7 @@ const HdFrame &frame(const Art *art)
 			art->holed = !allWhole.ok();
 			// measurement: every layer's picture is read (when not held already) and blended on the main thread
 			const Uint32 loadMs = SDL_GetTicks() - loadStart;
-			if (loadMs >= 20)
+			if (loadMs >= SLOW_LOAD_MS)
 			{
 				Log(LOG_INFO) << "HD picture: " << art->name << " composed of " << art->layers.size() << " layers in "
 					<< loadMs << " ms, " << (loadedBytes >> 20) << " MB held";
@@ -786,7 +797,7 @@ const HdFrame &frame(const Art *art)
 		// thread. A big one is a visible freeze, and nothing in the log said so before
 		const Uint32 loadMs = SDL_GetTicks() - loadStart;
 		const size_t loadBytes = art->frame.pixels.size() * 4;
-		if (loadMs >= 20 || loadBytes >= ((size_t)4 << 20))
+		if (loadMs >= SLOW_LOAD_MS || loadBytes >= ((size_t)4 << 20))
 		{
 			Log(LOG_INFO) << "HD picture: " << art->path << " " << (loadBytes >> 20) << " MB in "
 				<< loadMs << " ms, " << (loadedBytes >> 20) << " MB held";
@@ -837,7 +848,7 @@ const Art *find(const Surface *base)
  */
 const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY, long long newerThan)
 {
-	if (w < 8 || h < 8)
+	if (w < MIN_CROP_SIDE || h < MIN_CROP_SIDE)
 	{
 		return nullptr; // too small to be sure of
 	}
@@ -882,7 +893,7 @@ const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int
 		return false;
 	};
 	HdWorkers &pool = HdWorkers::instance();
-	const int jobs = std::max(1, std::min(count / 16, pool.threads() * 4));
+	const int jobs = std::max(1, std::min(count / CROP_PICTURES_PER_JOB, pool.threads() * CROP_JOBS_PER_THREAD));
 	pool.runCounted(jobs, [&](int job)
 	{
 		for (int i = (int)((long long)count * job / jobs), last = (int)((long long)count * (job + 1) / jobs); i < last && i < best.load(); ++i)
@@ -1124,7 +1135,7 @@ bool prepare(const Art *art, int k, const SDL_Color *colors, HdFrame &out)
 		}
 	};
 	HdWorkers &pool = HdWorkers::instance();
-	const int jobs = std::max(1, std::min(H / 64, pool.threads() * 2));
+	const int jobs = std::max(1, std::min(H / ROWS_PER_JOB, pool.threads() * ROW_JOBS_PER_THREAD));
 	pool.runCounted(jobs, [&](int job)
 	{
 		rows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs));
@@ -1183,13 +1194,13 @@ void blendInto(SDL_Surface *dest, const HdFrame &f, int x, int y, const SDL_Rect
 		}
 	};
 	const int n = y1 - y0;
-	if (n < 256)
+	if (n < MIN_ROWS_FOR_POOL)
 	{
 		rows(y0, y1); // a button's worth: the pool would cost more than the rows
 		return;
 	}
 	HdWorkers &pool = HdWorkers::instance();
-	const int jobs = std::max(1, std::min(n / 64, pool.threads() * 2));
+	const int jobs = std::max(1, std::min(n / ROWS_PER_JOB, pool.threads() * ROW_JOBS_PER_THREAD));
 	pool.runCounted(jobs, [&](int job)
 	{
 		rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));

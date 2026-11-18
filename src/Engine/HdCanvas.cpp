@@ -544,6 +544,8 @@ namespace
 			if (p && *p) file = fopen(p, "w");
 		}
 		~AddressTrace() { if (file) fclose(file); }
+		AddressTrace(const AddressTrace &) = delete; // owns the file: a copy would close it twice
+		AddressTrace &operator=(const AddressTrace &) = delete;
 		void line(const std::string &s)
 		{
 			if (file && seen.insert(s).second)
@@ -2515,7 +2517,7 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 	out->width = base.width;
 	out->height = base.height;
 	out->generated = false;
-	GroundJob job;
+	GroundJob job {}; // the frames past count are copied with the job: zeroed, not left as they were
 	job.out = out;
 	std::copy(frames, frames + count, job.frames);
 	job.count = count;

@@ -31,6 +31,16 @@
 namespace OpenXcom
 {
 
+namespace
+{
+	/// Not more threads than this, whatever the machine has.
+	constexpr int MAX_THREADS = 32;
+	/// Jobs shorter than this together are run by the caller alone, in microseconds (the reason is at its use).
+	constexpr long long DEFAULT_GRAIN_US = 400;
+	/// The statistics of the pool (OXCE_HD_POOL_STATS) go to the log once in this many milliseconds.
+	constexpr long long STATS_PERIOD_MS = 5000;
+}
+
 size_t HdWorkers::cacheBudget(size_t bytes)
 {
 #ifdef _WIN32
@@ -69,12 +79,12 @@ HdWorkers::HdWorkers()
 		const int cores = (int)std::thread::hardware_concurrency();
 		n = cores > 4 ? cores - 2 : cores;
 	}
-	n = std::max(1, std::min(32, n));
+	n = std::max(1, std::min(MAX_THREADS, n));
 	// a wake costs the woken thread some microseconds of processor time to go to sleep again, and 22 of them
 	// for every slice of a frame cost more than the whole battle canvas (docs/research/gpu-render-plan-2026-10-27.md, 2.2)
 	// 400 us: on the 285K the geoscape 0.67 -> 0.45 cores, the base 0.66 -> 0.52, a battle 0.32 -> 0.25, the frame
 	// longer by under half a millisecond (200 us saved less, docs/research/gpu-render-plan-2026-10-27.md, 2.3)
-	long long grainUs = 400;
+	long long grainUs = DEFAULT_GRAIN_US;
 	if (const char *env = getenv("OXCE_HD_POOL_GRAIN_US"))
 	{
 		grainUs = std::max(0LL, atoll(env));
@@ -337,7 +347,7 @@ void HdWorkers::reportStats()
 	{
 		_statsAt = now;
 	}
-	if (now - _statsAt < 5000)
+	if (now - _statsAt < STATS_PERIOD_MS)
 	{
 		return;
 	}
