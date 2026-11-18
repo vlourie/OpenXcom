@@ -151,6 +151,12 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 	int mapsize_x = reader["width"].readVal(_mapsize_x);
 	int mapsize_y = reader["length"].readVal(_mapsize_y);
 	int mapsize_z = reader["height"].readVal(_mapsize_z);
+	// the sizes come from a file: the tile count is their product, and a negative or huge one must not reach initMap()
+	const int maxMapSide = 10000;
+	const long long maxMapTiles = 16000000;
+	if (mapsize_x < 1 || mapsize_y < 1 || mapsize_z < 1 || mapsize_x > maxMapSide || mapsize_y > maxMapSide || mapsize_z > maxMapSide
+		|| (long long)mapsize_x * mapsize_y * mapsize_z > maxMapTiles)
+		throw Exception("Invalid map size in the saved battle");
 	initMap(mapsize_x, mapsize_y, mapsize_z);
 
 	reader.tryRead("missionType", _missionType);
@@ -203,7 +209,10 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 		for (const auto& tile : reader["tiles"].children())
 		{
 			Position pos = tile["position"].readVal<Position>();
-			getTile(pos)->load(tile);
+			Tile *t = getTile(pos);
+			if (!t)
+				throw Exception("Invalid tile position in the saved battle");
+			t->load(tile);
 		}
 	}
 	else
@@ -291,7 +300,12 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 		int id = unitReader["id"].readVal<int>();
 		BattleUnit* unit;
 		if (id < BattleUnit::MAX_SOLDIER_ID) // Unit is linked to a geoscape soldier
-			unit = new BattleUnit(mod, savedGame->getSoldier(id), _depth, nullptr); // look up the matching soldier
+		{
+			Soldier *soldier = savedGame->getSoldier(id); // look up the matching soldier
+			if (!soldier)
+				throw Exception("Soldier " + std::to_string(id) + " of the saved battle is not in any base");
+			unit = new BattleUnit(mod, soldier, _depth, nullptr);
+		}
 		else
 		{
 			std::string type = unitReader["genUnitType"].readVal<std::string>();
@@ -370,7 +384,13 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			{
 				Position pos = itemReader["position"].readVal(Position(-1, -1, -1));
 				if (pos.x != -1)
-					getTile(pos)->addItem(item, item->getSlot());
+				{
+					// a position outside the map: the item stays off the ground, as one saved without a position
+					if (Tile *t = getTile(pos))
+						t->addItem(item, item->getSlot());
+					else
+						Log(LOG_ERROR) << "Item " << item->getId() << " of the saved battle lies outside the map, left without a tile.";
+				}
 			}
 			_itemId = std::max(_itemId, item->getId());
 			itemIndex[item->getId()] = item;

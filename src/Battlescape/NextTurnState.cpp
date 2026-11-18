@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "NextTurnState.h"
+#include <algorithm>
 #include "../Engine/Game.h"
 #include "../Engine/Options.h"
 #include "../Engine/Timer.h"
@@ -570,7 +571,8 @@ void NextTurnState::close()
 		}
 
 		// Autosave every set amount of turns
-		if ((_currentTurn == 1 || _currentTurn % Options::autosaveFrequency == 0) && _battleGame->getSide() == FACTION_PLAYER)
+		// the options screen keeps the frequency in 1..5, the options file does not: zero there must not divide
+		if ((_currentTurn == 1 || _currentTurn % std::max(1, Options::autosaveFrequency) == 0) && _battleGame->getSide() == FACTION_PLAYER)
 		{
 			_state->autosave(_currentTurn);
 		}

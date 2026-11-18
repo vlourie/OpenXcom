@@ -36,6 +36,7 @@
 #include "../Mod/RuleInterface.h"
 #include "StatisticsState.h"
 #include "MainMenuState.h"
+#include "../Engine/RNG.h"
 #include <exception>
 
 namespace OpenXcom
@@ -166,6 +167,9 @@ void LoadGameState::think()
 
 		// Load the game
 		SavedGame *s = new SavedGame();
+		// SavedGame::load() sets the seed from the file at its very start;
+		// a save that is then rejected must not leave its seed to the game that goes on
+		const uint64_t seedBefore = RNG::getSeed();
 		try
 		{
 			s->load(_filename, _game->getMod(), _game->getLanguage());
@@ -212,16 +216,19 @@ void LoadGameState::think()
 		catch (Exception &e)
 		{
 			error(e.what(), s);
+			RNG::setSeed(seedBefore);
 		}
 		catch (YAML::Exception &e)
 		{
 			error(e.what(), s);
+			RNG::setSeed(seedBefore);
 		}
 		catch (std::exception &e)
 		{
 			// a damaged save can also end in a standard exception (a bad size, a missing key):
 			// that is a save that did not load, not a crash of the game
 			error(e.what(), s);
+			RNG::setSeed(seedBefore);
 		}
 		CrossPlatform::flashWindow();
 	}

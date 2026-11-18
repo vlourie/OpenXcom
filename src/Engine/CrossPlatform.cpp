@@ -1052,12 +1052,38 @@ bool copyFile(const std::string& src, const std::string& dest)
 }
 
 /**
+ * Asks the system to put a written and closed file on the disk.
+ * @param filename - the file
+ * @return if the system confirmed it.
+ */
+static bool flushFileToDisk(const std::string& filename)
+{
+#ifdef _WIN32
+	auto nameW = pathToWindows(filename);
+	HANDLE h = CreateFileW(nameW.c_str(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (h == INVALID_HANDLE_VALUE)
+		return false;
+	bool ok = FlushFileBuffers(h) != 0;
+	CloseHandle(h);
+	return ok;
+#else
+	FILE *f = fopen(filename.c_str(), "rb+");
+	if (!f)
+		return false;
+	bool ok = fsync(fileno(f)) == 0;
+	fclose(f);
+	return ok;
+#endif
+}
+
+/**
  * Writes a file.
  * @param filename - where to writeFile
  * @param data - what to writeFile
+ * @param durable - also wait until the system has put the file on the disk (a saved game that replaces the previous one)
  * @return if we did write it.
  */
-bool writeFile(const std::string& filename, const std::string& data) {
+bool writeFile(const std::string& filename, const std::string& data, bool durable) {
 	// Even SDL1 file IO accepts UTF-8 file names on windows.
 	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "w");
 	if (!rwops) {
@@ -1069,7 +1095,15 @@ bool writeFile(const std::string& filename, const std::string& data) {
 		SDL_RWclose(rwops);
 		return false;
 	}
-	SDL_RWclose(rwops);
+	// a write the system put off fails here, not in SDL_RWwrite
+	if (0 != SDL_RWclose(rwops)) {
+		Log(LOG_ERROR) << "Failed to write " << filename << ": " << SDL_GetError();
+		return false;
+	}
+	if (durable && !flushFileToDisk(filename)) {
+		Log(LOG_ERROR) << "Failed to write " << filename << ": the system did not confirm it is on the disk";
+		return false;
+	}
 	return true;
 }
 
@@ -1091,7 +1125,10 @@ bool writeFile(const std::string& filename, const std::vector<unsigned char>& da
 		SDL_RWclose(rwops);
 		return false;
 	}
-	SDL_RWclose(rwops);
+	if (0 != SDL_RWclose(rwops)) {
+		Log(LOG_ERROR) << "Failed to write " << filename << ": " << SDL_GetError();
+		return false;
+	}
 	return true;
 }
 

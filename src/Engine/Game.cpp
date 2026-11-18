@@ -146,6 +146,13 @@ Game::~Game()
 	Sound::stop();
 	Music::stop();
 
+	// screens taken off on the last pass of the loop: free them like run() does, while the save and the mod are still there
+	while (!_deleted.empty())
+	{
+		delete _deleted.back();
+		_deleted.pop_back();
+	}
+
 	for (auto* state : _states)
 	{
 		delete state;

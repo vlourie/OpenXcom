@@ -1005,7 +1005,7 @@ void SavedGame::save(const std::string &filename, Mod *mod, bool portable) const
 		finalString += bodyString.yaml;
 
 	std::string filepath = Options::getMasterUserFolder() + filename;
-	if (!CrossPlatform::writeFile(filepath, finalString))
+	if (!CrossPlatform::writeFile(filepath, finalString, true)) // on the disk before it replaces the previous save
 	{
 		throw Exception("Failed to save " + filepath);
 	}

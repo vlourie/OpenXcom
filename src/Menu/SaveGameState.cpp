@@ -18,6 +18,7 @@
  */
 #include "SaveGameState.h"
 #include <sstream>
+#include <algorithm>
 #include "../Engine/Logger.h"
 #include "../Engine/Game.h"
 #include "../Engine/Exception.h"
@@ -83,7 +84,7 @@ SaveGameState::SaveGameState(OptionsOrigin origin, SaveType type, SDL_Color *pal
 		if (currentTurn > 0 && Options::autosaveSlots >= 2 && Options::autosaveSlots <= 10)
 		{
 			// multi-slot autosave
-			int slotIndex = (currentTurn / Options::autosaveFrequency) % Options::autosaveSlots;
+			int slotIndex = (currentTurn / std::max(1, Options::autosaveFrequency)) % Options::autosaveSlots;
 			_filename = "_" + std::to_string(slotIndex) + SavedGame::AUTOSAVE_BATTLESCAPE;
 		}
 		else

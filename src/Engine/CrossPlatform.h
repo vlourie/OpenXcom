@@ -237,7 +237,7 @@ namespace CrossPlatform
 	/// Copy a file between paths.
 	bool copyFile(const std::string &src, const std::string &dest);
 	/// Writes out a file
-	bool writeFile(const std::string& filename, const std::string& data);
+	bool writeFile(const std::string& filename, const std::string& data, bool durable = false);
 	bool writeFile(const std::string& filename, const std::vector<unsigned char>& data);
 	/// Reads in a file
 	std::unique_ptr<std::istream> readFile(const std::string& filename);
