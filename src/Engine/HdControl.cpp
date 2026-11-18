@@ -135,7 +135,19 @@ void watchBattle(Control &c, Game *g)
 		c.watchSeen.clear();
 		c.watchCount.clear();
 	}
-	const BattlescapeGame *bg = sb ? sb->getBattleGame() : nullptr;
+	// the battle's screen is taken from the stack of states, not from the save: the save has no screen yet while
+	// the battle is generated (a null pointer) and keeps the address of a deleted one in the debriefing
+	const BattlescapeGame *bg = nullptr;
+	if (sb)
+	{
+		for (State *s : g->getStates())
+		{
+			if (BattlescapeState *bs = dynamic_cast<BattlescapeState*>(s))
+			{
+				bg = bs->getBattleGame();
+			}
+		}
+	}
 	if (!bg)
 	{
 		c.watchSeen.clear();
