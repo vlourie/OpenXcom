@@ -2383,7 +2383,8 @@ bool DogfightState::hdOutline() const
 void DogfightState::blit()
 {
 	State::blit();
-	if (!hdOutline() || !_battle->getVisible() || _ufoBlobSize < 0 || _ufo->isDestroyed())
+	// the UFO's front view covers the radar: no outline over it (XP-000595)
+	if (!hdOutline() || !_battle->getVisible() || _preview->getVisible() || _ufoBlobSize < 0 || _ufo->isDestroyed())
 	{
 		return;
 	}
