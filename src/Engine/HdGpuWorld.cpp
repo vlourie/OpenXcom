@@ -896,6 +896,7 @@ struct HdGpuWorld::Impl
 	int snapW = 0, snapH = 0;
 	Uint64 heldKey = 0, frameKey = 0;
 	bool heldValid = false, frameLight = false;
+	bool restFailed = false;          // the card could not make the textures of the light at rest: not tried again
 	/// HdRadar's wash (wash): the picture, its key and size; the key of this frame's (one a frame, as the light).
 	GLuint washTex = 0;
 	int washW = 0, washH = 0;
@@ -1027,6 +1028,7 @@ struct HdGpuWorld::Impl
 		rest[0] = rest[1] = 0;
 		heldW = heldH = 0;
 		heldValid = false;
+		restFailed = false;
 		program = vao = canvasOwn = 0;
 		buffers[0] = buffers[1] = buffers[2] = 0;
 		textures[0] = textures[1] = textures[2] = 0;
@@ -1824,9 +1826,20 @@ bool HdGpuWorld::light(unsigned long long key, const std::vector<float> &acc, co
 	if (!m.heldValid || m.heldKey != key || m.heldW != w || m.heldH != h)
 	{
 		const bool fresh = !m.rest[0] || m.heldW != w || m.heldH != h;
+		if (m.restFailed)
+		{
+			return refuse("no textures for the light of the base");
+		}
 		if (!m.rest[0])
 		{
 			glGenTextures(2, m.rest);
+		}
+		if (fresh)
+		{
+			// the two float textures are made here (and at a new size only): the one place of this path where the
+			// card may answer "no memory". Asked only at the making, never per frame (R-519: a glGet waits for the
+			// driver's whole queue); the errors left by anything before are taken away first
+			while (glGetError() != GL_NO_ERROR) {}
 		}
 		const std::vector<float> *pics[2] = { &acc, &glow };
 		gl.ActiveTexture(GL_TEXTURE0);
@@ -1846,6 +1859,18 @@ bool HdGpuWorld::light(unsigned long long key, const std::vector<float> &acc, co
 			}
 		}
 		glBindTexture(GL_TEXTURE_2D, 0);
+		if (fresh && glGetError() != GL_NO_ERROR)
+		{
+			// not made: nothing of it is kept as the light at rest, and the making is not tried again every frame -
+			// the processor lights the base until the card's world is made anew
+			Log(LOG_ERROR) << "HD GPU world: no textures of " << w << "x" << h << " for the light of the base - the processor lights it";
+			glDeleteTextures(2, m.rest);
+			m.rest[0] = m.rest[1] = 0;
+			m.heldW = m.heldH = 0;
+			m.heldValid = false;
+			m.restFailed = true;
+			return refuse("no textures for the light of the base");
+		}
 		m.heldW = w;
 		m.heldH = h;
 		m.heldKey = key;

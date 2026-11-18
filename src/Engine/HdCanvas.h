@@ -472,6 +472,8 @@ private:
 		TonedKey key;
 		/// TONED_LIT: the corner weights of the frame's size (see lightWeightsFor).
 		const Uint8 *weights;
+		/// Set by the worker after the whole copy is written (makeJobs tells the unmade ones by it).
+		bool done = false;
 	};
 	std::vector<TonedJob> _tonedJobs;
 	/// Fills a reserved shaded copy (on a worker).
@@ -623,6 +625,8 @@ private:
 		/// In the cache under `key` (not a one-off blend of a key clash).
 		bool cached;
 		Uint64 key;
+		/// Set by the worker after the whole blend is written (makeJobs tells the unmade ones by it).
+		bool done = false;
 	};
 	std::vector<GroundJob> _groundJobs;
 	/// HdSprites::generation() when the first waiting job was reserved: the frames they read belong to it.

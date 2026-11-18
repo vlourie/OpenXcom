@@ -3028,14 +3028,73 @@ void Canvas32::makeJobs()
 	}
 	HdDrawTimer timer(HdDrawStats::frame.tonedUs);
 	HdWorkers &pool = HdWorkers::instance();
+	// A frame its worker did not finish (done is set after the last row: a frame of the full size written halfway
+	// is told too, not only one of a wrong size) becomes an empty one of its size, so that this frame's commands
+	// draw nothing of it instead of reading past its rows or showing half a picture
+	auto emptied = [](HdFrame *f)
+	{
+		const size_t rows = (size_t)std::max(0, f->height), px = (size_t)std::max(0, f->width) * rows;
+		try
+		{
+			f->pixels.assign(px, 0);
+			f->rows.assign(rows, HdFrame::Span{0, 0});
+			f->solid.assign(rows, HdFrame::Span{0, 0});
+			return true;
+		}
+		catch (...)
+		{
+			// no memory even for the empty one (the worker fell at its first resize, and it is still so): a frame
+			// of no rows - the commands clip their rows by the frame's height at the drawing
+			f->pixels.clear();
+			f->rows.clear();
+			f->solid.clear();
+			return false;
+		}
+	};
 	bool whole = true;
 	if (!_groundJobs.empty())
 	{
-		whole = pool.run((int)_groundJobs.size(), [&](int i) { makeGround(_groundJobs[i]); }) && whole;
+		whole = pool.run((int)_groundJobs.size(), [&](int i) { makeGround(_groundJobs[i]); _groundJobs[i].done = true; });
+		if (!whole)
+		{
+			// before the shaded copies are made: some of them are copies of these blends
+			for (const GroundJob &job : _groundJobs)
+			{
+				if (!job.done && !emptied(job.out))
+				{
+					// the cache counted this frame by its size when it was reserved and takes it away by its pixels
+					_groundBytes -= job.cached ? (size_t)std::max(0, job.out->width) * std::max(0, job.out->height) * sizeof(Uint32) : 0;
+					job.out->width = job.out->height = 0;
+				}
+			}
+		}
 	}
 	if (!_tonedJobs.empty())
 	{
-		whole = pool.run((int)_tonedJobs.size(), [&](int i) { makeToned(_tonedJobs[i]); }) && whole;
+		const bool toned = pool.run((int)_tonedJobs.size(), [&](int i)
+		{
+			TonedJob &job = _tonedJobs[i];
+			// a source that is not the frame it was reserved from (a blend left with no rows above): no copy
+			if (job.src->width != job.out->width || job.src->height != job.out->height)
+			{
+				return;
+			}
+			makeToned(job);
+			job.done = true;
+		});
+		whole = whole && toned;
+		for (const TonedJob &job : _tonedJobs)
+		{
+			if (!job.done)
+			{
+				whole = false;
+				if (!emptied(job.out))
+				{
+					_tonedBytes -= job.cached ? (size_t)std::max(0, job.out->width) * std::max(0, job.out->height) * sizeof(Uint32) : 0;
+					job.out->width = job.out->height = 0;
+				}
+			}
+		}
 	}
 	if (!whole)
 	{
@@ -3043,26 +3102,6 @@ void Canvas32::makeJobs()
 		// frame's commands still point at the entries, so they are let go at the end of the flush, all of them,
 		// the way they go when the pack's frames change (forgetChanged)
 		Log(LOG_ERROR) << "HD canvas: a ground blend or shaded copy was not made - the cached ones are made anew";
-		// which of them it was is not known: every one of this batch that is not a whole frame becomes an empty
-		// one of its size, so that this frame's commands draw nothing of it instead of reading past its rows
-		auto whole_or_empty = [](HdFrame *f)
-		{
-			const size_t rows = (size_t)std::max(0, f->height), px = (size_t)std::max(0, f->width) * rows;
-			if (f->pixels.size() != px || f->rows.size() != rows || f->solid.size() != rows)
-			{
-				f->pixels.assign(px, 0);
-				f->rows.assign(rows, HdFrame::Span{0, 0});
-				f->solid.assign(rows, HdFrame::Span{0, 0});
-			}
-		};
-		for (const GroundJob &job : _groundJobs)
-		{
-			whole_or_empty(job.out);
-		}
-		for (const TonedJob &job : _tonedJobs)
-		{
-			whole_or_empty(job.out);
-		}
 		_changedAll = true;
 		_tonedStale = true;
 	}

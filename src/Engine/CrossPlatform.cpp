@@ -1637,6 +1637,9 @@ static bool logToFile(const std::string& filename, const std::string& data) {
 static const size_t LOG_BUFFER_LIMIT = 1<<10;
 static std::list<std::pair<int, std::string>> logBuffer;
 static std::string logFileName;
+// The buffer and the name above are one state for every thread that logs (the HD render threads do: a failed job,
+// an unreadable picture); the same thread may come again from the crash handler, hence recursive
+static std::recursive_mutex logLock;
 const std::string& getLogFileName() { return logFileName; }
 
 /**
@@ -1645,6 +1648,8 @@ const std::string& getLogFileName() { return logFileName; }
  * and turns on writing them to the actual log (and flushes the buffer).
  */
 void setLogFileName(const std::string& name) {
+	// under the log's lock: the name is read and the buffer is written by log() on other threads
+	std::lock_guard<std::recursive_mutex> logGuard(logLock);
 	probeLogClose();
 	deleteFile(name);
 	size_t sz = logBuffer.size();
@@ -1691,7 +1696,6 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	// the HD render threads log too (a failed job, an unreadable picture): the buffer below is one list for all of
 	// them, and two lines at once broke the heap (found with injected faults, 17.11); the same thread may come here
 	// again from the crash handler
-	static std::recursive_mutex logLock;
 	std::lock_guard<std::recursive_mutex> logGuard(logLock);
 	if (logBuffer.size() > LOG_BUFFER_LIMIT) { // drop earliest message so as to not eat all memory
 		logBuffer.pop_front();
