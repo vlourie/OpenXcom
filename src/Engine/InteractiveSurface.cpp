@@ -22,7 +22,7 @@
 namespace OpenXcom
 {
 
-const SDLKey InteractiveSurface::SDLK_ANY = (SDLKey)-1; // using an unused keycode to represent an "any key"
+const SDLKey InteractiveSurface::SDLK_ANY = SDLK_LAST; // using an unused keycode to represent an "any key" (inside the enum's range: -1 was not a value of SDLKey)
 
 /**
  * Sets up a blank interactive surface with the specified size and position.
@@ -70,6 +70,11 @@ bool InteractiveSurface::isButtonPressed(Uint8 button) const
 
 void InteractiveSurface::setButtonPressed(Uint8 button, bool pressed)
 {
+	if (button == 0)
+	{
+		// no such button (an event without one): SDL_BUTTON(0) is a shift by -1, which changed nothing here
+		return;
+	}
 	if (pressed)
 	{
 		_buttonsPressed |= SDL_BUTTON(button);

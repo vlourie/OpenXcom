@@ -2881,7 +2881,7 @@ void BattlescapeState::setStateInterval(Uint32 interval)
  * Gets pointer to the game. Some states need this info.
  * @return Pointer to game.
  */
-Game *BattlescapeState::getGame() const
+Game *BattlescapeState::getGame()
 {
 	return _game;
 }

@@ -971,20 +971,22 @@ void Game::popState()
 }
 
 /**
- * Pops every state and deletes them at once, not at the start of the next cycle: for the HD test bench, which
- * replaces the saved game right after (a state's destructor may look into the save it was opened on).
+ * Pops the states above the lowest `keep` and deletes them at once, not at the start of the next cycle: for the
+ * HD test bench, which replaces the saved game right after (a state's destructor may look into the save it was
+ * opened on). The top one goes first, a window before the screen it was opened from.
  * Only between cycles (HdControl::step): no state's code may be running.
+ * @param keep How many states stay at the bottom of the stack.
  */
-void Game::dropStates()
+void Game::dropStates(size_t keep)
 {
-	while (!_states.empty())
+	while (_states.size() > keep)
 	{
 		popState();
 	}
 	while (!_deleted.empty())
 	{
-		delete _deleted.back();
-		_deleted.pop_back();
+		delete _deleted.front();
+		_deleted.pop_front();
 	}
 }
 

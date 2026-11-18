@@ -305,6 +305,22 @@ std::string cmdLoad(Control &c, Game *g, const std::string &name)
 	if (g->getSavedGame())
 	{
 		origin = g->getSavedGame()->getSavedBattle() ? OPT_BATTLESCAPE : OPT_GEOSCAPE;
+		// the player loads from the globe or the battle, never from the base's windows: those are closed first,
+		// while the game they show is alive (the load deletes it before the screens under the loading one, R-535)
+		size_t keep = 0, n = 0;
+		for (const State *s : g->getStates())
+		{
+			++n;
+			const std::string name = className(s);
+			if (name == "GeoscapeState" || name == "BattlescapeState")
+			{
+				keep = n;
+			}
+		}
+		if (keep > 0 && keep < g->getStates().size())
+		{
+			g->dropStates(keep);
+		}
 	}
 	g->pushState(new LoadGameState(origin, name, g->getStates().back()->getPalette()));
 	c.loadPending = true;   // answered when the loading state is gone
@@ -574,9 +590,19 @@ std::string run(Control &c, Game *g, const std::string &line)
 		c.sinceInput = 0;
 		// these start a new game: the screens of the running one go first, while its save is alive (the base
 		// screen's destructor looks its base up in the save and deleted it a second time, R-508)
-		if (g->getSavedGame() && (args == "geoscape" || args == "save" || args == "base"))
+		if (g->getSavedGame() && (args == "geoscape" || args == "save" || args == "base" || args == "ufopaedia"))
 		{
 			g->dropStates();
+		}
+		// the mission generator makes its own game too, and its Cancel goes back to the screen below: out of
+		// a running game it is opened as the player opens it, from the main menu (R-516)
+		if (g->getSavedGame() && (args == "newbattle" || args == "battle"))
+		{
+			g->dropStates();
+			Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
+			g->getScreen()->resetDisplay(false);
+			g->setSavedGame(0);
+			g->setState(new MainMenuState);
 		}
 		return MainMenuState::hdStart(g, args) ? "ok" : "err open: geoscape|base|battle|load|newbattle|options|save|ufopaedia";
 	}

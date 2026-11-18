@@ -247,8 +247,8 @@ public:
 	void handleState();
 	/// Sets the state timer interval.
 	void setStateInterval(Uint32 interval);
-	/// Gets game.
-	Game *getGame() const;
+	/// Gets game (static: SavedBattleGame asks it while the battle is generated, before there is a battle screen).
+	static Game *getGame();
 	/// Gets map.
 	Map *getMap() const;
 	/// Show debug message.
