@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <assert.h>
+#include <climits>
 #include <set>
 #include "TileEngine.h"
 #include "AIModule.h"
@@ -2157,11 +2158,24 @@ int TileEngine::checkVoxelExposure(Position *originVoxel, Tile *tile, BattleUnit
 
 	// vector manipulation to make scan work in view-space
 	Position relPos = targetVoxel - *originVoxel;
-	float normal = unitRadius/sqrt((float)(relPos.x*relPos.x + relPos.y*relPos.y));
-	int relX = floor(((float)relPos.y)*normal+0.5);
-	int relY = floor(((float)-relPos.x)*normal+0.5);
+	int relX, relY, negX, negY;
+	if (relPos.x == 0 && relPos.y == 0)
+	{
+		// origin and target in one column of voxels: the formula below is 0/0, and the cast of its NaN to int is
+		// undefined. Kept as x86 always gave it (INT_MIN, and INT_MIN again when negated): the side rays go where
+		// they went, nothing of the mechanics changes
+		relX = relY = negX = negY = INT_MIN;
+	}
+	else
+	{
+		float normal = unitRadius/sqrt((float)(relPos.x*relPos.x + relPos.y*relPos.y));
+		relX = floor(((float)relPos.y)*normal+0.5);
+		relY = floor(((float)-relPos.x)*normal+0.5);
+		negX = -relX;
+		negY = -relY;
+	}
 
-	int sliceTargets[] = {0,0, relX,relY, -relX,-relY};
+	int sliceTargets[] = {0,0, relX,relY, negX,negY};
 
 	if (!otherUnit->isOut())
 	{
@@ -2258,11 +2272,22 @@ bool TileEngine::canTargetUnit(Position *originVoxel, Tile *tile, Position *scan
 	}
 	// vector manipulation to make scan work in view-space
 	Position relPos = targetVoxel - *originVoxel;
-	float normal = unitRadius/sqrt((float)(relPos.x*relPos.x + relPos.y*relPos.y));
-	int relX = floor(((float)relPos.y)*normal+0.5);
-	int relY = floor(((float)-relPos.x)*normal+0.5);
+	int relX, relY, negX, negY;
+	if (relPos.x == 0 && relPos.y == 0)
+	{
+		// origin and target in one column of voxels: see checkVoxelExposure() - the values x86 always gave
+		relX = relY = negX = negY = INT_MIN;
+	}
+	else
+	{
+		float normal = unitRadius/sqrt((float)(relPos.x*relPos.x + relPos.y*relPos.y));
+		relX = floor(((float)relPos.y)*normal+0.5);
+		relY = floor(((float)-relPos.x)*normal+0.5);
+		negX = -relX;
+		negY = -relY;
+	}
 
-	int sliceTargets[] = {0,0, relX,relY, -relX,-relY, relY,-relX, -relY,relX};
+	int sliceTargets[] = {0,0, relX,relY, negX,negY, relY,negX, negY,relX};
 
 	if (!potentialUnit->isOut())
 	{
