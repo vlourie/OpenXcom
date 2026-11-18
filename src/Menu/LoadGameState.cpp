@@ -35,6 +35,8 @@
 #include "../Engine/Unicode.h"
 #include "../Mod/RuleInterface.h"
 #include "StatisticsState.h"
+#include "MainMenuState.h"
+#include <exception>
 
 namespace OpenXcom
 {
@@ -215,6 +217,12 @@ void LoadGameState::think()
 		{
 			error(e.what(), s);
 		}
+		catch (std::exception &e)
+		{
+			// a damaged save can also end in a standard exception (a bad size, a missing key):
+			// that is a save that did not load, not a crash of the game
+			error(e.what(), s);
+		}
 		CrossPlatform::flashWindow();
 	}
 }
@@ -231,6 +239,15 @@ void LoadGameState::error(const std::string &msg, SavedGame *save)
 	Log(LOG_ERROR) << msg;
 	std::ostringstream error;
 	error << tr("STR_LOAD_UNSUCCESSFUL") << Unicode::TOK_NL_SMALL << msg;
+	if (_game->getSavedGame() == save)
+	{
+		// The failure came after the game was switched to this save (the map resources, the battle screen):
+		// the game before it is gone and the screens put up for this one must not stay without a save.
+		// Back to the main menu, as after abandoning a game; the message goes on top of it.
+		Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
+		_game->getScreen()->resetDisplay(false);
+		_game->setState(new MainMenuState);
+	}
 	if (_origin != OPT_BATTLESCAPE)
 		_game->pushState(new ErrorMessageState(error.str(), _palette, _game->getMod()->getInterface("errorMessages")->getElement("geoscapeColor")->color, "BACK01.SCR", _game->getMod()->getInterface("errorMessages")->getElement("geoscapePalette")->color));
 	else

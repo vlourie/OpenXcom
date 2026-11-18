@@ -110,6 +110,8 @@ private:
 	bool _debugMode, _bughuntMode;
 	bool _aborted;
 	bool _baseCraftInventory = false;
+	/// Read from a save, loadMapResources() not called yet: the map data sets in the list are not this battle's to unload
+	bool _mapDataPending = false;
 	int _itemId;
 	EscapeType _vipEscapeType;
 	int _vipSurvivalPercentage, _vipsSaved, _vipsLost, _vipsWaitingOutside, _vipsSavedScore, _vipsLostScore, _vipsWaitingOutsideScore;

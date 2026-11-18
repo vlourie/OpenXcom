@@ -28,6 +28,7 @@
 #include "HitLog.h"
 #include "Node.h"
 #include "../Mod/MapDataSet.h"
+#include "../Engine/Exception.h"
 #include "../Battlescape/Pathfinding.h"
 #include "../Battlescape/TileEngine.h"
 #include "../Battlescape/BattlescapeState.h"
@@ -98,9 +99,14 @@ SavedBattleGame::~SavedBattleGame()
 #ifdef OXCE_AI_DEV
 	AiCoverMap::reset(this);
 #endif
-	for (auto* mds : _mapDataSets)
+	// The sets belong to the mod and are shared by every battle. A save whose loading failed before
+	// loadMapResources() has only listed them: unloading here would pull the terrain from under the running battle
+	if (!_mapDataPending)
 	{
-		mds->unloadData();
+		for (auto* mds : _mapDataSets)
+		{
+			mds->unloadData();
+		}
 	}
 	for (auto* node : _nodes)
 	{
@@ -141,6 +147,7 @@ SavedBattleGame::~SavedBattleGame()
 void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame* savedGame)
 {
 	const auto& reader = node.useIndex();
+	_mapDataPending = true; // until loadMapResources()
 	int mapsize_x = reader["width"].readVal(_mapsize_x);
 	int mapsize_y = reader["length"].readVal(_mapsize_y);
 	int mapsize_z = reader["height"].readVal(_mapsize_z);
@@ -217,13 +224,25 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 		// load binary tile data!
 		std::vector<char> binTiles = reader["binTiles"].readValBase64();
 
+		// the key and the count come from the file: they must fit the data that is really there
+		// (every field of a record is read inside the record, and every record inside the buffer)
+		const size_t recordBytes = (size_t)serKey.index + 4 * (size_t)serKey._mapDataID + 4 * (size_t)serKey._mapDataSetID
+			+ serKey._smoke + serKey._fire + serKey.boolFields;
+		if (serKey.totalBytes == 0 || serKey.totalBytes < recordBytes || totalTiles > binTiles.size() / serKey.totalBytes)
+		{
+			throw Exception("Invalid tile data in the saved battle");
+		}
+
 		Uint8* ptr = (Uint8*)binTiles.data();
 		Uint8* dataEnd = ptr + totalTiles * serKey.totalBytes;
 
 		while (ptr < dataEnd)
 		{
 			int index = unserializeInt(&ptr, serKey.index);
-			assert(index >= 0 && index < _mapsize_x * _mapsize_z * _mapsize_y);
+			if (index < 0 || (size_t)index >= _tiles.size())
+			{
+				throw Exception("Invalid tile index in the saved battle");
+			}
 			_tiles[index].loadBinary(ptr, serKey); // loadBinary's privileges to advance *r have been revoked
 			ptr += serKey.totalBytes - serKey.index; // r is now incremented strictly by totalBytes in case there are obsolete fields present in the data
 		}
@@ -389,7 +408,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 						item->setAmmoForSlot(slotIndex, itemIndex.at(itemId));
 				}
 			else if (const auto& slotReader = itemReader["ammoItem"])
-				item->setAmmoForSlot(0, itemIndex.at(slotReader.readVal(0)));
+			{
+				int itemId = slotReader.readVal(0);
+				if (itemIndex.count(itemId))
+					item->setAmmoForSlot(0, itemIndex.at(itemId));
+			}
 		}
 	}
 
@@ -511,6 +534,7 @@ void SavedBattleGame::loadMapResources(Mod *mod)
 {
 	// HD render: a loaded battle picks up the HD scale option before its terrain loads
 	mod->refreshHdScale();
+	_mapDataPending = false;
 	for (auto* mds : _mapDataSets)
 	{
 		mds->loadData(mod->getMCDPatch(mds->getName()), true, mod->getHdScale());
@@ -526,6 +550,10 @@ void SavedBattleGame::loadMapResources(Mod *mod)
 			_tiles[i].getMapData(&mdID, &mdsID, tp);
 			if (mdID != -1 && mdsID != -1)
 			{
+				if (mdsID < 0 || (size_t)mdsID >= _mapDataSets.size())
+				{
+					throw Exception("Invalid map data set in the saved battle");
+				}
 				_tiles[i].setMapData(_mapDataSets[mdsID]->getObject(mdID), mdID, mdsID, tp);
 			}
 			else
