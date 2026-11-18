@@ -51,12 +51,13 @@ namespace OpenXcom
 /// BetterAI screen, ROW_BACK goes back from it.
 /// ROW_CUSTOM opens the window of the player's own colour of the battle panel; ROW_FACE the window of the windows' buttons'
 /// look, ROW_INK the window of their letters.
-static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10, ROW_SCREENS = -11, ROW_GUIDE = -12;
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10, ROW_SCREENS = -11, ROW_GUIDE = -13;
 /// ROW_GUIDE opens the guide to this menu on the site in the player's browser.
 static const char *const HD_GUIDE_URL = "https://x-piratez.mywire.org:8443/hd-wiki/index.html";
 /// ROW_SCREENS opens the window of the themes by screen (XP-000484).
 /// ROW_WINCUSTOM opens the window of the player's own colour of the windows' metal (XP-000479).
 /// ROW_MERGED is a row over several options at once (HD_MERGED); its index in the row is the number in that table.
+/// Every marker has its own number: ROW_GUIDE once had -12 too, and every merged row then told the guide's text.
 static const int ROW_MERGED = -12;
 /// What an entry of a group is: an option (its index in the group's settings), a special row (its marker) or a merged row.
 static const int ITEM_OPTION = 0, ITEM_SPECIAL = 1, ITEM_MERGED = 2;

@@ -1,0 +1,1 @@
+﻿HD menu: merged rows show their own hint again (almost every one used to tell about the online guide), the middle mouse button opens their setting window again, and the "HD settings guide" row opens the guide instead of changing another setting.
