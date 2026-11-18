@@ -71,13 +71,20 @@ bool calculateLineHelper(const Position& origin, const Position& target, FuncNew
 	int drift_xy, drift_xz;
 	int cx, cy, cz;
 
+	// The side rays of a target straight above or below the shooter end at INT_MIN (checkVoxelExposure(),
+	// canTargetUnit()): abs(INT_MIN) and "drift - INT_MIN" are undefined for int, and compilers answered differently
+	// (clang -O2 sent the ray along the floor). The arithmetic is made the one x86 gcc always gave - it wraps; for
+	// every other line the numbers are the same as before (tests/vertical_trace_test.cpp holds both).
+	const auto wrapAbs = [](int v) { return v < 0 ? (int)(0u - (unsigned)v) : v; };
+	const auto wrapSub = [](int a, int b) { return (int)((unsigned)a - (unsigned)b); };
+
 	//start and end points
 	x0 = origin.x;	 x1 = target.x;
 	y0 = origin.y;	 y1 = target.y;
 	z0 = origin.z;	 z1 = target.z;
 
 	//'steep' xy Line, make longest delta x plane
-	swap_xy = abs(y1 - y0) > abs(x1 - x0);
+	swap_xy = wrapAbs(wrapSub(y1, y0)) > wrapAbs(wrapSub(x1, x0));
 	if (swap_xy)
 	{
 		std::swap(x0, y0);
@@ -85,7 +92,7 @@ bool calculateLineHelper(const Position& origin, const Position& target, FuncNew
 	}
 
 	//do same for xz
-	swap_xz = abs(z1 - z0) > abs(x1 - x0);
+	swap_xz = wrapAbs(wrapSub(z1, z0)) > wrapAbs(wrapSub(x1, x0));
 	if (swap_xz)
 	{
 		std::swap(x0, z0);
@@ -93,9 +100,9 @@ bool calculateLineHelper(const Position& origin, const Position& target, FuncNew
 	}
 
 	//delta is Length in each plane
-	delta_x = abs(x1 - x0);
-	delta_y = abs(y1 - y0);
-	delta_z = abs(z1 - z0);
+	delta_x = wrapAbs(wrapSub(x1, x0));
+	delta_y = wrapAbs(wrapSub(y1, y0));
+	delta_z = wrapAbs(wrapSub(z1, z0));
 
 	//drift controls when to step in 'shallow' planes
 	//starting value keeps Line centred
@@ -128,8 +135,8 @@ bool calculateLineHelper(const Position& origin, const Position& target, FuncNew
 		if (x == x1) break;
 
 		//update progress in other planes
-		drift_xy = drift_xy - delta_y;
-		drift_xz = drift_xz - delta_z;
+		drift_xy = wrapSub(drift_xy, delta_y);
+		drift_xz = wrapSub(drift_xz, delta_z);
 
 		//step in y plane
 		if (drift_xy < 0)

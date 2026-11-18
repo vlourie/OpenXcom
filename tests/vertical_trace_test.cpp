@@ -4,16 +4,17 @@
 // TileEngine::checkVoxelExposure() and canTargetUnit() send, besides the central ray, side rays to
 // target + (relX, relY). With the shooter and the target in one column of voxels relX and relY are INT_MIN (the
 // value x86 gave for the 0/0 of the formula), so a side ray goes to (x + INT_MIN, y + INT_MIN, z). In
-// calculateLineHelper() that is abs(INT_MIN) and then a signed overflow of the drift: undefined behaviour.
+// calculateLineHelper() that was abs(INT_MIN) and then a signed overflow of the drift: undefined behaviour, and
+// compilers answered differently. The helper's arithmetic wraps now, as x86 gcc always made it; the rays below
+// were recorded BEFORE that fix, so the test holds that the fix moved nothing.
 //
 // The helper is the game's own text: tests/cut_line_helper.cmake cuts it out of src/Battlescape/TileEngine.cpp
 // when the test is built. Only Position is a stand-in here (three numbers; the helper uses nothing else of it).
 //
 //   vertical_trace_test plain    the rays without undefined behaviour (an ordinary line, the central vertical ray):
 //                                must give the recorded answers under every compiler and sanitizer
-//   vertical_trace_test intmin   the side rays: what they answer today, compared with what the game's compiler
-//                                (x86-64 gcc) gave on 18.11.2026. Under the undefined-behaviour sanitizer this
-//                                mode is reported by the sanitizer - that is the finding, see tests/CMakeLists.txt
+//   vertical_trace_test intmin   the side rays, compared with what the game's compiler (x86-64 gcc) gave on
+//                                18.11.2026 before the fix: the same under every compiler and sanitizer
 //   vertical_trace_test print    prints every ray (to record the answers anew)
 #include <algorithm>
 #include <climits>

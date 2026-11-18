@@ -59,17 +59,9 @@ if ( HD_TEST_SANITIZE )
 endif ()
 # the rays that have no undefined behaviour: the same answer everywhere
 add_test ( NAME vertical_trace_plain COMMAND vertical_trace_test plain )
-# the side rays (target + INT_MIN): abs(INT_MIN) and a signed overflow, undefined behaviour that is OPEN (the fix
-# touches the battle's mechanics and waits for a word).
-#   - under the undefined-behaviour sanitizer the run must be stopped by it: WILL_FAIL. The day the trace is made
-#     defined this test turns red - take WILL_FAIL away then;
-#   - with the game's compiler (gcc) the rays must be the ones recorded on 18.11.2026: a fix must not move them;
-#   - with clang and no sanitizer the test is not played: there the answer depends on the optimization (-O2 sends
-#     the ray along the floor instead of up - measured, docs/QA/audit4-check-2026-11-18.md), there is nothing to hold.
-if ( HD_TEST_SANITIZE MATCHES "undefined" )
-  add_test ( NAME vertical_trace_intmin COMMAND vertical_trace_test intmin )
-  set_tests_properties ( vertical_trace_intmin PROPERTIES WILL_FAIL TRUE
-    ENVIRONMENT "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1" )
-elseif ( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT HD_TEST_SANITIZE )
-  add_test ( NAME vertical_trace_intmin COMMAND vertical_trace_test intmin )
-endif ()
+# the side rays (target + INT_MIN): they were abs(INT_MIN) and a signed overflow - undefined, and clang -O2 sent the
+# ray along the floor instead of up. The arithmetic of the trace wraps now as x86 gcc always made it, so the rays
+# recorded with the game's compiler on 18.11.2026 (before the fix) must come out under every compiler, and the
+# undefined-behaviour sanitizer must have nothing to say (it stops the run if it has)
+add_test ( NAME vertical_trace_intmin COMMAND vertical_trace_test intmin )
+set_tests_properties ( vertical_trace_intmin PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1" )
