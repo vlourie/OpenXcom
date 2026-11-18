@@ -114,6 +114,44 @@ JOBS = {
         frames=[("XOPSDESERT", 25)], copies=[("DESERT", 25)], mirrors=[],
         variants=[("a", 2725, ""), ("b", 3325, ""), ("c", 4725, "")],
         neg_extra="yellow sand on top, sand pit, hollow, crater, bowl, orange centre, egg shape"),
+    # 596, круг 2 (Vitali 18.11: «должен быть похож на оригинал»): темнее, пятнистый, комковатый, как классика
+    "rock23d": dict(
+        out="art/_review/xp596/gen", kind="object", noun="object",
+        what="one small lumpy desert rock of dark charcoal-grey and near-black stone, mottled with mid-grey "
+             "patches, its surface broken into several rough knobs with deep black crevices between them, a thin "
+             "pale grey-tan rim along its upper left and upper right edges",
+        frames=[("XOPSDESERT", 23)], copies=[("DESERT", 23)], mirrors=[],
+        variants=[("d", 2733, ""), ("e", 3333, ""), ("f", 4733, "")],
+        neg_extra="yellow sand on top, sand pit, hollow, crater, bowl, orange centre, egg shape, smooth boulder, "
+                  "light grey stone, beige stone"),
+    "rock25d": dict(
+        out="art/_review/xp596/gen", kind="object", noun="object",
+        what="two small lumpy desert rocks side by side and touching, a low wide pair of dark charcoal-grey and "
+             "near-black stone, mottled with mid-grey patches, each broken into rough knobs with deep black "
+             "crevices, a thin pale grey-tan rim along their upper edges",
+        frames=[("XOPSDESERT", 25)], copies=[("DESERT", 25)], mirrors=[],
+        variants=[("d", 2735, ""), ("e", 3335, ""), ("f", 4735, "")],
+        neg_extra="yellow sand on top, sand pit, hollow, crater, bowl, orange centre, egg shape, smooth boulder, "
+                  "light grey stone, beige stone"),
+    # 596, круг 3: rock*d вышли грудой мелких камней с белой каймой; здесь описание пятен классики без слов rim/knobs
+    "rock23g": dict(
+        out="art/_review/xp596/gen", kind="object", noun="object",
+        what="one compact rounded lump of plain matte stone: mid-grey body with a large dark near-black patch in "
+             "its middle, its outer edges paler grey with a faint tan tinge, a few small loose orange sand grains "
+             "at its foot",
+        frames=[("XOPSDESERT", 23)], copies=[("DESERT", 23)], mirrors=[],
+        variants=[("g", 2743, ""), ("h", 3343, ""), ("i", 4743, "")],
+        neg_extra="yellow sand on top, sand pit, hollow, crater, bowl, orange centre, egg shape, white outline, "
+                  "white edge, pile of small stones, cracked pebbles, beige stone"),
+    "rock25g": dict(
+        out="art/_review/xp596/gen", kind="object", noun="object",
+        what="two compact rounded lumps of plain matte stone side by side and touching, a low wide pair: mid-grey "
+             "bodies with large dark near-black patches in their middles, their outer edges paler grey with a "
+             "faint tan tinge, a few small loose orange sand grains at their foot",
+        frames=[("XOPSDESERT", 25)], copies=[("DESERT", 25)], mirrors=[],
+        variants=[("g", 2745, ""), ("h", 3345, ""), ("i", 4745, "")],
+        neg_extra="yellow sand on top, sand pit, hollow, crater, bowl, orange centre, egg shape, white outline, "
+                  "white edge, pile of small stones, cracked pebbles, beige stone"),
     "stairs": dict(
         out="art/_review/xp331/gen", kind="object", noun="object",
         what="one long straight wooden staircase of tan planks rising from the lower left to the upper right, "
