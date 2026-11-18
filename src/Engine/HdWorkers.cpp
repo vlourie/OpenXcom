@@ -250,7 +250,19 @@ bool HdWorkers::run(int jobs, const std::function<void(int)> &fn, int tries)
 	// frame clear's 8 slices cost the main thread a fifth of its work on the base (profile 27.10);
 	// and only as many as the work this call site gave last time pays for, one grain each besides the caller's
 	// (a call site seen for the first time gets the whole pool, as before)
-	Cost &cost = _costs[&fn.target_type()];
+	// (the note of a call site is a help only: no memory for a new one - the batch runs as one seen for the first
+	// time and nothing is kept of it; an exception here would leave run() with no job done, AUDIT-04 2)
+	Cost spare;
+	Cost *noted;
+	try
+	{
+		noted = &_costs[&fn.target_type()];
+	}
+	catch (...)
+	{
+		noted = &spare;
+	}
+	Cost &cost = *noted;
 	int want = std::min(jobs - 1, (int)_threads.size());
 	if (cost.known && _grainNs > 0)
 	{

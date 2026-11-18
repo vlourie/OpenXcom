@@ -35,6 +35,7 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #endif
 
 #include "HdGpuGl.h"
+#include "HdGpuTold.h"
 #include "HdGpuCanvas.h"
 #include "HdGpuWorld.h"
 
@@ -70,11 +71,9 @@ namespace
 
 using hdgl::gl;
 
-// what the driver told of (HdGpu::takeErrors). The driver may call from a thread of its own: counters only, and
-// the text of the first error is written once, before the count that lets it be read
-std::atomic<unsigned> toldErrors(0);
-std::atomic<bool> toldFirst(false);
-char toldText[240] = {};
+// what the driver told of (HdGpu::takeErrors). The driver may call from threads of its own, several at once:
+// the count and the text of the first error are kept under one lock (HdGpuTold; tests/hdgputold_test.cpp)
+HdGpuTold told;
 
 void APIENTRY onGlMessage(GLenum, GLenum type, GLuint, GLenum, GLsizei, const char *message, const void *)
 {
@@ -82,11 +81,7 @@ void APIENTRY onGlMessage(GLenum, GLenum type, GLuint, GLenum, GLsizei, const ch
 	{
 		return;
 	}
-	if (!toldFirst.exchange(true) && message)
-	{
-		std::strncpy(toldText, message, sizeof(toldText) - 1);
-	}
-	++toldErrors;
+	told.tell(message);
 }
 
 template <typename F>
@@ -215,11 +210,23 @@ bool HdGpu::load()
 
 unsigned HdGpu::takeErrors(std::string &first)
 {
-	const unsigned n = toldErrors.exchange(0);
+	if (!gl.DebugMessageCallback)
+	{
+		// a driver that does not tell (older than OpenGL 4.3 without GL_KHR_debug): asked, once a frame. The call
+		// waits for the driver's queue (R-519) - the price only such a driver pays; without it a texture that
+		// could not be sent was never noticed (AUDIT-04 4)
+		const GLenum error = glGetError();
+		if (error == GL_NO_ERROR)
+		{
+			return 0;
+		}
+		char text[32];
+		std::snprintf(text, sizeof(text), "glGetError 0x%04X", (unsigned)error);
+		told.tell(text);
+	}
+	const unsigned n = told.take(first);
 	if (n)
 	{
-		first = toldText;
-		toldFirst = false;
 		// the error flag of the context stays set until it is read, and the next reader would take it for its own
 		// (the read-back of the test dump failed after an error told of here). Only on this rare way, not in a frame
 		for (int i = 0; i < 16 && glGetError() != GL_NO_ERROR; ++i)

@@ -955,7 +955,9 @@ int preload(const SurfaceSet *surfaceSet)
 		}
 	}
 	std::vector<HdFrame> frames(todo.size());
-	std::vector<char> ok(todo.size(), -1); // -1: the job did not end (it threw) - the frame is left to be read when asked for
+	// -1: the job did not end (it threw) - the frame is left to be read when asked for. signed char: a plain char has
+	// no sign on some machines, and -1 was then "decoded well" with an empty frame (AUDIT-04 5)
+	std::vector<signed char> ok(todo.size(), -1);
 	HdWorkers::instance().runCounted((int)todo.size(), [&](int i)
 	{
 		ok[i] = !todo[i]->failed && decodeShown(*todo[i], blobs[i], frames[i]);
@@ -1294,10 +1296,15 @@ bool loadPng(const std::string &path, HdFrame &frame)
 
 namespace
 {
-	/// The memory of the pictures being decoded at this moment, all threads together: a picture takes 8 bytes a pixel
-	/// while it is decoded, and every thread of the pool may be decoding one. The pictures of our packs (4 MB at
-	/// most) never reach the limit; a mod's pack of huge ones (64 Mpx each is let in) would take gigabytes at once -
-	/// there the threads wait for one another. One picture is always let through, whatever its size.
+	/// The memory of the pictures being decoded at this moment, all threads together: a picture is counted while
+	/// decodePng() works on it - 8 bytes a pixel (the RGBA of lodepng and the frame it is copied to) or more by its
+	/// colour type (20 for 16-bit RGBA: lodepng holds the unpacked rows twice besides its answer), and its packed
+	/// file - and every thread of the pool may be decoding one. The pictures of our packs (4 MB at most) never reach the limit; a mod's pack of
+	/// huge ones (64 Mpx each is let in) would take gigabytes at once - there the threads wait for one another.
+	/// One picture is always let through, whatever its size.
+	/// What it does NOT limit (AUDIT-04 7): the packed files read ahead of a batch (preload reads them all first) and
+	/// the frames a batch has decoded and holds until they are settled - those are bounded by the size of the batch,
+	/// not by this room (measured: docs/QA/audit4-check-2026-11-18.md).
 	class DecodeRoom
 	{
 	private:
@@ -1336,6 +1343,7 @@ bool decodePng(const unsigned char *data, size_t size, HdFrame &frame)
 {
 	std::vector<unsigned char> image;
 	unsigned width = 0, height = 0;
+	size_t rawBytes = 4; // a pixel of the file as it is unpacked, before it is made RGBA
 	// the size by the header first: a picture is decoded to RGBA and copied (8 bytes a pixel for a moment, on several threads
 	// at once), and a file of a mod may say anything. 8192 x 8192 is 16 times the largest frame the game is drawn in
 	{
@@ -1351,8 +1359,12 @@ bool decodePng(const unsigned char *data, size_t size, HdFrame &frame)
 			Log(LOG_ERROR) << "HD sprite PNG: " << width << "x" << height << " is too large, not loaded";
 			return false;
 		}
+		rawBytes = (lodepng_get_bpp(&header.info_png.color) + 7) / 8;
 	}
-	const DecodeHold room((size_t)width * height * 8);
+	// a pixel while it is decoded: the unpacked rows, the same rows put in order, the RGBA answer - or the answer
+	// and the frame it is copied to, whichever is more; and the packed file. Measured outside the game (AUDIT-04 7):
+	// 8-bit RGBA 8192x8192 took 10 bytes a pixel, 16-bit RGBA 20 - and 8 were counted for every kind
+	const DecodeHold room((size_t)width * height * std::max<size_t>(8, 2 * rawBytes + 4) + size);
 	const unsigned error = lodepng::decode(image, width, height, data, size, LCT_RGBA, 8);
 	if (error)
 	{

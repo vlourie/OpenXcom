@@ -1599,6 +1599,9 @@ bool openExplorer(const std::string &url)
 static FILE *probeLog = nullptr;
 static void probeLogFlush() { if (probeLog) { fflush(probeLog); } }
 static void probeLogClose() { if (probeLog) { fclose(probeLog); probeLog = nullptr; } }
+// probeLog belongs to the log's lock (log() and setLogFileName() hold it): the way out of the program takes it too,
+// other threads may still be logging (AUDIT-04 8)
+static void probeLogCloseAtExit();
 
 static bool logToFile(const std::string& filename, const std::string& data) {
 	if (AiProbe::fast()) {
@@ -1609,7 +1612,7 @@ static bool logToFile(const std::string& filename, const std::string& data) {
 #else
 			probeLog = fopen(filename.c_str(), "ab");
 #endif
-			if (probeLog) { setvbuf(probeLog, nullptr, _IOFBF, 1 << 20); atexit(probeLogClose); }
+			if (probeLog) { setvbuf(probeLog, nullptr, _IOFBF, 1 << 20); atexit(probeLogCloseAtExit); }
 		}
 		if (probeLog) {
 			const bool ok = fwrite(data.c_str(), data.size(), 1, probeLog) == 1;
@@ -1642,6 +1645,10 @@ static const size_t LOG_BUFFER_LIMIT = 1<<10;
 static std::list<std::pair<int, std::string>> &logBuffer = *new std::list<std::pair<int, std::string>>();
 static std::string &logFileName = *new std::string();
 static std::recursive_mutex &logLock = *new std::recursive_mutex();
+static void probeLogCloseAtExit() {
+	std::lock_guard<std::recursive_mutex> logGuard(logLock);
+	probeLogClose();
+}
 std::string getLogFileName() {
 	// a copy made under the lock: the name is changed by setLogFileName() while other threads log
 	std::lock_guard<std::recursive_mutex> logGuard(logLock);
@@ -1733,7 +1740,15 @@ void log(int level, const std::ostringstream& baremsgstream) {
 }
 
 void exitNow() {
-	probeLogFlush();
+	{
+		// under the log's lock when it can be had: a thread that logs at this moment owns probeLog. Not waited for
+		// longer than a moment - the process ends here whatever the others do (AUDIT-04 8)
+		std::unique_lock<std::recursive_mutex> logGuard(logLock, std::defer_lock);
+		for (int i = 0; i < 100 && !logGuard.try_lock(); ++i) {
+			SDL_Delay(1);
+		}
+		probeLogFlush();
+	}
 	fflush(nullptr);
 #ifdef _WIN32
 	TerminateProcess(GetCurrentProcess(), 0);

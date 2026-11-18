@@ -58,7 +58,7 @@ def tidy() -> bool:
     if not (ROOT / "build-tests-asan" / "compile_commands.json").exists() and not tests_asan():
         return False
     return run(CLANG, "clang-tidy", "--quiet", "--config-file=tests/clang-tidy.yml", "-p", "build-tests-asan",
-               "src/Engine/HdWorkers.cpp", "tests/hdworkers_test.cpp")
+               "src/Engine/HdWorkers.cpp", "tests/hdworkers_test.cpp", "tests/hdgputold_test.cpp")
 
 
 def cppcheck() -> bool:

@@ -63,8 +63,10 @@ public:
 	/// Reads the framebuffer back into a 32-bit surface of the world's size (the HD test dump).
 	bool readBack(SDL_Surface *out);
 	/// How many errors the driver has told of since the last call (GL debug output: an upload or an update of a
-	/// texture that failed, whoever made it), with the text of the first one. Always 0 where the driver does not
-	/// tell (older than OpenGL 4.3 without GL_KHR_debug). Costs nothing in the frame: no glGetError (R-519).
+	/// texture that failed, whoever made it), with the text of the first one. Costs nothing in the frame: no
+	/// glGetError (R-519) - but where the driver does not tell (older than OpenGL 4.3 without GL_KHR_debug) it is
+	/// asked with one glGetError a call. The driver tells from its own thread, after the call that failed: the
+	/// frame drawn with the error is shown, what is on the card is made anew at the next one (HdGpuWorld::begin).
 	static unsigned takeErrors(std::string &first);
 };
 

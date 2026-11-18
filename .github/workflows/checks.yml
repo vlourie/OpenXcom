@@ -215,7 +215,7 @@ jobs:
       - name: clang-tidy
         run: |
           cmake -S tests -B build-tests -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          clang-tidy --quiet --config-file=tests/clang-tidy.yml -p build-tests src/Engine/HdWorkers.cpp tests/hdworkers_test.cpp
+          clang-tidy --quiet --config-file=tests/clang-tidy.yml -p build-tests src/Engine/HdWorkers.cpp tests/hdworkers_test.cpp tests/hdgputold_test.cpp
 
   linux-sanitizers:
     name: Tests on Linux, ${{ matrix.sanitize }} (inquiry, not a gate)

@@ -827,13 +827,17 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 					const HdWorkers::Whole allWhole;
 					int lx = 0, ly = 0;
 					const HdUiArt::Art *part = HdUiArt::findCrop(pixels, pitch, w, h, lx, ly, (long long)it->second.artVersion);
-					if (part && (!fresh || part->order < fresh->order))
+					// a search left not whole answers nothing, a found part too: a job that failed may have held a
+					// picture that stands before it (AUDIT-04 6). The answer known stays, the search is made again
+					// at the next draw
+					const bool whole = allWhole.ok();
+					if (part && whole && (!fresh || part->order < fresh->order))
 					{
 						fresh = late = part;
 						lateX = lx;
 						lateY = ly;
 					}
-					checked = part || allWhole.ok(); // a search left not whole is made again at the next draw
+					checked = whole;
 				}
 			}
 			if (fresh == it->second.art)
@@ -893,17 +897,19 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				const auto cropStart = std::chrono::steady_clock::now();
 				const HdWorkers::Whole allWhole;
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY, missedAt);
-				holed = !art && !allWhole.ok();
-				if (!art && !holed) // a search left not whole is not remembered as a miss
+				// not whole: a miss is not remembered, and a picture found is drawn now but not kept as the answer -
+				// a job that failed may have held one that stands before it (AUDIT-04 6)
+				holed = !allWhole.ok();
+				if (!art && !holed)
 				{
 					if (_cropMisses.size() >= 65536) _cropMisses.clear();
 					_cropMisses[cropKey] = version;
 				}
-				else if (art && missedAt >= 0)
+				else if (art && !holed && missedAt >= 0)
 				{
 					_cropMisses.erase(cropKey);
 				}
-				else if (holed)
+				if (holed)
 				{
 					// nor by the surface's entry (made below, or by the smoothing): the surface is searched again next time
 					if (_cropAgain.size() >= 4096) _cropAgain.clear();
