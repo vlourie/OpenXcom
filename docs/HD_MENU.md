@@ -94,8 +94,9 @@ HD-шрифта; остальные не серые. Строка серая и 
 
 `always_on` — значение по умолчанию `true` и принудительно `true` после загрузки `options.cfg` (`Options::load`): `oxceHdGroundVariants`,
 `oxceHdHoverBob`, `oxceHdAnimHidden`, `oxceHdPediaRange`, `oxceHdWoundedRed`, `oxceHdAmmoHint`, `oxceHdTransferCost`,
-`oxceHdTransferSides`, `oxceHdTrainingBlocks`, `oxceHdFundsToggle`, `oxceInventoryUseOnBody`, `oxceHdCtrlZoom`,
+`oxceHdTransferSides`, `oxceHdTrainingBlocks`, `oxceHdFundsToggle`, `oxceInventoryUseOnBody`,
 `oxceSoldierListRaceBadge` (переменная `oxceBaseSoldierTypeIcon`), `oxceHdCollapseShake`, `oxceHdPathDigits`, `oxceHdInventoryKeys`.
+`oxceHdCtrlZoom` вернулся в меню 18.11 (вкладка «Бой», группа «Карта боя», тикет XP-000597, слово Vitali).
 
 `hidden_only` — только убраны из меню, значения и умолчания не тронуты: `oxceHdScale`, `oxceHdFirePace`, `oxceHdSmokePace`,
 `oxceHdBloodStepsLife`, `oxceHdBloodStepsColor`, `oxceHdAimNumWeight`, `oxceHdPathNumWeight`, `oxceHdFrameSkip`. Строки масштаба в

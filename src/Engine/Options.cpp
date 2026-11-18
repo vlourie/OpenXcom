@@ -1480,7 +1480,7 @@ bool load(const std::string &filename)
 		// the HD tab has no switch for these any more (docs/HD_MENU.md): always on, whatever options.cfg held
 		for (bool *always : { &oxceHdGroundVariants, &oxceHdHoverBob, &oxceHdAnimHidden, &oxceHdPediaRange, &oxceHdWoundedRed,
 			&oxceHdAmmoHint, &oxceHdTransferCost, &oxceHdTransferSides, &oxceHdTrainingBlocks, &oxceHdFundsToggle,
-			&oxceInventoryUseOnBody, &oxceHdCtrlZoom, &oxceBaseSoldierTypeIcon, &oxceHdCollapseShake, &oxceHdPathDigits,
+			&oxceInventoryUseOnBody, &oxceBaseSoldierTypeIcon, &oxceHdCollapseShake, &oxceHdPathDigits,
 			&oxceHdInventoryKeys })
 		{
 			*always = true;

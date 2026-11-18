@@ -1009,6 +1009,7 @@ en-US:
   STR_HD_G_22: "Rules"
   STR_HD_G_23: "Speed"
   STR_HD_G_24: "New functions"
+  STR_HD_G_25: "Battle map"
   STR_HD_M_SMOOTH: "Smooth the classic graphics"
   STR_HD_M_SMOOTH_DESC: "Everything that has no HD version yet (sprites on the battlefield, classic windows and pictures) is enlarged with xBRZ smoothing instead of blocks."
   STR_HD_M_LIGHT: "Light in battle"

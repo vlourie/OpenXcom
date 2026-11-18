@@ -78,7 +78,8 @@ static const HdTabDef HD_LAYOUT[] = {
 		{ "STR_HD_G_06", { "oxceHdFx", "oxceHdHitFlash", "oxceHdClassicShots", "oxceHdQuickFlight", "oxceHdLooseHits", "oxceHdShotCut",
 			"oxceHdKillCam", "oxceHdBlastFall", "@m_blood" } },
 		{ "STR_HD_G_07", { "@m_enemyturn", "oxceHdEnemyNumber", "oxceHdWalkerTurn" } },
-		{ "STR_HD_G_08", { "oxceCollapse", "oxceHdTrunkArmor" } } } },
+		{ "STR_HD_G_08", { "oxceCollapse", "oxceHdTrunkArmor" } },
+		{ "STR_HD_G_25", { "oxceHdCtrlZoom" } } } },
 	{ "STR_HD_T_AIM", {
 		{ "STR_HD_G_09", { "oxceHdReticle", "oxceHdReticleArtillery", "oxceHdReticleExplosive", "oxceHdReticleDamageColor", "oxceHdAimArc",
 			"oxceHdBlastArea", "oxceHdAimSkillBonus", "oxceHdAltInfo", "@m_nums", "oxceHdPathStretch" } },
