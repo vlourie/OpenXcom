@@ -984,6 +984,11 @@ bool ProjectileFlyBState::validThrowRange(BattleAction *action, Position origin,
  */
 int ProjectileFlyBState::getMaxThrowDistance(int weight, int strength, int level)
 {
+	if (strength <= 0)
+	{
+		// a unit with no strength (there are such in the rules) throws nowhere; the formula below would divide by it
+		return 0;
+	}
 	double curZ = level + 0.5;
 	double dz = 1.0;
 	int dist = 0;
