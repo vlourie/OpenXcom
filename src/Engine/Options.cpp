@@ -1477,14 +1477,8 @@ bool load(const std::string &filename)
 		{
 			keyBattleHdModeToggle = SDLK_F11;
 		}
-		// the HD tab has no switch for these any more (docs/HD_MENU.md): always on, whatever options.cfg held
-		for (bool *always : { &oxceHdGroundVariants, &oxceHdHoverBob, &oxceHdAnimHidden, &oxceHdPediaRange, &oxceHdWoundedRed,
-			&oxceHdAmmoHint, &oxceHdTransferCost, &oxceHdTransferSides, &oxceHdTrainingBlocks, &oxceHdFundsToggle,
-			&oxceInventoryUseOnBody, &oxceBaseSoldierTypeIcon, &oxceHdCollapseShake, &oxceHdPathDigits,
-			&oxceHdInventoryKeys })
-		{
-			*always = true;
-		}
+		// (16.11-18.11 fifteen HD switches were out of the menu and forced on here; they are in the menu again and keep
+		// what options.cfg holds - Vitali 18.11, XP-000597, XP-000598)
 
 		mods.clear();
 		for (const auto& mod : reader["mods"].children())

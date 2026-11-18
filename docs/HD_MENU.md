@@ -90,13 +90,18 @@ HD-шрифта; остальные не серые. Строка серая и 
 
 Средняя кнопка на объединённой строке открывает то же окно `OptionDetailState` с названием, описанием (`<имя>_DESC`) и значением.
 
-### Всегда включены и только скрыты
+### Были скрыты 16.11, вернулись 18.11
 
-`always_on` — значение по умолчанию `true` и принудительно `true` после загрузки `options.cfg` (`Options::load`): `oxceHdGroundVariants`,
-`oxceHdHoverBob`, `oxceHdAnimHidden`, `oxceHdPediaRange`, `oxceHdWoundedRed`, `oxceHdAmmoHint`, `oxceHdTransferCost`,
-`oxceHdTransferSides`, `oxceHdTrainingBlocks`, `oxceHdFundsToggle`, `oxceInventoryUseOnBody`,
-`oxceSoldierListRaceBadge` (переменная `oxceBaseSoldierTypeIcon`), `oxceHdCollapseShake`, `oxceHdPathDigits`, `oxceHdInventoryKeys`.
-`oxceHdCtrlZoom` вернулся в меню 18.11 (вкладка «Бой», группа «Карта боя», тикет XP-000597, слово Vitali).
+16.11 пятнадцать переключателей убрали из меню и включали силой после загрузки `options.cfg`. 18.11 по слову Vitali
+(тикеты XP-000597, XP-000598) все вернулись в меню и снова хранят значение игрока; по умолчанию включены. Где стоят:
+- «Бой» → «Карта боя» (`STR_HD_G_25`): `oxceHdCtrlZoom`, `oxceHdGroundVariants`, `oxceHdHoverBob`;
+- «Бой» → `STR_HD_G_07`: `oxceHdAnimHidden`; `STR_HD_G_08`: `oxceHdCollapseShake`;
+- «Прицел»: `oxceHdPathDigits` (рядом с `@m_nums`); `STR_HD_G_11`: `oxceHdAmmoHint`, `oxceInventoryUseOnBody`, `oxceHdInventoryKeys`;
+- «Интерфейс» → `STR_HD_G_12`: `oxceHdPediaRange`;
+- «Глобус, база» → `STR_HD_G_15`: `oxceHdFundsToggle`; `STR_HD_G_18`: `oxceHdWoundedRed`, `oxceSoldierListRaceBadge`
+  (переменная `oxceBaseSoldierTypeIcon`), `oxceHdTrainingBlocks`; `STR_HD_G_19`: `oxceHdTransferCost`, `oxceHdTransferSides`.
+
+Убирать опцию из меню и включать её силой — только со списком, показанным Vitali по пунктам.
 
 `hidden_only` — только убраны из меню, значения и умолчания не тронуты: `oxceHdScale`, `oxceHdFirePace`, `oxceHdSmokePace`,
 `oxceHdBloodStepsLife`, `oxceHdBloodStepsColor`, `oxceHdAimNumWeight`, `oxceHdPathNumWeight`, `oxceHdFrameSkip`. Строки масштаба в
