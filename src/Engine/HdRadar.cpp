@@ -216,7 +216,7 @@ inline float limb(double r2, double radius)
 /// A wave in flight: the band of the arc it lights now, its light by the cosine of the arc.
 struct Wave
 {
-	static const int LUT = 1024;
+	static constexpr int LUT = 1024;
 	Cap cap;          ///< its outer circle
 	double lo, hi;    ///< the band, radians of arc from the base
 	double cosLo, cosHi, scale;
@@ -1121,6 +1121,7 @@ void HdRadar::drawRings(const View &view, const std::vector<Ring> &rings)
 						if (x == x) { lo2 = std::min(lo2, x); hi2 = std::max(hi2, x); }
 					}
 					if (lo2 > hi2) continue;
+					// cppcheck-suppress floatConversionOverflow ; +-1e30 stay only when no sample was a number: left the line above
 					const int a = std::max(x0, (int)std::floor(lo2) - band), b = std::min(x1, (int)std::ceil(hi2) + band + 1);
 					if (a < b) { ivA[nIv] = a; ivB[nIv] = b; ++nIv; }
 				}

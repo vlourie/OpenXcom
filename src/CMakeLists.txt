@@ -731,11 +731,11 @@ if (${CMAKE_SYSTEM_NAME} MATCHES FreeBSD OR ${CMAKE_SYSTEM_NAME} MATCHES NetBSD 
 endif ()
 
 if (WIN32)
-  set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
   # crashDump names functions by the export table (dbghelp reads only it, checked 27.10): the COFF symbol table
-  # (12 MB of the exe) is not read by anything
+  # (12 MB of the exe) is not read by anything. A Debug build keeps its symbols for the debugger instead: without
+  # inlining it has more functions than an export table holds (ld: "export ordinal too large", 65535 at most)
   if ( NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s")
+    set(CMAKE_EXE_LINKER_FLAGS "-Wl,--export-all-symbols -s")
   endif ()
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)

@@ -1043,6 +1043,7 @@ static void drawRowsScalar(const Scene &s, Uint32 *pixels, int pitchBytes, int y
 		int texX[3];
 		for (int i = 0; i < L.layers; ++i)
 		{
+			// cppcheck-suppress uninitvar ; read under the count of layers that filled them above
 			const int side = runs[i].side;
 			int ry = (int)std::floor(y - s.originY - runs[i].oy);
 			ry = ((ry % side) + side) % side;

@@ -54,7 +54,7 @@ class HdRadar
 {
 public:
 	/// The most waves one base sends per cycle (its longest radars).
-	static const int MAX_WAVES = 3;
+	static constexpr int MAX_WAVES = 3;
 	/// A radar on the globe: a base with its radars' ranges, or a craft out of its base.
 	struct Source
 	{

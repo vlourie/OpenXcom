@@ -105,7 +105,7 @@ void bake(int k, int kind, int shape, int life, Uint32 *out)
 		for (int x = 0; x < R; ++x)
 		{
 			const float X = (x + 0.5f) / R * 2 - 1;
-			float *d = &dens[((size_t)y * R + x) * N];
+			float *d = dens.data() + ((size_t)y * R + x) * N;
 			for (int z = 0; z < N; ++z)
 			{
 				const float Z = (z + 0.5f) / N * 2 - 1;
@@ -134,8 +134,8 @@ void bake(int k, int kind, int shape, int life, Uint32 *out)
 	const float dz = 2.0f / N;
 	for (size_t p = 0; p < (size_t)R * R; ++p)
 	{
-		const float *d = &dens[p * N];
-		const float *l = &light[p * N];
+		const float *d = dens.data() + p * N;
+		const float *l = light.data() + p * N;
 		float T = 1, col = 0;
 		for (int z = 0; z < N; ++z)
 		{

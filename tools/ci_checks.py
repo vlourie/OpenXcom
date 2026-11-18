@@ -62,10 +62,11 @@ def tidy() -> bool:
 
 
 def cppcheck() -> bool:
-    # the level "error" over the whole HD layer; what is known not to be one is in tests/cppcheck-suppress.txt
+    # the level "error" over the whole HD layer; what is not a defect is suppressed at its line in the code,
+    # and tests/cppcheck-suppress.txt names the kinds for the code of others only
     files = sorted(glob.glob("src/Engine/Hd*.cpp", root_dir=ROOT))
     return run(GCC, "cppcheck", "-j", str(os.cpu_count() or 4), "--quiet", "--std=c++17", "--language=c++",
-               "--error-exitcode=1", "--suppressions-list=tests/cppcheck-suppress.txt",
+               "--error-exitcode=1", "--inline-suppr", "--suppressions-list=tests/cppcheck-suppress.txt",
                "--template={file}:{line}: {severity}: {id}: {message}", *CPPCHECK_DEFINES, *files)
 
 

@@ -365,6 +365,7 @@ static void composeArt(const Surface *composite, const std::vector<std::pair<con
 			arts.push_back(std::move(made));
 			++dollArts;
 		}
+		// cppcheck-suppress invalidLifetime ; the picture lives in the heap and was moved into the list, not freed
 		if (art->bad)
 		{
 			return;

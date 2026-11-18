@@ -1014,6 +1014,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 					xa = std::min(xa, px);
 					xb = std::max(xb, px + 1);
 				}
+				// cppcheck-suppress integerOverflow ; the row has a step here (an empty one was left above): both are set
 				const int span = xb - xa;
 				b.rows.insert(b.rows.end(), { (Uint32)b.table.size(), (Uint32)xa, (Uint32)xb, (Uint32)b.steps.size() });
 				// per pixel where its words start (from the row's first)

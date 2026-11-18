@@ -602,6 +602,7 @@ struct HdGpuCanvas::Target
 			}
 		}
 		gl.BindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+		// cppcheck-suppress arrayIndexOutOfBounds ; at most one readback waits here (the second was dropped above): one of the three is free
 		gl.BindBuffer(GL_PIXEL_PACK_BUFFER, pbos[free]);
 		glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 		glPixelStorei(GL_PACK_ALIGNMENT, 4);
@@ -1008,7 +1009,7 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 				q[11] = (Sint32)p.extras.size() / 4;
 				const size_t e = p.extras.size();
 				p.extras.resize(e + 8 * 4, 0);
-				Sint32 *x = &p.extras[e];
+				Sint32 *x = p.extras.data() + e;
 				x[0] = wp->layer; x[1] = wp->x; x[2] = wp->y; x[3] = hd.width;
 				for (int n = 0; n < HdLight::NODES; ++n)
 				{

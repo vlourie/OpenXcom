@@ -1903,6 +1903,7 @@ namespace
 				mainW = size->second.first;
 				mainH = size->second.second;
 			}
+			// cppcheck-suppress derefInvalidIterator ; a pair without its main picture was marked bad and left above
 			else if (!packPictureSize(main->second.path, mainW, mainH))
 			{
 				mainW = mainH = -1;
