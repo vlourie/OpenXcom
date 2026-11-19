@@ -7,6 +7,7 @@
 //   adlib_test fuzz <ADLIB.CAT> <seed> <count>   tracks of the file cut and damaged at random: no report, no hang
 //
 // The player and the synthesizer are the game's own sources; ADLIB_SRC (CMake) may name another tree to compare with.
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>

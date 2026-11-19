@@ -204,6 +204,11 @@ LONG WINAPI filter(EXCEPTION_POINTERS *ep)
 void install(Notice n)
 {
 	notice = n;
+	// a stack overflow leaves the filter only what is guaranteed below the guard page; the default (about a page) is
+	// not enough for the dispatcher of the system and the record on every Windows (the GitHub runner ended with
+	// 0xC0000005 and no record). The guarantee is per thread: this covers the thread that installs - the main one
+	ULONG guarantee = 64 * 1024;
+	SetThreadStackGuarantee(&guarantee);
 	SetUnhandledExceptionFilter(filter);
 }
 
