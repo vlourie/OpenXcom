@@ -542,9 +542,14 @@ inline void YamlNodeWriter::setValue(const InputType& inputValue)
 template <typename EnumType>
 typename std::enable_if<std::is_enum<EnumType>::value, bool>::type inline from_chars(ryml::csubstr buf, EnumType* v) noexcept
 {
-	int value = static_cast<int>(*v);
+	// The target is written only on success and never read: it may be not initialized yet, and loading an
+	// enum from such memory is undefined on its own (it used to be read here just to be written back on failure).
+	int value = 0;
 	bool result = ryml::atoi(buf, &value);
-	*v = static_cast<EnumType>(value);
+	if (result)
+	{
+		*v = static_cast<EnumType>(value);
+	}
 	return result;
 }
 

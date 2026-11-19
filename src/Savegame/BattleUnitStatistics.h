@@ -292,7 +292,8 @@ struct BattleUnitKills
 		}
 	}
 
-	BattleUnitKills(const YAML::YamlNodeReader& reader) { load(reader); }
+	/// The defaults first: load() fills only the keys the save has.
+	BattleUnitKills(const YAML::YamlNodeReader& reader) : BattleUnitKills() { load(reader); }
 	BattleUnitKills(): faction(FACTION_HOSTILE), status(STATUS_IGNORE_ME), mission(0), turn(0), id(0), side(SIDE_FRONT), bodypart(BODYPART_HEAD) { }
 	~BattleUnitKills() { }
 };
@@ -420,7 +421,8 @@ struct BattleUnitStatistics
 		}
 	}
 
-	BattleUnitStatistics(const YAML::YamlNodeReader& reader) { load(reader); }
+	/// The defaults first: load() fills only the keys the save has.
+	BattleUnitStatistics(const YAML::YamlNodeReader& reader) : BattleUnitStatistics() { load(reader); }
 	BattleUnitStatistics() : wasUnconcious(false), shotAtCounter(0), hitCounter(0), shotByFriendlyCounter(0), shotFriendlyCounter(0), loneSurvivor(false), ironMan(false), longDistanceHitCounter(0), lowAccuracyHitCounter(0), shotsFiredCounter(0), shotsLandedCounter(0), kills(), daysWounded(0), KIA(false), nikeCross(false), mercyCross(false), woundsHealed(0), appliedStimulant(0), appliedPainKill(0), revivedSoldier(0), revivedHostile(0), revivedNeutral(0), MIA(false), martyr(0), slaveKills(0) { }
 	~BattleUnitStatistics() { }
 };
