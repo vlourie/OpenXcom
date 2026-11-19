@@ -122,6 +122,7 @@
 #include "MCDPatch.h"
 #include "StatString.h"
 #include "RuleGlobe.h"
+#include "Texture.h"
 #include "RuleVideo.h"
 #include "RuleConverter.h"
 #include "RuleSoldierTransformation.h"
@@ -3844,6 +3845,115 @@ void Mod::loadAll()
 			const MissionWave &wave = mission->getWave(i);
 			checkForSoftError(!getUfoTrajectory(wave.trajectory), pair.first, "trajectory '" + wave.trajectory + "' of wave " + std::to_string(i) + " is not defined", LOG_INFO);
 			checkForSoftError(wave.ufoType != "dummy" && !getUfo(wave.ufoType) && !getDeployment(wave.ufoType), pair.first, "ufo '" + wave.ufoType + "' of wave " + std::to_string(i) + " is neither a UFO nor a deployment", LOG_INFO);
+		}
+	}
+	{
+		// deployments that are battles by what they are on the globe: a mission site, an alien base, the final mission.
+		// Each needs a map; the same deployment as an overlay (units and items only) does not, so the role is told here
+		std::map<const AlienDeployment*, std::string> battles;
+		auto battle = [&](const std::string &name, const std::string &owner, const std::string &role)
+		{
+			if (name.empty())
+			{
+				return;
+			}
+			const AlienDeployment *deployment = getDeployment(name);
+			checkForSoftError(!deployment, owner, role + " '" + name + "' is not a defined deployment", LOG_INFO);
+			if (deployment)
+			{
+				battles.emplace(deployment, role);
+			}
+		};
+		std::string finalMission;
+		for (const auto& pair : _alienDeployments)
+		{
+			const AlienDeployment *deployment = pair.second;
+			// (a marker says nothing: every deployment has one by default, overlays too)
+			if (deployment->isAlienBase())
+			{
+				battle(pair.first, pair.first, "alien base");
+			}
+			if (deployment->isFinalDestination())
+			{
+				battle(pair.first, pair.first, "final mission");
+			}
+		}
+		for (const auto& name : _deploymentsIndex)
+		{
+			// the craft sent to the final mission lands in the first such deployment of the list (ConfirmCydoniaState)
+			const AlienDeployment *deployment = getDeployment(name);
+			if (deployment && deployment->isFinalDestination())
+			{
+				checkForSoftError(!finalMission.empty(), name, "is a final destination, but the final mission starts in '" + finalMission + "' (the first one of the list): this one is never reached that way", LOG_INFO);
+				if (finalMission.empty())
+				{
+					finalMission = name;
+				}
+			}
+		}
+		for (const auto& pair : _alienMissions)
+		{
+			battle(pair.second->getSiteType(), pair.first, "siteType");
+			for (size_t i = 0; i < pair.second->getWaveCount(); ++i)
+			{
+				// a wave whose "ufo" is a deployment and no UFO puts a mission site of that deployment on the globe
+				const std::string &site = pair.second->getWave(i).ufoType;
+				if (!getUfo(site) && getDeployment(site))
+				{
+					battle(site, pair.first, "mission site of wave " + std::to_string(i));
+				}
+			}
+		}
+		if (_globe)
+		{
+			for (const auto& texture : _globe->getTexturesRaw())
+			{
+				for (const auto& site : texture.second->getDeployments())
+				{
+					battle(site.first, "globe texture " + std::to_string(texture.first), "deployment");
+				}
+			}
+		}
+		for (const auto& pair : _alienRaces)
+		{
+			battle(pair.second->getBaseCustomMission(), pair.first, "baseCustomMission");
+			const std::string &overlay = pair.second->getBaseCustomDeploy();
+			checkForSoftError(!overlay.empty() && !getDeployment(overlay), pair.first, "baseCustomDeploy '" + overlay + "' is not defined", LOG_INFO);
+		}
+		for (const auto& pair : battles)
+		{
+			checkForSoftError(!pair.first->hasMapSize(this), pair.first->getType(), "is a battle (" + pair.second + ") and has no map size: no width/length and no map script, its own or of its terrains, that resizes the map", LOG_INFO);
+		}
+		// Stages that come back to an earlier one. The next stage is taken whenever the stage is won with somebody left
+		// (BattlescapeState::finishBattle), so such a mission has no last stage: it ends only by abort or by defeat.
+		// That may be what the author wants; it is told once per ring, as a note
+		for (const auto& pair : _alienDeployments)
+		{
+			std::vector<std::string> ring{ pair.first };
+			const AlienDeployment *stage = pair.second;
+			while (stage && !stage->getNextStage().empty())
+			{
+				const std::string next = stage->getNextStage();
+				if (next == pair.first)
+				{
+					if (*std::min_element(ring.begin(), ring.end()) == pair.first)
+					{
+						std::string stages;
+						for (const auto& name : ring)
+						{
+							stages += name + " -> ";
+						}
+						Log(LOG_INFO) << "Note: the stages " << stages << next << " form a ring: the mission has no last stage and ends only by abort or by defeat.";
+					}
+					break;
+				}
+				if (std::find(ring.begin(), ring.end(), next) != ring.end())
+				{
+					break; // runs into a ring it is not part of: told at that ring
+				}
+				ring.push_back(next);
+				stage = getDeployment(next);
+			}
 		}
 	}
 
