@@ -96,6 +96,110 @@ def xcf(t):
 edit("IMG_xcf.c", xcf)
 
 
+def xcf_budget(t):
+    if "xcf_budget" in t:
+        return t
+    a = "#define SDL_ReadBE32 xcf_read_be32\n"
+    b = ("\n/* OXCE: the read budget. Every list of the file (layers, channels, levels, tiles) is a list of offsets, and\n"
+         "   nothing makes two entries point at different data: a file of a few KiB whose entries all point at one\n"
+         "   layer and one tile is decoded layers x tiles times. A file that is what GIMP writes has every structure\n"
+         "   once, so its decoder reads no byte twice, except that the last tile of a layer is read by its largest\n"
+         "   possible length (24576 bytes). The budget is twice the file plus that tail for every layer; a layer with\n"
+         "   its hierarchy, level and list of tiles takes 64 bytes at the least, a tile takes the 4 bytes of its\n"
+         "   offset. Past the budget every read gives nothing and the decoder stops. */\n"
+         "typedef struct {\n"
+         "  SDL_RWops * src;\n"
+         "  Uint64 left;\n"
+         "  int spent;\n"
+         "} xcf_budget;\n"
+         "\n"
+         "static int xcf_budget_seek (SDL_RWops * ctx, int offset, int whence) {\n"
+         "  xcf_budget * b = (xcf_budget *) ctx->hidden.unknown.data1;\n"
+         "  return b->src->seek (b->src, offset, whence);\n"
+         "}\n"
+         "\n"
+         "static int xcf_budget_read (SDL_RWops * ctx, void * ptr, int size, int maxnum) {\n"
+         "  xcf_budget * b = (xcf_budget *) ctx->hidden.unknown.data1;\n"
+         "  Uint64 want = (Uint64) (size > 0 ? size : 0) * (Uint64) (maxnum > 0 ? maxnum : 0);\n"
+         "  if (want == 0)\n"
+         "    want = 1;\n"
+         "  if (b->spent || want > b->left) {\n"
+         "    b->spent = 1;\n"
+         "    return 0;\n"
+         "  }\n"
+         "  b->left -= want;\n"
+         "  return b->src->read (b->src, ptr, size, maxnum);\n"
+         "}\n"
+         "\n"
+         "static int xcf_spent (SDL_RWops * src) {\n"
+         "  return src->read == xcf_budget_read && ((xcf_budget *) src->hidden.unknown.data1)->spent;\n"
+         "}\n"
+         "\n"
+         "static Uint64 xcf_tiles (Uint32 width, Uint32 height) {\n"
+         "  return (((Uint64) width + 63) / 64) * (((Uint64) height + 63) / 64);\n"
+         "}\n")
+    t = once(t, a, a + b)
+    a = "      SDL_RWseek (src, level->tile_file_offsets [j], RW_SEEK_SET);\n"
+    b = ("      if (xcf_spent (src)) {  /* OXCE: the read budget */\n"
+         "        free_xcf_level (level);\n"
+         "        free_xcf_hierarchy (hierarchy);\n"
+         "        return 1;\n"
+         "      }\n")
+    t = once(t, a, b + a)
+    a = "  unsigned char * (* load_tile) (SDL_RWops *, Uint32, int, int, int);\n"
+    b = ("  /* OXCE: the read budget, see xcf_budget */\n"
+         "  SDL_RWops budget_rw;\n"
+         "  xcf_budget budget;\n"
+         "  Uint64 file_size, tiles;\n")
+    t = once(t, a, a + b)
+    a = "  /* Initialize the data we will clean up when we're done */\n  surface = NULL;\n"
+    b = ("\n  {  /* OXCE: the read budget */\n"
+         "    int end = SDL_RWseek (src, 0, RW_SEEK_END);\n"
+         "    SDL_RWseek (src, start, RW_SEEK_SET);\n"
+         "    file_size = end > start ? (Uint64) (end - start) : 0;\n"
+         "  }\n"
+         "  budget.src = src;\n"
+         "  budget.left = 2 * file_size + 4096;\n"
+         "  budget.spent = 0;\n"
+         "  memset (&budget_rw, 0, sizeof (budget_rw));\n"
+         "  budget_rw.seek = xcf_budget_seek;\n"
+         "  budget_rw.read = xcf_budget_read;\n"
+         "  budget_rw.hidden.unknown.data1 = &budget;\n"
+         "  src = &budget_rw;\n"
+         "  tiles = 0;\n")
+    t = once(t, a, a + b)
+    a = "\n  fp = SDL_RWtell (src);\n"
+    b = ("\n  /* OXCE: a layer takes 64 bytes of the file at the least */\n"
+         "  if ((Uint64) offsets > file_size / 64) {\n"
+         "    error = \"XCF: more layers than the file can hold\";\n"
+         "    goto done;\n"
+         "  }\n"
+         "  budget.left += (Uint64) offsets * 24576;\n")
+    t = once(t, a, a + b)
+    a = "    layer = read_xcf_layer (src, head);\n    if (layer != NULL) {\n"
+    b = ("      /* OXCE: every tile of every layer has its own offset in the file, 4 bytes at the least */\n"
+         "      tiles += xcf_tiles (layer->width, layer->height);\n"
+         "      if (tiles > file_size / 4 || xcf_spent (src)) {\n"
+         "        free_xcf_layer (layer);\n"
+         "        error = \"XCF: the lists of the file point at the same data again and again\";\n"
+         "        break;\n"
+         "      }\n")
+    t = once(t, a, a + b)
+    a = "  SDL_FreeSurface (lays);\n"
+    b = ("\n  if (error)  /* OXCE: the read budget */\n"
+         "    goto done;\n")
+    t = once(t, a, a + b)
+    a = "    channel = (xcf_channel **) realloc (channel, sizeof (xcf_channel *) * (chnls+1));\n"
+    b = ("    /* OXCE: a channel is as large as the image and has its tiles too */\n"
+         "    tiles += xcf_tiles (head->width, head->height);\n"
+         "    if (tiles > file_size / 4 || xcf_spent (src))\n"
+         "      break;\n")
+    return once(t, a, b + a)
+
+
+edit("IMG_xcf.c", xcf_budget)
+
+
 def png(t):
     if "OXCE: past the end" in t:
         return t

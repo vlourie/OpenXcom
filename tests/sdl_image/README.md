@@ -28,4 +28,14 @@ and `make_corpus.py` (the valid samples of every format and their damaged copies
 flipped bytes). The samples of the formats are the test images of the upstream repository
 (https://github.com/libsdl-org/SDL_image, `test/`); they are not kept here.
 
+Two more lists are for the XCF decoder alone (OXCE patch 7, the read budget):
+
+    py -3 tests/sdl_image/make_xcf_nested.py <out.xcf> <layers> [side]   one hostile file: every layer of the list
+                                                                         is the same layer, every tile the same tile
+    py -3 tests/sdl_image/make_xcf_valid.py <folder>                     28 well-formed files and list.txt
+
+The hostile files go through `fuzz` and must be refused at once (before the patch: 1 s for 11 KiB, no end for
+270 KiB); the well-formed ones go through `compare` against a build made before a change of the decoder and must
+give no difference.
+
 What the test says about the library taken into libs/SDL_image is written in `libs/SDL_image/README_OXCE.md`.
