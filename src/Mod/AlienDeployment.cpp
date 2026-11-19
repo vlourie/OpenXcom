@@ -298,6 +298,70 @@ const std::vector<ReinforcementsData>* AlienDeployment::getReinforcementsData() 
 }
 
 /**
+ * Checks what a battle needs from this deployment when the rules are loaded, not hours later when the battle is
+ * generated. Nothing is refused: a mod that worked goes on working, what is wrong is written to the log.
+ * Only what holds for every role of a deployment is checked here: an overlay (craftCustomDeploy, missionCustomDeploy)
+ * gives units and items only and needs no map, so the map is checked where the role is known (see hasMapSize).
+ */
+void AlienDeployment::afterLoad(const Mod* mod)
+{
+	auto note = [&](bool wrong, const std::string &what)
+	{
+		mod->checkForSoftError(wrong, _type, what, LOG_INFO);
+	};
+	note(!_race.empty() && !mod->getAlienRace(_race), "race '" + _race + "' is not defined");
+	note(!_enviroEffects.empty() && !mod->getEnviroEffects(_enviroEffects), "enviroEffects '" + _enviroEffects + "' is not defined");
+	note(!_startingCondition.empty() && !mod->getStartingCondition(_startingCondition), "startingCondition '" + _startingCondition + "' is not defined");
+	for (const auto& terrain : _terrains)
+	{
+		note(!mod->getTerrain(terrain), "terrain '" + terrain + "' is not defined");
+	}
+	note(!_mapScript.empty() && !mod->getMapScript(_mapScript), "map script '" + _mapScript + "' is not defined");
+	for (const auto& script : _mapScripts)
+	{
+		note(!mod->getMapScript(script), "map script '" + script + "' is not defined");
+	}
+	if (!_nextStage.empty())
+	{
+		const AlienDeployment *next = mod->getDeployment(_nextStage);
+		note(!next, "nextStage '" + _nextStage + "' is not defined");
+		// a next stage is a battle of its own: it needs a map
+		note(next && !next->hasMapSize(mod), "nextStage '" + _nextStage + "' has no map size: no width/length and no map script of its own that resizes the map");
+	}
+}
+
+/**
+ * Whether a battle generated from this deployment gets a map: it has a size, or a map script of its own sets one.
+ * (The map script of the terrain may still set it; that one is drawn by the RNG and is not known here.)
+ */
+bool AlienDeployment::hasMapSize(const Mod* mod) const
+{
+	if (_width >= 10 && _length >= 10)
+	{
+		return true;
+	}
+	std::vector<std::string> scripts = _mapScripts;
+	if (!_mapScript.empty())
+	{
+		scripts.push_back(_mapScript);
+	}
+	for (const auto& script : scripts)
+	{
+		if (const std::vector<MapScript*> *commands = mod->getMapScript(script))
+		{
+			for (const auto* command : *commands)
+			{
+				if (command->getType() == MSC_RESIZE)
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+/**
  * Gets dimensions.
  * @param width Width.
  * @param length Length.

@@ -145,6 +145,10 @@ public:
 	~AlienDeployment();
 	/// Loads Alien Deployment data from YAML.
 	void load(const YAML::YamlNodeReader& node, Mod *mod);
+	/// Checks the references of this deployment after all rules are loaded.
+	void afterLoad(const Mod* mod);
+	/// Whether a battle generated from this deployment gets a map.
+	bool hasMapSize(const Mod* mod) const;
 	/// Gets the Alien Deployment's type.
 	const std::string& getType() const;
 	/// Gets the custom UFO name to use for the dummy/blank 'addUFO' mapscript command.

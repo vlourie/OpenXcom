@@ -3812,6 +3812,39 @@ void Mod::loadAll()
 	afterLoadHelper("arcScripts", this, _arcScripts, &RuleArcScript::afterLoad);
 	afterLoadHelper("soldierTransformation", this, _soldierTransformation, &RuleSoldierTransformation::afterLoad);
 	afterLoadHelper("ufopaediaArticles", this, _ufopaediaArticles, &ArticleDefinition::afterLoad);
+	afterLoadHelper("alienDeployments", this, _alienDeployments, &AlienDeployment::afterLoad);
+
+	// the chain a mission is generated from (mission -> wave -> UFO -> deployment) is checked here, by the role each
+	// rule plays in it, and only written to the log: before, a broken link was met hours later, when the battle started
+	for (const auto& pair : _ufos)
+	{
+		const RuleUfo *ufo = pair.second;
+		// a landed or crashed UFO is a battle generated from the deployment of the same name: that one needs a map
+		const AlienDeployment *battle = getDeployment(pair.first);
+		checkForSoftError(battle && !battle->hasMapSize(this), pair.first, "the deployment of this UFO has no map size: no width/length and no map script of its own that resizes the map", LOG_INFO);
+		auto overlays = [&](const RuleUfoStats &stats)
+		{
+			// overlays give units and items only: they have to exist, a map they do not need
+			checkForSoftError(!stats.craftCustomDeploy.empty() && !getDeployment(stats.craftCustomDeploy), pair.first, "craftCustomDeploy '" + stats.craftCustomDeploy + "' is not defined", LOG_INFO);
+			checkForSoftError(!stats.missionCustomDeploy.empty() && !getDeployment(stats.missionCustomDeploy), pair.first, "missionCustomDeploy '" + stats.missionCustomDeploy + "' is not defined", LOG_INFO);
+		};
+		overlays(ufo->getStats());
+		for (const auto& bonus : ufo->getRaceBonusRaw())
+		{
+			overlays(bonus.second);
+		}
+	}
+	for (const auto& pair : _alienMissions)
+	{
+		const RuleAlienMission *mission = pair.second;
+		checkForSoftError(!mission->getSpawnUfo().empty() && !getUfo(mission->getSpawnUfo()), pair.first, "spawnUfo '" + mission->getSpawnUfo() + "' is not defined", LOG_INFO);
+		for (size_t i = 0; i < mission->getWaveCount(); ++i)
+		{
+			const MissionWave &wave = mission->getWave(i);
+			checkForSoftError(!getUfoTrajectory(wave.trajectory), pair.first, "trajectory '" + wave.trajectory + "' of wave " + std::to_string(i) + " is not defined", LOG_INFO);
+			checkForSoftError(wave.ufoType != "dummy" && !getUfo(wave.ufoType) && !getDeployment(wave.ufoType), pair.first, "ufo '" + wave.ufoType + "' of wave " + std::to_string(i) + " is neither a UFO nor a deployment", LOG_INFO);
+		}
+	}
 
 	for (auto& a : _armors)
 	{
