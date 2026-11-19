@@ -2048,7 +2048,8 @@ void AIModule::setupPatrol()
 				_attackAction.weapon->getAmmoForAction(BA_SNAPSHOT)->getRules()->getDamageType()->ToTile > 0.01f)
 		{
 			// can i shoot an object?
-			if ((!oxceFixes || _fromNode) && _fromNode->isTarget() &&
+			// no node on the unit's level: not read (AUD05-015) - for every AI, the game stopped here
+			if (_fromNode && _fromNode->isTarget() &&
 				_save->canUseWeapon(_attackAction.weapon, _unit, false, BA_SNAPSHOT) &&
 				_save->getModuleMap()[_fromNode->getPosition().x / 10][_fromNode->getPosition().y / 10].second > 0)
 			{
@@ -5149,9 +5150,10 @@ void AIModule::wayPointAction()
 			}
 			PathDirection = _save->getPathfinding()->dequeuePath();
 		}
-		if ((bot || AiProbe::oxceFixes()) && _attackAction.waypoints.empty())
+		if (_attackAction.waypoints.empty())
 		{
-			// AI3-F: no waypoint was laid (front() of an empty list); the launch is not made - O10 (BetterAI): for every AI
+			// no waypoint was laid (front() of an empty list); the launch is not made, as before: the last waypoint is
+			// not the target, so BA_RETHINK followed anyway (AUD05-016) - for every AI
 			AiProbe::note(_unit, "botwp.no_waypoints");
 			_attackAction.type = BA_RETHINK;
 			return;
