@@ -801,6 +801,11 @@ void RuleItem::afterLoad(const Mod* mod)
 						throw Exception("Vehicle weapon clip size is not a multiple of '" + ammo->getType() + "' clip size");
 					}
 				}
+				else if (ammo->getClipSize() == 0)
+				{
+					// getVehicleClipsLoaded would be 0, and the stores are divided by it
+					throw Exception("Vehicle weapon ammo '" + ammo->getType() + "' has a clip size of 0");
+				}
 			}
 		}
 	}

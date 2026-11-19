@@ -213,7 +213,8 @@ CraftWeaponProjectile* CraftWeapon::fire() const
  */
 int CraftWeapon::getClipsLoaded() const
 {
-	int retVal = (int)floor((double)_ammo / _rules->getRearmRate());
+	// rearmRate 0 is a rule of the mods (a weapon that is not rearmed): no clips, not the cast of a NaN to int
+	int retVal = _rules->getRearmRate() > 0 ? (int)floor((double)_ammo / _rules->getRearmRate()) : 0;
 	auto* clip = _rules->getClipItem();
 
 	if (clip && clip->getClipSize() > 0)

@@ -833,7 +833,8 @@ void Craft::setFuel(int fuel)
  */
 int Craft::getFuelPercentage() const
 {
-	return (int)floor((double)_fuel / _stats.fuelMax * 100.0);
+	// a craft that carries no fuel at all (fuelMax 0 is a rule of the mods): 0 %, not the cast of a NaN to int
+	return _stats.fuelMax > 0 ? (int)floor((double)_fuel / _stats.fuelMax * 100.0) : 0;
 }
 
 /**
@@ -875,7 +876,7 @@ void Craft::setDamage(int damage)
  */
 int Craft::getDamagePercentage() const
 {
-	return (int)floor((double)_damage / _stats.damageMax * 100);
+	return _stats.damageMax > 0 ? (int)floor((double)_damage / _stats.damageMax * 100) : 0;
 }
 
 /**
@@ -1276,7 +1277,8 @@ unsigned int Craft::calcRearmTime()
 		if (w1 != 0 && !w1->isDisabled())
 		{
 			int needed = w1->getRules()->getAmmoMax() - w1->getAmmo();
-			if (needed > 0)
+			// a weapon that is not rearmed at all (rearmRate 0) adds no hours
+			if (needed > 0 && w1->getRules()->getRearmRate() > 0)
 			{
 				rearmTime += (int)ceil((double)(needed) / w1->getRules()->getRearmRate());
 			}

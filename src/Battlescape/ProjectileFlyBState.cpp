@@ -804,7 +804,7 @@ void ProjectileFlyBState::think()
 						Position originalTarget = _targetVoxel;
 
 						int i = 1;
-						while (i != _ammo->getRules()->getShotgunPellets())
+						while (i < _ammo->getRules()->getShotgunPellets())
 						{
 							if (behaviorType == 1)
 							{

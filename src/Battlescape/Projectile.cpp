@@ -726,7 +726,7 @@ void Projectile::addVaporCloud()
 	// HD (XP-000555): with the classic shots a laser, plasma or gauss shot leaves no vapor on the screen at k > 1; the particles are made
 	// and move all the same (the generator above is read as before), the map only does not draw the marked ones
 	const bool hdShot = Options::oxceHdClassicShots && HdShots::kindOf(getWeaponRules());
-	for (int i = 0; i != _vaporDensity; ++i)
+	for (int i = 0; i < _vaporDensity; ++i)
 	{
 		ModScript::VaporParticleAmmo::Output arg = {
 			_vaporColor, // "vapor_color",

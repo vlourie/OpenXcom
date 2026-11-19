@@ -266,9 +266,9 @@ SurfaceSet *ExtraSprites::loadSurfaceSet(SurfaceSet *set)
 				Log(LOG_VERBOSE) << "Subdividing into " << frames << " frames.";
 				int offset = startFrame;
 
-				for (int y = 0; y != yDivision; ++y)
+				for (int y = 0; y < yDivision; ++y)
 				{
-					for (int x = 0; x != xDivision; ++x)
+					for (int x = 0; x < xDivision; ++x)
 					{
 						Surface* frame = getFrame(set, offset);
 						// for some reason regular blit() doesn't work here how i want it, so i use this function instead.

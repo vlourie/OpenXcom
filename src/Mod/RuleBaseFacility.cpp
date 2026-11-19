@@ -204,6 +204,11 @@ void RuleBaseFacility::afterLoad(const Mod* mod)
 		throw Exception("Unified damage formula requires `ammoItem` to be defined.");
 	}
 
+	if (_sizeX < 1 || _sizeY < 1)
+	{
+		// the base's places are walked from 0 up to the size
+		throw Exception("Facility size (size, sizeX, sizeY) must be at least 1.");
+	}
 	if (!_destroyedFacilityName.empty())
 	{
 		mod->linkRule(_destroyedFacility, _destroyedFacilityName);

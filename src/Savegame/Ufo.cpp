@@ -492,7 +492,8 @@ void Ufo::setDamage(int damage, const Mod *mod)
  */
 int Ufo::getDamagePercentage() const
 {
-	return (int)floor((double)_damage / _stats.damageMax * 100);
+	// damageMax 0 is a rule of the mods (a UFO that is only a place on the globe): 0 %, not the cast of a NaN to int
+	return _stats.damageMax > 0 ? (int)floor((double)_damage / _stats.damageMax * 100) : 0;
 }
 
 /**

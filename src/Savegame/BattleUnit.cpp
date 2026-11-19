@@ -2749,7 +2749,8 @@ int BattleUnit::getAccuracyModifier(const BattleItem *item) const
 			}
 		}
 	}
-	return std::max(10, 25 * _health / getBaseStats()->health + 75 + -10 * wounds);
+	// health 0 is a rule of the mods (a unit that is only a death animation)
+	return std::max(10, 25 * _health / std::max<int>(1, getBaseStats()->health) + 75 + -10 * wounds);
 }
 
 /**

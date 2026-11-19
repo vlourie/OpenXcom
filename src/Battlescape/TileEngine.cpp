@@ -2220,7 +2220,7 @@ int TileEngine::checkVoxelExposure(Position *originVoxel, Tile *tile, BattleUnit
 			}
 		}
 	}
-	return (visible*100)/total;
+	return total ? (visible*100)/total : 0; // nothing scanned: a target of a height below zero
 }
 
 /**
@@ -3304,7 +3304,8 @@ bool TileEngine::hitUnit(BattleActionAttack attack, BattleUnit *target, const Po
 	{
 		if (healthDamage > 0 || stunDamage > 0)
 		{
-			int damagePercent = ((healthDamage + stunDamage) * 100) / target->getBaseStats()->health;
+			// health 0 is a rule of the mods (a unit that is only a death animation)
+			int damagePercent = ((healthDamage + stunDamage) * 100) / std::max<int>(1, target->getBaseStats()->health);
 			if (damagePercent <= 20)
 			{
 				_save->appendToHitLog(HITLOG_SMALL_DAMAGE, attack.attacker->getFaction());
@@ -6479,9 +6480,9 @@ void TileEngine::setDangerZone(Position pos, int radius, BattleUnit *unit)
 	tile->setDangerous(true);
 	Position originVoxel = pos.toVoxel() + Position(8,8,12 + -tile->getTerrainLevel());
 	Position targetVoxel;
-	for (int x = -radius; x != radius; ++x)
+	for (int x = -radius; x < radius; ++x)
 	{
-		for (int y = -radius; y != radius; ++y)
+		for (int y = -radius; y < radius; ++y)
 		{
 			// we can skip the epicenter
 			if (x != 0 || y != 0)

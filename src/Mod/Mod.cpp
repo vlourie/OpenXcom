@@ -3743,6 +3743,19 @@ void Mod::loadAll()
 	}
 
 	// afterLoad() for Mod.h members
+	// the numbers of the mod the engine divides by
+	if (_globalTransferCostDiv == 0)
+	{
+		throw Exception("transferCosts: globalCostDiv cannot be 0");
+	}
+	if (_ufoBeamWidthParameter == 0)
+	{
+		throw Exception("ufoBeamWidthParameter cannot be 0");
+	}
+	if (_soldiersPerRank[RANK_SERGEANT] == 0 || _soldiersPerRank[RANK_CAPTAIN] == 0 || _soldiersPerRank[RANK_COLONEL] == 0)
+	{
+		throw Exception("soldiersPerSergeant, soldiersPerCaptain and soldiersPerColonel cannot be 0");
+	}
 	linkRule(_psiUnlockResearch, _psiUnlockResearchName);
 	linkRule(_fakeUnderwaterBaseUnlockResearch, _fakeUnderwaterBaseUnlockResearchName);
 	linkRule(_newBaseUnlockResearch, _newBaseUnlockResearchName);
