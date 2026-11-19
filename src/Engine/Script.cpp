@@ -122,6 +122,19 @@ static inline void addShade_h(int& reg, const int& var)
 		reg = 0x01;
 }
 
+/// Division and remainder of a script: the same numbers as "/" and "%", but the smallest int by -1 does not stop the processor (a mod's script could close the game with it).
+[[gnu::always_inline]]
+static inline int divInt_h(int a, int b)
+{
+	return b == -1 ? (int)(0u - (unsigned)a) : a / b;
+}
+
+[[gnu::always_inline]]
+static inline int modInt_h(int a, int b)
+{
+	return b == -1 ? 0 : a % b;
+}
+
 [[gnu::always_inline]]
 static inline RetEnum mulAddMod_h(int& reg, const int& mul, const int& add, const int& mod)
 {
@@ -260,8 +273,8 @@ static inline RetEnum bit_popcount_h(int& reg)
 	IMPL(offset,	MACRO_QUOTE({ Reg0 = Reg0 * Data1 + Data2;						return RetContinue; }),		(int& Reg0, int Data1, int Data2),			"arg1 = (arg1 * arg2) + arg3") \
 	IMPL(offsetmod,	MACRO_QUOTE({ return mulAddMod_h(Reg0, Mul1, Add2, Mod3);							}),		(int& Reg0, int Mul1, int Add2, int Mod3),	"arg1 = ((arg1 * arg2) + arg3) % arg4") \
 	\
-	IMPL(div,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 /= Data1;		return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 / arg2") \
-	IMPL(mod,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 %= Data1;		return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 % arg2") \
+	IMPL(div,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 = divInt_h(Reg0, Data1);	return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 / arg2") \
+	IMPL(mod,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 = modInt_h(Reg0, Data1);	return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 % arg2") \
 	IMPL(muldiv,	MACRO_QUOTE({ return mulDiv_h(Reg0, Data1, Data2);									}),		(int& Reg0, int Data1, int Data2),	"arg1 = (arg1 * arg2) / arg3") \
 	\
 	IMPL(shl,		MACRO_QUOTE({ Reg0 <<= Data1;									return RetContinue; }),		(int& Reg0, int Data1),		"Left bit shift of arg1 by arg2") \

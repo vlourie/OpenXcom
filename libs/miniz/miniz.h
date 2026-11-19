@@ -172,7 +172,9 @@
 
 #if MINIZ_X86_OR_X64_CPU
 /* Set MINIZ_USE_UNALIGNED_LOADS_AND_STORES to 1 on CPU's that permit efficient integer loads and stores from unaligned addresses. */
-#define MINIZ_USE_UNALIGNED_LOADS_AND_STORES 1
+/* OXCE-HD: 0 as in miniz 3.x (2.0.8 had 1 here): reading integers through casted byte pointers is undefined behaviour, UBSan reported 12 such places */
+#define MINIZ_USE_UNALIGNED_LOADS_AND_STORES 0
+#define MINIZ_UNALIGNED_USE_MEMCPY
 #else
 #define MINIZ_USE_UNALIGNED_LOADS_AND_STORES 0
 #endif
