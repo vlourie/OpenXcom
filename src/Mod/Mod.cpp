@@ -33,6 +33,7 @@
 #include "../Engine/Surface.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Engine/HdSprites.h"
+#include "../Engine/HdWorkers.h"
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdUiArt.h"
 #include "../Engine/HdBase.h"
@@ -4245,8 +4246,74 @@ void Mod::loadHdUiArt()
 	// one pack serves both games: on vanilla nearly every picture of it is unmatched, so one summary line, the names at debug
 	int unmatched = 0;
 	std::string unmatchedNames;
-	for (const std::string &file : files)
+	// what the files say first, on all the threads: the size of each picture (a file opened for its first 24 bytes)
+	// and its palette, if it has one (a text of 256 lines) - a mod has thousands (X-Piratez: 6000 pictures; one after
+	// another this was the longest single step of the game's start)
+	struct PictureFile
 	{
+		int width = 0, height = 0;
+		bool png = false, hasPalette = false, read = false;
+		std::vector<SDL_Color> palette;
+	};
+	std::vector<PictureFile> pictureFiles(files.size());
+	const auto readPictureFile = [&files, &pictureFiles](size_t i)
+	{
+		const std::string &file = files[i];
+		PictureFile &f = pictureFiles[i];
+		f = PictureFile();
+		f.png = HdSprites::pngSize(HdSprites::artPath("UI/" + file), f.width, f.height);
+		const std::string palPath = HdSprites::artPath("UI/" + file.substr(0, file.size() - 4) + ".pal.txt");
+		if (f.png && FileMap::fileExists(palPath))
+		{
+			f.hasPalette = true;
+			if (SDL_RWops *rw = FileMap::getRWops(palPath))
+			{
+				size_t size = 0;
+				void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+				if (data)
+				{
+					try
+					{
+						std::istringstream in(std::string((const char*)data, size));
+						int r, g, b;
+						while (in >> r >> g >> b && f.palette.size() < 256)
+						{
+							SDL_Color c;
+							c.r = (Uint8)r; c.g = (Uint8)g; c.b = (Uint8)b; c.unused = 255;
+							f.palette.push_back(c);
+						}
+					}
+					catch (...)
+					{
+						SDL_free(data);
+						throw;
+					}
+					SDL_free(data);
+				}
+			}
+		}
+		f.read = true;
+	};
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int chunks = std::max(1, std::min((int)(files.size() / 64), pool.threads() * 4));
+		pool.runCounted(chunks, [&files, &pictureFiles, &readPictureFile, chunks](int chunk)
+		{
+			const size_t to = files.size() * (chunk + 1) / chunks;
+			for (size_t i = files.size() * chunk / chunks; i < to; ++i)
+			{
+				const std::string &file = files[i];
+				if (!pictureFiles[i].read && file.size() >= 5 && file.compare(file.size() - 4, 4, ".png") == 0
+					&& !(file.size() > 10 && file.compare(file.size() - 10, 10, ".erase.png") == 0))
+				{
+					readPictureFile(i);
+				}
+			}
+		});
+	}
+	for (size_t fileIndex = 0; fileIndex < files.size(); ++fileIndex)
+	{
+		const std::string &file = files[fileIndex];
 		if (file.size() < 5 || file.substr(file.size() - 4) != ".png")
 		{
 			continue;
@@ -4302,39 +4369,24 @@ void Mod::loadHdUiArt()
 			continue;
 		}
 		// only the size now: the picture itself is read when first drawn (a mod can have thousands)
-		int width = 0, height = 0;
+		PictureFile &pictureFile = pictureFiles[fileIndex];
+		if (!pictureFile.read)
+		{
+			readPictureFile(fileIndex); // (its job failed twice, memory short for a moment - once more here)
+		}
+		const int width = pictureFile.width, height = pictureFile.height;
 		const std::string picture = HdSprites::artPath("UI/" + file);
-		if (!HdSprites::pngSize(picture, width, height))
+		if (!pictureFile.png)
 		{
 			Log(LOG_WARNING) << "HD interface: " << picture << " is not a PNG";
 			continue;
 		}
-		std::vector<SDL_Color> palette;
-		const std::string palPath = HdSprites::artPath("UI/" + lower + ".pal.txt");
-		if (FileMap::fileExists(palPath))
+		std::vector<SDL_Color> palette = std::move(pictureFile.palette);
+		if (pictureFile.hasPalette && palette.size() != 256)
 		{
-			if (SDL_RWops *rw = FileMap::getRWops(palPath))
-			{
-				size_t size = 0;
-				void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
-				if (data)
-				{
-					std::istringstream in(std::string((const char*)data, size));
-					int r, g, b;
-					while (in >> r >> g >> b && palette.size() < 256)
-					{
-						SDL_Color c;
-						c.r = (Uint8)r; c.g = (Uint8)g; c.b = (Uint8)b; c.unused = 255;
-						palette.push_back(c);
-					}
-					SDL_free(data);
-				}
-			}
-			if (palette.size() != 256)
-			{
-				Log(LOG_WARNING) << "HD interface: " << palPath << " should hold 256 lines 'r g b' - no re-tinting for " << it->second;
-				palette.clear();
-			}
+			Log(LOG_WARNING) << "HD interface: " << HdSprites::artPath("UI/" + lower + ".pal.txt")
+				<< " should hold 256 lines 'r g b' - no re-tinting for " << it->second;
+			palette.clear();
 		}
 		if (layer)
 		{

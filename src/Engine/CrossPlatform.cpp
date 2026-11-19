@@ -604,7 +604,10 @@ std::vector<std::tuple<std::string, bool, time_t>> getFolderContents(const std::
 	Log(LOG_VERBOSE) << "getFolderContents("<<path<<", "<<ext<<") -> " << search_path;
 	auto pathW = pathToWindows(search_path);
 	WIN32_FIND_DATAW ffd;
-	auto handle = FindFirstFileW(pathW.c_str(), &ffd);
+	// (the names and attributes only, fetched in large portions: the plain FindFirstFileW also asks the file system
+	// for the 8.3 name of every file and reads the folder a few entries at a time - the folders of a mod are listed
+	// whole at every start, and an HD pack has a hundred thousand files)
+	auto handle = FindFirstFileExW(pathW.c_str(), FindExInfoBasic, &ffd, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 	if (handle == INVALID_HANDLE_VALUE) {
 		Log(LOG_VERBOSE) << "getFolderContents("<<path<<", "<<ext<<"): fail outright.";
 		return files;
