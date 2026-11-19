@@ -122,6 +122,7 @@ void Ufo::load(const YAML::YamlNodeReader& node, const ScriptGlobal *shared, con
 	reader.tryRead("detected", _detected);
 	reader.tryRead("hyperDetected", _hyperDetected);
 	reader.tryRead("hdDecoded", _hdDecoded);
+	reader.tryRead("baseDefenseDone", _baseDefenseDone);
 	_hdDecoded = _hdDecoded || _hyperDetected;
 	reader.tryRead("secondsRemaining", _secondsRemaining);
 	reader.tryRead("inBattlescape", _inBattlescape);
@@ -275,6 +276,8 @@ void Ufo::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared, bool new
 		writer.write("hyperDetected", _hyperDetected);
 	if (_hdDecoded)
 		writer.write("hdDecoded", _hdDecoded);
+	if (_baseDefenseDone)
+		writer.write("baseDefenseDone", _baseDefenseDone);
 	if (_secondsRemaining)
 		writer.write("secondsRemaining", _secondsRemaining);
 	if (_inBattlescape)

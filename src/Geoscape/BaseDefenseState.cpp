@@ -458,6 +458,8 @@ void BaseDefenseState::btnOkClick(Action *)
 	_game->popState();
 	if (_ufo->getStatus() != Ufo::DESTROYED)
 	{
+		// the phase of the defences is over for this UFO, whatever becomes of the battle
+		_ufo->setBaseDefenseDone(true);
 		_state->handleBaseDefense(_base, _ufo);
 	}
 	else

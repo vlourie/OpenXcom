@@ -1205,7 +1205,8 @@ void GeoscapeState::time5Seconds()
 					ufo->setDestination(0);
 					base->setupDefenses(mission);
 					timerReset();
-					if (!base->getDefenses()->empty() && !ufo->getMission()->getRules().ignoreBaseDefenses())
+					// (the defences fire at a UFO once: an assault that was put on hold comes back at the ground battle)
+					if (!base->getDefenses()->empty() && !ufo->getMission()->getRules().ignoreBaseDefenses() && !ufo->getBaseDefenseDone())
 					{
 						bool instaHyper = ufo->getRules()->isInstaHyper() || mission->getRules().isInstaHyper();
 						popup(new BaseDefenseState(base, ufo, this, instaHyper));
@@ -3772,8 +3773,8 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 			// no battle, and no result of one either: the base keeps what it had (vehicles go back to the stores)
 			// and the assault is not over - the UFO stays above the base as it arrived
 			base->cleanupDefenses(true);
-			const bool held = holdBaseAssault(ufo);
-			popup(BattlescapeGenerator::refusalMessage(_game, _palette, false, held ? "STR_BASE_DEFENSE_GENERATION_FAILED" : "STR_BATTLE_GENERATION_FAILED"));
+			holdBaseAssault(ufo);
+			popup(BattlescapeGenerator::refusalMessage(_game, _palette, false, "STR_BASE_DEFENSE_GENERATION_FAILED"));
 			return;
 		}
 		_pause = true;
@@ -3792,15 +3793,28 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
  * it was before it arrived - in the air above the base, on the same leg of its trajectory - and is held there.
  * A held UFO is not tried again by this screen (the same refusal would come every 5 seconds); it can be shot down
  * like any other, and after a load of the game the assault is tried once more.
+ * The assault is held in every case: when there is no record of the arrival (no caller does that today), the UFO is
+ * put back by what the arrival is known to change. A held UFO flies; one that was on the ground hovers above the base.
+ * What the defences of the base did to the UFO stays (Ufo::getBaseDefenseDone): they do not fire at it again.
  * @param ufo The attacking UFO.
- * @return False when there is nothing to put back (the attackers are gone then, as after a defense).
  */
-bool GeoscapeState::holdBaseAssault(Ufo *ufo)
+void GeoscapeState::holdBaseAssault(Ufo *ufo)
 {
-	const AssaultArrival &a = _assaultArrival;
-	if (a.ufoId != ufo->getUniqueId() || a.altitude == "STR_GROUND")
+	AssaultArrival a = _assaultArrival;
+	if (a.ufoId != ufo->getUniqueId())
 	{
-		return false;
+		a = AssaultArrival();
+		a.ufoId = ufo->getUniqueId();
+		a.trajectoryPoint = ufo->getTrajectoryPoint() > 0 ? ufo->getTrajectoryPoint() - 1 : 0;
+		a.altitude = ufo->getAltitude();
+		a.detected = ufo->getDetected();
+		a.hyperDetected = ufo->getHyperDetected();
+		a.landId = ufo->getLandId();
+		a.speed = ufo->getSpeed();
+	}
+	if (a.altitude == "STR_GROUND")
+	{
+		a.altitude = "STR_VERY_LOW";
 	}
 	AlienMission *mission = ufo->getMission();
 	if (mission->getRules().getObjective() == OBJECTIVE_INSTANT_RETALIATION)
@@ -3823,7 +3837,6 @@ bool GeoscapeState::holdBaseAssault(Ufo *ufo)
 	wp->setLatitude(ufo->getLatitude());
 	ufo->setDestination(wp);
 	_heldAssaults.insert(a.ufoId);
-	return true;
 }
 
 /**

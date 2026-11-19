@@ -212,7 +212,7 @@ public:
 	/// Handles base defense
 	void handleBaseDefense(Base *base, Ufo *ufo);
 	/// Puts a base assault whose battle cannot be generated on hold.
-	bool holdBaseAssault(Ufo *ufo);
+	void holdBaseAssault(Ufo *ufo);
 	/// Update the resolution settings, we just resized the window.
 	void resize(int &dX, int &dY) override;
 	/// Handle alien mission generation.
