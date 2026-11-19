@@ -1223,9 +1223,13 @@ void PurchaseState::increaseByValue(int change)
 
 	if (errorMessage.empty())
 	{
-		int64_t maxByMoney = (_game->getSavedGame()->getFunds() - _total) / getRow().cost;
-		if (maxByMoney >= 0)
-			change = (int)std::min<int64_t>(maxByMoney, change);
+		// a row that costs nothing (free hire of a mod, a price the coefficient or a script brings to 0) is not limited by money
+		if (getRow().cost > 0)
+		{
+			int64_t maxByMoney = (_game->getSavedGame()->getFunds() - _total) / getRow().cost;
+			if (maxByMoney >= 0)
+				change = (int)std::min<int64_t>(maxByMoney, change);
+		}
 		switch (getRow().type)
 		{
 		case TRANSFER_SOLDIER:
