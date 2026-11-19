@@ -20,6 +20,7 @@
 #include "ModScript.h"
 #include <algorithm>
 #include <functional>
+#include <future>
 #include <sstream>
 #include <climits>
 #include <cassert>
@@ -4573,37 +4574,43 @@ void Mod::loadMod(const std::vector<FileMap::FileRecord> &rulesetFiles, ModScrip
 	std::sort(sortedRulesetFiles.begin(), sortedRulesetFiles.end(),
 		[](const FileMap::FileRecord& a, const FileMap::FileRecord& b)
 		{ return a.fullpath > b.fullpath; });
-	// The text of every file becomes a YAML tree ahead, in the worker threads: a third of the time of the rulesets of
-	// a large mod is this parse, and the trees do not depend on each other. The rules are still taken from the trees
-	// one file at a time, in the same order, on this thread, and a tree is dropped as soon as its file is done. A file
-	// that did not parse here (or lies in an archive) is left to loadFile, which reads it as before - with the same
-	// error, at the same place in the order.
-	std::vector<std::unique_ptr<YAML::YamlRootNodeReader>> parsedAhead(sortedRulesetFiles.size());
-	if (sortedRulesetFiles.size() > 1)
-	{
-		HdWorkers::instance().runCounted((int)sortedRulesetFiles.size(), [&sortedRulesetFiles, &parsedAhead](int i)
-		{
-			const FileMap::FileRecord &rec = sortedRulesetFiles[i];
-			if (rec.zip != NULL)
-			{
-				return;
-			}
-			try
-			{
-				RawData data = CrossPlatform::readFileRaw(rec.fullpath);
-				parsedAhead[i].reset(new YAML::YamlRootNodeReader(data, rec.fullpath));
-			}
-			catch (...)
-			{
-				parsedAhead[i].reset();
-			}
-		});
-	}
-	size_t fileIndexAhead = 0;
+	// A third of the time of the rulesets of a large mod is the parse of the text into a YAML tree, and the trees do
+	// not depend on each other: while the rules of one file are taken from its tree here, the next file is read and
+	// parsed on another thread. Only a window of files is ahead at any moment - the trees of a whole mod at once took
+	// 320 MiB to save the same time - and a tree is dropped as soon as its file is done. The rules are taken one file
+	// at a time, in the same order, on this thread. A file that did not parse ahead (or lies in an archive) is left
+	// to loadFile, which reads it as before - with the same error, at the same place in the order.
+	const size_t window = 4;
+	std::vector<std::future<std::unique_ptr<YAML::YamlRootNodeReader>>> parsedAhead(sortedRulesetFiles.size());
+	size_t startedAhead = 0, fileIndexAhead = 0;
 	for (const auto& filerec : sortedRulesetFiles)
 	{
 		Log(LOG_VERBOSE) << "- " << filerec.fullpath;
-		std::unique_ptr<YAML::YamlRootNodeReader> parsedFile = std::move(parsedAhead[fileIndexAhead++]);
+		for (; window > 0 && startedAhead < sortedRulesetFiles.size() && startedAhead <= fileIndexAhead + window; ++startedAhead)
+		{
+			const FileMap::FileRecord *rec = &sortedRulesetFiles[startedAhead];
+			if (rec->zip == NULL)
+			{
+				parsedAhead[startedAhead] = std::async(std::launch::async, [rec]() -> std::unique_ptr<YAML::YamlRootNodeReader>
+				{
+					try
+					{
+						RawData data = CrossPlatform::readFileRaw(rec->fullpath);
+						return std::make_unique<YAML::YamlRootNodeReader>(data, rec->fullpath);
+					}
+					catch (...)
+					{
+						return nullptr;
+					}
+				});
+			}
+		}
+		std::unique_ptr<YAML::YamlRootNodeReader> parsedFile;
+		if (parsedAhead[fileIndexAhead].valid())
+		{
+			parsedFile = parsedAhead[fileIndexAhead].get();
+		}
+		++fileIndexAhead;
 		try
 		{
 			_scriptGlobal->fileLoad(filerec.fullpath);
