@@ -1,0 +1,29 @@
+﻿Faster:
+- The game starts faster: 2.4 -> about 1.5-1.8 seconds to the main menu (X-Piratez bench with the HD mods; the numbers differ from machine to machine).
+- A late campaign saves about two and a half times faster (0.6 -> 0.24 s).
+- In long campaigns the research list and the after-battle awards screen open faster.
+
+Less memory:
+- The main menu takes about 50-60 MB less.
+- After a battle the game no longer keeps enlarged copies of every frame the battle opened - only of those actually drawn: at scale 4 after three battles about 810 MB instead of 1020, in battle about 1170 instead of 1350 (Windows).
+- Writing a save no longer takes an extra half a gigabyte of memory for a moment.
+
+Stability:
+- Loading a save either gives the loaded game or leaves the current one: a damaged or unfit save is refused with a message instead of closing the game or spoiling the battle in progress.
+- Loading a battle saved at another HD scale no longer leaves the game half-way.
+- If the generator cannot build a battle map, the game says so and returns to the globe instead of closing; the campaign is not changed.
+- Base defence: the attack goes by phases, the facilities fire at the UFO once; a failed battle generation is no longer counted as the enemy leaving.
+- Stores: nothing is bought or transferred beyond the capacity, cargo on the way is counted; the craft equipment auto-buy does not order more than fits. Very large deal sums no longer overflow, a transfer with zero travel time is delivered once.
+- The game no longer closes on rare battle cases: a throw by a unit with zero strength, a unit without time units in the reaction score, a high-rank reinforcement, a map without route nodes.
+- Video card mode: a single driver error recreates the resources; after several in a row the mode is switched off for the session instead of crashing.
+- If the game does crash, openxcom.log now keeps a record of the place - also when the crash was not in the main thread. Please attach the log to your report.
+
+Security:
+- Damaged or wrongly built mod files (music, sounds, fonts, maps, videos, pictures) are refused with a message in the log instead of reading memory outside the file.
+- Pictures are read by our own build of SDL_image (branch SDL-1.2 with the security fixes); all pictures of X-Piratez and the mods decode exactly as before.
+- Mod scripts: an endless loop is stopped and named in the log; integer operations no longer close the game (the lowest number divided by -1 and the like).
+
+Compatibility:
+- Mod rules are checked after loading: the chain mission - wave - UFO - deployment, mission sites, stage rings. An error is named at once, with the name of the rule, instead of surfacing in the middle of a campaign.
+- Battle mechanics, balance and random numbers are unchanged; old saves load. The picture without enlargement matches the previous one byte for byte on the checked set of frames.
+- The game folder now has THIRD-PARTY-NOTICES.txt - the licences of the third-party libraries of the engine.

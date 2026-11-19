@@ -633,6 +633,10 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
         $lic = Join-Path $repoDir 'LICENSE.txt'
         if (-not (Test-Path -LiteralPath $lic)) { throw "нет $lic - без текста GPL выпуск с exe не собирать" }
         Copy-Item -LiteralPath $lic -Destination (Join-Path $stageDir 'LICENSE.txt') -Force
+        # лицензии сторонних библиотек, вошедших в exe (MIT и zlib требуют уведомления рядом с бинарником)
+        $tpn = Join-Path $repoDir 'THIRD-PARTY-NOTICES.txt'
+        if (-not (Test-Path -LiteralPath $tpn)) { throw "нет $tpn - без уведомлений о сторонних библиотеках выпуск с exe не собирать" }
+        Copy-Item -LiteralPath $tpn -Destination (Join-Path $stageDir 'THIRD-PARTY-NOTICES.txt') -Force
         $src = if ($hash -match '^[0-9a-f]+$') { "https://github.com/vlourie/OpenXcom/commit/$hash" } else { 'https://github.com/vlourie/OpenXcom (branch hd-render)' }
         $notice = @(
             'OXCE-HD - an unofficial fork of OpenXcom Extended 8.7.1 (https://github.com/MeridianOXC/OpenXcom).',
@@ -640,7 +644,8 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
             'battle effects, voices and Lua mods. The list of changes is in the Git history and CHANGELOG.md.',
             '',
             "$exeName is free software under the GNU General Public License version 3, see LICENSE.txt.",
-            'It comes with NO WARRANTY.',
+            'It comes with NO WARRANTY. The licences of the third-party libraries inside it are in',
+            'THIRD-PARTY-NOTICES.txt.',
             '',
             'Source code of this exact build:',
             "  $src",

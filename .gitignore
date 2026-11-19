@@ -72,6 +72,10 @@ docs/html/
 /build/
 build-release/
 build-ai*/
+build-asan*/
+# свидетельства аудитов (журналы прогонов, сейвы игроков, дампы кадров) - только локально
+/docs/QA/AUDIT05/evidence/
+/docs/QA/AUDIT05/inventory/
 build-tests*/
 apply_ai_tactical_module_replacements.py
 Dependencies/
