@@ -360,13 +360,92 @@ void Surface::loadScr(const std::string& filename)
  * known format into the surface.
  * @param filename Filename of the image.
  */
-void Surface::loadImage(const std::string &filename)
+void Surface::readPngAhead(const std::string &filename, PngAhead &ahead)
+{
+	// Only the plain case is taken: a file on the disk (an archive is read through one shared reader), a PNG that
+	// unpacks, 8 bits a pixel. Everything else - and every message about it - is left to loadImage(), in its turn.
+	ahead.ready = false;
+	try
+	{
+		if (!CrossPlatform::compareExt(filename, "png") || !FileMap::fileExists(filename))
+		{
+			return;
+		}
+		const FileMap::FileRecord *rec = FileMap::at(filename);
+		if (rec->zip != NULL)
+		{
+			return;
+		}
+		SDL_RWops *rw = SDL_RWFromFile(rec->fullpath.c_str(), "rb");
+		if (!rw)
+		{
+			return;
+		}
+		size_t size = 0;
+		void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+		if ((data != NULL) && (size > 8 + 12 + 12))
+		{
+			lodepng::State state;
+			state.decoder.color_convert = 0;
+			unsigned error = lodepng::decode(ahead.image, ahead.width, ahead.height, state, (const unsigned char*)data, size);
+			const LodePNGColorMode *color = &state.info_png.color;
+			if (!error && lodepng_get_bpp(color) == 8)
+			{
+				const SDL_Color *colors = (const SDL_Color*)color->palette;
+				ahead.palette.assign(colors, colors + (colors ? color->palettesize : 0));
+				ahead.ready = true;
+			}
+		}
+		if (data) { SDL_free(data); }
+	}
+	catch (...)
+	{
+		ahead.ready = false;
+	}
+	if (!ahead.ready)
+	{
+		std::vector<unsigned char>().swap(ahead.image);
+	}
+}
+
+void Surface::loadImage(const std::string &filename, PngAhead *ahead)
 {
 	// Destroy current surface (will be replaced)
 	_alignedBuffer = nullptr;
 	_surface = nullptr;
 
 	Log(LOG_VERBOSE) << "Loading image: " << filename;
+	if (ahead && ahead->ready)
+	{
+		// the file was read and unpacked ahead (readPngAhead): the same steps as the LodePNG branch below
+		*this = Surface(ahead->width, ahead->height, 0, 0);
+		setPalette(ahead->palette.data(), 0, (int)ahead->palette.size());
+
+		ShaderDrawFunc(
+			[](Uint8& dest, unsigned char& src)
+			{
+				dest = src;
+			},
+			ShaderSurface(this),
+			ShaderSurface(SurfaceRaw<unsigned char>(ahead->image, ahead->width, ahead->height))
+		);
+		int transparent = 0;
+		for (int c = 0; c < _surface->format->palette->ncolors; ++c)
+		{
+			SDL_Color *palColor = _surface->format->palette->colors + c;
+			if (palColor->unused == 0)
+			{
+				transparent = c;
+				break;
+			}
+		}
+		FixTransparent(_surface, transparent);
+		if (transparent != 0)
+		{
+			Log(LOG_WARNING) << "Image " << filename << " (from lodepng) has incorrect transparent color index " << transparent << " (instead of 0).";
+		}
+		return;
+	}
 	auto rw = FileMap::getRWops(filename);
 	if (!rw) { return; } // relevant message gets logged in FileMap.
 

@@ -128,8 +128,18 @@ public:
 	void loadSpk(const std::string &filename);
 	/// Loads a TFTD BDY graphic.
 	void loadBdy(const std::string &filename);
+	/// A PNG file read and unpacked ahead of loadImage(), on any thread.
+	struct PngAhead
+	{
+		bool ready = false;
+		unsigned width = 0, height = 0;
+		std::vector<unsigned char> image;
+		std::vector<SDL_Color> palette;
+	};
+	/// Reads and unpacks an 8-bit PNG file for loadImage(); says nothing and leaves "ready" off when it is anything else.
+	static void readPngAhead(const std::string &filename, PngAhead &ahead);
 	/// Loads a general image file.
-	void loadImage(const std::string &filename);
+	void loadImage(const std::string &filename, PngAhead *ahead = nullptr);
 	/// Clears the surface's contents with a specified colour.
 	void clear();
 	/// Offsets the surface's colors by a set amount.

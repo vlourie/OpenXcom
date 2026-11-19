@@ -25,6 +25,7 @@
 #include "../Engine/Logger.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Unicode.h"
+#include "../Engine/HdWorkers.h"
 #include "Mod.h"
 
 namespace OpenXcom
@@ -224,10 +225,39 @@ SurfaceSet *ExtraSprites::loadSurfaceSet(SurfaceSet *set)
 		}
 	}
 
+	// A set of thousands of single pictures (the items of a large mod) spent its time opening and unpacking them one
+	// by one. The files are read and unpacked ahead in the worker threads; the frames are still made and filled here,
+	// in the order of the list, and whatever is not a plain 8-bit PNG on the disk is loaded by loadImage() as before.
+	std::vector<Surface::PngAhead> ahead(_sprites.size());
+	if (_sprites.size() >= 16)
+	{
+		std::vector<const std::string*> names;
+		names.reserve(_sprites.size());
+		for (const auto& pair : _sprites)
+		{
+			const auto& fileName = pair.second;
+			names.push_back(fileName.empty() || fileName[fileName.length() - 1] == '/' ? nullptr : &fileName);
+		}
+		HdWorkers &pool = HdWorkers::instance();
+		const int chunks = std::max(1, std::min((int)(names.size() / 8), pool.threads() * 4));
+		pool.runCounted(chunks, [&names, &ahead, chunks](int chunk)
+		{
+			const size_t to = names.size() * (chunk + 1) / chunks;
+			for (size_t i = names.size() * chunk / chunks; i < to; ++i)
+			{
+				if (names[i])
+				{
+					Surface::readPngAhead(*names[i], ahead[i]);
+				}
+			}
+		});
+	}
+	size_t aheadIndex = 0;
 	for (const auto& pair : _sprites)
 	{
 		int startFrame = pair.first;
 		const auto& fileName = pair.second;
+		Surface::PngAhead *png = &ahead[aheadIndex++];
 		if (fileName[fileName.length() - 1] == '/')
 		{
 			Log(LOG_VERBOSE) << "Loading surface set from folder: " << fileName << " starting at frame: " << startFrame;
@@ -254,12 +284,12 @@ SurfaceSet *ExtraSprites::loadSurfaceSet(SurfaceSet *set)
 		{
 			if (!subdivision)
 			{
-				getFrame(set, startFrame)->loadImage(fileName);
+				getFrame(set, startFrame)->loadImage(fileName, png);
 			}
 			else
 			{
 				Surface temp = Surface(_width, _height);
-				temp.loadImage(fileName);
+				temp.loadImage(fileName, png);
 				int xDivision = _width / _subX;
 				int yDivision = _height / _subY;
 				int frames = xDivision * yDivision;
