@@ -34,6 +34,7 @@
 #include "HdGpu.h"
 #include "HdGpuGl.h"
 #include "HdGpuAtlas.h"
+#include "HdGpuTrust.h"
 #include "HdSprites.h"
 #include "Logger.h"
 
@@ -897,7 +898,7 @@ struct HdGpuWorld::Impl
 	Uint64 heldKey = 0, frameKey = 0;
 	bool heldValid = false, frameLight = false;
 	bool restFailed = false;          // the card could not make the textures of the light at rest: not tried again
-	int cardErrors = 0;               // how often the driver told of errors (HdGpu::takeErrors); kept over release()
+	HdGpuTrust trust;                 // what the driver's errors (HdGpu::takeErrors) did to the card; kept over release()
 	/// HdRadar's wash (wash): the picture, its key and size; the key of this frame's (one a frame, as the light).
 	GLuint washTex = 0;
 	int washW = 0, washH = 0;
@@ -1318,15 +1319,24 @@ bool HdGpuWorld::begin(SDL_Surface *world)
 	}
 	// what the driver told of since the last frame (HdGpu::takeErrors, A03-006): something on the card may be not
 	// what was sent - an update of a texture as well as its making, in any of the calls. Everything of the world
-	// on the card is dropped and made anew, the processor draws this frame; the third time it draws for good
+	// on the card is dropped and made anew, the processor draws this frame. Errors again and again: the processor
+	// draws for a rest, then for good (HdGpuTrust) - until the display is set anew (HdGpuWorld::release)
 	std::string told;
-	if (const unsigned errors = HdGpu::takeErrors(told))
+	const unsigned errors = HdGpu::takeErrors(told);
+	const Uint32 now = SDL_GetTicks();
+	if (!m.trust.card(now))
 	{
-		const bool last = ++m.cardErrors >= 3;
+		// nothing of the world is on the card: what the driver told of is not the world's
+		return false;
+	}
+	if (errors)
+	{
+		const HdGpuTrust::Answer answer = m.trust.error(now);
 		Log(LOG_ERROR) << "HD GPU world: the driver told of " << errors << " error(s) (" << told << ") - "
-			<< (last ? "the processor draws the world from now on" : "what is on the card is made anew");
+			<< (answer == HdGpuTrust::ANEW ? "what is on the card is made anew"
+				: answer == HdGpuTrust::REST ? "the processor draws the world for a while, then the card is tried again"
+				: "the processor draws the world until the display is set anew");
 		m.release();
-		m.built = m.failed = last;
 		m.dirty = true;
 		return false;
 	}
@@ -1424,6 +1434,7 @@ bool HdGpuWorld::end()
 	m.composite();
 	_on = false;
 	++m.stats.card;
+	m.trust.frame();
 	if (_verify)
 	{
 		// the card's frame against the processor's, pixel for pixel
@@ -2385,6 +2396,8 @@ void HdGpuWorld::release()
 	if (_impl)
 	{
 		_impl->release();
+		// the context is made anew (the player changed the display): the card is asked again
+		_impl->trust.reset();
 	}
 }
 

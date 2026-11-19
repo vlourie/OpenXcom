@@ -45,6 +45,15 @@ endif ()
 add_test ( NAME hdgputold COMMAND hdgputold_test )
 set_tests_properties ( hdgputold PROPERTIES TIMEOUT 300 )
 
+# the world on the card after the driver's errors: made anew, rests, off (a header only, no video card needed)
+add_executable ( hdgputrust_test hdgputrust_test.cpp )
+target_compile_options ( hdgputrust_test PRIVATE -Wall -Wextra )
+if ( HD_TEST_SANITIZE )
+  target_compile_options ( hdgputrust_test PRIVATE -fsanitize=${HD_TEST_SANITIZE} -fno-omit-frame-pointer -g )
+  target_link_options ( hdgputrust_test PRIVATE -fsanitize=${HD_TEST_SANITIZE} )
+endif ()
+add_test ( NAME hdgputrust COMMAND hdgputrust_test )
+
 # the rays of the line of fire with the target straight above or below the shooter (audit AUDIT-04 9): the game's own
 # calculateLineHelper(), cut out of TileEngine.cpp when the test is built. A test only - the game is not changed
 add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/calc_line_helper.inc
