@@ -2442,8 +2442,8 @@ void Map::drawTerrain(HdCanvas *surface)
 						if (softVapor)
 						{
 							// HD: a soft round puff at the particle's own place, fading smoothly (classic mode keeps the 2x2 pattern)
-							const Position o = p.getOffset16(_k);
-							surface->drawVaporSoft(vaporScreenOriginX * 16 + o.x + _k * 16, vaporScreenOriginY * 16 + o.y + _k * 16, p.getSize(), _k, vaporTintSoft(p));
+							const std::pair<int, int> o = p.getOffset16(_k);
+							surface->drawVaporSoft(vaporScreenOriginX * 16 + o.first + _k * 16, vaporScreenOriginY * 16 + o.second + _k * 16, p.getSize(), _k, vaporTintSoft(p));
 							continue;
 						}
 						int vaporX = vaporScreenOriginX + p.getOffsetX() * _k;
@@ -2497,8 +2497,8 @@ void Map::drawTerrain(HdCanvas *surface)
 						if (softVapor)
 						{
 							// HD: a soft round puff at the particle's own place, fading smoothly (classic mode keeps the 2x2 pattern)
-							const Position o = p.getOffset16(_k);
-							surface->drawVaporSoft(vaporScreenOriginX * 16 + o.x + _k * 16, vaporScreenOriginY * 16 + o.y + _k * 16, p.getSize(), _k, vaporTintSoft(p));
+							const std::pair<int, int> o = p.getOffset16(_k);
+							surface->drawVaporSoft(vaporScreenOriginX * 16 + o.first + _k * 16, vaporScreenOriginY * 16 + o.second + _k * 16, p.getSize(), _k, vaporTintSoft(p));
 							continue;
 						}
 						int vaporX = vaporScreenOriginX + p.getOffsetX() * _k;

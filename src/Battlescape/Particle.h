@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <utility>
 #include <SDL_types.h>
 #include "Position.h"
 
@@ -73,8 +74,9 @@ public:
 	/// Get the remaining life (the opacity level is derived from it): HD fades smoothly by it.
 	int getOpacityRaw() const { return _opacity; }
 	/// Screen offset relative to tile in 1/16 of an HD pixel at scale k (the exact place the classic
-	/// integer voxel offset rounds off): x in .x, y in .y. Valid after updateScreenPosition.
-	Position getOffset16(int k) const;
+	/// integer voxel offset rounds off): x, then y - in int, a Position (16 bits) is too small for the high levels
+	/// of a map (level 15 at k = 6). Valid after updateScreenPosition.
+	std::pair<int, int> getOffset16(int k) const;
 	/// Gets screen offset X relative to tile.
 	int getOffsetX() const { return _screenData.x; }
 	/// Gets screen offset Y relative to tile.

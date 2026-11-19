@@ -70,14 +70,10 @@ bool Particle::animate()
  * pixel: the sub-voxel position (1/256 voxel) is what the particle really has, and a voxel is a base pixel, k HD
  * pixels. Only the HD soft vapor reads it; the classic path keeps the rounded offset.
  */
-Position Particle::getOffset16(int k) const
+std::pair<int, int> Particle::getOffset16(int k) const
 {
 	const int sx = _subVoxelPos.x, sy = _subVoxelPos.y, sz = _subVoxelPos.z;
-	Position o;
-	o.x = (sx - sy) * k / 16;
-	o.y = ((sx + sy) / 2 - sz) * k / 16 - getTileZ() * Position::TileZ * k * 16;
-	o.z = 0;
-	return o;
+	return { (sx - sy) * k / 16, ((sx + sy) / 2 - sz) * k / 16 - getTileZ() * Position::TileZ * k * 16 };
 }
 
 /**
