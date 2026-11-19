@@ -179,6 +179,11 @@ void Soldier::load(const YAML::YamlNodeReader& node, const Mod *mod, SavedGame *
 	}
 
 	reader.tryRead("rank", _rank);
+	if (_rank < RANK_ROOKIE || _rank > RANK_COMMANDER)
+	{
+		// the rank is an index of fixed tables (rank counts, the best of a rank, soldiers per rank)
+		throw Exception("Invalid soldier rank in the save");
+	}
 	reader.tryRead("gender", _gender);
 	reader.tryRead("look", _look);
 	reader.tryRead("lookVariant", _lookVariant);
