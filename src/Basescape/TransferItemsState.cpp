@@ -1189,6 +1189,8 @@ void TransferItemsState::increaseByValue(int change)
 				{
 					freeStoresForItem = (freeStores + 0.05) / storesNeededPerItem;
 				}
+				// the stores count an item in an int: never send what the destination could not count (it would be lost on arrival)
+				freeStoresForItem = std::min(freeStoresForItem, (double)INT_MAX - getRow().qtyDst - getRow().amount);
 				change = std::min(std::min((int)freeStoresForItem, getRow().qtySrc - getRow().amount), change);
 				_iQty += change * storesNeededPerItem;
 			}
@@ -1316,6 +1318,9 @@ void TransferItemsState::exchangeByValue(int change)
 	bool toDst = change > 0;
 	int k = toDst ? change : (change == INT_MIN ? INT_MAX : -change);
 	int limit = toDst ? row.qtySrc - row.amount : row.amount + row.qtyDst;
+	// neither base may end with more than its stores can count (an int)
+	const int64_t room = toDst ? (int64_t)INT_MAX - row.qtyDst - row.amount : (int64_t)INT_MAX - row.qtySrc + row.amount;
+	limit = (int)std::min<int64_t>(limit, room);
 	k = std::min(k, limit);
 	if (k <= 0) return;
 	int cancel = toDst ? std::max(0, -row.amount) : std::max(0, row.amount);

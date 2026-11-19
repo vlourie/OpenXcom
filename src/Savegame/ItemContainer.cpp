@@ -104,6 +104,11 @@ void ItemContainer::addItem(const RuleItem* item, int qty)
 	{
 		auto it = _qty.find(item);
 		const int64_t sum = (int64_t)(it != _qty.end() ? it->second : 0) + qty;
+		if (sum > INT_MAX)
+		{
+			// the screens that sell for money (purchase, transfer) never ask for more than fits; whatever else does is told, not dropped in silence
+			Log(LOG_ERROR) << "Stores cannot count more than " << INT_MAX << " of " << item->getType() << ": " << (sum - INT_MAX) << " not added.";
+		}
 		if (sum <= 0)
 		{
 			if (it != _qty.end()) _qty.erase(it);

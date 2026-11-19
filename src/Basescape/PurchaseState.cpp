@@ -1289,6 +1289,8 @@ void PurchaseState::increaseByValue(int change)
 					{
 						maxByStores = (freeStores + 0.05) / storesNeededPerItem;
 					}
+					// the stores count an item in an int: never buy what the base could not count (it would be paid for and lost)
+					maxByStores = std::min(maxByStores, (double)INT_MAX - getRow().qtySrc - getRow().amount);
 					change = std::min((int)maxByStores, change);
 					_iQty += change * storesNeededPerItem;
 				}

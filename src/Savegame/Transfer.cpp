@@ -389,7 +389,14 @@ int Transfer::getTravelHours(double distance)
  */
 int64_t Transfer::getTransferPrice(const Mod *mod, int64_t sum)
 {
-	return std::max<int64_t>(1, sum * mod->getGlobalTransferCostMultiplier() / mod->getGlobalTransferCostDivider());
+	const int64_t mult = mod->getGlobalTransferCostMultiplier(), div = mod->getGlobalTransferCostDivider();
+	if (mult > 1 && sum > INT64_MAX / mult)
+	{
+		// the product would not fit 64 bits: divide first, and stop at the largest sum instead of wrapping to a negative price
+		const int64_t part = sum / div;
+		return part > INT64_MAX / mult ? INT64_MAX : std::max<int64_t>(1, part * mult);
+	}
+	return std::max<int64_t>(1, sum * mult / div);
 }
 
 }
