@@ -49,7 +49,9 @@ class Logger
 {
 public:
 	Logger() : _level(LOG_INFO) { };
-	virtual ~Logger() { CrossPlatform::log(_level, os); };
+	/// (a line that cannot be written is lost, not a crash: writing asks for memory, and a line is also written
+	/// while an exception for the lack of it unwinds - a second one thrown from here would end the game)
+	virtual ~Logger() { try { CrossPlatform::log(_level, os); } catch (...) { } };
 	std::ostringstream& get(SeverityLevel level = LOG_INFO) { _level = level; return os; };
 
 	static SeverityLevel& reportingLevel() {

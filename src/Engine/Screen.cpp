@@ -308,9 +308,10 @@ void Screen::clear()
 			// a world of the display's size is megabytes: one core's memset was a quarter of the battle frame
 			// (profile 27.10), so the rows are zeroed in parallel; with two threads the hand-over cost more
 			// than it saved (the base 5.2 -> 6.3 ms)
-			Uint8 *pixels = (Uint8*)world->pixels;
-			const int jobs = std::min(pool.threads(), 8);
-			pool.runCounted(jobs, [&](int job) { memset(pixels + bytes * job / jobs, 0, bytes * (job + 1) / jobs - bytes * job / jobs); });
+			// (one reference is all the job carries: it fits into the std::function itself, so that this asks for no
+			// memory - the display is also cleared when a rejected load is undone, and that must not need any)
+			const struct { Uint8 *pixels; size_t bytes; int jobs; } z = { (Uint8*)world->pixels, bytes, std::min(pool.threads(), 8) };
+			pool.runCounted(z.jobs, [&z](int job) { memset(z.pixels + z.bytes * job / z.jobs, 0, z.bytes * (job + 1) / z.jobs - z.bytes * job / z.jobs); });
 		}
 		else
 		{

@@ -50,6 +50,13 @@ namespace HdPaletteShift
 	void remove();
 	/// Whether a transformation is carried over now.
 	bool active();
+	/// A load puts the colours of the battle before aside, whole: the tables of its transformation and the frames it
+	/// recoloured are kept, and from now on there is none (the loaded battle installs its own, which leaves the
+	/// loaded frames of the battle before alone). Throws when out of memory, with nothing changed.
+	void park();
+	/// The end of that load. back: the transformation put aside is the one carried over again, with its tables and its
+	/// frames as they were - nothing is built, nothing is read from a file, no memory is asked for. Otherwise it goes.
+	void unpark(bool back);
 }
 
 }

@@ -59,6 +59,16 @@ namespace
 	bool on = false;
 	std::atomic<unsigned> recolouredTerrain(0), recolouredOther(0);
 
+	/// The transformation a load put aside (park).
+	struct Parked
+	{
+		std::vector<float> lut, table;
+		std::unordered_set<const void*> terrainKeys;
+		unsigned terrain = 0, other = 0;
+	};
+	Parked *parked = nullptr; ///< (none: the battle before carried no transformation)
+	bool parkedAny = false;
+
 	inline size_t cellOf(int r, int g, int b) { return (((size_t)r * TN + g) * TN + b) * 3; }
 
 	/// Trilinear read of a 64^3 table at a colour (the cell centres; clamped at the edges).
@@ -511,7 +521,14 @@ void remove()
 		return;
 	}
 	HdSprites::setRecolour(nullptr);
-	Log(LOG_INFO) << "HD palette shift: off, recoloured " << recolouredTerrain.load() << " terrain and " << recolouredOther.load() << " other frame(s)";
+	try
+	{
+		Log(LOG_INFO) << "HD palette shift: off, recoloured " << recolouredTerrain.load() << " terrain and " << recolouredOther.load() << " other frame(s)";
+	}
+	catch (...)
+	{
+		// the line needs memory, and this also runs when a load that found none is undone
+	}
 	on = false;
 	terrainKeys.clear();
 	std::vector<float>().swap(lut);
@@ -521,6 +538,60 @@ void remove()
 bool active()
 {
 	return on;
+}
+
+void park()
+{
+	if (parkedAny)
+	{
+		return;
+	}
+	Parked *p = on ? new Parked : nullptr;
+	try
+	{
+		HdSprites::parkRecolour();
+	}
+	catch (...)
+	{
+		delete p;
+		throw;
+	}
+	if (p)
+	{
+		p->lut.swap(lut);
+		p->table.swap(table);
+		p->terrainKeys.swap(terrainKeys);
+		p->terrain = recolouredTerrain.exchange(0);
+		p->other = recolouredOther.exchange(0);
+	}
+	parked = p;
+	parkedAny = true;
+	on = false;
+}
+
+void unpark(bool back)
+{
+	if (!parkedAny)
+	{
+		return;
+	}
+	parkedAny = false;
+	if (back)
+	{
+		remove(); // (the loaded battle's own is off by now, unless its screen failed half made)
+		if (parked)
+		{
+			lut.swap(parked->lut);
+			table.swap(parked->table);
+			terrainKeys.swap(parked->terrainKeys);
+			recolouredTerrain = parked->terrain;
+			recolouredOther = parked->other;
+			on = true;
+		}
+	}
+	HdSprites::unparkRecolour(back);
+	delete parked;
+	parked = nullptr;
 }
 
 }

@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <functional>
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -235,6 +236,15 @@ namespace HdSprites
 	/// The loaded pictures recoloured by the previous one are dropped (read again when drawn);
 	/// with a new one the loaded pictures are recoloured at once, each exactly once.
 	void setRecolour(Recolour fn);
+	/// A load puts the colours of the loaded pictures aside: the pictures the recolouring made are kept (not drawn,
+	/// not counted as loaded) and the pictures read from now on are in their own colours; a recolouring set before
+	/// the load ends keeps the loaded pictures in their own colours aside too, instead of recolouring them in place.
+	/// Throws when out of memory, with nothing changed.
+	void parkRecolour();
+	/// The end of that load. back: the recolouring and the loaded pictures are in place again as they were, and what
+	/// was read since in other colours goes (nothing is read from a file and no memory is asked for); otherwise the
+	/// kept pictures go.
+	void unparkRecolour(bool back);
 	/// Calls fn on every lazy picture of the frames of the sets (the frames, their variants and the
 	/// addressed walls), with the classic frame it replaces and the picture in its own colours,
 	/// on all cores; `place` numbers the pictures in a fixed order (0 .. n - 1, the same for the

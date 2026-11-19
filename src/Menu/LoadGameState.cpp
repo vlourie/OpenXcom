@@ -25,6 +25,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/Screen.h"
+#include "../Engine/HdPaletteShift.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/Text.h"
 #include "../Geoscape/GeoscapeState.h"
@@ -240,6 +241,9 @@ void LoadGameState::think()
 		CollapsePilot::park();
 		if (origBattleState != 0 && s->getEnding() == END_NONE)
 		{
+			// The colour shift the battle before gave its HD frames is put aside whole, with the frames it recoloured:
+			// undone, the load puts it back as it was, without building its tables or reading a frame again
+			HdPaletteShift::park();
 			// We need to reset palettes here already, can't wait for the destructor
 			palettes = origBattleState->resetPalettes();
 		}
@@ -258,6 +262,7 @@ void LoadGameState::think()
 		// nothing made at the scale before is left to point at what was parked
 		mod->dropHdScale(scalePark);
 		scalePark = 0;
+		HdPaletteShift::unpark(false);
 		_game->getScreen()->unparkWorld(false);
 		Timer::hdFrameSkip = frameSkipNow;
 		if (bs != 0)
@@ -316,8 +321,12 @@ void LoadGameState::think()
 			if (origBattleState != 0 && palettes)
 			{
 				BattlescapeState::restorePalettes(mod);
+				// the colour shift of the battle that goes on is in place again before its palettes are:
+				// reapplyPalettes finds it carried over and builds nothing
+				HdPaletteShift::unpark(true);
 				origBattleState->reapplyPalettes();
 			}
+			HdPaletteShift::unpark(true);
 			Options::baseXResolution = baseX;
 			Options::baseYResolution = baseY;
 			_game->getScreen()->unparkWorld(true);

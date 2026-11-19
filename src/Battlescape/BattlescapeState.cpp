@@ -887,15 +887,21 @@ void BattlescapeState::restorePalettes(Mod *mod)
 {
 	// HD render: the frames go back to their own colours (read again from their files)
 	HdPaletteShift::remove();
-	for (auto& origPal : mod->getPalettes())
+	// "BACKUP_PAL_x" keeps the colours of "PAL_x". The names are compared in place, not built: this also runs when
+	// a rejected load is undone, and that must not need memory
+	const auto &palettes = mod->getPalettes();
+	for (auto& backupPal : palettes)
 	{
-		if (origPal.first.find("PAL_") == 0)
+		if (backupPal.first.compare(0, 11, "BACKUP_PAL_") != 0 || !backupPal.second)
 		{
-			std::string backupName = "BACKUP_" + origPal.first;
-			Palette *backupPal = mod->getPalette(backupName, false);
-			if (backupPal)
+			continue;
+		}
+		for (auto& origPal : palettes)
+		{
+			if (origPal.first.size() + 7 == backupPal.first.size() && backupPal.first.compare(7, std::string::npos, origPal.first) == 0)
 			{
-				origPal.second->copyFrom(backupPal);
+				origPal.second->copyFrom(backupPal.second);
+				break;
 			}
 		}
 	}

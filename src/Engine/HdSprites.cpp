@@ -149,6 +149,7 @@ namespace
 		bool ownColour = false;    ///< color.txt of the set keeps the frame's own colours (HdFrame::ownColour)
 		const void *key = nullptr; ///< the key of the frame it belongs to (a variant and a wall slot: the frame's)
 		bool recoloured = false;   ///< the loaded picture went through the recolouring (setRecolour)
+		std::shared_ptr<HdFrame> parked; ///< the recoloured picture a load put aside (parkRecolour)
 		Uint64 stamp = 0;          ///< when the picture of the key, or its variants, were last registered (see find with a stamp)
 	};
 	std::unordered_map<const void*, Entry> registry;
@@ -354,6 +355,9 @@ namespace
 
 	/// The recolouring of the pictures read from now on (setRecolour); changed on the main thread only, never during a batch.
 	Recolour recolourHook = nullptr;
+	/// The recolouring a load put aside (parkRecolour).
+	Recolour parkedHook = nullptr;
+	bool recolourParked = false;
 
 	/// decodeBlob, then the recolouring (any thread).
 	bool decodeShown(const Entry &entry, const std::vector<unsigned char> &data, HdFrame &out)
@@ -1155,6 +1159,38 @@ namespace
 	}
 }
 
+namespace
+{
+	/// The loaded lazy pictures that `which` picks go aside (Entry::parked). The places are made first: whatever
+	/// fails, fails before anything moved.
+	template <typename Which>
+	void keepAside(Which which)
+	{
+		std::vector<Entry*> todo;
+		forEachLazy([&](Entry &entry)
+		{
+			if (!entry.path.empty() && !entry.frame.pixels.empty() && which(entry))
+			{
+				todo.push_back(&entry);
+			}
+		});
+		std::vector<std::shared_ptr<HdFrame>> places;
+		places.reserve(todo.size());
+		for (size_t i = 0; i < todo.size(); ++i)
+		{
+			places.push_back(std::make_shared<HdFrame>());
+		}
+		for (size_t i = 0; i < todo.size(); ++i)
+		{
+			Entry &entry = *todo[i];
+			loadedTotal -= bytesOf(entry.frame);
+			*places[i] = std::move(entry.frame);
+			entry.frame = HdFrame();
+			entry.parked = std::move(places[i]);
+		}
+	}
+}
+
 void setRecolour(Recolour fn)
 {
 	if (fn == recolourHook && fn == nullptr)
@@ -1175,6 +1211,11 @@ void setRecolour(Recolour fn)
 		}
 		entry.recoloured = false;
 	});
+	if (fn && recolourParked)
+	{
+		// a load is on: the pictures of the game before stay as they are, aside (the loaded game reads its own)
+		keepAside([](const Entry &entry) { return !entry.parked; });
+	}
 	recolourHook = fn;
 	size_t recoloured = 0;
 	if (fn)
@@ -1209,8 +1250,86 @@ void setRecolour(Recolour fn)
 	}
 	noteAll();
 	++registryGeneration;
-	Log(LOG_INFO) << "HD sprites: recolouring " << (fn ? "on" : "off") << ", " << dropped << " recoloured frame(s) dropped, "
-		<< recoloured << " loaded frame(s) recoloured";
+	try
+	{
+		Log(LOG_INFO) << "HD sprites: recolouring " << (fn ? "on" : "off") << ", " << dropped << " recoloured frame(s) dropped, "
+			<< recoloured << " loaded frame(s) recoloured";
+	}
+	catch (...)
+	{
+		// the line needs memory, and this also runs when a load that found none is undone
+	}
+}
+
+void parkRecolour()
+{
+	if (recolourParked)
+	{
+		return;
+	}
+	if (!recolourHook)
+	{
+		// nothing is recoloured now: the loaded pictures go aside only if the loaded game sets a recolouring (setRecolour)
+		parkedHook = nullptr;
+		recolourParked = true;
+		return;
+	}
+	beforeChange();
+	keepAside([](const Entry &entry) { return entry.recoloured; });
+	forEachLazy([](Entry &entry) { entry.recoloured = false; });
+	parkedHook = recolourHook;
+	recolourHook = nullptr;
+	recolourParked = true;
+	recolourStamp = ++stampClock;
+	noteAll();
+	++registryGeneration;
+}
+
+void unparkRecolour(bool back)
+{
+	if (!recolourParked)
+	{
+		return;
+	}
+	recolourParked = false;
+	if (back)
+	{
+		beforeChange();
+		const bool shown = parkedHook != nullptr; // the pictures of the game before went through a recolouring
+		forEachLazy([&](Entry &entry)
+		{
+			if (entry.path.empty())
+			{
+				return;
+			}
+			// a picture read since stays only if it is in the colours that come back (its own, and none was set before)
+			if (!entry.frame.pixels.empty() && (shown || entry.recoloured || entry.parked))
+			{
+				loadedTotal -= bytesOf(entry.frame);
+				entry.frame = HdFrame();
+			}
+			if (entry.parked)
+			{
+				entry.frame = std::move(*entry.parked);
+				entry.parked.reset();
+				entry.recoloured = shown;
+				loadedTotal += bytesOf(entry.frame);
+			}
+			else if (shown)
+			{
+				entry.recoloured = false;
+			}
+		});
+		recolourHook = parkedHook;
+		recolourStamp = ++stampClock;
+		noteAll();
+		++registryGeneration;
+	}
+	else
+	{
+		forEachLazy([](Entry &entry) { entry.parked.reset(); });
+	}
+	parkedHook = nullptr;
 }
 
 size_t scanPictures(const std::vector<const SurfaceSet*> &sets, const std::function<void(size_t place, const Surface &classic, const HdFrame &picture)> &fn)
