@@ -1795,7 +1795,10 @@ void exitNow() {
 		for (int i = 0; i < 100 && !logGuard.try_lock(); ++i) {
 			SDL_Delay(1);
 		}
-		probeLogFlush();
+		// without the lock the journal is another thread's at this moment: left to fflush below
+		if (logGuard.owns_lock()) {
+			probeLogFlush();
+		}
 	}
 	fflush(nullptr);
 #ifdef _WIN32

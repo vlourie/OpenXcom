@@ -28,6 +28,7 @@
 #include "HitLog.h"
 #include "Node.h"
 #include "../Mod/MapDataSet.h"
+#include <algorithm>
 #include "../Engine/Exception.h"
 #include "../Battlescape/Pathfinding.h"
 #include "../Battlescape/TileEngine.h"
@@ -237,21 +238,27 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 		// (every field of a record is read inside the record, and every record inside the buffer)
 		const size_t recordBytes = (size_t)serKey.index + 4 * (size_t)serKey._mapDataID + 4 * (size_t)serKey._mapDataSetID
 			+ serKey._smoke + serKey._fire + serKey.boolFields;
-		if (serKey.totalBytes == 0 || serKey.totalBytes < recordBytes || totalTiles > binTiles.size() / serKey.totalBytes)
+		// each field is a whole number of 1, 2 or 4 bytes (what the game writes and unserializeInt reads)
+		auto fieldSize = [](Uint8 size) { return size == 1 || size == 2 || size == 4; };
+		if (serKey.totalBytes == 0 || serKey.totalBytes < recordBytes || totalTiles > binTiles.size() / serKey.totalBytes
+			|| !fieldSize(serKey.index) || !fieldSize(serKey._mapDataID) || !fieldSize(serKey._mapDataSetID)
+			|| !fieldSize(serKey._smoke) || !fieldSize(serKey._fire) || !fieldSize(serKey.boolFields))
 		{
 			throw Exception("Invalid tile data in the saved battle");
 		}
 
 		Uint8* ptr = (Uint8*)binTiles.data();
 		Uint8* dataEnd = ptr + totalTiles * serKey.totalBytes;
+		std::vector<bool> loaded(_tiles.size(), false); // the game writes a tile once
 
 		while (ptr < dataEnd)
 		{
 			int index = unserializeInt(&ptr, serKey.index);
-			if (index < 0 || (size_t)index >= _tiles.size())
+			if (index < 0 || (size_t)index >= _tiles.size() || loaded[index])
 			{
 				throw Exception("Invalid tile index in the saved battle");
 			}
+			loaded[index] = true;
 			_tiles[index].loadBinary(ptr, serKey); // loadBinary's privileges to advance *r have been revoked
 			ptr += serKey.totalBytes - serKey.index; // r is now incremented strictly by totalBytes in case there are obsolete fields present in the data
 		}
@@ -264,6 +271,13 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			// backwards compatibility: imperfect solution, modules that were completely destroyed
 			// prior to saving and updating builds will be counted as indestructible.
 			calculateModuleMap();
+		}
+		// the battle reads and writes the grid by tile position / 10 with no check: it must be the map's size
+		const size_t modulesY = _mapsize_y / 10;
+		if (_baseModules.size() != (size_t)(_mapsize_x / 10)
+			|| std::any_of(_baseModules.begin(), _baseModules.end(), [modulesY](const auto &column) { return column.size() != modulesY; }))
+		{
+			throw Exception("Invalid module map in the saved battle");
 		}
 	}
 	for (const auto& nodeConfig : reader["nodes"].children())
@@ -2535,6 +2549,12 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 	if (fromNode == 0)
 	{
 		if (Options::traceAI) { Log(LOG_INFO) << "This alien got lost. :("; }
+		// a map with no route nodes at all, or with dummies only: there is nowhere to patrol to
+		// (the draw below would divide by zero or never end). A map with nodes draws as before
+		if (std::none_of(_nodes.begin(), _nodes.end(), [](const Node *n) { return !n->isDummy(); }))
+		{
+			return 0;
+		}
 		fromNode = getNodes()->at(RNG::generate(0, getNodes()->size() - 1));
 		while (fromNode->isDummy())
 		{
@@ -2547,7 +2567,8 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 
 	for (int i = 0; i < end; ++i)
 	{
-		if (!scout && fromNode->getNodeLinks()->at(i) < 1) continue;
+		// links below 1 are exits and "no link"; a link past the list (a damaged save) leads nowhere either
+		if (!scout && (fromNode->getNodeLinks()->at(i) < 1 || (size_t)fromNode->getNodeLinks()->at(i) >= _nodes.size())) continue;
 
 		Node *n = getNodes()->at(scout ? i : fromNode->getNodeLinks()->at(i));
 		if ( !n->isDummy()																				// don't consider dummy nodes.
@@ -2568,7 +2589,7 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 				// own rank goes first, the higher flags among equals
 				auto ownRank = [unit](const Node *node)
 				{
-					return unit->getRankInt() >= 0 && node->getRank() == Node::nodeRank[unit->getRankInt()][0];
+					return unit->getRankInt() >= 0 && node->getRank() == Node::getNodeRank(unit->getRankInt(), 0);
 				};
 				if (!preferred
 					|| (ownRank(n) && !ownRank(preferred))
@@ -2579,7 +2600,7 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 			}
 			else if (!preferred
 				|| (unit->getRankInt() >=0 &&
-					preferred->getRank() == Node::nodeRank[unit->getRankInt()][0] &&
+					preferred->getRank() == Node::getNodeRank(unit->getRankInt(), 0) &&
 					preferred->getFlags() < n->getFlags())
 				|| preferred->getFlags() < n->getFlags())
 			{

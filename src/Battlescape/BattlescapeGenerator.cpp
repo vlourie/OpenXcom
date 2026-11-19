@@ -1984,7 +1984,7 @@ BattleUnit *BattlescapeGenerator::addAlien(Unit *rules, int alienRank, bool outs
 		if (outside)
 			node = _save->getSpawnNode(0, unit); // when alien is instructed to spawn outside, we only look for node 0 spawnpoints
 		else
-			node = _save->getSpawnNode(Node::nodeRank[alienRank][i], unit);
+			node = _save->getSpawnNode(Node::getNodeRank(alienRank, i), unit);
 	}
 
 	int aliensFacingCraftOdds = 20 * _game->getSavedGame()->getDifficultyCoefficient();

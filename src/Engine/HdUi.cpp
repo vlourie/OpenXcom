@@ -91,6 +91,10 @@ std::string HdUi::memoryLine() const
 		smooth += frameBytes(e.second.frame);
 		sources += e.second.source.capacity();
 	}
+	for (const auto &e : _prepared)
+	{
+		smooth += frameBytes(e.second.frame); // pictures made ready: one memory limit with the smoothed surfaces
+	}
 	for (const auto &e : _sparse)
 	{
 		for (const auto &p : e.second.pieces)
@@ -115,8 +119,8 @@ std::string HdUi::memoryLine() const
 		recolored += frameBytes(e.second);
 	}
 	std::ostringstream s;
-	s << "smoothed " << _smooth.size() << " " << (smooth >> 20) << " MB (+" << (sources >> 20) << " MB sources, counted "
-		<< (_smoothBytes >> 20) << ") | sparse " << _sparse.size() << " " << (sparse >> 20) << " MB | glyphs " << _glyphs.size()
+	s << "smoothed " << _smooth.size() + _prepared.size() << " " << (smooth >> 20) << " MB (+" << (sources >> 20) << " MB sources, counted "
+		<< ((_smoothBytes + _preparedBytes) >> 20) << ") | sparse " << _sparse.size() << " " << (sparse >> 20) << " MB | glyphs " << _glyphs.size()
 		<< " " << (glyphs >> 20) << " MB | fitted " << _fitted.size() << " " << (fitted >> 20) << " MB | recolored "
 		<< _recolored.size() << " " << (recolored >> 20) << " MB";
 	return s.str();
@@ -558,9 +562,40 @@ HdUi::SmoothEntry *HdUi::cached(const Surface *key, Uint64 hash, int k)
 	if (it != _smooth.end() && it->second.hash == hash && it->second.k == k)
 	{
 		_smoothLru.splice(_smoothLru.begin(), _smoothLru, it->second.lru);
+		it->second.used = ++_frameUse;
 		return &it->second;
 	}
 	return nullptr;
+}
+
+void HdUi::trimFrames()
+{
+	// the newest entry of all (the one just made or asked for) stays whatever its size
+	while (_smoothBytes + _preparedBytes > SMOOTH_CACHE_BYTES && _smoothLru.size() + _preparedLru.size() > 1)
+	{
+		auto smooth = _smoothLru.empty() ? _smooth.end() : _smooth.find(_smoothLru.back());
+		auto prepared = _preparedLru.empty() ? _prepared.end() : _prepared.find(_preparedLru.back());
+		const bool dropPrepared = !_preparedLru.empty()
+			&& (_smoothLru.empty() || (prepared != _prepared.end() && smooth != _smooth.end() && prepared->second.used < smooth->second.used));
+		if (dropPrepared)
+		{
+			if (prepared != _prepared.end())
+			{
+				_preparedBytes -= prepared->second.frame.pixels.size() * 4;
+				_prepared.erase(prepared);
+			}
+			_preparedLru.pop_back();
+		}
+		else
+		{
+			if (smooth != _smooth.end())
+			{
+				_smoothBytes -= smooth->second.frame.pixels.size() * 4;
+				_smooth.erase(smooth);
+			}
+			_smoothLru.pop_back();
+		}
+	}
 }
 
 const HdFrame *HdUi::cache(const Surface *key, Uint64 pixelHash, Uint64 hash, int k, HdFrame &&frame, const HdUiArt::Art *art, int artX, int artY)
@@ -592,18 +627,9 @@ const HdFrame *HdUi::cache(const Surface *key, Uint64 pixelHash, Uint64 hash, in
 	e.frame = std::move(frame);
 	_smoothLru.push_front(key);
 	e.lru = _smoothLru.begin();
+	e.used = ++_frameUse;
 	_smoothBytes += e.frame.pixels.size() * 4;
-	while (_smoothBytes > SMOOTH_CACHE_BYTES && _smoothLru.size() > 1)
-	{
-		const Surface *old = _smoothLru.back();
-		auto oit = _smooth.find(old);
-		if (oit != _smooth.end())
-		{
-			_smoothBytes -= oit->second.frame.pixels.size() * 4;
-			_smooth.erase(oit);
-		}
-		_smoothLru.pop_back();
-	}
+	trimFrames();
 	return &_smooth[key].frame;
 }
 
@@ -619,9 +645,12 @@ const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k
 {
 	const Uint64 hash = art->palette.empty() ? art->hash ^ 0x9E3779B97F4A7C15ULL
 		: HdUiArt::foldPalette(art->hash ^ 0x9E3779B97F4A7C15ULL, colors);
-	if (SmoothEntry *e = cached(key, hash, k))
+	auto it = _prepared.find(key);
+	if (it != _prepared.end() && it->second.hash == hash && it->second.k == k)
 	{
-		return &e->frame;
+		_preparedLru.splice(_preparedLru.begin(), _preparedLru, it->second.lru);
+		it->second.used = ++_frameUse;
+		return &it->second.frame;
 	}
 	HdFrame frame;
 	const HdWorkers::Whole allWhole;
@@ -630,7 +659,29 @@ const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k
 	{
 		return nullptr;
 	}
-	return cache(key, art->hash, hash, k, std::move(frame));
+	if (it != _prepared.end())
+	{
+		// the new frame of the key takes the old one's place on the video card (HdGpuWorld::frame)
+		frame.gpuWorld.take(it->second.frame.gpuWorld);
+		_preparedBytes -= it->second.frame.pixels.size() * 4;
+		_preparedLru.erase(it->second.lru);
+		_prepared.erase(it);
+	}
+	if (!frame.pixels.empty())
+	{
+		frame.buildSpans();
+	}
+	PreparedEntry &e = _prepared[key];
+	e.hash = hash;
+	e.k = k;
+	e.frame = std::move(frame);
+	_preparedLru.push_front(key);
+	e.lru = _preparedLru.begin();
+	e.used = ++_frameUse;
+	_preparedBytes += e.frame.pixels.size() * 4;
+	trimFrames();
+	// trimFrames() keeps the newest entry, which is this one
+	return &_prepared[key].frame;
 }
 
 /**
@@ -1598,6 +1649,9 @@ void HdUi::clearCaches()
 	_smooth.clear();
 	_smoothLru.clear();
 	_smoothBytes = 0;
+	_prepared.clear();
+	_preparedLru.clear();
+	_preparedBytes = 0;
 	_sparse.clear();
 	_cover.clear();
 	_cropMisses.clear();

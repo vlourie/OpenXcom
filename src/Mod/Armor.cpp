@@ -276,6 +276,12 @@ void Armor::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript &pa
  */
 void Armor::afterLoad(const Mod* mod)
 {
+	// the battle knows units of one tile and of 2x2 only: movement, falling, sight and drawing keep four parts at most
+	if (_size != 1 && _size != 2)
+	{
+		throw Exception("Armor size must be 1 or 2.");
+	}
+
 	mod->verifySoundOffset(_type, _moveSound, "BATTLE.CAT");
 	mod->verifySoundOffset(_type, _deathSoundMale, "BATTLE.CAT");
 	mod->verifySoundOffset(_type, _deathSoundFemale, "BATTLE.CAT");

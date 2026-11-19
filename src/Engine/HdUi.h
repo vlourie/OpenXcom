@@ -349,6 +349,18 @@ private:
 		Uint64 palette = 0;               ///< content: the palette alone
 		std::vector<Uint8> source;        ///< the pixels `frame` was smoothed from (large surfaces only: a change is patched)
 		std::list<const Surface*>::iterator lru;
+		Uint64 used = 0;                  ///< _frameUse when the entry was last asked for
+	};
+	/// An HD picture's frame made ready for drawing (prepared()). Kept apart from _smooth: that one answers "what
+	/// is this surface", this one holds what a picture looks like at a scale and palette. A surface may be the key
+	/// of both (a picture's own base surface drawn as it is), and neither entry may replace the other.
+	struct PreparedEntry
+	{
+		Uint64 hash = 0;                  ///< the picture, and the palette when the picture is re-tinted by it
+		int k = 0;
+		HdFrame frame;
+		std::list<const Surface*>::iterator lru;
+		Uint64 used = 0;                  ///< _frameUse when the entry was last asked for
 	};
 	struct Glyph
 	{
@@ -384,7 +396,13 @@ private:
 	std::unordered_map<const Surface*, SmoothEntry> _smooth;
 	std::list<const Surface*> _smoothLru;
 	size_t _smoothBytes = 0;
-	unsigned _artGeneration = 0;      ///< HdUiArt::generation() the entries' art pointers belong to
+	std::unordered_map<const Surface*, PreparedEntry> _prepared;
+	std::list<const Surface*> _preparedLru;
+	size_t _preparedBytes = 0;
+	Uint64 _frameUse = 0;             ///< counts the uses of _smooth and _prepared entries: the two share one memory limit, the oldest of either goes first
+	/// Drops the least recently used frames of _smooth and _prepared while the two are over their limit.
+	void trimFrames();
+	unsigned _artGeneration = 0;     ///< HdUiArt::generation() the entries' art pointers belong to
 	bool _classicDolls = false;       ///< Options::oxceHdClassicDolls the entries were made with
 	std::unordered_map<Uint64, unsigned> _cropMisses; ///< contents searched for a picture in vain (by pixels and size), and the HdUiArt::version() they were searched at
 	size_t _cropMissesArts = 0;       ///< the pack size they were searched in
