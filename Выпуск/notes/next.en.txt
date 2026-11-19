@@ -31,3 +31,4 @@ Compatibility:
 Fixed:
 - XP-AMP player with the classic font: the English X-Piratez font no longer shows a line over the letters - the game now tells the letter from its outline by the font itself.
 - The "How many to send to the base" window after a disassembly starts at zero for every item: only what you pick is sent, the rest stays in the stores.
+- Launcher 0.7.0: released together with this engine release; the launcher itself has no changes.
