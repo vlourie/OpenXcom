@@ -257,7 +257,7 @@ void HdChatNotice::think()
 void HdChatNotice::draw()
 {
 	Surface::draw();                               // clears to the transparent colour
-	if (_line.empty() || !_game->getMod() || !_game->getLanguage())
+	if (_line.empty() || !_game->isDataReady())
 	{
 		_plate = 0;
 		return;
@@ -361,7 +361,7 @@ void HdChatNotice::paint(PlateCanvas &c)
 
 void HdChatNotice::hdMirror()
 {
-	if (!HdUi::instance().hasFonts() || _line.empty() || !_game->getMod())
+	if (!HdUi::instance().hasFonts() || _line.empty() || !_game->isDataReady())
 	{
 		Surface::hdMirror();
 		return;

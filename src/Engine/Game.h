@@ -59,6 +59,8 @@ private:
 	HdUpdateNotice *_updateNotice;
 	HdChatNotice *_chatNotice;
 	HdTrackNotice *_trackNotice;
+	/// The loading thread of StartState is rebuilding _mod and _lang. Written and read by the main thread only.
+	bool _backgroundLoad = false;
 	bool _mouseActive;
 	unsigned int _timeOfLastFrame;
 	int _timeUntilNextFrame;
@@ -91,6 +93,11 @@ public:
 	HdChatNotice *getChatNotice() const { return _chatNotice; }
 	/// Gets the plate "the track's name" (Engine/HdTrackNotice.h, XP-000575).
 	HdTrackNotice *getTrackNotice() const { return _trackNotice; }
+	/// Brackets the time the loading thread owns the mod and the language (StartState; main thread only).
+	void setBackgroundLoad(bool loading) { _backgroundLoad = loading; }
+	/// May the main thread use the mod and the language? Not while the loading thread deletes and rebuilds them:
+	/// the pointers are non-null long before the data behind them is complete, and dangle during a reload.
+	bool isDataReady() const { return !_backgroundLoad && _mod && _lang; }
 	/// Resets the state stack to a new state.
 	void setState(State *state);
 	/// Pushes a new state into the state stack.

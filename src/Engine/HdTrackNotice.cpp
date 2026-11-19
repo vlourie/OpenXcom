@@ -55,7 +55,7 @@ void HdTrackNotice::setPalette(const SDL_Color *colors, int firstcolor, int ncol
 
 void HdTrackNotice::think()
 {
-	Mod *mod = _game->getMod();
+	Mod *mod = _game->isDataReady() ? _game->getMod() : 0;
 	if (!mod)
 	{
 		return;
@@ -126,7 +126,7 @@ void HdTrackNotice::paint(PlateCanvas &c)
 void HdTrackNotice::draw()
 {
 	Surface::draw();
-	if (_title.empty() || !_game->getMod() || !_game->getLanguage() || (HdUi::active() && HdUi::instance().hasFonts()))
+	if (_title.empty() || !_game->isDataReady() || (HdUi::active() && HdUi::instance().hasFonts()))
 	{
 		return;
 	}
@@ -152,7 +152,7 @@ void HdTrackNotice::blit(SDL_Surface *surface)
 void HdTrackNotice::hdMirror()
 {
 	HdUi &ui = HdUi::instance();
-	if (!ui.hasFonts() || _title.empty() || !_game->getMod())
+	if (!ui.hasFonts() || _title.empty() || !_game->isDataReady())
 	{
 		Surface::hdMirror();
 		return;

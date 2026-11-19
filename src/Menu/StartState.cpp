@@ -45,7 +45,7 @@
 namespace OpenXcom
 {
 
-LoadingPhase StartState::loading;
+std::atomic<LoadingPhase> StartState::loading(LOADING_STARTED);
 std::string StartState::error;
 bool StartState::playIntroAfterReload = false;
 
@@ -156,7 +156,9 @@ void StartState::init()
 		_game->initAudio();
 	}
 
-	// Load the game data in a separate thread
+	// Load the game data in a separate thread. From here until its verdict is seen in think() the mod and the
+	// language belong to that thread: the main loop and the plates must not touch them (Game::isDataReady).
+	_game->setBackgroundLoad(true);
 	_thread = SDL_CreateThread(load, (void*)_game);
 	if (_thread == 0)
 	{
@@ -180,7 +182,7 @@ void StartState::think()
 		SDL_Delay(1);
 	}
 
-	switch (loading)
+	switch (loading.load())
 	{
 	case LOADING_FAILED:
 		CrossPlatform::flashWindow();
@@ -194,6 +196,7 @@ void StartState::think()
 		loading = LOADING_DONE;
 		break;
 	case LOADING_SUCCESSFUL:
+		_game->setBackgroundLoad(false);
 		CrossPlatform::flashWindow();
 		Log(LOG_INFO) << "OpenXcom started successfully!";
 		_game->setState(new GoToMainMenuState(true));

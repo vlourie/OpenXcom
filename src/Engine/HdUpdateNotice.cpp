@@ -110,7 +110,7 @@ void HdUpdateNotice::think()
 void HdUpdateNotice::draw()
 {
 	Surface::draw();                               // clears to the transparent colour
-	if (_release.empty() || !_game->getMod() || !_game->getLanguage())
+	if (_release.empty() || !_game->isDataReady())
 	{
 		_plate = 0;
 		return;

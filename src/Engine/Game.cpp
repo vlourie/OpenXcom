@@ -381,7 +381,7 @@ void Game::run()
 					}
 					// XP-000575, the music player's keys: on every screen, but not while a text is being typed.
 					// The geoscape and the battlescape keep End for their own handlers (the battle's one waits for its allowButtons).
-					if (action.getDetails()->type == SDL_KEYDOWN && _mod && !Options::mute && !isCtrlPressed() && !isAltPressed()
+					if (action.getDetails()->type == SDL_KEYDOWN && isDataReady() && !Options::mute && !isCtrlPressed() && !isAltPressed()
 						&& !_states.back()->hasFocusedTextEdit())
 					{
 						const SDLKey musicKey = action.getDetails()->key.keysym.sym;
@@ -466,7 +466,7 @@ void Game::run()
 			_updateNotice->think();
 			_chatNotice->think();
 			_trackNotice->think();
-			if (_mod)
+			if (isDataReady())
 			{
 				_mod->userMusicTick();
 			}

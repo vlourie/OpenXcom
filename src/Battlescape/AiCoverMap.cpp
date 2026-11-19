@@ -22,9 +22,11 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <functional>
 #include <set>
 #include <sstream>
 #include <thread>
+#include <system_error>
 #include "Pathfinding.h"
 #include "TileEngine.h"
 #include "../Engine/Logger.h"
@@ -161,6 +163,42 @@ int envInt(const char *name, int def)
 	return v && *v ? std::atoi(v) : def;
 }
 
+/// Runs `work` on this thread and on up to `threads - 1` more. The work takes its rows from a shared counter, so it is
+/// complete with any number of threads: when the system refuses a thread (std::system_error), the ones already started
+/// and this one finish it. The threads are joined on every way out - a joinable std::thread destroyed is std::terminate.
+template <typename Work>
+void runShared(int threads, Work &work)
+{
+	std::vector<std::thread> pool;
+	struct Join
+	{
+		std::vector<std::thread> &pool;
+		~Join()
+		{
+			for (auto &t : pool)
+			{
+				if (t.joinable())
+				{
+					t.join();
+				}
+			}
+		}
+	} join{pool};
+	pool.reserve(threads > 1 ? threads - 1 : 0);
+	try
+	{
+		for (int t = 1; t < threads; ++t)
+		{
+			pool.emplace_back(std::ref(work));
+		}
+	}
+	catch (const std::system_error &e)
+	{
+		Log(LOG_WARNING) << "AI cover map: " << pool.size() + 1 << " threads instead of " << threads << " (" << e.what() << ")";
+	}
+	work();
+}
+
 /// All tiles on `threads` threads: rows (z, y) handed out one by one, each tile written by one thread only.
 long long computeAll(const SavedBattleGame *save, std::vector<uint8_t> &prof, std::vector<uint8_t> &flags, int threads)
 {
@@ -182,16 +220,7 @@ long long computeAll(const SavedBattleGame *save, std::vector<uint8_t> &prof, st
 		}
 		rays += mine;
 	};
-	std::vector<std::thread> pool;
-	for (int t = 1; t < threads; ++t)
-	{
-		pool.emplace_back(work);
-	}
-	work();
-	for (auto &t : pool)
-	{
-		t.join();
-	}
+	runShared(threads, work);
 	return rays;
 }
 
@@ -244,16 +273,7 @@ long long computeNodes(const SavedBattleGame *save, std::vector<Node*> *nodes, i
 		}
 		rays += mine;
 	};
-	std::vector<std::thread> pool;
-	for (int t = 1; t < threads; ++t)
-	{
-		pool.emplace_back(work);
-	}
-	work();
-	for (auto &t : pool)
-	{
-		t.join();
-	}
+	runShared(threads, work);
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 			setSees(i, j, rows[i][j]);
