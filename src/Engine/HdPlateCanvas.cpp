@@ -67,6 +67,62 @@ ClassicPlateCanvas::ClassicPlateCanvas(Surface *surface, Font *big, Font *small,
 	_small->setSmall();
 	_big->setBig();
 	_clip = SDL_Rect{ 0, 0, 0, 0 };
+	_learnt[0] = _learnt[1] = false;
+}
+
+/**
+ * XP-000600: learns which shades of a font are the letter and which its dark outline. The shade numbers differ between
+ * fonts: the original's are 1-3 letter and 4-5 outline, the small font of X-Piratez has the letter in 1 and the outline
+ * in 3, 4 and 5 - a fixed "below 4" painted its outline 3 in the text colour, a line over the letters. Sample letters
+ * are drawn one by one and each shade is counted: an outline shade has most of its pixels next to an empty one (61-99 %
+ * in the fonts of the game, of X-Piratez and of its Russian patch), a letter shade almost none (0-8 %); the line is
+ * drawn at 30 %. A font whose every shade lies on the edge (a thin font without outline) keeps all of them.
+ */
+void ClassicPlateCanvas::learnShades(int which)
+{
+	_learnt[which] = true;
+	Text *t = which ? _big : _small;
+	int all[8] = { 0 }, edge[8] = { 0 };
+	// one letter at a time: in a string the neighbours' outlines overlap (spacing -1) and hide the side outline
+	for (const char *c = "ABCDEGHKMNOPRSTWabdeghkmnopqswy2345"; *c; ++c)
+	{
+		t->setText(std::string(1, *c));
+		t->draw();
+		const SDL_Surface *src = t->getSurface();
+		const int tw = std::min(src->w, t->getTextWidth() + 2);
+		for (int y = 0; y < src->h; ++y)
+		{
+			const Uint8 *row = (const Uint8*)src->pixels + y * src->pitch;
+			for (int x = 0; x < tw; ++x)
+			{
+				const int shade = row[x] - 1;
+				if (row[x] == 0 || shade >= 8)
+				{
+					continue;
+				}
+				++all[shade];
+				const bool touches = x == 0 || y == 0 || x == src->w - 1 || y == src->h - 1
+					|| row[x - 1] == 0 || row[x + 1] == 0 || row[x - src->pitch] == 0 || row[x + src->pitch] == 0;
+				if (touches)
+				{
+					++edge[shade];
+				}
+			}
+		}
+	}
+	bool any = false;
+	for (int s = 0; s < 8; ++s)
+	{
+		_letter[which][s] = all[s] > 0 && edge[s] * 10 < all[s] * 3;
+		any = any || _letter[which][s];
+	}
+	if (!any)
+	{
+		for (int s = 0; s < 8; ++s)
+		{
+			_letter[which][s] = true;
+		}
+	}
 }
 
 ClassicPlateCanvas::~ClassicPlateCanvas()
@@ -188,6 +244,11 @@ void ClassicPlateCanvas::text(const std::string &s, float x, float y, Uint32 arg
 	{
 		return;
 	}
+	const int which = big ? 1 : 0;
+	if (!_learnt[which])
+	{
+		learnShades(which);
+	}
 	Text *t = big ? _big : _small;
 	t->setText(s);
 	t->draw();
@@ -209,10 +270,11 @@ void ClassicPlateCanvas::text(const std::string &s, float x, float y, Uint32 arg
 			const int dx = ox + sx;
 			if (row[sx] && dx >= _clip.x && dx < _clip.x + _clip.w)
 			{
-				// only the letter: with setColor(1) a pixel is 1 + shade, shades 1-3 are the letter and
-				// 4-5 its dark outline; one flat colour over the outline too ran the letters together
-				// (Vitali 16.11, variant A of the player page)
-				if (row[sx] - 1 < 4)
+				// only the letter: with setColor(1) a pixel is 1 + shade, which shades are the letter and which
+				// the dark outline is learnt from the font (XP-000600); one flat colour over the outline too ran
+				// the letters together (Vitali 16.11, variant A of the player page)
+				const int shade = row[sx] - 1;
+				if (shade < 8 && _letter[which][shade])
 				{
 					*((Uint8*)dst->pixels + dy * dst->pitch + dx) = index;
 				}

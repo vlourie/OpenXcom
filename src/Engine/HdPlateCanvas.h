@@ -69,6 +69,10 @@ private:
 	SDL_Rect _clip;
 	const SDL_Color *_palette;
 	std::map<Uint32, Uint8> _index;
+	/// XP-000600: which shades of each font (0 small, 1 big) are the letter and which its outline, learnt from the font.
+	bool _letter[2][8];
+	bool _learnt[2];
+	void learnShades(int which);
 	Uint8 nearest(Uint32 argb);
 	void span(int x0, int x1, int y, Uint8 index);
 public:

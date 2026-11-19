@@ -27,3 +27,7 @@ Compatibility:
 - Mod rules are checked after loading: the chain mission - wave - UFO - deployment, mission sites, stage rings. An error is named at once, with the name of the rule, instead of surfacing in the middle of a campaign.
 - Battle mechanics, balance and random numbers are unchanged; old saves load. The picture without enlargement matches the previous one byte for byte on the checked set of frames.
 - The game folder now has THIRD-PARTY-NOTICES.txt - the licences of the third-party libraries of the engine.
+
+Fixed:
+- XP-AMP player with the classic font: the English X-Piratez font no longer shows a line over the letters - the game now tells the letter from its outline by the font itself.
+- The "How many to send to the base" window after a disassembly starts at zero for every item: only what you pick is sent, the rest stays in the stores.

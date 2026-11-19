@@ -382,8 +382,10 @@ void ProductionCompleteState::lootPicked(Base *to)
 	}
 	if (kinds.size() > 1)
 	{
+		// XP-000601: every kind starts at 0 - the player picks what and how much goes, the rest stays
 		_game->pushState(new ManufactureLootPartsState(to, kinds,
-			[this, to](const ManufactureDeliveryState::Items &picked) { lootSendParts(to, picked); }));
+			[this, to](const ManufactureDeliveryState::Items &picked) { lootSendParts(to, picked); },
+			std::vector<int>(kinds.size(), 0)));
 		return;
 	}
 	_game->pushState(new ManufactureDeliveryState(to, units, [this, to](int n) { lootSend(to, n); },
