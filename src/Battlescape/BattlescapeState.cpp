@@ -877,6 +877,14 @@ BattlescapeState::~BattlescapeState()
 	delete _battleGame;
 
 	resetPalettes();
+
+	if (_stageToMenu)
+	{
+		// the next stage was refused twice and the player is in the main menu (stageRefused): the campaign whose battle
+		// was taken apart goes now, when nothing of that battle is on the call stack any more - left alive, it was a
+		// battle without its screen, and the next load from the menu went through the pointer to this screen
+		_game->setSavedGame(0);
+	}
 }
 
 bool BattlescapeState::resetPalettes()
@@ -4053,6 +4061,7 @@ void BattlescapeState::stageRefused(bool kept, const std::string &error)
 	stageNotice = false;
 	Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
 	_game->getScreen()->resetDisplay(false);
+	_stageToMenu = true;
 	_game->setState(new MainMenuState);
 	_game->pushState(BattlescapeGenerator::refusalMessage(_game, _palette, false, "STR_NEXT_STAGE_GENERATION_FAILED_MENU"));
 }

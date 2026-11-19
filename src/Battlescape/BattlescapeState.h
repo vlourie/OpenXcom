@@ -108,7 +108,7 @@ private:
 	BattlescapeGame *_battleGame;
 	bool _firstInit, _paletteResetNeeded, _paletteResetRequested;
 	/// The next stage was refused: this battle is half taken apart and is neither run nor drawn any more.
-	bool _stageRefused = false;
+	bool _stageRefused = false, _stageToMenu = false;
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
 	Position _mapOffsetBeforeMouseScrolling;
