@@ -178,6 +178,14 @@ private:
 	bool _disableSoldierEquipment;
 	bool _alienContainmentChecked;
 	ScriptValues<SavedGame> _scriptValues;
+	/// The size of this game's save as it was last read or written: the next save takes the room for its tree and its
+	/// text at once. Only a hint, never saved; a new game has none.
+	struct SaveSizeHint
+	{
+		size_t nodes = 0, arena = 0, text = 0;
+		bool compact = false;
+	};
+	mutable SaveSizeHint _saveSizeHint;
 
 	static SaveInfo getSaveInfo(const std::string &file, Language *lang);
 public:

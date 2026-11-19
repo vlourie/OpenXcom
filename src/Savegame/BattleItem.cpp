@@ -161,7 +161,10 @@ void BattleItem::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) c
 	}
 	if (_tile)
 		writer.write("position", _tile->getPosition());
-	if (_ammoQuantity || _rules->isAmmoRechargeable()) // To consider: maybe it would be better to just always write also zero?
+	// A missing key reads as the constructor's value, the full clip. So an empty clip is written too: a built-in weapon
+	// with a clip of its own is not removed when emptied (SavedBattleGame::removeItem keeps special weapons) and a save
+	// and a load would hand it back loaded. Other items with a clip are removed at zero, their saves don't change.
+	if (_ammoQuantity || _rules->getClipSize() != 0 || _rules->isAmmoRechargeable())
 		writer.write("ammoqty", _ammoQuantity);
 	if (_ammoItem[0])
 		writer.write("ammoItem", _ammoItem[0]->getId());

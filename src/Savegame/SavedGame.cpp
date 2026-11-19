@@ -145,6 +145,17 @@ RawData unpackSave(RawData raw, const std::string &filepath)
 	return RawData(text, headerLen + (size_t)length, +[](void *p) { std::free(p); });
 }
 
+/// Reads a save as text and tells the size of that text and whether the file was a packed one.
+RawData readSaveText(const std::string &filepath, size_t &textSize, bool &packed)
+{
+	RawData raw = CrossPlatform::readFileRaw(filepath);
+	const size_t fileSize = raw.size();
+	RawData text = unpackSave(std::move(raw), filepath);
+	textSize = text.size();
+	packed = textSize != fileSize;
+	return text;
+}
+
 }
 
 const std::string SavedGame::AUTOSAVE_GEOSCAPE = "_autogeo_.asav",
@@ -450,7 +461,14 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 {
 	std::string filepath = Options::getMasterUserFolder() + filename;
 	// a save packed by oxceCompactSave is unpacked here; a plain one goes through as it is
-	YAML::YamlRootNodeReader documents(unpackSave(CrossPlatform::readFileRaw(filepath), filepath), filepath, false);
+	size_t textSize = 0;
+	bool packed = false;
+	YAML::YamlRootNodeReader documents(readSaveText(filepath, textSize, packed), filepath, false);
+	// what this game takes to write, for its next save: the same nodes, about 5/8 of the text in the tree's strings
+	_saveSizeHint.nodes = documents.getNodeCount();
+	_saveSizeHint.arena = textSize / 8 * 5;
+	_saveSizeHint.text = textSize;
+	_saveSizeHint.compact = packed;
 
 	// Get brief save info
 	const auto& header = documents[0];
@@ -873,6 +891,12 @@ void SavedGame::save(const std::string &filename, Mod *mod, bool portable) const
 
 	// Saves the full game data to the save
 	YAML::YamlRootNodeWriter writer(1000000); //1MB starting buffer
+	// a game that was read or written before is about as big now: room for the whole tree at once instead of growth by
+	// doubling with a copy each time. The margin covers what the game gained since; a hint of the other form of save
+	// (kill lists as a table make a much smaller tree) is no hint
+	const bool sizeKnown = _saveSizeHint.nodes > 0 && _saveSizeHint.compact == compact;
+	if (sizeKnown)
+		writer.reserve(_saveSizeHint.nodes + _saveSizeHint.nodes / 16 + 1024, _saveSizeHint.arena + _saveSizeHint.arena / 16 + 65536);
 	writer.setAsMap();
 	writer.write("difficulty", _difficulty);
 	writer.write("end", _end);
@@ -996,13 +1020,35 @@ void SavedGame::save(const std::string &filename, Mod *mod, bool portable) const
 	// per yaml standard, "bare documents" in a yaml "stream" can be separated by either a "document end" or "directives end" marker line
 	YAML::YamlString headerString = headerWriter.emit();
 	std::string directivesEndMarker = "---\n";
-	YAML::YamlString bodyString = writer.emit();
+	// the body's text is written in one pass when its size is known, and a plain save gets it right after the header,
+	// with no copy of the whole text
+	const size_t textHint = sizeKnown ? _saveSizeHint.text + _saveSizeHint.text / 32 + 4096 : 0;
 	std::string finalString;
-	finalString.reserve(headerString.yaml.size() + directivesEndMarker.size() + bodyString.yaml.size());
-	finalString += headerString.yaml;
-	finalString	+= directivesEndMarker;
-	if (!compact || !packSaveBody(bodyString.yaml, finalString))
-		finalString += bodyString.yaml;
+	size_t bodySize = 0;
+	if (!compact)
+	{
+		finalString.reserve(headerString.yaml.size() + directivesEndMarker.size());
+		finalString += headerString.yaml;
+		finalString += directivesEndMarker;
+		const size_t headSize = finalString.size();
+		writer.emitTo(finalString, textHint);
+		bodySize = finalString.size() - headSize;
+	}
+	else
+	{
+		std::string bodyString;
+		writer.emitTo(bodyString, textHint);
+		bodySize = bodyString.size();
+		finalString.reserve(headerString.yaml.size() + directivesEndMarker.size());
+		finalString += headerString.yaml;
+		finalString += directivesEndMarker;
+		if (!packSaveBody(bodyString, finalString))
+			finalString += bodyString;
+	}
+	_saveSizeHint.nodes = writer.getNodeCount();
+	_saveSizeHint.arena = writer.getArenaSize();
+	_saveSizeHint.text = bodySize;
+	_saveSizeHint.compact = compact;
 
 	std::string filepath = Options::getMasterUserFolder() + filename;
 	if (!CrossPlatform::writeFile(filepath, finalString, true)) // on the disk before it replaces the previous save
