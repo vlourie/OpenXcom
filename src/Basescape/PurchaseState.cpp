@@ -674,6 +674,8 @@ void PurchaseState::updateList()
 					}
 					else
 					{
+						// the same limit as an order made by hand (increaseByValue): no more than the stores can count
+						missingQty = std::max(0, std::min(missingQty, _base->getStoreRoom(rule) - _items[i].amount));
 						_items[i].amount += missingQty; // buy automatically
 
 						_iQty  += missingQty * rule->getSize(); // update total size
