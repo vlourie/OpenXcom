@@ -1903,8 +1903,9 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 		{
 			unlocked.push_back(unl);
 		}
-		sortReserchVector(unlocked);
 	}
+	// once, after the list is complete: it is only searched below (it used to be re-sorted after every discovered topic)
+	sortReserchVector(unlocked);
 
 	// Create a list of research topics available for research in the given base
 	for (const auto& pair : mod->getResearchMap())
