@@ -25,6 +25,7 @@
 #include <array>
 #include <numeric>
 #include <climits>
+#include <atomic>
 
 #include "Logger.h"
 #include "Options.h"
@@ -288,7 +289,7 @@ static inline RetEnum bit_popcount_h(int& reg)
 	/*	Name,		Implementation,													End execution,				Args,					Description */ \
 	IMPL(exit,		MACRO_QUOTE({													return RetEnd;		}),		(ScriptWorkerBase&),	"") \
 	\
-	IMPL(goto,		MACRO_QUOTE({ Prog = Label1;									return RetContinue; }),		(ScriptWorkerBase& c, ProgPos& Prog, ProgPos Label1),	"") \
+	IMPL(goto,		MACRO_QUOTE({ if (Label1 < Prog && --c.loopBudget < 0) return RetError; Prog = Label1;	return RetContinue; }),		(ScriptWorkerBase& c, ProgPos& Prog, ProgPos Label1),	"") \
 	\
 	IMPL(set,		MACRO_QUOTE({ Reg0 = Data1;										return RetContinue; }),		(ScriptWorkerBase& c, int& Reg0, int Data1),	"arg1 = arg2") \
 	\
@@ -491,6 +492,53 @@ enum ProcEnum : Uint8
 ////////////////////////////////////////////////////////////
 
 /**
+ * Scripts that were stopped for their loops (ScriptWorkerBase::LoopBudget). Every jump back in a script is a `goto`
+ * the parser wrote at the end of a `loop` or for a `continue`, so that one operation counts them: one test of the
+ * direction for a jump forward, one decrement for a jump back, nothing for any other operation.
+ * A stopped script ends where it is, as after any invalid operation: what it did to the game before stays done, its
+ * output is what it had set by then. It is then not run any more (its callers get what an empty script gives), or a
+ * script called for every unit or pixel would hold the game for the same time again at each call.
+ * Scripts run in the drawing threads too, hence the atomics. A script is known by where its code is, and the list
+ * is emptied when the scripts of a mod are about to be parsed (ScriptGlobal).
+ */
+namespace
+{
+std::array<std::atomic<const Uint8*>, 32> loopsStoppedProcs{};
+std::atomic<int> loopsStoppedCount{ 0 };
+
+void stopLoops(const Uint8* proc)
+{
+	if (ScriptWorkerBase::loopsStopped(proc))
+	{
+		return; // the rest of a blit: told already
+	}
+	const int place = loopsStoppedCount.fetch_add(1);
+	if (place < (int)loopsStoppedProcs.size())
+	{
+		loopsStoppedProcs[place].store(proc);
+	}
+	else
+	{
+		loopsStoppedCount.store((int)loopsStoppedProcs.size());
+	}
+	Log(LOG_ERROR) << "A script was stopped: its loops ran more than " << ScriptWorkerBase::LoopBudget << " turns in one call. It is not run again until the game is restarted.";
+}
+}
+
+bool ScriptWorkerBase::loopsStopped(const Uint8* proc)
+{
+	const int count = std::min(loopsStoppedCount.load(std::memory_order_relaxed), (int)loopsStoppedProcs.size());
+	for (int i = 0; i < count; ++i)
+	{
+		if (loopsStoppedProcs[i].load(std::memory_order_relaxed) == proc)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Core function in script engine used to executing scripts
  * @param proc array storing operation of script
  * @return Result of executing script
@@ -554,6 +602,11 @@ static inline void scriptExe(ScriptWorkerBase& data, const Uint8* proc)
 
 			case RetError:
 			default:
+				if (data.loopBudget < 0)
+				{
+					stopLoops(proc);
+					return;
+				}
 				if (++bugCount < 100)
 				{
 					Log(LOG_ERROR) << "Invalid script operation";
@@ -590,7 +643,23 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
 
 	destShader.setDomain(mask);
 
-	if (_proc)
+	// a blit whose script (or one of its events) was stopped for its loops is drawn as one without scripts
+	bool run = _proc && !loopsStopped(_proc);
+	if (run && _events && loopsStoppedCount.load(std::memory_order_relaxed))
+	{
+		// the list is two runs of events (before and after the script), each closed by an empty one
+		auto ptr = _events;
+		for (int part = 0; part < 2; ++part, ++ptr)
+		{
+			for (; *ptr; ++ptr)
+			{
+				run = run && !loopsStopped(ptr->data());
+			}
+		}
+	}
+	loopBudget = LoopBudget;
+
+	if (run)
 	{
 		if (_events)
 		{
@@ -666,8 +735,9 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
  */
 void ScriptWorkerBase::executeBase(const Uint8* proc)
 {
-	if (proc)
+	if (proc && !loopsStopped(proc))
 	{
+		loopBudget = LoopBudget;
 		scriptExe(*this, proc);
 	}
 }
@@ -4439,6 +4509,10 @@ void ScriptValuesBase::saveBase(YAML::YamlNodeWriter& writer, const ScriptGlobal
  */
 ScriptGlobal::ScriptGlobal()
 {
+	// the scripts of a mod are parsed after this; the ones stopped for their loops were of the mod before
+	// (and a new script may get the address of an old one)
+	loopsStoppedCount.store(0);
+
 	addTagValueTypeBase(
 		"int",
 		[](const ScriptGlobal* s, int& value, const YAML::YamlNodeReader& reader)
