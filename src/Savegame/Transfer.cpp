@@ -298,9 +298,17 @@ TransferType Transfer::getType() const
  */
 void Transfer::advance(Base *base)
 {
+	// A transfer is delivered once. One that starts with 0 hours or less (transferTime: 0 of a mod, hours of a save) used to
+	// go below zero, where ItemsArrivingState (hours == 0) never took it away, and was delivered again every hour.
+	if (_delivered)
+	{
+		_hours = 0;
+		return;
+	}
 	_hours--;
 	if (_hours <= 0)
 	{
+		_hours = 0;
 		if (_soldier != 0)
 		{
 			base->getSoldiers()->push_back(_soldier);
