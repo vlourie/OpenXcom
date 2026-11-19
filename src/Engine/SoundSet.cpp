@@ -201,6 +201,13 @@ void SoundSet::loadCatByIndex(CatFile &catFile, int index, bool tftd)
 	bool wav = ((sound[0] == 'R') && (sound[1] == 'I') && (sound[2]  == 'F') && (sound[3]  == 'F')
 			 && (sound[8] == 'W') && (sound[9] == 'A') && (sound[10] == 'V') && (sound[11] == 'E'));
 
+	// a RIFF/WAVE entry is read and patched up to offset 0x2C: shorter than the 44 byte header - nothing to play
+	if (wav && size < 44) {
+		Log(LOG_VERBOSE) << "SoundSet::loadCatByIndex(" << catFile.fileName() << ", " << index << ") WAV size=" << size <<" , skipping.";
+		SDL_free(sound);
+		return;
+	}
+
 	Uint8 *samples;
 	size_t samplecount;
 	bool do_resample = true;

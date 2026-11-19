@@ -22,6 +22,7 @@
 #include "MapDataSet.h"
 #include "MapScript.h"
 #include "../Engine/RNG.h"
+#include "../Engine/Exception.h"
 #include "Mod.h"
 
 namespace OpenXcom
@@ -254,6 +255,10 @@ MapData *RuleTerrain::getMapData(unsigned int *id, int *mapDataSetID) const
 	{
 		// oops! someone at microprose made an error in the map!
 		// set this broken tile reference to BLANKS 0.
+		if (_mapDataSets.empty())
+		{
+			throw Exception("Terrain " + _name + " has no mapDataSets, a map cannot be built on it.");
+		}
 		mdf = _mapDataSets.front();
 		*id = 0;
 		*mapDataSetID = 0;

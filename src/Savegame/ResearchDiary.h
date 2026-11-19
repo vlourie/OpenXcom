@@ -32,11 +32,11 @@ enum DiscoverySourceType : Uint8 { BASE = 0, FREE_FROM = 1, FREE_AFTER = 2, MISS
 
 struct DiscoverySource
 {
-	DiscoverySourceType type;
+	DiscoverySourceType type = DiscoverySourceType::BASE; // a diary entry saved without sourceType
 	std::string name; // Not guaranteed to be valid
-	const RuleResearch* research;
-	const RuleEvent* event;
-	const AlienDeployment* mission;
+	const RuleResearch* research = nullptr;
+	const RuleEvent* event = nullptr;
+	const AlienDeployment* mission = nullptr;
 
 	std::string_view getTypeString()
 	{

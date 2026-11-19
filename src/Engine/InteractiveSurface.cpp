@@ -274,6 +274,10 @@ void InteractiveSurface::mousePress(Action *action, State *state)
  */
 void InteractiveSurface::mouseRelease(Action *action, State *state)
 {
+	if (!state)
+	{
+		return; // unpressed by setVisible(false): there is no state to call the handlers on
+	}
 	auto allHandler = _release.find(0);
 	auto oneHandler = _release.find(action->getDetails()->button.button);
 	if (allHandler != _release.end())

@@ -3315,12 +3315,6 @@ void setupApi2(lua_State *L, void *)
 	lua_pop(L, 1);
 }
 
-int pushDone(lua_State *L, void *item)
-{
-	pushOrNil(L, TYPE_ITEM, item);
-	return 1;
-}
-
 int capOf(const std::string &word)
 {
 	return word == "spawn" ? LuaHost::CAP_SPAWN : word == "screens" ? LuaHost::CAP_SCREENS : word == "economy" ? LuaHost::CAP_ECONOMY : word == "map" ? LuaHost::CAP_MAP : 0;
