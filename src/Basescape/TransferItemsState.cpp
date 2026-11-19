@@ -1475,9 +1475,9 @@ void TransferItemsState::updateCost()
  * Gets the total cost of the current transfer.
  * @return Total cost.
  */
-int TransferItemsState::getTotal() const
+int64_t TransferItemsState::getTotal() const
 {
-	int ret = Transfer::getTransferPrice(_game->getMod(), _total);
+	int64_t ret = Transfer::getTransferPrice(_game->getMod(), _total);
 
 	if (ret == 1)
 	{

@@ -62,7 +62,8 @@ private:
 	std::vector<std::string> _cats;
 	size_t _vanillaCategories;
 	size_t _sel;
-	int _total, _pQty, _cQty;
+	int64_t _total;
+	int _pQty, _cQty;
 	double _iQty;
 	std::map<int, int> _iPrisonQty;
 	Uint8 _ammoColor;

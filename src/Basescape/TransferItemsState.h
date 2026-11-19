@@ -58,7 +58,8 @@ private:
 	std::vector<std::string> _cats;
 	size_t _vanillaCategories;
 	size_t _sel;
-	int _total, _pQty, _cQty, _aQty;
+	int64_t _total;
+	int _pQty, _cQty, _aQty;
 	double _iQty;
 	double _distance;
 	Uint8 _ammoColor;
@@ -137,7 +138,7 @@ public:
 	/// Shows the cost between the buttons (HD option).
 	void updateCost();
 	/// Gets the total of the transfer.
-	int getTotal() const;
+	int64_t getTotal() const;
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
 

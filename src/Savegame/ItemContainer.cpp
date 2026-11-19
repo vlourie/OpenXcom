@@ -18,6 +18,8 @@
  */
 #include "ItemContainer.h"
 #include <algorithm>
+#include <climits>
+#include <cstdint>
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 
@@ -53,7 +55,17 @@ void ItemContainer::load(const YAML::YamlNodeReader& reader, const Mod* mod)
 		const auto* type = mod->getItem(name);
 		if (type)
 		{
-			_qty[type] = item.readVal<int>();
+			// the container holds positive amounts only (see addItem)
+			const int qty = item.readVal<int>();
+			if (qty > 0)
+			{
+				_qty[type] = qty;
+			}
+			else
+			{
+				_qty.erase(type);
+				if (qty < 0) Log(LOG_ERROR) << "Item " << name << " has the amount " << qty << ", dropped";
+			}
 		}
 		else
 		{
@@ -86,9 +98,24 @@ void ItemContainer::save(YAML::YamlNodeWriter writer) const
  */
 void ItemContainer::addItem(const RuleItem* item, int qty)
 {
-	if (item)
+	// The contract of every stock in the game: an entry is a positive amount. Nothing is added by 0, an amount that
+	// would go to 0 or below leaves the container, and the sum stops at the largest int instead of wrapping around.
+	if (item && qty != 0)
 	{
-		_qty[item] += qty;
+		auto it = _qty.find(item);
+		const int64_t sum = (int64_t)(it != _qty.end() ? it->second : 0) + qty;
+		if (sum <= 0)
+		{
+			if (it != _qty.end()) _qty.erase(it);
+		}
+		else if (it != _qty.end())
+		{
+			it->second = (int)std::min<int64_t>(sum, INT_MAX);
+		}
+		else
+		{
+			_qty[item] = (int)std::min<int64_t>(sum, INT_MAX);
+		}
 	}
 }
 
@@ -104,7 +131,7 @@ void ItemContainer::removeItem(const std::string &id, int qty)
 		return;
 	}
 	auto it = std::find_if(_qty.begin(), _qty.end(), [&](auto& pair) { return pair.first->getType() == id; });
-	if (it == _qty.end())
+	if (it == _qty.end() || qty <= 0)
 	{
 		return;
 	}
@@ -129,7 +156,7 @@ void ItemContainer::removeItem(const RuleItem* item, int qty)
 	if (item)
 	{
 		auto it = _qty.find(item);
-		if (it == _qty.end())
+		if (it == _qty.end() || qty <= 0)
 		{
 			return;
 		}

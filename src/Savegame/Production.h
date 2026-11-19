@@ -113,7 +113,8 @@ public:
 	/// What one shipment of items between bases did (XP-000292).
 	struct ShipOutcome
 	{
-		int pieces = 0, price = 0, hours = 0;
+		int pieces = 0, hours = 0;
+		int64_t price = 0;
 		bool noSpace = false, noFunds = false;
 		std::vector<std::pair<const RuleItem*, int> > parts; ///< what was sent (or, with noFunds, what would have been)
 	};

@@ -379,9 +379,9 @@ int Transfer::getTravelHours(double distance)
  * @param sum The sum of the prices of everything that goes (an item costs (int)(1 * distance)).
  * @return Price, at least 1.
  */
-int Transfer::getTransferPrice(const Mod *mod, int sum)
+int64_t Transfer::getTransferPrice(const Mod *mod, int64_t sum)
 {
-	return std::max(1, sum * mod->getGlobalTransferCostMultiplier() / mod->getGlobalTransferCostDivider());
+	return std::max<int64_t>(1, sum * mod->getGlobalTransferCostMultiplier() / mod->getGlobalTransferCostDivider());
 }
 
 }

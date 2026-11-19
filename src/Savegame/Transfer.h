@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <cstdint>
 #include <string>
 #include "../Engine/Yaml.h"
 
@@ -39,7 +40,7 @@ struct TransferRow
 	TransferType type;
 	const void *rule;
 	std::string name;
-	int cost;
+	int64_t cost; // 64 bits: a sum is cost * amount, and the funds are 64 bits
 	int qtySrc, qtyDst;
 	int amount;
 	int listOrder;
@@ -110,7 +111,7 @@ public:
 	/// Hours on the way between bases that are this far apart.
 	static int getTravelHours(double distance);
 	/// The price of a transfer whose items add up to this sum (the mod's global multiplier and divider, at least 1).
-	static int getTransferPrice(const Mod *mod, int sum);
+	static int64_t getTransferPrice(const Mod *mod, int64_t sum);
 
 };
 

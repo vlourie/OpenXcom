@@ -405,6 +405,16 @@ void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 }
 
 /**
+ * Is this the base a delivery share was planned for? A share keeps the coordinates of its base, the way the save names
+ * every base (a base has no id: the index shifts and the name changes), so a share never holds a pointer that could
+ * outlive the base, and needs nothing resolved after loading.
+ */
+static bool isBaseAt(const Base *base, double lon, double lat)
+{
+	return std::fabs(base->getLongitude() - lon) < 1e-7 && std::fabs(base->getLatitude() - lat) < 1e-7;
+}
+
+/**
  * Finds the base by its coordinates (a base has no id: the index shifts and the name changes).
  * @return The base or null if there is no such base any more.
  */
@@ -412,7 +422,7 @@ static Base *findBaseAt(const SavedGame *g, double lon, double lat)
 {
 	for (auto *base : *g->getBases())
 	{
-		if (std::fabs(base->getLongitude() - lon) < 1e-7 && std::fabs(base->getLatitude() - lat) < 1e-7)
+		if (isBaseAt(base, lon, lat))
 		{
 			return base;
 		}
@@ -462,7 +472,7 @@ int Production::getDeliveryShare(const Base *to) const
 {
 	for (const auto &share : _delivery)
 	{
-		if (std::fabs(to->getLongitude() - share.lon) < 1e-7 && std::fabs(to->getLatitude() - share.lat) < 1e-7)
+		if (isBaseAt(to, share.lon, share.lat))
 		{
 			return share.amount;
 		}
@@ -477,7 +487,7 @@ void Production::setDeliveryShare(const Base *to, int amount)
 {
 	for (auto it = _delivery.begin(); it != _delivery.end(); ++it)
 	{
-		if (std::fabs(to->getLongitude() - it->lon) < 1e-7 && std::fabs(to->getLatitude() - it->lat) < 1e-7)
+		if (isBaseAt(to, it->lon, it->lat))
 		{
 			if (amount > 0)
 			{
@@ -631,7 +641,7 @@ int Production::getDeliveryPieces(const Base *to, const RuleItem *item) const
 {
 	for (const auto &share : _delivery)
 	{
-		if (std::fabs(to->getLongitude() - share.lon) < 1e-7 && std::fabs(to->getLatitude() - share.lat) < 1e-7)
+		if (isBaseAt(to, share.lon, share.lat))
 		{
 			for (const auto &p : getShareItems(share))
 			{
@@ -653,7 +663,7 @@ int Production::getDeliveryPieces(const Base *to) const
 	int total = 0;
 	for (const auto &share : _delivery)
 	{
-		if (std::fabs(to->getLongitude() - share.lon) < 1e-7 && std::fabs(to->getLatitude() - share.lat) < 1e-7)
+		if (isBaseAt(to, share.lon, share.lat))
 		{
 			for (const auto &p : getShareItems(share))
 			{
@@ -700,7 +710,7 @@ void Production::setDeliveryParts(const Base *to, const std::vector<std::pair<co
 	}
 	for (auto it = _delivery.begin(); it != _delivery.end(); ++it)
 	{
-		if (std::fabs(to->getLongitude() - it->lon) < 1e-7 && std::fabs(to->getLatitude() - it->lat) < 1e-7)
+		if (isBaseAt(to, it->lon, it->lat))
 		{
 			if (parts.empty())
 			{
@@ -766,7 +776,7 @@ Production::ShipOutcome Production::shipItems(Base *from, Base *to, const std::v
 		return out;
 	}
 	const double distance = Transfer::getBaseDistance(from, to);
-	out.price = Transfer::getTransferPrice(m, out.pieces * (int)(1 * distance));
+	out.price = Transfer::getTransferPrice(m, (int64_t)out.pieces * (int)(1 * distance));
 	if (g->getFunds() < out.price)
 	{
 		out.noFunds = true;
