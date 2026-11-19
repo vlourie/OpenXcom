@@ -45,6 +45,9 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Language.h"
+#include "../Menu/ErrorMessageState.h"
+#include "../Mod/RuleInterface.h"
 #include "../Mod/MapBlock.h"
 #include "../Mod/MapDataSet.h"
 #include "../Mod/RuleUfo.h"
@@ -774,6 +777,100 @@ void BattlescapeGenerator::nextStage()
 /**
  * Starts the generator; it fills up the battlescape savegame with data.
  */
+/**
+ * Why a craft or UFO block got no place: the map is too small for it (no other draw of the RNG can help,
+ * the rules of the mission are at fault), or its place was taken (the only case another draw can change).
+ */
+std::string BattlescapeGenerator::placementRefusal(const MapBlock *block) const
+{
+	std::ostringstream ss;
+	ss << "The map is " << _mapsize_x / 10 << "x" << _mapsize_y / 10 << " blocks, the block needs " << block->getSizeX() / 10 << "x" << block->getSizeY() / 10 << ". ";
+	if (_mapsize_x < 10 || _mapsize_y < 10)
+	{
+		ss << "The mission (" << _save->getMissionType() << ", map script " << _save->getLastUsedMapScript() << ") defines no map size: its deployment has no width/length and its script does not resize the map.";
+	}
+	else if (block->getSizeX() > _mapsize_x || block->getSizeY() > _mapsize_y)
+	{
+		ss << "The block is bigger than the map of this mission.";
+	}
+	else
+	{
+		ss << "No free place of that size was left. You may try turning on 'save scumming' to work around this issue.";
+	}
+	return ss.str();
+}
+
+State *BattlescapeGenerator::refusalMessage(Game *game, SDL_Color *palette, bool basescape)
+{
+	const LocalizedText &text = game->getLanguage()->getString("STR_BATTLE_GENERATION_FAILED");
+	if (basescape)
+	{
+		RuleInterface *ui = game->getMod()->getInterface("basescape");
+		return new ErrorMessageState(text, palette, ui->getElement("errorMessage")->color, "BACK13.SCR", ui->getElement("errorPalette")->color);
+	}
+	RuleInterface *ui = game->getMod()->getInterface("errorMessages");
+	return new ErrorMessageState(text, palette, ui->getElement("geoscapeColor")->color, "BACK01.SCR", ui->getElement("geoscapePalette")->color);
+}
+
+bool BattlescapeGenerator::runOrRollback(std::string &error)
+{
+	// everything of the campaign run() can touch before it refuses: the stores of the base (disabled vehicles and items go
+	// back there, a base defense takes its items out), the armor of the soldiers (starting conditions, enviro effects)
+	// and their voice (given at the first battle), the global RNG and the "in battlescape" marks
+	Base *base = _base ? _base : (_craft ? _craft->getBase() : nullptr);
+	const uint64_t seed = RNG::getSeed();
+	struct ArmorState { Soldier *soldier; Armor *armor, *replaced, *transformed; std::string voice; };
+	std::vector<ArmorState> armors;
+	std::map<const RuleItem*, int> stores;
+	if (base)
+	{
+		stores = *base->getStorageItems()->getContents();
+		armors.reserve(base->getSoldiers()->size());
+		for (auto* soldier : *base->getSoldiers())
+		{
+			armors.push_back({ soldier, soldier->getArmor(), soldier->getReplacedArmor(), soldier->getTransformedArmor(), soldier->getVoiceSetType() });
+		}
+	}
+
+	try
+	{
+		run();
+		return true;
+	}
+	catch (Exception &e)
+	{
+		error = e.what();
+	}
+
+	Log(LOG_ERROR) << "Battle generation refused, the campaign is left as it was: " << error;
+	delete _dummy;
+	_dummy = 0;
+	if (base)
+	{
+		base->getStorageItems()->clear();
+		for (const auto& pair : stores)
+		{
+			base->getStorageItems()->addItem(pair.first, pair.second);
+		}
+		for (const auto& a : armors)
+		{
+			a.soldier->setArmor(a.armor);
+			a.soldier->setReplacedArmor(a.replaced);
+			a.soldier->setTransformedArmor(a.transformed);
+			a.soldier->setVoiceSetType(a.voice);
+		}
+	}
+	if (_craft) _craft->setInBattlescape(false);
+	if (_ufo) _ufo->setInBattlescape(false);
+	if (_base) _base->setInBattlescape(false);
+	if (_mission) _mission->setInBattlescape(false);
+	if (_alienBase) _alienBase->setInBattlescape(false);
+	RNG::setSeed(seed);
+	_game->getSavedGame()->setBattleGame(0);
+	_save = 0;
+	return false;
+}
+
 void BattlescapeGenerator::run()
 {
 	bool isPreview = _save->isPreview();
@@ -3207,7 +3304,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 						{
 							throw Exception("Map generator encountered an error: Craft (MapBlock: "
 								+ craftMap->getName()
-								+ ") could not be placed on the map. You may try turning on 'save scumming' to work around this issue.");
+								+ ") could not be placed on the map. " + placementRefusal(craftMap));
 						}
 						if (craftPlaced)
 						{
@@ -3294,7 +3391,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 							{
 								throw Exception("Map generator encountered an error: UFO (MapBlock: "
 									+ ufoMap->getName()
-									+ ") could not be placed on the map. You may try turning on 'save scumming' to work around this issue.");
+									+ ") could not be placed on the map. " + placementRefusal(ufoMap));
 							}
 						}
 						if (ufoPlaced)
@@ -3513,6 +3610,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 	}
 
 	delete _dummy;
+	_dummy = 0;
 
 	// special hacks to fill in empty floors on level 0
 	for (int x = 0; x < _mapsize_x; ++x)

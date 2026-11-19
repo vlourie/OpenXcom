@@ -1038,7 +1038,16 @@ void NewBattleState::btnOkClick(Action *)
 	}
 #endif
 
-	bgen.run();
+	std::string error;
+	if (!bgen.runOrRollback(error))
+	{
+		if (base)
+		{
+			_craft = base->getCrafts()->front(); // the base defense branch above gave it up
+		}
+		_game->pushState(BattlescapeGenerator::refusalMessage(_game, _palette));
+		return;
+	}
 
 	_game->popState();
 	_game->popState();

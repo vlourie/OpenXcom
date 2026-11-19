@@ -421,7 +421,12 @@ void BasescapeState::viewLeftClick(Action *)
 					bgame->setMissionType("STR_BASE_DEFENSE");
 					bgen.setBase(_base);
 					bgen.setWorldTexture(globeTexture, globeTexture);
-					bgen.run();
+					std::string error;
+					if (!bgen.runOrRollback(error))
+					{
+						_game->pushState(BattlescapeGenerator::refusalMessage(_game, _palette, true));
+						return;
+					}
 
 					_game->pushState(new BriefingState(0, _base));
 				}

@@ -489,7 +489,12 @@ void CraftSoldiersState::btnPreviewClick(Action *)
 	bgame->setMissionType(c->getRules()->getCustomPreviewType());
 	bgame->setCraftForPreview(c);
 	bgen.setCraft(c);
-	bgen.run();
+	std::string error;
+	if (!bgen.runOrRollback(error))
+	{
+		_game->pushState(BattlescapeGenerator::refusalMessage(_game, _palette, true));
+		return;
+	}
 
 	// needed for preview of craft deployment tiles
 	bgame->setCraftPos(bgen.getCraftPos());

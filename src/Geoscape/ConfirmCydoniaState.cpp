@@ -99,7 +99,12 @@ void ConfirmCydoniaState::btnYesClick(Action *)
 		}
 	}
 	bgen.setCraft(_craft);
-	bgen.run();
+	std::string error;
+	if (!bgen.runOrRollback(error))
+	{
+		_game->pushState(BattlescapeGenerator::refusalMessage(_game, _palette));
+		return;
+	}
 
 	_game->pushState(new BriefingState(_craft));
 

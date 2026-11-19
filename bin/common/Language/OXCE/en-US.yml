@@ -1188,6 +1188,7 @@ en-US:
   STR_TOO_MANY_ITEMS_ONBOARD: "TOO MANY ITEMS!{SMALLLINE}This craft cannot carry so many items."
   STR_ARMOR_NOT_ALLOWED_ONBOARD: "ARMOR NOT ALLOWED!{SMALLLINE}Some soldiers are wearing forbidden armor."
   STR_INVALID_ALIEN_DEPLOYMENT: "The battle cannot be started because the mission data contains an invalid alien deployment. Details were written to the log. The craft will return without starting the battle."
+  STR_BATTLE_GENERATION_FAILED: "The battle cannot be started: the map of this mission could not be generated. Details were written to the log. Nothing was spent or lost, the battle is cancelled."
   STR_FOLLOW_WING_LEADER_QUESTION: "Follow wing leader?"
 #CraftNotEnoughPilotsState.cpp
   STR_ASSIGN_PILOTS: "Assign pilots..."

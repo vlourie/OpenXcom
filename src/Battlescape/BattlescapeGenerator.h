@@ -42,6 +42,7 @@ class RuleEnviroEffects;
 class RuleStartingCondition;
 class AlienDeployment;
 class Game;
+class State;
 class Base;
 class MissionSite;
 class AlienBase;
@@ -136,6 +137,8 @@ private:
 	void loadWeapons(const std::vector<BattleItem*> &itemList);
 	/// Adds a craft (either a ufo or an xcom craft) somewhere on the map.
 	bool addCraft(MapBlock *craftMap, MapScript *command, SDL_Rect &craftPos, RuleTerrain *terrain);
+	/// Why a craft or UFO block got no place on the map.
+	std::string placementRefusal(const MapBlock *block) const;
 	/// Adds a line (generally a road) to the map.
 	bool addLine(MapDirection lineType, const std::vector<SDL_Rect*> *rects, RuleTerrain *terrain, int verticalGroup, int horizontalGroup, int crossingGroup);
 	/// Adds a single block at a given position.
@@ -195,6 +198,10 @@ public:
 	void setTerrain(RuleTerrain *terrain);
 	/// Runs the generator.
 	void run();
+	/// Runs the generator as a transaction: a refusal leaves the campaign as it was.
+	bool runOrRollback(std::string &error);
+	/// The message for the player after a refusal.
+	static State *refusalMessage(Game *game, SDL_Color *palette, bool basescape = false);
 	/// Gets craft position.
 	SDL_Rect getCraftPos() const { return _craftPos; }
 	/// Gets craft elevation.

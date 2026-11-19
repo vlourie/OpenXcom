@@ -374,7 +374,14 @@ void ConfirmLandingState::btnYesClick(Action *)
 	{
 		throw Exception("No mission available!");
 	}
-	bgen.run();
+	std::string error;
+	if (!bgen.runOrRollback(error))
+	{
+		// the mission stays where it was: the craft goes home as after any other refused landing
+		_craft->returnToBase();
+		_game->pushState(BattlescapeGenerator::refusalMessage(_game, _palette));
+		return;
+	}
 	_game->pushState(new BriefingState(_craft));
 }
 

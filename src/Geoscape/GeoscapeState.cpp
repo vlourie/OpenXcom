@@ -3755,7 +3755,14 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 		Texture* globeTexture = _game->getMod()->getGlobe()->getTexture(texture);
 		bgen.setWorldTexture(globeTexture, globeTexture);
 		bgen.setUfoDamagePercentage(ufoDamagePercentage);
-		bgen.run();
+		std::string error;
+		if (!bgen.runOrRollback(error))
+		{
+			// no battle: the attackers are gone as after any base defense, the base keeps what it had (vehicles go back to the stores)
+			base->cleanupDefenses(true);
+			popup(BattlescapeGenerator::refusalMessage(_game, _palette));
+			return;
+		}
 		_pause = true;
 		_game->pushState(new BriefingState(0, base));
 	}
