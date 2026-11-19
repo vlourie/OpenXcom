@@ -4676,6 +4676,7 @@ int TileEngine::calculateLineTile(Position origin, Position target, std::vector<
 	return 0;
 }
 
+#ifdef OXCE_AI_DEV // the AI stand only, see AiCoverMap.h
 /**
  * AiCoverMap: TileEngine::voxelCheck's terrain test with all units excluded - the same tile parts, the same grav lift
  * floor and open UFO door rules - but without the tile cache of the engine, so several threads can run it at once.
@@ -4736,6 +4737,7 @@ VoxelType terrainLineVoxel(const SavedBattleGame *save, const std::vector<Uint16
 	};
 	return calculateLineHelper(origin, target, test, test) ? result : V_EMPTY;
 }
+#endif
 
 /**
  * Calculates a line trajectory, using bresenham algorithm in 3D.

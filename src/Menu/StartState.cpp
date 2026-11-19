@@ -19,6 +19,8 @@
 #include "StartState.h"
 #include "../version.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Exception.h"
+#include "../Engine/CrashTrace.h"
 #include "../Engine/Game.h"
 #include "../Engine/Screen.h"
 #include "../Engine/Action.h"
@@ -364,6 +366,14 @@ int StartState::load(void *game_ptr)
 	{
 		error = e.what();
 		Log(LOG_ERROR) << error;
+		if (const Exception *own = dynamic_cast<const Exception*>(&e))
+		{
+			const std::string thrownAt = CrashTrace::describe(own->getFrames(), own->getFrameCount());
+			if (!thrownAt.empty())
+			{
+				Log(LOG_ERROR) << "The exception was thrown at:\n" << thrownAt;
+			}
+		}
 		loading = LOADING_FAILED;
 	}
 

@@ -36,6 +36,7 @@
 #include <assert.h>
 #include "Logger.h"
 #include "Exception.h"
+#include "CrashTrace.h"
 #include "Options.h"
 #include "Unicode.h"
 #ifdef _WIN32
@@ -1455,11 +1456,11 @@ void stackTrace(void *ctx)
 				{
 					filename = filename.substr(n + 1);
 				}
-				Log(LOG_FATAL) << "0x" << std::hex << symbol->Address << std::dec << " " << symname << " (" << filename << ":" << line->LineNumber << ")";
+				Log(LOG_FATAL) << "0x" << std::hex << frame.AddrPC.Offset << " " << symname << "+0x" << (frame.AddrPC.Offset - symbol->Address) << std::dec << " (" << filename << ":" << line->LineNumber << ")";
 			}
 			else
 			{
-				Log(LOG_FATAL) << "0x" << std::hex << symbol->Address << std::dec << " " << symname;
+				Log(LOG_FATAL) << "0x" << std::hex << frame.AddrPC.Offset << " " << symname << "+0x" << (frame.AddrPC.Offset - symbol->Address) << std::dec;
 			}
 		}
 		else
@@ -1604,7 +1605,12 @@ void crashDump(void *ex, const std::string &err)
 		}
 	}
 	Log(LOG_FATAL) << "A fatal error has occurred: " << error.str();
-	stackTrace(0);
+	if (!CrashTrace::recorded())
+	{
+		// an exception or abort(): a normal context, the names can be looked up. After a crash the frames are
+		// already in the log (CrashTrace), and no symbol library is called from the broken process
+		stackTrace(0);
+	}
 #endif
 	std::ostringstream msg;
 	msg << "OXCE-HD has crashed: " << error.str() << std::endl;
@@ -1728,6 +1734,7 @@ void setLogFileName(const std::string& name) {
 	size_t sz = logBuffer.size();
 	Log(LOG_DEBUG) << "setLogFileName("<<name<<") was '"<<logFileName<<"'; "<<sz<<" in buffer";
 	logFileName = name;
+	CrashTrace::setLogFile(name);
 }
 /// Players' logs stay clean: the HD service lines only with verbose logging, the AI harness or OXCE_HD_PERFLOG (tools read them).
 static bool hdServiceLineHidden(int level, const std::string& bare)

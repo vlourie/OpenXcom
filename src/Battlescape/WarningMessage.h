@@ -38,6 +38,9 @@ private:
 	Uint8 _color, _fade;
 	bool _textKept;     ///< was the text kept out of the box when it was last drawn (the HD interface draws it)
 public:
+	/// Owns its resources: not copied.
+	WarningMessage(const WarningMessage&) = delete;
+	WarningMessage& operator=(const WarningMessage&) = delete;
 	/// Creates a new warning message with the specified size and position.
 	WarningMessage(int width, int height, int x = 0, int y = 0);
 	/// Cleans up the warning message.

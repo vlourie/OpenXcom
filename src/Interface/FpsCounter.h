@@ -38,6 +38,9 @@ private:
 	int _frames;
 	int _fps = 0;
 public:
+	/// Owns its resources: not copied.
+	FpsCounter(const FpsCounter&) = delete;
+	FpsCounter& operator=(const FpsCounter&) = delete;
 	/// Creates a new FPS counter linked to a game.
 	FpsCounter(int width, int height, int x, int y);
 	/// Cleans up all the FPS counter resources.

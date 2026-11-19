@@ -28,6 +28,8 @@ namespace OpenXcom
 
 class SavedBattleGame;
 
+#ifdef OXCE_AI_DEV
+
 /// One voxel of the terrain only - TileEngine::voxelCheck with all units excluded, without its tile cache, so it can run
 /// on several threads at once. Reads the tiles, changes nothing. Defined in TileEngine.cpp next to voxelCheck.
 VoxelType terrainVoxel(const SavedBattleGame *save, const std::vector<Uint16> *voxelData, Position voxel);
@@ -71,5 +73,20 @@ public:
 	/// Shortest paths between other nodes through the node; -1 without a map.
 	static int choke(int node);
 };
+
+#else
+
+/// The player's build: the cover map is a tool of the AI stand (OXCE_AI_DEV) and has no reader in the game, so
+/// its implementation (AiCoverMap.cpp, terrainVoxel) is not built; the calls of the engine compile to nothing.
+class AiCoverMap
+{
+public:
+	static int mode() { return 0; }
+	static void touch(const Position &) {}
+	static void update(SavedBattleGame *) {}
+	static void reset(const SavedBattleGame *) {}
+};
+
+#endif
 
 }

@@ -62,6 +62,9 @@ private:
 	void bevel(SDL_Rect &square, const std::function<void(SDL_Rect &r, Uint8 color, bool dot)> &fill) const;
 public:
 	static Sound *soundPopup[3];
+	/// Owns its resources: not copied.
+	Window(const Window&) = delete;
+	Window& operator=(const Window&) = delete;
 	/// Creates a new window with the specified size and position.
 	Window(State *state, int width, int height, int x = 0, int y = 0, WindowPopup popup = POPUP_NONE);
 	/// Cleans up the window.

@@ -43,6 +43,9 @@ private:
 	Text *_txtThinking;
 	ProgressBar *_progressBar;
 public:
+	/// Owns its resources: not copied.
+	BattlescapeMessage(const BattlescapeMessage&) = delete;
+	BattlescapeMessage& operator=(const BattlescapeMessage&) = delete;
 	/// Creates a new Battlescape message with the specified size and position.
 	BattlescapeMessage(int width, int height, int x = 0, int y = 0);
 	/// Cleans up the Battlescape message.

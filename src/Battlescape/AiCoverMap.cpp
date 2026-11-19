@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "AiCoverMap.h"
+#ifdef OXCE_AI_DEV // the AI stand only, see AiCoverMap.h
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -562,3 +563,5 @@ int AiCoverMap::choke(int node)
 }
 
 }
+
+#endif

@@ -52,6 +52,9 @@ private:
 	/// Parses a text string loaded from an external file.
 	std::string loadString(const std::string &s) const;
 public:
+	/// Owns its resources: not copied.
+	Language(const Language&) = delete;
+	Language& operator=(const Language&) = delete;
 	/// Creates a blank language.
 	Language();
 	/// Cleans up the language.

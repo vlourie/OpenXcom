@@ -65,6 +65,9 @@ protected:
 	SDL_Color _palette[256];
 	Uint8 _cursorColor;
 public:
+	/// Owns its resources: not copied.
+	State(const State&) = delete;
+	State& operator=(const State&) = delete;
 	/// Creates a new state linked to a game.
 	State();
 	/// Cleans up the state.

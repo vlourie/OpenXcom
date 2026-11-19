@@ -74,3 +74,28 @@ add_test ( NAME vertical_trace_plain COMMAND vertical_trace_test plain )
 # undefined-behaviour sanitizer must have nothing to say (it stops the run if it has)
 add_test ( NAME vertical_trace_intmin COMMAND vertical_trace_test intmin )
 set_tests_properties ( vertical_trace_intmin PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1" )
+
+# the Adlib player of the game on damaged tracks made in the test itself (AUDIT-05 G): must end without a report of
+# the sanitizers. The music of the original game against another tree, and random damage: tests/adlib/run.py
+add_executable ( adlib_test adlib/adlib_test.cpp ../src/Engine/Adlib/adlplayer.cpp ../src/Engine/Adlib/fmopl.cpp )
+target_include_directories ( adlib_test PRIVATE ../src/Engine/Adlib )
+if ( HD_TEST_SANITIZE )
+  target_compile_options ( adlib_test PRIVATE -fsanitize=${HD_TEST_SANITIZE} -fno-omit-frame-pointer -g )
+  target_link_options ( adlib_test PRIVATE -fsanitize=${HD_TEST_SANITIZE} )
+endif ()
+add_test ( NAME adlib_damaged COMMAND adlib_test bad )
+set_tests_properties ( adlib_damaged PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1" )
+
+# the crash record and the trace of an exception (Windows, 64 bit): every mode is a process that crashes on purpose,
+# tests/crashtrace/run.py checks what it leaves. Never built with the sanitizers: they take the crash for themselves
+if ( WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8 )
+  find_package ( Python3 COMPONENTS Interpreter )
+  add_executable ( crashtrace_test crashtrace/crashtrace_test.cpp ../src/Engine/CrashTrace.cpp )
+  target_link_libraries ( crashtrace_test PRIVATE dbghelp Threads::Threads )
+  # as the game is linked: the names of the frames come from the table of exports
+  target_link_options ( crashtrace_test PRIVATE -Wl,--export-all-symbols -s )
+  if ( Python3_FOUND AND NOT HD_TEST_SANITIZE )
+    add_test ( NAME crashtrace COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/crashtrace/run.py
+      --exe $<TARGET_FILE:crashtrace_test> --work ${CMAKE_CURRENT_BINARY_DIR}/crashtrace_work )
+  endif ()
+endif ()

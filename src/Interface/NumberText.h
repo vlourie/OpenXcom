@@ -43,6 +43,9 @@ public:
 	/// HD interface, modern skin: the marker under the number (a flat field in a black frame, the box of setHdBox) gets a
 	/// relief - a gradient and a bevel in the field's own colour, read from this surface at (1, 1). Picture only.
 	void setHdPlate(Surface *plate) { _hdPlate = plate; }
+	/// Owns its resources: not copied.
+	NumberText(const NumberText&) = delete;
+	NumberText& operator=(const NumberText&) = delete;
 	/// Creates a new number text with the specified size and position.
 	NumberText(int width, int height, int x = 0, int y = 0);
 	/// Cleans up the number text.

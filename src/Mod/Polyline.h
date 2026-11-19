@@ -33,6 +33,9 @@ private:
 	double *_lat, *_lon;
 	int _points;
 public:
+	/// Owns its resources: not copied.
+	Polyline(const Polyline&) = delete;
+	Polyline& operator=(const Polyline&) = delete;
 	/// Creates a polyline with a number of points.
 	Polyline(int points);
 	/// Cleans up the polyline.

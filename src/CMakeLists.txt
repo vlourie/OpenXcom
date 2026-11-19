@@ -167,6 +167,7 @@ set ( engine_src
   Engine/Adlib/fmopl.cpp
   Engine/AdlibMusic.cpp
   Engine/CatFile.cpp
+  Engine/CrashTrace.cpp
   Engine/CrossPlatform.cpp
   Engine/FastLineClip.cpp
   Engine/Feedback.cpp
@@ -708,6 +709,11 @@ if (( APPLE AND CREATE_BUNDLE ) OR CPACK_GENERATOR STREQUAL "7Z" )
 endif ()
 
 add_executable ( openxcom  ${application_type} ${openxcom_src} ${openxcom_icon} )
+
+# tests/parsers: the tests of the data parsers linked with the game's own code - a build of its own, never the player's
+if ( OXCE_PARSERS_TEST )
+  include ( "${OXCE_PARSERS_TEST}/hook.cmake" )
+endif ()
 
 if ( EMBED_ASSETS )
   add_dependencies(openxcom zips)
