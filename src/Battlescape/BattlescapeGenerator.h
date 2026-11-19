@@ -201,7 +201,13 @@ public:
 	/// Runs the generator as a transaction: a refusal leaves the campaign as it was.
 	bool runOrRollback(std::string &error);
 	/// The message for the player after a refusal.
-	static State *refusalMessage(Game *game, SDL_Color *palette, bool basescape = false);
+	static State *refusalMessage(Game *game, SDL_Color *palette, bool basescape = false, const char *textId = "STR_BATTLE_GENERATION_FAILED");
+	/// The file the running battle is kept in before its next stage is generated.
+	static const std::string STAGE_KEEP;
+	/// Keeps the running battle before its next stage is generated.
+	static bool keepStage(Game *game);
+	/// Generates the next stage; a refusal is caught and told, the battle is then put back from what keepStage() kept.
+	bool nextStageOrRefuse(std::string &error);
 	/// Gets craft position.
 	SDL_Rect getCraftPos() const { return _craftPos; }
 	/// Gets craft elevation.

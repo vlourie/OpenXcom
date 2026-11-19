@@ -1189,6 +1189,9 @@ en-US:
   STR_ARMOR_NOT_ALLOWED_ONBOARD: "ARMOR NOT ALLOWED!{SMALLLINE}Some soldiers are wearing forbidden armor."
   STR_INVALID_ALIEN_DEPLOYMENT: "The battle cannot be started because the mission data contains an invalid alien deployment. Details were written to the log. The craft will return without starting the battle."
   STR_BATTLE_GENERATION_FAILED: "The battle cannot be started: the map of this mission could not be generated. Details were written to the log. Nothing was spent or lost, the battle is cancelled."
+  STR_BASE_DEFENSE_GENERATION_FAILED: "The defence of the base cannot be started: the map of this battle could not be generated. Details were written to the log. Nothing was spent or lost. The attackers remain above the base: they can be shot down, and the attack will be tried again after the game is loaded."
+  STR_NEXT_STAGE_GENERATION_FAILED: "The next stage of the mission could not be generated. Details were written to the log. The battle was returned to the moment before the transition: soldiers, equipment and progress are kept. You can continue this stage or abort the mission."
+  STR_NEXT_STAGE_GENERATION_FAILED_MENU: "The next stage of the mission could not be generated again. Details were written to the log. The battle before the transition is kept in the save _stagekeep_: load it to continue this stage or abort the mission."
   STR_FOLLOW_WING_LEADER_QUESTION: "Follow wing leader?"
 #CraftNotEnoughPilotsState.cpp
   STR_ASSIGN_PILOTS: "Assign pilots..."

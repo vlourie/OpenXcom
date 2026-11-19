@@ -1097,7 +1097,8 @@ void GeoscapeState::time5Seconds()
 		{
 		case Ufo::FLYING:
 			ufo->think();
-			if (ufo->reachedDestination() && !ufo->isEscorting())
+			// (a base assault on hold stays where it is: see holdBaseAssault)
+			if (ufo->reachedDestination() && !ufo->isEscorting() && !_heldAssaults.count(ufo->getUniqueId()))
 			{
 				Craft* c = dynamic_cast<Craft*>(ufo->getDestination());
 				if (c != 0 && !c->isDestroyed() && ufo->isHunting())
@@ -1168,6 +1169,15 @@ void GeoscapeState::time5Seconds()
 				size_t count = _game->getSavedGame()->getMissionSites()->size();
 				AlienMission *mission = ufo->getMission();
 				bool detected = ufo->getDetected();
+				AssaultArrival arrival;
+				arrival.ufoId = ufo->getUniqueId();
+				arrival.trajectoryPoint = ufo->getTrajectoryPoint();
+				arrival.waveCountdown = mission->getWaveCountdown();
+				arrival.altitude = ufo->getAltitude();
+				arrival.detected = detected;
+				arrival.hyperDetected = ufo->getHyperDetected();
+				arrival.landId = ufo->getLandId();
+				arrival.speed = ufo->getSpeed();
 				mission->ufoReachedWaypoint(*ufo, *_game, *_globe);
 				if (Options::oxceUfoLandingAlert && ufo->getStatus() == Ufo::LANDED && ufo->getDetected() && ufo->getLandId() != 0)
 				{
@@ -1190,6 +1200,7 @@ void GeoscapeState::time5Seconds()
 					return;
 				if (Base *base = dynamic_cast<Base*>(ufo->getDestination()))
 				{
+					_assaultArrival = arrival;
 					mission->setWaveCountdown(30 * (RNG::generate(0, 400) + 48));
 					ufo->setDestination(0);
 					base->setupDefenses(mission);
@@ -3758,9 +3769,11 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 		std::string error;
 		if (!bgen.runOrRollback(error))
 		{
-			// no battle: the attackers are gone as after any base defense, the base keeps what it had (vehicles go back to the stores)
+			// no battle, and no result of one either: the base keeps what it had (vehicles go back to the stores)
+			// and the assault is not over - the UFO stays above the base as it arrived
 			base->cleanupDefenses(true);
-			popup(BattlescapeGenerator::refusalMessage(_game, _palette));
+			const bool held = holdBaseAssault(ufo);
+			popup(BattlescapeGenerator::refusalMessage(_game, _palette, false, held ? "STR_BASE_DEFENSE_GENERATION_FAILED" : "STR_BATTLE_GENERATION_FAILED"));
 			return;
 		}
 		_pause = true;
@@ -3771,6 +3784,46 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 		// Please garrison your bases in future
 		popup(new BaseDestroyedState(base, ufo, false, false));
 	}
+}
+
+/**
+ * The battle of a base assault could not be generated. Calling that a result of the assault would be wrong either
+ * way (the base is not lost, the attackers are not beaten), so the assault is left unfinished: the UFO is put back as
+ * it was before it arrived - in the air above the base, on the same leg of its trajectory - and is held there.
+ * A held UFO is not tried again by this screen (the same refusal would come every 5 seconds); it can be shot down
+ * like any other, and after a load of the game the assault is tried once more.
+ * @param ufo The attacking UFO.
+ * @return False when there is nothing to put back (the attackers are gone then, as after a defense).
+ */
+bool GeoscapeState::holdBaseAssault(Ufo *ufo)
+{
+	const AssaultArrival &a = _assaultArrival;
+	if (a.ufoId != ufo->getUniqueId() || a.altitude == "STR_GROUND")
+	{
+		return false;
+	}
+	AlienMission *mission = ufo->getMission();
+	if (mission->getRules().getObjective() == OBJECTIVE_INSTANT_RETALIATION)
+	{
+		mission->setInterrupted(false);
+	}
+	if (a.waveCountdown != 0 && a.waveCountdown % 30 == 0)
+	{
+		mission->setWaveCountdown(a.waveCountdown);
+	}
+	ufo->setStatus(Ufo::FLYING);
+	ufo->setAltitude(a.altitude);
+	ufo->setTrajectoryPoint(a.trajectoryPoint);
+	ufo->setDetected(a.detected);
+	ufo->setHyperDetected(a.hyperDetected);
+	ufo->setLandId(a.landId);
+	ufo->setSpeed(a.speed);
+	Waypoint *wp = new Waypoint();
+	wp->setLongitude(ufo->getLongitude());
+	wp->setLatitude(ufo->getLatitude());
+	ufo->setDestination(wp);
+	_heldAssaults.insert(a.ufoId);
+	return true;
 }
 
 /**

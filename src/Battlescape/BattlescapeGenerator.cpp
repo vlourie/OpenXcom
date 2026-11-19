@@ -800,9 +800,9 @@ std::string BattlescapeGenerator::placementRefusal(const MapBlock *block) const
 	return ss.str();
 }
 
-State *BattlescapeGenerator::refusalMessage(Game *game, SDL_Color *palette, bool basescape)
+State *BattlescapeGenerator::refusalMessage(Game *game, SDL_Color *palette, bool basescape, const char *textId)
 {
-	const LocalizedText &text = game->getLanguage()->getString("STR_BATTLE_GENERATION_FAILED");
+	const LocalizedText &text = game->getLanguage()->getString(textId);
 	if (basescape)
 	{
 		RuleInterface *ui = game->getMod()->getInterface("basescape");
@@ -810,6 +810,50 @@ State *BattlescapeGenerator::refusalMessage(Game *game, SDL_Color *palette, bool
 	}
 	RuleInterface *ui = game->getMod()->getInterface("errorMessages");
 	return new ErrorMessageState(text, palette, ui->getElement("geoscapeColor")->color, "BACK01.SCR", ui->getElement("geoscapePalette")->color);
+}
+
+const std::string BattlescapeGenerator::STAGE_KEEP = "_stagekeep_.asav";
+
+/**
+ * nextStage() takes the running battle apart as it goes (items are sorted out and deleted, units leave the map,
+ * the map itself is rebuilt), so a refusal in the middle of it leaves nothing to continue with. What can be put
+ * back is the whole game as it was before the stage ended: it is written the way every save is, and a refusal
+ * loads it the way every save is loaded - soldiers, equipment, what was done in the stage and the RNG come back together.
+ * The player's decision to abort is not part of what is kept: the battle comes back before it.
+ * @return False when the game could not be written (a refusal then has nothing to go back to).
+ */
+bool BattlescapeGenerator::keepStage(Game *game)
+{
+	SavedBattleGame *battle = game->getSavedGame()->getSavedBattle();
+	const bool aborted = battle->isAborted();
+	battle->setAborted(false);
+	bool kept = true;
+	try
+	{
+		game->getSavedGame()->save(STAGE_KEEP, game->getMod());
+	}
+	catch (std::exception &e)
+	{
+		Log(LOG_ERROR) << "The battle was not kept before its next stage: " << e.what();
+		kept = false;
+	}
+	battle->setAborted(aborted);
+	return kept;
+}
+
+bool BattlescapeGenerator::nextStageOrRefuse(std::string &error)
+{
+	try
+	{
+		nextStage();
+		return true;
+	}
+	catch (Exception &e)
+	{
+		error = e.what();
+	}
+	Log(LOG_ERROR) << "The next stage of the battle (" << _save->getMissionType() << ") was refused by the generator: " << error;
+	return false;
 }
 
 bool BattlescapeGenerator::runOrRollback(std::string &error)

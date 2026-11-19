@@ -78,6 +78,9 @@
 #include "../Menu/LuaScreenState.h"
 #include "../Menu/PauseState.h"
 #include "../Menu/LoadGameState.h"
+#include "../Menu/MainMenuState.h"
+#include "../Engine/Exception.h"
+#include "InfoboxOKState.h"
 #include "../Menu/SaveGameState.h"
 #include "../Mod/Mod.h"
 #include "../Mod/LuaHost.h"
@@ -113,6 +116,10 @@ namespace OpenXcom
 
 namespace
 {
+	/// Refusals of a next stage in a row with no decision of the player in between, and the notice owed to the battle that comes back.
+	int stageRefusals = 0;
+	bool stageNotice = false;
+
 	/**
 	 * HD render: carries the battle's palette transformation over to the HD frames (HdPaletteShift),
 	 * once, when the HD frames are drawn at all and the palette of the battle's depth was swapped.
@@ -983,6 +990,12 @@ void BattlescapeState::init()
 		_reserve = _btnReserveNone;
 		break;
 	}
+	if (_firstInit && stageNotice)
+	{
+		// this is the battle that came back after its next stage was refused
+		stageNotice = false;
+		popup(new InfoboxOKState(tr("STR_NEXT_STAGE_GENERATION_FAILED")));
+	}
 	if (_firstInit)
 	{
 		// Set music
@@ -1038,6 +1051,11 @@ void BattlescapeState::init()
 void BattlescapeState::think()
 {
 	static bool popped = false;
+	if (_stageRefused)
+	{
+		State::think();
+		return;
+	}
 
 	// HD interface: the panel's arrow is there while the panel is the modern one; the panel slides to where it goes
 	const bool panelArrow = Options::oxceHdPanelHide && HdBattleHud::on();
@@ -1725,6 +1743,8 @@ void BattlescapeState::btnEndTurnClick(Action *)
 {
 	if (allowButtons())
 	{
+		// a decision of the player: a stage refused after it is a new refusal, not the same one again (see stageRefused)
+		stageRefusals = 0;
 		// Temporarily deactivate the touch buttons at the end of the player's turn
 		toggleTouchButtons(true, false);
 
@@ -1742,6 +1762,7 @@ void BattlescapeState::btnEndTurnClick(Action *)
  */
 void BattlescapeState::btnAbortClick(Action *)
 {
+	stageRefusals = 0;
 	if (_save->isPreview())
 	{
 		if (!_save->getCraftForPreview())
@@ -4006,10 +4027,68 @@ void BattlescapeState::popup(State *state)
  * @param abort Was the mission aborted?
  * @param inExitArea Number of soldiers in the exit area OR number of survivors when battle finished due to either all aliens or objective being destroyed.
  */
+void BattlescapeState::stageRefused(bool kept, const std::string &error)
+{
+	// this battle is half taken apart: nothing of it is run or drawn from here on
+	_stageRefused = true;
+	_animTimer->stop();
+	_gameTimer->stop();
+	_map->setVisible(false);
+	if (!kept)
+	{
+		// nothing to go back to
+		throw Exception(error);
+	}
+	if (stageRefusals == 0)
+	{
+		// the battle comes back as it was before the stage ended, by the load every save goes through
+		++stageRefusals;
+		stageNotice = true;
+		_game->pushState(new LoadGameState(OPT_BATTLESCAPE, BattlescapeGenerator::STAGE_KEEP, _palette));
+		return;
+	}
+	// Refused again with no decision of the player in between: the battle that came back ends on its own (its last
+	// enemy is dead, its turns are up) and would be refused for ever. It stays in its save, the game goes to the menu
+	stageRefusals = 0;
+	stageNotice = false;
+	Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
+	_game->getScreen()->resetDisplay(false);
+	_game->setState(new MainMenuState);
+	_game->pushState(BattlescapeGenerator::refusalMessage(_game, _palette, false, "STR_NEXT_STAGE_GENERATION_FAILED_MENU"));
+}
+
 void BattlescapeState::finishBattle(bool abort, int inExitArea)
 {
 	AiProbe::battleOver(this, _save, abort);
 	bool isPreview = _save->isPreview();
+
+	// where the battle goes from here is known before anything of it is taken apart: a battle with a next stage is kept
+	// whole first (BattlescapeGenerator::keepStage), to come back if that stage cannot be generated
+	AlienDeployment *ruleDeploy = _game->getMod()->getDeployment(_save->getMissionType());
+	if (!ruleDeploy)
+	{
+		for (auto* ufo : *_game->getSavedGame()->getUfos())
+		{
+			if (ufo->isInBattlescape())
+			{
+				std::string ufoMissionName = ufo->getRules()->getType();
+				if (!_save->getAlienCustomMission().empty())
+				{
+					// fake underwater UFO
+					ufoMissionName = _save->getAlienCustomMission();
+				}
+				ruleDeploy = _game->getMod()->getDeployment(ufoMissionName);
+				break;
+			}
+		}
+	}
+	std::string nextStage;
+	if (ruleDeploy)
+	{
+		nextStage = ruleDeploy->getNextStage();
+	}
+	const bool toNextStage = !nextStage.empty() && inExitArea && !isPreview;
+	const bool stageKept = toNextStage && BattlescapeGenerator::keepStage(_game);
 
 	while (!_game->isState(this))
 	{
@@ -4053,37 +4132,19 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 	// this removes player-controlled VIPs (not civilian VIPs)
 	_battleGame->removeSummonedPlayerUnits();
 
-	AlienDeployment *ruleDeploy = _game->getMod()->getDeployment(_save->getMissionType());
-	if (!ruleDeploy)
-	{
-		for (auto* ufo : *_game->getSavedGame()->getUfos())
-		{
-			if (ufo->isInBattlescape())
-			{
-				std::string ufoMissionName = ufo->getRules()->getType();
-				if (!_save->getAlienCustomMission().empty())
-				{
-					// fake underwater UFO
-					ufoMissionName = _save->getAlienCustomMission();
-				}
-				ruleDeploy = _game->getMod()->getDeployment(ufoMissionName);
-				break;
-			}
-		}
-	}
-	std::string nextStage;
-	if (ruleDeploy)
-	{
-		nextStage = ruleDeploy->getNextStage();
-	}
-
-	if (!nextStage.empty() && inExitArea && !isPreview)
+	if (toNextStage)
 	{
 		// if there is a next mission stage + we have people in exit area OR we killed all aliens, load the next stage
 		_popups.clear();
 		_save->setMissionType(nextStage);
 		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
-		bgen.nextStage();
+		std::string error;
+		if (!bgen.nextStageOrRefuse(error))
+		{
+			stageRefused(stageKept, error);
+			return;
+		}
+		CrossPlatform::deleteFile(Options::getMasterUserFolder() + BattlescapeGenerator::STAGE_KEEP);
 		_game->popState();
 		_game->pushState(new BriefingState(0, 0));
 	}

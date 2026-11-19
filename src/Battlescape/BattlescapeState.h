@@ -107,6 +107,8 @@ private:
 	std::vector<State*> _popups;
 	BattlescapeGame *_battleGame;
 	bool _firstInit, _paletteResetNeeded, _paletteResetRequested;
+	/// The next stage was refused: this battle is half taken apart and is neither run nor drawn any more.
+	bool _stageRefused = false;
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
 	Position _mapOffsetBeforeMouseScrolling;
@@ -277,6 +279,8 @@ public:
 	void popup(State *state);
 	/// Finishes a battle.
 	void finishBattle(bool abort, int inExitArea);
+	/// The next stage of the battle could not be generated.
+	void stageRefused(bool kept, const std::string &error);
 	/// Show the launch button.
 	void showLaunchButton(bool show);
 	/// Reset visiblity of special buttons like psi or skill.

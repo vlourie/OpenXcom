@@ -19,6 +19,8 @@
  */
 #include "../Engine/State.h"
 #include <list>
+#include <set>
+#include <string>
 
 namespace OpenXcom
 {
@@ -62,6 +64,17 @@ private:
 	Text *_txtHdDate = nullptr;
 	Timer *_gameTimer, *_zoomInEffectTimer, *_zoomOutEffectTimer, *_dogfightStartTimer, *_dogfightTimer;
 	bool _pause, _zoomInEffectDone, _zoomOutEffectDone;
+	/// A UFO as it was before it arrived for a base assault: put back when the defense battle cannot be generated.
+	struct AssaultArrival
+	{
+		int ufoId = 0;
+		size_t trajectoryPoint = 0, waveCountdown = 0;
+		std::string altitude;
+		bool detected = false, hyperDetected = false;
+		int landId = 0, speed = 0;
+	} _assaultArrival;
+	/// Base assaults whose battle could not be generated (UFO ids): on hold, not tried again by this screen.
+	std::set<int> _heldAssaults;
 	Text *_txtDebug;
 	ComboBox *_cbxRegion, *_cbxZone, *_cbxArea, *_cbxCountry;
 	Text *_txtSlacking;
@@ -198,6 +211,8 @@ public:
 	bool processMissionSite(MissionSite *site);
 	/// Handles base defense
 	void handleBaseDefense(Base *base, Ufo *ufo);
+	/// Puts a base assault whose battle cannot be generated on hold.
+	bool holdBaseAssault(Ufo *ufo);
 	/// Update the resolution settings, we just resized the window.
 	void resize(int &dX, int &dY) override;
 	/// Handle alien mission generation.
