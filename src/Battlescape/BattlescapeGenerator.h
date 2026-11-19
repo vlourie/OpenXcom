@@ -203,9 +203,9 @@ public:
 	/// The message for the player after a refusal.
 	static State *refusalMessage(Game *game, SDL_Color *palette, bool basescape = false, const char *textId = "STR_BATTLE_GENERATION_FAILED");
 	/// The file the running battle is kept in before its next stage is generated.
-	static const std::string STAGE_KEEP;
+	static const std::string STAGE_KEEP, STAGE_KEEP_OLD;
 	/// Keeps the running battle before its next stage is generated.
-	static bool keepStage(Game *game);
+	static bool keepStage(Game *game, bool ownRecord);
 	/// Generates the next stage; a refusal is caught and told, the battle is then put back from what keepStage() kept.
 	bool nextStageOrRefuse(std::string &error);
 	/// Gets craft position.

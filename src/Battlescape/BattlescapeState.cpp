@@ -119,6 +119,8 @@ namespace
 	/// Refusals of a next stage in a row with no decision of the player in between, and the notice owed to the battle that comes back.
 	int stageRefusals = 0;
 	bool stageNotice = false;
+	/// The game that came back from the record of its stage (BattlescapeGenerator::STAGE_KEEP): that record is its own.
+	const SavedGame *stageKeepOwner = nullptr;
 
 	/**
 	 * HD render: carries the battle's palette transformation over to the HD frames (HdPaletteShift),
@@ -1002,6 +1004,7 @@ void BattlescapeState::init()
 	{
 		// this is the battle that came back after its next stage was refused
 		stageNotice = false;
+		stageKeepOwner = _game->getSavedGame();
 		popup(new InfoboxOKState(tr("STR_NEXT_STAGE_GENERATION_FAILED")));
 	}
 	if (_firstInit)
@@ -4035,16 +4038,16 @@ void BattlescapeState::popup(State *state)
  * @param abort Was the mission aborted?
  * @param inExitArea Number of soldiers in the exit area OR number of survivors when battle finished due to either all aliens or objective being destroyed.
  */
-void BattlescapeState::stageRefused(bool kept, const std::string &error)
+void BattlescapeState::stageRefused(const std::string &error)
 {
 	// this battle is half taken apart: nothing of it is run or drawn from here on
 	_stageRefused = true;
 	_animTimer->stop();
 	_gameTimer->stop();
 	_map->setVisible(false);
-	if (!kept)
+	if (!CrossPlatform::fileExists(Options::getMasterUserFolder() + BattlescapeGenerator::STAGE_KEEP))
 	{
-		// nothing to go back to
+		// nothing to go back to (the record was written before the stage was taken apart, and is gone since)
 		throw Exception(error);
 	}
 	if (stageRefusals == 0)
@@ -4059,6 +4062,7 @@ void BattlescapeState::stageRefused(bool kept, const std::string &error)
 	// enemy is dead, its turns are up) and would be refused for ever. It stays in its save, the game goes to the menu
 	stageRefusals = 0;
 	stageNotice = false;
+	stageKeepOwner = nullptr;
 	Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
 	_game->getScreen()->resetDisplay(false);
 	_stageToMenu = true;
@@ -4097,7 +4101,20 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 		nextStage = ruleDeploy->getNextStage();
 	}
 	const bool toNextStage = !nextStage.empty() && inExitArea && !isPreview;
-	const bool stageKept = toNextStage && BattlescapeGenerator::keepStage(_game);
+	if (toNextStage && !BattlescapeGenerator::keepStage(_game, stageKeepOwner == _game->getSavedGame()))
+	{
+		// nothing to come back to (no room on the disk, the folder cannot be written): what the next stage does to this
+		// battle cannot be undone, so it is not begun. The battle stays as it is, the player is told and may try again
+		_save->setAborted(false);
+		popup(new InfoboxOKState(tr("STR_NEXT_STAGE_KEEP_FAILED")));
+		return;
+	}
+	if (!toNextStage && stageKeepOwner == _game->getSavedGame())
+	{
+		// the battle that came back from its record ends another way: the record is of no battle any more
+		CrossPlatform::deleteFile(Options::getMasterUserFolder() + BattlescapeGenerator::STAGE_KEEP);
+		stageKeepOwner = nullptr;
+	}
 
 	while (!_game->isState(this))
 	{
@@ -4150,10 +4167,11 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 		std::string error;
 		if (!bgen.nextStageOrRefuse(error))
 		{
-			stageRefused(stageKept, error);
+			stageRefused(error);
 			return;
 		}
 		CrossPlatform::deleteFile(Options::getMasterUserFolder() + BattlescapeGenerator::STAGE_KEEP);
+		stageKeepOwner = nullptr;
 		_game->popState();
 		_game->pushState(new BriefingState(0, 0));
 	}

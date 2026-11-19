@@ -812,7 +812,7 @@ State *BattlescapeGenerator::refusalMessage(Game *game, SDL_Color *palette, bool
 	return new ErrorMessageState(text, palette, ui->getElement("geoscapeColor")->color, "BACK01.SCR", ui->getElement("geoscapePalette")->color);
 }
 
-const std::string BattlescapeGenerator::STAGE_KEEP = "_stagekeep_.asav";
+const std::string BattlescapeGenerator::STAGE_KEEP = "_stagekeep_.asav", BattlescapeGenerator::STAGE_KEEP_OLD = "_stagekeep_old_.asav";
 
 /**
  * nextStage() takes the running battle apart as it goes (items are sorted out and deleted, units leave the map,
@@ -820,21 +820,37 @@ const std::string BattlescapeGenerator::STAGE_KEEP = "_stagekeep_.asav";
  * back is the whole game as it was before the stage ended: it is written the way every save is, and a refusal
  * loads it the way every save is loaded - soldiers, equipment, what was done in the stage and the RNG come back together.
  * The player's decision to abort is not part of what is kept: the battle comes back before it.
- * @return False when the game could not be written (a refusal then has nothing to go back to).
+ * The record is written beside its name and put in place whole (as SaveGameState does): a write that fails, or a game
+ * that is closed in the middle of it, leaves the record that was there. A record that is not of this battle (left by
+ * a transition that never finished: the game was closed, or went to the main menu) is not overwritten, it is kept
+ * under STAGE_KEEP_OLD. No save of the player has these names: theirs end in ".sav".
+ * @param ownRecord The record that is there is of this very battle (it came back from it).
+ * @return False when the game could not be written: the stage must not be taken apart then.
  */
-bool BattlescapeGenerator::keepStage(Game *game)
+bool BattlescapeGenerator::keepStage(Game *game, bool ownRecord)
 {
 	SavedBattleGame *battle = game->getSavedGame()->getSavedBattle();
 	const bool aborted = battle->isAborted();
 	battle->setAborted(false);
 	bool kept = true;
+	const std::string folder = Options::getMasterUserFolder();
+	const std::string beside = STAGE_KEEP + ".bak";
 	try
 	{
-		game->getSavedGame()->save(STAGE_KEEP, game->getMod());
+		game->getSavedGame()->save(beside, game->getMod());
+		if (!ownRecord && CrossPlatform::fileExists(folder + STAGE_KEEP) && !CrossPlatform::moveFile(folder + STAGE_KEEP, folder + STAGE_KEEP_OLD))
+		{
+			throw Exception("the record of another battle could not be moved aside");
+		}
+		if (!CrossPlatform::moveFile(folder + beside, folder + STAGE_KEEP))
+		{
+			throw Exception("the record could not be put in place");
+		}
 	}
 	catch (std::exception &e)
 	{
 		Log(LOG_ERROR) << "The battle was not kept before its next stage: " << e.what();
+		CrossPlatform::deleteFile(folder + beside);
 		kept = false;
 	}
 	battle->setAborted(aborted);

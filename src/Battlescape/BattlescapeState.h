@@ -280,7 +280,7 @@ public:
 	/// Finishes a battle.
 	void finishBattle(bool abort, int inExitArea);
 	/// The next stage of the battle could not be generated.
-	void stageRefused(bool kept, const std::string &error);
+	void stageRefused(const std::string &error);
 	/// Show the launch button.
 	void showLaunchButton(bool show);
 	/// Reset visiblity of special buttons like psi or skill.
