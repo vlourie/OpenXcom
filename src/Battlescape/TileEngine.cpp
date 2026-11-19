@@ -2658,7 +2658,10 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 {
 	std::vector<TileEngine::ReactionScore> spotters;
 	Tile *tile = unit->getTile();
-	int threshold = unit->getReactionScore();
+	// The loop below is not only reaction fire: an observer that passes it also sights the unit (setVisible,
+	// addToVisibleUnits). A unit without time units takes no part in the reaction duel (getReactor), so its
+	// observers are not filtered by score either - as it was while its score was NaN and the threshold INT_MIN.
+	int threshold = unit->hasReactionFire() ? (int)unit->getReactionScore() : INT_MIN;
 	// no reaction on civilian turn.
 	if (_save->getSide() != FACTION_NEUTRAL)
 	{
