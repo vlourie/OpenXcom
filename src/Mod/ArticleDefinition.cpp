@@ -18,6 +18,7 @@
  */
 
 #include "ArticleDefinition.h"
+#include "Mod.h"
 #include "../Engine/Exception.h"
 #include "../Mod/RuleItem.h"
 
@@ -58,8 +59,8 @@ namespace OpenXcom
 		reader.tryRead("id", id);
 		_pages[0].title = id;
 		reader.tryRead("section", section);
-		reader.tryRead("requires", _requires);
-		reader.tryRead("disabledBy", disabledBy);
+		reader.tryRead("requires", requireNames);
+		reader.tryRead("disabledBy", disabledByNames);
 		reader.tryRead("hiddenCommendation", hiddenCommendation);
 		//_type_id = (UfopaediaTypeId)node["type_id"].as<int>(_type_id);
 		reader.tryRead("listOrder", _listOrder);
@@ -96,6 +97,15 @@ namespace OpenXcom
 				throw Exception("Unsupported type of node 'pages' for Article '" + id + "'");
 			}
 		}
+	}
+
+	/**
+	 * Cross link with other rules.
+	 */
+	void ArticleDefinition::afterLoad(const Mod* mod)
+	{
+		mod->linkRule(_requires, requireNames);
+		mod->linkRule(disabledBy, disabledByNames);
 	}
 
 	/**
@@ -311,7 +321,10 @@ namespace OpenXcom
 	 * Constructor (only setting type of base class).
 	 */
 	ArticleDefinitionUfo::ArticleDefinitionUfo() : ArticleDefinition(UFOPAEDIA_TYPE_UFO)
-	{}
+	{
+		rect_stats.set(5, 52, 150, 40);
+		rect_text.set(10, 146, 300, 50);
+	}
 
 	/**
 	 * Loads the article definition from a YAML file.
@@ -321,6 +334,11 @@ namespace OpenXcom
 	void ArticleDefinitionUfo::load(const YAML::YamlNodeReader& reader, int listOrder)
 	{
 		ArticleDefinition::load(reader, listOrder);
+		reader.tryRead("image_id", image_id);
+		if (image_id.find("_CPAL") != std::string::npos)
+			customPalette = true;
+		reader.tryRead("rect_stats", rect_stats);
+		reader.tryRead("rect_text", rect_text);
 	}
 
 	/**

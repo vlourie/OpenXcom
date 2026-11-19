@@ -34,6 +34,7 @@ namespace OpenXcom
  */
 AliensCrashState::AliensCrashState()
 {
+	setHdScreen("aliensCrash");
 	// Create objects
 	_window = new Window(this, 256, 160, 32, 20);
 	_btnOk = new TextButton(120, 18, 100, 154);
@@ -51,6 +52,7 @@ AliensCrashState::AliensCrashState()
 	// Set up objects
 	_window->setHighContrast(true);
 	_window->setBackground(_game->getMod()->getSurface("TAC00.SCR"));
+	_window->setInterfaceName("battlescape");
 
 	_btnOk->setHighContrast(true);
 	_btnOk->setText(tr("STR_OK"));

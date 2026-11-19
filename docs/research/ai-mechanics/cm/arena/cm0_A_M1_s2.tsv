@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2013002	STR_BASE_DEFENSE	over	STR_BASE_DEFENSE	STR_BASE_DEFENSE	20	5	XBASE	STR_NINJA	STR_AIRTRUCK#1	12	15	60	56	4	60	4868	37	17	3	17	0	17	0	17	282	h.rec.in:1192,h.rec.out.M2:6,h.rec.out.a8:151,h.rec.out.a9:1,p.rec.in:391	391	0	0	1	0	1	1209	0	0	4	0	5	122		loss

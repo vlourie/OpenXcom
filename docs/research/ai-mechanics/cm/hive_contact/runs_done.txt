@@ -1,0 +1,8 @@
+1 CC M6 s1 turns=8
+8 CC M6 s1 turns=8
+2 CC M6 s1 turns=8
+3 CO M6 s1 turns=8
+4 CB M6 s2 turns=8
+5 CC M6 s2 turns=8
+6 CV M3 s1 turns=8
+7 LOAD cc6_CV_M3_s1 hive_3.asav turns=8

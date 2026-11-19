@@ -1,0 +1,8 @@
+1 IS M6 s1 turns=8
+2 IS M6 s1 turns=8
+3 IO M6 s1 turns=8
+4 IA M6 s1 turns=8
+5 IA M6 s1 turns=8
+6 IA M6 s2 turns=8
+7 IV M3 s1 turns=8
+8 IA M6 s1 turns=8

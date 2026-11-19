@@ -35,6 +35,8 @@ private:
 	Sint16 *_x, *_y;
 	int _points, _texture;
 public:
+	/// Owns its resources: not copied.
+	Polygon& operator=(const Polygon&) = delete;
 	/// Creates a polygon with a number of points.
 	Polygon(int points);
 	/// Creates a new polygon from an existing one.

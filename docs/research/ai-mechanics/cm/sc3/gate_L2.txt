@@ -1,0 +1,84 @@
+sc7k_K_L2_s1: COVER orders 16, gate lines 402
+
+ turn 1 B 1000001 pos (55,46,0) face 6 STR_BLUNDERBUSS reactions 89: player turn 2: 21 checks from 5 movers; score:15 lof:3 visible:3
+   deepest gate: visible; B's reactions in turn 2: 0
+   nearest check: mover 91 at (30,45,0) d2 626 mscore 169 uscore 87 udir 6 gate score
+   score gate: B 87 vs the lowest mover score 101 (mover 229, tu 85, d2 809)
+
+ turn 1 B 1000002 pos (15,32,2) face 3 STR_NINJA_SMG reactions 89: player turn 2: 21 checks from 5 movers; score:15 lof:6
+   deepest gate: lof; B's reactions in turn 2: 0
+   nearest check: mover 191 at (19,30,0) d2 20 mscore 175 uscore 89 udir 3 gate score
+   score gate: B 89 vs the lowest mover score 101 (mover 229, tu 85, d2 225)
+
+ turn 2 B 1000000 pos (16,46,0) face 2 STR_NINJA_SMG reactions 89: player turn 3: 32 checks from 3 movers; out:16 score:16
+   deepest gate: score; B's reactions in turn 3: 0
+   nearest check: mover 157 at (16,45,0) d2 1 mscore 101 uscore 86 udir 2 gate score
+   score gate: B 86 vs the lowest mover score 94 (mover 157, tu 152, d2 1)
+
+ turn 2 B 1000002 pos (15,32,2) face 3 STR_NINJA_SMG reactions 89: player turn 3: 32 checks from 3 movers; score:21 sector:4 lof:7
+   deepest gate: lof; B's reactions in turn 3: 0
+   nearest check: mover 344 at (15,37,0) d2 25 mscore 72 uscore 89 udir 3 gate lof
+   score gate: B 89 vs the lowest mover score 94 (mover 157, tu 152, d2 196)
+
+ turn 3 B 1000002 pos (15,32,2) face 5 STR_NINJA_SMG reactions 89: player turn 4: 10 checks from 3 movers; score:8 sector:2
+   deepest gate: sector; B's reactions in turn 4: 0
+   nearest check: mover 344 at (12,38,0) d2 45 mscore 135 uscore 87 udir 5 gate score
+   score gate: B 87 vs the lowest mover score 113 (mover 344, tu 171, d2 85)
+
+ turn 3 B 1000003 pos (49,21,0) face 5 STR_CD_PISTOL reactions 89: player turn 4: 10 checks from 3 movers; score:8 lof:2
+   deepest gate: lof; B's reactions in turn 4: 0
+   nearest check: mover 229 at (28,38,0) d2 730 mscore 85 uscore 89 udir 5 gate lof
+   score gate: B 89 vs the lowest mover score 113 (mover 344, tu 171, d2 1970)
+
+ turn 4 B 1000001 pos (55,46,0) face 6 STR_BLUNDERBUSS reactions 89: player turn 5: 25 checks from 3 movers; score:13 dist:8 lof:1 visible:3
+   deepest gate: visible; B's reactions in turn 5: 0
+   nearest check: mover 229 at (26,40,0) d2 877 mscore 53 uscore 89 udir 6 gate lof
+   score gate: B 89 vs the lowest mover score 91 (mover 344, tu 138, d2 2861)
+
+ turn 4 B 1000002 pos (15,32,2) face 4 STR_NINJA_SMG reactions 89: player turn 5: 25 checks from 3 movers; score:13 sector:12
+   deepest gate: sector; B's reactions in turn 5: 0
+   nearest check: mover 344 at (9,32,0) d2 36 mscore 119 uscore 88 udir 4 gate score
+   score gate: B 88 vs the lowest mover score 91 (mover 344, tu 138, d2 125)
+
+ turn 5 B 1000001 pos (55,46,0) face 6 STR_BLUNDERBUSS reactions 89: player turn 6: 14 checks from 2 movers; score:14
+   deepest gate: score; B's reactions in turn 6: 0
+   nearest check: mover 157 at (14,40,0) d2 1717 mscore 154 uscore 89 udir 6 gate score
+   score gate: B 89 vs the lowest mover score 104 (mover 344, tu 158, d2 3338)
+
+ turn 5 B 1000002 pos (15,32,2) face 4 STR_NINJA_SMG reactions 89: player turn 6: 14 checks from 2 movers; score:14
+   deepest gate: score; B's reactions in turn 6: 0
+   nearest check: mover 157 at (9,34,0) d2 40 mscore 122 uscore 89 udir 4 gate score
+   score gate: B 89 vs the lowest mover score 104 (mover 344, tu 158, d2 250)
+
+ turn 6 B 1000002 pos (15,32,2) face 7 STR_NINJA_SMG reactions 89: player turn 7: 46 checks from 2 movers; score:23 sector:18 lof:5
+   deepest gate: lof; B's reactions in turn 7: 0
+   nearest check: mover 157 at (19,34,0) d2 20 mscore 99 uscore 86 udir 7 gate score
+   score gate: B 86 vs the lowest mover score 90 (mover 157, tu 146, d2 36)
+
+ turn 6 B 1000008 pos (17,25,2) face 6 STR_CD_RIFLE reactions 89: player turn 7: 46 checks from 2 movers; score:23 sector:19 lof:4
+   deepest gate: lof; B's reactions in turn 7: 0
+   nearest check: mover 344 at (19,25,0) d2 4 mscore 41 uscore 89 udir 6 gate sector
+   score gate: B 89 vs the lowest mover score 90 (mover 157, tu 146, d2 65)
+
+ turn 7 B 1000001 pos (59,36,0) face 6 STR_BLUNDERBUSS reactions 89: player turn 8: 52 checks from 2 movers; score:32 dist:12 lof:8
+   deepest gate: lof; B's reactions in turn 8: 0
+   nearest check: mover 344 at (23,32,1) d2 1312 mscore 110 uscore 87 udir 6 gate score
+   score gate: B 87 vs the lowest mover score 89 (mover 344, tu 135, d2 1952)
+
+ turn 7 B 1000002 pos (15,32,2) face 1 STR_NINJA_SMG reactions 89: player turn 8: 52 checks from 2 movers; score:32 sector:12 lof:8
+   deepest gate: lof; B's reactions in turn 8: 0
+   nearest check: mover 157 at (15,32,1) d2 0 mscore 138 uscore 87 udir 1 gate score
+   score gate: B 87 vs the lowest mover score 89 (mover 344, tu 135, d2 0)
+
+ turn 8 B 1000001 pos (59,36,0) face 6 STR_BLUNDERBUSS reactions 89: player turn 9: 1 checks from 1 movers; score:1
+   deepest gate: score; B's reactions in turn 9: 0
+   nearest check: mover 157 at (20,28,3) d2 1585 mscore 153 uscore 89 udir 6 gate score
+   score gate: B 89 vs the lowest mover score 153 (mover 157, tu 247, d2 1585)
+
+ turn 8 B 1000002 pos (15,32,2) face 2 STR_NINJA_SMG reactions 89: player turn 9: 1 checks from 1 movers; score:1
+   deepest gate: score; B's reactions in turn 9: 0
+   nearest check: mover 157 at (20,28,3) d2 41 mscore 153 uscore 88 udir 2 gate score
+   score gate: B 88 vs the lowest mover score 153 (mover 157, tu 247, d2 41)
+
+all checks by gate: out:16 score:249 dist:20 sector:67 lof:44 visible:6
+orders by the deepest gate reached: score:5 sector:2 lof:7 visible:2

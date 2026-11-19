@@ -19,6 +19,8 @@
  */
 #include <string>
 #include <map>
+#include <utility>
+#include <vector>
 #include "../Engine/Yaml.h"
 
 namespace OpenXcom
@@ -67,6 +69,8 @@ public:
 	void clear() { _qty.clear(); }
 	/// Gets all the items in the container.
 	const std::map<const RuleItem*, int> *getContents() const;
+	/// Gets all the items in the container in the mod's list order - the same in every run, unlike the map's address order.
+	std::vector<std::pair<const RuleItem*, int>> getContentsInListOrder() const;
 };
 
 }

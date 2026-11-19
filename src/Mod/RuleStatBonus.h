@@ -40,6 +40,7 @@ class RuleStatBonus
 	std::vector<RuleStatBonusDataOrig> _bonusOrig;
 	bool _modded = false;
 	bool _refresh = true;
+	int _luaEvent = -1;
 
 	void setValues(std::vector<RuleStatBonusDataOrig>&& bonuses);
 

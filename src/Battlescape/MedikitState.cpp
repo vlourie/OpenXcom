@@ -120,6 +120,7 @@ MedikitButton::MedikitButton(int y) : InteractiveSurface(30, 20, 190, y)
  */
 MedikitState::MedikitState (BattleUnit *targetUnit, BattleAction *action, TileEngine *tile) : _targetUnit(targetUnit), _action(action), _tileEngine(tile)
 {
+	setHdScreen("medikit");
 	if (Options::maximizeInfoScreens)
 	{
 		Options::baseXResolution = Screen::ORIGINAL_WIDTH;

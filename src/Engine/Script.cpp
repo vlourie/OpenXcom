@@ -25,6 +25,7 @@
 #include <array>
 #include <numeric>
 #include <climits>
+#include <atomic>
 
 #include "Logger.h"
 #include "Options.h"
@@ -120,6 +121,52 @@ static inline void addShade_h(int& reg, const int& var)
 	//prevent overflow to 0 or another color - make it white instead
 	if (!reg || newShade < 0)
 		reg = 0x01;
+}
+
+/// Division and remainder of a script: the same numbers as "/" and "%", but the smallest int by -1 does not stop the processor (a mod's script could close the game with it).
+[[gnu::always_inline]]
+static inline int divInt_h(int a, int b)
+{
+	return b == -1 ? (int)(0u - (unsigned)a) : a / b;
+}
+
+[[gnu::always_inline]]
+static inline int modInt_h(int a, int b)
+{
+	return b == -1 ? 0 : a % b;
+}
+
+// Integer operations of the script language wrap around modulo 2^32, shifts take the count modulo 32 and a power that
+// does not fit gives INT_MIN: that is what the compiled code always did on x86, written here without undefined behaviour.
+[[gnu::always_inline]]
+static inline int wrapAdd_h(int a, int b)
+{
+	return (int)((unsigned)a + (unsigned)b);
+}
+
+[[gnu::always_inline]]
+static inline int wrapSub_h(int a, int b)
+{
+	return (int)((unsigned)a - (unsigned)b);
+}
+
+[[gnu::always_inline]]
+static inline int wrapMul_h(int a, int b)
+{
+	return (int)((unsigned)a * (unsigned)b);
+}
+
+[[gnu::always_inline]]
+static inline int wrapShl_h(int a, int b)
+{
+	return (int)((unsigned)a << (b & 31));
+}
+
+[[gnu::always_inline]]
+static inline int powInt_h(int a, int b)
+{
+	const double r = std::pow(a, std::max(0, b));
+	return (r > -2147483649.0 && r < 2147483648.0) ? (int)r : INT_MIN;
 }
 
 [[gnu::always_inline]]
@@ -242,7 +289,7 @@ static inline RetEnum bit_popcount_h(int& reg)
 	/*	Name,		Implementation,													End execution,				Args,					Description */ \
 	IMPL(exit,		MACRO_QUOTE({													return RetEnd;		}),		(ScriptWorkerBase&),	"") \
 	\
-	IMPL(goto,		MACRO_QUOTE({ Prog = Label1;									return RetContinue; }),		(ScriptWorkerBase& c, ProgPos& Prog, ProgPos Label1),	"") \
+	IMPL(goto,		MACRO_QUOTE({ if (Label1 < Prog && --c.loopBudget < 0) return RetError; Prog = Label1;	return RetContinue; }),		(ScriptWorkerBase& c, ProgPos& Prog, ProgPos Label1),	"") \
 	\
 	IMPL(set,		MACRO_QUOTE({ Reg0 = Data1;										return RetContinue; }),		(ScriptWorkerBase& c, int& Reg0, int Data1),	"arg1 = arg2") \
 	\
@@ -252,20 +299,20 @@ static inline RetEnum bit_popcount_h(int& reg)
 	IMPL(test_eq,	MACRO_QUOTE({ Prog = (A == B) ? LabelTrue : LabelFalse;			return RetContinue; }),		(ProgPos& Prog, int A, int B, ProgPos LabelTrue, ProgPos LabelFalse),	"") \
 	\
 	IMPL(swap,		MACRO_QUOTE({ std::swap(Reg0, Reg1);							return RetContinue; }),		(int& Reg0, int& Reg1),				"Swap value of arg1 and arg2") \
-	IMPL(add,		MACRO_QUOTE({ Reg0 += Data1;									return RetContinue; }),		(int& Reg0, int Data1),				"arg1 = arg1 + arg2") \
-	IMPL(sub,		MACRO_QUOTE({ Reg0 -= Data1;									return RetContinue; }),		(int& Reg0, int Data1),				"arg1 = arg1 - arg2") \
-	IMPL(mul,		MACRO_QUOTE({ Reg0 *= Data1;									return RetContinue; }),		(int& Reg0, int Data1),				"arg1 = arg1 * arg2") \
+	IMPL(add,		MACRO_QUOTE({ Reg0 = wrapAdd_h(Reg0, Data1);								return RetContinue; }),		(int& Reg0, int Data1),				"arg1 = arg1 + arg2") \
+	IMPL(sub,		MACRO_QUOTE({ Reg0 = wrapSub_h(Reg0, Data1);								return RetContinue; }),		(int& Reg0, int Data1),				"arg1 = arg1 - arg2") \
+	IMPL(mul,		MACRO_QUOTE({ Reg0 = wrapMul_h(Reg0, Data1);								return RetContinue; }),		(int& Reg0, int Data1),				"arg1 = arg1 * arg2") \
 	\
-	IMPL(aggregate,	MACRO_QUOTE({ Reg0 = Reg0 + Data1 * Data2;						return RetContinue; }),		(int& Reg0, int Data1, int Data2),			"arg1 = arg1 + (arg2 * arg3)") \
-	IMPL(offset,	MACRO_QUOTE({ Reg0 = Reg0 * Data1 + Data2;						return RetContinue; }),		(int& Reg0, int Data1, int Data2),			"arg1 = (arg1 * arg2) + arg3") \
+	IMPL(aggregate,	MACRO_QUOTE({ Reg0 = wrapAdd_h(Reg0, wrapMul_h(Data1, Data2));					return RetContinue; }),		(int& Reg0, int Data1, int Data2),			"arg1 = arg1 + (arg2 * arg3)") \
+	IMPL(offset,	MACRO_QUOTE({ Reg0 = wrapAdd_h(wrapMul_h(Reg0, Data1), Data2);					return RetContinue; }),		(int& Reg0, int Data1, int Data2),			"arg1 = (arg1 * arg2) + arg3") \
 	IMPL(offsetmod,	MACRO_QUOTE({ return mulAddMod_h(Reg0, Mul1, Add2, Mod3);							}),		(int& Reg0, int Mul1, int Add2, int Mod3),	"arg1 = ((arg1 * arg2) + arg3) % arg4") \
 	\
-	IMPL(div,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 /= Data1;		return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 / arg2") \
-	IMPL(mod,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 %= Data1;		return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 % arg2") \
+	IMPL(div,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 = divInt_h(Reg0, Data1);	return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 / arg2") \
+	IMPL(mod,		MACRO_QUOTE({ if (!Data1) return RetError; Reg0 = modInt_h(Reg0, Data1);	return RetContinue; }),		(int& Reg0, int Data1),		"arg1 = arg1 % arg2") \
 	IMPL(muldiv,	MACRO_QUOTE({ return mulDiv_h(Reg0, Data1, Data2);									}),		(int& Reg0, int Data1, int Data2),	"arg1 = (arg1 * arg2) / arg3") \
 	\
-	IMPL(shl,		MACRO_QUOTE({ Reg0 <<= Data1;									return RetContinue; }),		(int& Reg0, int Data1),		"Left bit shift of arg1 by arg2") \
-	IMPL(shr,		MACRO_QUOTE({ Reg0 >>= Data1;									return RetContinue; }),		(int& Reg0, int Data1),		"Right bit shift of arg1 by arg2") \
+	IMPL(shl,		MACRO_QUOTE({ Reg0 = wrapShl_h(Reg0, Data1);								return RetContinue; }),		(int& Reg0, int Data1),		"Left bit shift of arg1 by arg2") \
+	IMPL(shr,		MACRO_QUOTE({ Reg0 >>= (Data1 & 31);								return RetContinue; }),		(int& Reg0, int Data1),		"Right bit shift of arg1 by arg2") \
 	\
 	IMPL(bit_and,		MACRO_QUOTE({ Reg0 = Reg0 & Data1;								return RetContinue; }),		(int& Reg0, int Data1),		"Bit And of arg1 and arg2") \
 	IMPL(bit_or,		MACRO_QUOTE({ Reg0 = Reg0 | Data1;								return RetContinue; }),		(int& Reg0, int Data1),		"Bit Or of arg1 and arg2") \
@@ -273,10 +320,10 @@ static inline RetEnum bit_popcount_h(int& reg)
 	IMPL(bit_not,		MACRO_QUOTE({ Reg0 = ~Reg0;										return RetContinue; }),		(int& Reg0),				"Bit Not of arg1") \
 	IMPL(bit_count,		MACRO_QUOTE({ return bit_popcount_h(Reg0);											 }),	(int& Reg0),				"Count number of set bits of arg1") \
 	\
-	IMPL(pow,			MACRO_QUOTE({ Reg0 = std::pow(Reg0, std::max(0, Data1));		return RetContinue; }),		(int& Reg0, int Data1),		"Power of arg1 to arg2") \
+	IMPL(pow,			MACRO_QUOTE({ Reg0 = powInt_h(Reg0, Data1);	return RetContinue; }),		(int& Reg0, int Data1),		"Power of arg1 to arg2") \
 	IMPL(sqrt,			MACRO_QUOTE({ Reg0 = Reg0 > 0 ? std::sqrt(Reg0) : 0;			return RetContinue; }),		(int& Reg0),				"Square root of arg1") \
 	\
-	IMPL(abs,			MACRO_QUOTE({ Reg0 = std::abs(Reg0);							return RetContinue; }),		(int& Reg0),						"Absolute value of arg1") \
+	IMPL(abs,			MACRO_QUOTE({ Reg0 = Reg0 == INT_MIN ? INT_MIN : std::abs(Reg0);						return RetContinue; }),		(int& Reg0),						"Absolute value of arg1") \
 	IMPL(limit,			MACRO_QUOTE({ Reg0 = std::max(std::min(Reg0, Data2), Data1);	return RetContinue; }),		(int& Reg0, int Data1, int Data2),	"Correct value in arg1 that is always between arg2 and arg3") \
 	IMPL(limit_upper,	MACRO_QUOTE({ Reg0 = std::min(Reg0, Data1);						return RetContinue; }),		(int& Reg0, int Data1),				"Correct value in arg1 that is always lesser than arg2") \
 	IMPL(limit_lower,	MACRO_QUOTE({ Reg0 = std::max(Reg0, Data1);						return RetContinue; }),		(int& Reg0, int Data1),				"Correct value in arg1 that is always greater than arg2") \
@@ -288,7 +335,7 @@ static inline RetEnum bit_popcount_h(int& reg)
 	IMPL(wavegen_cos,	MACRO_QUOTE({ return wavegen_cos_h(Reg0, Period1, Size2);						}),		(int& Reg0, int Period1, int Size2),				"Cos wave function, arg1 - argument and result, arg2 - period, arg3 - size of amplitude") \
 	\
 	IMPL(get_color,		MACRO_QUOTE({ Reg0 = Data1 >> 4;							return RetContinue; }),		(int& Reg0, int Data1),		"Get color part to arg1 of pixel color in arg2") \
-	IMPL(set_color,		MACRO_QUOTE({ Reg0 = (Reg0 & 0xF) | (Data1 << 4);			return RetContinue; }),		(int& Reg0, int Data1),		"Set color part to pixel color in arg1") \
+	IMPL(set_color,		MACRO_QUOTE({ Reg0 = (Reg0 & 0xF) | wrapShl_h(Data1, 4);			return RetContinue; }),		(int& Reg0, int Data1),		"Set color part to pixel color in arg1") \
 	IMPL(get_shade,		MACRO_QUOTE({ Reg0 = Data1 & 0xF;							return RetContinue; }),		(int& Reg0, int Data1),		"Get shade part to arg1 of pixel color in arg2") \
 	IMPL(set_shade,		MACRO_QUOTE({ Reg0 = (Reg0 & 0xF0) | (Data1 & 0xF);			return RetContinue; }),		(int& Reg0, int Data1),		"Set color part to pixel color in arg1") \
 	IMPL(add_shade,		MACRO_QUOTE({ addShade_h(Reg0, Data1);						return RetContinue; }),		(int& Reg0, int Data1),		"Add value of shade to pixel color in arg1") \
@@ -445,6 +492,53 @@ enum ProcEnum : Uint8
 ////////////////////////////////////////////////////////////
 
 /**
+ * Scripts that were stopped for their loops (ScriptWorkerBase::LoopBudget). Every jump back in a script is a `goto`
+ * the parser wrote at the end of a `loop` or for a `continue`, so that one operation counts them: one test of the
+ * direction for a jump forward, one decrement for a jump back, nothing for any other operation.
+ * A stopped script ends where it is, as after any invalid operation: what it did to the game before stays done, its
+ * output is what it had set by then. It is then not run any more (its callers get what an empty script gives), or a
+ * script called for every unit or pixel would hold the game for the same time again at each call.
+ * Scripts run in the drawing threads too, hence the atomics. A script is known by where its code is, and the list
+ * is emptied when the scripts of a mod are about to be parsed (ScriptGlobal).
+ */
+namespace
+{
+std::array<std::atomic<const Uint8*>, 32> loopsStoppedProcs{};
+std::atomic<int> loopsStoppedCount{ 0 };
+
+void stopLoops(const Uint8* proc)
+{
+	if (ScriptWorkerBase::loopsStopped(proc))
+	{
+		return; // the rest of a blit: told already
+	}
+	const int place = loopsStoppedCount.fetch_add(1);
+	if (place < (int)loopsStoppedProcs.size())
+	{
+		loopsStoppedProcs[place].store(proc);
+	}
+	else
+	{
+		loopsStoppedCount.store((int)loopsStoppedProcs.size());
+	}
+	Log(LOG_ERROR) << "A script was stopped: its loops ran more than " << ScriptWorkerBase::LoopBudget << " turns in one call. It is not run again until the game is restarted.";
+}
+}
+
+bool ScriptWorkerBase::loopsStopped(const Uint8* proc)
+{
+	const int count = std::min(loopsStoppedCount.load(std::memory_order_relaxed), (int)loopsStoppedProcs.size());
+	for (int i = 0; i < count; ++i)
+	{
+		if (loopsStoppedProcs[i].load(std::memory_order_relaxed) == proc)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Core function in script engine used to executing scripts
  * @param proc array storing operation of script
  * @return Result of executing script
@@ -508,6 +602,11 @@ static inline void scriptExe(ScriptWorkerBase& data, const Uint8* proc)
 
 			case RetError:
 			default:
+				if (data.loopBudget < 0)
+				{
+					stopLoops(proc);
+					return;
+				}
 				if (++bugCount < 100)
 				{
 					Log(LOG_ERROR) << "Invalid script operation";
@@ -533,14 +632,34 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
  * @param x x offset of source surface.
  * @param y y offset of source surface.
  */
+const Uint8* ScriptWorkerBlit::hitFlashProc = nullptr;
+
 void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int y, int shade, GraphSubset mask)
 {
+	// the event of the hit flash, when the player switched it off (option oxceHdHitFlash): skipped, nothing else
+	const Uint8* const skipEvent = Options::oxceHdHitFlash ? nullptr : hitFlashProc;
 	ShaderMove<const Uint8> srcShader(src, x, y);
 	ShaderMove<Uint8> destShader(dest, 0, 0);
 
 	destShader.setDomain(mask);
 
-	if (_proc)
+	// a blit whose script (or one of its events) was stopped for its loops is drawn as one without scripts
+	bool run = _proc && !loopsStopped(_proc);
+	if (run && _events && loopsStoppedCount.load(std::memory_order_relaxed))
+	{
+		// the list is two runs of events (before and after the script), each closed by an empty one
+		auto ptr = _events;
+		for (int part = 0; part < 2; ++part, ++ptr)
+		{
+			for (; *ptr; ++ptr)
+			{
+				run = run && !loopsStopped(ptr->data());
+			}
+		}
+	}
+	loopBudget = LoopBudget;
+
+	if (run)
 	{
 		if (_events)
 		{
@@ -554,8 +673,11 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
 						auto ptr = _events;
 						while (*ptr)
 						{
-							reset(arg);
-							scriptExe(*this, ptr->data());
+							if (ptr->data() != skipEvent)
+							{
+								reset(arg);
+								scriptExe(*this, ptr->data());
+							}
 							++ptr;
 						}
 						++ptr;
@@ -565,8 +687,11 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
 
 						while (*ptr)
 						{
-							reset(arg);
-							scriptExe(*this, ptr->data());
+							if (ptr->data() != skipEvent)
+							{
+								reset(arg);
+								scriptExe(*this, ptr->data());
+							}
 							++ptr;
 						}
 						++ptr;
@@ -610,8 +735,9 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
  */
 void ScriptWorkerBase::executeBase(const Uint8* proc)
 {
-	if (proc)
+	if (proc && !loopsStopped(proc))
 	{
+		loopBudget = LoopBudget;
 		scriptExe(*this, proc);
 	}
 }
@@ -4258,12 +4384,23 @@ const ScriptContainerBase* ScriptParserEventsBase::getEvents() const
 std::vector<ScriptContainerBase> ScriptParserEventsBase::releseEvents()
 {
 	std::sort(std::begin(_eventsData), std::end(_eventsData), [](const EventData& a, const EventData& b) { return a.offset < b.offset; });
+	const auto isUnitRecolor = getName() == "recolorUnitSprite";
+	if (isUnitRecolor)
+	{
+		ScriptWorkerBlit::hitFlashProc = nullptr;
+	}
 	for (auto& e : _eventsData)
 	{
 		const auto reservedSpaceForZero = e.offset < 0;
 		if (_events.size() + (reservedSpaceForZero ?  2 : 1) < EventsMax)
 		{
 			_events.push_back(std::move(e.script));
+			// the hit flash of X-Piratez (HitFX-basic.rul): remember its code so the option can switch it off (XP-000490);
+			// the buffer of the code does not move when the list is handed over to ScriptGlobal
+			if (isUnitRecolor && e.name == "YSCRIPT_HITFX_RECOLOR_UNIT" && _events.back())
+			{
+				ScriptWorkerBlit::hitFlashProc = _events.back().data();
+			}
 		}
 		else
 		{
@@ -4372,6 +4509,10 @@ void ScriptValuesBase::saveBase(YAML::YamlNodeWriter& writer, const ScriptGlobal
  */
 ScriptGlobal::ScriptGlobal()
 {
+	// the scripts of a mod are parsed after this; the ones stopped for their loops were of the mod before
+	// (and a new script may get the address of an old one)
+	loopsStoppedCount.store(0);
+
 	addTagValueTypeBase(
 		"int",
 		[](const ScriptGlobal* s, int& value, const YAML::YamlNodeReader& reader)

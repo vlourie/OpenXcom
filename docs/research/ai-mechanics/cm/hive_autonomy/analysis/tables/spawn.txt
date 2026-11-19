@@ -1,0 +1,24 @@
+cc3_CO_M6_s1 units 41 by first turn {1: 41} {'hostile': '41', 'hdead': '26', 'hout': '2', 'hleft': '13', 'livealiens': '12', 'turn': '9'}
+   late []
+cc8_CC_M6_s1 units 41 by first turn {1: 41} {'hostile': '41', 'hdead': '24', 'hout': '0', 'hleft': '17', 'livealiens': '17', 'turn': '8'}
+   late []
+   start list against the first of the triple: only here [] only there []
+ra1_AN_M6_s1 units 41 by first turn {1: 41} {'hostile': '41', 'hdead': '25', 'hout': '3', 'hleft': '13', 'livealiens': '13', 'turn': '6'}
+   late []
+   start list against the first of the triple: only here [] only there []
+scpa_D_M6_s2 units 37 by first turn {0: 1, 1: 36} {'hostile': '37', 'hdead': '36', 'hout': '1', 'hleft': '0', 'livealiens': '0', 'turn': '29'}
+   late []
+cc5_CC_M6_s2 units 37 by first turn {0: 1, 1: 36} {'hostile': '37', 'hdead': '27', 'hout': '0', 'hleft': '10', 'livealiens': '9', 'turn': '9'}
+   late []
+   start list against the first of the triple: only here [] only there []
+ra2_AN_M6_s2 units 37 by first turn {0: 1, 1: 36} {'hostile': '37', 'hdead': '24', 'hout': '0', 'hleft': '13', 'livealiens': '13', 'turn': '9'}
+   late []
+   start list against the first of the triple: only here [] only there []
+scpa_D_M3_s1 units 64 by first turn {1: 58, 2: 2, 3: 1, 7: 1, 12: 2} {'hostile': '64', 'hdead': '61', 'hout': '3', 'hleft': '0', 'livealiens': '0', 'turn': '21'}
+   late [(2, '1000082', 'STR_ZOMBIE'), (2, '1000083', 'STR_ZOMBIE'), (3, '1000084', 'STR_ZOMBIE'), (7, '1000085', 'STR_CHRYSSALID_TERRORIST'), (12, '1000086', 'STR_CHRYSSALID_TERRORIST'), (12, '1000087', 'STR_CHRYSSALID_TERRORIST')]
+cc6_CV_M3_s1 units 70 by first turn {1: 58, 2: 3, 3: 4, 4: 4, 6: 1} {'hostile': '70', 'hdead': '45', 'hout': '1', 'hleft': '24', 'livealiens': '24', 'turn': '9'}
+   late [(2, '1000082', 'STR_ZOMBIE'), (2, '1000083', 'STR_ZOMBIE'), (2, '1000084', 'STR_ZOMBIE'), (3, '1000085', 'STR_ZOMBIE'), (3, '1000086', 'STR_ZOMBIE'), (3, '1000087', 'STR_ZOMBIE'), (3, '1000088', 'STR_CHRYSSALID_TERRORIST'), (4, '1000089', 'STR_ZOMBIE'), (4, '1000090', 'STR_CHRYSSALID_TERRORIST'), (4, '1000091', 'STR_CHRYSSALID_TERRORIST'), (4, '1000092', 'STR_CHRYSSALID_TERRORIST'), (6, '1000093', 'STR_CHRYSSALID_TERRORIST')]
+   start list against the first of the triple: only here [] only there []
+ra3_AV_M3_s1 units 64 by first turn {1: 58, 2: 2, 3: 1, 4: 1, 6: 1, 8: 1} {'hostile': '64', 'hdead': '42', 'hout': '1', 'hleft': '21', 'livealiens': '21', 'turn': '9'}
+   late [(2, '1000082', 'STR_ZOMBIE'), (2, '1000083', 'STR_ZOMBIE'), (3, '1000084', 'STR_ZOMBIE'), (4, '1000085', 'STR_CHRYSSALID_TERRORIST'), (6, '1000086', 'STR_ZOMBIE'), (8, '1000087', 'STR_CHRYSSALID_TERRORIST')]
+   start list against the first of the triple: only here [] only there []

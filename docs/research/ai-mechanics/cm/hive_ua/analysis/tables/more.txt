@@ -1,0 +1,141 @@
+﻿===== M6 s1
+  first difference at line 273, [AIDECIDE]: fields {'ha': ('1c80f907ba9c582d', '64ba85f795371e5e')}
+  decisions before it 30, all equal including hr: True
+   next OFF [AIREC] {"v":1,"gen":"base_v2","seed":2018001,"rec":30,"turn":1,"side":1,"unit":1000001,"order":0,"n":0,"state":{"pos":[42,42,0],"dir":2,"tu":96,"hp":133,"stun":0,"morale
+   next ON  [AIREC] {"v":1,"gen":"base_v2","seed":2018001,"rec":30,"turn":1,"side":1,"unit":1000001,"order":0,"n":0,"state":{"pos":[42,42,0],"dir":2,"tu":96,"hp":133,"stun":0,"morale
+  turn 1 soldier 1000008 squad 5 task SECURE area center (8,47,0) r 8: free node (20,23,1), chosen (15,49,0)
+    ON  n=1 from (6,44,0) mode 0 act 2 to (15,49,0) tu 96
+    ON  n=2 from (15,49,0) mode 0 act 2 to (6,44,0) tu 50
+    ON  n=1 from (12,47,0) mode 0 act 2 to (6,44,0) tu 34
+    ON  n=2 from (12,47,0) mode 0 act 2 to (6,44,0) tu 34
+    OFF n=1 from (6,44,0) mode 0 act 2 to (25,13,0) tu 96
+    OFF n=2 from (10,37,0) mode 2 act 8 to (32,36,2) tu 59
+    OFF n=1 from (10,37,0) mode 2 act 8 to (32,36,2) tu 30
+    result start (6,44,0) end (12,47,0) spent 62 inside 1 closer 0
+  turn 1 soldier 1000008 squad 5 task SECURE area center (8,47,0) r 8: free node (36,7,0), chosen (6,44,0)
+    ON  n=1 from (6,44,0) mode 0 act 2 to (15,49,0) tu 96
+    ON  n=2 from (15,49,0) mode 0 act 2 to (6,44,0) tu 50
+    ON  n=1 from (12,47,0) mode 0 act 2 to (6,44,0) tu 34
+    ON  n=2 from (12,47,0) mode 0 act 2 to (6,44,0) tu 34
+    OFF n=1 from (6,44,0) mode 0 act 2 to (25,13,0) tu 96
+    OFF n=2 from (10,37,0) mode 2 act 8 to (32,36,2) tu 59
+    OFF n=1 from (10,37,0) mode 2 act 8 to (32,36,2) tu 30
+    result start (6,44,0) end (12,47,0) spent 62 inside 1 closer 0
+  empty walks OFF {'empty': 84, 'mode0': 84, 'elsewhere': 84, 'then_walk': 36, 'last_of_turn': 48, 'left_tu': 1342, 'turns_nothing_spent': 25, 'turns_nothing_spent_tu': 3128, 'unit_turns': 155}
+  empty walks ON  {'empty': 149, 'mode0': 148, 'elsewhere': 149, 'then_walk': 76, 'last_of_turn': 68, 'left_tu': 1935, 'then_other': 5, 'mode3': 1, 'turns_nothing_spent': 1, 'turns_nothing_spent_tu': 96, 'unit_turns': 141}
+  ua4_UO_M6_s1: lines 42, victims 32, most lines [('1000011', 'STR_MUTON_SOLDIER', 2), ('543', 'SOLDIER', 2), ('1000026', 'STR_MUTON_NAVIGATOR', 2)], how {('1', 'dead'): 26, ('1', 'stun'): 10, ('0', 'dead'): 4, ('0', 'stun'): 2}
+    side 0 new victims by turn: 1:4 2:0
+    side 1 new victims by turn: 1:8 2:7 3:5 4:5 5:1 6:2 7:0
+    side 1 by type: [('STR_MUTON_NAVIGATOR', 14), ('STR_MUTON_SOLDIER', 12), ('STR_MUTON_LEADER', 1), ('STR_MUTON_ENGINEER', 1)]
+  ua1_UN_M6_s1: lines 51, victims 41, most lines [('1000011', 'STR_MUTON_SOLDIER', 2), ('1000010', 'STR_MUTON_SOLDIER', 2), ('1000026', 'STR_MUTON_NAVIGATOR', 2)], how {('1', 'dead'): 32, ('1', 'stun'): 12, ('0', 'dead'): 6, ('0', 'stun'): 1}
+    side 0 new victims by turn: 1:4 3:1 5:1
+    side 1 new victims by turn: 1:7 2:6 3:4 4:5 5:7 6:2 7:2 8:2
+    side 1 by type: [('STR_MUTON_NAVIGATOR', 14), ('STR_MUTON_SOLDIER', 14), ('STR_MUTON_ENGINEER', 4), ('STR_MUTON_LEADER', 3)]
+  ua4_UO_M6_s1: last turn 8; lines of ending ['[AIRESULT] how=timeout tac=h.rec.in:545,h.rec.out.M2:3,p.rec.in:115 seed=2018001 livesoldiers=4 livealiens=12 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=9 player=8 pdead=4 pout=0 pwounded=8 phplost=712 hostile=41 hdead=26 hout=2 hleft=13 pmoves=65 pattacks=34 hmoves=391 hattacks=96 ms=35314 vms=384770']
+    last state [AISTATE] end turn=9 unit=1000039 type=STR_MUTON_LEADER faction=1 status=0 pos=(10,19,2) dir=4 tu=134 hp=193/193 stun=0 morale=97 kneel=0 weapon=STR_GAUSS_RIFLE spotted=255 sniped=0 sees=- seenby=0 known=1 near=8 shade=12 tumax=134 wounds=0 threat=-1 reach=-1 
+  ua1_UN_M6_s1: last turn 8; lines of ending ['[AIRESULT] how=timeout tac=h.rec.in:500,h.rec.out.M2:9,p.rec.in:99 seed=2018001 livesoldiers=2 livealiens=3 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=9 player=8 pdead=6 pout=0 pwounded=8 phplost=663 hostile=41 hdead=32 hout=3 hleft=6 pmoves=41 pattacks=48 hmoves=352 hattacks=145 ms=26472 vms=433260']
+    last state [AISTATE] end turn=9 unit=1000035 type=STR_MUTON_ENGINEER faction=1 status=7 pos=(10,26,0) dir=3 tu=12 hp=7/139 stun=85 morale=46 kneel=0 weapon=- spotted=255 sniped=0 sees=- seenby=0 known=2 near=30 shade=-1 tumax=96 wounds=5 threat=-1 reach=-1 rh=- lh=- spar
+  ua1_UN_M6_s1: objective why {'contact': 4, 'first_plan': 3, 'reached': 4, 'term_over': 1}
+    squad 0: 1SEA6/5 2SEA6/5 3RES6/0 4RES5/0 5RES3/0
+    squad 1: 1RES5/0 2RES6/0 3RES5/0 4RES3/0
+    squad 2: 1RES2/0 2RES2/1
+    squad 4: 1SEC4/1
+    squad 5: 1SEC4/3 2SEC4/3 3SEC6/4 4SEC5/3 5SEC4/3 6SEC3/2 7SEC2/1 8SEC1/0
+    squad 6: 1SEA3/2
+    squad 7: 1SEC3/2 2SEC3/1
+    squad 8: 1SEA6/6 2SEA6/5 3SEA6/5 4SEA6/5 5SEA5/3 6RES5/0 7RES4/0 8RES3/0
+===== M3 s1
+  first difference at line 332, [AIDECIDE]: fields {'ha': ('a0cad3d6a684b2f4', '107a54a02a176c7b')}
+  decisions before it 26, all equal including hr: True
+   next OFF [AIREC] {"v":1,"gen":"base_v2","seed":2015001,"rec":26,"turn":1,"side":1,"unit":1000000,"order":0,"n":1,"state":{"pos":[45,55,3],"dir":4,"tu":181,"hp":116,"stun":0,"moral
+   next ON  [AIREC] {"v":1,"gen":"base_v2","seed":2015001,"rec":26,"turn":1,"side":1,"unit":1000000,"order":0,"n":1,"state":{"pos":[45,55,3],"dir":4,"tu":181,"hp":116,"stun":0,"moral
+  turn 1 soldier 1000006 squad 6 task SEARCH area center (19,36,0) r 10: free node (26,66,0), chosen (19,46,0)
+    ON  n=1 from (22,38,0) mode 2 act 8 to (15,35,0) tu 59
+    ON  n=2 from (22,38,0) mode 2 act 8 to (15,35,0) tu 40
+    ON  n=1 from (22,38,0) mode 0 act 2 to (19,46,0) tu 23
+    ON  n=2 from (22,39,0) mode 3 act 2 to (21,40,0) tu 19
+    OFF n=1 from (22,38,0) mode 2 act 8 to (15,35,0) tu 59
+    OFF n=2 from (22,38,0) mode 2 act 8 to (15,35,0) tu 40
+    OFF n=1 from (22,38,0) mode 2 act 8 to (25,24,0) tu 23
+    result start (22,38,0) end (21,40,0) spent 46 inside 1 closer 0
+  turn 1 soldier 1000009 squad 6 task SEARCH area center (19,36,0) r 10: free node (50,60,0), chosen (23,31,0)
+    ON  n=1 from (21,44,0) mode 0 act 2 to (23,31,0) tu 65
+    ON  n=2 from (21,44,0) mode 3 act 2 to (19,41,0) tu 62
+    OFF n=1 from (21,44,0) mode 0 act 2 to (50,60,0) tu 65
+    OFF n=2 from (21,44,0) mode 3 act 2 to (19,41,0) tu 64
+    result start (21,44,0) end (19,41,0) spent 19 inside 1 closer 1
+  empty walks OFF {'empty': 76, 'mode0': 76, 'elsewhere': 76, 'then_walk': 47, 'last_of_turn': 27, 'left_tu': 453, 'then_attack': 2, 'unit_turns': 267}
+  empty walks ON  {'empty': 126, 'mode0': 126, 'elsewhere': 126, 'then_walk': 84, 'last_of_turn': 38, 'left_tu': 728, 'then_other': 4, 'turns_nothing_spent': 3, 'turns_nothing_spent_tu': 195, 'unit_turns': 342}
+  ua6_UO_M3_s1: lines 259, victims 74, most lines [('1000001', 'STR_CHRYSSALID_TERRORIST', 72), ('1000045', 'STR_ERIDIAN_SOLDIER', 72), ('1000005', 'STR_CHRYSSALID_TERRORIST', 17)], how {('1', 'dead'): 41, ('2', 'dead'): 24, ('0', 'stun'): 1, ('0', 'dead'): 5, ('2', 'stun'): 8, ('1', 'stun'): 180}
+    side 0 new victims by turn: 1:2 3:2 7:1
+    side 1 new victims by turn: 1:4 2:12 3:10 4:3 5:6 6:3 7:7
+    side 2 new victims by turn: 1:12 2:10 3:1 4:0 5:1
+    side 1 by type: [('STR_ERIDIAN_SOLDIER', 31), ('STR_CHRYSSALID_TERRORIST', 6), ('STR_ERIDIAN_BEASTMASTER', 4), ('STR_SILACOID_TERRORIST', 2), ('STR_ERIDIAN_LEADER', 1), ('STR_ZOMBIE', 1)]
+  ua2_UN_M3_s1: lines 73, victims 64, most lines [('1000066', 'FEMALE_CIVILIAN', 3), ('454', 'SOLDIER', 2), ('1000067', 'FEMALE_CIVILIAN', 2)], how {('1', 'dead'): 34, ('2', 'dead'): 22, ('0', 'stun'): 1, ('2', 'stun'): 9, ('0', 'dead'): 4, ('1', 'stun'): 3}
+    side 0 new victims by turn: 1:2 2:0 3:2
+    side 1 new victims by turn: 1:5 2:4 3:8 4:8 5:3 6:4 7:2 8:2
+    side 2 new victims by turn: 1:12 2:8 3:3 4:1 8:0
+    side 1 by type: [('STR_ERIDIAN_SOLDIER', 18), ('STR_CHRYSSALID_TERRORIST', 9), ('STR_ZOMBIE', 5), ('STR_ERIDIAN_BEASTMASTER', 3), ('STR_SILACOID_TERRORIST', 1)]
+  ua6_UO_M3_s1: last turn 8; lines of ending ['[AIRESULT] how=timeout tac=h.rec.in:753,h.rec.out.M2:7,h.rec.out.a9:1,p.rec.in:120,p.rec.out.a9:1 seed=2015001 livesoldiers=3 livealiens=17 aborted=0 mission=STR_ERIDIAN_TERROR turn=9 player=8 pdead=5 pout=0 pwounded=8 phplost=630 hostile=62 hdead=41 hout=4 hleft=17 pmoves=70 pattacks=30 hmoves=568 hattacks=163 ms=66071 vms=609460']
+    last state [AISTATE] end turn=9 unit=1000085 type=STR_CHRYSSALID_TERRORIST faction=1 status=0 pos=(28,11,0) dir=7 tu=105 hp=116/116 stun=0 morale=100 kneel=0 weapon=AUX_CHRYSSALID_WEAPON spotted=255 sniped=0 sees=- seenby=0 known=1 near=23 shade=6 tumax=181 wounds=0 thre
+  ua2_UN_M3_s1: last turn 8; lines of ending ['[AIRESULT] how=timeout tac=h.rec.in:1038,h.rec.out.M2:7,h.rec.out.a9:1,p.rec.in:119 seed=2015001 livesoldiers=3 livealiens=33 aborted=0 mission=STR_ERIDIAN_TERROR turn=9 player=8 pdead=5 pout=0 pwounded=8 phplost=674 hostile=68 hdead=34 hout=1 hleft=33 pmoves=69 pattacks=36 hmoves=822 hattacks=168 ms=62803 vms=678710']
+    last state [AISTATE] end turn=9 unit=1000072 type=CIVILIAN_YOUNG_UBER faction=2 status=7 pos=(53,5,0) dir=3 tu=0 hp=8/60 stun=85 morale=35 kneel=0 weapon=- spotted=255 sniped=0 sees=- seenby=0 known=0 near=-1 shade=-1 tumax=65 wounds=0 threat=-1 reach=-1 rh=- lh=- spare=
+  ua2_UN_M3_s1: objective why {'contact': 9, 'first_plan': 6, 'reached': 14}
+    squad 0: 1RES2/1
+    squad 1: 1SEC2/2 2SEC5/2
+    squad 2: 1SEC5/3 2SEC5/3 3SEC6/5 4SEC6/5 5SEC6/5 6SEC6/5 7SEC6/5 8SEC6/5
+    squad 3: 1SEA5/2 2RES5/0 3RES5/0 4RES6/0 5RES5/1
+    squad 4: 1SEC6/2 2SEC6/3 3SEC6/3 4SEC5/4 5SEC4/3 6SEC4/2 7SEC4/3 8SEC6/4
+    squad 5: 1SEA3/2 2SEA3/3 3SEA3/2 4SEA3/2 5RES4/1 6RES5/1 7RES3/1
+    squad 6: 1SEA5/3 2RES5/2 3RES5/3 4RES5/1 5RES5/2 6SEA5/5 7SEA5/3 8RES4/0
+    squad 7: 1SEA6/4 2RES6/0 3RES6/0 4RES5/1 5SEA5/2 6SEA5/3 7SEA5/2 8SEA5/5
+    squad 8: 1SEA3/2 2RES3/0 3RES3/0
+    squad 9: 1SEC6/5 2SEC6/5 3SEC6/4 4SEC6/4 5SEC6/6 6SEC6/3 7SEC6/2 8SEC6/4
+    squad 10: 1RES3/1
+    squad 11: 1SEA4/2 2SEA3/2 3SEA5/2 4SEA5/2 5SEA5/3 6RES5/0 7RES5/0 8RES4/0
+===== M8 s1
+  first difference at line 211, [AIDECIDE]: fields {'ha': ('b09a01f549d6941', '5359ee0766ff5a78'), 'to': ('(39,4,0)', '(28,38,0)')}
+  decisions before it 26, all equal including hr: True
+   next OFF [AIREC] {"v":1,"gen":"base_v2","seed":2020001,"rec":26,"turn":1,"side":1,"unit":1000000,"order":0,"n":1,"state":{"pos":[52,34,0],"dir":2,"tu":298,"hp":72,"stun":0,"morale
+   next ON  [AIREC] {"v":1,"gen":"base_v2","seed":2020001,"rec":26,"turn":1,"side":1,"unit":1000000,"order":0,"n":1,"state":{"pos":[52,34,0],"dir":2,"tu":298,"hp":72,"stun":0,"morale
+  turn 1 soldier 1000002 squad 3 task SECURE area center (29,45,0) r 8: free node (20,50,0), chosen (29,50,0)
+    ON  n=1 from (29,50,0) mode 0 act 2 to (24,48,0) tu 149
+    ON  n=2 from (24,48,0) mode 0 act 2 to (29,50,0) tu 125
+    ON  n=1 from (29,50,0) mode 0 act 2 to (24,48,0) tu 101
+    ON  n=2 from (24,48,0) mode 0 act 2 to (29,50,0) tu 77
+    OFF n=1 from (29,50,0) mode 0 act 2 to (24,48,0) tu 149
+    OFF n=2 from (24,48,0) mode 0 act 2 to (20,50,0) tu 125
+    OFF n=1 from (20,50,0) mode 0 act 2 to (24,48,0) tu 105
+    OFF n=2 from (24,48,0) mode 0 act 2 to (20,50,0) tu 85
+    result start (29,50,0) end (22,47,0) spent 140 inside 1 closer 0
+  turn 1 soldier 1000004 squad 3 task SECURE area center (29,45,0) r 8: free node (12,42,0), chosen (37,42,0)
+    ON  n=1 from (24,42,0) mode 0 act 2 to (37,42,0) tu 149
+    ON  n=2 from (37,42,0) mode 0 act 2 to (24,42,0) tu 93
+    ON  n=1 from (24,42,0) mode 0 act 2 to (37,42,0) tu 37
+    OFF n=1 from (24,42,0) mode 0 act 2 to (12,42,0) tu 149
+    OFF n=2 from (13,43,0) mode 0 act 2 to (12,42,0) tu 103
+    OFF n=1 from (12,42,0) mode 0 act 2 to (24,42,0) tu 97
+    OFF n=2 from (24,42,0) mode 0 act 2 to (12,42,0) tu 45
+    result start (24,42,0) end (32,41,0) spent 146 inside 1 closer 1
+  empty walks OFF {'empty': 97, 'mode0': 97, 'elsewhere': 97, 'then_walk': 64, 'last_of_turn': 28, 'left_tu': 1015, 'then_other': 4, 'then_attack': 1, 'turns_nothing_spent': 4, 'turns_nothing_spent_tu': 1192, 'unit_turns': 79}
+  empty walks ON  {'empty': 69, 'mode0': 69, 'elsewhere': 69, 'last_of_turn': 29, 'left_tu': 1165, 'then_walk': 38, 'then_other': 2, 'turns_nothing_spent': 2, 'turns_nothing_spent_tu': 447, 'unit_turns': 83}
+  ua8_UO_M8_s1: lines 41, victims 37, most lines [('1000038', 'STR_NAZI_LEADER', 2), ('1000020', 'STR_NAZI_KKK', 2), ('1000015', 'STR_NAZI_KKK', 2)], how {('1', 'dead'): 35, ('1', 'stun'): 6}
+    side 1 new victims by turn: 1:4 2:11 3:7 4:5 5:4 6:1 7:4 8:1
+    side 1 by type: [('STR_NAZI_KKK', 14), ('STR_NAZI_SOLDIER', 12), ('STR_DOGG_TERRORIST', 5), ('STR_NAZI_SS', 4), ('STR_ARMORED_CAR_NAZI_TERRORIST', 1), ('STR_NAZI_LEADER', 1)]
+  ua3_UN_M8_s1: lines 38, victims 37, most lines [('1000022', 'STR_NAZI_SOLDIER', 2), ('1000028', 'STR_NAZI_SOLDIER', 1), ('1000031', 'STR_NAZI_SOLDIER', 1)], how {('1', 'dead'): 35, ('1', 'stun'): 2, ('0', 'dead'): 1}
+    side 0 new victims by turn: 5:1
+    side 1 new victims by turn: 1:5 2:9 3:6 4:7 5:4 6:5
+    side 1 by type: [('STR_NAZI_SOLDIER', 13), ('STR_NAZI_KKK', 11), ('STR_DOGG_TERRORIST', 5), ('STR_NAZI_SS', 4), ('STR_ARMORED_CAR_NAZI_TERRORIST', 2), ('STR_NAZI_LEADER', 1)]
+  ua8_UO_M8_s1: last turn 8; lines of ending ['[AIRESULT] how=timeout tac=h.rec.in:311,h.rec.out.M2:1,h.rec.out.a7:1,p.rec.in:198,p.rec.out.a8:1 seed=2020001 livesoldiers=8 livealiens=1 aborted=0 mission=STR_LOC_HUMANIST_VILLA turn=9 player=8 pdead=0 pout=0 pwounded=2 phplost=23 hostile=39 hdead=35 hout=2 hleft=2 pmoves=148 pattacks=39 hmoves=278 hattacks=21 ms=42083 vms=385080']
+    last state [AISTATE] end turn=9 unit=1000036 type=STR_NAZI_SS faction=1 status=7 pos=(19,49,2) dir=3 tu=23 hp=11/72 stun=40 morale=34 kneel=0 weapon=- spotted=255 sniped=0 sees=- seenby=0 known=1 near=2 shade=-1 tumax=96 wounds=1 threat=-1 reach=-1 rh=- lh=- spare=0 ammo
+  ua3_UN_M8_s1: last turn 6; lines of ending ['[AIRESULT] how=over tac=h.rec.in:280,h.rec.out.M2:4,p.rec.in:145,p.rec.out.a8:1,p.rec.out.a9:1 seed=2020001 livesoldiers=7 livealiens=0 aborted=0 mission=STR_LOC_HUMANIST_VILLA turn=6 player=8 pdead=1 pout=0 pwounded=3 phplost=201 hostile=39 hdead=35 hout=1 hleft=3 pmoves=93 pattacks=41 hmoves=247 hattacks=26 ms=36865 vms=297720']
+    last state [AISTATE] end turn=6 unit=1000034 type=STR_NAZI_SS faction=1 status=7 pos=(26,44,2) dir=3 tu=12 hp=2/72 stun=54 morale=0 kneel=0 weapon=- spotted=255 sniped=0 sees=- seenby=0 known=3 near=10 shade=-1 tumax=96 wounds=1 threat=-1 reach=-1 rh=- lh=- spare=0 ammo=
+  ua3_UN_M8_s1: objective why {'first_plan': 4, 'reached': 4, 'contact': 2}
+    squad 0: 1SEC6/4 2SEC5/4 3SEC3/2
+    squad 1: 1SEA3/2
+    squad 2: 1SEC6/5 2SEC6/5 3SEC4/4 4SEC4/3
+    squad 3: 1SEC5/5 2SEC5/5 3SEC3/3
+    squad 4: 1SEA5/2 2RES4/0 3RES4/0 4RES2/0 5RES2/0
+    squad 5: 1SEA5/2
+    squad 7: 1SEA4/3 2SEA4/2 3RES3/0 4RES2/0 5RES2/0
+tags ['[AIAFTER]', '[AIAMBMEMO]', '[AIBLOCKSTEP]', '[AICAND]', '[AICASUALTY]', '[AIDECIDE]', '[AIESCRF]', '[AIEVENT]', '[AIEXEC]', '[AIKNOWARMOR]', '[AILIGHT]', '[AIPANIC]', '[AIPOSTWALK]', '[AIPROBE]', '[AIRECHEAD]', '[AIREC]', '[AIRESULT]', '[AIREUSE]', '[AISTATE]', '[AIWALKFOVSKIP]']

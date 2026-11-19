@@ -1,0 +1,567 @@
+      X 2/0 victim=1000062(2) stun at (12,59,0) by 1000019(1) STR_GRENADE_BUG dist=29
+      X 2/0 victim=1000062(2) stun at (12,59,0) by 1000019(1) STR_GRENADE_BUG dist=29
+      X 2/0 victim=1000031(1) dead at (27,13,1) by 470(0) AUX_TANK_LASER_CANNON dist=7
+      X 2/0 victim=1000003(1) dead at (48,32,0) by 545(0) AUX_WOLVERIN_WEAPON_MINIGUN dist=23
+      X 2/0 victim=1000013(1) dead at (52,5,0) by 545(0) AUX_WOLVERIN_WEAPON_MINIGUN dist=17
+      X 2/0 victim=1000035(1) dead at (26,13,2) by 448(0) AUX_TANK_LASER_CANNON dist=7
+      X 2/0 victim=1000056(1) dead at (25,10,0) by 448(0) AUX_TANK_LASER_CANNON dist=7
+      X 2/0 victim=1000048(1) stun at (27,16,1) by 545(0) AUX_WOLVERIN_WEAPON_MINIGUN dist=11
+      X 2/1 victim=1000062(2) dead at (12,59,0) by 1000019(1) STR_GRENADE_BUG dist=29
+      X 2/1 victim=1000076(2) stun at (52,54,0) by 1000044(1) STR_GRENADE_BUG dist=3
+P      448 SOLDIER                  pos=(32,10,2) dir=6 tu=17/182 hp=163/171 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spotted=0 sees=-
+P      470 SOLDIER                  pos=(42,23,0) dir=3 tu=3/195 hp=138/168 kneel=0 st=0 w=AUX_TANK_LASER rh=AUX_TANK_LASER_CANNON:1 lh=AUX_TANK_LASER:1 spotted=0 sees=-
+P      444 SOLDIER                  pos=(31,16,0) dir=5 tu=162/183 hp=154/170 kneel=0 st=0 w=AUX_TANK_MG rh=AUX_TANK_CANNON:1 lh=AUX_TANK_MG:1 spotted=0 sees=1000036,1000051
+P      545 SOLDIER                  pos=(37,12,2) dir=6 tu=29/108 hp=68/68 kneel=0 st=0 w=AUX_WOLVERIN_WEAPON_MINIGUN rh=AUX_WOLVERIN_WEAPON_MINIGUN:1 lh=AUX_TANK_WEAPON_GRENADES:1 spotted=0 sees=-
+P      520 SOLDIER                  pos=(25,8,0) dir=6 tu=62/108 hp=29/84 kneel=0 st=0 w=STR_SUPER_MAGNUM rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spotted=0 sees=1000055,1000057
+P      503 SOLDIER                  pos=(44,24,0) dir=4 tu=11/99 hp=85/85 kneel=0 st=0 w=STR_SUPER_MAGNUM rh=STR_SUPER_MAGNUM:1 lh=STR_POLICE_SHIELD:1 spotted=0 sees=1000000
+H  1000000 STR_CHRYSSALID_TERRORIST pos=(40,54,3) dir=0 tu=181/181 hp=37/116 mor=97 st=0 w=AUX_CHRYSSALID_WEAPON rh=AUX_CHRYSSALID_WEAPON:1 lh=- ammo=0 sees=470,503,1000075 seenby=1 known=6 near=30
+H  1000001 STR_CHRYSSALID_TERRORIST pos=(16,35,0) dir=6 tu=181/181 hp=109/116 mor=100 st=0 w=AUX_CHRYSSALID_WEAPON rh=AUX_CHRYSSALID_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=6 near=24
+H  1000005 STR_CHRYSSALID_TERRORIST pos=(62,58,3) dir=3 tu=181/181 hp=116/116 mor=100 st=0 w=AUX_CHRYSSALID_WEAPON rh=AUX_CHRYSSALID_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=6 near=38
+H  1000006 STR_SILACOID_TERRORIST   pos=(22,38,0) dir=0 tu=59/59 hp=98/137 mor=100 st=0 w=AUX_SILACOID_WEAPON rh=AUX_SILACOID_WEAPON:1 lh=AUX_SILACOID_WEAPON_MELEE:1 ammo=0 sees=1000060 seenby=0 known=6 near=24
+H  1000008 STR_SILACOID_TERRORIST   pos=(30,51,0) dir=0 tu=59/59 hp=137/137 mor=100 st=0 w=AUX_SILACOID_WEAPON rh=AUX_SILACOID_WEAPON:1 lh=AUX_SILACOID_WEAPON_MELEE:1 ammo=0 sees=- seenby=0 known=6 near=30
+H  1000009 STR_ERIDIAN_SOLDIER      pos=(19,41,0) dir=3 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=28
+H  1000010 STR_ERIDIAN_SOLDIER      pos=(38,57,0) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=1000075 seenby=0 known=6 near=34
+H  1000011 STR_ERIDIAN_SOLDIER      pos=(34,57,0) dir=0 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=34
+H  1000012 STR_ERIDIAN_SOLDIER      pos=(7,57,0) dir=2 tu=65/65 hp=44/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=48
+H  1000014 STR_ERIDIAN_SOLDIER      pos=(35,61,0) dir=0 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=38
+H  1000016 STR_ERIDIAN_SOLDIER      pos=(1,20,0) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=- seenby=0 known=6 near=27
+H  1000017 STR_ERIDIAN_SOLDIER      pos=(56,39,0) dir=2 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=- seenby=0 known=6 near=19
+H  1000018 STR_ERIDIAN_SOLDIER      pos=(38,56,0) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=503,1000075 seenby=0 known=6 near=33
+H  1000019 STR_ERIDIAN_SOLDIER      pos=(40,65,3) dir=2 tu=65/65 hp=87/87 mor=100 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=41
+H  1000020 STR_ERIDIAN_SOLDIER      pos=(7,61,0) dir=3 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=51
+H  1000021 STR_ERIDIAN_SOLDIER      pos=(32,62,0) dir=4 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=40
+H  1000022 STR_ERIDIAN_SOLDIER      pos=(8,37,0) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=1000060 seenby=0 known=6 near=31
+H  1000023 STR_ERIDIAN_SOLDIER      pos=(51,7,0) dir=1 tu=65/65 hp=84/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=15
+H  1000024 STR_ERIDIAN_SOLDIER      pos=(53,55,0) dir=6 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=1000076 seenby=0 known=6 near=32
+H  1000025 STR_ERIDIAN_SOLDIER      pos=(33,55,0) dir=0 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=33
+H  1000026 STR_ERIDIAN_SOLDIER      pos=(61,43,0) dir=5 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=- seenby=0 known=6 near=25
+H  1000027 STR_ERIDIAN_SOLDIER      pos=(2,20,0) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=26
+H  1000028 STR_ERIDIAN_SOLDIER      pos=(3,7,0) dir=2 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=520 seenby=0 known=6 near=22
+H  1000029 STR_ERIDIAN_SOLDIER      pos=(62,9,0) dir=6 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=- seenby=0 known=6 near=23
+H  1000030 STR_ERIDIAN_SOLDIER      pos=(21,16,2) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=2 sees=- seenby=0 known=6 near=9
+H  1000032 STR_ERIDIAN_SOLDIER      pos=(67,38,0) dir=7 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=1000079 seenby=0 known=6 near=27
+H  1000033 STR_ERIDIAN_SOLDIER      pos=(35,62,0) dir=0 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=39
+H  1000034 STR_ERIDIAN_SOLDIER      pos=(54,32,3) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=13
+H  1000036 STR_ERIDIAN_SOLDIER      pos=(28,16,0) dir=1 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=444 seenby=1 known=6 near=3
+H  1000037 STR_ERIDIAN_SOLDIER      pos=(55,67,0) dir=2 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=44
+H  1000038 STR_ERIDIAN_SOLDIER      pos=(5,37,3) dir=2 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=33
+H  1000039 STR_ERIDIAN_SOLDIER      pos=(62,61,0) dir=4 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=41
+H  1000040 STR_ERIDIAN_SOLDIER      pos=(39,63,0) dir=0 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=39
+H  1000041 STR_ERIDIAN_SOLDIER      pos=(54,55,0) dir=6 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=1000076 seenby=0 known=6 near=33
+H  1000042 STR_ERIDIAN_SOLDIER      pos=(25,18,0) dir=4 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=6
+H  1000043 STR_ERIDIAN_SOLDIER      pos=(52,33,3) dir=0 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=12
+H  1000044 STR_ERIDIAN_SOLDIER      pos=(52,57,0) dir=2 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=34
+H  1000045 STR_ERIDIAN_SOLDIER      pos=(4,38,0) dir=3 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=1000061 seenby=0 known=6 near=35
+H  1000046 STR_ERIDIAN_SOLDIER      pos=(36,69,0) dir=2 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=- seenby=0 known=6 near=46
+H  1000047 STR_ERIDIAN_SOLDIER      pos=(49,63,0) dir=0 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=- seenby=0 known=6 near=39
+H  1000048 STR_ERIDIAN_SOLDIER      pos=(27,16,1) dir=3 tu=1/65 hp=11/87 mor=46 st=7 w=- rh=- lh=- ammo=0 sees=- seenby=0 known=6 near=4
+H  1000049 STR_ERIDIAN_SOLDIER      pos=(66,6,3) dir=5 tu=65/65 hp=87/87 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=- seenby=0 known=6 near=28
+H  1000050 STR_ERIDIAN_SOLDIER      pos=(4,18,0) dir=2 tu=65/65 hp=87/87 mor=99 st=0 w=STR_CANISTER_GUN rh=STR_CANISTER_GUN:1 lh=- ammo=3 sees=1000060 seenby=0 known=6 near=23
+H  1000051 STR_ERIDIAN_BEASTMASTER  pos=(24,19,0) dir=6 tu=71/71 hp=94/94 mor=99 st=0 w=- rh=STR_PIR_SMALL_LAUNCHER:0 lh=- ammo=5 sees=1000060 seenby=1 known=6 near=8
+H  1000052 STR_ERIDIAN_BEASTMASTER  pos=(7,62,0) dir=3 tu=71/71 hp=94/94 mor=99 st=0 w=STR_PIR_SMALL_LAUNCHER rh=STR_PIR_SMALL_LAUNCHER:1 lh=- ammo=5 sees=- seenby=0 known=6 near=52
+H  1000053 STR_ERIDIAN_BEASTMASTER  pos=(64,12,0) dir=4 tu=71/71 hp=94/94 mor=99 st=0 w=STR_TOXIGUN rh=STR_TOXIGUN:1 lh=- ammo=1 sees=1000068 seenby=0 known=6 near=23
+H  1000054 STR_ERIDIAN_BEASTMASTER  pos=(57,60,0) dir=6 tu=71/71 hp=94/94 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=- seenby=0 known=6 near=38
+H  1000055 STR_ERIDIAN_BEASTMASTER  pos=(6,5,2) dir=2 tu=71/71 hp=94/94 mor=99 st=0 w=STR_SR_RIFLE rh=STR_SR_RIFLE:1 lh=- ammo=2 sees=520 seenby=1 known=6 near=19
+H  1000057 STR_ERIDIAN_LEADER       pos=(14,5,0) dir=6 tu=77/77 hp=101/101 mor=100 st=0 w=STR_PIR_PLASMA_RIFLE rh=STR_PIR_PLASMA_RIFLE:1 lh=- ammo=2 sees=- seenby=1 known=6 near=11
+N  1000060 MALE_CIVILIAN            pos=(19,20,0) hp=37/40
+N  1000061 CIVILIAN_MUT_4           pos=(18,44,0) hp=70/70
+N  1000063 FEMALE_CIVILIAN          pos=(41,11,0) hp=28/30
+N  1000068 CIVILIAN_MUT_5           pos=(56,20,0) hp=80/80
+N  1000069 MALE_CIVILIAN            pos=(15,53,0) hp=39/40
+N  1000070 MALE_CIVILIAN            pos=(41,0,0) hp=40/40
+N  1000075 CIVILIAN_MUT_4           pos=(51,22,0) hp=70/70
+N  1000076 FEMALE_CIVILIAN          pos=(52,54,0) hp=3/30
+N  1000079 CIVILIAN_MUT_4           pos=(52,37,3) hp=61/70
+N  1000080 CIVILIAN_MUT_5           pos=(13,51,0) hp=30/80
+N  1000081 CIVILIAN_MUT_4           pos=(52,11,3) hp=41/70
+H  1000082 STR_ZOMBIE               pos=(15,35,0) dir=3 tu=59/59 hp=101/101 mor=100 st=0 w=AUX_ZOMBIE_WEAPON rh=AUX_ZOMBIE_WEAPON:1 lh=- ammo=0 sees=1000061 seenby=0 known=6 near=25
+H  1000083 STR_ZOMBIE               pos=(63,59,3) dir=3 tu=59/59 hp=101/101 mor=100 st=0 w=AUX_ZOMBIE_WEAPON rh=AUX_ZOMBIE_WEAPON:1 lh=- ammo=0 sees=- seenby=0 known=6 near=40
+  H2 D 1000000 n=1 from=(40,54,3) tu=181 patrol walk to=(48,3,0) run=0 aim=1000069 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000061,1000068,1000075,1000079,1000081
+      -> pos=[44, 52, 3] tu=145 spent=36 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 44,52,3>44,52,3 d0 bam0 mt0 sz1 tu145/-1 en126/-1 rs0 bu-1
+  H2 D 1000000 n=2 from=(44,52,3) tu=145 combat walk to=(53,38,3) run=0 aim=1000079 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000061,1000068,1000075,1000079,1000081
+      -> pos=[44, 51, 3] tu=141 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=0 walk.stop.spotted 44,51,3>44,51,3 d0 bam0 mt0 sz1 tu141/-1 en124/-1 rs0 bu-1
+  H2 D 1000001 n=1 from=(16,35,0) tu=181 combat walk to=(18,43,0) run=0 aim=1000061 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000061,1000068,1000075,1000079,1000081
+      -> pos=[17, 36, 0] tu=175 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 17,36,0>17,36,0 d3 bam0 mt0 sz1 tu175/-1 en137/-1 rs0 bu-1
+  H2 D 1000001 n=2 from=(17,36,0) tu=175 combat walk to=(18,43,0) run=0 aim=1000061 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000061,1000068,1000069,1000075,1000079,1000080,1000081
+      X 2/1 victim=1000061(2) dead at (18,44,0) by 1000001(1) AUX_CHRYSSALID_WEAPON dist=1
+      -> pos=[18, 43, 0] tu=126 spent=49 dmg=70 downed=1 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000005 n=1 from=(62,58,3) tu=181 patrol walk to=(45,55,3) run=0 aim=503 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      -> pos=[45, 55, 3] tu=91 spent=90 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000005 n=2 from=(45,55,3) tu=91 patrol walk to=(43,57,0) run=0 aim=-1 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      -> pos=[43, 57, 0] tu=69 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000006 n=1 from=(22,38,0) tu=59 combat snap to=(13,51,0) run=0 aim=1000080 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      -> pos=[22, 38, 0] tu=39 spent=20 dmg=18 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000006 n=2 from=(22,38,0) tu=39 combat snap to=(13,51,0) run=0 aim=1000080 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      -> pos=[22, 38, 0] tu=22 spent=17 dmg=0 downed=0 fdmg=3 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000008 n=1 from=(30,51,0) tu=59 patrol walk to=(37,67,2) run=0 aim=-1 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      -> pos=[33, 59, 0] tu=21 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 33,59,0>34,60,0 d3 bam0 mt2 sz1 tu21/6 en61/3 rs8 bu-1
+  H2 D 1000008 n=2 from=(33,59,0) tu=21 patrol walk to=(37,67,2) run=0 aim=-1 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      -> pos=[33, 59, 0] tu=21 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 33,59,0>34,60,0 d3 bam0 mt2 sz1 tu21/6 en61/3 rs8 bu-1
+  H2 D 1000009 n=0 from=(19,41,0) tu=65 combat walk to=(16,41,0) run=0 aim=444 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      -> pos=[16, 41, 0] tu=53 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000009 n=1 from=(16,41,0) tu=53 combat aimed to=(13,51,0) run=0 aim=1000080 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081
+      X 2/1 victim=1000080(2) stun at (13,51,0) by 1000009(1) STR_CANISTER_GUN dist=10
+      -> pos=[16, 41, 0] tu=5 spent=48 dmg=7 downed=1 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000010 n=1 from=(38,57,0) tu=52 combat throw to=(44,24,0) run=0 aim=-1 w=STR_GRENADE_BUG seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[38, 57, 0] tu=51 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000010 n=1 from=(38,57,0) tu=51 combat walk to=(41,56,0) run=0 aim=503 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[39, 57, 0] tu=47 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 walk.stop.turnspot 39,57,0>39,57,0 d1 bam0 mt2 sz1 tu47/-1 en78/-1 rs0 bu-1
+  H2 D 1000010 n=2 from=(39,57,0) tu=47 combat aimed to=(44,24,0) run=0 aim=503 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[39, 57, 0] tu=5 spent=42 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 
+  H2 D 1000011 n=1 from=(34,57,0) tu=65 patrol walk to=(35,24,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[38, 57, 0] tu=49 spent=16 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 38,57,0>38,57,0 d1 bam0 mt2 sz1 tu49/-1 en72/-1 rs0 bu-1
+  H2 D 1000011 n=2 from=(38,57,0) tu=36 combat throw to=(44,24,0) run=0 aim=-1 w=STR_GRENADE_BUG seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[38, 57, 0] tu=9 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000012 n=0 from=(7,57,0) tu=62 combat walk to=(5,61,0) run=0 aim=444 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[5, 61, 0] tu=42 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000012 n=1 from=(5,61,0) tu=42 patrol walk to=(9,13,3) run=0 aim=1000069 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[9, 53, 0] tu=2 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 9,53,0>9,52,0 d0 bam0 mt2 sz1 tu2/4 en44/2 rs0 bu-1
+  H2 D 1000014 n=0 from=(35,61,0) tu=65 combat walk to=(30,59,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[30, 59, 0] tu=41 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000014 n=0 from=(30,59,0) tu=41 combat walk to=(28,57,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[28, 57, 0] tu=27 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000014 n=1 from=(28,57,0) tu=27 patrol walk to=(19,16,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[26, 53, 0] tu=7 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 26,53,0>26,53,0 d7 bam0 mt2 sz1 tu7/-1 en51/-1 rs0 bu-1
+  H2 D 1000014 n=2 from=(26,53,0) tu=7 patrol walk to=(19,16,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[25, 52, 0] tu=1 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 25,52,0>24,51,0 d7 bam0 mt2 sz1 tu1/6 en48/3 rs0 bu-1
+  H2 D 1000016 n=0 from=(1,20,0) tu=65 combat walk to=(6,18,0) run=0 aim=520 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[3, 19, 0] tu=55 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 3,19,0>3,19,0 d2 bam0 mt2 sz1 tu55/-1 en75/-1 rs0 bu-1
+  H2 D 1000016 n=1 from=(3,19,0) tu=55 combat walk to=(7,18,0) run=0 aim=520 w=AUX_FISTO seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[4, 19, 0] tu=51 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 4,19,0>4,19,0 d2 bam0 mt2 sz1 tu51/-1 en73/-1 rs0 bu-1
+  H2 D 1000016 n=2 from=(4,19,0) tu=51 combat walk to=(9,17,0) run=0 aim=520 w=AUX_FISTO seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      -> pos=[9, 17, 0] tu=27 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000017 n=1 from=(56,39,0) tu=65 combat snap to=(52,37,3) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000081
+      X 2/1 victim=1000079(2) dead at (52,37,3) by 1000017(1) STR_SR_RIFLE dist=4
+      -> pos=[56, 39, 0] tu=42 spent=23 dmg=61 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000017 n=2 from=(56,39,0) tu=42 patrol walk to=(1,1,0) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[54, 39, 0] tu=34 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 walk.stop.turnspot 54,39,0>54,39,0 d7 bam0 mt2 sz1 tu34/-1 en76/-1 rs0 bu-1
+  H2 D 1000018 n=1 from=(38,56,0) tu=65 patrol walk to=(66,14,0) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[40, 55, 0] tu=55 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 40,55,0>40,55,0 d1 bam0 mt2 sz1 tu55/-1 en75/-1 rs0 bu-1
+  H2 D 1000018 n=2 from=(40,55,0) tu=55 combat snap to=(42,23,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[40, 55, 0] tu=34 spent=21 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000019 n=0 from=(40,65,3) tu=65 combat walk to=(44,68,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[44, 68, 3] tu=37 spent=28 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000019 n=0 from=(44,68,3) tu=37 combat walk to=(44,66,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[44, 66, 3] tu=29 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000019 n=1 from=(44,66,3) tu=29 patrol walk to=(63,52,3) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[44, 59, 3] tu=1 spent=28 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 44,59,3>44,58,3 d0 bam0 mt2 sz1 tu1/4 en48/2 rs0 bu-1
+  H2 D 1000020 n=1 from=(7,61,0) tu=65 combat walk to=(9,61,0) run=0 aim=444 w=AUX_FISTO seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[7, 61, 0] tu=64 spent=1 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 7,61,0>7,61,0 d2 bam0 mt2 sz1 tu64/-1 en80/-1 rs0 bu-1
+  H2 D 1000020 n=2 from=(7,61,0) tu=64 combat walk to=(5,62,0) run=0 aim=444 w=AUX_FISTO seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[5, 62, 0] tu=54 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000021 n=1 from=(32,62,0) tu=65 patrol walk to=(5,6,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[29, 56, 0] tu=1 spent=64 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 29,56,0>28,55,0 d7 bam0 mt2 sz1 tu1/6 en48/3 rs0 bu-1
+  H2 D 1000022 n=1 from=(8,37,0) tu=65 patrol walk to=(25,19,0) run=0 aim=1000069 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[9, 33, 0] tu=47 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.turnspot 9,33,0>9,33,0 d1 bam0 mt2 sz1 tu47/-1 en71/-1 rs0 bu-1
+  H2 D 1000022 n=2 from=(9,33,0) tu=47 combat aimed to=(19,20,0) run=0 aim=1000060 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[9, 33, 0] tu=2 spent=45 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000023 n=0 from=(51,7,0) tu=65 combat walk to=(51,8,0) run=0 aim=545 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[51, 8, 0] tu=61 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000023 n=0 from=(51,8,0) tu=61 combat walk to=(51,5,0) run=0 aim=545 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[51, 5, 0] tu=49 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000023 n=1 from=(51,5,0) tu=49 combat walk to=(52,6,0) run=0 aim=545 w=AUX_FISTO seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[52, 6, 0] tu=43 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000023 n=1 from=(52,6,0) tu=43 combat walk to=(54,8,0) run=0 aim=545 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[54, 8, 0] tu=31 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000023 n=1 from=(54,8,0) tu=31 combat walk to=(53,8,0) run=0 aim=545 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[53, 8, 0] tu=27 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000023 n=1 from=(53,8,0) tu=27 combat walk to=(53,7,0) run=0 aim=545 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[53, 7, 0] tu=23 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000023 n=2 from=(53,7,0) tu=23 combat snap to=(37,12,2) run=0 aim=545 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[53, 7, 0] tu=0 spent=23 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000024 n=1 from=(53,55,0) tu=65 patrol walk to=(20,5,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[54, 49, 3] tu=1 spent=64 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 walk.stop.tu 54,49,3>54,48,3 d0 bam0 mt2 sz1 tu1/4 en62/2 rs0 bu-1
+  H2 D 1000025 n=0 from=(33,55,0) tu=65 combat walk to=(34,52,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[34, 52, 0] tu=51 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000025 n=0 from=(34,52,0) tu=51 combat walk to=(35,52,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[35, 52, 0] tu=47 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000025 n=0 from=(35,52,0) tu=47 combat walk to=(38,53,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[38, 53, 0] tu=33 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=0 
+  H2 D 1000025 n=1 from=(38,53,0) tu=33 combat snap to=(15,53,0) run=0 aim=1000069 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[38, 53, 0] tu=8 spent=25 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000025 n=2 from=(38,53,0) tu=8 patrol walk to=(14,5,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[38, 53, 0] tu=8 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000026 n=1 from=(61,43,0) tu=65 patrol walk to=(51,35,3) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[50, 51, 0] tu=5 spent=60 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 50,51,0>49,52,0 d5 bam0 mt2 sz1 tu5/6 en50/3 rs0 bu-1
+  H2 D 1000027 n=0 from=(2,20,0) tu=65 combat walk to=(6,18,0) run=0 aim=520 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[3, 20, 0] tu=61 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 3,20,0>3,20,0 d2 bam0 mt2 sz1 tu61/-1 en78/-1 rs0 bu-1
+  H2 D 1000027 n=1 from=(3,20,0) tu=61 patrol walk to=(25,18,3) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[8, 21, 0] tu=39 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 8,21,0>8,21,0 d2 bam0 mt2 sz1 tu39/-1 en67/-1 rs0 bu-1
+  H2 D 1000027 n=2 from=(8,21,0) tu=39 patrol walk to=(25,18,3) run=0 aim=1000060 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[16, 18, 0] tu=1 spent=38 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 16,18,0>17,17,0 d1 bam0 mt2 sz1 tu1/6 en48/3 rs0 bu-1
+  H2 D 1000028 n=1 from=(3,7,0) tu=52 combat throw to=(32,10,2) run=0 aim=448 w=STR_GRENADE_BUG seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[3, 7, 0] tu=52 spent=13 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000028 n=2 from=(3,7,0) tu=52 combat walk to=(8,9,0) run=0 aim=520 w=AUX_FISTO seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[6, 8, 0] tu=38 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 6,8,0>6,8,0 d2 bam0 mt2 sz1 tu38/-1 en73/-1 rs0 bu-1
+  H2 D 1000029 n=1 from=(62,9,0) tu=65 patrol walk to=(56,3,1) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[61, 8, 0] tu=59 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 61,8,0>61,8,0 d5 bam0 mt2 sz1 tu59/-1 en77/-1 rs0 bu-1
+  H2 D 1000029 n=2 from=(61,8,0) tu=59 combat snap to=(51,22,0) run=0 aim=1000075 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[61, 8, 0] tu=39 spent=20 dmg=64 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000030 n=1 from=(21,16,2) tu=65 escape walk to=(22,17,2) run=0 aim=520 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[22, 17, 2] tu=59 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000032 n=1 from=(67,38,0) tu=65 patrol walk to=(63,50,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[63, 49, 0] tu=3 spent=62 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 63,49,0>63,50,0 d4 bam0 mt2 sz1 tu3/4 en51/2 rs0 bu-1
+  H2 D 1000033 n=1 from=(35,62,0) tu=65 patrol walk to=(48,31,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[38, 56, 0] tu=35 spent=30 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 38,56,0>38,56,0 d1 bam0 mt2 sz1 tu35/-1 en65/-1 rs0 bu-1
+  H2 D 1000033 n=2 from=(38,56,0) tu=35 patrol walk to=(48,31,0) run=0 aim=1000075 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[39, 55, 0] tu=29 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=4 spotted=0 walk.stop.spotted 39,55,0>39,55,0 d1 bam0 mt2 sz1 tu29/-1 en62/-1 rs0 bu-1
+  H2 D 1000034 n=0 from=(54,32,3) tu=65 combat walk to=(54,27,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[54, 31, 3] tu=57 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.spotted 54,31,3>54,31,3 d0 bam0 mt2 sz1 tu57/-1 en78/-1 rs0 bu-1
+  H2 D 1000034 n=1 from=(54,31,3) tu=44 combat throw to=(52,11,3) run=0 aim=1000081 w=STR_GRENADE_BUG seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[54, 31, 3] tu=18 spent=39 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 
+  H2 D 1000034 n=2 from=(54,31,3) tu=18 patrol walk to=(54,15,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      ~ reaction turn=2 side=1 reactor=1000075 turn=2 side=1 what=reaction unit=1000075 pos=(54,30,3)
+      -> pos=[54, 30, 3] tu=14 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 walk.stop.reaction 54,30,3>54,30,3 d0 bam0 mt2 sz1 tu14/-1 en68/-1 rs0 bu-1
+  H2 D 1000036 n=0 from=(28,16,0) tu=65 combat walk to=(26,15,0) run=0 aim=444 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[26, 15, 0] tu=55 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000036 n=1 from=(26,15,0) tu=55 combat aimed to=(31,16,0) run=0 aim=444 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      ~ reaction turn=2 side=1 reactor=444 turn=2 side=1 what=reaction unit=444 pos=(26,15,0)
+      ~ reaction turn=2 side=1 reactor=444 turn=2 side=1 what=reaction unit=444 pos=(26,15,0)
+      X 2/1 victim=1000036(1) dead at (26,15,0) by 444(0) AUX_TANK_CANNON dist=5
+      X 2/1 victim=1000048(1) dead at (27,16,0) by 444(0) AUX_TANK_CANNON dist=4
+      -> pos=[26, 15, 0] tu=10 spent=45 dmg=8 downed=0 fdmg=143 hp_lost=192 down=1 seen=0 spotted=2 
+  H2 D 1000037 n=2 from=(55,67,0) tu=65 patrol walk to=(69,51,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[68, 61, 0] tu=1 spent=64 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 68,61,0>69,60,0 d1 bam0 mt2 sz1 tu1/6 en48/3 rs0 bu-1
+  H2 D 1000038 n=1 from=(5,37,3) tu=65 patrol walk to=(52,52,3) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[12, 44, 3] tu=1 spent=64 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 12,44,3>13,44,3 d2 bam0 mt2 sz1 tu1/4 en48/2 rs0 bu-1
+  H2 D 1000039 n=1 from=(62,61,0) tu=65 patrol walk to=(55,62,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[55, 62, 0] tu=31 spent=34 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000039 n=2 from=(55,62,0) tu=31 patrol walk to=(24,35,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[50, 60, 0] tu=5 spent=26 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 50,60,0>49,59,0 d7 bam0 mt2 sz1 tu5/6 en50/3 rs0 bu-1
+  H2 D 1000040 n=0 from=(39,63,0) tu=65 combat walk to=(42,58,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[41, 59, 0] tu=41 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 41,59,0>41,59,0 d1 bam0 mt2 sz1 tu41/-1 en68/-1 rs0 bu-1
+  H2 D 1000040 n=0 from=(41,59,0) tu=41 combat walk to=(42,56,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[42, 57, 0] tu=31 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 42,57,0>42,57,0 d1 bam0 mt2 sz1 tu31/-1 en63/-1 rs0 bu-1
+  H2 D 1000040 n=0 from=(42,57,0) tu=31 combat walk to=(41,56,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[41, 56, 0] tu=25 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 
+  H2 D 1000040 n=1 from=(41,56,0) tu=25 patrol walk to=(9,33,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[36, 54, 0] tu=1 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 36,54,0>35,53,0 d7 bam0 mt2 sz1 tu1/6 en48/3 rs0 bu-1
+  H2 D 1000041 n=1 from=(54,55,0) tu=65 patrol walk to=(34,68,2) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[48, 55, 3] tu=1 spent=64 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 48,55,3>47,54,3 d7 bam0 mt2 sz1 tu1/6 en60/3 rs0 bu-1
+  H2 D 1000042 n=1 from=(25,18,0) tu=52 combat throw to=(37,12,2) run=0 aim=545 w=STR_GRENADE_BUG seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[25, 18, 0] tu=23 spent=42 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=2 
+  H2 D 1000042 n=2 from=(25,18,0) tu=23 escape walk to=(20,18,0) run=0 aim=444 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      ~ reaction turn=2 side=1 reactor=444 turn=2 side=1 what=reaction unit=444 pos=(26,20,0)
+      X 2/1 victim=1000042(1) dead at (26,20,0) by 444(0) AUX_TANK_CANNON dist=6
+      X 2/1 victim=1000051(1) dead at (24,19,0) by 444(0) AUX_TANK_CANNON dist=8
+      -> pos=[26, 20, 0] tu=13 spent=10 dmg=0 downed=0 fdmg=68 hp_lost=119 down=1 seen=0 spotted=1 walk.stop.reaction 26,20,0>26,20,0 d3 bam0 mt2 sz1 tu13/-1 en67/-1 rs0 bu-1
+  H2 D 1000044 n=1 from=(52,57,0) tu=65 patrol walk to=(23,12,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[54, 50, 3] tu=3 spent=62 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 54,50,3>55,49,3 d1 bam0 mt2 sz1 tu3/6 en61/3 rs0 bu-1
+  H2 D 1000045 n=1 from=(4,38,0) tu=65 patrol walk to=(65,9,3) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      -> pos=[8, 37, 0] tu=47 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 8,37,0>8,37,0 d1 bam0 mt2 sz1 tu47/-1 en71/-1 rs0 bu-1
+  H2 D 1000045 n=2 from=(8,37,0) tu=47 combat snap to=(15,53,0) run=0 aim=1000069 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000081
+      X 2/1 victim=1000069(2) stun at (15,53,0) by 1000045(1) STR_SR_RIFLE dist=17
+      -> pos=[8, 37, 0] tu=25 spent=22 dmg=28 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000046 n=1 from=(36,69,0) tu=65 patrol walk to=(39,69,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[39, 69, 0] tu=53 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000046 n=2 from=(39,69,0) tu=53 patrol walk to=(35,65,3) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[36, 64, 0] tu=13 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 36,64,0>36,63,0 d0 bam0 mt2 sz1 tu13/16 en54/8 rs0 bu-1
+  H2 D 1000047 n=1 from=(49,63,0) tu=65 combat snap to=(51,22,0) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[49, 63, 0] tu=45 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000047 n=1 from=(49,63,0) tu=45 combat walk to=(50,67,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[50, 67, 0] tu=27 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000047 n=2 from=(50,67,0) tu=27 combat snap to=(42,23,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[50, 67, 0] tu=7 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000049 n=0 from=(66,6,3) tu=65 combat walk to=(64,11,3) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[65, 8, 3] tu=55 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 65,8,3>65,8,3 d4 bam0 mt2 sz1 tu55/-1 en75/-1 rs0 bu-1
+  H2 D 1000049 n=1 from=(65,8,3) tu=55 patrol walk to=(27,17,2) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[65, 13, 3] tu=35 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=0 walk.stop.turnspot 65,13,3>65,13,3 d5 bam0 mt2 sz1 tu35/-1 en65/-1 rs0 bu-1
+  H2 D 1000049 n=2 from=(65,13,3) tu=35 patrol walk to=(27,17,2) run=0 aim=1000068 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[64, 14, 3] tu=29 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.turnspot 64,14,3>64,14,3 d6 bam0 mt2 sz1 tu29/-1 en62/-1 rs0 bu-1
+  H2 D 1000050 n=1 from=(4,18,0) tu=52 combat throw to=(19,20,0) run=0 aim=1000060 w=STR_GRENADE_BUG seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[4, 18, 0] tu=26 spent=39 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000050 n=2 from=(4,18,0) tu=26 escape none to=(4,18,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[4, 18, 0] tu=26 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000052 n=1 from=(7,62,0) tu=71 patrol walk to=(49,67,0) run=0 aim=-1 w=STR_PIR_SMALL_LAUNCHER seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[18, 62, 0] tu=23 spent=48 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 18,62,0>19,62,0 d2 bam0 mt2 sz1 tu23/4 en66/2 rs8 bu-1
+  H2 D 1000052 n=2 from=(18,62,0) tu=23 patrol walk to=(49,67,0) run=0 aim=470 w=STR_PIR_SMALL_LAUNCHER seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      -> pos=[18, 62, 0] tu=23 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 18,62,0>19,62,0 d2 bam0 mt2 sz1 tu23/4 en66/2 rs8 bu-1
+  H2 D 1000053 n=1 from=(64,12,0) tu=71 combat auto to=(56,20,0) run=0 aim=1000068 w=STR_TOXIGUN seen=448,470,444,545,520,503,1000060,1000068,1000075,1000081
+      X 2/1 victim=1000029(1) stun at (61,8,0) by 1000053(1) STR_WEAPON_UNKNOWN dist=5
+      X 2/1 victim=1000053(1) dead at (64,12,0) by 1000053(1) STR_WEAPON_UNKNOWN dist=0
+      X 2/1 victim=1000029(1) dead at (61,8,0) by 1000053(1) STR_WEAPON_UNKNOWN dist=5
+      X 2/1 victim=1000049(1) stun at (64,14,3) by 1000053(1) STR_WEAPON_UNKNOWN dist=2
+      X 2/1 victim=1000049(1) dead at (64,14,3) by 1000053(1) STR_WEAPON_UNKNOWN dist=2
+      X 2/1 victim=1000068(2) dead at (56,20,0) by 1000053(1) STR_WEAPON_UNKNOWN dist=11
+      -> pos=[64, 12, 0] tu=24 spent=47 dmg=80 downed=1 fdmg=174 hp_lost=94 down=1 seen=0 spotted=0 
+  H2 D 1000054 n=2 from=(57,60,0) tu=71 patrol walk to=(35,65,0) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000075,1000081
+      -> pos=[49, 60, 0] tu=35 spent=36 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.spotted 49,60,0>49,60,0 d7 bam0 mt2 sz1 tu35/-1 en72/-1 rs8 bu-1
+  H2 D 1000055 n=1 from=(6,5,2) tu=71 combat walk to=(3,7,2) run=0 aim=520 w=AUX_FISTO seen=448,470,444,545,520,503,1000060,1000075,1000081
+      -> pos=[3, 7, 0] tu=55 spent=16 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000055 n=2 from=(3,7,0) tu=41 combat throw to=(32,10,2) run=0 aim=448 w=STR_GRENADE_BUG seen=448,470,444,545,520,503,1000060,1000075,1000081
+      -> pos=[3, 7, 0] tu=13 spent=42 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000057 n=1 from=(14,5,0) tu=77 escape walk to=(18,2,0) run=0 aim=520 w=STR_PIR_PLASMA_RIFLE seen=448,470,444,545,520,503,1000060,1000075,1000081
+      ~ reaction turn=2 side=1 reactor=520 turn=2 side=1 what=reaction unit=520 pos=(18,2,0)
+      -> pos=[18, 2, 0] tu=55 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 walk.stop.reaction 18,2,0>18,2,0 d1 bam0 mt2 sz1 tu55/-1 en79/-1 rs0 bu-1
+  H2 D 1000057 n=2 from=(18,2,0) tu=55 escape walk to=(13,1,0) run=0 aim=444 w=STR_PIR_PLASMA_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      ~ reaction turn=2 side=1 reactor=520 turn=2 side=1 what=reaction unit=520 pos=(13,1,0)
+      -> pos=[13, 1, 0] tu=33 spent=22 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 walk.stop.reaction 13,1,0>13,1,0 d6 bam0 mt2 sz1 tu33/-1 en68/-1 rs0 bu-1
+  H2 D 1000082 n=1 from=(15,35,0) tu=59 patrol walk to=(65,31,3) run=0 aim=-1 w=AUX_ZOMBIE_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[25, 43, 0] tu=1 spent=58 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 25,43,0>26,44,0 d3 bam0 mt0 sz1 tu1/6 en81/3 rs0 bu-1
+  H2 D 1000083 n=1 from=(63,59,3) tu=59 patrol walk to=(63,30,0) run=0 aim=-1 w=AUX_ZOMBIE_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[64, 52, 3] tu=7 spent=52 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 64,52,3>64,51,3 d0 bam0 mt0 sz1 tu7/8 en84/4 rs0 bu-1
+  H2 D 1000083 n=2 from=(64,52,3) tu=7 patrol walk to=(63,30,0) run=0 aim=-1 w=AUX_ZOMBIE_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[64, 52, 3] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 64,52,3>64,51,3 d0 bam0 mt0 sz1 tu7/8 en84/4 rs0 bu-1
+  H2 D 1000000 n=1 from=(44,51,3) tu=141 combat walk to=(40,54,3) run=0 aim=470 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[40, 54, 3] tu=109 spent=32 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H2 D 1000000 n=2 from=(40,54,3) tu=109 escape none to=(40,54,3) run=0 aim=-1 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[40, 54, 3] tu=109 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 
+  H2 D 1000001 n=1 from=(18,43,0) tu=126 combat walk to=(19,48,0) run=0 aim=444 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[18, 43, 0] tu=124 spent=2 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 18,43,0>18,43,0 d2 bam0 mt0 sz1 tu124/-1 en120/-1 rs0 bu-1
+  H2 D 1000001 n=2 from=(18,43,0) tu=124 patrol walk to=(9,11,0) run=0 aim=-1 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[11, 37, 0] tu=84 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=3 spotted=1 walk.stop.turnspot 11,37,0>11,37,0 d0 bam0 mt0 sz1 tu84/-1 en100/-1 rs0 bu-1
+  H2 D 1000005 n=1 from=(43,57,0) tu=69 combat walk to=(44,59,0) run=0 aim=470 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[44, 59, 0] tu=59 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000005 n=2 from=(44,59,0) tu=59 combat walk to=(42,58,0) run=0 aim=470 w=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[43, 59, 0] tu=55 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.turnspot 43,59,0>43,59,0 d7 bam0 mt0 sz1 tu55/-1 en83/-1 rs0 bu-1
+  H2 D 1000006 n=1 from=(22,38,0) tu=22 patrol walk to=(35,69,0) run=0 aim=-1 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[22, 38, 0] tu=22 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 22,38,0>22,39,0 d4 bam0 mt2 sz1 tu22/4 en80/2 rs8 bu-1
+  H2 D 1000006 n=1 from=(22,38,0) tu=22 combat walk to=(22,39,0) run=0 aim=444 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[22, 39, 0] tu=18 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000006 n=2 from=(22,39,0) tu=18 patrol walk to=(35,69,0) run=0 aim=444 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[22, 39, 0] tu=18 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 22,39,0>22,40,0 d4 bam0 mt2 sz1 tu18/4 en78/2 rs8 bu-1
+  H2 D 1000008 n=0 from=(33,59,0) tu=21 combat walk to=(33,60,0) run=0 aim=470 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[33, 60, 0] tu=17 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000008 n=1 from=(33,60,0) tu=17 patrol walk to=(37,67,2) run=0 aim=470 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[33, 60, 0] tu=17 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 33,60,0>34,60,0 d2 bam0 mt2 sz1 tu17/4 en59/2 rs8 bu-1
+  H2 D 1000008 n=2 from=(33,60,0) tu=17 patrol walk to=(37,67,2) run=0 aim=470 w=AUX_SILACOID_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[33, 60, 0] tu=17 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 33,60,0>34,60,0 d2 bam0 mt2 sz1 tu17/4 en59/2 rs8 bu-1
+  H2 D 1000011 n=1 from=(38,57,0) tu=9 patrol walk to=(35,24,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[39, 56, 0] tu=3 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.tu 39,56,0>40,56,0 d2 bam0 mt2 sz1 tu3/4 en61/2 rs0 bu-1
+  H2 D 1000016 n=1 from=(9,17,0) tu=27 patrol walk to=(45,11,0) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[11, 21, 0] tu=3 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.tu 11,21,0>12,21,0 d2 bam0 mt2 sz1 tu3/4 en49/2 rs0 bu-1
+  H2 D 1000017 n=0 from=(54,39,0) tu=34 combat walk to=(55,39,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[55, 39, 0] tu=30 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 
+  H2 D 1000017 n=1 from=(55,39,0) tu=30 patrol walk to=(1,1,0) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[51, 34, 0] tu=0 spent=30 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=2 walk.stop.tu 51,34,0>50,34,0 d6 bam0 mt2 sz1 tu0/4 en59/2 rs0 bu-1
+  H2 D 1000018 n=1 from=(40,55,0) tu=34 combat snap to=(42,23,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[40, 55, 0] tu=14 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000018 n=2 from=(40,55,0) tu=14 patrol walk to=(66,14,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[42, 53, 0] tu=2 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.tu 42,53,0>42,52,0 d0 bam0 mt2 sz1 tu2/4 en69/2 rs0 bu-1
+  H2 D 1000020 n=0 from=(5,62,0) tu=54 combat walk to=(4,64,0) run=0 aim=444 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[4, 64, 0] tu=44 spent=10 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000020 n=0 from=(4,64,0) tu=44 combat walk to=(4,65,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[4, 65, 0] tu=40 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000020 n=1 from=(4,65,0) tu=40 patrol walk to=(58,67,0) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[12, 63, 0] tu=0 spent=40 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 12,63,0>13,63,0 d2 bam0 mt2 sz1 tu0/4 en48/2 rs0 bu-1
+  H2 D 1000025 n=1 from=(38,53,0) tu=8 patrol walk to=(14,5,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[39, 54, 0] tu=2 spent=6 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 39,54,0>40,54,0 d2 bam0 mt2 sz1 tu2/4 en61/2 rs0 bu-1
+  H2 D 1000028 n=1 from=(6,8,0) tu=38 combat snap to=(31,16,0) run=0 aim=444 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[6, 8, 0] tu=18 spent=20 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000028 n=2 from=(6,8,0) tu=18 escape walk to=(6,3,0) run=0 aim=520 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[7, 4, 0] tu=0 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 7,4,0>6,3,0 d7 bam0 mt2 sz1 tu0/6 en64/3 rs0 bu-1
+  H2 D 1000033 n=0 from=(39,55,0) tu=29 combat walk to=(40,55,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[40, 55, 0] tu=25 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 
+  H2 D 1000033 n=1 from=(40,55,0) tu=25 patrol walk to=(48,31,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[43, 51, 0] tu=1 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.tu 43,51,0>44,50,0 d1 bam0 mt2 sz1 tu1/6 en48/3 rs0 bu-1
+  H2 D 1000034 n=1 from=(54,30,3) tu=14 patrol walk to=(54,15,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[54, 27, 3] tu=2 spent=12 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=1 walk.stop.spotted 54,27,3>54,27,3 d0 bam0 mt2 sz1 tu2/-1 en62/-1 rs0 bu-1
+  H2 D 1000043 n=0 from=(52,33,3) tu=65 combat walk to=(49,34,3) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[50, 35, 3] tu=47 spent=18 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 walk.stop.turnspot 50,35,3>50,35,3 d7 bam0 mt2 sz1 tu47/-1 en73/-1 rs0 bu-1
+  H2 D 1000043 n=1 from=(50,35,3) tu=47 combat snap to=(42,23,0) run=0 aim=470 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      -> pos=[50, 35, 3] tu=24 spent=23 dmg=14 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=2 
+  H2 D 1000043 n=2 from=(50,35,3) tu=24 combat snap to=(51,22,0) run=0 aim=1000075 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000075,1000081
+      X 2/1 victim=1000075(2) stun at (51,22,0) by 1000043(1) STR_CANISTER_GUN dist=13
+      -> pos=[50, 35, 3] tu=0 spent=24 dmg=5 downed=1 fdmg=0 hp_lost=0 down=0 seen=3 spotted=3 
+  H2 D 1000045 n=1 from=(8,37,0) tu=25 combat snap to=(42,23,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[8, 37, 0] tu=4 spent=21 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000046 n=1 from=(36,64,0) tu=13 patrol walk to=(35,65,3) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[36, 64, 0] tu=13 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 36,64,0>36,63,0 d0 bam0 mt2 sz1 tu13/16 en54/8 rs0 bu-1
+  H2 D 1000046 n=2 from=(36,64,0) tu=13 patrol walk to=(35,65,3) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[36, 64, 0] tu=13 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 36,64,0>36,63,0 d0 bam0 mt2 sz1 tu13/16 en54/8 rs0 bu-1
+  H2 D 1000047 n=1 from=(50,67,0) tu=7 patrol walk to=(51,30,0) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[49, 67, 0] tu=3 spent=4 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 49,67,0>48,67,0 d6 bam0 mt2 sz1 tu3/4 en69/2 rs0 bu-1
+  H2 D 1000050 n=1 from=(4,18,0) tu=26 patrol walk to=(1,4,2) run=0 aim=-1 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[6, 18, 0] tu=18 spent=8 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=2 spotted=0 walk.stop.spotted 6,18,0>6,18,0 d2 bam0 mt2 sz1 tu18/-1 en68/-1 rs0 bu-1
+  H2 D 1000050 n=2 from=(6,18,0) tu=18 patrol walk to=(1,4,2) run=0 aim=520 w=STR_CANISTER_GUN seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[8, 16, 0] tu=4 spent=14 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 8,16,0>7,15,0 d7 bam0 mt2 sz1 tu4/6 en61/3 rs0 bu-1
+  H2 D 1000052 n=1 from=(18,62,0) tu=23 patrol walk to=(49,67,0) run=0 aim=470 w=STR_PIR_SMALL_LAUNCHER seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[18, 62, 0] tu=23 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000052 n=2 from=(18,62,0) tu=23 patrol walk to=(49,67,0) run=0 aim=470 w=STR_PIR_SMALL_LAUNCHER seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[18, 62, 0] tu=23 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000054 n=1 from=(49,60,0) tu=35 combat snap to=(42,23,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[49, 60, 0] tu=12 spent=23 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 
+  H2 D 1000054 n=2 from=(49,60,0) tu=12 patrol walk to=(35,65,0) run=0 aim=470 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[49, 60, 0] tu=12 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.reserve 49,60,0>49,59,0 d0 bam0 mt2 sz1 tu12/4 en72/2 rs8 bu-1
+  H2 D 1000055 n=1 from=(3,7,0) tu=13 patrol walk to=(27,14,1) run=0 aim=-1 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[3, 7, 0] tu=13 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 3,7,0>4,7,0 d2 bam0 mt2 sz1 tu13/4 en74/2 rs8 bu-1
+  H2 D 1000055 n=2 from=(3,7,0) tu=13 patrol walk to=(27,14,1) run=0 aim=520 w=STR_SR_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[3, 7, 0] tu=13 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=0 walk.stop.reserve 3,7,0>4,7,0 d2 bam0 mt2 sz1 tu13/4 en74/2 rs8 bu-1
+  H2 D 1000057 n=1 from=(13,1,0) tu=33 escape walk to=(15,6,0) run=0 aim=520 w=STR_PIR_PLASMA_RIFLE seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[15, 6, 0] tu=9 spent=24 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=1 
+  H2 D 1000083 n=1 from=(64,52,3) tu=7 patrol walk to=(63,30,0) run=0 aim=-1 w=AUX_ZOMBIE_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[64, 52, 3] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 64,52,3>64,51,3 d0 bam0 mt0 sz1 tu7/8 en84/4 rs0 bu-1
+  H2 D 1000083 n=2 from=(64,52,3) tu=7 patrol walk to=(63,30,0) run=0 aim=-1 w=AUX_ZOMBIE_WEAPON seen=448,470,444,545,520,503,1000060,1000070,1000081
+      -> pos=[64, 52, 3] tu=7 spent=0 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=0 spotted=0 walk.stop.tu 64,52,3>64,51,3 d0 bam0 mt0 sz1 tu7/8 en84/4 rs0 bu-1
+      X 2/1 victim=1000060(2) stun at (19,20,0) by 1000050(1) STR_GRENADE_BUG dist=12
+      X 2/1 victim=1000063(2) stun at (41,11,0) by 1000042(1) STR_GRENADE_BUG dist=17
+      X 2/2 victim=1000060(2) dead at (19,20,0) by 1000050(1) STR_GRENADE_BUG dist=12
+      X 2/2 victim=1000069(2) dead at (15,53,0) by 1000045(1) STR_SR_RIFLE dist=17
+      X 2/2 victim=1000075(2) dead at (51,22,0) by 1000043(1) STR_CANISTER_GUN dist=13
+  p3 D 470 n=1 from=(42,23,0) tu=195 combat snap to=(54,27,3) run=0 aim=1000034 w=AUX_TANK_LASER_CANNON seen=1000030,1000034,1000043,1000057,1000081
+      X 3/0 victim=503(0) dead at (44,24,0) by 470(0) AUX_TANK_LASER_CANNON dist=2
+      -> pos=[42, 23, 0] tu=131 spent=64 dmg=0 downed=0 fdmg=72 hp_lost=0 down=0 seen=1 spotted=3 
+  p3 D 470 n=2 from=(42,23,0) tu=131 combat snap to=(54,27,3) run=0 aim=1000034 w=AUX_TANK_LASER_CANNON seen=1000030,1000034,1000043,1000057,1000081
+      X 3/0 victim=1000034(1) dead at (54,27,3) by 470(0) AUX_TANK_LASER_CANNON dist=13
+      -> pos=[42, 23, 0] tu=73 spent=58 dmg=87 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=3 
+  p3 D 520 n=1 from=(25,8,0) tu=43 combat aimed to=(15,6,0) run=0 aim=1000057 w=STR_SUPER_MAGNUM seen=1000022,1000030,1000043,1000057,1000081
+      -> pos=[25, 8, 0] tu=10 spent=98 dmg=0 downed=0 fdmg=0 hp_lost=0 down=0 seen=1 spotted=1 
+  p3 D 470 n=1 from=(42,23,0) tu=73 combat snap to=(50,35,3) run=0 aim=1000043 w=AUX_TANK_LASER_CANNON seen=1000022,1000023,1000030,1000043,1000057,1000081
+      X 3/0 victim=1000043(1) dead at (50,35,3) by 470(0) AUX_TANK_LASER_CANNON dist=14
+      -> pos=[42, 23, 0] tu=9 spent=64 dmg=87 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=2 
+  p3 D 545 n=1 from=(34,5,2) tu=66 combat auto to=(15,6,0) run=0 aim=1000057 w=AUX_WOLVERIN_WEAPON_MINIGUN seen=1000022,1000023,1000030,1000057,1000081
+      X 3/0 victim=1000057(1) dead at (15,6,0) by 545(0) AUX_WOLVERIN_WEAPON_MINIGUN dist=19
+      -> pos=[34, 5, 2] tu=43 spent=23 dmg=101 downed=1 fdmg=0 hp_lost=0 down=0 seen=0 spotted=3 
+      ~ reaction turn=3 side=1 reactor=444 turn=3 side=1 what=reaction unit=444 pos=(22,17,0)
+      X 3/1 victim=520(0) dead at (23,9,0) by 444(0) AUX_TANK_CANNON dist=14
+      X 3/1 victim=1000027(1) dead at (23,16,0) by 444(0) AUX_TANK_CANNON dist=8
+      X 3/1 victim=1000030(1) dead at (22,17,0) by 444(0) AUX_TANK_CANNON dist=8
+      X 3/1 victim=1000016(1) dead at (9,13,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      ~ reaction turn=3 side=1 reactor=444 turn=3 side=1 what=reaction unit=444 pos=(18,33,0)
+      ~ reaction turn=3 side=1 reactor=444 turn=3 side=1 what=reaction unit=444 pos=(18,33,0)
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) AUX_TANK_CANNON dist=21
+      X 3/1 victim=1000009(1) dead at (16,41,0) by 444(0) AUX_TANK_CANNON dist=22
+      X 3/1 victim=1000012(1) dead at (7,41,0) by 444(0) AUX_TANK_CANNON dist=28
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) AUX_TANK_CANNON dist=19
+      X 3/1 victim=1000080(2) dead at (13,51,0) by 444(0) AUX_TANK_CANNON dist=33
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000001(1) stun at (12,36,0) by 444(0) STR_WEAPON_UNKNOWN dist=21
+      X 3/1 victim=1000045(1) stun at (14,35,0) by 444(0) STR_WEAPON_UNKNOWN dist=19
+      X 3/1 victim=1000070(2) dead at (30,1,0) by 1000028(1) STR_SR_RIFLE dist=20

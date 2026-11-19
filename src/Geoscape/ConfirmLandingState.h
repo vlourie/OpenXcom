@@ -45,6 +45,8 @@ private:
 	Surface *_sprite;
 	// Checks the starting condition
 	std::string checkStartingCondition();
+	// Checks the alien ranks of the deployment against the race (U-03); empty if fine, else the log line
+	std::string checkAlienDeployment();
 public:
 	/// Creates the Confirm Landing state.
 	ConfirmLandingState(Craft *craft, Texture *missionTexture, Texture *globeTexture, int shade);

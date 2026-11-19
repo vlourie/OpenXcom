@@ -18,6 +18,8 @@
 * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <sstream>
 #include "../Engine/Yaml.h"
 #include "BattleUnit.h"
@@ -27,13 +29,105 @@ namespace OpenXcom
 {
 
 /**
+ * A string of a kill record, kept once for all the records that carry it: the tens of thousands of records of a
+ * long campaign repeat a few hundred names of units, ranks, races and weapons.
+ * The pool belongs to no saved game. A record holds a counted reference and a string leaves the pool with its
+ * last record: the pool is empty when no game is loaded, and holds the strings of two games only while one
+ * is being loaded over the other. The empty string takes no place in it.
+ * The main thread only, as the saved game itself.
+ */
+class PooledString
+{
+	typedef std::unordered_map<std::string, size_t> Pool;
+	Pool::value_type *_entry;
+	static Pool &pool()
+	{
+		static Pool strings;
+		return strings;
+	}
+	static const std::string &none()
+	{
+		static const std::string empty;
+		return empty;
+	}
+	static Pool::value_type *take(const std::string &s)
+	{
+		if (s.empty())
+		{
+			return nullptr;
+		}
+		Pool::value_type &entry = *pool().emplace(s, 0).first;
+		++entry.second;
+		return &entry;
+	}
+	static void drop(Pool::value_type *entry)
+	{
+		if (entry && --entry->second == 0)
+		{
+			pool().erase(pool().find(entry->first));
+		}
+	}
+public:
+	PooledString() : _entry(nullptr) {}
+	PooledString(const std::string &s) : _entry(take(s)) {}
+	PooledString(const char *s) : _entry(take(s)) {}
+	PooledString(const PooledString &o) : _entry(o._entry)
+	{
+		if (_entry) ++_entry->second;
+	}
+	PooledString(PooledString &&o) noexcept : _entry(o._entry)
+	{
+		o._entry = nullptr;
+	}
+	~PooledString()
+	{
+		drop(_entry);
+	}
+	PooledString &operator=(const PooledString &o)
+	{
+		if (o._entry) ++o._entry->second;
+		drop(_entry);
+		_entry = o._entry;
+		return *this;
+	}
+	PooledString &operator=(PooledString &&o) noexcept
+	{
+		std::swap(_entry, o._entry);
+		return *this;
+	}
+	PooledString &operator=(const std::string &s)
+	{
+		Pool::value_type *entry = take(s);
+		drop(_entry);
+		_entry = entry;
+		return *this;
+	}
+	PooledString &operator=(const char *s)
+	{
+		return *this = std::string(s);
+	}
+	operator const std::string &() const { return str(); }
+	const std::string &str() const { return _entry ? _entry->first : none(); }
+	bool empty() const { return !_entry; }
+	const char *c_str() const { return str().c_str(); }
+	bool operator==(const PooledString &o) const { return _entry == o._entry; }
+	bool operator!=(const PooledString &o) const { return _entry != o._entry; }
+	bool operator==(const std::string &o) const { return str() == o; }
+	bool operator!=(const std::string &o) const { return str() != o; }
+	bool operator==(const char *o) const { return str() == o; }
+	bool operator!=(const char *o) const { return str() != o; }
+	/// How many different strings the pool holds now.
+	static size_t poolSize() { return pool().size(); }
+};
+
+/**
  * Container for battle unit kills statistics.
  */
 struct BattleUnitKills
 {
 	// Variables
-	std::string name;
-	std::string type, rank, race, weapon, weaponAmmo;
+	PooledString name;
+	PooledString type, rank, race, weapon, weaponAmmo;
 	UnitFaction faction;
 	UnitStatus status;
 	int mission, turn, id;
@@ -63,13 +157,13 @@ struct BattleUnitKills
 	/// Load
 	void load(const YAML::YamlNodeReader& reader)
 	{
-		reader.tryRead("type", type); // The ones killed are usually hostiles, so read this first
-		if (type.empty())
-			reader.tryRead("name", name); // Can't have both type and name at the same time
-		reader.tryRead("rank", rank);
-		reader.tryRead("race", race);
-		reader.tryRead("weapon", weapon);
-		reader.tryRead("weaponAmmo", weaponAmmo);
+		std::string text;
+		if (reader.tryRead("type", text)) type = text; // The ones killed are usually hostiles, so read this first
+		if (type.empty() && reader.tryRead("name", text)) name = text; // Can't have both type and name at the same time
+		if (reader.tryRead("rank", text)) rank = text;
+		if (reader.tryRead("race", text)) race = text;
+		if (reader.tryRead("weapon", text)) weapon = text;
+		if (reader.tryRead("weaponAmmo", text)) weaponAmmo = text;
 		reader.tryRead("status", status);
 		reader.tryRead("faction", faction);
 		reader.tryRead("mission", mission);
@@ -85,13 +179,13 @@ struct BattleUnitKills
 		writer.setAsMap();
 		writer.setFlowStyle();
 		if (!name.empty())
-			writer.write("name", name);
+			writer.write("name", name.str());
 		if (!type.empty())
-			writer.write("type", type);
-		writer.write("rank", rank);
-		writer.write("race", race);
-		writer.write("weapon", weapon);
-		writer.write("weaponAmmo", weaponAmmo);
+			writer.write("type", type.str());
+		writer.write("rank", rank.str());
+		writer.write("race", race.str());
+		writer.write("weapon", weapon.str());
+		writer.write("weaponAmmo", weaponAmmo.str());
 		writer.write("status", status);
 		writer.write("faction", faction);
 		writer.write("mission", mission);
@@ -292,7 +386,8 @@ struct BattleUnitKills
 		}
 	}
 
-	BattleUnitKills(const YAML::YamlNodeReader& reader) { load(reader); }
+	/// The defaults first: load() fills only the keys the save has.
+	BattleUnitKills(const YAML::YamlNodeReader& reader) : BattleUnitKills() { load(reader); }
 	BattleUnitKills(): faction(FACTION_HOSTILE), status(STATUS_IGNORE_ME), mission(0), turn(0), id(0), side(SIDE_FRONT), bodypart(BODYPART_HEAD) { }
 	~BattleUnitKills() { }
 };
@@ -420,7 +515,8 @@ struct BattleUnitStatistics
 		}
 	}
 
-	BattleUnitStatistics(const YAML::YamlNodeReader& reader) { load(reader); }
+	/// The defaults first: load() fills only the keys the save has.
+	BattleUnitStatistics(const YAML::YamlNodeReader& reader) : BattleUnitStatistics() { load(reader); }
 	BattleUnitStatistics() : wasUnconcious(false), shotAtCounter(0), hitCounter(0), shotByFriendlyCounter(0), shotFriendlyCounter(0), loneSurvivor(false), ironMan(false), longDistanceHitCounter(0), lowAccuracyHitCounter(0), shotsFiredCounter(0), shotsLandedCounter(0), kills(), daysWounded(0), KIA(false), nikeCross(false), mercyCross(false), woundsHealed(0), appliedStimulant(0), appliedPainKill(0), revivedSoldier(0), revivedHostile(0), revivedNeutral(0), MIA(false), martyr(0), slaveKills(0) { }
 	~BattleUnitStatistics() { }
 };

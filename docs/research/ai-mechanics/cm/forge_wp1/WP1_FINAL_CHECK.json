@@ -1,0 +1,200 @@
+﻿{
+ "pairs": {
+  "R2-R3": {
+   "scenario": "M3",
+   "events_compared": 12579,
+   "clock_readings": 1208,
+   "shifts": {
+    "3020": 1208
+   },
+   "intervals": 1185,
+   "intervals_different_raw": 0,
+   "interval_min_max": [
+    0,
+    18150
+   ],
+   "clock_goes_back": 0,
+   "reading_max": 871890,
+   "events_text_equal_raw": 11393,
+   "event_fields_differing_raw": {
+    "C": 1186
+   },
+   "fingerprints_compared": 1186,
+   "fingerprint_fields_equal_raw": {
+    "S": 1186,
+    "U": 1186,
+    "A": 1186,
+    "I": 1186,
+    "O": 1186,
+    "M": 1186,
+    "N": 1186,
+    "B": 1186,
+    "J": 1186,
+    "R": 1186,
+    "rng": 1186
+   },
+   "dumps_compared": 22,
+   "dump_lines_equal_raw": 2218,
+   "dump_lines_differ_only_in_C": 22,
+   "dump_lines_differ_otherwise": 0,
+   "game_lines": 8518,
+   "game_lines_differ_raw_only_in_real_time_fields": {
+    "[AIRESULT]": 1
+   },
+   "game_lines_differ_otherwise": 0,
+   "other_log_lines": [
+    360,
+    365
+   ]
+  },
+  "P1-R5": {
+   "scenario": "L8",
+   "events_compared": 6514,
+   "clock_readings": 648,
+   "shifts": {
+    "10510": 648
+   },
+   "intervals": 629,
+   "intervals_different_raw": 0,
+   "interval_min_max": [
+    0,
+    5540
+   ],
+   "clock_goes_back": 0,
+   "reading_max": 338910,
+   "events_text_equal_raw": 5884,
+   "event_fields_differing_raw": {
+    "C": 630
+   },
+   "fingerprints_compared": 630,
+   "fingerprint_fields_equal_raw": {
+    "S": 630,
+    "U": 630,
+    "A": 630,
+    "I": 630,
+    "O": 630,
+    "M": 630,
+    "N": 630,
+    "B": 630,
+    "J": 630,
+    "R": 630,
+    "rng": 630
+   },
+   "dumps_compared": 18,
+   "dump_lines_equal_raw": 882,
+   "dump_lines_differ_only_in_C": 18,
+   "dump_lines_differ_otherwise": 0,
+   "game_lines": 4366,
+   "game_lines_differ_raw_only_in_real_time_fields": {
+    "[AIRESULT]": 1
+   },
+   "game_lines_differ_otherwise": 0,
+   "other_log_lines": [
+    266,
+    264
+   ]
+  },
+  "R5-R6": {
+   "scenario": "L8 to n=889",
+   "events_compared": 889,
+   "clock_readings": 92,
+   "shifts": {
+    "-6290": 92
+   },
+   "intervals": 80,
+   "intervals_different_raw": 0,
+   "interval_min_max": [
+    0,
+    5540
+   ],
+   "clock_goes_back": 0,
+   "reading_max": 71670,
+   "events_text_equal_raw": 808,
+   "event_fields_differing_raw": {
+    "C": 81
+   },
+   "fingerprints_compared": 81,
+   "fingerprint_fields_equal_raw": {
+    "S": 81,
+    "U": 81,
+    "A": 81,
+    "I": 81,
+    "O": 81,
+    "M": 81,
+    "N": 81,
+    "B": 81,
+    "J": 81,
+    "R": 81,
+    "rng": 81
+   },
+   "dumps_compared": 11,
+   "dump_lines_equal_raw": 539,
+   "dump_lines_differ_only_in_C": 11,
+   "dump_lines_differ_otherwise": 0,
+   "game_lines": 537,
+   "game_lines_differ_raw_only_in_real_time_fields": {},
+   "game_lines_differ_otherwise": 0,
+   "other_log_lines": [
+    264,
+    253
+   ]
+  }
+ },
+ "runs": {
+  "P1": {
+   "events": 6514,
+   "raw_chain_last": "64ab8426eaaadbdd",
+   "canonical_chain_last": "98b356630aba9ba7",
+   "chain_violations": 0,
+   "first_reading": 17990,
+   "last_reading": 338910,
+   "vms": 320920,
+   "last_reading_minus_vms": 17990,
+   "first_reading_after_start": 0
+  },
+  "R2": {
+   "events": 12579,
+   "raw_chain_last": "44fca9a2af0b6ffb",
+   "canonical_chain_last": "db962297951fa199",
+   "chain_violations": 0,
+   "first_reading": 14020,
+   "last_reading": 871890,
+   "vms": 857870,
+   "last_reading_minus_vms": 14020,
+   "first_reading_after_start": 0
+  },
+  "R3": {
+   "events": 12579,
+   "raw_chain_last": "4380f5bc73a38b27",
+   "canonical_chain_last": "db962297951fa199",
+   "chain_violations": 0,
+   "first_reading": 11000,
+   "last_reading": 868870,
+   "vms": 857870,
+   "last_reading_minus_vms": 11000,
+   "first_reading_after_start": 0
+  },
+  "R5": {
+   "events": 6514,
+   "raw_chain_last": "35cc61313e51423",
+   "canonical_chain_last": "98b356630aba9ba7",
+   "chain_violations": 0,
+   "first_reading": 7480,
+   "last_reading": 328400,
+   "vms": 320920,
+   "last_reading_minus_vms": 7480,
+   "first_reading_after_start": 0
+  },
+  "R6": {
+   "events": 889,
+   "raw_chain_last": "7f7807e78afdd820",
+   "canonical_chain_last": "296c6983737ccf9c",
+   "chain_violations": 0,
+   "first_reading": 13770,
+   "last_reading": 71670,
+   "vms": 57910,
+   "last_reading_minus_vms": 13760,
+   "first_reading_after_start": 10
+  }
+ }
+}

@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include <atomic>
 #include <string>
 #include <sstream>
 
@@ -47,8 +48,12 @@ private:
 	SDL_Thread *_thread;
 	std::ostringstream _output;
 public:
-	static LoadingPhase loading;
+	/// The loading thread's verdict. The thread stores it as its very last step, after `error` and after the mod
+	/// and the language are complete; the main thread reads those only after it has seen the verdict here.
+	static std::atomic<LoadingPhase> loading;
 	static std::string error;
+	/// Play the intro once the next load is done? Set when a reload throws away a pending cutscene.
+	static bool playIntroAfterReload;
 
 	/// Creates the Start state.
 	StartState();

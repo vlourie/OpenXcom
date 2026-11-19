@@ -21,6 +21,11 @@ option ( ENABLE_CLANG_ANALYSIS "When building with clang, enable the static anal
 option ( CHECK_CCACHE "Check if ccache is installed and use it" OFF )
 set ( MSVC_WARNING_LEVEL 3 CACHE STRING "Visual Studio warning levels" )
 option ( FORCE_INSTALL_DATA_TO_BIN "Force installation of data to binary directory" OFF )
+# the AI test bench (src/Battlescape/AiProbe.*, docs/AI_ROADMAP.md): only in the local build-ai, never in a release
+option ( OXCE_AI_DEV "AI test bench: probe, player bot, generated battles" OFF )
+if ( OXCE_AI_DEV )
+  add_definitions( -DOXCE_AI_DEV )
+endif ()
 set ( DATADIR "" CACHE STRING "Where to search for datafiles" )
 
 if ( CHECK_CCACHE )
@@ -84,6 +89,14 @@ endif ()
 # Include rapidyaml lib
 include_directories(${CMAKE_SOURCE_DIR}/libs/rapidyaml)
 
+# SDL_image: the fixed SDL-1.2 branch kept in libs/SDL_image and built with the game (libs/SDL_image/README_OXCE.md).
+# The package of MSYS2 is the archive of 2012 with none of the security fixes; it is neither looked for nor linked
+option ( OXCE_BUNDLED_SDL_IMAGE "Build SDL_image 1.2 from libs/SDL_image instead of the one of the system" ${MINGW} )
+if ( OXCE_BUNDLED_SDL_IMAGE )
+  include_directories ( BEFORE ${CMAKE_SOURCE_DIR}/libs/SDL_image )
+  add_definitions ( -DOXCE_BUNDLED_SDL_IMAGE )
+endif ()
+
 if(NOT UNIX AND IS_DIRECTORY ${DEPS_DIR})
    include_directories ( ${DEPS_DIR}/include/SDL ${DEPS_DIR}/include )
    if ( CMAKE_CL_64 )
@@ -94,7 +107,9 @@ if(NOT UNIX AND IS_DIRECTORY ${DEPS_DIR})
    set( SDL_LIBRARY SDL )
    set ( SDLGFX_LIBRARY SDL_gfx )
    set ( SDLMIXER_LIBRARY SDL_mixer )
-   set ( SDLIMAGE_LIBRARY SDL_image )
+   if ( NOT OXCE_BUNDLED_SDL_IMAGE )
+     set ( SDLIMAGE_LIBRARY SDL_image )
+   endif ()
    set ( PKG_DEPS_LDFLAGS ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY} ${SDLGFX_LIBRARY} ${SDL_LIBRARY} ${OPENGL_LIBRARIES} )
 elseif(UNIX OR MINGW OR CYGWIN)
   if(IS_DIRECTORY ${DEPS_DIR})
@@ -104,7 +119,9 @@ elseif(UNIX OR MINGW OR CYGWIN)
   include(FindPkgConfig)
   pkg_check_modules(PKG_SDL REQUIRED sdl)
   pkg_check_modules(PKG_ZLIB REQUIRED zlib)
-  pkg_check_modules(PKG_SDLIMAGE REQUIRED SDL_image)
+  if ( NOT OXCE_BUNDLED_SDL_IMAGE )
+    pkg_check_modules(PKG_SDLIMAGE REQUIRED SDL_image)
+  endif ()
   pkg_check_modules(PKG_SDLGFX REQUIRED SDL_gfx)
   pkg_check_modules(PKG_SDLMIXER REQUIRED SDL_mixer)
 

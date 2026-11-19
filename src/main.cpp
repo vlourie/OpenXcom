@@ -23,9 +23,11 @@
 #include "Engine/Exception.h"
 #include "Engine/Logger.h"
 #include "Engine/CrossPlatform.h"
+#include "Engine/CrashTrace.h"
 #include "Engine/Game.h"
 #include "Engine/Options.h"
 #include "Engine/FileMap.h"
+#include "Engine/ModCheck.h"
 #include "Menu/StartState.h"
 
 /** @mainpage
@@ -79,6 +81,16 @@ void exceptionLogger()
 			throw;
 		}
 	}
+	catch (const Exception &e)
+	{
+		error = e.what();
+		// the stack below is the one of the handler: an exception caught and thrown again is found by its own frames
+		const std::string thrownAt = CrashTrace::describe(e.getFrames(), e.getFrameCount());
+		if (!thrownAt.empty())
+		{
+			Log(LOG_FATAL) << "The exception was thrown at:\n" << thrownAt;
+		}
+	}
 	catch (const std::exception &e)
 	{
 		error = e.what();
@@ -90,6 +102,14 @@ void exceptionLogger()
 	CrossPlatform::crashDump(0, error);
 	exit(EXIT_FAILURE);
 }
+
+#if defined(_WIN64) && !defined(_MSC_VER)
+/// After the crash record is in the log (CrashTrace): the message to the player. Runs inside the crashed process.
+void crashNotice(const char *what)
+{
+	CrossPlatform::crashDump(0, what);
+}
+#endif
 
 Game *game = 0;
 
@@ -110,17 +130,26 @@ int main(int argc, char *argv[])
 	// Uncomment to debug crash handler
 	// AddVectoredContinueHandler(1, crashLogger);
 #else
+#ifdef _WIN64
+	// every thread and every kind of crash; signal() of the C library sees the main thread and SIGSEGV only
+	CrashTrace::install(crashNotice);
+#else
 	signal(SIGSEGV, signalLogger);
+#endif
+	signal(SIGABRT, signalLogger);
 	std::set_terminate(exceptionLogger);
 #endif
 #endif
 	YAML::setGlobalErrorHandler();
 	CrossPlatform::getErrorDialog();
 	CrossPlatform::processArgs(argc, argv);
+	const int modCheck = ModCheck::run(CrossPlatform::getArgs());
+	if (modCheck >= 0)
+		return modCheck;
 	if (!Options::init())
 		return EXIT_SUCCESS;
 	std::ostringstream title;
-	title << "OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT;
+	title << OXCE_HD_VERSION_TITLE << OPENXCOM_VERSION_GIT;
 	Options::baseXResolution = Options::displayWidth;
 	Options::baseYResolution = Options::displayHeight;
 
@@ -145,7 +174,8 @@ int main(int argc, char *argv[])
 
 namespace OpenXcom
 {
-	Exception::Exception(const std::string &msg) : runtime_error(msg) {
+	Exception::Exception(const std::string &msg) : runtime_error(msg), _frameCount(0) {
+		_frameCount = CrashTrace::capture(_frames, MAX_FRAMES, 0);
 #ifdef DUMP_CORE
 		__builtin_trap();
 #endif

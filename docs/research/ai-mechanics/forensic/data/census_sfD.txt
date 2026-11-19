@@ -1,0 +1,229 @@
+﻿== A. Battles
+battle | mission race month | P H | turns | pdead hdead hout | outcome | hdec | 1st hostile attack turn / 1st player casualty / 1st hostile casualty | hostile down before first AI turn
+sfF_D_L4_s1 | STR_BASE_DEFENSE STR_DOOM 60 | 38 37 | 10 | 3 37 0 | win | 175 | 1 1 1 | 8
+sfF_D_L4_s2 | STR_BASE_DEFENSE STR_DOOM 60 | 38 36 | 7 | 0 34 2 | win | 140 | 1 None 1 | 7
+sfF_D_L4_s3 | STR_BASE_DEFENSE STR_DOOM 60 | 38 35 | 11 | 2 34 1 | win | 123 | 1 2 1 | 11
+sfF_D_L4_s4 | STR_BASE_DEFENSE STR_DOOM 60 | 38 36 | 9 | 3 35 1 | win | 188 | 1 2 1 | 5
+sfF_D_L8_s1 | STR_BATTLESHIP STR_ETHEREAL 62 | 8 34 | 10 | 7 16 0 | loss | 506 | 1 1 1 | 3
+sfF_D_L8_s2 | STR_BATTLESHIP STR_ETHEREAL 62 | 8 37 | 6 | 8 4 0 | loss | 441 | 1 1 2 | 0
+sfF_D_L8_s3 | STR_BATTLESHIP STR_ETHEREAL 62 | 8 36 | 4 | 7 9 0 | loss | 243 | 1 1 0 | 0
+sfF_D_L8_s4 | STR_BATTLESHIP STR_ETHEREAL 62 | 8 37 | 2 | 8 3 0 | loss | 165 | 1 1 1 | 1
+sfF_D_M3_s1 | STR_ERIDIAN_TERROR STR_ERIDIAN 46 | 8 64 | 21 | 6 61 3 | win | 902 | 1 1 1 | 4
+sfF_D_M3_s2 | STR_ERIDIAN_TERROR STR_ERIDIAN 46 | 8 79 | 6 | 8 39 4 | loss | 755 | 1 2 1 | 5
+sfF_D_M3_s3 | STR_ERIDIAN_TERROR STR_ERIDIAN 46 | 8 56 | 38 | 8 45 2 | loss | 1749 | 1 2 1 | 9
+sfF_D_M3_s4 | STR_ERIDIAN_TERROR STR_ERIDIAN 46 | 8 69 | 22 | 5 67 2 | win | 723 | 1 3 1 | 7
+sfF_D_M8_s1 | STR_LOC_HUMANIST_VILLA STR_MIXED_KKK 45 | 8 39 | 12 | 0 38 1 | win | 338 | 1 None 1 | 3
+sfF_D_M8_s2 | STR_LOC_HUMANIST_VILLA STR_MIXED_KKK 45 | 8 39 | 5 | 0 37 0 | win | 132 | 1 None 1 | 6
+sfF_D_M8_s3 | STR_LOC_HUMANIST_VILLA STR_MIXED_KKK 45 | 8 38 | 5 | 0 34 0 | win | 161 | 1 4 1 | 7
+sfF_D_M8_s4 | STR_LOC_HUMANIST_VILLA STR_MIXED_KKK 45 | 8 40 | 6 | 0 36 2 | win | 211 | 1 None 1 | 7
+outcomes {'win': 10, 'loss': 6}
+
+== B. Decisions by source (n, % of n, TU spent, % of TU, zero-TU decisions)
+patrol.node               2847  41.0% tu=   57361  40.2% zero=878
+shot                       652   9.4% tu=   19771  13.8% zero=4
+ambush                     633   9.1% tu=    9415   6.6% zero=3
+sniper                     582   8.4% tu=   18982  13.3% zero=0
+firepoint.fallback         562   8.1% tu=    7316   5.1% zero=0
+firepoint.random           458   6.6% tu=    7626   5.3% zero=0
+firepoint                  421   6.1% tu=    4963   3.5% zero=0
+melee                      252   3.6% tu=    9502   6.7% zero=0
+escape.known               213   3.1% tu=     563   0.4% zero=171
+escape                     165   2.4% tu=    2887   2.0% zero=2
+leeroy                      68   1.0% tu=    1443   1.0% zero=13
+patrol.module               35   0.5% tu=     647   0.5% zero=12
+psi                         28   0.4% tu=    1216   0.9% zero=0
+grenade                     16   0.2% tu=     787   0.6% zero=0
+rethink                     14   0.2% tu=       0   0.0% zero=14
+waypoint                     3   0.0% tu=     220   0.2% zero=0
+grenade.node                 3   0.0% tu=     119   0.1% zero=0
+
+== B2. Unit-turn budget {'unit_turns': 2502, 'tu0': 220124, 'tuLeft': 77300, 'tuAttack': 42538, 'tuWalk': 100252, 'tuOther': 28, 'unit_turns_with_legal_attack': 1245, 'unit_turns_legal_but_no_attack': 499, 'tuLeft_legal_no_attack': 14923, 'unit_turns_legal_at_first_decision': 894, 'unit_turns_legal_first_no_attack': 345, 'unit_turns_with_attack': 856}
+  TU at first decision: 220124; attack 42538 (19.3%); walk 100252 (45.5%); other 28; left 77300 (35.1%)
+
+== C. Legal attack on a visible player unit available at decision
+ decisions with legal: 2283 of 6952
+   chose shot                       520  22.8%  tu=16149
+   chose sniper                     447  19.6%  tu=14439
+   chose patrol.node                442  19.4%  tu=11377
+   chose firepoint.fallback         224   9.8%  tu=2395
+   chose firepoint.random           179   7.8%  tu=2858
+   chose firepoint                  152   6.7%  tu=1608
+   chose ambush                     127   5.6%  tu=1717
+   chose escape                      87   3.8%  tu=1687
+   chose melee                       49   2.1%  tu=1802
+   chose escape.known                32   1.4%  tu=231
+   chose grenade                     16   0.7%  tu=787
+   chose waypoint                     3   0.1%  tu=220
+   chose grenade.node                 3   0.1%  tu=119
+   chose psi                          2   0.1%  tu=74
+ unit turns: 2502 with attack 856 with legal 1245 legal but no attack 499 legal at first decision 894 of them no attack 345 tu left on legal-no-attack 14923
+
+== R. Mode roll when legal attack existed {'n': 1474, 'sum_c': 939.78892408756, 'sum_p': 371.7946681022894, 'sum_a': 83.70904868213572, 'sum_e': 78.70735912801533, 'rolled_3': 71, 'rolled_2': 997, 'rolled_0': 309, 'rolled_1': 97}
+   mean weights patrol 0.252 ambush 0.057 combat 0.638 escape 0.053
+
+== D. Attacks by type: n, n with dmg/stun, %hit, dmg, stun, downs, TU, dmg/attack, dmg/100TU, friendly dmg
+snap        720    143  19.9% dmg=   3428 stun=   559 down=   35 tu=  17282 d/a=  4.76 d/100tu= 19.84 fdmg=1895
+auto        244     69  28.3% dmg=   4394 stun=   608 down=   37 tu=   9302 d/a= 18.01 d/100tu= 47.24 fdmg=1278
+aimed       242     53  21.9% dmg=   1462 stun=   331 down=   12 tu=  10333 d/a=  6.04 d/100tu= 14.15 fdmg=1466
+throw        82      1   1.2% dmg=    254 stun=    96 down=    1 tu=   3389 d/a=  3.10 d/100tu=  7.49 fdmg=66
+panic        20      0   0.0% dmg=      0 stun=     0 down=    0 tu=    668 d/a=  0.00 d/100tu=  0.00 fdmg=0
+melee        18     13  72.2% dmg=    726 stun=    90 down=   10 tu=    796 d/a= 40.33 d/100tu= 91.21 fdmg=432
+mindctl       8      0   0.0% dmg=      0 stun=     0 down=    0 tu=    548 d/a=  0.00 d/100tu=  0.00 fdmg=0
+launch        3      1  33.3% dmg=     65 stun=    51 down=    0 tu=    220 d/a= 21.67 d/100tu= 29.55 fdmg=110
+
+== D2. Top weapons (mode): n, mean candidate p, %effect, dmg, dmg/attack, downs, TU, dmg/100TU
+STR_SR_RIFLE|snap                            211 p= 56.5 eff= 11.4% dmg=   773 d/a=  3.66 down=  12 tu=  4415 d/100= 17.51
+STR_CANISTER_GUN|snap                        173 p= 35.9 eff= 28.9% dmg=   898 d/a=  5.19 down=  14 tu=  4121 d/100= 21.79
+STR_CANISTER_GUN|aimed                       112 p= 66.3 eff= 29.5% dmg=  1008 d/a=  9.00 down=   9 tu=  5179 d/100= 19.46
+STR_PIR_PLASMA_RIFLE|auto                     91 p= 36.3 eff= 17.6% dmg=   279 d/a=  3.07 down=   6 tu=  2676 d/100= 10.43
+STR_SR_RIFLE|aimed                            76 p= 80.8 eff= 22.4% dmg=   332 d/a=  4.37 down=   2 tu=  3225 d/100= 10.29
+STR_GRENADE_BUG|throw                         69 p= 91.0 eff=  1.4% dmg=   254 d/a=  3.68 down=   1 tu=  2610 d/100=  9.73
+STR_PIR_PLASMA_PISTOL|auto                    53 p= 35.0 eff=  9.4% dmg=   187 d/a=  3.53 down=   4 tu=  1350 d/100= 13.85
+STR_PIR_PLASMA_RIFLE|snap                     36 p= 41.7 eff=  2.8% dmg=    53 d/a=  1.47 down=   0 tu=   751 d/100=  7.06
+STR_PIR_PLASMA_PISTOL|snap                    35 p= 54.9 eff=  5.7% dmg=    62 d/a=  1.77 down=   0 tu=   579 d/100= 10.71
+AUX_SECTOPOD_WEAPON|snap                      34 p= 50.3 eff= 35.3% dmg=   896 d/a= 26.35 down=   5 tu=   935 d/100= 95.83
+AUX_SECTOPOD_WEAPON|auto                      33 p= 35.7 eff= 81.8% dmg=  3121 d/a= 94.58 down=  22 tu=  1082 d/100=288.45
+STR_PIR_HEAVY_PLASMA|snap                     30 p=  4.3 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   579 d/100=  0.00
+AUX_SILACOID_WEAPON|snap                      28 p= 44.1 eff= 75.0% dmg=   266 d/a=  9.50 down=   0 tu=   486 d/100= 54.73
+AUX_DOOM_IMP_WEAPON|snap                      27 p= 31.0 eff= 55.6% dmg=    41 d/a=  1.52 down=   0 tu=   849 d/100=  4.83
+AUX_TANK_TURRETED_AC25MM_WEAPON|auto          25 p= 28.3 eff= 44.0% dmg=   131 d/a=  5.24 down=   0 tu=  2623 d/100=  4.99
+ALIEN_PSI_WEAPON|panic                        20 p=  0.0 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   668 d/100=  0.00
+AUX_DOOM_CACODEMON_WEAPON|snap                19 p= 38.4 eff=  5.3% dmg=    50 d/a=  2.63 down=   1 tu=   626 d/100=  7.99
+STR_PIR_HEAVY_PLASMA|auto                     19 p= 34.1 eff= 26.3% dmg=   398 d/a= 20.95 down=   1 tu=   674 d/100= 59.05
+AUX_DOOM_HELL_BARON_WEAPON|snap               18 p= 42.3 eff= 16.7% dmg=    88 d/a=  4.89 down=   0 tu=   836 d/100= 10.53
+ETHEREAL_WEAPON|snap                          15 p=115.5 eff= 40.0% dmg=    17 d/a=  1.13 down=   1 tu=   388 d/100=  4.38
+STR_LUGER|snap                                14 p= 33.9 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   202 d/100=  0.00
+STR_PLASMA_SCORCHER|snap                      13 p= 31.9 eff= 15.4% dmg=   112 d/a=  8.62 down=   1 tu=   322 d/100= 34.78
+STR_COOKER|snap                               12 p= 43.9 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   321 d/100=  0.00
+AUX_CHRYSSALID_WEAPON|melee                   12 p=121.2 eff=100.0% dmg=   582 d/a= 48.50 down=   9 tu=   765 d/100= 76.08
+AUX_TANK_TURRETED_AC25MM_WEAPON|snap          11 p= 25.7 eff= 27.3% dmg=    62 d/a=  5.64 down=   0 tu=   723 d/100=  8.58
+STR_PIR_ALIEN_GRENADE|throw                    9 p= 53.3 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   533 d/100=  0.00
+ALIEN_PSI_WEAPON|mindctl                       8 p=  0.0 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   548 d/100=  0.00
+STR_PIR_PLASMA_PISTOL|aimed                    8 p= 70.5 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   202 d/100=  0.00
+STR_REVOLVER|aimed                             7 p= 36.6 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   186 d/100=  0.00
+STR_MP40|snap                                  7 p= 29.1 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   173 d/100=  0.00
+STR_RIFLE_AK|snap                              7 p= 33.4 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   152 d/100=  0.00
+STR_PLASMA_SCORCHER|auto                       6 p= 17.5 eff= 50.0% dmg=   170 d/a= 28.33 down=   3 tu=   223 d/100= 76.23
+STR_OLD_RIFLE|snap                             6 p= 44.0 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   229 d/100=  0.00
+STR_LMG|auto                                   6 p= 41.0 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   267 d/100=  0.00
+STR_LUGER|aimed                                6 p= 38.0 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   164 d/100=  0.00
+STR_COLT45|aimed                               5 p= 28.2 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   144 d/100=  0.00
+STR_OLD_RIFLE|aimed                            5 p= 80.0 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   312 d/100=  0.00
+STR_LMG|snap                                   5 p= 46.0 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   168 d/100=  0.00
+STR_SSRL|aimed                                 5 p= 22.8 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=    62 d/100=  0.00
+STR_REVOLVER|snap                              5 p= 14.8 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=    81 d/100=  0.00
+
+== E. Participation {'hostiles': 698, 'never_damaged': 450, 'never_attacked': 228, 'died_never_attacked': 151, 'never_decided': 96, 'dmg_total': 12064, 'dmg_top10pct': 9256}
+  never attacked 32.7%; never damaged 64.5%; top10% share of dmg 76.7%
+
+== F. Casualties
+  civ_by_f-1                               5
+  civ_by_f0                                18
+  civ_by_f1                                100
+  civ_dead                                 97
+  civ_stun                                 26
+  hostile_by_f-1                           3
+  hostile_by_f0                            565
+  hostile_by_f1                            36
+  hostile_by_f2                            2
+  hostile_dead                             528
+  hostile_dead_side0                       366
+  hostile_dead_side1                       161
+  hostile_dead_side2                       1
+  hostile_down_before_first_ai_turn        83
+  hostile_down_unseen                      103
+  hostile_hit_front                        243
+  hostile_hit_left                         111
+  hostile_hit_rear                         110
+  hostile_hit_right                        89
+  hostile_hit_under                        53
+  hostile_stun                             78
+  hostile_stun_side0                       53
+  hostile_stun_side1                       24
+  hostile_stun_side2                       1
+  player_by_f0                             6
+  player_by_f1                             69
+  player_dead                              63
+  player_dead_side0                        13
+  player_dead_side1                        50
+  player_stun                              12
+  player_stun_side0                        4
+  player_stun_side1                        8
+  hostile TU at downing / max: [21482, 54927] 39.1%
+  distance of hostile downing (5-bins): [(0, 120), (5, 123), (10, 96), (15, 102), (20, 84), (25, 41), (30, 30), (35, 6), (40, 1)]
+  player weapons killing hostiles top: [('AUX_ACAR_WEAPON_LASCANNON', 126), ('AUX_TANK_LASER_CANNON', 91), ('AUX_TANK_CANNON', 68), ('AUX_WOLVERIN_WEAPON_MINIGUN', 45), ('AUX_TANK_LASER', 43), ('STR_SLUGGA', 31), ('STR_SUPER_MAGNUM', 27), ('STR_ELITE_PLASMA_PISTOL', 21), ('STR_WEAPON_UNKNOWN', 17), ('AUX_TANK_PSI_CANNON', 13), ('STR_XG_HEAVY', 10), ('STR_SWORD', 10), ('AUX_ACAR_WEAPON_XGAUSS', 9), ('STR_GAUNTLET_CLAW', 9), ('STR_QUICKSILVER_CUTLASS', 6)]
+  hostile killers of player top: [('STR_SECTOPOD_TERRORIST|AUX_SECTOPOD_WEAPON', 31), ('STR_CHRYSSALID_TERRORIST|AUX_CHRYSSALID_WEAPON', 11), ('SOLDIER|AUX_TANK_CANNON', 5), ('STR_DOOM_SARGE|STR_PLASMA_SCORCHER', 3), ('STR_ERIDIAN_SOLDIER|STR_CANISTER_GUN', 3), ('STR_ERIDIAN_LEADER|STR_PIR_PLASMA_RIFLE', 3), ('STR_DOOM_SARGE|STR_PIR_HEAVY_PLASMA', 2), ('STR_DOOM_CACODEMON_TERRORIST|AUX_DOOM_CACODEMON_WEAPON', 2), ('STR_DOOM_SARGE|STR_PIR_PLASMA_RIFLE', 2), ('STR_DOOM_SOLDIER|STR_PIR_PLASMA_RIFLE', 2), ('STR_ERIDIAN_SOLDIER|STR_GRENADE_BUG', 2), ('STR_DOOM_SOLDIER|STR_PLASMA_SCORCHER', 1), ('STR_ETHEREAL_NOVICE|ETHEREAL_WEAPON', 1), ('STR_ETHEREAL_SOLDIER|STR_PLASMA_SCORCHER', 1), ('SOLDIER|AUX_TANK_LASER_CANNON', 1)]
+
+== G. Walk direction vs nearest player (start-of-side positions): src closer farther same meanDelta
+patrol.node              1011    662   1174 closer= 35.5% farther= 23.3% mean=-0.64
+ambush                    238    249    146 closer= 37.6% farther= 39.3% mean=+0.05
+firepoint.fallback        261    199    102 closer= 46.4% farther= 35.4% mean=-0.30
+firepoint.random          223    149     86 closer= 48.7% farther= 32.5% mean=-0.39
+firepoint                 190    140     91 closer= 45.1% farther= 33.3% mean=-0.22
+melee                     164     48     27 closer= 68.6% farther= 20.1% mean=-1.69
+escape                     52     83     29 closer= 31.7% farther= 50.6% mean=+0.58
+leeroy                     42      9     12 closer= 66.7% farther= 14.3% mean=-1.62
+escape.known               12     19      9 closer= 30.0% farther= 47.5% mean=+0.27
+
+== H. Source by HP band
+hp<33 {'patrol.node': '25.8%', 'ambush': '14.5%', 'shot': '11.3%', 'sniper': '11.3%', 'melee': '9.7%', 'escape': '8.1%', 'firepoint.random': '8.1%', 'escape.known': '3.2%'} n= 62
+hp<66 {'patrol.node': '45.2%', 'firepoint.random': '16.0%', 'shot': '12.2%', 'sniper': '8.0%', 'firepoint.fallback': '6.1%', 'escape': '5.3%', 'escape.known': '3.4%', 'ambush': '1.5%'} n= 263
+hp>=66 {'patrol.node': '40.9%', 'ambush': '9.4%', 'shot': '9.3%', 'sniper': '8.4%', 'firepoint.fallback': '8.2%', 'firepoint': '6.3%', 'firepoint.random': '6.2%', 'melee': '3.7%'} n= 6627
+
+== I. Trail stops (first token)
+[('walk.stop.tu', 873), ('walk.stop.reserve', 689), ('walk.stop.spotted', 662), ('walk.stop.turnspot', 350), ('walk.stop.reaction', 86), ('walk.stop.energy', 81), ('walk.stop.invalid', 1)]
+
+== J. reactions (actingSide|reactorFaction) {'0|1': 249, '1|0': 400, '1|2': 75}
+  during own decision: died 99 walk 57 attack 42 other 0 hp lost 12219
+
+== L. Focus: side turns with 2+ attacks {'turns': 127, 'attacks': 1321, 'targets': 460} attacks/turn 10.40, distinct targets/turn 3.62
+
+== M. Psi options {'decisions_with_psi_option': 948, 'no_attack_chosen': 797, 'other_attack_chosen': 125, 'psi_chosen': 26}
+== N. Grenades {'decisions_with_grenade_lof': 509, 'throw_chosen': 61}
+== multi-firearm {}
+friendly 5247 34
+
+== P. Unit types: units dec att dmg downs dead | dmg/unit, dmg/att, dead%
+STR_ERIDIAN_SOLDIER                      157   2424   509   3122   38   131 |    19.9   6.13  83.4%
+STR_ETHEREAL_SOLDIER                      96    862   137    179    1    22 |     1.9   1.31  22.9%
+STR_DOOM_SARGE                            53    223    83    541    5    53 |    10.2   6.52 100.0%
+STR_NAZI_KKK                              52    182    38      0    0    51 |     0.0   0.00  98.1%
+STR_NAZI_SOLDIER                          51    264    46      0    0    50 |     0.0   0.00  98.0%
+STR_CHRYSSALID_TERRORIST                  44    559    12    582    9    37 |    13.2  48.50  84.1%
+STR_DOOM_SOLDIER                          37    148    53    263    2    37 |     7.1   4.96 100.0%
+STR_ZOMBIE                                26    312     4    144    1    22 |     5.5  36.00  84.6%
+STR_ERIDIAN_BEASTMASTER                   22    559   146    371    5    17 |    16.9   2.54  77.3%
+STR_DOOM_IMP_TERRORIST                    20     59    27     41    0    20 |     2.0   1.52 100.0%
+STR_SECTOPOD_TERRORIST                    20    209    69   4089   28     3 |   204.4  59.26  15.0%
+STR_DOGG_TERRORIST                        19    169     0      0    0    19 |     0.0   0.00 100.0%
+STR_NAZI_SS                               16     99    20     14    0    16 |     0.9   0.70 100.0%
+STR_DOOM_GUNNER                           12     52    17     39    0    12 |     3.2   2.29 100.0%
+STR_ETHEREAL_NOVICE                       12    113    12     17    1     2 |     1.4   1.42  16.7%
+STR_ETHEREAL_LEADER                       10    120    17      0    0     1 |     0.0   0.00  10.0%
+STR_DOOM_CACODEMON_TERRORIST               9     51    19     50    1     9 |     5.6   2.63 100.0%
+STR_DOOM_DEMON_TERRORIST                   9     35     1      0    0     9 |     0.0   0.00 100.0%
+STR_SILACOID_TERRORIST                     9    210    28    266    0     8 |    29.6   9.50  88.9%
+STR_ARMORED_CAR_NAZI_TERRORIST             8     85    36    193    0     8 |    24.1   5.36 100.0%
+STR_DOOM_HELL_BARON_TERRORIST              4     58    18     88    0     4 |    22.0   4.89 100.0%
+STR_ERIDIAN_LEADER                         4     65    24    330    7     3 |    82.5  13.75  75.0%
+STR_NAZI_LEADER                            4     19     1      0    0     4 |     0.0   0.00 100.0%
+STR_ETHEREAL_COMMANDER                     3     41    14      0    0     1 |     0.0   0.00  33.3%
+SOLDIER                                    1     10     0      0    0     0 |     0.0   0.00   0.0%
+
+== G2. Army geometry per turn (one battle = one line; turn:n/mean distance/<=10/<=20/seenby/known)
+sfF_D_L4_s1 1:29/16/5/21/5/29 2:18/14/4/17/4/18 3:8/8/5/8/1/8 4:6/9/4/6/0/6 5:2/18/0/2/0/2 6:2/4/2/2/0/0 7:2/9/2/2/0/0 8:1/17/0/1/0/1 9:1/12/0/1/1/1
+sfF_D_L4_s2 1:29/10/14/28/14/29 2:11/13/5/10/2/11 3:6/8/4/6/1/6 4:3/4/3/3/0/3 5:3/6/3/3/0/0 6:3/5/3/3/0/3
+sfF_D_L4_s3 1:24/20/1/12/6/24 2:14/11/6/14/4/14 3:5/9/4/5/0/5 4:3/4/3/3/1/3 5:3/4/3/3/2/3 6:2/2/2/2/1/2 7:1/1/1/1/0/1 8:1/5/1/1/0/1 9:1/5/1/1/0/1 10:1/10/1/1/0/0
+sfF_D_L4_s4 1:31/11/12/31/14/31 2:17/7/15/17/4/17 3:10/8/7/10/5/10 4:7/5/7/7/1/7 5:4/6/4/4/0/4 6:3/5/3/3/2/3 7:2/3/2/2/0/2 8:2/4/2/2/1/2
+sfF_D_L8_s1 1:31/10/14/31/4/31 2:29/7/24/29/6/29 3:27/6/21/27/4/27 4:27/8/20/26/4/27 5:27/10/16/26/2/27 6:24/9/17/22/0/24 7:22/10/16/20/2/22 8:21/10/12/20/2/21 9:19/11/13/17/2/19 10:18/12/7/17/2/18
+sfF_D_L8_s2 1:37/24/4/14/12/37 2:35/19/5/21/7/35 3:35/27/2/12/4/35 4:35/39/2/3/0/35 5:34/39/1/2/1/34 6:33/30/1/2/3/33
+sfF_D_L8_s3 1:33/23/0/13/7/33 2:33/13/14/26/7/33 3:29/13/10/24/4/29 4:27/17/7/19/1/27
+sfF_D_L8_s4 1:36/30/4/9/6/36 2:34/30/1/8/4/34
+sfF_D_M3_s1 1:54/32/6/16/5/54 2:51/29/5/11/5/51 3:42/28/2/8/3/42 4:34/23/1/12/3/34 5:30/17/4/16/4/30 6:25/19/4/13/3/25 7:22/20/4/11/1/22 8:21/20/1/14/1/21 9:16/20/0/10/0/16 10:13/21/0/7/0/13 11:12/19/3/6/3/12 12:10/21/2/4/0/10 13:7/32/0/0/0/7 14:7/24/1/2/0/7
+sfF_D_M3_s2 1:53/29/6/13/4/53 2:53/24/7/19/8/53 3:43/17/9/26/4/43 4:48/23/6/17/2/48 5:45/20/8/21/7/45 6:40/26/0/14/1/40
+sfF_D_M3_s3 1:41/32/0/6/4/41 2:39/19/7/21/2/39 3:33/17/7/20/5/33 4:25/16/6/20/4/25 5:24/12/11/21/7/24 6:21/18/5/11/3/21 7:21/28/3/8/1/21 8:20/28/2/7/0/20 9:21/30/4/8/0/21 10:19/30/1/5/0/19 11:17/34/0/1/0/17 12:17/34/1/2/0/0 13:16/33/0/3/1/16 14:16/33/0/4/1/16
+sfF_D_M3_s4 1:49/38/1/6/4/49 2:44/19/7/22/4/44 3:41/18/8/25/9/41 4:38/16/9/26/4/38 5:26/17/7/18/5/26 6:23/17/6/17/5/23 7:15/19/3/11/1/15 8:15/21/4/7/0/15 9:14/13/7/11/3/14 10:12/18/2/8/2/12 11:10/23/0/4/2/10 12:8/33/1/2/1/8 13:7/21/1/4/1/7 14:6/19/1/4/0/6
+sfF_D_M8_s1 1:36/31/0/0/2/36 2:28/30/0/0/3/28 3:21/26/0/2/3/21 4:16/10/7/16/3/16 5:12/8/7/12/4/12 6:10/7/8/10/3/10 7:6/8/5/6/2/6 8:4/3/4/4/0/4 9:3/4/3/3/1/3 10:3/4/3/3/2/3 11:3/6/3/3/2/3 12:2/5/2/2/1/2
+sfF_D_M8_s2 1:33/15/4/28/9/33 2:17/8/11/17/2/17 3:5/10/1/5/0/5 4:3/8/3/3/0/3
+sfF_D_M8_s3 1:31/16/8/19/5/31 2:17/14/4/16/5/17 3:10/6/9/10/5/10 4:7/9/5/7/0/7
+sfF_D_M8_s4 1:33/14/9/27/3/33 2:21/16/6/13/4/21 3:14/16/3/7/3/14 4:10/7/7/10/5/10 5:6/4/6/6/1/6 6:4/9/3/4/0/4

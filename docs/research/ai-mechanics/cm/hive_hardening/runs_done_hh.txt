@@ -1,0 +1,8 @@
+3 JA M6 s1 turns=12
+4 JA M6 s2 turns=12
+1 JO M6 s1 turns=12
+2 JS M6 s1 turns=12
+5 JA M6 s2 turns=12
+6 JV M3 s1 turns=12
+7 LOAD hh6_JV_M3_s1 hive_5.asav  turns=9
+8 LOAD hh6_JV_M3_s1 hive_5.asav strip turns=9

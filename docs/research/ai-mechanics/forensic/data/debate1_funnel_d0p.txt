@@ -1,0 +1,128 @@
+
+===== ALL battles 48 unit_turns 11622
+ attacked 28.6%  lof_no_attack 12.3%  no_lof 59.1% (6863)
+ aimed damage on players 18952 no_lof after turn 20 1151
+ audit known (spotted this round, unit snapshot): 6064 = 52.2% of unit-turns
+ modes on no_lof: {'patrol': '4716 (68.7%)', 'escape': '1038 (15.1%)', 'ambush': '951 (13.9%)', 'other': '158 (2.3%)'}
+  info exact   4527   66.0% of no_lof   39.0% of unit-turns
+     modes {'patrol': 3041, 'escape': 819, 'ambush': 516, 'other': 151}
+     dist {'00-08': 864, '09-15': 1001, '16-25': 1163, '26+': 1499}
+     weapon {'proven': 1689, 'weak': 1263, 'melee': 1093, 'thrown': 0, 'unknown': 304, 'none': 178}
+     immobile 213 nomoves 0 reach adjacent 1737 melee on patrol 825 of them adjacent reachable 457
+     p50: in range now 1047; reach cell in range 2060; +TU for a shot 1401; two turns 1008; patrol & reach+shot 853: proven 679 (5.8% of unit-turns; late 59), weak 147, unknown 27, thrown 0; two-turn proven patrol 213; HP at one mean attack 6639
+     p90: in range now 1422; reach cell in range 2249; +TU for a shot 1631; two turns 854; patrol & reach+shot 987: proven 795 (6.8% of unit-turns; late 61), weak 165, unknown 27, thrown 0; two-turn proven patrol 138; HP at one mean attack 7959
+  info fresh   1538   22.4% of no_lof   13.2% of unit-turns
+     modes {'patrol': 1143, 'escape': 143, 'ambush': 246, 'other': 6}
+     dist {'00-08': 162, '09-15': 263, '16-25': 389, '26+': 724}
+     weapon {'proven': 303, 'weak': 737, 'melee': 293, 'thrown': 0, 'unknown': 171, 'none': 34}
+     immobile 20 nomoves 0 reach adjacent 386 melee on patrol 252 of them adjacent reachable 81
+     p50: in range now 132; reach cell in range 382; +TU for a shot 285; two turns 273; patrol & reach+shot 217: proven 134 (1.2% of unit-turns; late 54), weak 77, unknown 6, thrown 0; two-turn proven patrol 42; HP at one mean attack 918
+     p90: in range now 191; reach cell in range 415; +TU for a shot 316; two turns 244; patrol & reach+shot 230: proven 147 (1.3% of unit-turns; late 57), weak 77, unknown 6, thrown 0; two-turn proven patrol 32; HP at one mean attack 1033
+  info stale    591    8.6% of no_lof    5.1% of unit-turns
+     modes {'patrol': 369, 'escape': 39, 'ambush': 182, 'other': 1}
+     dist {'00-08': 102, '09-15': 166, '16-25': 140, '26+': 183}
+     weapon {'proven': 213, 'weak': 264, 'melee': 45, 'thrown': 0, 'unknown': 53, 'none': 16}
+     immobile 7 nomoves 0 reach adjacent 224 melee on patrol 43 of them adjacent reachable 10
+     p50: in range now 160; reach cell in range 258; +TU for a shot 237; two turns 73; patrol & reach+shot 189: proven 153 (1.3% of unit-turns; late 0), weak 26, unknown 10, thrown 0; two-turn proven patrol 15; HP at one mean attack 2900
+     p90: in range now 199; reach cell in range 264; +TU for a shot 247; two turns 70; patrol & reach+shot 199: proven 163 (1.4% of unit-turns; late 0), weak 26, unknown 10, thrown 0; two-turn proven patrol 12; HP at one mean attack 3403
+  info none     207    3.0% of no_lof    1.8% of unit-turns
+ targets at aistart: {'tgt_exact': 1298, 'tgt_fresh': 1146, 'tgt_never': 1407, 'tgt_stale': 1160}
+ stale age: {'stale_age_1': 327, 'stale_age_2': 192, 'stale_age_3+': 641} mean error cells 9.6
+ stale error: {'stale_err_00-02': 540, 'stale_err_03-08': 139, 'stale_err_09-15': 160, 'stale_err_16+': 321}
+
+===== WITHOUT M1 battles 46 unit_turns 11001
+ attacked 28.0%  lof_no_attack 12.5%  no_lof 59.5% (6551)
+ aimed damage on players 10487 no_lof after turn 20 1151
+ audit known (spotted this round, unit snapshot): 5870 = 53.4% of unit-turns
+ modes on no_lof: {'patrol': '4443 (67.8%)', 'escape': '1001 (15.3%)', 'ambush': '951 (14.5%)', 'other': '156 (2.4%)'}
+  info exact   4345   66.3% of no_lof   39.5% of unit-turns
+     modes {'patrol': 2885, 'escape': 794, 'ambush': 516, 'other': 150}
+     dist {'00-08': 850, '09-15': 962, '16-25': 1084, '26+': 1449}
+     weapon {'proven': 1541, 'weak': 1263, 'melee': 1093, 'thrown': 0, 'unknown': 275, 'none': 173}
+     immobile 213 nomoves 0 reach adjacent 1632 melee on patrol 825 of them adjacent reachable 457
+     p50: in range now 1016; reach cell in range 1916; +TU for a shot 1286; two turns 989; patrol & reach+shot 756: proven 587 (5.3% of unit-turns; late 59), weak 147, unknown 22, thrown 0; two-turn proven patrol 195; HP at one mean attack 4141
+     p90: in range now 1318; reach cell in range 2090; +TU for a shot 1486; two turns 850; patrol & reach+shot 862: proven 675 (6.1% of unit-turns; late 61), weak 165, unknown 22, thrown 0; two-turn proven patrol 135; HP at one mean attack 4607
+  info fresh   1526   23.3% of no_lof   13.9% of unit-turns
+     modes {'patrol': 1134, 'escape': 140, 'ambush': 246, 'other': 6}
+     dist {'00-08': 160, '09-15': 262, '16-25': 387, '26+': 717}
+     weapon {'proven': 293, 'weak': 737, 'melee': 293, 'thrown': 0, 'unknown': 170, 'none': 33}
+     immobile 20 nomoves 0 reach adjacent 380 melee on patrol 252 of them adjacent reachable 81
+     p50: in range now 130; reach cell in range 375; +TU for a shot 279; two turns 272; patrol & reach+shot 212: proven 129 (1.2% of unit-turns; late 54), weak 77, unknown 6, thrown 0; two-turn proven patrol 42; HP at one mean attack 713
+     p90: in range now 186; reach cell in range 408; +TU for a shot 309; two turns 241; patrol & reach+shot 224: proven 141 (1.3% of unit-turns; late 57), weak 77, unknown 6, thrown 0; two-turn proven patrol 31; HP at one mean attack 772
+  info stale    473    7.2% of no_lof    4.3% of unit-turns
+     modes {'patrol': 261, 'escape': 30, 'ambush': 182, 'other': 0}
+     dist {'00-08': 74, '09-15': 124, '16-25': 113, '26+': 162}
+     weapon {'proven': 125, 'weak': 264, 'melee': 45, 'thrown': 0, 'unknown': 35, 'none': 4}
+     immobile 7 nomoves 0 reach adjacent 139 melee on patrol 43 of them adjacent reachable 10
+     p50: in range now 116; reach cell in range 163; +TU for a shot 151; two turns 66; patrol & reach+shot 109: proven 82 (0.7% of unit-turns; late 0), weak 26, unknown 1, thrown 0; two-turn proven patrol 10; HP at one mean attack 400
+     p90: in range now 124; reach cell in range 163; +TU for a shot 152; two turns 67; patrol & reach+shot 110: proven 83 (0.8% of unit-turns; late 0), weak 26, unknown 1, thrown 0; two-turn proven patrol 11; HP at one mean attack 403
+  info none     207    3.2% of no_lof    1.9% of unit-turns
+ targets at aistart: {'tgt_exact': 1230, 'tgt_fresh': 1076, 'tgt_never': 1144, 'tgt_stale': 1019}
+ stale age: {'stale_age_1': 287, 'stale_age_2': 167, 'stale_age_3+': 565} mean error cells 10.4
+ stale error: {'stale_err_00-02': 449, 'stale_err_03-08': 119, 'stale_err_09-15': 139, 'stale_err_16+': 312}
+
+== Scenario bootstrap (95%), resampling scenarios
+ no_lof (46.4, 71.9, 24)
+ attacked (19.8, 37.5, 24)
+ exact+fresh on no_lof (42.5, 62.6, 24)
+ F3 exact+fresh, proven, p90 (4.6, 12.5, 24)
+ F3 exact+fresh, proven, p50 (3.8, 11.1, 24)
+
+== Per scenario: unit-turns, attacked %, no_lof %, exact+fresh %, F3 proven p90 %, F3 proven p50 %, aimed dmg
+ L1      215  att  38.6  nolof  47.9  known  46.0  F3p90  18.6  F3p50  16.7  dmg    114
+ L2      913  att  37.7  nolof  46.0  known  44.9  F3p90   8.1  F3p50   8.0  dmg    915
+ L3        8  att  25.0  nolof  50.0  known  50.0  F3p90  25.0  F3p50  12.5  dmg      0
+ L4      116  att  43.1  nolof  44.0  known  44.0  F3p90  26.7  F3p50  25.9  dmg    375
+ L5      402  att  44.8  nolof  33.6  known  33.6  F3p90   0.2  F3p50   0.2  dmg     34
+ L6      457  att  28.7  nolof  66.1  known  51.2  F3p90  23.4  F3p50  23.4  dmg    251
+ L7      526  att  49.6  nolof  37.8  known  37.8  F3p90  16.2  F3p50  15.0  dmg    628
+ L8      461  att  13.9  nolof  69.8  known  69.8  F3p90   3.7  F3p50   3.3  dmg   1865
+ L9      141  att  39.0  nolof  46.1  known  42.6  F3p90   2.1  F3p50   2.1  dmg     37
+ L10     211  att  11.8  nolof  83.4  known  24.2  F3p90   0.5  F3p50   0.5  dmg     77
+ L11    1552  att   5.4  nolof  93.7  known  69.5  F3p90   0.0  F3p50   0.0  dmg     49
+ L12     435  att  10.3  nolof  86.9  known  80.7  F3p90   0.7  F3p50   0.7  dmg      0
+ M1      621  att  39.6  nolof  50.2  known  31.2  F3p90  20.3  F3p50  15.6  dmg   8465
+ M2     1119  att  51.1  nolof  35.9  known  35.6  F3p90   9.1  F3p50   7.1  dmg   1400
+ M3      583  att  44.3  nolof  33.6  known  33.6  F3p90   4.1  F3p50   2.2  dmg    744
+ M4      300  att  23.0  nolof  61.0  known  61.0  F3p90   5.0  F3p50   1.3  dmg    623
+ M5      452  att  39.6  nolof  42.5  known  42.5  F3p90   0.4  F3p50   0.4  dmg    195
+ M6      599  att  25.7  nolof  70.6  known  60.3  F3p90  29.9  F3p50  27.0  dmg   1118
+ M7      177  att  25.4  nolof  59.3  known  59.3  F3p90  27.7  F3p50  22.6  dmg    189
+ M8      128  att  29.7  nolof  60.2  known  60.2  F3p90   0.0  F3p50   0.0  dmg     69
+ M9      274  att   7.7  nolof  71.5  known  71.5  F3p90   1.1  F3p50   1.1  dmg    777
+ M10    1045  att  35.0  nolof  32.8  known  32.8  F3p90   2.3  F3p50   1.0  dmg    621
+ M11     875  att   5.5  nolof  93.8  known  93.8  F3p90   6.2  F3p50   6.2  dmg    406
+ M12      12  att  50.0  nolof  33.3  known  33.3  F3p90   0.0  F3p50   0.0  dmg      0
+
+== Weapon table: attacks on players, HP, yield, p50 and p90 of hurting distance, typical shot cost, class
+ STR_CD_RIFLE                   att   268 dmg    753 y    2.8 p50  18 p90  27 cost 58 proven
+ STR_CD_PISTOL                  att   258 dmg    140 y    0.5 p50  12 p90  27 cost 32 weak
+ STR_PIR_PLASMA_RIFLE           att   168 dmg   3316 y   19.7 p50  11 p90  28 cost 40 proven
+ STR_GAUSS_RIFLE                att   164 dmg    467 y    2.8 p50  16 p90  28 cost 50 proven
+ STR_LASER_RIFLE_PIR            att   148 dmg    421 y    2.8 p50  14 p90  27 cost 26 proven
+ STR_UAC_RIFLE                  att   137 dmg     61 y    0.4 p50   6 p90   6 cost 48 weak
+ STR_NINJA_SMG                  att   110 dmg      0 y    0.0 p50   0 p90   0 cost 45 weak
+ AUX_DOOM_IMP_WEAPON            att    98 dmg     62 y    0.6 p50  13 p90  20 cost 31 weak
+ STR_PIR_PLASMA_PISTOL          att    95 dmg    616 y    6.5 p50  10 p90  19 cost 22 proven
+ STR_SR_RIFLE                   att    91 dmg     59 y    0.6 p50   8 p90   8 cost 41 weak
+ STR_CANISTER_GUN               att    82 dmg    180 y    2.2 p50  15 p90  22 cost 45 proven
+ STR_PIR_HEAVY_PLASMA           att    77 dmg   4274 y   55.5 p50  10 p90  22 cost 50 proven
+ AUX_ADRONE_WEAPON              att    71 dmg     45 y    0.6 p50   8 p90   8 cost 65 weak
+ STR_HEAVY_LASER_PIR            att    64 dmg    199 y    3.1 p50  27 p90  29 cost 40 proven
+ STR_GAUSS_PISTOL               att    56 dmg     38 y    0.7 p50  20 p90  20 cost 35 weak
+ AUX_XTANK_GAUSS_WEAPON         att    55 dmg    114 y    2.1 p50  10 p90  21 cost 65 proven
+ STR_CD_CANNON                  att    53 dmg    577 y   10.9 p50  12 p90  23 cost 53 proven
+ STR_BLUNDERBUSS                att    52 dmg      0 y    0.0 p50   0 p90   0 cost 44 weak
+ STR_SHOTGUN_PA                 att    51 dmg     11 y    0.2 p50   6 p90   6 cost 58 weak
+ STR_NINJA_CARBINE              att    50 dmg      0 y    0.0 p50   0 p90   0 cost 60 weak
+ STR_PIR_ALIEN_GRENADE          att    49 dmg      0 y    0.0 p50   0 p90   0 cost None thrown
+ STR_LUGER                      att    47 dmg      0 y    0.0 p50   0 p90   0 cost 24 weak
+ STR_INCENDIARY_GRENADE         att    45 dmg      0 y    0.0 p50   0 p90   0 cost None thrown
+ STR_LASER_PISTOL_PIR           att    44 dmg     12 y    0.3 p50   3 p90   3 cost 25 weak
+ STR_HEAVY_CANNON               att    44 dmg    326 y    7.4 p50  18 p90  30 cost 46 proven
+ STR_STORM_LASER                att    44 dmg      2 y    0.0 p50  13 p90  13 cost 28 weak
+ STR_GAS_GRENADE                att    40 dmg      0 y    0.0 p50   0 p90   0 cost None thrown
+ STR_PIR_SMALL_LAUNCHER         att    39 dmg    150 y    3.8 p50  14 p90  25 cost 41 proven
+ STR_GAUSS_SNIPER               att    37 dmg    217 y    5.9 p50  15 p90  23 cost 84 proven
+ STR_UAC_CARBINE                att    34 dmg      0 y    0.0 p50   0 p90   0 cost 21 weak
+ classes {'melee': 43, 'proven': 31, 'unknown': 50, 'weak': 33, 'thrown': 16}

@@ -123,7 +123,10 @@ namespace OpenXcom
 	ArticleState::ArticleState(const std::string &article_id, std::shared_ptr<ArticleCommonState> state) : _id(article_id)
 	{
 		// init background and navigation elements
+		setHdScreen("ufopaediaArticle");
 		_bg = new Surface(320, 200, 0, 0);
+		// the article's picture: its text lies straight on it, so the HD text is outlined over it
+		_bg->setHdKind(Surface::HD_PICTURE);
 		_btnOk = new TextButton(30, 14, 5, 5);
 		_btnPrev = new TextButton(30, 14, 40, 5);
 		_btnNext = new TextButton(30, 14, 75, 5);
@@ -236,9 +239,11 @@ namespace OpenXcom
 		_btnPrev->setText("<<");
 		_btnPrev->onMouseClick((ActionHandler)&ArticleState::btnPrevClick);
 		_btnPrev->onKeyboardPress((ActionHandler)&ArticleState::btnPrevClick, Options::keyGeoLeft);
+		_btnPrev->onKeyboardPress((ActionHandler)&ArticleState::btnPrevClick, Options::keyBattlePrevUnit);
 		_btnNext->setText(">>");
 		_btnNext->onMouseClick((ActionHandler)&ArticleState::btnNextClick);
 		_btnNext->onKeyboardPress((ActionHandler)&ArticleState::btnNextClick, Options::keyGeoRight);
+		_btnNext->onKeyboardPress((ActionHandler)&ArticleState::btnNextClick, Options::keyBattleNextUnit);
 		_btnInfo->setText(tr("STR_INFO_UFOPEDIA"));
 		_btnInfo->onMouseClick((ActionHandler)&ArticleState::btnInfoClick);
 		_btnInfo->onKeyboardPress((ActionHandler)&ArticleState::btnInfoClick, Options::keyGeoUfopedia);

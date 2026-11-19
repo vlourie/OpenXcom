@@ -1,0 +1,482 @@
+﻿{
+ "R2-R3": {
+  "scenario": "M3",
+  "boundaries": [
+   {
+    "kind": "shot.0",
+    "n": 8,
+    "units": 100,
+    "rng": "11b9c4ac18938ed9",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "death.0",
+    "n": 14,
+    "units": 100,
+    "rng": "d5641aeb5c18fc2d",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "walk.0",
+    "n": 19,
+    "units": 100,
+    "rng": "8cc985dcd82d60ae",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "reaction.0",
+    "n": 51,
+    "units": 100,
+    "rng": "feb89d2b2826b543",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "none.0",
+    "n": 68,
+    "units": 100,
+    "rng": "3e3705a307c9a8d6",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "second_pass.0",
+    "n": 162,
+    "units": 100,
+    "rng": "7dfd94d725e35412",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "stun.0",
+    "n": 213,
+    "units": 100,
+    "rng": "4dc2e260cb2b78f2",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "walk.1",
+    "n": 281,
+    "units": 100,
+    "rng": "3c352e91011fde6c",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "shot.1",
+    "n": 355,
+    "units": 100,
+    "rng": "8631a7abfd2bc10b",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "reaction.1",
+    "n": 365,
+    "units": 100,
+    "rng": "aa7a062ffbd85591",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "throw.1",
+    "n": 472,
+    "units": 100,
+    "rng": "e8fff3e53cfff33b",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "death.1",
+    "n": 548,
+    "units": 100,
+    "rng": "1ad4ebe4c215a4e0",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "none.1",
+    "n": 600,
+    "units": 100,
+    "rng": "dbf4a8dae7217b61",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "second_pass.1",
+    "n": 1285,
+    "units": 100,
+    "rng": "618724e98b355988",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "convert.1",
+    "n": 1319,
+    "units": 101,
+    "rng": "645dcab2a25be604",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "melee.1",
+    "n": 1371,
+    "units": 101,
+    "rng": "75adb35f013a8b73",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "walk.2",
+    "n": 1845,
+    "units": 102,
+    "rng": "5c54495373834f63",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "shot.2",
+    "n": 2019,
+    "units": 102,
+    "rng": "3537e1d734aab4da",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "stun.1",
+    "n": 2325,
+    "units": 102,
+    "rng": "ee82fcc1918fd969",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "death.2",
+    "n": 3803,
+    "units": 103,
+    "rng": "f1c238f3a9f14cb1",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "second_pass.2",
+    "n": 6610,
+    "units": 103,
+    "rng": "40e0c071f5feab41",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "convert.0",
+    "n": 8450,
+    "units": 104,
+    "rng": "f9f0b2b45ccaa3e3",
+    "same_event": true,
+    "same_dump": true
+   }
+  ],
+  "convert_events": [
+   1318,
+   1375,
+   2367,
+   8449,
+   10859,
+   10886
+  ],
+  "convert_same": true,
+  "casualty": {
+   "null": 294
+  }
+ },
+ "P1-R5": {
+  "scenario": "L8",
+  "boundaries": [
+   {
+    "kind": "walk.0",
+    "n": 8,
+    "units": 49,
+    "rng": "c0c0c0135e660ccb",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "reaction.0",
+    "n": 30,
+    "units": 49,
+    "rng": "fe726bd5c71e93ea",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "none.0",
+    "n": 126,
+    "units": 49,
+    "rng": "faefaf115b4168f6",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "death.0",
+    "n": 141,
+    "units": 49,
+    "rng": "75bbb6acbfbe5e51",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "shot.0",
+    "n": 270,
+    "units": 49,
+    "rng": "e479f75668263aae",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "second_pass.0",
+    "n": 313,
+    "units": 49,
+    "rng": "4b58ea4516163953",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "melee.0",
+    "n": 317,
+    "units": 49,
+    "rng": "4b58ea4516163953",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "walk.1",
+    "n": 501,
+    "units": 49,
+    "rng": "df8aab26a9be193a",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "none.1",
+    "n": 526,
+    "units": 49,
+    "rng": "21e54db25671b0e2",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "shot.1",
+    "n": 608,
+    "units": 49,
+    "rng": "c7bcd5cc1f42ddf4",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "psi.1",
+    "n": 885,
+    "units": 49,
+    "rng": "e3e5033f6dc8769b",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "second_pass.1",
+    "n": 997,
+    "units": 49,
+    "rng": "d8831866d81c2135",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "stun.0",
+    "n": 1314,
+    "units": 49,
+    "rng": "baf325ae2af7098a",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "throw.1",
+    "n": 1573,
+    "units": 49,
+    "rng": "782f8b3c2caed1d5",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "death.1",
+    "n": 1927,
+    "units": 49,
+    "rng": "2438c041f8a7453a",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "panic.0",
+    "n": 2235,
+    "units": 49,
+    "rng": "b843e56bd2a3ccc3",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "stun.1",
+    "n": 2716,
+    "units": 49,
+    "rng": "692da50f28d94e17",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "reaction.1",
+    "n": 3660,
+    "units": 49,
+    "rng": "c52bd6d81d6a40cb",
+    "same_event": true,
+    "same_dump": true
+   }
+  ],
+  "convert_events": [],
+  "convert_same": true,
+  "casualty": {
+   "null": 24
+  }
+ },
+ "R5-R6": {
+  "scenario": "L8 to N",
+  "boundaries": [
+   {
+    "kind": "walk.0",
+    "n": 8,
+    "units": 49,
+    "rng": "c0c0c0135e660ccb",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "reaction.0",
+    "n": 30,
+    "units": 49,
+    "rng": "fe726bd5c71e93ea",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "none.0",
+    "n": 126,
+    "units": 49,
+    "rng": "faefaf115b4168f6",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "death.0",
+    "n": 141,
+    "units": 49,
+    "rng": "75bbb6acbfbe5e51",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "shot.0",
+    "n": 270,
+    "units": 49,
+    "rng": "e479f75668263aae",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "second_pass.0",
+    "n": 313,
+    "units": 49,
+    "rng": "4b58ea4516163953",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "melee.0",
+    "n": 317,
+    "units": 49,
+    "rng": "4b58ea4516163953",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "walk.1",
+    "n": 501,
+    "units": 49,
+    "rng": "df8aab26a9be193a",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "none.1",
+    "n": 526,
+    "units": 49,
+    "rng": "21e54db25671b0e2",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "shot.1",
+    "n": 608,
+    "units": 49,
+    "rng": "c7bcd5cc1f42ddf4",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "psi.1",
+    "n": 885,
+    "units": 49,
+    "rng": "e3e5033f6dc8769b",
+    "same_event": true,
+    "same_dump": true
+   },
+   {
+    "kind": "second_pass.1",
+    "n": 997,
+    "state": "past the stop"
+   },
+   {
+    "kind": "stun.0",
+    "n": 1314,
+    "state": "past the stop"
+   },
+   {
+    "kind": "throw.1",
+    "n": 1573,
+    "state": "past the stop"
+   },
+   {
+    "kind": "death.1",
+    "n": 1927,
+    "state": "past the stop"
+   },
+   {
+    "kind": "panic.0",
+    "n": 2235,
+    "state": "past the stop"
+   },
+   {
+    "kind": "stun.1",
+    "n": 2716,
+    "state": "past the stop"
+   },
+   {
+    "kind": "reaction.1",
+    "n": 3660,
+    "state": "past the stop"
+   }
+  ],
+  "convert_events": [],
+  "convert_same": true,
+  "casualty": {
+   "null": 24
+  }
+ }
+}

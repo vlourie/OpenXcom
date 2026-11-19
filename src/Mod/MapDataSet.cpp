@@ -22,8 +22,10 @@
 #include <SDL_endian.h>
 #include "../Engine/Exception.h"
 #include "../Engine/SurfaceSet.h"
+#include "../Engine/HdSprites.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -102,12 +104,25 @@ SurfaceSet *MapDataSet::getSurfaceset() const
  * Loads terrain data in XCom format (MCD & PCK files).
  * @sa http://www.ufopaedia.org/index.php?title=MCD
  */
-void MapDataSet::loadData(MCDPatch *patch, bool validate)
+void MapDataSet::loadData(MCDPatch *patch, bool validate, int hdScale)
 {
 	// prevents loading twice
 	if (_loaded) return;
 	_loaded = true;
+	try
+	{
+		loadDataNow(patch, validate, hdScale);
+	}
+	catch (...)
+	{
+		// a set that did not load is not loaded: half of its records would be taken for the whole set by the next battle
+		unloadData();
+		throw;
+	}
+}
 
+void MapDataSet::loadDataNow(MCDPatch *patch, bool validate, int hdScale)
+{
 	int objNumber = 0;
 
 	// the struct below helps to read the xcom file format
@@ -245,6 +260,19 @@ void MapDataSet::loadData(MCDPatch *patch, bool validate)
 	// Load terrain sprites/surfaces/PCK files into a surfaceset
 	_surfaceSet = new SurfaceSet(32, 40);
 	_surfaceSet->loadPck("TERRAIN/" + _name + ".PCK", "TERRAIN/" + _name + ".TAB");
+	// HD render: terrain sets are only ever drawn on the battlescape, so they are scaled in place
+	_surfaceSet->hdScaleInPlace(hdScale);
+	// ... and get their HD pack from hd/TERRAIN/<name>.PCK/<index>.png
+	const int hdFrames = HdSprites::loadPack("TERRAIN/" + _name + ".PCK", _surfaceSet, hdScale);
+	if (hdFrames > 0)
+	{
+		Log(LOG_INFO) << "HD render: " << hdFrames << " HD frame(s) for terrain " << _name;
+		// read them now on all cores, not one by one on the first frame of the battle (nearest mode draws no pack)
+		if (Options::oxceHdMode != 0)
+		{
+			HdSprites::preload(_surfaceSet);
+		}
+	}
 }
 
 /**
@@ -259,9 +287,46 @@ void MapDataSet::unloadData()
 			delete mapdata;
 		}
 		_objects.clear();
+		HdSprites::removeSet(_surfaceSet);
 		delete _surfaceSet;
+		_surfaceSet = 0;
 		_loaded = false;
 	}
+}
+
+void MapDataSet::park(Parked &to)
+{
+	to.set = this;
+	to.objects.swap(_objects);
+	to.surfaces = _surfaceSet;
+	_surfaceSet = 0;
+	_loaded = false;
+}
+
+void MapDataSet::unpark(Parked &from)
+{
+	unloadData();
+	_objects.swap(from.objects);
+	_surfaceSet = from.surfaces;
+	from.surfaces = 0;
+	_loaded = true;
+}
+
+void MapDataSet::drop(Parked &parked)
+{
+	for (auto* mapdata : parked.objects)
+	{
+		delete mapdata;
+	}
+	parked.objects.clear();
+	delete parked.surfaces;
+	parked.surfaces = 0;
+}
+
+void MapDataSet::setBlankTiles(MapData *blank, MapData *scorched)
+{
+	_blankTile = blank;
+	_scorchedTile = scorched;
 }
 
 /**

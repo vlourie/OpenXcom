@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2019001	STR_VESSEL_GUNSHIP	over	STR_VESSEL_GUNSHIP	STR_UFO_CRASH_RECOVERY	20	5	MOUNTBD_DEAD	STR_SNAKEMAN	STR_AIRTRUCK#1	12	2	5	3	2	5	516	27	1	0	26	0	26	0	5	10	h.rec.in:170,p.rec.in:32	32	0	0	0	0	5	170	0	0	2	0	0	10		loss

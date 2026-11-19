@@ -39,7 +39,8 @@ namespace OpenXcom
 	class UfopaediaSelectState : public State
 	{
 	public:
-		UfopaediaSelectState(const std::string &section, int heightOffset, int windowOffset);
+		/// OXCE-HD: an empty section lists the articles of every section, filtered by the given quick search
+		UfopaediaSelectState(const std::string &section, int heightOffset, int windowOffset, const std::string &search = "");
 		virtual ~UfopaediaSelectState();
 		void init() override;
 	protected:

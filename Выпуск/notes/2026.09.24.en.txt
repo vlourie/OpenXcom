@@ -1,0 +1,28 @@
+﻿The first full HD release: our own graphics, our own launcher and our own site.
+
+Graphics
+— HD battlescape art: cursors, the reticle, path arrows, status icons over bodies, bullet tracers.
+— The interface font is picked from eight faces in the options and changes without a restart.
+— Every HD option now lives on its own "HD" tab instead of being scattered through "Advanced".
+— On start the game asks for the language and the art version: 18+ or classic. The answer is never remembered, so nothing slips out on stream.
+
+Launcher
+— Downloads and verifies updates on its own, repairs damaged files and rolls a bad update back. It never touches your saves, options or your own mods.
+— A "Graphics" tab: every HD picture is shown next to the original, and you can say whether it is good enough. Floors are shown as a field of map tiles, not as a single tile.
+— The launcher links to your account on the site with a short code — no password typed anywhere.
+— A "Support ♥" button: for the author of X-Piratez and for the HD team.
+
+Problem reports
+— F8 in game: pause, a screenshot and a report form. The log and the save are attached only if you tick them, and paths with your user name are stripped from the log.
+— With no internet the report is not lost: it waits in the launcher and goes with one button. "My reports" in the main menu shows the stage and the team's answer.
+
+Site
+— The wiki is built from the mod's own files: 13,563 X-Piratez pages, with the same numbers the game uses. Search works in Russian and English.
+— A forum and a support desk: a ticket can be written without signing up.
+
+Fixes
+— Descenders (p, y, g, q) are no longer cut off at the bottom of a line.
+— Numbers are back in the Bootypedia instead of question marks.
+— Recoloured soldiers no longer turn purple.
+— Globe labels are drawn with the crisp font; the globe itself spins almost twice as smoothly.
+— The end-of-turn screen and the enemy turn no longer stall.

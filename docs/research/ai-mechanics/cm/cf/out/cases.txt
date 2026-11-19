@@ -1,0 +1,75 @@
+=== M3_s1 t2 1000036 n=1
+decision: mode=2 act=9 to=(31,16,0) aim=444 (AUX_TANK_MG) weapon=STR_CANISTER_GUN from=(26,15,0) tu=55; target in the shooter's own view: True
+own units within 3 cells (aistart positions): 2: 1000042(25, 18, 0) 1000048(27, 16, 1)
+chosen: src=shot score=118 slot=x; proposals: escape 150 t2->[29, 18, 0]; shot 118 t9->[31, 16, 0]
+  [AIEVENT] turn=2 side=1 what=explosion unit=1000036 pos=(31,16,0)
+  [AIEVENT] turn=2 side=1 what=reaction unit=444 pos=(26,15,0)
+  [AIEVENT] turn=2 side=1 what=reaction unit=444 pos=(26,15,0)
+  [AIEVENT] turn=2 side=1 what=explosion unit=444 pos=(26,15,0)
+  [AICASUALTY] turn=2 side=1 victim=1000036 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(26,15,0) tu=10 kneel=0 seenby=2 killer=444 kfaction=0 ktype=SOLDIER dist=5 weapon=AUX_TANK_CANNON hit=under terrain=0
+  [AICASUALTY] turn=2 side=1 victim=1000048 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(27,16,0) tu=1 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=4 weapon=AUX_TANK_CANNON hit=under terrain=0
+  exec: spent=45 dmg=8 downed=0 spotted_after=2 hp_lost=192 down=1
+=== M3_s1 t12 1000020 n=2
+decision: mode=2 act=8 to=(51,45,0) aim=444 (AUX_TANK_MG) weapon=STR_CANISTER_GUN from=(48,46,0) tu=23; target in the shooter's own view: True
+own units within 3 cells (aistart positions): 1: 1000087(50, 44, 0)
+chosen: src=sniper score=None slot=x; proposals: sniper None t8->[51, 45, 0]
+  [AIEVENT] turn=12 side=1 what=explosion unit=1000020 pos=(51,45,0)
+  [AIEVENT] turn=12 side=1 what=reaction unit=444 pos=(48,46,0)
+  [AIEVENT] turn=12 side=1 what=reaction unit=444 pos=(48,46,0)
+  [AIEVENT] turn=12 side=1 what=reaction unit=444 pos=(48,46,0)
+  [AIEVENT] turn=12 side=1 what=reaction unit=444 pos=(48,46,0)
+  [AIEVENT] turn=12 side=1 what=explosion unit=444 pos=(48,46,0)
+  [AICASUALTY] turn=12 side=1 victim=1000010 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(41,54,0) tu=3 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=13 weapon=AUX_TANK_CANNON hit=under terrain=0
+  [AICASUALTY] turn=12 side=1 victim=1000020 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(48,46,0) tu=0 kneel=0 seenby=1 killer=444 kfaction=0 ktype=SOLDIER dist=3 weapon=AUX_TANK_CANNON hit=under terrain=0
+  [AICASUALTY] turn=12 side=1 victim=1000039 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(36,58,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=20 weapon=AUX_TANK_CANNON hit=left terrain=0
+  [AIEVENT] turn=12 side=1 what=explosion unit=444 pos=(47,47,0)
+  [AICASUALTY] turn=12 side=1 victim=1000039 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(36,58,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=20 weapon=STR_WEAPON_UNKNOWN hit=left terrain=1
+  [AIEVENT] turn=12 side=1 what=explosion unit=444 pos=(46,50,0)
+  [AICASUALTY] turn=12 side=1 victim=1000039 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(36,58,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=20 weapon=STR_WEAPON_UNKNOWN hit=left terrain=1
+  [AIEVENT] turn=12 side=1 what=explosion unit=444 pos=(46,54,0)
+  [AICASUALTY] turn=12 side=1 victim=1000039 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(36,58,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=20 weapon=STR_WEAPON_UNKNOWN hit=left terrain=1
+  [AIEVENT] turn=12 side=1 what=explosion unit=444 pos=(47,55,0)
+  [AICASUALTY] turn=12 side=1 victim=1000039 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(36,58,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=20 weapon=STR_WEAPON_UNKNOWN hit=left terrain=1
+  [AIEVENT] turn=12 side=1 what=explosion unit=444 pos=(46,57,0)
+  [AICASUALTY] turn=12 side=1 victim=1000039 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(36,58,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=20 weapon=STR_WEAPON_UNKNOWN hit=left terrain=1
+  exec: spent=23 dmg=12 downed=0 spotted_after=0 hp_lost=194 down=1
+=== M3_s2 t2 1000044 n=2
+decision: mode=2 act=8 to=(29,28,0) aim=444 (AUX_TANK_MG) weapon=STR_CANISTER_GUN from=(41,27,0) tu=33; target in the shooter's own view: True
+own units within 3 cells (aistart positions): 1: 1000046(44, 27, 0)
+chosen: src=shot score=72 slot=x; proposals: escape 150 t2->[38, 26, 0]; shot 72 t8->[29, 28, 0]
+  [AIEVENT] turn=2 side=1 what=explosion unit=1000044 pos=(30,29,0)
+  [AIEVENT] turn=2 side=1 what=reaction unit=444 pos=(41,27,0)
+  [AIEVENT] turn=2 side=1 what=reaction unit=444 pos=(41,27,0)
+  [AIEVENT] turn=2 side=1 what=explosion unit=444 pos=(45,26,0)
+  [AICASUALTY] turn=2 side=1 victim=1000024 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(43,24,0) tu=51 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=15 weapon=AUX_TANK_CANNON hit=front terrain=0
+  [AICASUALTY] turn=2 side=1 victim=1000044 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(41,27,0) tu=10 kneel=0 seenby=1 killer=444 kfaction=0 ktype=SOLDIER dist=12 weapon=AUX_TANK_CANNON hit=rear terrain=0
+  [AICASUALTY] turn=2 side=1 victim=1000046 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(44,27,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=15 weapon=AUX_TANK_CANNON hit=under terrain=0
+  [AICASUALTY] turn=2 side=1 victim=1000049 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(46,36,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=AUX_TANK_CANNON hit=rear terrain=0
+  [AICASUALTY] turn=2 side=1 victim=1000056 vfaction=1 type=STR_ERIDIAN_BEASTMASTER how=stun pos=(47,22,1) tu=71 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=AUX_TANK_CANNON hit=under terrain=0
+  [AIEVENT] turn=2 side=1 what=explosion unit=444 pos=(51,21,0)
+  [AICASUALTY] turn=2 side=1 victim=1000049 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(46,36,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=rear terrain=1
+  [AICASUALTY] turn=2 side=1 victim=1000056 vfaction=1 type=STR_ERIDIAN_BEASTMASTER how=stun pos=(47,22,1) tu=71 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=under terrain=1
+  [AIEVENT] turn=2 side=1 what=explosion unit=444 pos=(56,21,0)
+  [AICASUALTY] turn=2 side=1 victim=1000049 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(46,36,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=rear terrain=1
+  [AICASUALTY] turn=2 side=1 victim=1000056 vfaction=1 type=STR_ERIDIAN_BEASTMASTER how=stun pos=(47,22,1) tu=71 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=under terrain=1
+  [AIEVENT] turn=2 side=1 what=explosion unit=444 pos=(57,21,0)
+  [AICASUALTY] turn=2 side=1 victim=1000049 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(46,36,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=rear terrain=1
+  [AICASUALTY] turn=2 side=1 victim=1000056 vfaction=1 type=STR_ERIDIAN_BEASTMASTER how=stun pos=(47,22,1) tu=71 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=under terrain=1
+  [AIEVENT] turn=2 side=1 what=explosion unit=444 pos=(55,22,0)
+  [AICASUALTY] turn=2 side=1 victim=1000049 vfaction=1 type=STR_ERIDIAN_SOLDIER how=stun pos=(46,36,0) tu=65 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=rear terrain=1
+  [AICASUALTY] turn=2 side=1 victim=1000056 vfaction=1 type=STR_ERIDIAN_BEASTMASTER how=stun pos=(47,22,1) tu=71 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=19 weapon=STR_WEAPON_UNKNOWN hit=under terrain=1
+  exec: spent=23 dmg=0 downed=0 spotted_after=1 hp_lost=89 down=1
+=== M6_s2 t25 1000007 n=2
+decision: mode=2 act=8 to=(15,17,0) aim=444 (AUX_TANK_MG) weapon=STR_GAUSS_PISTOL from=(28,14,0) tu=26; target in the shooter's own view: True
+own units within 3 cells (aistart positions): 0: 
+chosen: src=shot score=251 slot=x; proposals: escape 130 t2->[29, 12, 0]; shot 251 t8->[15, 17, 0]
+  [AIEVENT] turn=25 side=1 what=reaction unit=444 pos=(28,14,0)
+  [AIEVENT] turn=25 side=1 what=reaction unit=444 pos=(28,14,0)
+  [AIEVENT] turn=25 side=1 what=reaction unit=444 pos=(28,14,0)
+  [AIEVENT] turn=25 side=1 what=explosion unit=444 pos=(26,15,0)
+  [AICASUALTY] turn=25 side=1 victim=1000013 vfaction=1 type=STR_MUTON_NAVIGATOR how=stun pos=(39,18,0) tu=111 kneel=0 seenby=2 killer=444 kfaction=0 ktype=SOLDIER dist=24 weapon=AUX_TANK_CANNON hit=front terrain=0
+  [AIEVENT] turn=25 side=1 what=explosion unit=444 pos=(25,15,0)
+  [AIEVENT] turn=25 side=1 what=explosion unit=444 pos=(28,14,0)
+  [AICASUALTY] turn=25 side=1 victim=1000007 vfaction=1 type=STR_MUTON_SOLDIER how=dead pos=(28,14,0) tu=5 kneel=0 seenby=2 killer=444 kfaction=0 ktype=SOLDIER dist=13 weapon=AUX_TANK_CANNON hit=under terrain=0
+  [AIEVENT] turn=25 side=1 what=view unit=1000005 pos=(0,1,0)
+  exec: spent=21 dmg=0 downed=0 spotted_after=2 hp_lost=208 down=1

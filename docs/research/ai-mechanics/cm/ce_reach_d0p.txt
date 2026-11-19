@@ -1,0 +1,83 @@
+series d0p, battles 48, hostile turns t <= 7; ranged weapons 146
+    489  0 exposed
+    296  1 task patrol/combat walk
+    161  2 able
+     77  3 hidden before the walk
+     26  4 spotter known (FAIR)
+     14  5 ally + joint possible (R=12)
+     15  5 ally + joint possible (R=20)
+      1  6 R=12: control t+1 - U and the ally both useful
+  exposed by last decision: {'patrol/2': 191, 'escape/2': 144, 'combat/2': 105, 'ambush/2': 35, 'escape/0': 14}
+  candidates (R=12) per battle: {'d0p_D_L10_s1': 1, 'd0p_D_L2_s1': 2, 'd0p_D_L2_s2': 1, 'd0p_D_M10_s1': 4, 'd0p_D_M10_s2': 5, 'd0p_D_M3_s1': 1}
+  first cases: [('d0p_D_L10_s1', 6, '1000003'), ('d0p_D_L2_s1', 1, '1000038'), ('d0p_D_L2_s1', 5, '1000044'), ('d0p_D_L2_s2', 1, '1000043'), ('d0p_D_M10_s1', 2, '1000007'), ('d0p_D_M10_s1', 2, '1000018'), ('d0p_D_M10_s1', 3, '1000001'), ('d0p_D_M10_s1', 7, '1000036'), ('d0p_D_M10_s2', 1, '1000026'), ('d0p_D_M10_s2', 1, '1000039'), ('d0p_D_M10_s2', 1, '1000041'), ('d0p_D_M10_s2', 2, '1000035')]
+== variants, d0p, t <= 7 (able exposed unit-turns whose exposing walk is PATROL/COMBAT from a hidden place)
+   walk   known  ally   count
+   first  K0     -        73
+   first  K0     eng      28
+   first  K0     near     32
+   first  K2     -        79
+   first  K2     eng      30
+   first  K2     near     36
+   first  any    -        94
+   first  any    eng      31
+   first  any    near     40
+   last   K0     -        26
+   last   K0     eng      14
+   last   K0     near     14
+   last   K2     -        26
+   last   K2     eng      14
+   last   K2     near     14
+   last   any    -        30
+   last   any    eng      14
+   last   any    near     14
+   first/K2/eng per battle: {'d0p_D_M10_s2': 9, 'd0p_D_M10_s1': 5, 'd0p_D_L2_s1': 3, 'd0p_D_L2_s2': 3, 'd0p_D_L1_s1': 2, 'd0p_D_M3_s1': 2, 'd0p_D_L10_s1': 1, 'd0p_D_L11_s2': 1, 'd0p_D_L7_s1': 1, 'd0p_D_L8_s1': 1, 'd0p_D_M5_s1': 1, 'd0p_D_M5_s2': 1}
+   battles with any 12; the 24 richest battles hold 30, the 12 richest 30
+   control t+1 after such a case: U and another unit both useful 1, not 29
+
+series d0p, battles 48, hostile turns t <= 999; ranged weapons 146
+    688  0 exposed
+    425  1 task patrol/combat walk
+    198  2 able
+     92  3 hidden before the walk
+     32  4 spotter known (FAIR)
+     19  5 ally + joint possible (R=12)
+     21  5 ally + joint possible (R=20)
+      1  6 R=12: control t+1 - U and the ally both useful
+  exposed by last decision: {'patrol/2': 244, 'escape/2': 197, 'combat/2': 181, 'ambush/2': 44, 'escape/0': 22}
+  candidates (R=12) per battle: {'d0p_D_L10_s1': 1, 'd0p_D_L2_s1': 2, 'd0p_D_L2_s2': 1, 'd0p_D_L7_s1': 2, 'd0p_D_M10_s1': 6, 'd0p_D_M10_s2': 6, 'd0p_D_M3_s1': 1}
+  first cases: [('d0p_D_L10_s1', 6, '1000003'), ('d0p_D_L2_s1', 1, '1000038'), ('d0p_D_L2_s1', 5, '1000044'), ('d0p_D_L2_s2', 1, '1000043'), ('d0p_D_L7_s1', 18, '1000029'), ('d0p_D_L7_s1', 18, '1000030'), ('d0p_D_M10_s1', 2, '1000007'), ('d0p_D_M10_s1', 2, '1000018'), ('d0p_D_M10_s1', 3, '1000001'), ('d0p_D_M10_s1', 7, '1000036'), ('d0p_D_M10_s1', 10, '1000044'), ('d0p_D_M10_s1', 13, '1000008')]
+== variants, d0p, t <= 999 (able exposed unit-turns whose exposing walk is PATROL/COMBAT from a hidden place)
+   walk   known  ally   count
+   first  K0     -        94
+   first  K0     eng      43
+   first  K0     near     47
+   first  K2     -       102
+   first  K2     eng      45
+   first  K2     near     52
+   first  any    -       119
+   first  any    eng      46
+   first  any    near     56
+   last   K0     -        32
+   last   K0     eng      19
+   last   K0     near     19
+   last   K2     -        32
+   last   K2     eng      19
+   last   K2     near     19
+   last   any    -        36
+   last   any    eng      19
+   last   any    near     19
+   first/K2/eng per battle: {'d0p_D_M10_s1': 12, 'd0p_D_M10_s2': 11, 'd0p_D_L7_s1': 5, 'd0p_D_L2_s1': 3, 'd0p_D_L2_s2': 3, 'd0p_D_L1_s1': 2, 'd0p_D_M3_s1': 2, 'd0p_D_L10_s1': 1, 'd0p_D_L11_s2': 1, 'd0p_D_L12_s2': 1, 'd0p_D_L8_s1': 1, 'd0p_D_M2_s2': 1, 'd0p_D_M5_s1': 1, 'd0p_D_M5_s2': 1}
+   battles with any 14; the 24 richest battles hold 45, the 12 richest 43
+   control t+1 after such a case: U and another unit both useful 1, not 44
+
+series csd, battles 12, hostile turns t <= 7; ranged weapons 62
+     97  0 exposed
+     43  1 task patrol/combat walk
+     25  2 able
+     11  3 hidden before the walk
+      3  4 spotter known (FAIR)
+      3  5 ally + joint possible (R=12)
+      3  5 ally + joint possible (R=20)
+  exposed by last decision: {'escape/2': 39, 'patrol/2': 26, 'combat/2': 17, 'ambush/2': 12, 'escape/0': 3}
+  candidates (R=12) per battle: {'csd_D_L2_s1': 2, 'csd_D_L2_s2': 1}
+  first cases: [('csd_D_L2_s1', 1, '1000038'), ('csd_D_L2_s1', 5, '1000044'), ('csd_D_L2_s2', 1, '1000043')]

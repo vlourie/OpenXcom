@@ -116,6 +116,7 @@ void AdlibMusic::play(int) const
 		func_setup_music((unsigned char*)_data, _size);
 		func_set_music_volume(127 * _volume);
 		Mix_HookMusic(player, (void*)this);
+		noteStarted(this, true);
 	}
 #endif
 }

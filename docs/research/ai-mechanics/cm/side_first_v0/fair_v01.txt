@@ -1,0 +1,11 @@
+sfH_XN_M3_s1 {'act': 251, 'attack': 124, 'attack_tu_over': 2, 'result': 251, 'special': 5, 'walk': 122, 'walk_not_moved': 3, 'walk_stopped_short': 20}
+  examples [('A', 'STR_CANISTER_GUN', 8, 23, 26), ('A', 'STR_CANISTER_GUN', 8, 23, 28)]
+sfH_XN_M3_s2 {'act': 255, 'attack': 102, 'result': 255, 'special': 8, 'walk': 145, 'walk_not_moved': 8, 'walk_stopped_short': 39}
+sfH_XN_M3_s3 {'act': 195, 'attack': 113, 'result': 195, 'special': 7, 'walk': 75, 'walk_not_moved': 2, 'walk_stopped_short': 16}
+sfH_XN_M3_s4 {'act': 200, 'attack': 112, 'attack_tu_over': 4, 'result': 200, 'special': 6, 'walk': 82, 'walk_not_moved': 2, 'walk_stopped_short': 33}
+  examples [('A', 'STR_CANISTER_GUN', 8, 24, 30), ('A', 'STR_CANISTER_GUN', 8, 24, 32), ('A', 'STR_CANISTER_GUN', 8, 23, 29), ('A', 'STR_CANISTER_GUN', 8, 26, 31)]
+sfI_XN_L8_s1 {'act': 41, 'attack': 18, 'result': 41, 'walk': 23, 'walk_not_moved': 3, 'walk_stopped_short': 12}
+sfI_XN_L8_s2 {'act': 62, 'attack': 40, 'result': 62, 'special': 1, 'walk': 21, 'walk_stopped_short': 5}
+sfI_XN_L8_s3 {'act': 91, 'attack': 52, 'result': 91, 'special': 1, 'walk': 38, 'walk_stopped_short': 14}
+sfI_XN_L8_s4 {'act': 84, 'attack': 35, 'attack_on_out': 1, 'result': 84, 'special': 2, 'walk': 47, 'walk_not_moved': 2, 'walk_stopped_short': 8}
+BAD 7

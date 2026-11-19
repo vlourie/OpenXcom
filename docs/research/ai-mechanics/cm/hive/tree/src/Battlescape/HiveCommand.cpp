@@ -1,0 +1,1226 @@
+/*
+ * Copyright 2010-2016 OpenXcom Developers.
+ *
+ * This file is part of OpenXcom.
+ *
+ * OpenXcom is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OpenXcom is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include "HiveCommand.h"
+#include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
+#include "AiProbe.h"
+#include "BattlescapeGame.h"
+#include "Pathfinding.h"
+#include "Position.h"
+#include "../Engine/Logger.h"
+#include "../Mod/Armor.h"
+#include "../Mod/RuleItem.h"
+#include "../Savegame/BattleItem.h"
+#include "../Savegame/BattleUnit.h"
+#include "../Savegame/Node.h"
+#include "../Savegame/SavedBattleGame.h"
+#include "../Savegame/Tile.h"
+
+namespace OpenXcom
+{
+namespace HiveCommand
+{
+namespace
+{
+
+enum Task { T_HOLD, T_SEARCH };
+enum OrderState { CREATED, ASSIGNED, VALIDATED, EXECUTING, COMPLETED, BLOCKED, INTERRUPTED, CANCELLED };
+const char *const STATE_NAME[] = { "CREATED", "ASSIGNED", "VALIDATED", "EXECUTING", "COMPLETED", "BLOCKED", "INTERRUPTED", "CANCELLED" };
+const char *const TASK_NAME[] = { "HOLD", "SEARCH" };
+enum Knowledge { KNOWN, LAST_KNOWN, INFERRED };
+const char *const KNOW_NAME[] = { "KNOWN", "LAST_KNOWN", "INFERRED" };
+
+const int SQUAD_TARGET = 5, SQUAD_MAX = 6;
+const int LEADER_SPACING = 8;
+const int HOLD_RADIUS = 8, POST_RADIUS = 5;
+const int ARRIVE_RADIUS = 2, OBJECTIVE_NODE_RADIUS = 10, VISIT_RADIUS = 3;
+const int CONTACT_REACH = 24, CONTACT_SQUADS = 2;
+const int OBJECTIVE_REPLANS_PER_TURN = 3, OBJECTIVE_TURNS = 3, ORDER_TURNS = 3, STUCK_LIMIT = 2, STUCK_TURNS = 2, BLOCK_TURNS = 2, PATH_TRIES = 5;
+
+struct Sector
+{
+	int id = 0;
+	std::vector<Node*> nodes;
+	std::set<int> visited;
+};
+
+struct Objective
+{
+	bool valid = false;
+	bool contact = false;
+	int contactId = -1;
+	Position pos;
+	int since = 0;
+	int key = 0;
+};
+
+struct Squad
+{
+	int id = 0;
+	BattleUnit *commander = 0;
+	std::vector<BattleUnit*> members;
+	Task task = T_HOLD;
+	int sector = 0;
+	Position anchor;
+	Objective objective;
+	int replans = 0;
+	int replanTurn = -1;
+};
+
+struct Order
+{
+	int id = 0;
+	int squad = 0;
+	BattleUnit *unit = 0;
+	Task task = T_HOLD;
+	bool stay = false;
+	Node *node = 0;
+	Position target;
+	OrderState state = CREATED;
+	std::string why;
+	int objectiveKey = 0;
+	int turn = 0;
+	int overrides = 0;
+	int stuck = 0;
+	int stuckTurns = 0;
+	int pauseTurn = -1;
+	Position lastPos, turnStart;
+	int lastTurn = -1;
+	bool walked = false;
+};
+
+struct Contact
+{
+	int id = -1;
+	Position pos;
+	Knowledge cls = KNOWN;
+	int seenTurn = 0;
+	int observer = -1;
+};
+
+struct Hq
+{
+	SavedBattleGame *save = 0;
+	bool managesBattle = false;
+	int turn = -1;
+	int firstPlanTurn = -1;
+	bool turnOpen = false;
+	std::vector<Sector> sectors;
+	std::vector<Squad> squads;
+	std::map<int, int> squadOf;
+	std::map<int, Order> orders;
+	std::map<int, Contact> contacts;
+	std::map<int, std::map<int, int> > blocked;
+	std::set<int> seenOut;
+	std::set<Node*> taken;
+	int nextOrder = 1;
+	int nextKey = 1;
+	long long thinkNs = 0;
+	int thinks = 0;
+	int stat[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+};
+Hq hq;
+
+int dist(const Position &a, const Position &b)
+{
+	return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)) + 2 * std::abs(a.z - b.z);
+}
+
+bool nearPos(const Position &a, const Position &b, int r)
+{
+	return a.z == b.z && std::abs(a.x - b.x) <= r && std::abs(a.y - b.y) <= r;
+}
+
+std::string pos(const Position &p)
+{
+	std::ostringstream s;
+	s << "(" << p.x << "," << p.y << "," << p.z << ")";
+	return s.str();
+}
+
+bool isOurs(const BattleUnit *u)
+{
+	return u->getFaction() == FACTION_HOSTILE && u->getOriginalFaction() == FACTION_HOSTILE;
+}
+
+bool available(const BattleUnit *u)
+{
+	return u && !u->isOut() && isOurs(u);
+}
+
+const char *role(const BattleUnit *u)
+{
+	const BattleItem *w = u->getMainHandWeapon(false);
+	if (!w || w->getRules()->getBattleType() != BT_FIREARM) return "M";
+	if (!w->getRules()->isTwoHanded()) return "S";
+	return w->getRules()->getAccuracyAimed() > 0 ? "L" : "A";
+}
+
+/// Out of the system's hands, and counted apart: why, or 0.
+const char *unmanaged(const BattleUnit *u)
+{
+	if (u->isOut()) return "out";
+	if (!u->getArmor()->allowsMoving()) return "immobile";
+	if (u->isLeeroyJenkins()) return "charger";
+	const BattleItem *w = u->getMainHandWeapon(false);
+	if (!w) return "unarmed";
+	return 0;
+}
+
+int rankWeight(const std::string &r)
+{
+	if (r == "STR_LIVE_COMMANDER") return 6;
+	if (r == "STR_LIVE_LEADER") return 5;
+	if (r == "STR_LIVE_ENGINEER") return 4;
+	if (r == "STR_LIVE_MEDIC") return 3;
+	if (r == "STR_LIVE_NAVIGATOR") return 2;
+	if (r == "STR_LIVE_SOLDIER") return 1;
+	return 0;
+}
+
+/// A commander by the unit's own fields: rank, then intelligence, health and a weapon; no bonus comes of it.
+int leaderScore(const BattleUnit *u)
+{
+	const int hp = u->getBaseStats()->health > 0 ? 10 * u->getHealth() / u->getBaseStats()->health : 0;
+	return 1000 * rankWeight(u->getRankString()) + 100 * u->getIntelligence() + 10 * hp + (u->getMainHandWeapon(false) ? 5 : 0);
+}
+
+/// The node test of the engine's own patrol choice (SavedBattleGame::getPatrolNode), plus the nodes this unit found no path to.
+bool legalNode(SavedBattleGame *save, BattleUnit *unit, Node *n)
+{
+	if (n->isDummy() || n->isAllocated() || hq.taken.count(n)) return false;
+	if ((n->getType() & Node::TYPE_SMALL) && !unit->isSmallUnit()) return false;
+	if ((n->getType() & Node::TYPE_FLYING) && unit->getMovementType() != MT_FLY) return false;
+	if (n->getType() & Node::TYPE_DANGEROUS) return false;
+	if (n->getPosition().x <= 0 || n->getPosition().y <= 0) return false;
+	Tile *t = save->getTile(n->getPosition());
+	if (!t || t->getFire() || t->getDangerous()) return false;
+	if (!save->setUnitPosition(unit, n->getPosition(), true)) return false;
+	auto b = hq.blocked.find(unit->getId());
+	if (b != hq.blocked.end())
+	{
+		auto i = b->second.find(n->getID());
+		if (i != b->second.end() && i->second >= save->getTurn()) return false;
+	}
+	return true;
+}
+
+Node *closestNode(SavedBattleGame *save, const Position &p)
+{
+	Node *best = 0;
+	int bestD = 1000000;
+	for (auto *n : *save->getNodes())
+	{
+		if (n->isDummy()) continue;
+		const int d = dist(p, n->getPosition());
+		if (d < bestD)
+		{
+			best = n;
+			bestD = d;
+		}
+	}
+	return best;
+}
+
+void logOrder(const Order &o, const char *note = "")
+{
+	Log(LOG_INFO) << "[HIVEORD] turn=" << hq.save->getTurn() << " id=" << o.id << " squad=" << o.squad << " unit=" << o.unit->getId()
+		<< " task=" << TASK_NAME[o.task] << " kind=" << (o.stay ? "STAY" : "GO") << " state=" << STATE_NAME[o.state]
+		<< " target=" << pos(o.target) << " at=" << pos(o.unit->getPosition()) << " tu=" << o.unit->getTimeUnits()
+		<< " why=" << o.why << " overrides=" << o.overrides << " note=" << note;
+}
+
+void setState(Order &o, OrderState s, const char *note = "")
+{
+	if (o.state == s) return;
+	o.state = s;
+	hq.stat[s]++;
+	logOrder(o, note);
+}
+
+bool isTerminal(const Order &o)
+{
+	return o.state == BLOCKED || o.state == INTERRUPTED || o.state == CANCELLED;
+}
+
+Order &newOrder(Squad &sq, BattleUnit *u, bool stay, Node *node, const Position &target, const char *why)
+{
+	Order &o = hq.orders[u->getId()];
+	if (o.unit && !isTerminal(o) && o.state != COMPLETED)
+	{
+		setState(o, CANCELLED, "replaced");
+	}
+	o = Order();
+	o.id = hq.nextOrder++;
+	o.squad = sq.id;
+	o.unit = u;
+	o.task = sq.task;
+	o.stay = stay;
+	o.node = node;
+	o.target = target;
+	o.why = why;
+	o.objectiveKey = sq.objective.key;
+	o.turn = hq.save->getTurn();
+	o.state = CREATED;
+	hq.stat[CREATED]++;
+	logOrder(o, "expect=at_target success=near2 cancel=objective_or_task_change");
+	setState(o, ASSIGNED);
+	if (stay)
+	{
+		setState(o, VALIDATED, "no_walk");
+	}
+	if (node)
+	{
+		hq.taken.insert(node);
+	}
+	return o;
+}
+
+/// Takes what this unit has in sight: the only way a position of the other side comes in.
+void observe(BattleUnit *unit, SavedBattleGame *save)
+{
+	for (auto *v : *unit->getVisibleUnits())
+	{
+		if (v->isOut() || v->getFaction() != FACTION_PLAYER) continue;
+		Contact &c = hq.contacts[v->getId()];
+		const bool fresh = c.id == -1 || !(c.pos == v->getPosition()) || c.seenTurn != save->getTurn();
+		c.id = v->getId();
+		c.pos = v->getPosition();
+		c.cls = KNOWN;
+		c.seenTurn = save->getTurn();
+		c.observer = unit->getId();
+		if (fresh)
+		{
+			Log(LOG_INFO) << "[HIVEFAIR] turn=" << save->getTurn() << " observer=" << unit->getId() << " target=" << v->getId() << " pos=" << pos(c.pos);
+		}
+	}
+}
+
+int contactTtl(const Squad &sq)
+{
+	return sq.commander ? sq.commander->getIntelligence() : 1;
+}
+
+/// The contact the commander's memory still holds: age in turns against his intelligence, the engine's own measure of the side's memory.
+bool contactAlive(const Contact &c, const Squad &sq, int turn)
+{
+	return turn - c.seenTurn <= contactTtl(sq);
+}
+
+void changeCommander(Squad &sq, const char *why)
+{
+	BattleUnit *best = 0;
+	for (auto *m : sq.members)
+	{
+		if (available(m) && !unmanaged(m) && (!best || leaderScore(m) > leaderScore(best) || (leaderScore(m) == leaderScore(best) && m->getId() < best->getId())))
+		{
+			best = m;
+		}
+	}
+	Log(LOG_INFO) << "[HIVECMD] turn=" << hq.save->getTurn() << " squad=" << sq.id << " old=" << (sq.commander ? sq.commander->getId() : -1)
+		<< " new=" << (best ? best->getId() : -1) << " why=" << why << " rank=" << (best ? best->getRankString() : "-")
+		<< " int=" << (best ? best->getIntelligence() : 0) << " task=" << TASK_NAME[sq.task] << " kept=1";
+	sq.commander = best;
+}
+
+/// A sector's next node the squad has not been to, the nearest to the commander.
+bool sweepObjective(Squad &sq, SavedBattleGame *save, Objective &out)
+{
+	Sector &s = hq.sectors[sq.sector];
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		Node *best = 0;
+		int bestD = 1000000;
+		for (auto *n : s.nodes)
+		{
+			if (s.visited.count(n->getID())) continue;
+			const int d = dist(sq.commander->getPosition(), n->getPosition());
+			if (d < bestD)
+			{
+				best = n;
+				bestD = d;
+			}
+		}
+		if (best)
+		{
+			out.valid = true;
+			out.contact = false;
+			out.contactId = -1;
+			out.pos = best->getPosition();
+			return true;
+		}
+		s.visited.clear();
+	}
+	(void)save;
+	return false;
+}
+
+/// SEARCH's objective: a remembered contact in reach, not more squads on one than two, else the sector's next node.
+void chooseObjective(Squad &sq, SavedBattleGame *save)
+{
+	Objective out;
+	std::map<int, int> onContact;
+	for (auto &o : hq.squads)
+	{
+		if (o.id != sq.id && o.task == T_SEARCH && o.objective.valid && o.objective.contact)
+		{
+			onContact[o.objective.contactId]++;
+		}
+	}
+	const Contact *best = 0;
+	int bestScore = -1;
+	if (sq.objective.valid && sq.objective.contact)
+	{
+		// the contact it is after stays its objective while the commander's memory holds it; only its place may change
+		auto cur = hq.contacts.find(sq.objective.contactId);
+		if (cur != hq.contacts.end() && contactAlive(cur->second, sq, save->getTurn()))
+		{
+			best = &cur->second;
+		}
+	}
+	for (auto &e : hq.contacts)
+	{
+		if (best) break;
+		const Contact &c = e.second;
+		if (!contactAlive(c, sq, save->getTurn()) || onContact[c.id] >= CONTACT_SQUADS) continue;
+		const int d = dist(sq.commander->getPosition(), c.pos);
+		if (d > CONTACT_REACH) continue;
+		const int age = save->getTurn() - c.seenTurn;
+		const int score = 1000 - 100 * age - (c.cls == INFERRED ? 200 : 0) - d;
+		if (score > bestScore)
+		{
+			bestScore = score;
+			best = &c;
+		}
+	}
+	if (best)
+	{
+		out.valid = true;
+		out.contact = true;
+		out.contactId = best->id;
+		out.pos = best->pos;
+	}
+	else if (sq.objective.valid && !sq.objective.contact)
+	{
+		// a sweep's node stays until the squad has been there: nearest-from-here would turn it round every turn
+		Node *n = closestNode(save, sq.objective.pos);
+		if (n && !hq.sectors[sq.sector].visited.count(n->getID()))
+		{
+			return;
+		}
+		sweepObjective(sq, save, out);
+	}
+	else
+	{
+		sweepObjective(sq, save, out);
+	}
+	const bool changed = out.valid != sq.objective.valid || !(out.pos == sq.objective.pos) || out.contact != sq.objective.contact;
+	if (changed)
+	{
+		out.since = save->getTurn();
+		out.key = hq.nextKey++;
+		sq.objective = out;
+		Log(LOG_INFO) << "[HIVETASK] turn=" << save->getTurn() << " squad=" << sq.id << " task=SEARCH commander=" << (sq.commander ? sq.commander->getId() : -1)
+			<< " objective=" << (out.valid ? pos(out.pos) : "-") << " kind=" << (out.contact ? "contact" : "sector_node")
+			<< " contact=" << out.contactId << " ttl=" << contactTtl(sq);
+	}
+}
+
+Node *nodeNear(SavedBattleGame *save, BattleUnit *u, const Position &center, int radius)
+{
+	Node *best = 0;
+	int bestScore = 1000000;
+	for (auto *n : *save->getNodes())
+	{
+		const int d = dist(center, n->getPosition());
+		if (d > radius) continue;
+		const int score = 100 * d + dist(u->getPosition(), n->getPosition());
+		if (score < bestScore && legalNode(save, u, n))
+		{
+			best = n;
+			bestScore = score;
+		}
+	}
+	return best;
+}
+
+bool orderHolds(const Order *o, const Squad &sq)
+{
+	if (!o || !o->unit || isTerminal(*o)) return false;
+	if (o->task != sq.task) return false;
+	if (sq.task == T_SEARCH) return o->objectiveKey == sq.objective.key;
+	return !o->stay || o->turn == hq.save->getTurn();
+}
+
+/// The orders of one squad: those that still stand stay, the rest are given anew, the commander's first.
+void planSquad(Squad &sq, SavedBattleGame *save)
+{
+	if (!sq.commander) return;
+	if (sq.task == T_SEARCH && (!sq.objective.valid || save->getTurn() - sq.objective.since > OBJECTIVE_TURNS))
+	{
+		if (sq.objective.valid && !sq.objective.contact)
+		{
+			Node *n = closestNode(save, sq.objective.pos);
+			if (n) hq.sectors[sq.sector].visited.insert(n->getID());
+		}
+		else if (sq.objective.valid)
+		{
+			hq.contacts.erase(sq.objective.contactId);
+		}
+		sq.objective.valid = false;
+		chooseObjective(sq, save);
+	}
+	else if (sq.task == T_SEARCH)
+	{
+		// a contact coming in takes the squad off its sweep, one that moved in sight moves the objective
+		chooseObjective(sq, save);
+	}
+	std::vector<BattleUnit*> ordered(sq.members);
+	std::stable_sort(ordered.begin(), ordered.end(), [&sq](BattleUnit *a, BattleUnit *b) { return (a == sq.commander) > (b == sq.commander); });
+	for (auto *u : ordered)
+	{
+		if (!available(u) || unmanaged(u)) continue;
+		auto f = hq.orders.find(u->getId());
+		const Order *cur = f == hq.orders.end() ? 0 : &f->second;
+		if (orderHolds(cur, sq)) continue;
+		if (sq.task == T_HOLD)
+		{
+			// nobody is sent off his starting place by the first plan
+			if (dist(u->getPosition(), sq.anchor) <= HOLD_RADIUS || save->getTurn() == hq.firstPlanTurn)
+			{
+				newOrder(sq, u, true, 0, u->getPosition(), "post_in_sector");
+			}
+			else
+			{
+				Node *n = nodeNear(save, u, sq.anchor, POST_RADIUS);
+				if (n)
+				{
+					newOrder(sq, u, false, n, n->getPosition(), "take_post");
+				}
+				else
+				{
+					newOrder(sq, u, true, 0, u->getPosition(), "no_free_post");
+				}
+			}
+		}
+		else if (sq.objective.valid)
+		{
+			if (nearPos(u->getPosition(), sq.objective.pos, VISIT_RADIUS))
+			{
+				newOrder(sq, u, true, 0, u->getPosition(), sq.objective.contact ? "at_contact" : "at_node");
+			}
+			else
+			{
+				Node *n = nodeNear(save, u, sq.objective.pos, OBJECTIVE_NODE_RADIUS);
+				if (n)
+				{
+					newOrder(sq, u, false, n, n->getPosition(), sq.objective.contact ? "seek_contact" : "sweep_sector");
+				}
+				else
+				{
+					// the unit falls back on the free choice, the old objective's order does not go on
+					auto old = hq.orders.find(u->getId());
+					if (old != hq.orders.end() && old->second.unit && !isTerminal(old->second))
+					{
+						setState(old->second, CANCELLED, "no_legal_node");
+					}
+					Log(LOG_INFO) << "[HIVEORD] turn=" << save->getTurn() << " unit=" << u->getId() << " squad=" << sq.id << " state=NONE why=no_legal_node objective=" << pos(sq.objective.pos);
+				}
+			}
+		}
+	}
+}
+
+/// A contact seen no more where the squad came to look is cleared; a sweep's node is marked; the objective moves on when the commander or half the squad is there.
+void objectiveReached(Squad &sq, SavedBattleGame *save)
+{
+	if (sq.task != T_SEARCH || !sq.objective.valid || !sq.commander) return;
+	int alive = 0, there = 0;
+	for (auto *m : sq.members)
+	{
+		if (!available(m) || unmanaged(m)) continue;
+		alive++;
+		there += nearPos(m->getPosition(), sq.objective.pos, VISIT_RADIUS);
+	}
+	if (alive == 0 || (there * 2 < alive && !nearPos(sq.commander->getPosition(), sq.objective.pos, VISIT_RADIUS))) return;
+	if (sq.replanTurn != save->getTurn())
+	{
+		sq.replanTurn = save->getTurn();
+		sq.replans = 0;
+	}
+	if (sq.replans >= OBJECTIVE_REPLANS_PER_TURN) return;
+	sq.replans++;
+	if (sq.objective.contact)
+	{
+		auto c = hq.contacts.find(sq.objective.contactId);
+		if (c != hq.contacts.end() && c->second.seenTurn != save->getTurn())
+		{
+			Log(LOG_INFO) << "[HIVECONTACT] turn=" << save->getTurn() << " target=" << c->first << " pos=" << pos(c->second.pos) << " cls=" << KNOW_NAME[c->second.cls] << " event=cleared_by_visit squad=" << sq.id;
+			hq.contacts.erase(c);
+		}
+		else if (c != hq.contacts.end())
+		{
+			// there and seen: the fight is the units' own, the squad stays on it
+			return;
+		}
+	}
+	else
+	{
+		Node *n = closestNode(save, sq.objective.pos);
+		if (n) hq.sectors[sq.sector].visited.insert(n->getID());
+	}
+	sq.objective.valid = false;
+	chooseObjective(sq, save);
+	planSquad(sq, save);
+}
+
+void initSectors(SavedBattleGame *save, const std::vector<Squad> &squads)
+{
+	hq.sectors.clear();
+	std::map<int, int> owner;
+	std::vector<Node*> frontier;
+	for (size_t i = 0; i < squads.size(); ++i)
+	{
+		Sector s;
+		s.id = (int)i;
+		hq.sectors.push_back(s);
+		Node *n = closestNode(save, squads[i].commander->getPosition());
+		if (n && !owner.count(n->getID()))
+		{
+			owner[n->getID()] = (int)i;
+			frontier.push_back(n);
+		}
+	}
+	// over the map's own links (its doors and passages), from each commander in turn; what no link reaches goes to the nearest commander
+	auto *nodes = save->getNodes();
+	while (!frontier.empty())
+	{
+		std::vector<Node*> next;
+		for (auto *n : frontier)
+		{
+			for (int l : *n->getNodeLinks())
+			{
+				if (l < 0 || l >= (int)nodes->size()) continue;
+				Node *m = nodes->at(l);
+				if (m->isDummy() || owner.count(m->getID())) continue;
+				owner[m->getID()] = owner[n->getID()];
+				next.push_back(m);
+			}
+		}
+		frontier.swap(next);
+	}
+	for (auto *n : *nodes)
+	{
+		if (n->isDummy()) continue;
+		auto o = owner.find(n->getID());
+		int sector = -1;
+		if (o != owner.end())
+		{
+			sector = o->second;
+		}
+		else
+		{
+			int bestD = 1000000;
+			for (size_t i = 0; i < squads.size(); ++i)
+			{
+				const int d = dist(n->getPosition(), squads[i].commander->getPosition());
+				if (d < bestD)
+				{
+					bestD = d;
+					sector = (int)i;
+				}
+			}
+		}
+		if (sector >= 0)
+		{
+			hq.sectors[sector].nodes.push_back(n);
+		}
+	}
+}
+
+void initialize(SavedBattleGame *save)
+{
+	const auto t0 = std::chrono::steady_clock::now();
+	hq = Hq();
+	hq.save = save;
+	hq.managesBattle = save->getMissionType() != "STR_BASE_DEFENSE";
+
+	std::vector<BattleUnit*> managed;
+	int ours = 0, apart = 0;
+	for (auto *u : *save->getUnits())
+	{
+		if (!isOurs(u)) continue;
+		ours++;
+		const char *why = unmanaged(u);
+		const BattleItem *w = u->getMainHandWeapon(false);
+		Log(LOG_INFO) << "[HIVEUNIT] id=" << u->getId() << " type=" << u->getType() << " pos=" << pos(u->getPosition()) << " status=" << (int)u->getStatus()
+			<< " tu=" << u->getTimeUnits() << " energy=" << u->getEnergy() << " hp=" << u->getHealth() << "/" << u->getBaseStats()->health
+			<< " rank=" << u->getRankString() << " int=" << u->getIntelligence() << " aggr=" << u->getAggression() << " role=" << role(u)
+			<< " weapon=" << (w ? w->getRules()->getType() : "-") << " armor=" << u->getArmor()->getType() << " size=" << u->getArmor()->getSize()
+			<< " move=" << (int)u->getMovementType() << " managed=" << (why ? "0" : "1") << " why=" << (why ? why : "-");
+		if (why)
+		{
+			apart++;
+		}
+		else
+		{
+			managed.push_back(u);
+		}
+	}
+	int rank0 = 0, usable = 0;
+	for (auto *n : *save->getNodes())
+	{
+		if (n->isDummy()) continue;
+		usable++;
+		rank0 += n->getRank() == 0;
+	}
+
+	if (hq.managesBattle && !managed.empty())
+	{
+		// commanders: the best by their own fields, spaced apart while there are enough of them
+		const int count = std::max(1, ((int)managed.size() + SQUAD_TARGET - 1) / SQUAD_TARGET);
+		std::vector<BattleUnit*> byScore(managed);
+		std::stable_sort(byScore.begin(), byScore.end(), [](BattleUnit *a, BattleUnit *b)
+		{
+			const int sa = leaderScore(a), sb = leaderScore(b);
+			return sa != sb ? sa > sb : a->getId() < b->getId();
+		});
+		std::vector<BattleUnit*> leaders;
+		for (auto *u : byScore)
+		{
+			if ((int)leaders.size() >= count) break;
+			if (std::string(role(u)) == "M") continue;
+			bool spaced = true;
+			for (auto *l : leaders)
+			{
+				spaced = spaced && dist(u->getPosition(), l->getPosition()) >= LEADER_SPACING;
+			}
+			if (spaced) leaders.push_back(u);
+		}
+		for (auto *u : byScore)
+		{
+			if ((int)leaders.size() >= count) break;
+			if (std::find(leaders.begin(), leaders.end(), u) == leaders.end()) leaders.push_back(u);
+		}
+		for (size_t i = 0; i < leaders.size(); ++i)
+		{
+			Squad s;
+			s.id = (int)i;
+			s.commander = leaders[i];
+			s.sector = (int)i;
+			s.members.push_back(leaders[i]);
+			hq.squads.push_back(s);
+			hq.squadOf[leaders[i]->getId()] = (int)i;
+		}
+		// the rest: near, but a weapon class the squad lacks is worth tiles, and a squad over its target size costs more
+		for (auto *u : managed)
+		{
+			if (hq.squadOf.count(u->getId())) continue;
+			int best = -1, bestCost = 1000000;
+			const std::string r = role(u);
+			for (auto &s : hq.squads)
+			{
+				if ((int)s.members.size() >= SQUAD_MAX) continue;
+				int same = 0;
+				for (auto *m : s.members)
+				{
+					same += r == role(m);
+				}
+				const int cost = dist(u->getPosition(), s.commander->getPosition()) + 4 * same + ((int)s.members.size() >= SQUAD_TARGET ? 8 : 0);
+				if (cost < bestCost)
+				{
+					bestCost = cost;
+					best = s.id;
+				}
+			}
+			if (best < 0)
+			{
+				best = 0;
+			}
+			hq.squads[best].members.push_back(u);
+			hq.squadOf[u->getId()] = best;
+		}
+		initSectors(save, hq.squads);
+		// the tasks, no dice: long arms and the squads standing most inside hold, the short arms go looking; half and half, one of each from two squads on
+		std::vector<std::pair<int, int> > holdScore;
+		for (auto &s : hq.squads)
+		{
+			int score = 0;
+			for (auto *m : s.members)
+			{
+				const std::string r = role(m);
+				score += r == "L" ? 2 : r == "S" ? -1 : 0;
+			}
+			holdScore.push_back(std::make_pair(-score, s.id));
+		}
+		std::stable_sort(holdScore.begin(), holdScore.end());
+		const int holders = hq.squads.size() >= 2 ? (int)hq.squads.size() / 2 : 0;
+		for (size_t i = 0; i < holdScore.size(); ++i)
+		{
+			Squad &s = hq.squads[holdScore[i].second];
+			s.task = (int)i < holders ? T_HOLD : T_SEARCH;
+			Node *n = closestNode(save, s.commander->getPosition());
+			s.anchor = n ? n->getPosition() : s.commander->getPosition();
+		}
+		for (auto &s : hq.squads)
+		{
+			std::ostringstream m;
+			for (auto *u : s.members)
+			{
+				m << (m.tellp() > 0 ? "," : "") << u->getId() << role(u);
+			}
+			Log(LOG_INFO) << "[HIVESQUAD] id=" << s.id << " commander=" << s.commander->getId() << " rank=" << s.commander->getRankString() << " int=" << s.commander->getIntelligence()
+				<< " at=" << pos(s.commander->getPosition()) << " size=" << s.members.size() << " members=" << m.str() << " sector=" << s.sector << " sectorNodes=" << hq.sectors[s.sector].nodes.size()
+				<< " task=" << TASK_NAME[s.task] << " anchor=" << pos(s.anchor);
+		}
+	}
+	const long long us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count();
+	Log(LOG_INFO) << "[HIVEINIT] turn=" << save->getTurn() << " mission=" << save->getMissionType() << " manages=" << (hq.managesBattle ? 1 : 0) << " hostile=" << ours << " managed=" << managed.size()
+		<< " apart=" << apart << " nodes=" << usable << " rank0=" << rank0 << " sectors=" << hq.sectors.size() << " squads=" << hq.squads.size() << " us=" << us;
+}
+
+/// Commanders down and units out, seen when the side's turn opens or one of the squad's units thinks.
+void checkSquad(Squad &sq, SavedBattleGame *save)
+{
+	if (sq.commander && (sq.commander->isOut() || !isOurs(sq.commander)))
+	{
+		const char *why = sq.commander->isOut() ? (sq.commander->getStatus() == STATUS_DEAD ? "dead" : "stunned") : "faction";
+		changeCommander(sq, why);
+		if (sq.commander)
+		{
+			if (sq.task == T_SEARCH && !sq.objective.contact)
+			{
+				// the sweep goes on from where the new commander stands; the task and the squad's other orders stay
+				Log(LOG_INFO) << "[HIVETASK] turn=" << save->getTurn() << " squad=" << sq.id << " task=SEARCH commander=" << sq.commander->getId() << " kept=1 objective=" << pos(sq.objective.pos);
+			}
+			planSquad(sq, save);
+		}
+	}
+}
+
+/// A side's turn opens: last turn's orders closed by what really happened, the memory aged, the army kept and not rebuilt.
+void planTurn(SavedBattleGame *save)
+{
+	const auto t0 = std::chrono::steady_clock::now();
+	const int turn = save->getTurn();
+	hq.turn = turn;
+	if (hq.firstPlanTurn < 0)
+	{
+		hq.firstPlanTurn = turn;
+	}
+	hq.turnOpen = true;
+	hq.taken.clear();
+	hq.thinkNs = 0;
+	hq.thinks = 0;
+
+	for (auto *u : *save->getUnits())
+	{
+		if (isOurs(u) && !u->isOut())
+		{
+			observe(u, save);
+		}
+	}
+	for (auto i = hq.contacts.begin(); i != hq.contacts.end(); )
+	{
+		Contact &c = i->second;
+		if (c.seenTurn != turn && c.cls == KNOWN)
+		{
+			c.cls = LAST_KNOWN;
+		}
+		int ttl = 0;
+		for (auto &s : hq.squads)
+		{
+			ttl = std::max(ttl, contactTtl(s));
+		}
+		if (turn - c.seenTurn > ttl)
+		{
+			Log(LOG_INFO) << "[HIVECONTACT] turn=" << turn << " target=" << c.id << " pos=" << pos(c.pos) << " cls=" << KNOW_NAME[c.cls] << " event=expired ttl=" << ttl;
+			i = hq.contacts.erase(i);
+		}
+		else
+		{
+			Log(LOG_INFO) << "[HIVECONTACT] turn=" << turn << " target=" << c.id << " pos=" << pos(c.pos) << " cls=" << KNOW_NAME[c.cls] << " age=" << (turn - c.seenTurn) << " observer=" << c.observer;
+			++i;
+		}
+	}
+	// a unit of ours fell with nobody it could have seen: there is an enemy about that place, no more is known
+	int inferredId = -2;
+	for (auto *u : *save->getUnits())
+	{
+		if (u->getOriginalFaction() != FACTION_HOSTILE || !u->isOut() || hq.seenOut.count(u->getId())) continue;
+		hq.seenOut.insert(u->getId());
+		if (!hq.squadOf.count(u->getId())) continue;
+		bool explained = false;
+		for (auto &e : hq.contacts)
+		{
+			explained = explained || (e.second.cls != INFERRED && dist(e.second.pos, u->getPosition()) <= CONTACT_REACH && e.second.seenTurn >= turn - 1);
+		}
+		if (!explained)
+		{
+			Contact c;
+			c.id = inferredId - u->getId();
+			c.pos = u->getPosition();
+			c.cls = INFERRED;
+			c.seenTurn = turn;
+			c.observer = u->getId();
+			hq.contacts[c.id] = c;
+			Log(LOG_INFO) << "[HIVECONTACT] turn=" << turn << " target=" << c.id << " pos=" << pos(c.pos) << " cls=INFERRED event=own_loss unit=" << u->getId();
+		}
+	}
+	// orders of the fallen; orders left too long
+	for (auto &e : hq.orders)
+	{
+		Order &o = e.second;
+		if (!o.unit || isTerminal(o) || o.state == COMPLETED) continue;
+		if (!available(o.unit))
+		{
+			setState(o, INTERRUPTED, "unit_out");
+		}
+		else if (!o.stay && turn - o.turn >= ORDER_TURNS)
+		{
+			setState(o, CANCELLED, "too_long");
+		}
+	}
+	// commanders, newcomers, squads too small
+	for (auto &s : hq.squads)
+	{
+		checkSquad(s, save);
+	}
+	for (auto *u : *save->getUnits())
+	{
+		if (!isOurs(u) || u->isOut() || unmanaged(u) || hq.squadOf.count(u->getId()) || hq.squads.empty()) continue;
+		int best = -1, bestD = 1000000;
+		for (auto &s : hq.squads)
+		{
+			if (!s.commander || (int)s.members.size() >= SQUAD_MAX) continue;
+			const int d = dist(u->getPosition(), s.commander->getPosition());
+			if (d < bestD)
+			{
+				best = s.id;
+				bestD = d;
+			}
+		}
+		if (best >= 0)
+		{
+			hq.squads[best].members.push_back(u);
+			hq.squadOf[u->getId()] = best;
+			Log(LOG_INFO) << "[HIVESQUAD] turn=" << turn << " join=" << u->getId() << " squad=" << best;
+		}
+	}
+	for (auto &s : hq.squads)
+	{
+		int alive = 0;
+		for (auto *m : s.members)
+		{
+			alive += available(m);
+		}
+		if (!s.commander || alive >= 3) continue;
+		int best = -1, bestD = 1000000;
+		for (auto &t : hq.squads)
+		{
+			if (t.id == s.id || !t.commander) continue;
+			int talive = 0;
+			for (auto *m : t.members)
+			{
+				talive += available(m);
+			}
+			const int d = dist(s.commander->getPosition(), t.commander->getPosition());
+			if (talive + alive <= SQUAD_MAX && d < bestD)
+			{
+				best = t.id;
+				bestD = d;
+			}
+		}
+		if (best < 0) continue;
+		Squad &t = hq.squads[best];
+		for (auto *m : s.members)
+		{
+			if (!available(m)) continue;
+			t.members.push_back(m);
+			hq.squadOf[m->getId()] = best;
+		}
+		Log(LOG_INFO) << "[HIVESQUAD] turn=" << turn << " merged=" << s.id << " into=" << best << " units=" << alive << " task=" << TASK_NAME[t.task];
+		s.members.clear();
+		s.commander = 0;
+	}
+	// both tasks stand as long as there are two squads
+	int bySearch = 0, byHold = 0;
+	Squad *largest = 0;
+	for (auto &s : hq.squads)
+	{
+		if (!s.commander) continue;
+		(s.task == T_SEARCH ? bySearch : byHold)++;
+		if (!largest || s.members.size() > largest->members.size()) largest = &s;
+	}
+	if (largest && bySearch + byHold >= 2 && (bySearch == 0 || byHold == 0))
+	{
+		const Task t = bySearch == 0 ? T_SEARCH : T_HOLD;
+		Log(LOG_INFO) << "[HIVETASK] turn=" << turn << " squad=" << largest->id << " from=" << TASK_NAME[largest->task] << " to=" << TASK_NAME[t] << " why=task_lost";
+		largest->task = t;
+		largest->objective.valid = false;
+		Node *n = closestNode(save, largest->commander->getPosition());
+		largest->anchor = n ? n->getPosition() : largest->commander->getPosition();
+	}
+	for (auto &s : hq.squads)
+	{
+		if (s.commander)
+		{
+			planSquad(s, save);
+		}
+	}
+	const long long us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count();
+	Log(LOG_INFO) << "[HIVEPERF] turn=" << turn << " phase=plan us=" << us << " contacts=" << hq.contacts.size();
+}
+
+}
+
+int mode()
+{
+	static const int m = (int)AiProbe::param("OXCE_AI_HIVE", 0);
+	return m;
+}
+
+void beforeThink(SavedBattleGame *save, BattleUnit *unit)
+{
+	if (mode() == 0 || save->getSide() != FACTION_HOSTILE || !isOurs(unit)) return;
+	const auto t0 = std::chrono::steady_clock::now();
+	if (hq.save != save)
+	{
+		initialize(save);
+	}
+	if (hq.turn != save->getTurn())
+	{
+		planTurn(save);
+	}
+	if (hq.managesBattle)
+	{
+		observe(unit, save);
+		auto f = hq.squadOf.find(unit->getId());
+		if (f != hq.squadOf.end())
+		{
+			Squad &sq = hq.squads[f->second];
+			checkSquad(sq, save);
+			objectiveReached(sq, save);
+			if (sq.task == T_SEARCH)
+			{
+				Sector &s = hq.sectors[sq.sector];
+				for (auto *n : s.nodes)
+				{
+					if (nearPos(unit->getPosition(), n->getPosition(), VISIT_RADIUS))
+					{
+						s.visited.insert(n->getID());
+					}
+				}
+			}
+		}
+	}
+	hq.thinkNs += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+	hq.thinks++;
+}
+
+PatrolOrder patrol(SavedBattleGame *save, BattleUnit *unit, Node *&node)
+{
+	node = 0;
+	if (mode() != 2 || hq.save != save || !hq.managesBattle || save->getSide() != FACTION_HOSTILE || !isOurs(unit) || unmanaged(unit)) return PO_NONE;
+	auto f = hq.orders.find(unit->getId());
+	if (f == hq.orders.end() || !f->second.unit || isTerminal(f->second)) return PO_NONE;
+	Order &o = f->second;
+	if (o.stay || o.state == COMPLETED) return PO_HOLD;
+	if (nearPos(unit->getPosition(), o.target, ARRIVE_RADIUS))
+	{
+		setState(o, COMPLETED, "arrived");
+		return PO_HOLD;
+	}
+	if (o.pauseTurn == save->getTurn())
+	{
+		return PO_HOLD;
+	}
+	// a node that cannot be walked to is refused and the next one near the same place is tried, as the free choice tries its own;
+	// a walk of more turns than an order may last is no order. None left: a post is held where the unit stands, a search goes free
+	for (int tries = 0; o.state < VALIDATED; ++tries)
+	{
+		Pathfinding *pf = save->getPathfinding();
+		pf->calculate(unit, o.target, BAM_NORMAL);
+		const bool noPath = pf->getStartDirection() == -1;
+		const int cost = pf->getTotalTUCost();
+		pf->abortPath();
+		if (!noPath && cost <= ORDER_TURNS * unit->getBaseStats()->tu)
+		{
+			std::ostringstream note;
+			note << "path_tu=" << cost;
+			setState(o, VALIDATED, note.str().c_str());
+			break;
+		}
+		hq.blocked[unit->getId()][o.node ? o.node->getID() : -1] = save->getTurn() + BLOCK_TURNS;
+		setState(o, BLOCKED, noPath ? "no_path" : "too_far");
+		auto sf = hq.squadOf.find(unit->getId());
+		if (sf == hq.squadOf.end()) return PO_NONE;
+		Squad &sq = hq.squads[sf->second];
+		const std::string why = o.why;
+		Node *next = 0;
+		if (tries + 1 < PATH_TRIES)
+		{
+			next = sq.task == T_HOLD ? nodeNear(save, unit, sq.anchor, POST_RADIUS) : sq.objective.valid ? nodeNear(save, unit, sq.objective.pos, OBJECTIVE_NODE_RADIUS) : 0;
+		}
+		if (next)
+		{
+			newOrder(sq, unit, false, next, next->getPosition(), why.c_str());
+		}
+		else if (sq.task == T_HOLD)
+		{
+			newOrder(sq, unit, true, 0, unit->getPosition(), "post_too_far");
+			return PO_HOLD;
+		}
+		else
+		{
+			return PO_NONE;
+		}
+	}
+	node = o.node;
+	return node ? PO_GO : PO_NONE;
+}
+
+void decided(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
+{
+	if (mode() == 0 || hq.save != save || !hq.managesBattle || save->getSide() != FACTION_HOSTILE || !isOurs(unit)) return;
+	auto f = hq.orders.find(unit->getId());
+	if (f == hq.orders.end() || !f->second.unit) return;
+	Order &o = f->second;
+	if (isTerminal(o) || o.state == COMPLETED) return;
+	const Position here = unit->getPosition();
+	if (!o.stay && action.type == BA_WALK && action.target == o.target)
+	{
+		o.walked = true;
+		if (mode() == 2)
+		{
+			setState(o, EXECUTING, "walk");
+			if (o.lastTurn != save->getTurn())
+			{
+				o.turnStart = here;
+				o.stuck = 0;
+			}
+			else if (o.lastPos == here)
+			{
+				if (++o.stuck >= STUCK_LIMIT)
+				{
+					// the walk starts and stops where it stands. After steps this turn: its time units are spent, down to what its
+					// reserve for a shot keeps, and the order goes on next turn. Without a step two turns running: it cannot be done
+					if (here == o.turnStart && ++o.stuckTurns >= STUCK_TURNS)
+					{
+						hq.blocked[unit->getId()][o.node ? o.node->getID() : -1] = save->getTurn() + BLOCK_TURNS;
+						setState(o, BLOCKED, "no_progress");
+					}
+					else
+					{
+						o.pauseTurn = save->getTurn();
+						logOrder(o, "pause_no_time_units");
+					}
+				}
+			}
+			else
+			{
+				o.stuck = 0;
+				o.stuckTurns = 0;
+			}
+			o.lastPos = here;
+			o.lastTurn = save->getTurn();
+		}
+	}
+	else if (o.stay && action.type == BA_NONE)
+	{
+		if (mode() == 2)
+		{
+			setState(o, EXECUTING, "stays");
+		}
+	}
+	else if (action.type != BA_NONE)
+	{
+		// the unit's own decision: a fight, an escape; the order waits, what happened is counted
+		o.overrides++;
+		Log(LOG_INFO) << "[HIVEORD] turn=" << save->getTurn() << " id=" << o.id << " unit=" << unit->getId() << " own=" << (int)action.type << " to=" << pos(action.target)
+			<< " order=" << (o.stay ? "STAY" : "GO") << " target=" << pos(o.target) << " at=" << pos(here);
+	}
+}
+
+void sideEnds(SavedBattleGame *save)
+{
+	if (mode() == 0 || hq.save != save || !hq.managesBattle || save->getSide() != FACTION_HOSTILE || !hq.turnOpen) return;
+	hq.turnOpen = false;
+	int alive = 0, holdUnits = 0, searchUnits = 0, holdTu = 0, searchTu = 0, squads = 0, hold = 0, search = 0;
+	for (auto &s : hq.squads)
+	{
+		if (!s.commander) continue;
+		squads++;
+		(s.task == T_SEARCH ? search : hold)++;
+		for (auto *m : s.members)
+		{
+			if (!available(m)) continue;
+			alive++;
+			const int pc = m->getBaseStats()->tu > 0 ? 100 * m->getTimeUnits() / m->getBaseStats()->tu : 0;
+			if (s.task == T_SEARCH)
+			{
+				searchUnits++;
+				searchTu += pc;
+			}
+			else
+			{
+				holdUnits++;
+				holdTu += pc;
+			}
+		}
+	}
+	for (auto &e : hq.orders)
+	{
+		Order &o = e.second;
+		if (!o.unit || isTerminal(o) || o.state == COMPLETED) continue;
+		if (!available(o.unit))
+		{
+			setState(o, INTERRUPTED, "unit_out");
+		}
+		else if (o.stay && mode() == 2)
+		{
+			if (dist(o.unit->getPosition(), o.target) <= (o.task == T_HOLD ? HOLD_RADIUS : VISIT_RADIUS))
+			{
+				setState(o, COMPLETED, "held_turn");
+			}
+			else
+			{
+				setState(o, INTERRUPTED, "left_post");
+			}
+		}
+		else if (mode() == 2 && nearPos(o.unit->getPosition(), o.target, ARRIVE_RADIUS))
+		{
+			setState(o, COMPLETED, "arrived");
+		}
+	}
+	Log(LOG_INFO) << "[HIVETURN] turn=" << save->getTurn() << " alive=" << alive << " squads=" << squads << " hold=" << hold << " search=" << search
+		<< " holdUnits=" << holdUnits << " holdTuPct=" << (holdUnits ? holdTu / holdUnits : 0) << " searchUnits=" << searchUnits << " searchTuPct=" << (searchUnits ? searchTu / searchUnits : 0)
+		<< " created=" << hq.stat[CREATED] << " validated=" << hq.stat[VALIDATED] << " executing=" << hq.stat[EXECUTING] << " completed=" << hq.stat[COMPLETED]
+		<< " blocked=" << hq.stat[BLOCKED] << " interrupted=" << hq.stat[INTERRUPTED] << " cancelled=" << hq.stat[CANCELLED]
+		<< " thinks=" << hq.thinks << " thinkUs=" << hq.thinkNs / 1000;
+}
+
+}
+}

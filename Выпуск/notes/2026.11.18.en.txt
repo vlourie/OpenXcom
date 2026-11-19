@@ -1,0 +1,12 @@
+﻿- GPU output with the SDL output selected: without the HD interface the picture is no longer blurred - the frame is stretched pixel by pixel, as in the classic game. Smoothing is used only with the OpenGL output and its smoothing selected.
+- HD interface: with the "HD pictures" option off the Ufopaedia shows the classic illustrations, not the HD art.
+- Production complete window: a single upper button (send the loot or keep working) now spans exactly both buttons below it.
+- HD paper doll of the Triarius power armour (inventory and Ufopaedia): 30% less gloss, the shading, colour and eyes are unchanged.
+- HD battle on a map by the water (a harbour): the sea beyond the map's edge is drawn only on the sides where the edge is water; beyond a land edge there is plain ground. A ship in the open sea is still surrounded by water.
+- HD paper doll of the Sear Armor in the inventory: the visor and the chest gem are redrawn after the classic one - a narrow red visor and a red gem in a grey setting instead of a blurred blot.
+- Black market and selling: Aye with nothing chosen now closes the window like Begone instead of opening it again; after a real deal the window still stays open on the same base.
+- HD interface, Geoscape: zoomed in, the names of countries, cities and bases no longer run over the side panel (clock, date, buttons) - they are cut at the globe's edge, as in the classic game.
+- HD interface, Geoscape: the clock and date on the side panel are set smaller, so the rows no longer run into each other; with funds shown, the time is one line (14:16:55) without gaps at the colons.
+- HD interface, layout (after a player's review): on the Geoscape the time stands clear of the weekday, the day and month are one centred line and the date rows are evenly spaced; in battle the digit in a spotted-enemy marker sits in the middle of the marker; in the options the tabs (Graphics, Battle... and OXC / OXCE / Other) stand a pixel apart like the categories on the left, with labels a step smaller.
+- HD interface (after a player's review): the spotted-enemy markers in battle got a relief - a lit edge at the top and left, a dark one at the bottom and right, the marker's colour as before; a new setting 'Buttons' text size' (HD - Interface - Windows and buttons): the labels on the buttons of all windows from 60 to 100%, 100% by default, as before.
+- HD air combat: while you look at the target (the UFO picture), the small HD outline of the UFO from the radar no longer stays on top of it.

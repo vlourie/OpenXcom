@@ -1,0 +1,14 @@
+# 2026-10-27 21:52:18 phase=iflog
+771d9a45784ffe58b47edc70658e9865010da30088f373e16be64f3bce769765 *C:\OXCE_AIWorker\asrun\asrun.py
+e4cf1640ed634f6e08ad018c7e863eeb26bc5d23a7c824903deb28882461f83e *C:\OXCE_AIWorker\asrun\cfg\base.cfg
+13a587c1c4b9bf55d80b480841ede37b8cde00098191a1a37a03f07fb72cf342 *C:\OXCE_AIWorker\asrun\exe\IF\openxcom.exe
+1f8c7c4a7572897145e07d83f1f989cfeee3b8675d4066465c297353c16a3eab *C:\OXCE_AIWorker\asrun\pvone.py
+014c3af760d0352f2019f4fd7cd54da9161df6ae8013a6049b9572ee309f9d6f *C:\OXCE_AIWorker\asrun\saves\GoldGalZ.sav
+dc46245c8368bb92e0f3a0088b465689450b56c1b5caa778ff3989c610b15774 *C:\OXCE_AIWorker\asrun\saves\NoCodexCatZ.sav
+942bd4f7b2e9a5fc5d8b2c8f5a52db22a182d15003786fdd90e0b368afcb2352 *C:\OXCE_AIWorker\asrun\saves\NoCodexManZ.sav
+c9f600b4a9db7e86344602cbb1a5453a333a337fb272ec8442c98120c8f77bc7 *C:\OXCE_AIWorker\asrun\saves\PeasGray.sav
+f7394b48425cb0b5dd01c29913eef8a0b0c8320f67b59eb65a310c7bcf08551f *C:\OXCE_AIWorker\asrun\saves\RedCatZ.sav
+e4660fa487601db03f316325c27c6ecd5a50680e8c6f1a953f54a012f048c101 *C:\OXCE_AIWorker\asrun\saves\strim.sav
+eb3271ee9f138250e0409302e4b9ffcfd7a543f5a47a8a7ce39c3172f6e2253f *C:\OXCE_AIWorker\asrun\scen.tsv
+3c67575072bb853510be3e812ab2bb599832deb632ad2378aa68fb2e61df3eb3 *C:\OXCE_AIWorker\asrun\stand\ai_probe.py
+e1d7553c706fb42ddbedf016e437fb2b9452ee6fc8d6829b0a4bfd6818fb2420 *C:\OXCE_AIWorker\game\user\builds\piratez\options.cfg

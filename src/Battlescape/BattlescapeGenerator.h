@@ -25,6 +25,7 @@ namespace OpenXcom
 {
 
 class SavedBattleGame;
+class SavedGame;
 class Mod;
 class Craft;
 class RuleCraft;
@@ -41,6 +42,7 @@ class RuleEnviroEffects;
 class RuleStartingCondition;
 class AlienDeployment;
 class Game;
+class State;
 class Base;
 class MissionSite;
 class AlienBase;
@@ -135,6 +137,8 @@ private:
 	void loadWeapons(const std::vector<BattleItem*> &itemList);
 	/// Adds a craft (either a ufo or an xcom craft) somewhere on the map.
 	bool addCraft(MapBlock *craftMap, MapScript *command, SDL_Rect &craftPos, RuleTerrain *terrain);
+	/// Why a craft or UFO block got no place on the map.
+	std::string placementRefusal(const MapBlock *block) const;
 	/// Adds a line (generally a road) to the map.
 	bool addLine(MapDirection lineType, const std::vector<SDL_Rect*> *rects, RuleTerrain *terrain, int verticalGroup, int horizontalGroup, int crossingGroup);
 	/// Adds a single block at a given position.
@@ -194,6 +198,16 @@ public:
 	void setTerrain(RuleTerrain *terrain);
 	/// Runs the generator.
 	void run();
+	/// Runs the generator as a transaction: a refusal leaves the campaign as it was.
+	bool runOrRollback(std::string &error);
+	/// The message for the player after a refusal.
+	static State *refusalMessage(Game *game, SDL_Color *palette, bool basescape = false, const char *textId = "STR_BATTLE_GENERATION_FAILED");
+	/// The file the running battle is kept in before its next stage is generated.
+	static const std::string STAGE_KEEP, STAGE_KEEP_OLD;
+	/// Keeps the running battle before its next stage is generated.
+	static bool keepStage(Game *game, bool ownRecord);
+	/// Generates the next stage; a refusal is caught and told, the battle is then put back from what keepStage() kept.
+	bool nextStageOrRefuse(std::string &error);
 	/// Gets craft position.
 	SDL_Rect getCraftPos() const { return _craftPos; }
 	/// Gets craft elevation.
@@ -207,6 +221,9 @@ public:
 	// Auto-equip a set of units
 	static void autoEquip(std::vector<BattleUnit*> units, Mod *mod, std::vector<BattleItem*> *craftInv,
 		RuleInventory *groundRuleInv, int worldShade, bool allowAutoLoadout, bool overrideEquipmentLayout);
+	/// Checks (no RNG, no state) that the alien ranks of a landing exist in the race at every possible depth; empty if fine.
+	static std::string checkAlienRanks(const Mod *mod, const SavedGame *save, const AlienDeployment *ruleDeploy,
+		const AlienDeployment *alienDeploy, const std::string &alienRace, Texture *missionTexture, const std::string &where);
 };
 
 }

@@ -1,0 +1,4 @@
+﻿HD menu: merged rows show their own hint again (almost every one used to tell about the online guide), the middle mouse button opens their setting window again, and the "HD settings guide" row opens the guide instead of changing another setting.
+HD menu: the "Ctrl + wheel zooms the map" switch is back (Battle tab, "Battle map" group) - battle zoom by Ctrl + wheel can be turned off again.
+HD menu: every switch removed on 16.11 is back and remembers the player's choice again: ground variants, hover sway, hidden enemy animation, collapse shake, path digits, ammo hint, inventory keys, use on body, Ufopaedia range, red wounded, race badge, training blocks, transfer cost and sides, globe funds button.
+Launcher 0.6.2: leaving the setup page while the game is installing and coming back no longer cancels the install ("A task was canceled" at step 4 of 5), and pressing Install again no longer crashes the launcher - the running install simply goes on (player report).

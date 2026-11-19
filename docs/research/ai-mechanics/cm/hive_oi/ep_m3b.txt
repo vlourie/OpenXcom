@@ -1,0 +1,74 @@
+==== scpa_D_M3_s1 target 470
+ t5 pstart: pos (42,26,0) dir 5 tu 195 hp 132/168
+ t5 aistart: pos (46,27,0) dir 4 tu 156 hp 132/168 spotted 0 sniped 1 seenby 3 wounds 0
+ t6 pstart: pos (46,27,0) dir 4 tu 195 hp 36/168
+ t6 aistart: pos (45,27,0) dir 6 tu 25 hp 36/168 spotted 0 sniped 1 seenby 4 wounds 0
+ t7 pstart: pos (45,27,0) dir 6 tu 195 hp 36/168
+ t7 aistart: pos (45,27,0) dir 2 tu 116 hp 36/168 spotted 0 sniped 1 seenby 5 wounds 0
+ t5 1000000 from (44,32,3) tu 181 hp 37 mode 2 act 2 to (45,26,0) CHRYSSALID_W src melee tgt  side-if-from-to rear/right spent 8 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d6
+ t5 1000000 from (44,30,3) tu 173 hp 37 mode 2 act 2 to (45,26,0) CHRYSSALID_W src melee tgt  side-if-from-to rear/right spent 161 dmg 96 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d4
+-- reactions and casualties in the window, in log order
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+  casualty {'turn': '5', 'victim': '1000000', 'how': 'dead', 'killer': '470', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'front', 'dist': '1', 'pos': '(45,26,0)'}
+  casualty {'turn': '5', 'victim': '1000081', 'how': 'dead', 'killer': '1000023', 'weapon': 'STR_CANISTER_GUN', 'hit': 'left', 'dist': '11', 'pos': '(45,22,0)'}
+  [AIEVENT] turn=5 side=1 what=reaction unit=448 pos=(13,7,0)
+  casualty {'turn': '5', 'victim': '1000028', 'how': 'dead', 'killer': '448', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'front', 'dist': '11', 'pos': '(13,7,0)'}
+  [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(43,36,0)
+  [AIEVENT] turn=5 side=1 what=reaction unit=448 pos=(6,5,0)
+  casualty {'turn': '5', 'victim': '1000050', 'how': 'dead', 'killer': '448', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'left', 'dist': '16', 'pos': '(6,5,0)'}
+  casualty {'turn': '6', 'victim': '1000047', 'how': 'dead', 'killer': '470', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'left', 'dist': '3', 'pos': '(48,29,0)'}
+  [AIEVENT] turn=6 side=0 what=reaction unit=1000025 pos=(21,44,0)
+  [AIEVENT] turn=6 side=0 what=reaction unit=1000025 pos=(21,44,0)
+  casualty {'turn': '6', 'victim': '1000017', 'how': 'dead', 'killer': '470', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'front', 'dist': '8', 'pos': '(43,34,0)'}
+  [AIEVENT] turn=6 side=1 what=reaction unit=448 pos=(32,21,0)
+  casualty {'turn': '6', 'victim': '1000044', 'how': 'dead', 'killer': '448', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'front', 'dist': '3', 'pos': '(32,21,0)'}
+  casualty {'turn': '7', 'victim': '1000083', 'how': 'dead', 'killer': '470', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'left', 'dist': '4', 'pos': '(49,26,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000052', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'front', 'dist': '21', 'pos': '(31,60,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000039', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '21', 'pos': '(36,58,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000038', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'under', 'dist': '8', 'pos': '(28,47,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  casualty {'turn': '7', 'victim': '1000005', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'front', 'dist': '14', 'pos': '(18,52,0)'}
+  [AIEVENT] turn=7 side=1 what=reaction unit=470 pos=(52,30,0)
+  casualty {'turn': '7', 'victim': '1000018', 'how': 'dead', 'killer': '470', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'left', 'dist': '8', 'pos': '(52,30,0)'}
+  casualty {'turn': '7', 'victim': '1000010', 'how': 'stun', 'killer': '1000054', 'weapon': 'STR_SR_RIFLE', 'hit': 'left', 'dist': '7', 'pos': '(41,54,0)'}
+  casualty {'turn': '7', 'victim': '470', 'how': 'dead', 'killer': '1000085', 'weapon': 'AUX_CHRYSSALID_WEAPON', 'hit': 'rear', 'dist': '2', 'pos': '(45,27,0)'}
+  [AIEVENT] turn=8 side=0 what=reaction unit=1000025 pos=(26,39,0)
+  [AIEVENT] turn=8 side=0 what=reaction unit=1000026 pos=(31,34,0)
+  [AIEVENT] turn=8 side=0 what=reaction unit=1000008 pos=(24,48,0)
+-- kills by the target, per turn, over the whole battle
+   [(1, 1), (2, 1), (3, 2), (4, 1), (5, 1), (6, 2), (7, 2)]
+-- all player's kills per turn: [(1, 4), (2, 12), (3, 8), (4, 4), (5, 6), (6, 3), (7, 4), (9, 5), (10, 3), (11, 1), (12, 6), (13, 1), (15, 1), (16, 1), (17, 1), (20, 1)]

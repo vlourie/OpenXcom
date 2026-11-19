@@ -1,0 +1,17 @@
+== ra2_AN_M6_s2 decisions 697 unit-turns 177
+  classes {'patrol_walk': 448, 'attack': 110, 'combat_walk': 55, 'held_patrol_stand': 25, 'esc_dice_stand': 18, 'art_esc_stand': 17, 'esc_dice_walk': 15, 'esc_kept_walk': 4, 'patrol_stand': 3, 'natural_fallback_stand': 2}
+  held decisions 329 with a patrol proposal (must be 0) 135 not held without one 233
+  rolled -> final when held / when not held
+    rolled 0: held {0: 124, 3: 7} | free {0: 117}
+    rolled 1: held {} | free {}
+    rolled 2: held {0: 121, 2: 39, 3: 10} | free {0: 114, 2: 62, 3: 2}
+    rolled 3: held {3: 12} | free {3: 21}
+    rolled -: held {2: 13, 3: 3} | free {2: 51, 3: 1}
+  by role: decisions art_stand art_walk held_patrol_stand esc_dice attack
+    ENGAGE 287 4 0 0 16 55
+    GUARD 34 0 0 25 1 2
+    NONE 133 0 0 0 9 48
+    REINFORCE 99 9 0 0 3 2
+    SEARCH 144 4 0 0 4 3
+  artificial by hold kind {'arrived': 15, 'guard_sector': 1, 'locked': 1}
+  unit turns {'unit_turns_with_art': 28, 'could_only_walk': 26, 'attacked_later_same_turn': 2} tu at the end {'could_only_walk': 2134}

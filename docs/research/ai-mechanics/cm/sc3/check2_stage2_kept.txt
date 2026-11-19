@@ -1,0 +1,6 @@
+sc4t_S_M10_s1 c8f3ef7cd6410e401a7c58e0ad62aaf1
+sc6s_S_M10_s1 c8f3ef7cd6410e401a7c58e0ad62aaf1 IDENTICAL
+  picks 522, total 26.2 ms, mean 50 us, median 27 us, p95 198 us, max 568 us
+sc4t_S_L2_s1 4ed532dc48ab779e966bdc46c25fe700
+sc6s_S_L2_s1 4ed532dc48ab779e966bdc46c25fe700 IDENTICAL
+  picks 473, total 22.0 ms, mean 47 us, median 15 us, p95 177 us, max 401 us

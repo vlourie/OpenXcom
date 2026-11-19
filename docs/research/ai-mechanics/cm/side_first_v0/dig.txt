@@ -1,0 +1,67 @@
+
+== M3
+ D: ходов 87, phplost 3358 (38.6 за ход), врагов сбито 251 (2.89 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 440, 'att_at_2': 153, 'att_at_place': 58, 'attdmg_at_0': 1523, 'attdmg_at_2': 2966, 'attdmg_at_place': 72, 'attff_at_0': 3349, 'attff_at_2': 274, 'attff_at_place': 68}
+   ОВ: {'tu_aim': 8642, 'tu_auto': 496, 'tu_hit': 796, 'tu_none': 14, 'tu_snap': 9221, 'tu_throw': 2610, 'tu_walk': 63982} пси: {}
+   игрок сбит: [(('h', 'STR_CHRYSSALID_TERRORIST', 'AUX_CHRYSSALID_WEAPON', 'dead'), 11), (('h', 'SOLDIER', 'AUX_TANK_CANNON', 'dead'), 3), (('p', 'SOLDIER', 'AUX_TANK_CANNON', 'stun'), 2), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'dead'), 2), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('p', 'SOLDIER', 'AUX_TANK_LASER_CANNON', 'dead'), 1), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'stun'), 1), (('p', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('p', 'STR_ERIDIAN_BEASTMASTER', 'STR_PIR_SMALL_LAUNCHER', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 133), (('h', 'player', 'dead'), 73), (('p', 'player', 'stun'), 25), (('h', 'player', 'stun'), 9), (('h', 'own', 'dead'), 5), (('h', 'own', 'stun'), 4), (('p', '?', 'stun'), 1), (('p', '?', 'dead'), 1)]
+ XN: ходов 70, phplost 2191 (31.3 за ход), врагов сбито 281 (4.01 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 300, 'att_at_2': 155, 'att_at_place': 87, 'attdmg_at_0': 1919, 'attdmg_at_2': 3598, 'attdmg_at_place': 365, 'attff_at_0': 640, 'attff_at_2': 106, 'attff_at_place': 22}
+   ОВ: {'tu_aim': 4449, 'tu_auto': 544, 'tu_hit': 425, 'tu_none': 259, 'tu_snap': 9391, 'tu_throw': 2349, 'tu_walk': 34459} пси: {}
+   игрок сбит: [(('p', 'SOLDIER', 'AUX_TANK_CANNON', 'dead'), 5), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_SR_RIFLE', 'dead'), 4), (('h', 'STR_CHRYSSALID_TERRORIST', 'AUX_CHRYSSALID_WEAPON', 'dead'), 3), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_CANISTER_GUN', 'dead'), 2), (('h', 'STR_ERIDIAN_SOLDIER', 'STR_SR_RIFLE', 'stun'), 2), (('p', 'SOLDIER', 'AUX_TANK_CANNON', 'stun'), 1), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('h', 'STR_ERIDIAN_LEADER', 'STR_PIR_PLASMA_RIFLE', 'stun'), 1), (('p', '-', 'STR_WEAPON_UNKNOWN', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 196), (('p', 'player', 'stun'), 36), (('h', 'player', 'dead'), 31), (('h', 'player', 'stun'), 13), (('h', 'own', 'dead'), 2), (('p', '?', 'stun'), 1), (('p', '?', 'dead'), 1), (('p', 'own', 'dead'), 1)]
+
+== M8
+ D: ходов 28, phplost 321 (11.5 за ход), врагов сбито 160 (5.71 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 138, 'att_at_place': 1, 'attdmg_at_0': 207, 'attdmg_at_place': 0, 'attff_at_0': 145, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 1359, 'tu_auto': 3201, 'tu_none': 14, 'tu_snap': 1957, 'tu_throw': 246, 'tu_walk': 10444} пси: {}
+   игрок сбит: [(('p', 'STR_ARMORED_CAR_NAZI_TERRORIST', 'AUX_TANK_TURRETED_AC25MM_WEAPON', 'stun'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 108), (('h', 'player', 'dead'), 31), (('p', 'player', 'stun'), 10), (('h', 'own', 'dead'), 5), (('h', 'own', 'stun'), 2), (('h', 'player', 'stun'), 2), (('p', 'own', 'dead'), 1), (('p', 'own', 'stun'), 1)]
+ XN: ходов 25, phplost 241 (9.6 за ход), врагов сбито 157 (6.28 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 38, 'att_at_place': 31, 'attdmg_at_0': 111, 'attdmg_at_place': 7, 'attff_at_0': 0, 'attff_at_place': 125}
+   ОВ: {'tu_aim': 543, 'tu_auto': 2891, 'tu_none': 18, 'tu_snap': 894, 'tu_throw': 154, 'tu_walk': 10478} пси: {}
+   игрок сбит: [(('h', 'STR_ARMORED_CAR_NAZI_TERRORIST', 'AUX_TANK_TURRETED_AC25MM_WEAPON', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 109), (('h', 'player', 'dead'), 34), (('p', 'player', 'stun'), 6), (('h', 'own', 'dead'), 4), (('h', 'player', 'stun'), 2), (('h', 'own', 'stun'), 1), (('p', 'own', 'dead'), 1)]
+
+== L4
+ D: ходов 37, phplost 1266 (34.2 за ход), врагов сбито 150 (4.05 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 185, 'att_at_2': 1, 'att_at_place': 13, 'attdmg_at_0': 943, 'attdmg_at_2': 79, 'attdmg_at_place': 0, 'attff_at_0': 1013, 'attff_at_2': 146, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 105, 'tu_auto': 1946, 'tu_hit': 0, 'tu_none': 0, 'tu_o': 0, 'tu_snap': 3846, 'tu_throw': 312, 'tu_walk': 10485} пси: {}
+   игрок сбит: [(('h', 'STR_DOOM_SARGE', 'STR_PIR_PLASMA_RIFLE', 'dead'), 2), (('p', 'STR_DOOM_SARGE', 'STR_PLASMA_SCORCHER', 'dead'), 1), (('h', 'STR_DOOM_SOLDIER', 'STR_PLASMA_SCORCHER', 'dead'), 1), (('p', 'STR_DOOM_SARGE', 'STR_PIR_HEAVY_PLASMA', 'stun'), 1), (('p', 'STR_DOOM_SARGE', 'STR_PIR_HEAVY_PLASMA', 'dead'), 1), (('h', 'STR_DOOM_SARGE', 'STR_PLASMA_SCORCHER', 'dead'), 1), (('h', 'STR_DOOM_SARGE', 'STR_PLASMA_SCORCHER', 'stun'), 1), (('h', 'STR_DOOM_CACODEMON_TERRORIST', 'AUX_DOOM_CACODEMON_WEAPON', 'stun'), 1), (('p', 'STR_DOOM_CACODEMON_TERRORIST', 'AUX_DOOM_CACODEMON_WEAPON', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 103), (('h', 'player', 'dead'), 24), (('h', 'own', 'dead'), 10), (('p', 'player', 'stun'), 8), (('p', 'own', 'dead'), 3), (('h', 'own', 'stun'), 2)]
+ XN: ходов 25, phplost 2116 (84.6 за ход), врагов сбито 147 (5.88 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 94, 'att_at_place': 44, 'attdmg_at_0': 1533, 'attdmg_at_place': 302, 'attff_at_0': 50, 'attff_at_place': 113}
+   ОВ: {'tu_aim': 126, 'tu_auto': 2144, 'tu_hit': 154, 'tu_none': 0, 'tu_snap': 1772, 'tu_throw': 354, 'tu_walk': 9424} пси: {}
+   игрок сбит: [(('h', 'STR_DOOM_SARGE', 'STR_PIR_HEAVY_PLASMA', 'stun'), 2), (('p', 'STR_DOOM_SARGE', 'STR_PIR_HEAVY_PLASMA', 'dead'), 2), (('h', 'STR_DOOM_SOLDIER', 'STR_PIR_PLASMA_RIFLE', 'dead'), 2), (('h', 'STR_DOOM_SARGE', 'STR_PIR_HEAVY_PLASMA', 'dead'), 2), (('p', 'STR_DOOM_SARGE', 'STR_PLASMA_SCORCHER', 'dead'), 1), (('h', 'STR_DOOM_SARGE', 'STR_PLASMA_SCORCHER', 'stun'), 1), (('h', 'STR_DOOM_SARGE', 'STR_PLASMA_SCORCHER', 'dead'), 1), (('h', 'STR_DOOM_SARGE', 'STR_PIR_PLASMA_RIFLE', 'dead'), 1), (('h', 'STR_DOOM_SOLDIER', 'STR_PLASMA_SCORCHER', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 105), (('h', 'player', 'dead'), 29), (('h', 'own', 'dead'), 6), (('p', 'own', 'dead'), 3), (('p', 'player', 'stun'), 3), (('h', 'player', 'stun'), 1)]
+
+== L8
+ D: ходов 22, phplost 3057 (139.0 за ход), врагов сбито 33 (1.50 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 208, 'att_at_place': 7, 'attdmg_at_0': 4220, 'attdmg_at_place': 0, 'attff_at_0': 76, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 227, 'tu_auto': 3659, 'tu_mc': 668, 'tu_none': 0, 'tu_o': 220, 'tu_psi': 548, 'tu_snap': 2258, 'tu_throw': 221, 'tu_walk': 15341} пси: {'psi_psi': 8, 'psi_mc': 20}
+   игрок сбит: [(('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 26), (('p', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 3), (('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'stun'), 2), (('h', 'STR_ETHEREAL_NOVICE', 'ETHEREAL_WEAPON', 'dead'), 1), (('h', 'STR_ETHEREAL_SOLDIER', 'STR_PLASMA_SCORCHER', 'stun'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 15), (('h', 'player', 'dead'), 11), (('p', '?', 'dead'), 3), (('h', 'own', 'dead'), 2), (('p', 'player', 'stun'), 1), (('h', 'own', 'stun'), 1)]
+ XN: ходов 16, phplost 3339 (208.7 за ход), врагов сбито 22 (1.38 за ход)
+   атаки по фракции (0 игрок, 2 гражд.): {'att_at_0': 167, 'att_at_place': 82, 'attdmg_at_0': 1357, 'attdmg_at_place': 3583, 'attff_at_0': 3, 'attff_at_place': 0}
+   ОВ: {'tu_aim': 703, 'tu_auto': 3058, 'tu_mc': 142, 'tu_none': 0, 'tu_o': 73, 'tu_psi': 150, 'tu_snap': 3767, 'tu_throw': 251, 'tu_walk': 23170} пси: {'psi_psi': 2, 'psi_mc': 4}
+   игрок сбит: [(('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 29), (('p', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'dead'), 2), (('h', 'STR_SECTOPOD_TERRORIST', 'AUX_SECTOPOD_WEAPON', 'stun'), 1), (('h', 'STR_ETHEREAL_SOLDIER', 'STR_PIR_HEAVY_PLASMA', 'dead'), 1)]
+   враг сбит (чей ход, кем, как): [(('p', 'player', 'dead'), 12), (('h', 'player', 'dead'), 4), (('p', '?', 'dead'), 3), (('p', 'player', 'stun'), 1), (('h', 'player', 'stun'), 1), (('h', 'own', 'dead'), 1)]
+
+== первый ход врага по парам: здоровье игрока D -> XN
+ M3 s1: 114 -> 30
+ M3 s2: 183 -> 103
+ M3 s3: 64 -> 119
+ M3 s4: 42 -> 34
+ M8 s1: 5 -> 5
+ M8 s2: 23 -> 23
+ M8 s3: 48 -> 0
+ M8 s4: 11 -> 3
+ L4 s1: 111 -> 144
+ L4 s2: 163 -> 26
+ L4 s3: 3 -> 2
+ L4 s4: 123 -> 108
+ L8 s1: -5 -> 503
+ L8 s2: 394 -> 560
+ L8 s3: 225 -> 260
+ L8 s4: 429 -> 278
+ знаки: {'-': 9, '+': 5, '=': 2}

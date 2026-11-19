@@ -1,0 +1,381 @@
+== M1 D0~D0b
+decisions A 156 B 156; same state and choice from the start 156; same choice from the start 156
+== M1 D0~D0n
+decisions A 156 B 156; same state and choice from the start 156; same choice from the start 156
+== M1 D0~DH
+decisions A 156 B 146; same state and choice from the start 0; same choice from the start 4
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(32,27,2) tu=85 mode=2 act=6 to=(43,23,2) run=0 kneel=0 aim=115 weapon=STR_PIR_ALIEN ... hashes differ: ha,hu
+  same  turn=3 side=1 unit=1000001 n=2 from=(42,35,2) tu=76 mode=2 act=7 to=(45,18,2) run=0 kneel=0 aim=180 weapon=STR_PIR_HEAVY_PLASMA seen=167,114,115,43,176,205,180,218,207,220,212,219,210,138,229,1000038
+  A     turn=3 side=1 unit=1000002 n=1 from=(26,24,4) tu=126 mode=0 act=2 to=(26,16,4) run=0 kneel=0 aim=-1 weapon=STR_PIR_BLASTER_LAUNCHER seen=167,114,115,43,176,205,180,218,207,220,212,219,210,138,229,1000038
+  B     turn=3 side=1 unit=1000000 n=1 from=(32,27,2) tu=45 mode=2 act=8 to=(43,23,2) run=0 kneel=0 aim=115 weapon=STR_PIR_PLASMA_RIFLE seen=167,114,115,43,176,205,180,218,207,220,212,219,210,138,229,1000038
+== M1 D0~D1
+decisions A 156 B 146; same state and choice from the start 0; same choice from the start 4
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(32,27,2) tu=85 mode=2 act=6 to=(43,23,2) run=0 kneel=0 aim=115 weapon=STR_PIR_ALIEN ... hashes differ: ha,hu
+  same  turn=3 side=1 unit=1000001 n=2 from=(42,35,2) tu=76 mode=2 act=7 to=(45,18,2) run=0 kneel=0 aim=180 weapon=STR_PIR_HEAVY_PLASMA seen=167,114,115,43,176,205,180,218,207,220,212,219,210,138,229,1000038
+  A     turn=3 side=1 unit=1000002 n=1 from=(26,24,4) tu=126 mode=0 act=2 to=(26,16,4) run=0 kneel=0 aim=-1 weapon=STR_PIR_BLASTER_LAUNCHER seen=167,114,115,43,176,205,180,218,207,220,212,219,210,138,229,1000038
+  B     turn=3 side=1 unit=1000000 n=1 from=(32,27,2) tu=45 mode=2 act=8 to=(43,23,2) run=0 kneel=0 aim=115 weapon=STR_PIR_PLASMA_RIFLE seen=167,114,115,43,176,205,180,218,207,220,212,219,210,138,229,1000038
+== M1 DH~D1
+decisions A 146 B 146; same state and choice from the start 3; same choice from the start 146
+  first state difference at #3: turn=3 side=1 unit=1000001 n=2 from=(42,35,2) tu=76 mode=2 act=7 to=(45,18,2) run=0 kneel=0 aim=180 weapon=STR_PIR_HEAVY ... hashes differ: ha
+== M1 DH~DS
+decisions A 146 B 146; same state and choice from the start 3; same choice from the start 146
+  first state difference at #3: turn=3 side=1 unit=1000001 n=2 from=(42,35,2) tu=76 mode=2 act=7 to=(45,18,2) run=0 kneel=0 aim=180 weapon=STR_PIR_HEAVY ... hashes differ: ha
+== M1 DS~DSE
+decisions A 146 B 146; same state and choice from the start 146; same choice from the start 146
+== M2 D0~D0b
+decisions A 277 B 277; same state and choice from the start 277; same choice from the start 277
+== M2 D0~D0n
+decisions A 277 B 277; same state and choice from the start 277; same choice from the start 277
+== M2 D0~DH
+decisions A 277 B 271; same state and choice from the start 0; same choice from the start 91
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(15,28,2) tu=126 mode=3 act=0 to=(15,28,2) run=0 kneel=0 aim=257 weapon=STR_CD_RIFLE ... hashes differ: hu
+  same  turn=3 side=1 unit=1000049 n=1 from=(20,25,4) tu=163 mode=0 act=2 to=(48,58,0) run=0 kneel=0 aim=1000102 weapon=STR_CD_PISTOL seen=268,261,1000070,1000076,1000079,1000081,1000084,1000093,1000095,1000100,1000102,1000103,1
+  A     turn=3 side=1 unit=1000049 n=2 from=(21,27,4) tu=153 mode=2 act=9 to=(64,38,0) run=0 kneel=0 aim=1000102 weapon=STR_CD_PISTOL seen=268,261,1000070,1000076,1000079,1000081,1000084,1000093,1000095,1000100,1000102,1000103,1
+  B     turn=3 side=1 unit=1000049 n=2 from=(20,37,0) tu=115 mode=2 act=8 to=(45,50,0) run=0 kneel=0 aim=1000095 weapon=STR_CD_PISTOL seen=268,261,1000070,1000076,1000079,1000081,1000084,1000093,1000095,1000100,1000102,1000103,1
+== M2 D0~D1
+decisions A 277 B 260; same state and choice from the start 0; same choice from the start 1
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(15,28,2) tu=126 mode=3 act=0 to=(15,28,2) run=0 kneel=0 aim=257 weapon=STR_CD_RIFLE ... hashes differ: hu
+  same  turn=3 side=1 unit=1000000 n=1 from=(15,28,2) tu=126 mode=3 act=0 to=(15,28,2) run=0 kneel=0 aim=257 weapon=STR_CD_RIFLE seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,1000120,10
+  A     turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(30,48,0) run=0 kneel=0 aim=1000079 weapon=STR_CD_PISTOL seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,10001
+  B     turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(27,28,1) run=0 kneel=0 aim=1000079 weapon=STR_CD_PISTOL seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,10001
+== M2 DH~D1
+decisions A 271 B 260; same state and choice from the start 1; same choice from the start 1
+  first state difference at #1: turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(30,48,0) run=0 kneel=0 aim=1000079 weapon=STR_CD_P ... hashes differ: ha
+  same  turn=3 side=1 unit=1000000 n=1 from=(15,28,2) tu=126 mode=3 act=0 to=(15,28,2) run=0 kneel=0 aim=257 weapon=STR_CD_RIFLE seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,1000120,10
+  A     turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(30,48,0) run=0 kneel=0 aim=1000079 weapon=STR_CD_PISTOL seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,10001
+  B     turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(27,28,1) run=0 kneel=0 aim=1000079 weapon=STR_CD_PISTOL seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,10001
+== M2 DH~DS
+decisions A 271 B 277; same state and choice from the start 114; same choice from the start 114
+  first state difference at #114: turn=3 side=1 unit=1000128 n=1 from=(19,36,2) tu=74 mode=3 act=0 to=(19,36,2) run=0 kneel=0 aim=-1 weapon=AUX_TANK_LIGHT ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000127 n=2 from=(15,36,2) tu=74 mode=0 act=2 to=(69,43,0) run=0 kneel=0 aim=257 weapon=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=268,261,1000070,1000081,1000084,1000093,1000100,1000102,1000106,1000108,100012
+  A     turn=3 side=1 unit=1000128 n=1 from=(19,36,2) tu=74 mode=3 act=0 to=(19,36,2) run=0 kneel=0 aim=-1 weapon=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=268,261,1000070,1000081,1000084,1000093,1000100,1000102,1000106,1000108,1000120
+  B     turn=3 side=1 unit=1000128 n=1 from=(19,36,2) tu=74 mode=0 act=2 to=(64,29,0) run=0 kneel=0 aim=-1 weapon=AUX_TANK_LIGHT_MINIGUN_WEAPON seen=268,261,1000070,1000081,1000084,1000093,1000100,1000102,1000106,1000108,1000120
+== M2 DS~DSE
+decisions A 277 B 277; same state and choice from the start 277; same choice from the start 277
+== M3 D0~D0b
+decisions A 123 B 123; same state and choice from the start 123; same choice from the start 123
+== M3 D0~D0n
+decisions A 123 B 123; same state and choice from the start 123; same choice from the start 123
+== M3 D0~DH
+decisions A 123 B 169; same state and choice from the start 0; same choice from the start 16
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(42,28,0) tu=181 mode=2 act=2 to=(45,25,0) run=0 kneel=0 aim=470 weapon=AUX_CHRYSSAL ... hashes differ: ha,hu
+  same  turn=3 side=1 unit=1000009 n=1 from=(26,32,0) tu=65 mode=2 act=9 to=(40,19,0) run=0 kneel=0 aim=545 weapon=STR_CANISTER_GUN seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  A     turn=3 side=1 unit=1000009 n=2 from=(26,32,0) tu=19 mode=3 act=2 to=(28,29,0) run=0 kneel=0 aim=454 weapon=STR_CANISTER_GUN seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  B     turn=3 side=1 unit=1000009 n=2 from=(26,32,0) tu=19 mode=3 act=2 to=(25,33,0) run=0 kneel=0 aim=454 weapon=STR_CANISTER_GUN seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+== M3 D0~D1
+decisions A 123 B 143; same state and choice from the start 0; same choice from the start 6
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(42,28,0) tu=181 mode=2 act=2 to=(45,25,0) run=0 kneel=0 aim=470 weapon=AUX_CHRYSSAL ... hashes differ: ha,hu
+  same  turn=3 side=1 unit=1000005 n=2 from=(38,58,0) tu=159 mode=2 act=2 to=(42,59,0) run=0 kneel=0 aim=520 weapon=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  A     turn=3 side=1 unit=1000006 n=1 from=(26,39,0) tu=59 mode=0 act=2 to=(9,52,0) run=0 kneel=0 aim=-1 weapon=AUX_SILACOID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  B     turn=3 side=1 unit=1000006 n=0 from=(26,39,0) tu=59 mode=2 act=2 to=(21,40,0) run=0 kneel=0 aim=454 weapon=AUX_SILACOID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+== M3 DH~D1
+decisions A 169 B 143; same state and choice from the start 6; same choice from the start 6
+  first state difference at #6: turn=3 side=1 unit=1000006 n=1 from=(26,39,0) tu=59 mode=0 act=2 to=(9,52,0) run=0 kneel=0 aim=-1 weapon=AUX_SILACOID_WE ... hashes differ: ha,hr,hu
+  same  turn=3 side=1 unit=1000005 n=2 from=(38,58,0) tu=159 mode=2 act=2 to=(42,59,0) run=0 kneel=0 aim=520 weapon=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  A     turn=3 side=1 unit=1000006 n=1 from=(26,39,0) tu=59 mode=0 act=2 to=(9,52,0) run=0 kneel=0 aim=-1 weapon=AUX_SILACOID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  B     turn=3 side=1 unit=1000006 n=0 from=(26,39,0) tu=59 mode=2 act=2 to=(21,40,0) run=0 kneel=0 aim=454 weapon=AUX_SILACOID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+== M3 DH~DS
+decisions A 169 B 169; same state and choice from the start 169; same choice from the start 169
+== M3 DS~DSE
+decisions A 169 B 169; same state and choice from the start 169; same choice from the start 169
+== M5 D0~D0b
+decisions A 218 B 218; same state and choice from the start 218; same choice from the start 218
+== M5 D0~D0n
+decisions A 218 B 218; same state and choice from the start 218; same choice from the start 218
+== M5 D0~DH
+decisions A 218 B 254; same state and choice from the start 1; same choice from the start 1
+  first state difference at #1: turn=3 side=1 unit=1000001 n=2 from=(53,8,0) tu=74 mode=0 act=2 to=(18,6,2) run=0 kneel=0 aim=4 weapon=STR_BLUNDERBUSS s ... hashes differ: hu
+  same  turn=3 side=1 unit=1000000 n=1 from=(38,36,2) tu=74 mode=2 act=2 to=(38,32,2) run=0 kneel=0 aim=108 weapon=STR_SHOVEL seen=268,261,153,92,255,257,108,4
+  A     turn=3 side=1 unit=1000001 n=2 from=(53,8,0) tu=74 mode=0 act=2 to=(18,6,2) run=0 kneel=0 aim=4 weapon=STR_BLUNDERBUSS seen=268,261,153,92,255,257,108,4
+  B     turn=3 side=1 unit=1000001 n=1 from=(53,8,0) tu=74 mode=0 act=2 to=(18,6,2) run=0 kneel=0 aim=4 weapon=STR_BLUNDERBUSS seen=268,261,153,92,255,257,108,4
+== M5 D0~D1
+decisions A 218 B 256; same state and choice from the start 0; same choice from the start 1
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(38,36,2) tu=74 mode=2 act=2 to=(38,32,2) run=0 kneel=0 aim=108 weapon=STR_SHOVEL se ... hashes differ: ha
+  same  turn=3 side=1 unit=1000000 n=1 from=(38,36,2) tu=74 mode=2 act=2 to=(38,32,2) run=0 kneel=0 aim=108 weapon=STR_SHOVEL seen=268,261,153,92,255,257,108,4
+  A     turn=3 side=1 unit=1000001 n=2 from=(53,8,0) tu=74 mode=0 act=2 to=(18,6,2) run=0 kneel=0 aim=4 weapon=STR_BLUNDERBUSS seen=268,261,153,92,255,257,108,4
+  B     turn=3 side=1 unit=1000001 n=1 from=(53,8,0) tu=74 mode=0 act=2 to=(18,6,2) run=0 kneel=0 aim=4 weapon=STR_BLUNDERBUSS seen=268,261,153,92,255,257,108,4
+== M5 DH~D1
+decisions A 254 B 256; same state and choice from the start 0; same choice from the start 5
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(38,36,2) tu=74 mode=2 act=2 to=(38,32,2) run=0 kneel=0 aim=108 weapon=STR_SHOVEL se ... hashes differ: ha
+  same  turn=3 side=1 unit=1000001 n=2 from=(48,10,0) tu=22 mode=3 act=0 to=(48,10,0) run=0 kneel=0 aim=-1 weapon=STR_BLUNDERBUSS seen=268,261,153,92,255,257,108,4
+  A     turn=3 side=1 unit=1000002 n=1 from=(36,34,0) tu=74 mode=0 act=2 to=(36,37,3) run=0 kneel=0 aim=-1 weapon=STR_SHOOTA seen=268,261,153,92,255,257,108,4
+  B     turn=3 side=1 unit=1000002 n=1 from=(36,34,0) tu=74 mode=0 act=2 to=(34,30,1) run=0 kneel=0 aim=-1 weapon=STR_SHOOTA seen=268,261,153,92,255,257,108,4
+== M5 DH~DS
+decisions A 254 B 255; same state and choice from the start 47; same choice from the start 47
+  first state difference at #47: turn=3 side=1 unit=1000022 n=2 from=(38,35,2) tu=66 mode=0 act=2 to=(30,35,2) run=0 kneel=0 aim=-1 weapon=STR_NINJA_CARB ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000022 n=1 from=(31,32,3) tu=126 mode=0 act=2 to=(38,35,2) run=0 kneel=0 aim=-1 weapon=STR_NINJA_CARBINE seen=268,261,153,92,255,257,108,4
+  A     turn=3 side=1 unit=1000022 n=2 from=(38,35,2) tu=66 mode=0 act=2 to=(30,35,2) run=0 kneel=0 aim=-1 weapon=STR_NINJA_CARBINE seen=268,261,153,92,255,257,108,4
+  B     turn=3 side=1 unit=1000022 n=2 from=(38,35,2) tu=66 mode=3 act=0 to=(38,35,2) run=0 kneel=0 aim=-1 weapon=STR_NINJA_CARBINE seen=268,261,153,92,255,257,108,4
+== M5 DS~DSE
+decisions A 255 B 255; same state and choice from the start 255; same choice from the start 255
+== M8 D0~D0b
+decisions A 70 B 70; same state and choice from the start 70; same choice from the start 70
+== M8 D0~D0n
+decisions A 70 B 70; same state and choice from the start 70; same choice from the start 70
+== M8 D0~DH
+decisions A 70 B 72; same state and choice from the start 0; same choice from the start 17
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(52,34,0) tu=298 mode=1 act=2 to=(52,32,0) run=0 kneel=0 aim=257 weapon=AUX_TANK_TUR ... hashes differ: ha
+  same  turn=3 side=1 unit=1000021 n=1 from=(19,45,2) tu=81 mode=2 act=9 to=(8,18,0) run=0 kneel=0 aim=153 weapon=STR_OLD_RIFLE seen=153,257,4
+  A     turn=3 side=1 unit=1000001 n=2 from=(24,56,0) tu=298 mode=3 act=0 to=(24,56,0) run=0 kneel=0 aim=-1 weapon=AUX_TANK_TURRETED_AC25MM_WEAPON seen=153,257,4
+  B     turn=3 side=1 unit=1000001 n=1 from=(24,56,0) tu=298 mode=3 act=0 to=(24,56,0) run=0 kneel=0 aim=-1 weapon=AUX_TANK_TURRETED_AC25MM_WEAPON seen=153,257,4
+== M8 D0~D1
+decisions A 70 B 72; same state and choice from the start 0; same choice from the start 7
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(52,34,0) tu=298 mode=1 act=2 to=(52,32,0) run=0 kneel=0 aim=257 weapon=AUX_TANK_TUR ... hashes differ: ha
+  same  turn=3 side=1 unit=1000006 n=1 from=(18,50,0) tu=149 mode=0 act=2 to=(16,52,0) run=0 kneel=0 aim=-1 weapon=AUX_DOGG_WEAPON seen=153,257,4
+  A     turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(13,50,0) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEAPON seen=153,257,4
+  B     turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(17,50,1) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEAPON seen=153,257,4
+== M8 DH~D1
+decisions A 72 B 72; same state and choice from the start 7; same choice from the start 7
+  first state difference at #7: turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(13,50,0) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEA ... hashes differ: ha
+  same  turn=3 side=1 unit=1000006 n=1 from=(18,50,0) tu=149 mode=0 act=2 to=(16,52,0) run=0 kneel=0 aim=-1 weapon=AUX_DOGG_WEAPON seen=153,257,4
+  A     turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(13,50,0) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEAPON seen=153,257,4
+  B     turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(17,50,1) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEAPON seen=153,257,4
+== M8 DH~DS
+decisions A 72 B 72; same state and choice from the start 7; same choice from the start 7
+  first state difference at #7: turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(13,50,0) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEA ... hashes differ: ha
+  same  turn=3 side=1 unit=1000006 n=1 from=(18,50,0) tu=149 mode=0 act=2 to=(16,52,0) run=0 kneel=0 aim=-1 weapon=AUX_DOGG_WEAPON seen=153,257,4
+  A     turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(13,50,0) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEAPON seen=153,257,4
+  B     turn=3 side=1 unit=1000006 n=2 from=(16,52,0) tu=135 mode=0 act=2 to=(17,50,1) run=0 kneel=0 aim=261 weapon=AUX_DOGG_WEAPON seen=153,257,4
+== M8 DS~DSE
+decisions A 72 B 72; same state and choice from the start 72; same choice from the start 72
+== M10 D0~D0b
+decisions A 122 B 122; same state and choice from the start 122; same choice from the start 122
+== M10 D0~D0n
+decisions A 122 B 122; same state and choice from the start 122; same choice from the start 122
+== M10 D0~DH
+decisions A 122 B 129; same state and choice from the start 7; same choice from the start 73
+  first state difference at #7: turn=3 side=1 unit=1000002 n=2 from=(36,36,0) tu=67 mode=2 act=9 to=(47,6,0) run=0 kneel=0 aim=115 weapon=STR_UAC_RIFLE  ... hashes differ: ha
+  same  turn=3 side=1 unit=1000035 n=1 from=(36,33,0) tu=74 mode=2 act=9 to=(48,6,0) run=0 kneel=0 aim=114 weapon=STR_UAC_ROCKET_LAUNCHER seen=46,114,1,115
+  A     turn=3 side=1 unit=1000035 n=2 from=(36,33,0) tu=26 mode=0 act=2 to=(16,36,0) run=0 kneel=0 aim=114 weapon=STR_UAC_ROCKET_LAUNCHER seen=46,114,1,115
+  B     turn=3 side=1 unit=1000035 n=2 from=(36,33,0) tu=26 mode=3 act=2 to=(41,36,0) run=0 kneel=0 aim=114 weapon=STR_UAC_ROCKET_LAUNCHER seen=46,114,1,115
+== M10 D0~D1
+decisions A 122 B 115; same state and choice from the start 3; same choice from the start 3
+  first state difference at #3: turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(29,10,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO see ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000000 n=2 from=(55,34,0) tu=19 mode=0 act=2 to=(46,20,0) run=0 kneel=0 aim=114 weapon=STR_SHOTGUN_PA seen=46,114,1,115
+  A     turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(29,10,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO seen=46,114,1,115
+  B     turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(21,12,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO seen=46,114,1,115
+== M10 DH~D1
+decisions A 129 B 115; same state and choice from the start 3; same choice from the start 3
+  first state difference at #3: turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(29,10,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO see ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000000 n=2 from=(55,34,0) tu=19 mode=0 act=2 to=(46,20,0) run=0 kneel=0 aim=114 weapon=STR_SHOTGUN_PA seen=46,114,1,115
+  A     turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(29,10,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO seen=46,114,1,115
+  B     turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(21,12,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO seen=46,114,1,115
+== M10 DH~DS
+decisions A 129 B 128; same state and choice from the start 120; same choice from the start 121
+  first state difference at #120: turn=3 side=1 unit=1000037 n=1 from=(42,23,0) tu=19 mode=0 act=2 to=(29,55,0) run=0 kneel=0 aim=115 weapon=STR_UAC_HEAVY ... hashes differ: hr
+  same  turn=3 side=1 unit=1000037 n=1 from=(42,23,0) tu=19 mode=0 act=2 to=(29,55,0) run=0 kneel=0 aim=115 weapon=STR_UAC_HEAVY_NAILGUN seen=46,114,1,115
+  A     turn=3 side=1 unit=1000038 n=1 from=(12,13,0) tu=40 mode=0 act=2 to=(30,52,0) run=0 kneel=0 aim=-1 weapon=STR_UAC_HEAVY_NAILGUN seen=46,114,1,115
+  B     turn=3 side=1 unit=1000038 n=1 from=(12,13,0) tu=40 mode=2 act=2 to=(9,13,0) run=0 kneel=0 aim=115 weapon=STR_UAC_HEAVY_NAILGUN seen=46,114,1,115
+== M10 DS~DSE
+decisions A 128 B 128; same state and choice from the start 128; same choice from the start 128
+== M11 D0~D0b
+decisions A 59 B 59; same state and choice from the start 59; same choice from the start 59
+== M11 D0~D0n
+decisions A 59 B 59; same state and choice from the start 59; same choice from the start 59
+== M11 D0~DH
+decisions A 59 B 59; same state and choice from the start 10; same choice from the start 10
+  first state difference at #10: turn=3 side=1 unit=1000007 n=1 from=(24,14,1) tu=65 mode=0 act=2 to=(21,13,3) run=0 kneel=0 aim=4 weapon=AUX_ZOMBIE_WEAP ... hashes differ: ha
+  same  turn=3 side=1 unit=1000006 n=1 from=(20,16,0) tu=59 mode=0 act=2 to=(26,5,0) run=0 kneel=0 aim=92 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+  A     turn=3 side=1 unit=1000007 n=1 from=(24,14,1) tu=65 mode=0 act=2 to=(21,13,3) run=0 kneel=0 aim=4 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+  B     turn=3 side=1 unit=1000007 n=1 from=(24,14,1) tu=65 mode=0 act=2 to=(24,11,3) run=0 kneel=0 aim=255 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+== M11 D0~D1
+decisions A 59 B 52; same state and choice from the start 0; same choice from the start 0
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=153 weapon=AUX_ZOMBIE_WEA ... hashes differ: ha
+  A     turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=153 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+  B     turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=92 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+== M11 DH~D1
+decisions A 59 B 52; same state and choice from the start 0; same choice from the start 0
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=153 weapon=AUX_ZOMBIE_WEA ... hashes differ: ha
+  A     turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=153 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+  B     turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=92 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+== M11 DH~DS
+decisions A 59 B 57; same state and choice from the start 0; same choice from the start 0
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=153 weapon=AUX_ZOMBIE_WEA ... hashes differ: ha
+  A     turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=153 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+  B     turn=3 side=1 unit=1000000 n=1 from=(21,14,0) tu=59 mode=0 act=2 to=(25,7,0) run=0 kneel=0 aim=92 weapon=AUX_ZOMBIE_WEAPON seen=153,92,255,268,261,108,4
+== M11 DS~DSE
+decisions A 57 B 57; same state and choice from the start 57; same choice from the start 57
+== L4 D0~D0b
+decisions A 33 B 33; same state and choice from the start 33; same choice from the start 33
+== L4 D0~D0n
+decisions A 33 B 33; same state and choice from the start 33; same choice from the start 33
+== L4 D0~DH
+decisions A 33 B 29; same state and choice from the start 0; same choice from the start 8
+  first state difference at #0: turn=3 side=1 unit=1000004 n=0 from=(5,35,2) tu=81 mode=2 act=2 to=(10,38,2) run=0 kneel=0 aim=394 weapon=STR_PIR_PLASMA ... hashes differ: ha
+  same  turn=3 side=1 unit=1000009 n=1 from=(8,36,2) tu=51 mode=2 act=7 to=(10,31,2) run=0 kneel=0 aim=394 weapon=STR_PLASMA_SCORCHER seen=366,472,67,394
+  A     turn=3 side=1 unit=1000013 n=2 from=(14,56,2) tu=81 mode=2 act=8 to=(10,31,2) run=0 kneel=0 aim=394 weapon=STR_PIR_PLASMA_RIFLE seen=366,472,67,394
+  B     turn=3 side=1 unit=1000013 n=1 from=(14,56,2) tu=81 mode=2 act=8 to=(10,31,2) run=0 kneel=0 aim=394 weapon=STR_PIR_PLASMA_RIFLE seen=366,472,67,394
+== L4 D0~D1
+decisions A 33 B 29; same state and choice from the start 0; same choice from the start 8
+  first state difference at #0: turn=3 side=1 unit=1000004 n=0 from=(5,35,2) tu=81 mode=2 act=2 to=(10,38,2) run=0 kneel=0 aim=394 weapon=STR_PIR_PLASMA ... hashes differ: ha
+  same  turn=3 side=1 unit=1000009 n=1 from=(8,36,2) tu=51 mode=2 act=7 to=(10,31,2) run=0 kneel=0 aim=394 weapon=STR_PLASMA_SCORCHER seen=366,472,67,394
+  A     turn=3 side=1 unit=1000013 n=2 from=(14,56,2) tu=81 mode=2 act=8 to=(10,31,2) run=0 kneel=0 aim=394 weapon=STR_PIR_PLASMA_RIFLE seen=366,472,67,394
+  B     turn=3 side=1 unit=1000013 n=1 from=(14,56,2) tu=81 mode=2 act=8 to=(10,31,2) run=0 kneel=0 aim=394 weapon=STR_PIR_PLASMA_RIFLE seen=366,472,67,394
+== L4 DH~D1
+decisions A 29 B 29; same state and choice from the start 29; same choice from the start 29
+== L4 DH~DS
+decisions A 29 B 29; same state and choice from the start 29; same choice from the start 29
+== L4 DS~DSE
+decisions A 29 B 29; same state and choice from the start 29; same choice from the start 29
+== L5 D0~D0b
+decisions A 60 B 60; same state and choice from the start 60; same choice from the start 60
+== L5 D0~D0n
+decisions A 60 B 60; same state and choice from the start 60; same choice from the start 60
+== L5 D0~DH
+decisions A 60 B 58; same state and choice from the start 16; same choice from the start 17
+  first state difference at #16: turn=3 side=1 unit=1000039 n=1 from=(33,15,0) tu=96 mode=2 act=10 to=(34,14,0) run=0 kneel=0 aim=344 weapon=AUX_FISTO se ... hashes differ: ha
+  same  turn=3 side=1 unit=1000039 n=1 from=(33,15,0) tu=96 mode=2 act=10 to=(34,14,0) run=0 kneel=0 aim=344 weapon=AUX_FISTO seen=91,335,229
+  A     turn=3 side=1 unit=1000000 n=2 from=(24,42,0) tu=92 mode=0 act=2 to=(37,45,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,344,335,229
+  B     turn=3 side=1 unit=1000000 n=1 from=(24,42,0) tu=92 mode=0 act=2 to=(37,45,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,344,335,229
+== L5 D0~D1
+decisions A 60 B 71; same state and choice from the start 0; same choice from the start 6
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(32,40,0) tu=149 mode=2 act=2 to=(28,38,0) run=0 kneel=0 aim=229 weapon=AUX_DOGG_WEA ... hashes differ: ha
+  same  turn=3 side=1 unit=1000005 n=2 from=(12,64,0) tu=109 mode=0 act=2 to=(44,24,0) run=0 kneel=0 aim=-1 weapon=AUX_DOGG_WEAPON seen=91,229
+  A     turn=3 side=1 unit=1000000 n=1 from=(24,42,0) tu=92 mode=0 act=2 to=(37,45,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,335,229
+  B     turn=3 side=1 unit=1000000 n=1 from=(24,42,0) tu=92 mode=0 act=2 to=(57,51,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,335,229
+== L5 DH~D1
+decisions A 58 B 71; same state and choice from the start 0; same choice from the start 6
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(32,40,0) tu=149 mode=2 act=2 to=(28,38,0) run=0 kneel=0 aim=229 weapon=AUX_DOGG_WEA ... hashes differ: ha
+  same  turn=3 side=1 unit=1000005 n=2 from=(12,64,0) tu=109 mode=0 act=2 to=(44,24,0) run=0 kneel=0 aim=-1 weapon=AUX_DOGG_WEAPON seen=91,229
+  A     turn=3 side=1 unit=1000000 n=1 from=(24,42,0) tu=92 mode=0 act=2 to=(37,45,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,335,229
+  B     turn=3 side=1 unit=1000000 n=1 from=(24,42,0) tu=92 mode=0 act=2 to=(57,51,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,335,229
+== L5 DH~DS
+decisions A 58 B 58; same state and choice from the start 58; same choice from the start 58
+== L5 DS~DSE
+decisions A 58 B 58; same state and choice from the start 58; same choice from the start 58
+== L10 D0~D0b
+decisions A 63 B 63; same state and choice from the start 63; same choice from the start 63
+== L10 D0~D0n
+decisions A 63 B 63; same state and choice from the start 63; same choice from the start 63
+== L10 D0~DH
+decisions A 63 B 66; same state and choice from the start 0; same choice from the start 20
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(14,13,2) tu=74 mode=0 act=2 to=(1,12,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_P ... hashes differ: hu
+  same  turn=3 side=1 unit=1000010 n=2 from=(13,32,2) tu=32 mode=2 act=8 to=(8,28,3) run=0 kneel=0 aim=192 weapon=STR_SHOTGUN_G seen=192,1000015
+  A     turn=3 side=1 unit=1000001 n=1 from=(22,18,2) tu=28 mode=0 act=2 to=(1,31,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_PISTOL seen=192,1000015
+  B     turn=3 side=1 unit=1000000 n=1 from=(6,15,2) tu=30 mode=0 act=2 to=(1,12,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_PISTOL seen=192,1000015
+== L10 D0~D1
+decisions A 63 B 64; same state and choice from the start 0; same choice from the start 12
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(14,13,2) tu=74 mode=0 act=2 to=(1,12,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_P ... hashes differ: hu
+  same  turn=3 side=1 unit=1000006 n=1 from=(25,33,2) tu=74 mode=0 act=2 to=(10,10,2) run=0 kneel=0 aim=192 weapon=STR_RUSTY_BLADE seen=192,1000015
+  A     turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(3,1,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_MUSKET seen=192,1000015
+  B     turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(34,1,0) run=0 kneel=0 aim=192 weapon=STR_FLINTLOCK_MUSKET seen=192,1000015
+== L10 DH~D1
+decisions A 66 B 64; same state and choice from the start 12; same choice from the start 12
+  first state difference at #12: turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(3,1,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_MU ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000006 n=1 from=(25,33,2) tu=74 mode=0 act=2 to=(10,10,2) run=0 kneel=0 aim=192 weapon=STR_RUSTY_BLADE seen=192,1000015
+  A     turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(3,1,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_MUSKET seen=192,1000015
+  B     turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(34,1,0) run=0 kneel=0 aim=192 weapon=STR_FLINTLOCK_MUSKET seen=192,1000015
+== L10 DH~DS
+decisions A 66 B 66; same state and choice from the start 66; same choice from the start 66
+== L10 DS~DSE
+decisions A 66 B 66; same state and choice from the start 66; same choice from the start 66
+== L11 D0~D0b
+decisions A 90 B 90; same state and choice from the start 90; same choice from the start 90
+== L11 D0~D0n
+decisions A 90 B 90; same state and choice from the start 90; same choice from the start 90
+== L11 D0~DH
+decisions A 90 B 90; same state and choice from the start 13; same choice from the start 90
+  first state difference at #13: turn=3 side=1 unit=1000006 n=2 from=(16,27,1) tu=81 mode=2 act=8 to=(15,26,2) run=0 kneel=0 aim=344 weapon=STR_UAC_RIFLE ... hashes differ: ha
+== L11 D0~D1
+decisions A 90 B 89; same state and choice from the start 13; same choice from the start 83
+  first state difference at #13: turn=3 side=1 unit=1000006 n=2 from=(16,27,1) tu=81 mode=2 act=8 to=(15,26,2) run=0 kneel=0 aim=344 weapon=STR_UAC_RIFLE ... hashes differ: ha
+  same  turn=3 side=1 unit=1000023 n=2 from=(55,43,1) tu=33 mode=0 act=2 to=(65,56,1) run=0 kneel=0 aim=-1 weapon=STR_RAYGUN seen=344,335
+  A     turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(43,26,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBUSS seen=344,335
+  B     turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(7,14,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBUSS seen=344,335
+== L11 DH~D1
+decisions A 90 B 89; same state and choice from the start 83; same choice from the start 83
+  first state difference at #83: turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(43,26,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBU ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000023 n=2 from=(55,43,1) tu=33 mode=0 act=2 to=(65,56,1) run=0 kneel=0 aim=-1 weapon=STR_RAYGUN seen=344,335
+  A     turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(43,26,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBUSS seen=344,335
+  B     turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(7,14,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBUSS seen=344,335
+== L11 DH~DS
+decisions A 90 B 90; same state and choice from the start 90; same choice from the start 90
+== L11 DS~DSE
+decisions A 90 B 90; same state and choice from the start 90; same choice from the start 90
+== L12 D0~D0b
+decisions A 129 B 129; same state and choice from the start 129; same choice from the start 129
+== L12 D0~D0n
+decisions A 129 B 129; same state and choice from the start 129; same choice from the start 129
+== L12 D0~DH
+decisions A 129 B 139; same state and choice from the start 0; same choice from the start 22
+  first state difference at #0: turn=3 side=1 unit=1000001 n=1 from=(25,42,3) tu=98 mode=2 act=2 to=(27,38,3) run=0 kneel=0 aim=1000056 weapon=STR_AQUA_ ... hashes differ: ha,hu
+  same  turn=3 side=1 unit=1000013 n=1 from=(5,28,5) tu=98 mode=3 act=2 to=(10,29,5) run=0 kneel=0 aim=571 weapon=STR_AQUA_HATCHET seen=293,575,538,582,571,297,307,581,1000043,1000048,1000054,1000055,1000058,1000064,1000066,1000
+  A     turn=3 side=1 unit=1000001 n=2 from=(27,38,3) tu=44 mode=0 act=2 to=(25,35,3) run=0 kneel=0 aim=571 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000048,1000054,1000055,1000058,1000064,1000066,100
+  B     turn=3 side=1 unit=1000001 n=1 from=(27,38,3) tu=44 mode=0 act=2 to=(25,35,3) run=0 kneel=0 aim=571 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000048,1000054,1000055,1000058,1000064,1000066,100
+== L12 D0~D1
+decisions A 129 B 129; same state and choice from the start 0; same choice from the start 4
+  first state difference at #0: turn=3 side=1 unit=1000001 n=1 from=(25,42,3) tu=98 mode=2 act=2 to=(27,38,3) run=0 kneel=0 aim=1000056 weapon=STR_AQUA_ ... hashes differ: ha,hu
+  same  turn=3 side=1 unit=1000002 n=2 from=(9,29,6) tu=92 mode=2 act=2 to=(6,30,7) run=0 kneel=0 aim=1000066 weapon=STR_BOATHOOK seen=293,575,582,571,297,307,1000043,1000047,1000054,1000064,1000066,1000069
+  A     turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(11,36,5) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000047,1000054,1000064,1000066,1000069
+  B     turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(18,17,3) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000047,1000054,1000064,1000066,1000069
+== L12 DH~D1
+decisions A 139 B 129; same state and choice from the start 4; same choice from the start 4
+  first state difference at #4: turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(11,36,5) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDE ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000002 n=2 from=(9,29,6) tu=92 mode=2 act=2 to=(6,30,7) run=0 kneel=0 aim=1000066 weapon=STR_BOATHOOK seen=293,575,582,571,297,307,1000043,1000047,1000054,1000064,1000066,1000069
+  A     turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(11,36,5) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000047,1000054,1000064,1000066,1000069
+  B     turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(18,17,3) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000047,1000054,1000064,1000066,1000069
+== L12 DH~DS
+decisions A 139 B 139; same state and choice from the start 39; same choice from the start 139
+  first state difference at #39: turn=3 side=1 unit=1000010 n=1 from=(19,48,5) tu=54 mode=2 act=8 to=(10,35,5) run=0 kneel=0 aim=1000055 weapon=STR_BAGPI ... hashes differ: ha
+== L12 DS~DSE
+decisions A 139 B 139; same state and choice from the start 139; same choice from the start 139
+== M1 D1~DS
+decisions A 146 B 146; same state and choice from the start 146; same choice from the start 146
+== M2 D1~DS
+decisions A 260 B 277; same state and choice from the start 1; same choice from the start 1
+  first state difference at #1: turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(27,28,1) run=0 kneel=0 aim=1000079 weapon=STR_CD_P ... hashes differ: ha
+  same  turn=3 side=1 unit=1000000 n=1 from=(15,28,2) tu=126 mode=3 act=0 to=(15,28,2) run=0 kneel=0 aim=257 weapon=STR_CD_RIFLE seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,1000120,10
+  A     turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(27,28,1) run=0 kneel=0 aim=1000079 weapon=STR_CD_PISTOL seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,10001
+  B     turn=3 side=1 unit=1000001 n=1 from=(27,31,1) tu=126 mode=0 act=2 to=(30,48,0) run=0 kneel=0 aim=1000079 weapon=STR_CD_PISTOL seen=261,1000070,1000076,1000079,1000081,1000093,1000095,1000100,1000102,1000103,1000107,10001
+== M3 D1~DS
+decisions A 143 B 169; same state and choice from the start 6; same choice from the start 6
+  first state difference at #6: turn=3 side=1 unit=1000006 n=0 from=(26,39,0) tu=59 mode=2 act=2 to=(21,40,0) run=0 kneel=0 aim=454 weapon=AUX_SILACOID_ ... hashes differ: ha,hr,hu
+  same  turn=3 side=1 unit=1000005 n=2 from=(38,58,0) tu=159 mode=2 act=2 to=(42,59,0) run=0 kneel=0 aim=520 weapon=AUX_CHRYSSALID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  A     turn=3 side=1 unit=1000006 n=0 from=(26,39,0) tu=59 mode=2 act=2 to=(21,40,0) run=0 kneel=0 aim=454 weapon=AUX_SILACOID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+  B     turn=3 side=1 unit=1000006 n=1 from=(26,39,0) tu=59 mode=0 act=2 to=(9,52,0) run=0 kneel=0 aim=-1 weapon=AUX_SILACOID_WEAPON seen=448,470,444,545,520,454,1000063,1000068,1000072,1000075
+== M5 D1~DS
+decisions A 256 B 255; same state and choice from the start 0; same choice from the start 5
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(38,36,2) tu=74 mode=2 act=2 to=(38,32,2) run=0 kneel=0 aim=108 weapon=STR_SHOVEL se ... hashes differ: ha
+  same  turn=3 side=1 unit=1000001 n=2 from=(48,10,0) tu=22 mode=3 act=0 to=(48,10,0) run=0 kneel=0 aim=-1 weapon=STR_BLUNDERBUSS seen=268,261,153,92,255,257,108,4
+  A     turn=3 side=1 unit=1000002 n=1 from=(36,34,0) tu=74 mode=0 act=2 to=(34,30,1) run=0 kneel=0 aim=-1 weapon=STR_SHOOTA seen=268,261,153,92,255,257,108,4
+  B     turn=3 side=1 unit=1000002 n=1 from=(36,34,0) tu=74 mode=0 act=2 to=(36,37,3) run=0 kneel=0 aim=-1 weapon=STR_SHOOTA seen=268,261,153,92,255,257,108,4
+== M8 D1~DS
+decisions A 72 B 72; same state and choice from the start 72; same choice from the start 72
+== M10 D1~DS
+decisions A 115 B 128; same state and choice from the start 3; same choice from the start 3
+  first state difference at #3: turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(21,12,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO see ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000000 n=2 from=(55,34,0) tu=19 mode=0 act=2 to=(46,20,0) run=0 kneel=0 aim=114 weapon=STR_SHOTGUN_PA seen=46,114,1,115
+  A     turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(21,12,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO seen=46,114,1,115
+  B     turn=3 side=1 unit=1000001 n=1 from=(26,10,0) tu=81 mode=2 act=2 to=(29,10,0) run=0 kneel=0 aim=115 weapon=AUX_FISTO seen=46,114,1,115
+== M11 D1~DS
+decisions A 52 B 57; same state and choice from the start 21; same choice from the start 21
+  first state difference at #21: turn=3 side=1 unit=1000016 n=1 from=(27,18,3) tu=196 mode=3 act=0 to=(27,18,3) run=0 kneel=0 aim=268 weapon=AUX_VAMPBAT_ ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000014 n=1 from=(44,47,0) tu=196 mode=3 act=0 to=(44,47,0) run=0 kneel=0 aim=-1 weapon=AUX_VAMPBAT_WEAPON seen=153,92,255,268,261,108,4
+  A     turn=3 side=1 unit=1000016 n=1 from=(27,18,3) tu=196 mode=3 act=0 to=(27,18,3) run=0 kneel=0 aim=268 weapon=AUX_VAMPBAT_WEAPON seen=153,92,255,268,261,108,4
+  B     turn=3 side=1 unit=1000016 n=1 from=(27,18,3) tu=196 mode=0 act=2 to=(24,1,0) run=0 kneel=0 aim=268 weapon=AUX_VAMPBAT_WEAPON seen=153,92,255,268,261,108,4
+== L4 D1~DS
+decisions A 29 B 29; same state and choice from the start 29; same choice from the start 29
+== L5 D1~DS
+decisions A 71 B 58; same state and choice from the start 0; same choice from the start 6
+  first state difference at #0: turn=3 side=1 unit=1000000 n=1 from=(32,40,0) tu=149 mode=2 act=2 to=(28,38,0) run=0 kneel=0 aim=229 weapon=AUX_DOGG_WEA ... hashes differ: ha
+  same  turn=3 side=1 unit=1000005 n=2 from=(12,64,0) tu=109 mode=0 act=2 to=(44,24,0) run=0 kneel=0 aim=-1 weapon=AUX_DOGG_WEAPON seen=91,229
+  A     turn=3 side=1 unit=1000000 n=1 from=(24,42,0) tu=92 mode=0 act=2 to=(57,51,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,335,229
+  B     turn=3 side=1 unit=1000000 n=1 from=(24,42,0) tu=92 mode=0 act=2 to=(37,45,0) run=0 kneel=0 aim=157 weapon=AUX_DOGG_WEAPON seen=91,335,229
+== L10 D1~DS
+decisions A 64 B 66; same state and choice from the start 12; same choice from the start 12
+  first state difference at #12: turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(34,1,0) run=0 kneel=0 aim=192 weapon=STR_FLINTLOCK_ ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000006 n=1 from=(25,33,2) tu=74 mode=0 act=2 to=(10,10,2) run=0 kneel=0 aim=192 weapon=STR_RUSTY_BLADE seen=192,1000015
+  A     turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(34,1,0) run=0 kneel=0 aim=192 weapon=STR_FLINTLOCK_MUSKET seen=192,1000015
+  B     turn=3 side=1 unit=1000007 n=1 from=(33,11,0) tu=74 mode=0 act=2 to=(3,1,2) run=0 kneel=0 aim=-1 weapon=STR_FLINTLOCK_MUSKET seen=192,1000015
+== L11 D1~DS
+decisions A 89 B 90; same state and choice from the start 83; same choice from the start 83
+  first state difference at #83: turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(7,14,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBUS ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000023 n=2 from=(55,43,1) tu=33 mode=0 act=2 to=(65,56,1) run=0 kneel=0 aim=-1 weapon=STR_RAYGUN seen=344,335
+  A     turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(7,14,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBUSS seen=344,335
+  B     turn=3 side=1 unit=1000024 n=1 from=(38,24,1) tu=29 mode=0 act=2 to=(43,26,1) run=0 kneel=0 aim=344 weapon=STR_BLUNDERBUSS seen=344,335
+== L12 D1~DS
+decisions A 129 B 139; same state and choice from the start 4; same choice from the start 4
+  first state difference at #4: turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(18,17,3) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDE ... hashes differ: ha,hr
+  same  turn=3 side=1 unit=1000002 n=2 from=(9,29,6) tu=92 mode=2 act=2 to=(6,30,7) run=0 kneel=0 aim=1000066 weapon=STR_BOATHOOK seen=293,575,582,571,297,307,1000043,1000047,1000054,1000064,1000066,1000069
+  A     turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(18,17,3) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000047,1000054,1000064,1000066,1000069
+  B     turn=3 side=1 unit=1000003 n=1 from=(1,16,2) tu=98 mode=0 act=2 to=(11,36,5) run=0 kneel=0 aim=582 weapon=STR_AQUA_TRIDENT seen=293,575,538,582,571,297,307,581,1000043,1000047,1000054,1000064,1000066,1000069

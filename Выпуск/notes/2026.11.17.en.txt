@@ -1,0 +1,2 @@
+﻿- The game now calls itself by its own name: the main menu, the pause menu, the window title and the loading line say "OXCE-HD (unofficial fork of OXCE 8.7.1)" instead of "OpenXcom Extended 8.7.1". The crash message no longer sends you to the OpenXcom forum: it gives the address of our ticket page. Saves and mods are not affected.
+- The game folder now has LICENSE.txt (the GPL v3 text) and OXCE-HD-README.txt: this is an unofficial fork of OpenXcom Extended, where the source code of this exact build is, and where to report problems.

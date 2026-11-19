@@ -1,0 +1,2 @@
+58e156a20a544bd42cbd5fcd37e6665d64bdeda6ece198a54c605fa2faac9742 *openxcom.exe
+9165ac9b39d722a32e8268e732e0dbdd6e9dcebf987ce500c216ffa43f8e91f8 *BUILD_INFO.txt

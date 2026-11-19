@@ -1,0 +1,75 @@
+===== M6 s1
+cc3_CO_M6_s1 last turn 8 result {'turn': '9', 'hostile': '41', 'hdead': '26', 'hout': '2', 'hleft': '13', 'player': '8', 'pdead': '4', 'pout': '0', 'livealiens': '12'}
+    {'unit_turns': 155, 'attacks': 96, 'attacks_dmg': 10, 'dmg': 458, 'downed': 1, 'ally_dmg': 401, 'joint_targets': 13, 'joint_fighters': 52, 'joint_with_dmg': 6, 'joint_dmg': 458, 'ut_attacked': 49, 'ut_moved': 112, 'ut_nothing': 25, 'ut_nothing_tu': 3128, 'tu_left_at_stand': 3292, 'walks': 391, 'walks_empty': 84, 'mode3': 78}
+    losses by turn: AI {1: 9, 2: 7, 3: 6, 4: 7, 5: 1, 6: 4, 7: 2} players {1: 5, 2: 1} totals 36 6
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 0, 'rolled3': 21, 'rolled3_kept': 21, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 426, 'above_tumax': 0}
+    start list: units 41 only here [] only in D0 []
+cc8_CC_M6_s1 last turn 8 result {'turn': '8', 'hostile': '41', 'hdead': '24', 'hout': '0', 'hleft': '17', 'player': '8', 'pdead': '8', 'pout': '0', 'livealiens': '17'}
+    {'unit_turns': 179, 'attacks': 133, 'attacks_dmg': 19, 'dmg': 633, 'downed': 5, 'ally_dmg': 609, 'joint_targets': 16, 'joint_fighters': 75, 'joint_with_dmg': 11, 'joint_dmg': 558, 'ut_attacked': 68, 'ut_moved': 128, 'ut_nothing': 38, 'ut_nothing_tu': 4019, 'tu_left_at_stand': 5438, 'walks': 263, 'walks_empty': 67, 'mode3': 189}
+    losses by turn: AI {1: 9, 2: 8, 3: 4, 4: 2, 5: 1, 6: 2, 7: 4} players {1: 3, 2: 3, 6: 2, 8: 1} totals 30 9
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 0, 'rolled3': 26, 'rolled3_kept': 26, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 434, 'above_tumax': 0, 'savecheck': 8, 'savecheck_bad': 0}
+    start list: units 41 only here [] only in D0 []
+ra1_AN_M6_s1 last turn 6 result {'turn': '6', 'hostile': '41', 'hdead': '25', 'hout': '3', 'hleft': '13', 'player': '8', 'pdead': '8', 'pout': '0', 'livealiens': '13'}
+    {'unit_turns': 140, 'attacks': 131, 'attacks_dmg': 24, 'dmg': 766, 'downed': 6, 'ally_dmg': 936, 'joint_targets': 17, 'joint_fighters': 82, 'joint_with_dmg': 12, 'joint_dmg': 691, 'ut_attacked': 71, 'ut_moved': 94, 'ut_nothing': 20, 'ut_nothing_tu': 2064, 'tu_left_at_stand': 3213, 'walks': 249, 'walks_empty': 75, 'mode3': 33}
+    losses by turn: AI {1: 8, 2: 9, 3: 4, 4: 1, 5: 10, 6: 1} players {1: 5, 2: 2, 3: 1, 4: 1, 6: 2} totals 33 11
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 5, 'rolled3': 22, 'rolled3_kept': 22, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 339, 'above_tumax': 0, 'savecheck': 6, 'savecheck_bad': 0}
+    start list: units 41 only here [] only in D0 []
+ci5_IA_M6_s1 last turn 5 result {'turn': '5', 'hostile': '41', 'hdead': '17', 'hout': '1', 'hleft': '23', 'player': '8', 'pdead': '8', 'pout': '0', 'livealiens': '23'}
+    {'unit_turns': 144, 'attacks': 116, 'attacks_dmg': 18, 'dmg': 621, 'downed': 5, 'ally_dmg': 350, 'joint_targets': 14, 'joint_fighters': 70, 'joint_with_dmg': 9, 'joint_dmg': 621, 'ut_attacked': 60, 'ut_moved': 103, 'ut_nothing': 23, 'ut_nothing_tu': 2374, 'tu_left_at_stand': 3454, 'walks': 286, 'walks_empty': 102, 'mode3': 43}
+    losses by turn: AI {1: 6, 2: 5, 3: 5, 4: 2, 5: 1} players {1: 6, 3: 2, 4: 1, 5: 1} totals 19 10
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 3, 'rolled3': 31, 'rolled3_kept': 31, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 329, 'above_tumax': 0, 'savecheck': 5, 'savecheck_bad': 0}
+    start list: units 41 only here [] only in D0 []
+    aim check: attacks 116, RESULT lines 116, resolved target agrees 116, raw aim agrees 112
+    result kinds {'WALK_OTHER': 118, 'ATTACKED_CONTACT': 52, 'WALK_TOWARD': 66, 'OTHER_ATTACK': 64, 'NO_ACTION': 107, 'NOT_EXECUTED': 102}
+    attacks, hits, hp lost: {'changed': [8, 1, 11], 'other': [64, 7, 292], 'own_choice': [44, 8, 185]}
+    choices {'same': 168, 'no_effect': 76, 'not_valid_target': 45, 'takes': 14, 'maintain_keeps_post': 10, 'not_visible': 6, 'closer_threat': 6, 'firepoint_no_shot': 4, 'no_tu': 3, 'mode_choice_rejected': 3}
+===== M6 s2
+scpa_D_M6_s2 last turn 29 result {'turn': '29', 'hostile': '37', 'hdead': '36', 'hout': '1', 'hleft': '0', 'player': '8', 'pdead': '5', 'pout': '0', 'livealiens': '0'}
+    {'unit_turns': 170, 'attacks': 111, 'attacks_dmg': 17, 'dmg': 576, 'downed': 4, 'ally_dmg': 24, 'joint_targets': 16, 'joint_fighters': 65, 'joint_with_dmg': 7, 'joint_dmg': 422, 'ut_attacked': 62, 'ut_moved': 145, 'ut_nothing': 11, 'ut_nothing_tu': 1116, 'tu_left_at_stand': 1396, 'walks': 531, 'walks_empty': 149, 'mode3': 54}
+    losses by turn: AI {0: 1, 1: 2, 2: 7, 3: 4, 4: 5, 5: 3, 6: 8, 8: 2} players {2: 4, 3: 1} totals 32 5
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 0, 'rolled3': 22, 'rolled3_kept': 22, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 782, 'above_tumax': 0}
+    start list: units 37 only here [] only in D0 []
+cc5_CC_M6_s2 last turn 8 result {'turn': '9', 'hostile': '37', 'hdead': '27', 'hout': '0', 'hleft': '10', 'player': '8', 'pdead': '5', 'pout': '0', 'livealiens': '9'}
+    {'unit_turns': 158, 'attacks': 84, 'attacks_dmg': 17, 'dmg': 636, 'downed': 5, 'ally_dmg': 31, 'joint_targets': 19, 'joint_fighters': 55, 'joint_with_dmg': 10, 'joint_dmg': 504, 'ut_attacked': 50, 'ut_moved': 105, 'ut_nothing': 46, 'ut_nothing_tu': 4966, 'tu_left_at_stand': 7291, 'walks': 216, 'walks_empty': 62, 'mode3': 218}
+    losses by turn: AI {0: 1, 1: 2, 2: 8, 3: 6, 4: 3, 5: 3, 6: 9, 7: 1, 8: 2} players {1: 1, 2: 3, 3: 1, 7: 1} totals 35 6
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 0, 'rolled3': 21, 'rolled3_kept': 21, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 388, 'above_tumax': 0, 'savecheck': 8, 'savecheck_bad': 0}
+    start list: units 37 only here [] only in D0 []
+ra2_AN_M6_s2 last turn 8 result {'turn': '9', 'hostile': '37', 'hdead': '24', 'hout': '0', 'hleft': '13', 'player': '8', 'pdead': '5', 'pout': '0', 'livealiens': '13'}
+    {'unit_turns': 177, 'attacks': 110, 'attacks_dmg': 15, 'dmg': 581, 'downed': 3, 'ally_dmg': 84, 'joint_targets': 17, 'joint_fighters': 64, 'joint_with_dmg': 8, 'joint_dmg': 422, 'ut_attacked': 68, 'ut_moved': 154, 'ut_nothing': 10, 'ut_nothing_tu': 1111, 'tu_left_at_stand': 2176, 'walks': 522, 'walks_empty': 174, 'mode3': 56}
+    losses by turn: AI {0: 1, 1: 2, 2: 5, 3: 6, 4: 3, 5: 3, 6: 2, 7: 1, 8: 4} players {2: 5, 3: 1} totals 27 6
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 19, 'rolled3': 33, 'rolled3_kept': 33, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 418, 'above_tumax': 0, 'savecheck': 8, 'savecheck_bad': 0}
+    start list: units 37 only here [] only in D0 []
+ci6_IA_M6_s2 last turn 8 result {'turn': '9', 'hostile': '37', 'hdead': '22', 'hout': '4', 'hleft': '11', 'player': '8', 'pdead': '3', 'pout': '0', 'livealiens': '11'}
+    {'unit_turns': 136, 'attacks': 78, 'attacks_dmg': 12, 'dmg': 358, 'downed': 2, 'ally_dmg': 472, 'joint_targets': 15, 'joint_fighters': 43, 'joint_with_dmg': 7, 'joint_dmg': 253, 'ut_attacked': 43, 'ut_moved': 109, 'ut_nothing': 14, 'ut_nothing_tu': 1495, 'tu_left_at_stand': 1681, 'walks': 384, 'walks_empty': 148, 'mode3': 36}
+    losses by turn: AI {0: 1, 1: 2, 2: 11, 3: 11, 4: 6, 5: 1, 8: 3} players {2: 3, 5: 1} totals 35 4
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 13, 'rolled3': 22, 'rolled3_kept': 22, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 407, 'above_tumax': 0, 'savecheck': 8, 'savecheck_bad': 0}
+    start list: units 37 only here [] only in D0 []
+    aim check: attacks 78, RESULT lines 78, resolved target agrees 78, raw aim agrees 76
+    result kinds {'OTHER_ATTACK': 64, 'WALK_TOWARD': 62, 'WALK_OTHER': 174, 'NO_ACTION': 51, 'ATTACKED_CONTACT': 14, 'NOT_EXECUTED': 148}
+    attacks, hits, hp lost: {'other': [64, 7, 235], 'own_choice': [12, 4, 110], 'changed': [2, 1, 13]}
+    choices {'same': 130, 'no_effect': 43, 'takes': 32, 'not_visible': 11, 'mode_choice_rejected': 6, 'weak_effect': 6, 'firepoint_no_shot': 4, 'no_line': 3, 'no_tu': 1, 'closer_threat': 1}
+===== M3 s1
+scpa_D_M3_s1 last turn 21 result {'turn': '21', 'hostile': '64', 'hdead': '61', 'hout': '3', 'hleft': '0', 'player': '8', 'pdead': '6', 'pout': '0', 'livealiens': '0'}
+    {'unit_turns': 267, 'attacks': 163, 'attacks_dmg': 35, 'dmg': 1260, 'downed': 17, 'ally_dmg': 1150, 'joint_targets': 26, 'joint_fighters': 100, 'joint_with_dmg': 10, 'joint_dmg': 347, 'ut_attacked': 119, 'ut_moved': 251, 'ut_nothing': 0, 'ut_nothing_tu': 0, 'tu_left_at_stand': 146, 'walks': 568, 'walks_empty': 76, 'mode3': 34}
+    losses by turn: AI {1: 4, 2: 15, 3: 150, 4: 7, 5: 6, 6: 3, 7: 36} players {1: 3, 3: 2, 7: 1} totals 221 6
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 0, 'rolled3': 22, 'rolled3_kept': 22, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 787, 'above_tumax': 0}
+    start list: units 58 only here [] only in D0 []
+cc6_CV_M3_s1 last turn 8 result {'turn': '9', 'hostile': '70', 'hdead': '45', 'hout': '1', 'hleft': '24', 'player': '8', 'pdead': '6', 'pout': '0', 'livealiens': '24'}
+    {'unit_turns': 335, 'attacks': 143, 'attacks_dmg': 23, 'dmg': 621, 'downed': 10, 'ally_dmg': 562, 'joint_targets': 18, 'joint_fighters': 74, 'joint_with_dmg': 5, 'joint_dmg': 184, 'ut_attacked': 103, 'ut_moved': 234, 'ut_nothing': 80, 'ut_nothing_tu': 5290, 'tu_left_at_stand': 6930, 'walks': 447, 'walks_empty': 21, 'mode3': 396}
+    losses by turn: AI {1: 5, 2: 5, 3: 118, 4: 8, 5: 43, 6: 12, 7: 3, 8: 5} players {1: 3, 2: 1, 4: 1, 6: 2, 7: 1} totals 199 8
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 0, 'rolled3': 28, 'rolled3_kept': 28, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 758, 'above_tumax': 0, 'savecheck': 8, 'savecheck_bad': 0}
+    start list: units 58 only here [] only in D0 []
+ra3_AV_M3_s1 last turn 8 result {'turn': '9', 'hostile': '64', 'hdead': '42', 'hout': '1', 'hleft': '21', 'player': '8', 'pdead': '5', 'pout': '0', 'livealiens': '21'}
+    {'unit_turns': 291, 'attacks': 170, 'attacks_dmg': 53, 'dmg': 1295, 'downed': 16, 'ally_dmg': 436, 'joint_targets': 22, 'joint_fighters': 80, 'joint_with_dmg': 15, 'joint_dmg': 643, 'ut_attacked': 119, 'ut_moved': 214, 'ut_nothing': 52, 'ut_nothing_tu': 3404, 'tu_left_at_stand': 3710, 'walks': 467, 'walks_empty': 55, 'mode3': 49}
+    losses by turn: AI {1: 4, 2: 20, 3: 71, 4: 12, 5: 6, 6: 1, 7: 5, 8: 4} players {1: 2, 3: 1, 4: 1, 5: 2} totals 123 6
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 3, 'rolled3': 36, 'rolled3_kept': 36, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 671, 'above_tumax': 0, 'savecheck': 8, 'savecheck_bad': 0}
+    start list: units 58 only here [] only in D0 []
+ci7_IV_M3_s1 last turn 6 result {'turn': '6', 'hostile': '66', 'hdead': '24', 'hout': '2', 'hleft': '40', 'player': '8', 'pdead': '8', 'pout': '0', 'livealiens': '40'}
+    {'unit_turns': 279, 'attacks': 128, 'attacks_dmg': 27, 'dmg': 641, 'downed': 12, 'ally_dmg': 70, 'joint_targets': 11, 'joint_fighters': 56, 'joint_with_dmg': 6, 'joint_dmg': 80, 'ut_attacked': 93, 'ut_moved': 210, 'ut_nothing': 48, 'ut_nothing_tu': 3174, 'tu_left_at_stand': 3518, 'walks': 492, 'walks_empty': 50, 'mode3': 24}
+    losses by turn: AI {1: 4, 2: 6, 3: 8, 4: 4, 5: 3, 6: 4} players {1: 2, 3: 3, 5: 1, 6: 2} totals 29 8
+    gates {'art_escape_stand': 0, 'free_mode3_fallback': 5, 'rolled3': 13, 'rolled3_kept': 13, 'stand_mode0_walk': 0, 'free_held_stand': 0} ok {'lines': 635, 'above_tumax': 0, 'savecheck': 6, 'savecheck_bad': 0}
+    start list: units 58 only here [] only in D0 []
+    aim check: attacks 128, RESULT lines 128, resolved target agrees 126, raw aim agrees 114
+    result kinds {'WALK_OTHER': 301, 'OTHER_ATTACK': 90, 'NO_ACTION': 130, 'WALK_TOWARD': 119, 'ATTACKED_CONTACT': 33, 'NOT_EXECUTED': 57}
+    attacks, hits, hp lost: {'other': [90, 17, 510], 'own_choice': [29, 6, 72], 'changed': [4, 2, 26]}
+    choices {'same': 131, 'not_valid_target': 52, 'takes': 41, 'not_visible': 31, 'no_effect': 24, 'weak_effect': 8, 'mode_choice_rejected': 6, 'firepoint_no_shot': 5, 'closer_threat': 2, 'no_line': 1}

@@ -1,0 +1,11 @@
+1 HO M6 s1 turns=12
+2 HS M6 s1 turns=12
+3 HA M6 s1 turns=12
+4 HO M6 s1 turns=12
+5 HS M6 s1 turns=12
+6 HA M6 s1 turns=12
+7 HA M6 s1 turns=12
+8 HA M6 s2 turns=12
+9 HA L6 s1 turns=12
+10 HA L6 s2 turns=12
+11 HA L7 s1 turns=12

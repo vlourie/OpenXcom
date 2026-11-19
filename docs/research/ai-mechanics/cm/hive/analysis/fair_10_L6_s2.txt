@@ -1,0 +1,2 @@
+records 51 in the observer's own sees 50 only in the side's seen of that turn 1 in neither 0
+sample: [HIVEFAIR] turn=1 observer=1000013 target=571 pos=(18,26,2)

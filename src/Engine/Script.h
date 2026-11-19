@@ -716,6 +716,15 @@ protected:
 	void executeBase(const Uint8* proc);
 
 public:
+	/// How many times one call of a script may jump back (that is: begin one more turn of a `loop`, of all its loops
+	/// together). Loops are bounded one by one, nested ones multiply: without a limit a script can hold the game for
+	/// hours. A script that goes over it is stopped as on any error and is not run again until the game is restarted.
+	static constexpr int LoopBudget = 50000000;
+	/// What is left of LoopBudget for the running call (for a blit: for all its pixels).
+	int loopBudget = LoopBudget;
+	/// Was this script stopped for its loops before?
+	static bool loopsStopped(const Uint8* proc);
+
 	/// Default constructor.
 	ScriptWorkerBase()
 	{
@@ -866,6 +875,15 @@ public:
 	{
 		_proc = nullptr;
 		_events = nullptr;
+	}
+	/// The body hit flash of X-Piratez (event YSCRIPT_HITFX_RECOLOR_UNIT of recolorUnitSprite): its code, found when the events are
+	/// released; with the option oxceHdHitFlash off the blit skips exactly that event (XP-000490). The event only
+	/// reads tags and sets the colour of a pixel, so skipping it changes nothing but the colour.
+	static const Uint8* hitFlashProc;
+	/// Is a script set (false: the blit is a plain shaded copy)?
+	bool hasScript() const
+	{
+		return _proc != nullptr;
 	}
 };
 

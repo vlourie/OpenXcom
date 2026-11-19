@@ -128,6 +128,12 @@ bool FlcPlayer::init(const char *filename, void(*frameCallBack)(), Game *game, b
 	_fileSize = size;
 	file->read((char *)_fileBuf, size);
 
+	if (_fileSize < 128)
+	{
+		Log(LOG_ERROR) << "Flx file is shorter than its header.";
+		return false;
+	}
+
 	_audioFrameData = _fileBuf + 128;
 
 	// Let's read the first 128 bytes

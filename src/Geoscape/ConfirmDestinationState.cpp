@@ -45,6 +45,9 @@
 #include "../Savegame/Soldier.h"
 #include "../Engine/Options.h"
 #include "../Engine/Sound.h"
+#include "CraftLaunchState.h"
+#include "../Engine/HdPilotVoice.h"
+#include "../Engine/HdCraftRoute.h"
 #include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
@@ -362,6 +365,8 @@ void ConfirmDestinationState::btnOkClick(Action *)
 		_game->getSavedGame()->getWaypoints()->push_back(w);
 	}
 
+	// HD render: the scene of the leader leaving its hangar (a picture only, shown once the order is done)
+	State *launch = nullptr;
 	// first selected _craft (first shift-clicked craft) is wing leader; the other crafts follow the wing leader
 	if (_crafts.front() == _target)
 	{
@@ -377,6 +382,7 @@ void ConfirmDestinationState::btnOkClick(Action *)
 			{
 				_game->getMod()->getSound("GEO.CAT", _crafts.front()->getRules()->getTakeoffSound())->play();
 			}
+			launch = CraftLaunchState::create(_crafts.front(), false);
 		}
 	}
 
@@ -403,8 +409,40 @@ void ConfirmDestinationState::btnOkClick(Action *)
 		craft->setStatus("STR_OUT");
 	}
 
+	// OXCE-HD (oxceHdCraftRoute): Shift+clicks on the globe made stops before this target - the craft flies to the first one,
+	// the rest and this target wait in its queue (the leader, and the wing mates that go for the same target)
+	if (Options::oxceHdCraftRoute && HdCraftRoute::pendingFor(_crafts))
+	{
+		for (auto* craft : _crafts)
+		{
+			if (craft != _target && craft->getDestination() == _target)
+			{
+				HdCraftRoute::apply(craft, _target, _game->getSavedGame());
+			}
+		}
+	}
+
+	// HD: the leader answers the order over the radio
+	{
+		HdPilotVoice::Event ev = HdPilotVoice::ORDER;
+		Base *b = dynamic_cast<Base*>(_target);
+		if (_crafts.size() > 1)
+			ev = HdPilotVoice::WING;
+		else if (dynamic_cast<Ufo*>(_target))
+			ev = HdPilotVoice::ATTACK;
+		else if (dynamic_cast<Craft*>(_target) && _target != _crafts.front())
+			ev = HdPilotVoice::ESCORT;
+		else if (b)
+			ev = b == _crafts.front()->getBase() ? HdPilotVoice::RETURN : HdPilotVoice::REBASE;
+		HdPilotVoice::order(_crafts.front(), ev);
+	}
+
 	_game->popState();
 	_game->popState();
+	if (launch)
+	{
+		_game->pushState(launch);
+	}
 }
 
 /**
@@ -471,6 +509,7 @@ void ConfirmDestinationState::btnTransferClick(Action *)
 		{
 			_crafts.front()->setLowFuel(true);
 		}
+		HdPilotVoice::order(_crafts.front(), HdPilotVoice::REBASE);
 
 		// pop the selecting the destination state
 		_game->popState();

@@ -1,0 +1,107 @@
+pairs 48, missing -
+
+== all 24 scenarios: scenarios 24 (M 12, L 12), pairs 48
+  metric                                                  A mean    B mean       B-A  95% CI
+  1 player HP lost                                       567.958   579.896   +11.938  [-15.562, +41.083]
+     ratio B/A-1                                                               +2.1%  [-3.8%, +6.4%]
+  2 player units out (share)                               0.568     0.573    +0.004  [-0.030, +0.036]
+  2 player dead                                            5.312     5.479    +0.167  [-0.250, +0.583]
+  3 hostile units out (share)                              0.742     0.719    -0.023  [-0.076, +0.028]
+  3 hostile dead                                          28.271    26.021    -2.250  [-6.188, +1.354]
+     ratio B/A-1                                                               -8.0%  [-19.4%, +5.2%]
+  4 player lost the battle (0/1)                           0.417     0.417    +0.000  [-0.042, +0.042]
+  4 battle turns                                          17.188    15.583    -1.604  [-3.604, +0.208]
+  5/7 hostile attacks executed                           120.708   114.417    -6.292  [-18.750, +5.521]
+     ratio B/A-1                                                               -5.2%  [-14.6%, +5.5%]
+  5 hostile attacks that did damage                       19.812    18.458    -1.354  [-3.938, +0.750]
+  5 share of executed attacks with damage                  0.157     0.158    +0.001  [-0.020, +0.023]
+  5 damage dealt by hostile attacks                      691.125   641.750   -49.375  [-183.979, +26.938]
+     ratio B/A-1                                                               -7.1%  [-18.1%, +5.5%]
+  5 hostile attack damage per turn                        60.787    73.397   +12.610  [-3.834, +30.539]
+  5 friendly damage by hostile attacks                   272.542   272.104    -0.438  [-91.792, +100.333]
+  6 player reactions in hostile turns                     66.312    41.208   -25.104  [-59.854, -2.000] *
+     ratio B/A-1                                                              -37.9%  [-55.7%, -5.4%] *
+  6 player reactions per 10 hostile walks+attacks          1.091     1.092    +0.001  [-0.432, +0.696]
+  6 player reactions per turn                              4.593     3.624    -0.969  [-2.677, +0.152]
+  6 hostile units down in hostile turns                   19.438    13.958    -5.479  [-15.104, +0.042]
+  6 hostile reactions in player turns                     19.479    20.979    +1.500  [-2.938, +5.250]
+  7 hostile time units spent                           16260.417 15505.667  -754.750  [-2521.125, +1132.417]
+  7 hostile time units spent per turn                   1289.753  1410.816  +121.063  [-87.677, +366.477]
+  7 hostile decisions                                    823.083   763.083   -60.000  [-171.604, +52.271]
+  8 battle ms per turn                                  5219.899  5851.295  +631.396  [-57.872, +1398.241]
+  T1 hostile attacks executed, turn 1                     19.417    20.042    +0.625  [-1.188, +2.417]
+  T1 hostile attack damage, turn 1                       165.625   150.333   -15.292  [-50.104, +12.271]
+  T1 player reactions, hostile turn 1                     10.312     6.750    -3.562  [-13.188, +0.625]
+  T1 hostile walks, turn 1                                92.062    93.250    +1.188  [-6.083, +7.792]
+  T1 hostile down, hostile turn 1                          3.354     2.229    -1.125  [-3.875, +0.562]
+  T1 player down, hostile turn 1                           1.167     1.104    -0.062  [-0.333, +0.188]
+
+== without L2 and M10 (seen before): scenarios 22 (M 11, L 11), pairs 44
+  metric                                                  A mean    B mean       B-A  95% CI
+  1 player HP lost                                       562.545   573.136   +10.591  [-19.318, +41.318]
+     ratio B/A-1                                                               +1.9%  [-5.0%, +6.4%]
+  2 player units out (share)                               0.529     0.534    +0.005  [-0.033, +0.039]
+  2 player dead                                            5.386     5.500    +0.114  [-0.227, +0.500]
+  3 hostile units out (share)                              0.742     0.735    -0.008  [-0.056, +0.042]
+  3 hostile dead                                          26.886    25.568    -1.318  [-5.023, +2.182]
+     ratio B/A-1                                                               -4.9%  [-16.6%, +8.9%]
+  4 player lost the battle (0/1)                           0.364     0.364    +0.000  [-0.045, +0.045]
+  4 battle turns                                          17.159    15.955    -1.205  [-3.205, +0.614]
+  5/7 hostile attacks executed                           103.136    98.636    -4.500  [-16.591, +6.727]
+     ratio B/A-1                                                               -4.4%  [-14.9%, +8.1%]
+  5 hostile attacks that did damage                       17.818    16.886    -0.932  [-3.250, +0.955]
+  5 share of executed attacks with damage                  0.160     0.162    +0.002  [-0.021, +0.026]
+  5 damage dealt by hostile attacks                      708.318   655.818   -52.500  [-202.091, +29.705]
+     ratio B/A-1                                                               -7.4%  [-19.0%, +5.9%]
+  5 hostile attack damage per turn                        63.378    75.193   +11.815  [-6.553, +30.751]
+  5 friendly damage by hostile attacks                   219.682   228.000    +8.318  [-85.068, +116.386]
+  6 player reactions in hostile turns                     36.636    28.205    -8.432  [-17.636, +0.045]
+     ratio B/A-1                                                              -23.0%  [-42.3%, +0.2%]
+  6 player reactions per 10 hostile walks+attacks          0.968     1.064    +0.096  [-0.314, +0.815]
+  6 player reactions per turn                              2.762     2.282    -0.480  [-1.389, +0.288]
+  6 hostile units down in hostile turns                   17.727    12.455    -5.273  [-15.455, +0.705]
+  6 hostile reactions in player turns                     18.773    20.818    +2.045  [-2.227, +5.773]
+  7 hostile time units spent                           14463.364 13831.386  -631.977  [-2413.864, +1281.045]
+  7 hostile time units spent per turn                   1199.949  1240.289   +40.340  [-150.117, +241.987]
+  7 hostile decisions                                    740.818   704.773   -36.045  [-136.886, +73.000]
+  8 battle ms per turn                                  5255.483  5689.669  +434.185  [-215.975, +1111.837]
+  T1 hostile attacks executed, turn 1                     17.841    18.136    +0.295  [-1.432, +1.909]
+  T1 hostile attack damage, turn 1                       179.045   158.795   -20.250  [-55.864, +9.000]
+  T1 player reactions, hostile turn 1                      7.295     6.750    -0.545  [-2.000, +0.591]
+  T1 hostile walks, turn 1                                86.636    88.432    +1.795  [-3.159, +6.841]
+  T1 hostile down, hostile turn 1                          3.136     2.341    -0.795  [-3.659, +0.864]
+  T1 player down, hostile turn 1                           1.205     1.136    -0.068  [-0.341, +0.182]
+
+== per scenario (mean over seeds): player HP lost A -> B, player out A -> B, hostile out A -> B, hostile attack dmg A -> B
+  L1       101 ->     120   0.17 -> 0.17   0.96 -> 0.98       67 ->     96   seeds: 57->81 145->160
+  L2       736 ->     770   1.00 -> 1.00   0.83 -> 0.53      605 ->    528   seeds: 777->738 696->801
+  L3         0 ->       0   0.00 -> 0.00   0.80 -> 0.76        0 ->      0   seeds: 0->0 0->0
+  L4       356 ->     437   0.04 -> 0.08   1.00 -> 1.00      249 ->    310   seeds: 537->548 176->326
+  L5         7 ->      18   0.12 -> 0.00   0.99 -> 0.95       17 ->     15   seeds: 9->13 5->24
+  L6       414 ->     476   0.56 -> 0.69   0.88 -> 0.76      388 ->    324   seeds: 215->341 612->611
+  L7       529 ->     517   1.00 -> 1.00   0.61 -> 0.65      477 ->    459   seeds: 539->509 519->525
+  L8       686 ->     768   0.94 -> 0.94   0.29 -> 0.28      950 ->    952   seeds: 599->699 773->838
+  L9        62 ->      74   0.06 -> 0.12   1.00 -> 1.00       26 ->      0   seeds: 0->0 124->149
+  L10       86 ->      86   0.25 -> 0.25   1.00 -> 1.00       38 ->     12   seeds: 57->57 114->114
+  L11      116 ->      94   0.88 -> 0.88   0.73 -> 0.88       84 ->     94   seeds: 95->94 137->94
+  L12        2 ->      46   0.00 -> 0.06   0.96 -> 0.98      488 ->    414   seeds: 0->76 3->16
+  M1      4828 ->    4996   1.00 -> 1.00   0.52 -> 0.49     6444 ->   5552   seeds: 4696->4977 4960->5016
+  M2       988 ->     972   1.00 -> 1.00   0.84 -> 0.51     3205 ->   3176   seeds: 993->968 984->977
+  M3       862 ->     850   0.88 -> 0.94   0.77 -> 0.88     1271 ->   1074   seeds: 808->916 916->784
+  M4       502 ->     528   1.00 -> 1.00   0.09 -> 0.12      360 ->    308   seeds: 464->523 539->533
+  M5       302 ->     100   0.19 -> 0.00   0.98 -> 0.99      106 ->     16   seeds: 378->124 225->76
+  M6       744 ->     686   0.69 -> 0.69   1.00 -> 1.00      624 ->    534   seeds: 744->751 744->620
+  M7       504 ->     518   1.00 -> 1.00   0.07 -> 0.13      102 ->    293   seeds: 539->535 469->502
+  M8        56 ->      96   0.00 -> 0.06   0.97 -> 0.97       34 ->     60   seeds: 38->38 75->153
+  M9       536 ->     526   1.00 -> 1.00   0.00 -> 0.00      388 ->    386   seeds: 526->526 545->527
+  M10      518 ->     539   1.00 -> 1.00   0.64 -> 0.57      399 ->    446   seeds: 519->539 518->539
+  M11      651 ->     653   0.88 -> 0.88   0.89 -> 0.87      265 ->    356   seeds: 664->614 638->692
+  M12       46 ->      46   0.00 -> 0.00   0.95 -> 0.95        0 ->      0   seeds: 66->66 25->25
+  player HP lost by scenario: {'B>A': 14, '=': 3, 'B<A': 7}
+
+== outcomes (player side): A {'win': 23, 'draw': 5, 'loss': 20}, B {'win': 23, 'draw': 5, 'loss': 20}
+  pairs A -> B: {'win->win': 22, 'draw->draw': 5, 'loss->loss': 19, 'win->loss': 1, 'loss->win': 1}
+  how A: {'over': 43, 'timeout': 5}, B: {'over': 43, 'timeout': 5}
+
+== scheduler (arm B, all pairs): picks 20791, attack picks out of the engine's order 2165; the promoted unit's first decision an attack 1445, executed 1430, with damage 223, damage 6946; scheduler time 1017 ms total, 49 us per pick
+  executed attacks of the other units in B 3078 vs all executed attacks in A 5794 (B all 5492)

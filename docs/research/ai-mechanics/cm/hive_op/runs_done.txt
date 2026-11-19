@@ -1,0 +1,6 @@
+1 OA M3 s1 turns=8
+2 OO M3 s1 turns=8
+3 OS M3 s1 turns=8
+4 OA M3 s1 turns=8
+5 OG M3 s1 turns=8
+6 OG M3 s2 turns=8

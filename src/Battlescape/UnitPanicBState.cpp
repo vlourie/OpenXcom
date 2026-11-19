@@ -83,7 +83,7 @@ void UnitPanicBState::think()
 
 				if (!canShoot && Mod::EXTENDED_BERSERK_WITH_AIMED > 0)
 				{
-					if (Mod::EXTENDED_BERSERK_WITH_AIMED == 1 && ba.weapon->getCurrentWaypoints() != 0)
+					if (Mod::EXTENDED_BERSERK_WITH_AIMED == 1 && ba.weapon && ba.weapon->getCurrentWaypoints() != 0)
 					{
 						// can use BA_AIMEDSHOT, but cannot use BA_LAUNCH
 					}

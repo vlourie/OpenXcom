@@ -1,0 +1,65 @@
+﻿Hi Dioxine! Same checker, this time Piratez_Factions.rul. It's big (116k lines), but it's clean in almost every way. There are no dangling references, no accidental duplicate ids (only your delete-and-redefine ones), and no zone index outside a region's missionZones across all 2100 mission/region pairs. No weight table ever sums to zero, no nextStage cycles, and every race member is a real unit. The race vs deployment check went through every race each deployment can meet: mission/script raceWeights, base races, retaliation, raceBonus custom deploys, globe texture deployments per zone, and base defense. Two combinations crash; details below. Line numbers are from the current release.
+
+1) Black Bomber with STR_BAD_COPS: crash on battle.
+STR_MISSION_HIGHWAYMEN_FLIGHT_1 (line 38811) flies STR_VESSEL_BLACK_BOMBER with raceWeights STR_BAD_COPS 100 from month 0, 60/40 with APOCALYPSE_CULT from month 24.
+The deployment STR_VESSEL_BLACK_BOMBER (line 88431) has one row, alienRank: 13.
+STR_BAD_COPS (line 25728) has 8 members. The bomber's raceBonus (line 51079) only covers APOCALYPSE_CULT, so there's no custom deploy.
+The engine calls race->getMember(13), which throws "does not have a member" and exits. Any battle with that bomber (crash site or landing) crashes: always before month 24, and 60% of the time after. APOCALYPSE_CULT has 16 members, so it's fine.
+Spawned by the scripts highwaymenOverflights / highwaymenStrikes (around lines 28095 and 28111).
+Fix, pick one:
+  - give BAD_COPS at least 14 members;
+  - customUnitType on that deployment row;
+  - raceBonus: STR_BAD_COPS: craftCustomDeploy: <a deployment sized for them> on the bomber.
+
+2) Black Helicopter with STR_BANDIT_VILLAGE: crash half the time.
+STR_MISSION_HARASSMENT_STORMRATS_2 (line 37214) uses raceWeights STR_BANDIT_TOWN 50 / STR_BANDIT_VILLAGE 50, and its last wave is STR_VESSEL_BLACK_HELICOPTER.
+The deployment STR_VESSEL_BLACK_HELICOPTER (line 88393) uses alienRank: 18.
+BANDIT_TOWN has 19 members, and #18 is STR_BANDIT_RATMAN_STORMRAT, the stormrat itself. BANDIT_VILLAGE (line 25697) has 15, so the helicopter battle crashes for the village half. The bombers in the same mission (rank 13) are fine for both races.
+The sister mission STR_MISSION_HARASSMENT_STORMRATS (line 37194) is BANDIT_TOWN 100, so VILLAGE in _2 looks like a slip.
+Now:
+    raceWeights:
+      0:
+        STR_BANDIT_TOWN: 50
+        STR_BANDIT_VILLAGE: 50
+Fix:
+    raceWeights:
+      0:
+        STR_BANDIT_TOWN: 100
+
+3) AUX_XARQUID_GRAPPLE loses its whole damage profile (line 9625).
+damageAlter: is written twice in a row (lines 9633-9634). With a repeated key the engine takes the FIRST one, and that one is empty. So RandomType 2, ToHealth 0.4, ToArmorPre 0.1, ToTile 0.3, ToTime 1.5, FixRadius 0 and IgnoreDirection are all ignored, and the grapple uses plain damage type 6 defaults.
+Now:
+    damageType: 6
+    damageAlter:
+    damageAlter:
+      RandomType: 2
+Fix:
+    damageType: 6
+    damageAlter:
+      RandomType: 2
+
+4) despawnEvenIfTargeted on alienDeployments does nothing.
+The engine reads it only on alienMissions (RuleAlienMission.cpp), and GeoscapeState checks the mission's flag. Without it, an expired site stays up for as long as a craft is heading to it (the "cheeky exploit" branch).
+16 deployments have it. 5 still work, because their same-named mission has it too: CATACOMBS_BUTCHER, CATACOMBS_BUTCHER_ENTRY, HALLS_OF_FEAR, NIGHTOSHPHERE_DELOREAN, NIGHTOSHPHERE_HARVEST.
+These 11 have it only on the deployment (deployment line / mission line):
+  EUROSYNDICATE_ELIMINATION   59849 / 34554
+  THULE_BOSSBATTLE            61477 / 34416
+  GATE_OF_FEAR                70314 / 35925
+  NECROPOLIS                  70421 / 35937
+  CITY_OF_THE_DEAD_SCOUTING   70532 / 35949
+  CITY_OF_THE_DEAD            70644 / 35961
+  FOUNTAIN_OF_YOUTH           70712 / 35985
+  FOUNTAIN_OF_YOUTH_G         70803 / 35997
+  STYX_BLACK_TOWER_OUTSIDE    71026 / 34540
+  EMANSION_MAG                85243 / 36025
+  DOOMED_CRYPT                85819 / 35178
+Fix: add despawnEvenIfTargeted: true to the alienMissions entry of the same name. On the deployment it can stay or go; it's ignored there.
+
+Small stuff, no rush:
+- Missing strings: mission names STR_EXPLOSION_1_MISSION (36943) and STR_BANDIT_ROBBERS_ASSAULT (39356). Both are objective 6, and they show as raw ids in UFO info with a hyperwave decoder. Also STR_LOC_SPACE_STATION (34614).
+- The HWP_SENTRY_LAUNCHER wreck SENTRY_CORPSE_1 (line 4191) is named STR_SENTRY_CORPSE, which has no string, so the battlescape shows the raw id. The items STR_SENTRY_CORPSE (4221) and STR_TANK_MSDF_CORPSE (4642) aren't referenced by anything.
+- STR_VESSEL_FOOT_PATROL_NECRO (line 89411): alertDescription is STR_VESSEL_FOOT_PATROL_NECRO_BRIEFING.SCR, which looks like the background file name pasted into the wrong field. It's harmless, since UFO deployments don't show alerts.
+- STR_VESSEL_PROBE_FOOT_ATTACK_SWARM (line 51934) is never used.
+- A few raceBonus custom deploys may never trigger because that race never flies that ship: COURIER / FRIGATE _FLOATER_ELITE / _SECTOID_ELITE, and USO *_TASOTH (lines 43820-43979). I haven't checked these fully, so treat them as a hint only.
+
+That's all. It's from the ruleset and the engine code only; nothing here was tested in combat. I found no "does not have a member" lines in my logs, so 1) and 2) are predicted, not seen.

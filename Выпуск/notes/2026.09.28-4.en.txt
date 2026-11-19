@@ -1,0 +1,5 @@
+— HD graphics, version 0.2: 211 objects on battle maps redrawn — trees, beds, cabinets, tables, chairs, barrels, crates, stairs, rocks, base and craft furniture. Clean drawings with smooth edges instead of blurry, grainy ones; the same object from different tilesets now looks the same.
+— The whole-body flash on a hit in HD is bright again: white when armor takes the blow, red when health is lost. No speckles and no rim of the old colours around the figure.
+— In the "Soldiers" and "Soldiers on board" lists a race picture now stands before the name and a rank badge before the rank; soldiers are grouped by race and sorted inside the group by the "Sort by" choice. The same race picture is now shown on the "Sell" and "Transfer" screens.
+— On the soldier stats screen in battle (S key) the maximum stands to the left of the current value, so you see at once how much the soldier has lost.
+— On the soldier screen the "MISSIONS" label no longer overlaps "KILLS".

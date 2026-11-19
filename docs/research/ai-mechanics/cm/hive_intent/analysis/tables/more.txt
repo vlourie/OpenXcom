@@ -1,0 +1,133 @@
+===== ci5_IA_M6_s1 ra1_AN_M6_s1 decisions 579 555
+ first difference of any field at 30 ; first in the action or in state at 30
+   base   {'turn': '1', 'side': '1', 'unit': '1000001', 'n': '0', 'from': '(42,42,0)', 'tu': '96', 'mode': '2', 'act': '2', 'to': '(38,40,0)', 'aim': '520', 'hr': '2320f5dbcc865cba', 'hu': '2a141af5a0ca1fcb', 'ho': '3e9f7e3ee3e10fc7', 'hi': '204d22db130d42a7'}
+   active {'turn': '1', 'side': '1', 'unit': '1000001', 'n': '0', 'from': '(42,42,0)', 'tu': '96', 'mode': '2', 'act': '2', 'to': '(37,47,0)', 'aim': '503', 'hr': '2320f5dbcc865cba', 'hu': '2a141af5a0ca1fcb', 'ho': '3e9f7e3ee3e10fc7', 'hi': '204d22db130d42a7'}
+      [HIVECC] event=CONTACT turn=1 target=444 pos=(31,29,2) cls=KNOWN seen_by=4:
+      [HIVECC] event=CONTACT turn=1 target=448 pos=(31,25,2) cls=KNOWN seen_by=4:6:
+      [HIVECC] event=CONTACT turn=1 target=470 pos=(39,24,0) cls=KNOWN seen_by=1:2:4:7:
+      [HIVECC] event=CONTACT turn=1 target=503 pos=(36,29,2) cls=KNOWN seen_by=4:
+      [HIVECC] event=CONTACT turn=1 target=520 pos=(36,33,2) cls=KNOWN seen_by=4:
+      [HIVECC] event=CONTACT turn=1 target=543 pos=(33,29,2) cls=KNOWN seen_by=4:
+      [HIVECC] event=ASSIGN turn=1 squad=0 commander=1000038 from=NONE to=MAINTAIN contact=-1 why=own_task task=SEARCH hold=none objective=-
+      [HIVECC] event=ASSIGN turn=1 squad=1 commander=1000040 from=NONE to=ENGAGE contact=470 why=sees task=SEARCH hold=none objective=-
+      [HIVECC] event=ASSIGN turn=1 squad=2 commander=1000036 from=NONE to=ENGAGE contact=470 why=sees task=SEARCH hold=none objective=-
+      [HIVECC] event=ASSIGN turn=1 squad=4 commander=1000014 from=NONE to=ENGAGE contact=520 why=threat_near task=HOLD hold=guard_sector objective=-
+      [HIVECC] event=ASSIGN turn=1 squad=5 commander=1000016 from=NONE to=MAINTAIN contact=-1 why=own_task task=HOLD hold=guard_sector objective=-
+      [HIVECC] event=ASSIGN turn=1 squad=6 commander=1000019 from=NONE to=ENGAGE contact=448 why=sees task=SEARCH hold=none objective=-
+      [HIVECC] event=ASSIGN turn=1 squad=7 commander=1000023 from=NONE to=MAINTAIN contact=-1 why=own_task task=HOLD hold=guard_sector objective=-
+      [HIVECC] event=ASSIGN turn=1 squad=8 commander=1000025 from=NONE to=MAINTAIN contact=-1 why=own_task task=HOLD hold=guard_sector objective=-
+      [HIVECC] event=REINFORCE_CHECK turn=1 squad=0 contact=444 dist=21 able=6
+      [HIVECC] event=ASSIGN turn=1 squad=0 commander=1000038 from=MAINTAIN to=REINFORCE contact=444 why=nearest_free_with_route task=SEARCH hold=none objective=-
+      [HIVECC] event=DECISION turn=1 in_sight=6 fighting=4 free=4 cap=2 helpers=1 squads: 0=REINFORCE:444 1=ENGAGE:470 2=ENGAGE:470 4=ENGAGE:520 5=MAINTAIN:-1 6=ENGAGE:448 7=MAINTAI
+      [HIVEINTENT] event=PRIORITY turn=1 contact=503 capable=2 was=-1 contact_seers_capable=444:2:1,448:3:0,470:7:2,503:2:2,520:1:1,543:2:2,
+      [HIVEINTENT] event=ISSUE turn=1 squad=0 commander=1000038 type=SUPPORT_CONTACT contact=444 objective=(31,29,2) priority=2 expiry=1 role=REINFORCE
+      [HIVEINTENT] event=ISSUE turn=1 squad=1 commander=1000040 type=ENGAGE_CONTACT contact=470 objective=(39,24,0) priority=2 expiry=1 role=ENGAGE
+      [HIVEINTENT] event=ISSUE turn=1 squad=2 commander=1000036 type=ENGAGE_CONTACT contact=470 objective=(39,24,0) priority=2 expiry=1 role=ENGAGE
+      [HIVECC] event=ASSIGN turn=1 squad=4 commander=1000014 from=ENGAGE to=ENGAGE contact=503 why=intent_priority task=SEARCH hold=none objective=(36,33,2)
+      [HIVEINTENT] event=ISSUE turn=1 squad=4 commander=1000014 type=ENGAGE_CONTACT contact=503 objective=(36,29,2) priority=2 expiry=1 role=ENGAGE
+      [HIVEINTENT] event=ISSUE turn=1 squad=5 commander=1000016 type=MAINTAIN_OBJECTIVE contact=-1 objective=(8,47,0) priority=1 expiry=1 role=MAINTAIN
+      [HIVEINTENT] event=ISSUE turn=1 squad=6 commander=1000019 type=ENGAGE_CONTACT contact=448 objective=(31,25,2) priority=2 expiry=1 role=ENGAGE
+      [HIVEINTENT] event=ISSUE turn=1 squad=7 commander=1000023 type=MAINTAIN_OBJECTIVE contact=-1 objective=(34,4,0) priority=1 expiry=1 role=MAINTAIN
+      [HIVEINTENT] event=ISSUE turn=1 squad=8 commander=1000025 type=MAINTAIN_OBJECTIVE contact=-1 objective=(2,25,0) priority=1 expiry=1 role=MAINTAIN
+      [HIVECC] event=ORDER turn=1 squad=0 role=REINFORCE unit=1000038 kind=approach order=1 contact=444 at=(8,21,2) target=(24,20,2) cost=134 tu=134 shot=29 until=4
+      [HIVECC] event=ORDER turn=1 squad=0 role=REINFORCE unit=1000007 kind=approach order=2 contact=444 at=(8,20,1) target=(22,25,1) cost=66 tu=96 shot=21 until=4
+      [HIVECC] event=ORDER turn=1 squad=0 role=REINFORCE unit=1000015 kind=approach order=3 contact=444 at=(6,19,2) target=(20,20,2) cost=104 tu=111 shot=33 until=4
+      [HIVECC] event=ORDER turn=1 squad=0 role=REINFORCE unit=1000021 kind=approach order=4 contact=444 at=(7,17,2) target=(20,17,2) cost=98 tu=111 shot=33 until=4
+      [HIVECC] event=ORDER turn=1 squad=0 role=REINFORCE unit=1000028 kind=approach order=5 contact=444 at=(8,15,2) target=(20,15,2) cost=64 tu=111 shot=72 until=4
+      [HIVECC] event=ORDER turn=1 squad=0 role=REINFORCE unit=1000037 kind=approach order=6 contact=444 at=(14,17,0) target=(23,22,0) cost=62 tu=96 shot=33 until=4
+      [HIVECC] event=ORDER turn=1 squad=1 role=ENGAGE unit=1000040 kind=fire order=7 contact=470 at=(14,21,0) target=(26,25,0) cost=62 tu=134 shot=29 until=-1
+      [HIVECC] event=ORDER turn=1 squad=1 role=ENGAGE unit=1000002 kind=approach order=8 contact=470 at=(5,5,0) target=(24,4,0) cost=82 tu=96 shot=22 until=-1
+      [HIVECC] event=ORDER turn=1 squad=1 role=ENGAGE unit=1000004 kind=no_node contact=470 at=(23,23,2)
+      [HIVECC] event=ORDER turn=1 squad=1 role=ENGAGE unit=1000012 kind=approach order=9 contact=470 at=(17,22,1) target=(26,20,1) cost=40 tu=96 shot=22 until=-1
+      [HIVECC] event=ORDER turn=1 squad=1 role=ENGAGE unit=1000024 kind=approach order=10 contact=470 at=(8,26,0) target=(32,28,0) cost=100 tu=111 shot=33 until=-1
+      [HIVECC] event=ORDER turn=1 squad=1 role=ENGAGE unit=1000029 kind=own_fight at=(20,26,0)
+      [HIVECC] event=ORDER turn=1 squad=2 role=ENGAGE unit=1000036 kind=in_place order=11 contact=470 at=(45,7,0) target=(45,7,0) cost=-1 tu=96 shot=62 until=-1
+      [HIVECC] event=ORDER turn=1 squad=2 role=ENGAGE unit=1000005 kind=own_fight at=(40,10,0)
+      [HIVECC] event=ORDER turn=1 squad=2 role=ENGAGE unit=1000017 kind=own_fight at=(44,12,0)
+      [HIVECC] event=ORDER turn=1 squad=4 role=ENGAGE unit=1000014 kind=own_fight at=(37,42,2)
+      [HIVECC] event=ORDER turn=1 squad=4 role=ENGAGE unit=1000000 kind=fire order=12 contact=503 at=(45,48,0) target=(41,38,0) cost=54 tu=96 shot=28 until=-1
+      [HIVECC] event=ORDER turn=1 squad=4 role=ENGAGE unit=1000001 kind=fire order=13 contact=503 at=(42,42,0) target=(43,30,0) cost=54 tu=96 shot=28 until=-1
+      [HIVECC] event=ORDER turn=1 squad=4 role=ENGAGE unit=1000006 kind=own_fight at=(36,14,0)
+      [HIVECC] event=ORDER turn=1 squad=4 role=ENGAGE unit=1000027 kind=own_fight at=(48,32,2)
+      [HIVECC] event=ORDER turn=1 squad=6 role=ENGAGE unit=1000019 kind=fire order=18 contact=448 at=(23,36,0) target=(15,30,0) cost=44 tu=111 shot=25 until=-1
+      [HIVECC] event=ORDER turn=1 squad=6 role=ENGAGE unit=1000010 kind=fire order=19 contact=448 at=(20,23,0) target=(27,19,0) cost=56 tu=96 shot=21 until=-1
+      [HIVECC] event=ORDER turn=1 squad=6 role=ENGAGE unit=1000018 kind=fire order=20 contact=448 at=(14,42,0) target=(14,32,2) cost=56 tu=111 shot=33 until=-1
+      [HIVECC] event=ORDER turn=1 squad=6 role=ENGAGE unit=1000026 kind=own_fight at=(26,30,0)
+      [HIVECC] event=ORDER turn=1 squad=6 role=ENGAGE unit=1000035 kind=approach order=21 contact=448 at=(17,19,0) target=(23,19,0) cost=32 tu=96 shot=28 until=-1
+      [HIVEINTENT] event=CHOICE turn=1 squad=4 unit=1000001 site=firepoint type=ENGAGE_CONTACT contact=503 own=520 changed=1 would=0 no=- tu=96
+      [HIVEINTENT] event=CHOICE turn=1 squad=4 unit=1000001 site=firepoint type=ENGAGE_CONTACT contact=503 own=520 changed=1 would=0 no=- tu=96
+      [AIDECIDE] turn=1 side=1 unit=1000001 n=0 from=(42,42,0) tu=96 mode=2 act=2 to=(37,47,0) run=0 kneel=0 aim=503 weapon=STR_GAUSS_RIFLE seen=448,470,444,545,520,543,503 hu=2a141
+ first changed: [HIVEINTENT] event=CHOICE turn=1 squad=4 unit=1000001 site=firepoint type=ENGAGE_CONTACT contact=503 own=520 changed=1 would=0 no=- tu=96
+ role changes for the priority 3 ['[HIVECC] event=ASSIGN turn=1 squad=4 commander=1000014 from=ENGAGE to=ENGAGE contact=503 why=intent_priority task=SEARCH hold=none objective', '[HIVECC] event=ASSIGN turn=2 squad=1 commander=1000040 from=ENGAGE to=ENGAGE contact=545 why=intent_priority task=SEARCH hold=none objective', '[HIVECC] event=ASSIGN turn=4 squad=2 commander=1000036 from=ENGAGE to=ENGAGE contact=444 why=intent_priority task=SEARCH hold=none objective']
+ tu against AIEXEC [(('differ', '6', 32), 2), (('differ', '6', 37), 2), (('differ', '6', 44), 1), (('same', '7'), 6), (('same', '8'), 93), (('same', '9'), 12)]
+ not_valid_target [(('1', '503'), 29), (('2', '470'), 12), (('3', '470'), 4)]
+ grenades by turn {'1': [('1000025', '(31,25,2)'), ('1000027', '(36,29,2)')], '2': [('1000006', '(40,23,0)'), ('1000040', '(31,32,0)')], '3': [('1000002', '(41,22,0)')]}
+ changed attacks [('1', '1000001', '503', '8', '0', '0', '0'), ('1', '1000001', '503', '8', '0', '0', '0'), ('1', '1000006', '503', '8', '0', '0', '0'), ('1', '1000006', '503', '8', '0', '0', '0'), ('1', '1000014', '503', '8', '0', '0', '0'), ('1', '1000014', '503', '8', '0', '0', '0'), ('1', '1000027', '503', '6', '0', '0', '0'), ('3', '1000016', '545', '7', '1', '1', '11')]
+ closes [(('expired', ''), 17), (('contact_down', ''), 8), (('done', ''), 2), (('expired', 'no_effect:22,'), 1), (('done', 'no_effect:19,'), 1), (('done', 'not_valid_target:29,'), 1), (('done', 'closer_threat:6,no_effect:14,no_tu:3,not_visible:3,'), 1), (('expired', 'mode_choice_rejected:1,no_effect:2,not_visible:1,'), 1)]
+ SKIP ['event=SKIP turn=2 contact=448 unsuited=4 attacks=1']
+ PRIORITY [('1', '503', '2', '-1'), ('2', '545', '1', '503'), ('3', '545', '4', '545'), ('3', '-1', '0', '545'), ('3', '444', '1', '-1'), ('3', '444', '1', '444'), ('4', '444', '1', '444'), ('4', '-1', '0', '444'), ('4', '-1', '0', '-1'), ('5', '470', '1', '-1'), ('5', '-1', '0', '470'), ('5', '-1', '0', '-1')]
+===== ci6_IA_M6_s2 ra2_AN_M6_s2 decisions 650 814
+ first difference of any field at 91 ; first in the action or in state at 128
+   base   {'turn': '1', 'side': '1', 'unit': '1000027', 'n': '0', 'from': '(11,10,0)', 'tu': '32', 'mode': '2', 'act': '2', 'to': '(12,8,0)', 'aim': '448', 'hr': 'bf3b154a1a49ee73', 'hu': 'a81d75b76f9009ed', 'ho': '90a24f7e89a3138e', 'hi': 'f99f2f6fd09bcb0d'}
+   active {'turn': '1', 'side': '1', 'unit': '1000027', 'n': '0', 'from': '(11,10,0)', 'tu': '32', 'mode': '2', 'act': '2', 'to': '(11,8,0)', 'aim': '520', 'hr': 'bf3b154a1a49ee73', 'hu': 'a81d75b76f9009ed', 'ho': '90a24f7e89a3138e', 'hi': 'f99f2f6fd09bcb0d'}
+      [HIVEINTENT] event=DECIDED turn=1 squad=2 unit=1000026 act=0 to=(-1,-1,-1) contact=-1 aim=-1 site=- changed=0 own=- tu=111
+      [HIVEINTENT] event=RESULT turn=1 squad=2 unit=1000026 kind=NO_ACTION act=0 tu_spent=0 contact=-1 aim=-1 changed=0 hit=0 down=0 hp_lost=0
+      [HIVECC] event=AUTONOMY turn=1 unit=1000027 answer=FREE from=completed why=contact_approach
+      [HIVEINTENT] event=CHOICE turn=1 squad=6 unit=1000027 site=firepoint type=ENGAGE_CONTACT contact=520 own=448 changed=1 would=0 no=- tu=32
+      [AIDECIDE] turn=1 side=1 unit=1000027 n=0 from=(11,10,0) tu=32 mode=2 act=2 to=(11,8,0) run=0 kneel=0 aim=520 weapon=STR_GAUSS_PISTOL seen=448,470,444,545,520,543,503,454 hu=a
+ first changed: [HIVEINTENT] event=CHOICE turn=1 squad=6 unit=1000012 site=firepoint type=ENGAGE_CONTACT contact=520 own=448 changed=1 would=0 no=- tu=111
+ role changes for the priority 0 []
+ tu against AIEXEC [(('differ', '6', 32), 1), (('differ', '6', 37), 1), (('same', '7'), 3), (('same', '8'), 62), (('same', '9'), 11)]
+ not_valid_target []
+ grenades by turn {'2': [('1000011', '(25,16,0)')], '5': [('1000005', '(28,42,0)')]}
+ changed attacks [('1', '1000027', '520', '8', '0', '0', '0'), ('2', '1000010', '444', '8', '1', '0', '13')]
+ closes [(('expired', ''), 16), (('contact_down', ''), 2), (('done', 'no_effect:1,'), 1), (('expired', 'mode_choice_rejected:1,no_effect:6,no_tu:1,not_visible:2,'), 1), (('done', 'firepoint_no_shot:1,mode_choice_rejected:2,no_line:3,not_visible:2,'), 1), (('done', 'closer_threat:1,no_effect:2,'), 1), (('done', 'mode_choice_rejected:2,no_effect:1,not_visible:1,'), 1), (('done', 'mode_choice_rejected:1,no_effect:2,not_visible:3,weak_effect:3,'), 1)]
+ SKIP ['event=SKIP turn=2 contact=470 unsuited=2 attacks=1', 'event=SKIP turn=2 contact=444 unsuited=5 attacks=2', 'event=SKIP turn=2 contact=444 unsuited=5 attacks=2']
+ PRIORITY [('1', '520', '1', '-1'), ('2', '454', '2', '520'), ('2', '503', '1', '454'), ('2', '503', '1', '503'), ('3', '-1', '0', '503'), ('4', '-1', '0', '-1'), ('5', '-1', '0', '-1'), ('6', '-1', '0', '-1'), ('7', '-1', '0', '-1'), ('8', '-1', '0', '-1')]
+===== ci7_IV_M3_s1 ra3_AV_M3_s1 decisions 896 987
+ first difference of any field at 81 ; first in the action or in state at 81
+   base   {'turn': '1', 'side': '1', 'unit': '1000036', 'n': '2', 'from': '(27,17,0)', 'tu': '17', 'mode': '0', 'act': '2', 'to': '(27,11,1)', 'aim': '1000065', 'hr': '8e6d889406ffcf6c', 'hu': '144b25194407f31f', 'ho': '512d2a1a0adb43ba', 'hi': '6b2639aa2edb61ec'}
+   active {'turn': '1', 'side': '1', 'unit': '1000036', 'n': '2', 'from': '(27,17,0)', 'tu': '17', 'mode': '0', 'act': '2', 'to': '(32,8,0)', 'aim': '1000065', 'hr': '8e6d889406ffcf6c', 'hu': '144b25194407f31f', 'ho': '512d2a1a0adb43ba', 'hi': '6b2639aa2edb61ec'}
+      [HIVEINTENT] event=DECIDED turn=1 squad=0 unit=1000036 act=9 to=(25,24,0) contact=520 aim=1000065 site=shot changed=0 own=- tu=65
+      [HIVECC] event=EXEC turn=1 squad=0 role=ENGAGE unit=1000036 act=9 at=(27,17,0) to=(25,24,0) aim=1000065 on_order=-1 why=own tu=65
+      [HIVEINTENT] event=RESULT turn=1 squad=0 unit=1000036 kind=OTHER_ATTACK act=9 tu_spent=48 contact=520 aim=1000065 changed=0 hit=1 down=0 hp_lost=3
+      [HIVEINTENT] event=CHOICE turn=1 squad=0 unit=1000036 site=shot type=ENGAGE_CONTACT contact=520 own=1000065 changed=0 would=0 no=not_visible tu=17
+      [AIDECIDE] turn=1 side=1 unit=1000036 n=2 from=(27,17,0) tu=17 mode=0 act=2 to=(32,8,0) run=0 kneel=0 aim=1000065 weapon=STR_CANISTER_GUN seen=448,470,444,545,520,543,503,1000
+ first changed: [HIVEINTENT] event=CHOICE turn=1 squad=10 unit=1000048 site=shot type=ENGAGE_CONTACT contact=520 own=448 changed=1 would=0 no=- tu=65
+ role changes for the priority 10 ['[HIVECC] event=ASSIGN turn=1 squad=0 commander=1000057 from=ENGAGE to=ENGAGE contact=520 why=intent_priority task=SEARCH hold=none objective', '[HIVECC] event=ASSIGN turn=1 squad=10 commander=1000030 from=ENGAGE to=ENGAGE contact=520 why=intent_priority task=SEARCH hold=none objectiv', '[HIVECC] event=ASSIGN turn=2 squad=1 commander=1000051 from=ENGAGE to=ENGAGE contact=543 why=intent_priority task=SEARCH hold=none objective']
+ tu against AIEXEC [(('differ', '6', 13), 13), (('differ', '6', 14), 1), (('differ', '6', 15), 1), (('differ', '8', 18), 2), (('differ', '9', 18), 2), (('same', '10'), 2), (('same', '8'), 79), (('same', '9'), 28)]
+ not_valid_target [(('3', '503'), 9), (('4', '448'), 26), (('4', '545'), 6), (('5', '545'), 11)]
+ grenades by turn {'1': [('1000009', '(15,65,0)'), ('1000013', '(39,12,0)'), ('1000019', '(15,55,0)'), ('1000030', '(33,14,2)'), ('1000035', '(49,13,3)'), ('1000044', '(63,59,3)')], '2': [('1000025', '(9,53,0)')], '3': [('1000025', '(41,27,0)'), ('1000043', '(50,33,0)'), ('1000053', '(59,6,0)')], '4': [('1000022', '(49,31,0)'), ('1000042', '(45,19,0)'), ('1000057', '(26,14,0)')], '5': [('1000017', '(47,17,0)'), ('1000050', '(24,16,0)')]}
+ changed attacks [('1', '1000048', '520', '8', '1', '0', '6'), ('1', '1000048', '520', '8', '0', '0', '0'), ('2', '1000022', '543', '9', '0', '0', '0'), ('3', '1000010', '503', '8', '1', '0', '20')]
+ closes [(('expired', ''), 33), (('contact_down', ''), 10), (('expired', 'not_visible:2,'), 1), (('done', 'weak_effect:1,'), 1), (('expired', 'no_effect:4,not_visible:4,'), 1), (('done', 'not_visible:1,weak_effect:1,'), 1), (('expired', 'closer_threat:2,mode_choice_rejected:1,not_visible:2,'), 1), (('done', 'mode_choice_rejected:1,not_visible:1,weak_effect:1,'), 1)]
+ SKIP []
+ PRIORITY [('1', '520', '2', '-1'), ('2', '543', '3', '520'), ('3', '520', '2', '543'), ('3', '520', '2', '520'), ('3', '503', '3', '520'), ('3', '503', '4', '503'), ('3', '503', '4', '503'), ('4', '503', '3', '503'), ('4', '448', '2', '503'), ('4', '448', '2', '448'), ('4', '448', '2', '448'), ('5', '470', '3', '448')]
+===== the episode: M6 s1, turn 1, contact 503
+ci5_IA_M6_s1
+    1 1000001 act 8 tu 62 to (36,29,2) aim 503 STR_GAUSS_RIFLE spent 28 dmg 0 down 0
+    1 1000001 act 8 tu 34 to (36,29,2) aim 503 STR_GAUSS_RIFLE spent 28 dmg 63 down 1
+    1 1000006 act 8 tu 96 to (36,29,2) aim 503 STR_GAUSS_PISTOL spent 21 dmg 0 down 0
+    1 1000006 act 8 tu 75 to (36,29,2) aim 503 STR_GAUSS_PISTOL spent 21 dmg 0 down 0
+    1 1000014 act 8 tu 111 to (36,29,2) aim 503 STR_GAUSS_RIFLE spent 33 dmg 0 down 0
+    1 1000014 act 8 tu 78 to (36,29,2) aim 503 STR_GAUSS_RIFLE spent 33 dmg 0 down 0
+    1 1000024 act 8 tu 111 to (36,29,2) aim -1 STR_GAUSS_RIFLE spent 35 dmg 0 down 0
+    1 1000024 act 8 tu 76 to (36,29,2) aim 503 STR_GAUSS_RIFLE spent 33 dmg 35 down 0
+    1 1000027 act 6 tu 74 to (36,29,2) aim 470 STR_PIR_ALIEN_GRENADE spent 82 dmg 0 down 0
+    [AICASUALTY] turn=1 side=1 victim=503 vfaction=0 type=SOLDIER how=stun pos=(36,29,2) tu=1 kneel=0 seenby=2 killer=1000025 kfaction=1 ktype=STR_MUTON_NAVIGATOR dist=32 weapon=S
+    [AICASUALTY] turn=1 side=1 victim=503 vfaction=0 type=SOLDIER how=dead pos=(36,29,2) tu=1 kneel=0 seenby=2 killer=1000027 kfaction=1 ktype=STR_MUTON_NAVIGATOR dist=12 weapon=S
+     event=ISSUE turn=1 squad=4 commander=1000014 type=ENGAGE_CONTACT contact=503 objective=(36,29,2) priority=2 expiry=1 role=ENGAGE
+     event=CHOICE turn=1 squad=4 unit=1000001 site=firepoint type=ENGAGE_CONTACT contact=503 own=520 changed=1 would=0 no=- tu=96
+     event=CHOICE turn=1 squad=4 unit=1000001 site=firepoint type=ENGAGE_CONTACT contact=503 own=520 changed=1 would=0 no=- tu=96
+     event=CHOICE turn=1 squad=4 unit=1000001 site=sniper type=ENGAGE_CONTACT contact=503 own=470 changed=1 would=0 no=- tu=62
+     event=CHOICE turn=1 squad=4 unit=1000001 site=sniper type=ENGAGE_CONTACT contact=503 own=520 changed=1 would=0 no=- tu=34
+     event=CHOICE turn=1 squad=4 unit=1000006 site=shot type=ENGAGE_CONTACT contact=503 own=470 changed=1 would=0 no=- tu=96
+     event=CHOICE turn=1 squad=4 unit=1000006 site=sniper type=ENGAGE_CONTACT contact=503 own=543 changed=1 would=0 no=- tu=75
+     event=CHOICE turn=1 squad=4 unit=1000014 site=sniper type=ENGAGE_CONTACT contact=503 own=470 changed=1 would=0 no=- tu=111
+     event=CHOICE turn=1 squad=4 unit=1000014 site=sniper type=ENGAGE_CONTACT contact=503 own=543 changed=1 would=0 no=- tu=78
+     event=CHOICE turn=1 squad=4 unit=1000027 site=sniper type=ENGAGE_CONTACT contact=503 own=470 changed=1 would=0 no=- tu=111
+     event=CLOSE turn=1 squad=4 type=ENGAGE_CONTACT contact=503 status=done accepted=9 changed=9 refused=29 attacked=7 other=5 walk_toward=2 w
+     event=PRIORITY turn=1 contact=503 capable=2 was=-1 contact_seers_capable=444:2:1,448:3:0,470:7:2,503:2:2,520:1:1,543:2:2,
+ra1_AN_M6_s1
+    [AICASUALTY] turn=1 side=1 victim=503 vfaction=0 type=SOLDIER how=stun pos=(36,29,2) tu=1 kneel=0 seenby=2 killer=1000001 kfaction=1 ktype=STR_MUTON_SOLDIER dist=14 weapon=STR
+    1 1000001 act 8 tu 85 to (36,29,2) aim 503 STR_GAUSS_RIFLE spent 30 dmg 75 down 1
+    [AICASUALTY] turn=3 side=0 victim=503 vfaction=0 type=SOLDIER how=dead pos=(36,29,2) tu=1 kneel=0 seenby=0 killer=1000001 kfaction=1 ktype=STR_MUTON_SOLDIER dist=9 weapon=STR_

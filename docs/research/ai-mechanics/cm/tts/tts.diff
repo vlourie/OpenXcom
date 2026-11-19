@@ -1,0 +1,72 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/tts/bg_d0.cpp	2026-11-06 00:01:41.741483500 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/tts/tree/src/Battlescape/BattlescapeGame.cpp	2026-11-05 23:49:54.853066100 +0200
+@@ -18,6 +18,7 @@
+  */
+ #include <sstream>
+ #include "BattlescapeGame.h"
++#include "TurnSolver.h"
+ #include "BattlescapeState.h"
+ #include "AiProbe.h"
+ #include "AiCoverMap.h"
+@@ -397,7 +398,23 @@
+ 	{
+ 		_AIActionCounter = 0;
+ 	}
+-	if (_AIActionCounter >= AiProbe::maxActions(unit) || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
++	// TACTICAL TURN SOLVER (bench, OXCE_AI_TTS): one brain over the side's turn says before the unit's think whose step comes next and what it is
++	BattleAction ttsAction;
++	BattleUnit *ttsOther = 0;
++	const TurnSolver::Result tts = TurnSolver::step(_save, unit, &ttsAction, &ttsOther);
++	if (tts == TurnSolver::SWITCH)
++	{
++		_AIActionCounter = 0;
++		_save->setSelectedUnit(ttsOther);
++		_parentState->updateSoldierInfo();
++		getMap()->getCamera()->focusOn(ttsOther->getPosition());
++		return;
++	}
++	if (tts == TurnSolver::ACT)
++	{
++		_AIActionCounter = 0;
++	}
++	if (tts != TurnSolver::ACT && (_AIActionCounter >= AiProbe::maxActions(unit) || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0)) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
+ 	{
+ 		if (carefulGuard(unit))
+ 		{
+@@ -474,7 +491,16 @@
+ 	{
+ 		ai->retryBegin();
+ 	}
+-	unit->think(&action);
++	if (tts == TurnSolver::ACT)
++	{
++		const int number = action.number;
++		action = ttsAction;
++		action.number = number;
++	}
++	else
++	{
++		unit->think(&action);
++	}
+ 
+ 	if (action.type == BA_RETHINK)
+ 	{
+@@ -489,7 +515,7 @@
+ 	bool pickUpWeaponsMoreActively = unit->getPickUpWeaponsMoreActively() || botArms;
+ 	bool weaponPickedUp = false;
+ 	bool walkToItem = false;
+-	if (!weapon || !weapon->haveAnyAmmo())
++	if (tts != TurnSolver::ACT && (!weapon || !weapon->haveAnyAmmo()))
+ 	{
+ 		if (unit->getOriginalFaction() != FACTION_PLAYER)
+ 		{
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/tts/cm_d0.txt	2026-11-06 00:01:41.767831400 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/tts/tree/src/CMakeLists.txt	2026-11-05 23:49:54.853679900 +0200
+@@ -83,6 +83,7 @@
+   Battlescape/AiCandidates.cpp
+   Battlescape/AiCoverMap.cpp
+   Battlescape/AiProbe.cpp
++  Battlescape/TurnSolver.cpp
+   Battlescape/AlienInventory.cpp
+   Battlescape/AlienInventoryState.cpp
+   Battlescape/AliensCrashState.cpp

@@ -24,6 +24,7 @@
 #include "../Engine/Options.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
+#include "../Interface/TextEdit.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/ArrowButton.h"
 #include "../Mod/Mod.h"
@@ -101,6 +102,10 @@ namespace OpenXcom
 			_txtTitle->setY(titleY);
 		}
 
+		// OXCE-HD: quick search over every section - the box each section has, in the same place by the title
+		_btnQuickSearch = new TextEdit(this, 48, 9, 48, _txtTitle->getY() + 4);
+		add(_btnQuickSearch, "button2", "ufopaedia");
+
 		centerAllSurfaces();
 
 		setWindowBackground(_window, "ufopaedia");
@@ -113,6 +118,11 @@ namespace OpenXcom
 		_btnOk->onMouseClick((ActionHandler)&UfopaediaStartState::btnOkClick);
 		_btnOk->onKeyboardPress((ActionHandler)&UfopaediaStartState::btnOkClick, Options::keyCancel);
 		_btnOk->onKeyboardPress((ActionHandler)&UfopaediaStartState::btnOkClick, Options::keyGeoUfopedia);
+
+		_btnQuickSearch->setText(""); // redraw
+		_btnQuickSearch->onEnter((ActionHandler)&UfopaediaStartState::btnQuickSearchApply);
+		_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
+		_btnOk->onKeyboardRelease((ActionHandler)&UfopaediaStartState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
 		_btnScrollUp->setVisible(_cats.size() > _maxButtons);
 		_btnScrollUp->onMousePress((ActionHandler)&UfopaediaStartState::btnScrollUpPress);
@@ -149,6 +159,37 @@ namespace OpenXcom
 	void UfopaediaStartState::btnOkClick(Action *)
 	{
 		_game->popState();
+	}
+
+	/**
+	 * OXCE-HD: shows or hides the quick search box, as a section's list does.
+	 * @param action Pointer to an action.
+	 */
+	void UfopaediaStartState::btnQuickSearchToggle(Action *)
+	{
+		if (_btnQuickSearch->getVisible())
+		{
+			_btnQuickSearch->setText("");
+			_btnQuickSearch->setVisible(false);
+		}
+		else
+		{
+			_btnQuickSearch->setVisible(true);
+			_btnQuickSearch->setFocus(true);
+		}
+	}
+
+	/**
+	 * OXCE-HD: lists the articles of every section whose title has the searched text - a section's
+	 * own list, with its search and filters, only over all the sections at once.
+	 * @param action Pointer to an action.
+	 */
+	void UfopaediaStartState::btnQuickSearchApply(Action *)
+	{
+		if (!_btnQuickSearch->getText().empty())
+		{
+			_game->pushState(new UfopaediaSelectState("", _heightOffset, _windowOffset, _btnQuickSearch->getText()));
+		}
 	}
 
 	/**

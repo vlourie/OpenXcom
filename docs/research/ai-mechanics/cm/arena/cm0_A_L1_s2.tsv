@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2025002	STR_VESSEL_GUNSHIP	over	STR_VESSEL_GUNSHIP	STR_UFO_GROUND_ASSAULT	60	6	DESERT	STR_FLOATER_ELITE	STR_DRAKKAR#1	11	23	6	1	0	2	155	24	24	0	0	5	0	0	57	98	h.rec.in:355,h.rec.out.M2:3,h.rec.out.a8:2,p.rec.in:311	311	0	0	1	0	1	360	0	0	6	0	0	57		win

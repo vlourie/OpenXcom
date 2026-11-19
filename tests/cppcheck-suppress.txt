@@ -1,0 +1,17 @@
+// What cppcheck says of code that is not the HD layer but is read with it, kind by kind (no "*"). The HD layer has
+// no line here: what is not a defect there is suppressed in the code itself, at its line and with its reason
+// ("// cppcheck-suppress <kind> ; why", read with --inline-suppr), so a new finding of the same kind elsewhere
+// in the file is still seen. The list with the reasons: docs/QA/cppcheck-triage-2026-11-18.md.
+// (tools/ci_checks.py and .github/workflows/checks.yml pass this file with --suppressions-list.)
+
+// the script engine of OXCE, taken as it is: cppcheck does not parse its templates (the compilers do)
+syntaxError:src/Engine/Script.h
+missingReturn:src/Engine/Script.h
+
+// the font library, taken as it is
+nullPointerArithmeticOutOfMemory:src/Engine/stb_truetype.h
+uninitvar:src/Engine/stb_truetype.h
+nullPointerOutOfMemory:src/Engine/stb_truetype.h
+
+// the video library, taken as it is
+nullPointerOutOfMemory:libs/pl_mpeg/pl_mpeg.h

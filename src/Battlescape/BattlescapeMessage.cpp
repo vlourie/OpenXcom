@@ -21,7 +21,10 @@
 #include "../Interface/Text.h"
 #include "../Interface/ProgressBar.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdScreens.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/Palette.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -164,10 +167,66 @@ void BattlescapeMessage::setPalette(const SDL_Color *colors, int firstcolor, int
 void BattlescapeMessage::blit(SDL_Surface *surface)
 {
 	Surface::blit(surface);
-	_window->blit(surface);
-	_text->blit(surface);
-	_txtThinking->blit(surface);
+	const bool hd = hdText();
+	if (!Options::QOL::hideEnemyTurnBackground)
+	{
+		_window->blit(surface);
+		if (!hd)
+		{
+			_text->blit(surface);
+		}
+	}
+
+	if (!hd)
+	{
+		_txtThinking->blit(surface);
+	}
 	_progressBar->blit(surface);
+}
+
+/**
+ * The message goes into a surface of its own (Map::blitMessage) and reaches the screen already
+ * scaled, so the HD interface never sees these two lines as widgets of its own. They are kept out
+ * of that surface when it can draw them itself, and drawn over the picture afterwards - baked in
+ * otherwise, or the classic frame would lose them.
+ */
+bool BattlescapeMessage::hdText() const
+{
+	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * Draws the two lines with the HD fonts at the place the classic layout put them.
+ * @param ox Left edge of the surface the message was drawn into, in base pixels.
+ * @param oy Top edge of the same.
+ */
+void BattlescapeMessage::hdDrawAt(int ox, int oy)
+{
+	if (!Options::QOL::hideEnemyTurnBackground)
+	{
+		// the screen's theme picture (HdScreens) over the classic background baked into the canvas;
+		// it covers the canvas' progress bar too, so that one is drawn again on top of it
+		if (HdScreens::has("hiddenMovement"))
+		{
+			HdUi &ui = HdUi::instance();
+			const int x = ox + getX(), y = oy + getY();
+			ui.setClip(x, y, getWidth(), getHeight());
+			HdScreens::drawBackdrop(this, "hiddenMovement", x, y, getWidth(), getHeight());
+			ui.clearClip();
+			ui.noteBackdrop(this, x, y, getWidth(), getHeight());
+			if (_progressBar->getVisible())
+			{
+				ui.drawSurface(_progressBar, ox + _progressBar->getX(), oy + _progressBar->getY(), HdUi::mode() >= 2);
+			}
+		}
+		_text->draw();
+		_text->hdDrawAt(ox + _text->getX(), oy + _text->getY());
+	}
+	if (_txtThinking->getVisible())
+	{
+		_txtThinking->draw();
+		_txtThinking->hdDrawAt(ox + _txtThinking->getX(), oy + _txtThinking->getY());
+	}
 }
 
 /*

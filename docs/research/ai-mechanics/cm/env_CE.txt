@@ -1,0 +1,5 @@
+OXCE_AI_GAME=C:/OXCE_AIWorker/game
+OXCE_AI_WORK=C:/OXCE_AIWorker/cmrun/work
+PATH+=C:/OXCE_AIWorker/bench/dll
+OXCE_AI_EXE=C:/OXCE_AIWorker/cmrun/exe/CE/openxcom.exe
+OXCE_AI_CFG=C:/OXCE_AIWorker/cmrun/cfg/base.cfg

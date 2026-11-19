@@ -1,0 +1,3 @@
+﻿- Launcher 0.4.3, "Reports": when the team replies to a report sent from the game with F8, changes its status (Resolved, Closed) or asks for details, the report is highlighted - green frame, dot and label; the count is on the "Reports" button and a line on the main page at start. Opening it on the site or pressing "Read" clears the mark; "Needs info from you" stays lit until you reply.
+- Launcher 0.4.3, "Support": a block "Other ways" under the main buttons, taken from a list on the site, so options can change without a new launcher version (ticket XP-000428).
+- Launcher 0.4.3: the Chat section has a new Messages tab - private text messages with friends and other players, an unread counter on the Chat button, block and report (ticket XP-000476).

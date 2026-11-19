@@ -1,0 +1,291 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/AiProbe.h	2026-10-30 00:13:37.082664600 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/cf/tree/src/Battlescape/AiProbe.h	2026-10-30 14:34:40.863358400 +0200
+@@ -309,6 +309,11 @@
+ void beforeThink(SavedBattleGame *save, BattleUnit *unit);
+ /// One line per AI decision (after the unit has thought, before the action runs).
+ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
++/// COUNTERFIRE V0 (GO Vitali 30.10, five battles): OXCE_AI_COUNTERFIRE=1 - a hostile unit's attack at a player vehicle it sees,
++/// whose built-in weapon can fire a blast back (by the rules), is not made (BA_NONE: the unit's selection ends, its TU stay) when
++/// the attack's most hopeful damage is under 10% of the vehicle's max health and it does nothing else. Every attack at such a
++/// vehicle is an [AIORDER] arm=cf line: status cf_cancel or cf_keep.<why>.
++void counterfire(SavedBattleGame *save, BattleUnit *unit, BattleAction &action);
+ /// One line per unit on the field: position, TU, health, who it sees and who has spotted it.
+ void logState(SavedBattleGame *save, const char *when);
+ /// The smarter enemy under test (OXCE_AI_TACTICS): true for hostile units only.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/AiProbe.cpp	2026-10-30 00:13:37.184689200 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/cf/tree/src/Battlescape/AiProbe.cpp	2026-10-30 14:38:33.221884600 +0200
+@@ -237,6 +237,7 @@
+ void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
+ void beforeThink(SavedBattleGame *, BattleUnit *) {}
+ void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
++void counterfire(SavedBattleGame *, BattleUnit *, BattleAction &) {}
+ void logState(SavedBattleGame *, const char *) {}
+ bool tactics(const BattleUnit *) { return false; }
+ bool careful(const BattleUnit *) { return false; }
+@@ -3893,6 +3894,255 @@
+ 	pathClose(unit);
+ }
+ 
++namespace
++{
++
++/// COUNTERFIRE V0: the built-in weapon of a player vehicle that answers with a blast - a player unit that is no soldier, a fixed
++/// firearm with a snap or auto shot (what reaction fire uses), and among the ammo the rules let it load (or its own power when it
++/// needs none) one whose damage is area and hurts health. Rules only: what it can load, not what it has loaded. nullptr if none.
++const RuleItem *blastCounter(const BattleUnit *target)
++{
++	if (target->getOriginalFaction() != FACTION_PLAYER || target->getGeoscapeSoldier() != nullptr)
++		return nullptr;
++	auto blast = [](const RuleItem *r)
++	{
++		const RuleDamageType *dt = r ? r->getDamageType() : nullptr;
++		return dt && !dt->isDirect() && dt->ToHealth > 0.0f && r->getPower() > 0;
++	};
++	for (const BattleItem *bi : *target->getInventory())
++	{
++		const RuleItem *w = bi->getRules();
++		if (!w->isFixed() || w->getBattleType() != BT_FIREARM || (w->getCostSnap().Time <= 0 && w->getCostAuto().Time <= 0))
++			continue;
++		bool any = false;
++		for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
++		{
++			for (const RuleItem *a : *w->getCompatibleAmmoForSlot(slot))
++			{
++				any = true;
++				if (blast(a))
++					return w;
++			}
++		}
++		if (!any && blast(w))
++			return w;
++	}
++	return nullptr;
++}
++
++/// COUNTERFIRE V0: the most hopeful health damage of the attack to the target, by the rules: every shot and every pellet hits,
++/// the power the attacker's own weapon, ammo and stats give (ExplosionBState::init) without the range dropoff, the armor's
++/// ruleset modifier for the damage's resist type, the ruleset armor of the side the shot comes from by the target's place and
++/// facing the shooter sees (as AIModule::fireModeEffect), the expected roll, times ToHealth. Read: the attacker's own items and
++/// stats, the seen target's place and facing, its armor rule; not read: its current health and armor, TU, reactions. 'other'
++/// names an effect beyond health that keeps the attack: area damage, an incendiary or smoke damage type, transformation, armor
++/// damage (ToArmorPre on the roll, ToArmor past the armor) of 10% of that side's armor or more, or status damage (stun, time,
++/// energy, morale or mana above ToHealth) that the best roll gets past the armor. A direct hit makes no smoke or fire: hitTile
++/// runs only when the shot hits no unit (TileEngine::hit). -1 when not modelled.
++double cfBenefit(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, const BattleUnit *target,
++	const char *&other, int &power, int &shots, double &sideArmor, double &armorLoss)
++{
++	other = nullptr;
++	power = 0;
++	shots = 1;
++	sideArmor = 0.0;
++	armorLoss = 0.0;
++	if (!action.weapon)
++	{
++		other = "no_weapon";
++		return -1.0;
++	}
++	BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(action);
++	if (!attack.damage_item)
++	{
++		other = "no_ammo";
++		return -1.0;
++	}
++	const RuleItem *weapon = action.weapon->getRules();
++	const RuleItem *item = attack.damage_item->getRules();
++	const RuleDamageType *dt = nullptr;
++	if (action.type == BA_HIT && item->getBattleType() != BT_MELEE)
++	{
++		power = item->getMeleeBonus(attack);
++		dt = item->getMeleeType();
++	}
++	else
++	{
++		power = action.type != BA_HIT && weapon->getIgnoreAmmoPower() ? weapon->getPowerBonus(attack) : item->getPowerBonus(attack);
++		dt = item->getDamageType();
++		if (item->getExplosionRadius(attack) != 0)
++		{
++			other = "area";
++			return -1.0;
++		}
++	}
++	if (!dt)
++	{
++		other = "no_damage_type";
++		return -1.0;
++	}
++	power = std::max(power, 0);
++	if (!dt->isDirect())
++		other = "area";
++	else if (dt->ResistType == DT_SMOKE || dt->ResistType == DT_IN)
++		other = "smoke_fire";
++	else if (!item->getZombieUnit(target).empty() && !target->getArmor()->getZombiImmune())
++		other = "transform";
++	if (action.type == BA_AUTOSHOT)
++		shots = weapon->getConfigAuto()->shots;
++	else if (action.type == BA_SNAPSHOT)
++		shots = weapon->getConfigSnap()->shots;
++	else if (action.type == BA_AIMEDSHOT)
++		shots = weapon->getConfigAimed()->shots;
++	if (action.type != BA_HIT && action.type != BA_THROW && item->getShotgunPellets() > 1)
++		shots *= item->getShotgunPellets();
++	shots = std::max(shots, 1);
++
++	// BattleUnit::damage: the side of the hit by the direction from the target to the shooter (the seen place and facing)
++	const Armor *armor = target->getArmor();
++	sideArmor = armor->getFrontArmor();
++	if (!dt->IgnoreDirection)
++	{
++		const Position rel = (unit->getPosition() - target->getPosition()) * Position(16, 16, 24);
++		if (rel.x == 0 && rel.y == 0 && rel.z <= 0)
++		{
++			sideArmor = armor->getUnderArmor();
++		}
++		else
++		{
++			int relativeDirection;
++			const int abs_x = abs(rel.x);
++			const int abs_y = abs(rel.y);
++			if (abs_y > abs_x * 2)
++				relativeDirection = 8 + 4 * (rel.y > 0);
++			else if (abs_x > abs_y * 2)
++				relativeDirection = 10 + 4 * (rel.x < 0);
++			else if (rel.x < 0)
++				relativeDirection = rel.y > 0 ? 13 : 15;
++			else
++				relativeDirection = rel.y > 0 ? 11 : 9;
++			const double front = armor->getFrontArmor(), right = armor->getRightSideArmor(), rear = armor->getRearArmor(),
++				left = armor->getLeftSideArmor();
++			switch ((relativeDirection - target->getDirection()) % 8)
++			{
++			case 0: sideArmor = front; break;
++			case 1: sideArmor = (2 * front + right) / 3; break;
++			case 2: sideArmor = right; break;
++			case 3: sideArmor = (2 * rear + right) / 3; break;
++			case 4: sideArmor = rear; break;
++			case 5: sideArmor = (2 * rear + left) / 3; break;
++			case 6: sideArmor = left; break;
++			default: sideArmor = (2 * front + left) / 3; break;
++			}
++		}
++	}
++	const float modifier = armor->getDamageModifier(dt->ResistType);
++	const float effectiveness = KnowledgeArmor::effectiveness(dt, unit, action.weapon, attack.damage_item, target, save);
++	const float armorCut = effectiveness > 0.0f ? (float)sideArmor * effectiveness : 0.0f;
++	auto afterArmor = [&](int roll)
++	{
++		int damage = (int)floor(roll * modifier);
++		damage -= armorCut;
++		return std::max(damage, 0);
++	};
++	// the expected roll after the modifier (ToArmorPre's base) and after the armor (the base of health, ToArmor and status)
++	double perHit = 0.0, preHit = 0.0;
++	int best = 0;
++	if (dt->RandomType == DRT_UFO_WITH_TWO_DICE)
++	{
++		const double n = (double)(power + 1) * (power + 1);
++		for (int s = 0; s <= 2 * power; ++s)
++		{
++			perHit += afterArmor(s) * (std::min(s, 2 * power - s) + 1) / n;
++			preHit += (int)floor(s * modifier) * (std::min(s, 2 * power - s) + 1) / n;
++		}
++		best = afterArmor(2 * power);
++	}
++	else
++	{
++		const int lo = dt->getRandomDamage(power, 1);
++		const int hi = dt->getRandomDamage(power, 2);
++		for (int d = lo; d <= hi; ++d)
++		{
++			perHit += afterArmor(d);
++			preHit += (int)floor(d * modifier);
++		}
++		perHit /= (hi - lo + 1);
++		preHit /= (hi - lo + 1);
++		best = afterArmor(hi);
++	}
++	armorLoss = (dt->ToArmorPre * preHit + dt->ToArmor * perHit) * shots;
++	const float status = std::max(std::max(dt->ToStun, dt->ToTime), std::max(std::max(dt->ToEnergy, dt->ToMorale), dt->ToMana));
++	if (!other && sideArmor > 0.0 && armorLoss >= 0.10 * sideArmor)
++		other = "armor";
++	else if (!other && best > 0 && status > dt->ToHealth)
++		other = "status";
++	return perHit * dt->ToHealth * shots;
++}
++
++}
++
++void counterfire(SavedBattleGame *save, BattleUnit *unit, BattleAction &action)
++{
++	static const bool on = []
++	{
++		const char *s = ai3Env("OXCE_AI_COUNTERFIRE");
++		return s && atoi(s) == 1;
++	}();
++	if (!on || unit->getFaction() != FACTION_HOSTILE || unit->getOriginalFaction() != FACTION_HOSTILE
++		|| save->getSide() != FACTION_HOSTILE)
++	{
++		return;
++	}
++	const bool attack = action.type == BA_AUTOSHOT || action.type == BA_SNAPSHOT || action.type == BA_AIMEDSHOT
++		|| action.type == BA_HIT || action.type == BA_THROW || action.type == BA_LAUNCH;
++	if (!attack)
++	{
++		return;
++	}
++	Tile *tile = save->getTile(action.target);
++	BattleUnit *target = tile ? tile->getUnit() : nullptr;
++	if (!target || target->isOut() || target->getFaction() != FACTION_PLAYER)
++	{
++		return;
++	}
++	const RuleItem *counter = blastCounter(target);
++	if (!counter)
++	{
++		return;
++	}
++	const char *other = nullptr;
++	int power = 0, shots = 1;
++	double sideArmor = 0.0, armorLoss = 0.0;
++	const double est = cfBenefit(save, unit, action, target, other, power, shots, sideArmor, armorLoss);
++	const int maxHp = target->getBaseStats()->health;
++	const std::vector<BattleUnit *> *seen = unit->getVisibleUnits();
++	const char *why = nullptr;
++	if (std::find(seen->begin(), seen->end(), target) == seen->end())
++		why = "cf_keep.unseen";
++	else if (target->isVIP())
++		why = "cf_keep.mission";
++	else if (other)
++		why = "cf_keep.other";
++	else if (est < 0.0)
++		why = "cf_keep.not_modelled";
++	else if (est >= 0.10 * maxHp)
++		why = "cf_keep.useful";
++	const bool cancel = !why;
++	if (cancel)
++		why = "cf_cancel";
++	Log(LOG_INFO) << "[AIORDER] turn=" << save->getTurn() << " unit=" << unit->getId() << " n=" << action.number << " arm=cf"
++		<< " status=" << why << " type=" << (int)action.type << " target=" << target->getId() << " tpos=" << target->getPosition()
++		<< " pos=" << unit->getPosition() << " tu=" << unit->getTimeUnits()
++		<< " weapon=" << action.weapon->getRules()->getType() << " power=" << power << " shots=" << shots
++		<< " est=" << est << " maxhp=" << maxHp << " side=" << sideArmor << " armorloss=" << armorLoss
++		<< " other=" << (other ? other : "-") << " counter=" << counter->getType();
++	if (cancel)
++	{
++		action.type = BA_NONE;
++	}
++}
++
+ void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
+ 	bool dead, int hitSide, bool terrain)
+ {
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/BattlescapeGame.cpp	2026-10-30 00:13:37.116020300 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/cf/tree/src/Battlescape/BattlescapeGame.cpp	2026-10-30 14:34:36.490853600 +0200
+@@ -546,6 +546,8 @@
+ 			action.type = BA_NONE;
+ 		}
+ 	}
++	// COUNTERFIRE V0 (bench, OXCE_AI_COUNTERFIRE): a nearly useless attack at a vehicle that answers with a blast is not made
++	AiProbe::counterfire(_save, unit, action);
+ 	AiProbe::logDecision(_save, unit, action);
+ 	AiProbe::blockedStepDecide(_save, unit);
+ 	if (AiProbe::knownOccupantPath())

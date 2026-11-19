@@ -1,0 +1,37 @@
+   CAS [AICASUALTY] turn=8 side=0 victim=1000023 vfaction=1 type=STR_DOOM_SARGE how=stun pos=(57,22,0) tu=71 kneel=0 seenby=1 killer=46 kfaction=0 ktype=SOLDIER dist=1 weapon=STR_UNARMED_GAUNTLET hit=front terrain=0
+   CAS [AICASUALTY] turn=8 side=1 victim=1000012 vfaction=1 type=STR_DOOM_SOLDIER how=dead pos=(36,37,0) tu=81 kneel=0 seenby=2 killer=1000046 kfaction=1 ktype=STR_DOOM_IMP_TERRORIST dist=39 weapon=AUX_DOOM_IMP_WEAPON hit=front terrain=0
+   CAS [AICASUALTY] turn=8 side=1 victim=1000013 vfaction=1 type=STR_DOOM_SOLDIER how=dead pos=(36,17,0) tu=81 kneel=0 seenby=1 killer=1000039 kfaction=1 ktype=STR_DOOM_IMP_TERRORIST dist=16 weapon=AUX_DOOM_IMP_WEAPON hit=front terrain=0
+6676 DEC u=1000000 n=1 from=(23,32,0) tu=81 mode=2 act=9 to=(35,16,0) w=STR_SHOTGUN_PA seen=46,1,115
+   src shot slot x props [('e', 'escape', 130, 2, [26, 31, 0]), ('x', 'shot', 94, 9, [35, 16, 0])] trail []
+   attacks with a line [(115, [35, 16, 0], 8, 'STR_SHOTGUN_PA', 32, 101, 20), (115, [35, 16, 0], 9, 'STR_SHOTGUN_PA', 58, 117, 20)]
+   reach 781 ['23.31.0:4', '24.32.0:4', '22.32.0:4', '23.33.0:4', '22.31.0:6', '22.33.0:6', '24.31.0:6', '24.33.0:6', '21.32.0:8', '25.32.0:8', '23.30.0:8', '22.34.0:10', '23.34.0:40', '24.30.0:10', '25.31.0:10', '25.33.0:10', '21.33.0:10', '22.30.0:10', '25.30.0:12', '20.32.0:12', '21.34.0:12', '21.30.0:12', '23.29.0:12', '26.32.0:12', '20.31.0:14', '24.29.0:14', '22.35.0:14', '26.33.0:14', '22.29.0:14', '20.33.0:14']
+   EXEC {'unit': 1000000, 'walk': None, 'pos': [23, 32, 0], 'tu': 23, 'spent': 58, 'hp': 36, 'dmg': 0, 'fdmg': 0, 'fdowned': 0, 'downed': 0}
+6681 DEC u=1000000 n=2 from=(23,32,0) tu=23 mode=0 act=2 to=(18,7,0) w=STR_SHOTGUN_PA seen=46,1,115
+   src patrol.node slot p props [] trail []
+   attacks with a line []
+   reach 70 ['23.31.0:4', '23.33.0:4', '24.32.0:4', '22.32.0:4', '22.31.0:6', '22.33.0:6', '24.31.0:6', '24.33.0:6', '21.32.0:8', '25.32.0:8', '23.30.0:8', '22.30.0:10', '22.34.0:10', '24.30.0:10', '25.31.0:10', '25.33.0:10', '21.33.0:10', '23.29.0:12', '26.32.0:12', '21.30.0:12', '21.34.0:12', '20.32.0:12', '25.30.0:12', '22.29.0:14', '26.31.0:14', '26.33.0:14', '20.33.0:14', '20.31.0:14', '22.35.0:14', '24.29.0:14']
+   EXEC {'unit': 1000000, 'walk': 1, 'pos': [22, 27, 0], 'tu': 1, 'spent': 22, 'hp': 36, 'dmg': 0, 'fdmg': 0, 'fdowned': 0, 'downed': 0}
+   CAS [AICASUALTY] turn=8 side=1 victim=1000011 vfaction=1 type=STR_DOOM_SOLDIER how=dead pos=(30,7,0) tu=3 kneel=0 seenby=0 killer=1000022 kfaction=1 ktype=STR_DOOM_SARGE dist=33 weapon=STR_CHAINGUN hit=rear terrain=0
+   CAS [AICASUALTY] turn=8 side=1 victim=1000042 vfaction=1 type=STR_DOOM_IMP_TERRORIST how=dead pos=(22,18,0) tu=114 kneel=0 seenby=1 killer=1000028 kfaction=1 ktype=STR_DOOM_SARGE dist=7 weapon=STR_CHAINGUN hit=rear terrain=0
+   CAS [AICASUALTY] turn=8 side=1 victim=1000000 vfaction=1 type=STR_DOOM_SOLDIER how=dead pos=(22,27,0) tu=1 kneel=0 seenby=1 killer=1000036 kfaction=1 ktype=STR_DOOM_GUNNER dist=4 weapon=STR_CHAINGUN hit=left terrain=0
+6944 DEC u=1000039 n=1 from=(47,29,0) tu=114 mode=2 act=8 to=(56,22,0) w=AUX_DOOM_IMP_WEAPON seen=46,1,115
+   src shot slot x props [('e', 'escape', 140, 2, [48, 34, 0]), ('x', 'shot', 177, 8, [56, 22, 0])] trail []
+   attacks with a line [(46, [56, 22, 0], 8, 'AUX_DOOM_IMP_WEAPON', 31, 42, 12)]
+   reach 1342 ['47.28.0:4', '48.29.0:4', '46.29.0:4', '47.30.0:4', '46.30.0:6', '46.28.0:6', '48.28.0:6', '48.30.0:6', '49.29.0:8', '45.29.0:8', '47.31.0:8', '49.28.0:10', '45.28.0:10', '48.27.0:10', '48.31.0:10', '46.31.0:10', '49.30.0:10', '45.30.0:10', '50.29.0:12', '44.29.0:12', '49.31.0:12', '47.32.0:12', '49.27.0:12', '44.30.0:14', '48.32.0:14', '50.30.0:14', '44.28.0:14', '46.32.0:14', '50.28.0:14', '50.27.0:16']
+   EXEC {'unit': 1000039, 'walk': None, 'pos': [47, 29, 0], 'tu': 83, 'spent': 31, 'hp': 79, 'dmg': 2, 'fdmg': 9, 'fdowned': 0, 'downed': 0}
+6950 DEC u=1000039 n=2 from=(47,29,0) tu=83 mode=2 act=8 to=(56,22,0) w=AUX_DOOM_IMP_WEAPON seen=46,1,115
+   src shot slot x props [('x', 'shot', 118, 8, [56, 22, 0])] trail []
+   attacks with a line [(46, [56, 22, 0], 8, 'AUX_DOOM_IMP_WEAPON', 31, 42, 12)]
+   reach 830 ['47.28.0:4', '48.29.0:4', '46.29.0:4', '47.30.0:4', '46.30.0:6', '46.28.0:6', '48.28.0:6', '48.30.0:6', '47.31.0:8', '45.29.0:8', '49.29.0:8', '45.28.0:10', '45.30.0:10', '49.30.0:10', '46.31.0:10', '48.31.0:10', '48.27.0:10', '49.28.0:10', '49.27.0:12', '47.32.0:12', '50.29.0:12', '49.31.0:12', '44.29.0:12', '50.30.0:14', '50.28.0:14', '46.32.0:14', '44.28.0:14', '48.32.0:14', '44.30.0:14', '45.32.0:16']
+   CAS [AICASUALTY] turn=8 side=1 victim=1000023 vfaction=1 type=STR_DOOM_SARGE how=dead pos=(57,22,0) tu=49 kneel=0 seenby=0 killer=1000039 kfaction=1 ktype=STR_DOOM_IMP_TERRORIST dist=12 weapon=AUX_DOOM_IMP_WEAPON hit=front terrain=0
+   EXEC {'unit': 1000039, 'walk': None, 'pos': [47, 29, 0], 'tu': 52, 'spent': 31, 'hp': 79, 'dmg': 2, 'fdmg': 1, 'fdowned': 0, 'downed': 0}
+7132 DEC u=1000039 n=1 from=(47,29,0) tu=52 mode=2 act=2 to=(48,31,0) w=AUX_DOOM_IMP_CLAWS seen=46,1,115
+   src firepoint slot x props [('x', 'firepoint', 142, 2, [48, 31, 0])] trail []
+   attacks with a line [(46, [56, 22, 0], 8, 'AUX_DOOM_IMP_WEAPON', 31, 42, 12)]
+   reach 365 ['47.28.0:4', '48.29.0:4', '47.30.0:4', '46.30.0:6', '48.28.0:6', '46.28.0:6', '48.30.0:6', '47.31.0:8', '49.29.0:8', '49.30.0:10', '45.28.0:10', '49.28.0:10', '48.27.0:10', '46.31.0:10', '45.30.0:10', '48.31.0:10', '49.27.0:12', '47.32.0:12', '45.29.0:12', '49.31.0:12', '50.29.0:12', '48.32.0:14', '44.28.0:14', '50.30.0:14', '50.28.0:14', '46.32.0:14', '44.30.0:14', '50.27.0:16', '49.32.0:16', '44.29.0:16']
+   EXEC {'unit': 1000039, 'walk': 1, 'pos': [48, 31, 0], 'tu': 42, 'spent': 10, 'hp': 79, 'dmg': 0, 'fdmg': 0, 'fdowned': 0, 'downed': 0}
+7137 DEC u=1000039 n=2 from=(48,31,0) tu=42 mode=2 act=2 to=(50,29,0) w=AUX_DOOM_IMP_CLAWS seen=46,1,115
+   src firepoint slot x props [('e', 'escape', 120, 2, [45, 29, 0]), ('x', 'firepoint', 130, 2, [50, 29, 0])] trail []
+   attacks with a line [(46, [56, 22, 0], 8, 'AUX_DOOM_IMP_WEAPON', 31, 42, 13)]
+   reach 250 ['48.30.0:4', '49.31.0:4', '47.31.0:4', '48.32.0:4', '49.32.0:6', '49.30.0:6', '47.32.0:6', '47.30.0:6', '48.33.0:8', '46.31.0:8', '50.31.0:8', '48.29.0:8', '46.30.0:10', '47.33.0:10', '49.29.0:10', '50.30.0:10', '50.32.0:10', '46.32.0:10', '49.33.0:10', '47.29.0:10', '50.33.0:12', '50.29.0:12', '46.33.0:12', '51.31.0:12', '48.28.0:12', '48.34.0:12', '47.28.0:14', '45.32.0:14', '51.30.0:14', '47.34.0:14']
+   EXEC {'unit': 1000039, 'walk': 1, 'pos': [50, 29, 0], 'tu': 30, 'spent': 12, 'hp': 79, 'dmg': 0, 'fdmg': 0, 'fdowned': 0, 'downed': 0}

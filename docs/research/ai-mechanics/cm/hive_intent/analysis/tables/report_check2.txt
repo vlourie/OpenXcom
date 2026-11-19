@@ -1,0 +1,64 @@
+== changed attacks, all runs: RESULT and the AIEXEC right before it
+ci5_IA_M6_s1 turn 1 unit 1000001 squad 4 contact 503 aim 503 act 8 hit 0 down 0 hp 0 tu 28 | exec dmg 0 stunned 0 downed 0
+ci5_IA_M6_s1 turn 1 unit 1000001 squad 4 contact 503 aim 503 act 8 hit 0 down 0 hp 0 tu 28 | exec dmg 63 stunned 29 downed 1
+ci5_IA_M6_s1 turn 1 unit 1000006 squad 4 contact 503 aim 503 act 8 hit 0 down 0 hp 0 tu 21 | exec dmg 0 stunned 0 downed 0
+ci5_IA_M6_s1 turn 1 unit 1000006 squad 4 contact 503 aim 503 act 8 hit 0 down 0 hp 0 tu 21 | exec dmg 0 stunned 0 downed 0
+ci5_IA_M6_s1 turn 1 unit 1000014 squad 4 contact 503 aim 503 act 8 hit 0 down 0 hp 0 tu 33 | exec dmg 0 stunned 0 downed 0
+ci5_IA_M6_s1 turn 1 unit 1000014 squad 4 contact 503 aim 503 act 8 hit 0 down 0 hp 0 tu 33 | exec dmg 0 stunned 0 downed 0
+ci5_IA_M6_s1 turn 1 unit 1000027 squad 4 contact 503 aim 503 act 6 hit 0 down 0 hp 0 tu 45 | exec dmg 0 stunned 0 downed 0
+ci5_IA_M6_s1 turn 3 unit 1000016 squad 5 contact 545 aim 545 act 7 hit 1 down 1 hp 11 tu 53 | exec dmg 11 stunned 0 downed 1
+ci6_IA_M6_s2 turn 1 unit 1000027 squad 6 contact 520 aim 520 act 8 hit 0 down 0 hp 0 tu 21 | exec dmg 0 stunned 0 downed 0
+ci6_IA_M6_s2 turn 2 unit 1000010 squad 4 contact 444 aim 444 act 8 hit 1 down 0 hp 13 tu 35 | exec dmg 13 stunned 0 downed 0
+ci7_IV_M3_s1 turn 1 unit 1000048 squad 10 contact 520 aim 520 act 8 hit 1 down 0 hp 6 tu 24 | exec dmg 14 stunned 0 downed 0
+ci7_IV_M3_s1 turn 1 unit 1000048 squad 10 contact 520 aim 520 act 8 hit 0 down 0 hp 0 tu 23 | exec dmg 17 stunned 0 downed 0
+ci7_IV_M3_s1 turn 2 unit 1000022 squad 6 contact 543 aim 543 act 9 hit 0 down 0 hp 0 tu 49 | exec dmg 0 stunned 0 downed 0
+ci7_IV_M3_s1 turn 3 unit 1000010 squad 7 contact 503 aim 503 act 8 hit 1 down 0 hp 20 tu 21 | exec dmg 20 stunned 1 downed 0
+== M6 s1 turn 1: attacks on the contact's tile and what happened to 503, 520, 543
+   1000001 changed 1 kind ATTACKED_CONTACT aim 503 act 8 hit 0 hp 0 exec 0 0
+   casualty turn 1 520 dead by 1000001 STR_GAUSS_RIFLE (36,33,2)
+   1000001 changed 1 kind ATTACKED_CONTACT aim 503 act 8 hit 0 hp 0 exec 63 1
+   1000006 changed 1 kind ATTACKED_CONTACT aim 503 act 8 hit 0 hp 0 exec 0 0
+   1000006 changed 1 kind ATTACKED_CONTACT aim 503 act 8 hit 0 hp 0 exec 0 0
+   1000014 changed 1 kind ATTACKED_CONTACT aim 503 act 8 hit 0 hp 0 exec 0 0
+   1000014 changed 1 kind ATTACKED_CONTACT aim 503 act 8 hit 0 hp 0 exec 0 0
+   1000027 changed 1 kind ATTACKED_CONTACT aim 503 act 6 hit 0 hp 0 exec 0 0
+   1000006 changed 0 kind OTHER_ATTACK aim 470 act 8 hit 0 hp 0 exec 0 0
+   1000006 changed 0 kind OTHER_ATTACK aim 470 act 8 hit 0 hp 0 exec 0 0
+   casualty turn 1 543 stun by 1000014 STR_GAUSS_RIFLE (33,29,2)
+   1000014 changed 0 kind OTHER_ATTACK aim 448 act 8 hit 0 hp 0 exec 70 1
+   1000000 changed 0 kind OTHER_ATTACK aim 470 act 8 hit 0 hp 0 exec 0 0
+   1000000 changed 0 kind OTHER_ATTACK aim 470 act 8 hit 0 hp 0 exec 0 0
+   casualty turn 1 543 dead by 1000025 STR_PIR_ALIEN_GRENADE (33,29,2)
+   casualty turn 1 503 stun by 1000025 STR_PIR_ALIEN_GRENADE (36,29,2)
+   casualty turn 1 503 dead by 1000027 STR_PIR_ALIEN_GRENADE (36,29,2)
+   ra1 casualty turn 1 503 stun by 1000001 STR_GAUSS_RIFLE
+   ra1 casualty turn 3 503 dead by 1000001 STR_GAUSS_RIFLE
+   squads of the units: {'1000001': '4', '1000006': '4', '1000014': '4', '1000024': '1', '1000025': '8', '1000027': '4'}
+== refusals not_valid_target: by run and contact, turn
+  ci5_IA_M6_s1 45 [(('1', '503'), 29), (('2', '470'), 12), (('3', '470'), 4)]
+  ci6_IA_M6_s2 0 []
+  ci7_IV_M3_s1 52 [(('4', '448'), 26), (('5', '545'), 11), (('3', '503'), 9), (('4', '545'), 6)]
+  M6 s1 turn 1 contact 503 answers: {'-': 9, 'not_valid_target': 29}
+== decisions against RESULT lines on each run, AI side
+  ci5_IA_M6_s1 decisions 509 RESULT 509 by turn gap []
+  ci6_IA_M6_s2 decisions 513 RESULT 513 by turn gap []
+  ci7_IV_M3_s1 decisions 750 RESULT 730 by turn gap [('2', 153), ('3', 123), ('4', 118), ('5', 120), ('6', 99)]
+== HIVESAVECHECK
+  ci5_IA_M6_s1 5 Counter({'1': 5}) ['1', '2', '3', '4', '5']
+  ci6_IA_M6_s2 8 Counter({'1': 8}) ['1', '2', '3', '4', '5', '6', '7', '8']
+  ci7_IV_M3_s1 6 Counter({'1': 6}) ['1', '2', '3', '4', '5', '6']
+== run 4: 1000035 on turn 2
+   2 WALK_TOWARD changed 1 tu None spent 10 None
+   2 WALK_OTHER changed 1 tu None spent 8 None
+   2 WALK_TOWARD changed 1 tu None spent 4 None
+   2 WALK_OTHER changed 1 tu None spent 4 None
+   2 WALK_OTHER changed 1 tu None spent 8 None
+   2 WALK_TOWARD changed 1 tu None spent 8 None
+   2 WALK_OTHER changed 1 tu None spent 8 None
+   2 WALK_TOWARD changed 1 tu None spent 8 None
+   2 WALK_OTHER changed 1 tu None spent 8 None
+   2 NOT_EXECUTED changed 1 tu None spent 0 None
+   2 NOT_EXECUTED changed 1 tu None spent 0 None
+   2 NOT_EXECUTED changed 1 tu None spent 0 None
+   2 NOT_EXECUTED changed 1 tu None spent 0 None
+   lines 13

@@ -1,0 +1,223 @@
+== timeline turn 2
+957 T [AISTATE] pstart turn=2 unit=368 type=SOLDIER faction=0 status=0 pos=(40,32,1) dir=1 tu=86 hp=104/104 stun=2 morale=87 kneel=0 weapon=STR_SMARTGUN spotted=0 sniped=1 sees=1000024 seenby=3 known=3 near=9 shade=3 tumax=110 wounds=0 threa
+963 A [AISTATE] pstart turn=2 unit=1000004 type=STR_MARSEC_SECURITY faction=1 status=0 pos=(47,18,0) dir=5 tu=4 hp=54/54 stun=0 morale=98 kneel=0 weapon=STR_STORM_LASER spotted=255 sniped=0 sees=- seenby=0 known=6 near=6 shade=5 tumax=81 wou
+978 B [AISTATE] pstart turn=2 unit=1000019 type=STR_MARSEC_BODYGUARD faction=1 status=0 pos=(47,22,0) dir=1 tu=67 hp=60/60 stun=0 morale=100 kneel=0 weapon=STR_LASER_RIFLE_PIR spotted=255 sniped=0 sees=- seenby=0 known=6 near=9 shade=5 tumax
+1032 T [AIDECIDE] turn=2 side=0 unit=368 n=1 from=(40,32,1) tu=86 mode=0 act=2 to=(43,29,2) run=0 kneel=0 aim=1000024 weapon=STR_SMARTGUN seen=1000000,1000001,1000005,1000024 hu=8c24140942725779 hi=d6bc43f5744fa6a3 ho=e92609504635b81c hou=b12
+1040 T [AIDECIDE] turn=2 side=0 unit=368 n=2 from=(43,29,2) tu=60 mode=0 act=2 to=(30,34,0) run=0 kneel=0 aim=1000024 weapon=STR_SMARTGUN seen=1000000,1000001,1000005,1000024 hu=cd2ae4a01c3eb3ac hi=d6bc43f5744fa6a3 ho=e92609504635b81c hou=b12
+1093 T [AIDECIDE] turn=2 side=0 unit=368 n=1 from=(42,29,0) tu=54 mode=3 act=0 to=(-1,-1,-1) run=0 kneel=0 aim=1000024 weapon=STR_SMARTGUN seen=1000000,1000001,1000002,1000005,1000024 hu=fb4a86db0ed8c9ca hi=a2fd8de9d2b0a6b5 ho=746c2a232554215
+1153 T [AISTATE] aistart turn=2 unit=368 type=SOLDIER faction=0 status=0 pos=(42,29,0) dir=6 tu=54 hp=104/104 stun=2 morale=89 kneel=0 weapon=STR_SMARTGUN spotted=0 sniped=2 sees=1000002 seenby=3 known=5 near=5 shade=3 tumax=110 wounds=0 thre
+1159 A [AISTATE] aistart turn=2 unit=1000004 type=STR_MARSEC_SECURITY faction=1 status=0 pos=(47,18,0) dir=5 tu=81 hp=54/54 stun=0 morale=100 kneel=0 weapon=STR_STORM_LASER spotted=255 sniped=0 sees=- seenby=0 known=6 near=3 shade=5 tumax=81 
+1174 B [AISTATE] aistart turn=2 unit=1000019 type=STR_MARSEC_BODYGUARD faction=1 status=0 pos=(47,22,0) dir=1 tu=67 hp=60/60 stun=0 morale=100 kneel=0 weapon=STR_LASER_RIFLE_PIR spotted=255 sniped=0 sees=- seenby=0 known=6 near=3 shade=5 tuma
+1224 A [AIDECIDE] turn=2 side=1 unit=1000004 n=1 from=(47,18,0) tu=81 mode=0 act=2 to=(30,14,0) run=0 kneel=0 aim=-1 weapon=STR_STORM_LASER seen=472,471,2,368,267,192 hu=835022d73de766b0 hi=4ebdcb8ef3fa4d99 ho=1a2bc1ce46c349f5 hou=16a50ba62f2
+      exec {'pos': [45, 24, 0], 'tu': 45, 'spent': 36, 'seen': 2, 'spotted': 2, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 54}
+1229 A [AIDECIDE] turn=2 side=1 unit=1000004 n=2 from=(45,24,0) tu=45 mode=2 act=8 to=(36,32,0) run=0 kneel=0 aim=2 weapon=STR_STORM_LASER seen=472,471,2,368,267,192 hu=87de586e5152dfd5 hi=4ebdcb8ef3fa4d99 ho=1a2bc1ce46c349f5 hou=16a50ba62f28
+      exec {'pos': [45, 24, 0], 'tu': 19, 'spent': 26, 'seen': 3, 'spotted': 2, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 54}
+1367 B [AIDECIDE] turn=2 side=1 unit=1000019 n=1 from=(47,22,0) tu=67 mode=3 act=0 to=(47,22,0) run=0 kneel=0 aim=-1 weapon=STR_LASER_RIFLE_PIR seen=472,471,2,368,267,192 hu=b05deb6e67b85bad hi=2fc30485e90b0378 ho=503c0b58287d558e hou=b72c043
+      exec {'pos': [47, 22, 0], 'tu': 67, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+1433 A [AIDECIDE] turn=2 side=1 unit=1000004 n=1 from=(45,24,0) tu=19 mode=0 act=2 to=(30,14,0) run=0 kneel=0 aim=472 weapon=STR_STORM_LASER seen=472,471,2,368,267,192 hu=7e8a51cb489bc365 hi=d05f1f94c1fb6d63 ho=b9e78cb73167d22d hou=a40c0affcc
+      exec {'pos': [45, 24, 0], 'tu': 19, 'spent': 0, 'seen': 3, 'spotted': 2, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 54}
+1438 A [AIDECIDE] turn=2 side=1 unit=1000004 n=2 from=(45,24,0) tu=19 mode=3 act=2 to=(43,22,0) run=0 kneel=0 aim=472 weapon=STR_STORM_LASER seen=472,471,2,368,267,192 hu=2d8f05116bfc77e6 hi=d05f1f94c1fb6d63 ho=b9e78cb73167d22d hou=a40c0affcc
+      exec {'pos': [43, 22, 0], 'tu': 7, 'spent': 12, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 54}
+1559 B [AIDECIDE] turn=2 side=1 unit=1000019 n=1 from=(47,22,0) tu=67 mode=0 act=2 to=(47,29,1) run=0 kneel=0 aim=-1 weapon=STR_LASER_RIFLE_PIR seen=472,471,2,368,267,192 hu=6cc38a6601b602e2 hi=6cf15a978fcf51c7 ho=42f7f9e3a140e9d9 hou=b72c043
+      exec {'pos': [50, 21, 1], 'tu': 25, 'spent': 42, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+1564 B [AIDECIDE] turn=2 side=1 unit=1000019 n=2 from=(50,21,1) tu=25 mode=0 act=2 to=(47,29,1) run=0 kneel=0 aim=471 weapon=STR_LASER_RIFLE_PIR seen=472,471,2,368,267,192 hu=cce8d9c3ccee5bc0 hi=6cf15a978fcf51c7 ho=42f7f9e3a140e9d9 hou=b72c04
+      exec {'pos': [50, 21, 1], 'tu': 25, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+1674 B [AIDECIDE] turn=2 side=1 unit=1000019 n=1 from=(50,21,1) tu=25 mode=0 act=2 to=(47,29,1) run=0 kneel=0 aim=471 weapon=STR_LASER_RIFLE_PIR seen=472,471,2,368,267,192 hu=8037d6939b72a9f3 hi=23323286d633bcc4 ho=89931bbb5db88fe8 hou=b72c04
+      exec {'pos': [50, 21, 1], 'tu': 25, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+1678 B [AIDECIDE] turn=2 side=1 unit=1000019 n=2 from=(50,21,1) tu=25 mode=0 act=2 to=(47,29,1) run=0 kneel=0 aim=471 weapon=STR_LASER_RIFLE_PIR seen=472,471,2,368,267,192 hu=f34432b9727efd70 hi=23323286d633bcc4 ho=89931bbb5db88fe8 hou=b72c04
+      exec {'pos': [50, 21, 1], 'tu': 25, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+1846 B [AIDECIDE] turn=2 side=1 unit=1000019 n=1 from=(50,21,1) tu=25 mode=0 act=2 to=(47,29,1) run=0 kneel=0 aim=471 weapon=STR_LASER_RIFLE_PIR seen=472,471,2,368,267,192 hu=a4be74de971c262 hi=4376b7dcb4472a3 ho=bed2a65ee3e7e0d5 hou=b72c043d
+      exec {'pos': [50, 21, 1], 'tu': 25, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+1850 B [AIDECIDE] turn=2 side=1 unit=1000019 n=2 from=(50,21,1) tu=25 mode=0 act=2 to=(47,29,1) run=0 kneel=0 aim=471 weapon=STR_LASER_RIFLE_PIR seen=472,471,2,368,267,192 hu=5b473407c6110de1 hi=4376b7dcb4472a3 ho=bed2a65ee3e7e0d5 hou=b72c043
+      exec {'pos': [50, 21, 1], 'tu': 25, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+
+== first list of B in the turn with T
+rec 172 n 1 pos (47, 22, 0) tu 67 kneel 0 src escape.known t 0 to (47, 22, 0)
+    {'id': 'b36f986790186640', 'k': 'a', 't': 8, 'to': [42, 29, 0], 'tu': 16, 'u': 368, 'w': 'STR_LASER_RIFLE_PIR', 'p': 86, 'lof': 0, 'd': 9}
+    {'id': '2618edbb9855e95', 'k': 'a', 't': 7, 'to': [42, 29, 0], 'tu': 24, 'u': 368, 'w': 'STR_LASER_RIFLE_PIR', 'p': 56, 'lof': 0, 'd': 9}
+    {'id': '15ef8e1f0ae56d43', 'k': 'a', 't': 9, 'to': [42, 29, 0], 'tu': 40, 'u': 368, 'w': 'STR_LASER_RIFLE_PIR', 'p': 127, 'lof': 0, 'd': 9}
+    {'id': '1a442ede5beb79c4', 'k': 'a', 't': 10, 'to': [42, 29, 0], 'tu': 10, 'u': 368, 'w': 'STR_UNARMED_GAUNTLET', 'p': 98, 'lof': 0, 'd': 9}
+    {'id': '63da0ad6e75b74ec', 'k': 'a', 't': 6, 'to': [42, 29, 0], 'tu': 26, 'u': 368, 'w': 'STR_PIR_ALIEN_GRENADE', 'p': 66, 'lof': 0, 'd': 9}
+   lof 1 targets: []
+   near cells: [((47, 21, 0), 4), ((47, 23, 0), 4), ((48, 22, 0), 4), ((46, 23, 0), 6), ((48, 23, 0), 6), ((48, 21, 0), 6), ((47, 24, 0), 8), ((48, 24, 0), 10), ((49, 22, 0), 12), ((49, 21, 0), 16), ((50, 22, 0), 16), ((49, 23, 0), 16), ((50, 21, 0), 18), ((50, 23, 0), 18), ((49, 24, 0), 20), ((50, 20, 0), 22), ((50, 24, 0), 22), ((50, 19, 0), 26), ((49, 20, 0), 26), ((49, 19, 0), 28), ((48, 20, 0), 30), ((50, 25, 0), 30), ((48, 19, 0), 32), ((47, 20, 0), 34), ((49, 25, 0), 34), ((47, 19, 0), 36), ((46, 20, 0), 38), ((46, 19, 0), 40), ((45, 20, 0), 42), ((45, 19, 0), 44), ((45, 21, 0), 46), ((44, 20, 0), 46), ((47, 25, 0), 46), ((44, 21, 0), 48), ((44, 19, 0), 48), ((45, 22, 0), 50), ((44, 22, 0), 52), ((44, 23, 0), 56)]
+   who stands near the lane: [(1000004, (45, 24, 0), 19, 0.46), (1000021, (45, 23, 0), 119, 1.05), (1000024, (44, 24, 0), 119, 1.28)]
+
+== all lists of A on its cell in the turn
+rec 142 n 1 pos (47, 18, 0) tu 81 t 2 to (30, 14, 0) src patrol.node T: {'to': (42, 29, 0), 'lof': 0, 'tu': 24, 'p': 74, 'w': 'STR_STORM_LASER', 'd': 13, 'mode': 8} with a line: []
+rec 143 n 2 pos (45, 24, 0) tu 45 t 8 to (36, 32, 0) src sniper T: {'to': (42, 29, 0), 'lof': 1, 'tu': 24, 'p': 74, 'w': 'STR_STORM_LASER', 'd': 6, 'mode': 8} with a line: [(472, 24, 74, 6), (2, 24, 74, 13), (368, 24, 74, 6), (192, 24, 74, 15)]
+rec 183 n 1 pos (45, 24, 0) tu 19 t 2 to (30, 14, 0) src patrol.node T: {'to': (42, 29, 0), 'lof': 1, 'tu': 24, 'p': 74, 'w': 'STR_STORM_LASER', 'd': 6, 'mode': 8} with a line: [(472, 24, 74, 6), (2, 24, 74, 13), (368, 24, 74, 6), (267, 24, 74, 8), (192, 24, 74, 15)]
+rec 184 n 2 pos (45, 24, 0) tu 19 t 2 to (43, 22, 0) src escape T: {'to': (42, 29, 0), 'lof': 1, 'tu': 24, 'p': 74, 'w': 'STR_STORM_LASER', 'd': 6, 'mode': 8} with a line: [(472, 24, 74, 6), (2, 24, 74, 13), (368, 24, 74, 6), (267, 24, 74, 8), (192, 24, 74, 15)]
+
+== B's own list through the battle around the turn: did the line to T ever exist from this cell
+ turn 1 n 1 pos (47, 22, 0) tu 67 T at (40, 32, 1) lof 0 d 13 w STR_LASER_RIFLE_PIR tu 16 did t 0 to (47, 22, 0) dmg 0
+ turn 1 n 1 pos (47, 22, 0) tu 67 T at (40, 32, 1) lof 0 d 13 w STR_LASER_RIFLE_PIR tu 16 did t 0 to (47, 22, 0) dmg 0
+ turn 2 n 1 pos (47, 22, 0) tu 67 T at (42, 29, 0) lof 0 d 9 w STR_LASER_RIFLE_PIR tu 16 did t 0 to (47, 22, 0) dmg 0
+ turn 2 n 1 pos (47, 22, 0) tu 67 T at (42, 29, 0) lof 0 d 9 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (47, 29, 1) dmg 0
+ turn 2 n 2 pos (50, 21, 1) tu 25 T at (42, 29, 0) lof 0 d 12 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (47, 29, 1) dmg 0
+ turn 2 n 1 pos (50, 21, 1) tu 25 T at (42, 29, 0) lof 0 d 12 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (47, 29, 1) dmg 0
+ turn 2 n 2 pos (50, 21, 1) tu 25 T at (42, 29, 0) lof 0 d 12 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (47, 29, 1) dmg 0
+ turn 2 n 1 pos (50, 21, 1) tu 25 T at (42, 29, 0) lof 0 d 12 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (47, 29, 1) dmg 0
+ turn 2 n 2 pos (50, 21, 1) tu 25 T at (42, 29, 0) lof 0 d 12 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (47, 29, 1) dmg 0
+ turn 3 n 1 pos (50, 21, 1) tu 67 T at (30, 34, 0) lof 0 d 24 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (47, 29, 1) dmg 0
+ turn 3 n 2 pos (47, 29, 1) tu 29 T at (30, 34, 0) lof 0 d 18 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (50, 38, 0) dmg 0
+ turn 3 n 1 pos (48, 28, 1) tu 23 T at (30, 34, 0) lof 0 d 19 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (50, 38, 0) dmg 0
+ turn 3 n 2 pos (48, 28, 1) tu 23 T at (30, 34, 0) lof 0 d 19 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (50, 38, 0) dmg 0
+ turn 4 n 1 pos (48, 28, 1) tu 67 T at (30, 34, 0) lof 0 d 19 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (50, 38, 0) dmg 0
+ turn 4 n 2 pos (49, 21, 1) tu 29 T at (30, 34, 0) lof 0 d 24 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (50, 38, 0) dmg 0
+ turn 4 n 1 pos (49, 21, 1) tu 29 T at (30, 34, 0) lof 0 d 24 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (50, 38, 0) dmg 0
+ turn 4 n 2 pos (49, 20, 1) tu 25 T at (30, 34, 0) lof 0 d 24 w STR_LASER_RIFLE_PIR tu 16 did t 2 to (50, 38, 0) dmg 0
+
+== shots at T in the battle by this side
+ turn 1 unit 1000002 from (9, 50, 2) mode 8 STR_STORM_LASER dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000021 from (45, 23, 0) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000024 from (44, 24, 0) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000013 from (45, 20, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000001 from (49, 50, 2) mode 8 STR_LACC dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000029 from (45, 22, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000018 from (46, 27, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000004 from (45, 25, 0) mode 8 STR_STORM_LASER dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000004 from (45, 25, 0) mode 8 STR_STORM_LASER dmg 0 stun 0 fdmg 42 downed 0
+ turn 4 unit 1000018 from (46, 27, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000013 from (56, 39, 0) mode 9 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000017 from (46, 24, 0) mode 9 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000016 from (41, 18, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000011 from (46, 25, 0) mode 9 STR_PIR_SMALL_LAUNCHER dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000012 from (52, 35, 0) mode 8 STR_GAUSS_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000012 from (52, 35, 0) mode 8 STR_GAUSS_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000013 from (56, 39, 0) mode 9 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000013 from (56, 39, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000015 from (55, 33, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000015 from (55, 33, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 60 downed 0
+ turn 8 unit 1000017 from (44, 26, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000020 from (41, 22, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000010 from (46, 26, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000016 from (41, 21, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000019 from (56, 33, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000019 from (56, 33, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000008 from (46, 24, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000010 from (46, 26, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000010 from (46, 26, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000011 from (46, 25, 0) mode 9 STR_PIR_SMALL_LAUNCHER dmg 0 stun 0 fdmg 0 downed 0
+ turn 10 unit 1000015 from (53, 41, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 10 unit 1000019 from (52, 38, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 10 unit 1000019 from (52, 38, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000008 from (39, 19, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000017 from (40, 34, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000017 from (40, 34, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000019 from (46, 30, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 12 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000008 from (37, 28, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000017 from (40, 34, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000017 from (40, 34, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000019 from (46, 30, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000019 from (46, 30, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000030 from (38, 14, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 13 unit 1000030 from (38, 14, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000008 from (37, 28, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000008 from (37, 28, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000013 from (59, 40, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000013 from (59, 40, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000017 from (40, 34, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000017 from (40, 34, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000019 from (46, 32, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000019 from (46, 32, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000020 from (25, 23, 0) mode 9 STR_HEAVY_LASER_PIR dmg 12 stun 1 fdmg 0 downed 0
+ turn 14 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000019 from (46, 32, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 14 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000008 from (37, 28, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000008 from (37, 28, 0) mode 8 STR_HEAVY_LASER_PIR dmg 26 stun 3 fdmg 0 downed 0
+ turn 15 unit 1000013 from (59, 40, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000017 from (39, 35, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000017 from (39, 35, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000019 from (42, 30, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000013 from (57, 41, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000017 from (39, 35, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000019 from (42, 30, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 15 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000008 from (37, 29, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 38 downed 0
+ turn 16 unit 1000013 from (57, 41, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000013 from (57, 41, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000017 from (39, 35, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000017 from (39, 35, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000020 from (20, 22, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000008 from (37, 29, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000008 from (37, 29, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000013 from (57, 41, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000017 from (39, 35, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 16 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000008 from (37, 29, 0) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000013 from (57, 41, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000017 from (39, 35, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000017 from (39, 35, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000019 from (44, 26, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000017 from (39, 35, 0) mode 8 STR_LASER_RIFLE_PIR dmg 5 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000020 from (20, 19, 0) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000029 from (38, 24, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 17 unit 1000030 from (41, 19, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000015 from (47, 47, 1) mode 8 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000017 from (32, 41, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000017 from (32, 41, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000019 from (36, 20, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000019 from (36, 20, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000027 from (41, 25, 0) mode 9 STR_GAUSS_SNIPER dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000017 from (32, 41, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 19 unit 1000019 from (36, 20, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 20 unit 1000013 from (50, 23, 0) mode 7 STR_LASER_RIFLE_PIR dmg 9 stun 1 fdmg 0 downed 0
+ turn 20 unit 1000015 from (46, 48, 1) mode 9 STR_HEAVY_LASER_PIR dmg 0 stun 0 fdmg 30 downed 0
+ turn 20 unit 1000019 from (40, 23, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 20 unit 1000019 from (40, 23, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 20 unit 1000030 from (35, 30, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 20 unit 1000030 from (35, 30, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 19 downed 0
+ turn 20 unit 1000030 from (35, 30, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 20 unit 1000030 from (35, 30, 0) mode 8 AUX_ADRONE_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000013 from (50, 20, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000013 from (50, 20, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000019 from (43, 19, 0) mode 8 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000027 from (43, 21, 0) mode 8 STR_GAUSS_SNIPER dmg 0 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000013 from (50, 20, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000013 from (50, 20, 0) mode 7 STR_LASER_RIFLE_PIR dmg 0 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000019 from (43, 19, 0) mode 7 STR_LASER_RIFLE_PIR dmg 21 stun 1 fdmg 0 downed 0
+ turn 22 unit 1000019 from (43, 19, 0) mode 7 STR_LASER_RIFLE_PIR dmg 21 stun 2 fdmg 0 downed 1
+
+== T state
+[AISTATE] before turn=1 unit=368 type=SOLDIER faction=0 status=0 pos=(27,50,1) dir=0 tu=110 hp=104/104 stun=0 morale=100 kneel=0 weapon=STR_SMARTGUN spotted=255 sniped=0 sees=- seenby=0 known=0 near=-1 shade=2 
+[AISTATE] aistart turn=1 unit=368 type=SOLDIER faction=0 status=0 pos=(40,32,1) dir=1 tu=4 hp=104/104 stun=0 morale=100 kneel=0 weapon=STR_SMARTGUN spotted=0 sniped=1 sees=- seenby=1 known=3 near=20 shade=3 tum
+[AISTATE] pstart turn=2 unit=368 type=SOLDIER faction=0 status=0 pos=(40,32,1) dir=1 tu=86 hp=104/104 stun=2 morale=87 kneel=0 weapon=STR_SMARTGUN spotted=0 sniped=1 sees=1000024 seenby=3 known=3 near=9 shade=3
+[AISTATE] aistart turn=2 unit=368 type=SOLDIER faction=0 status=0 pos=(42,29,0) dir=6 tu=54 hp=104/104 stun=2 morale=89 kneel=0 weapon=STR_SMARTGUN spotted=0 sniped=2 sees=1000002 seenby=3 known=5 near=5 shade=
+[AISTATE] pstart turn=3 unit=368 type=SOLDIER faction=0 status=0 pos=(42,29,0) dir=5 tu=96 hp=104/104 stun=5 morale=86 kneel=0 weapon=STR_SMARTGUN spotted=0 sniped=1 sees=1000002 seenby=1 known=3 near=13 shade=
+[AISTATE] aistart turn=3 unit=368 type=SOLDIER faction=0 status=0 pos=(30,34,0) dir=2 tu=2 hp=104/104 stun=5 morale=100 kneel=0 weapon=STR_SMARTGUN spotted=0 sniped=1 sees=1000005 seenby=1 known=2 near=24 shade
+[AICASUALTY] turn=22 side=1 victim=368 vfaction=0 type=SOLDIER how=stun pos=(49,18,0) tu=2 kneel=0 seenby=3 killer=1000019 kfaction=1 ktype=STR_MARSEC_BODYGUARD dist=6 weapon=STR_LASER_RIFLE_PIR hit=r

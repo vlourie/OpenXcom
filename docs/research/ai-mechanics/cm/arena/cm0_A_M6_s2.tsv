@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2018002	STR_VESSEL_FRIGATE	over	STR_VESSEL_FRIGATE	STR_UFO_CRASH_RECOVERY	46	8	WESTOWN_MUD	STR_MUTON	STR_DROPSHIP#2	8	26	8	5	0	8	573	37	36	0	1	3	0	0	64	130	h.rec.in:1070,h.rec.out.M2:1,h.rec.out.a9:1,p.rec.in:282,p.rec.out.a7:1,p.rec.out.a9:1	284	0	0	0	0	0	1072	0	0	2	0	0	108		win

@@ -45,6 +45,7 @@ namespace OpenXcom
  */
 SkillMenuState::SkillMenuState(BattleAction *action, int x, int y) : ActionMenuState(action)
 {
+	setHdScreen("skillMenu");
 	// Attention: back up the current _action members
 	BattleActionType currentActionType = _action->type;
 	BattleItem* currentWeapon = _action->weapon;

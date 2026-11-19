@@ -61,6 +61,7 @@ ErrorMessageState::~ErrorMessageState()
 void ErrorMessageState::create(const std::string &str, SDL_Color *palette, Uint8 color, const std::string &bg, int bgColor, Uint8 color2)
 {
 	_screen = false;
+	setHdScreen("errorMessages");
 
 	// Create objects
 	_window = new Window(this, 256, 160, 32, 20, POPUP_BOTH);

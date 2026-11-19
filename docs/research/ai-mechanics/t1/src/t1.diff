@@ -1,0 +1,154 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ts/AIModule.h.al3	2026-10-27 20:34:28.554763200 +0200
++++ AIModule.h	2026-10-27 20:47:09.189387500 +0200
+@@ -125,6 +125,8 @@
+ 	/// The bench's decision record (AiProbe::propose, docs/AI_DECISION_RECORD.md): the score the rule that ran last gave its
+ 	/// action and, if it names itself more exactly than its caller, its name. Written, never read by play.
+ 	int _probeScore = INT_MIN;
++	/// AI-T1: the target selectNearestTarget valued clearly better than the nearest (OXCE_AI_TARGET_EV=2), else null.
++	BattleUnit *_evPick = nullptr;
+ 	const char *_probeSource = nullptr;
+ 	/// AI3-FF (bench, OXCE_AI_FF_RISK): units of the target faction the last explosiveEfficacy counted (written always, read
+ 	/// only with the flag); the throw grenadeAction found and left for ffThrowOrShot (bit 2); the decision ff.trade was noted in.
+@@ -301,7 +303,7 @@
+ 	int getSpottingUnits(const Position& pos) const;
+ 	/// Selects the nearest target we can see, and return the number of viable targets.
+ 	/// AI2-H h8: escape - the pick for setupEscape (a target the side remembers is taken at its remembered place).
+-	int selectNearestTarget(bool escape = false);
++	int selectNearestTarget(bool escape = false, bool attack = false);
+ 	/// AI2-H h8 knowledge contract for the nearest-target selectors: 0 - skip, 1 - the old ray to the true tile, 2 - the ray at the
+ 	/// remembered place (escape only); state, mem, dir - AiProbe::fairState; oldPass - the old ray (diagnostics, -1 not asked).
+ 	int fairNearestMode(BattleUnit *bu, bool escape, const char *cons, int &state, Position &mem, int &dir, int &oldPass) const;
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ts/AIModule.cpp.al3	2026-10-27 20:34:28.528832100 +0200
++++ AIModule.cpp	2026-10-27 20:47:09.190385600 +0200
+@@ -2490,13 +2490,21 @@
+ 
+ 	// if we CAN see someone, that makes them a viable target for "regular" attacks.
+ 	// This is skipped if sniperAction has already chosen an attack action
+-	if (!sniperAttack && selectNearestTarget())
++	if (!sniperAttack && selectNearestTarget(false, true))
+ 	{
+ 		// if we have both types of weapon, make a determination on which to use.
+ 		if (_melee && _rifle)
+ 		{
+ 			selectMeleeOrRanged();
+ 		}
++		// AI-T1 (bench): OXCE_AI_TARGET_EV=2 - a firearm attack (melee not chosen) goes at the target selectNearestTarget valued
++		// clearly better than the nearest; the melee choice above still weighs the nearest. Off - _evPick stays null.
++		if (_evPick && _rifle && !_melee)
++		{
++			Log(LOG_INFO) << "[AITARGETSET] turn=" << _save->getTurn() << " unit=" << _unit->getId() << " from=" << _aggroTarget->getId()
++				<< " to=" << _evPick->getId();
++			_aggroTarget = _evPick;
++		}
+ 		if (_grenade)
+ 		{
+ 			const ProbeMark mark = probeMark('x');
+@@ -2978,7 +2986,7 @@
+  * This function includes civilians as viable targets.
+  * @return viable targets.
+  */
+-int AIModule::selectNearestTarget(bool escape)
++int AIModule::selectNearestTarget(bool escape, bool attack)
+ {
+ 	int tally = 0;
+ 	_closestDist= 100;
+@@ -2986,6 +2994,20 @@
+ 	Position target;
+ 	const char *cons = escape ? "escape" : "nearest";
+ 	int pickState = AiProbe::FAIR_LEGACY;
++	// AI-T1 (bench): OXCE_AI_TARGET_EV - the attack's target by its expected effect, not by the distance alone (1 - the record
++	// only, 2 - the pick). For a hostile unit with a firearm in setupAttack every seen target with a line of fire is valued by the
++	// share of its maximum health the best fire mode it has the time units for is expected to take this turn (fireModeEffect:
++	// the hit chance with the range dropoff, the shots, the uses, the ruleset armour and resistance of the side it shows; capped
++	// to 1), times its ruleset target weight (a civilian 50, the enemy 100). The pick (2) leaves the nearest only for a target
++	// worth more than 1.5 times as much (_evPick, taken by setupAttack for a firearm attack); a weapon the effect cannot model
++	// (an area, no ammo) - the nearest. Not read: the target's current health and armour. No RNG; _aggroTarget and _closestDist
++	// stay the nearest's here. Off - as before.
++	static const int targetEv = (int)AiProbe::param("OXCE_AI_TARGET_EV", 0);
++	const bool evOn = attack && targetEv > 0 && _rifle && _unit->getFaction() == FACTION_HOSTILE;
++	_evPick = nullptr;
++	struct EvCand { BattleUnit *bu; int dist; double ev; double score; int kst; };
++	std::vector<EvCand> evCands;
++	const char *evWhy = "";
+ 	for (auto* bu : *_save->getUnits())
+ 	{
+ 		// AI2-H h8: a geometric ray does not make the side know where a hidden enemy stands now
+@@ -3002,6 +3024,38 @@
+ 		{
+ 			tally++;
+ 			int dist = Position::distance2d(_unit->getPosition(), bu->getPosition());
++			if (evOn)
++			{
++				BattleAction action;
++				action.actor = _unit;
++				action.weapon = _attackAction.weapon;
++				action.target = bu->getPosition();
++				Position origin = _save->getTileEngine()->getOriginVoxel(action, 0);
++				Position at;
++				if (_save->getTileEngine()->canTargetUnit(&origin, bu->getTile(), &at, _unit, false))
++				{
++					double ev = 0.0;
++					for (BattleActionType t : { BA_AIMEDSHOT, BA_SNAPSHOT, BA_AUTOSHOT })
++					{
++						BattleActionCost cost(t, _unit, _attackAction.weapon);
++						if (!cost.haveTU())
++						{
++							continue;
++						}
++						action.type = t;
++						const char *why = "";
++						const double e = fireModeEffect(&action, bu, why);
++						if (e < 0.0)
++						{
++							evWhy = why;
++						}
++						ev = std::max(ev, e);
++					}
++					const int hpMax = std::max(1, (int)bu->getBaseStats()->health);
++					const double score = std::min(1.0, ev / hpMax) * (int)getTargetAttackWeight(bu) / 100.0;
++					evCands.push_back({ bu, dist, ev, score, kst });
++				}
++			}
+ 			if (dist < _closestDist)
+ 			{
+ 				bool valid = false;
+@@ -3030,6 +3084,39 @@
+ 			}
+ 		}
+ 	}
++	if (evOn && _aggroTarget && !evCands.empty())
++	{
++		const EvCand *near = nullptr, *best = nullptr;
++		for (const auto &c : evCands)
++		{
++			if (c.bu == _aggroTarget)
++			{
++				near = &c;
++			}
++			if (!best || c.score > best->score || (c.score == best->score && c.dist < best->dist))
++			{
++				best = &c;
++			}
++		}
++		const bool modelled = !*evWhy;
++		const bool better = near && best != near && best->score > 1.5 * near->score;
++		const bool pick = targetEv == 2 && modelled && better;
++		std::ostringstream s;
++		s << "[AITARGET] turn=" << _save->getTurn() << " unit=" << _unit->getId() << " tu=" << _unit->getTimeUnits()
++			<< " weapon=" << (_attackAction.weapon ? _attackAction.weapon->getRules()->getType() : std::string("-"))
++			<< " melee=" << (_melee ? 1 : 0) << " near=" << _aggroTarget->getId() << " best=" << best->bu->getId()
++			<< " model=" << (modelled ? "1" : evWhy) << " better=" << (better ? 1 : 0) << " pick=" << (pick ? 1 : 0) << " cands=";
++		for (const auto &c : evCands)
++		{
++			s << c.bu->getId() << ":" << (int)c.bu->getFaction() << ":" << c.dist << ":" << (int)std::lround(c.ev) << ":"
++				<< (int)c.bu->getBaseStats()->health << ":" << (int)std::lround(c.score * 1000) << ";";
++		}
++		Log(LOG_INFO) << s.str();
++		if (pick)
++		{
++			_evPick = best->bu;
++		}
++	}
+ 	if (_aggroTarget)
+ 	{
+ 		AiProbe::fairPick(_unit, _aggroTarget, cons, pickState, pickState == AiProbe::FAIR_LAST_SEEN ? "mem" : "now", tally);

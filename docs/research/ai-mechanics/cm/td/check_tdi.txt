@@ -1,0 +1,11 @@
+pairs 2: ['M10_s1', 'M3_s1']; turns <= 9
+== A d0p: useful 60 wasted 200 exposed 60 hidden 305; dmg by hostile attacks 1507; player hp lost 757, player down 9, hostile down 261; decisions 1803 (max 8 per unit-turn); unit-turns with an effective attack on a player unit 41
+== B tdi: useful 78 wasted 252 exposed 61 hidden 246; dmg by hostile attacks 1725; player hp lost 970, player down 15, hostile down 133; decisions 1958 (max 10 per unit-turn); unit-turns with an effective attack on a player unit 57
+== plans 18, with groups 18; groups by phase {'STRIKE': 56, 'APPROACH': 13}; roles {'A': 222, 'S': 13, 'M': 41}; group targets older than a turn 0
+   orders: {'KEEP': 600, 'FREE': 148, 'MANEUVER': 71, 'FIREWALK': 66, 'WAIT': 46, 'HOLD': 20, 'FIRE': 6, 'JOINWALK': 2, 'JOIN': 1, 'SUPPORT': 1}
+   FREE why: {'exposed': 105, 'escape': 37, 'lost': 3, 'stuck': 2, 'limit': 1}
+   own choice > order: {'p/2>MANEUVER': 71, 'p/2>FIREWALK': 66, 'p/2>WAIT': 46, 'p/2>HOLD': 16, 'p/2>FIRE': 6, 'x/2>HOLD': 4, 'p/2>JOINWALK': 2, 'p/2>JOIN': 1, 'p/2>SUPPORT': 1}
+   carried out: {'FIRE.nouse': 3, 'FIRE.paid': 6, 'FIRE.useful': 3, 'FIREWALK.moved': 66, 'FIREWALK.turn_exposed': 2, 'FIREWALK.turn_hidden': 24, 'FIREWALK.turn_useful': 5, 'FIREWALK.turn_wasted': 35, 'HOLD.hidden': 19, 'HOLD.seen': 1, 'JOIN.paid': 1, 'JOIN.useful': 1, 'JOINWALK.moved': 2, 'JOINWALK.turn_hidden': 2, 'MANEUVER.hidden': 56, 'MANEUVER.seen': 15, 'SUPPORT.hidden': 1, 'WAIT.hidden': 43, 'WAIT.seen': 3}
+   support: {'reactions_all_hostile': 37, 'kept_tu': 1, 'orders': 1}
+   engagement: {'joint_on_player': 4, 'joint': 7, 'members': 276, 'members_attacked': 194, 'members_exposed_noattack': 8, 'approach': 13, 'approach_sent_hidden': 21, 'approach_sent_exposed': 0, 'approach_followed': 5, 'approach_next_attackers': 6, 'approach_next_useful': 0, 'joint_on_target': 2, 'planned': 3, 'planned_useful_attacks': 10}
+   orders replacing an attack the unit chose 0 (need 0); most changing orders in one unit-turn 4

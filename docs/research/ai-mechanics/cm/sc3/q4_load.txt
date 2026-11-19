@@ -1,0 +1,13 @@
+save run sc5v_V_M10_s1: hostile turn 1 without a load - activations 93, units 48; before the save 5: 1000005 1000029 1000043 1000000 1000001 (saved: True)
+  activations per unit without a load: {1: 13, 2: 26, 3: 8, 4: 1} (activations: units)
+== sc5l_S_M10_s1: activations after the load 87, first ones: 1000000 1000000 1000000 1000000 1000005 1000043 1000001 1000002
+  first scheduler pick after the load: pick 1 site first left -1 chosen 1000000 why attack.same
+  units active before the save that act again after the load: 5 of 5: 1000005 1000029 1000043 1000000 1000001
+  units with more activations in the turn than without a load: 12; activations before+after vs without: 1000000:1+5/2, 1000001:1+1/1, 1000005:1+2/2, 1000006:0+2/1, 1000011:0+2/1, 1000013:0+2/1, 1000027:0+5/4, 1000029:1+1/1, 1000034:0+2/1, 1000042:0+2/1, 1000043:1+2/2, 1000044:0+3/2
+  activations in the turn, before+after the load: 92 vs 93 without a load
+  AI decisions for player units in the hostile turn: 0
+== sc5l_Q_M10_s1: activations after the load 87, first ones: 1000000 1000000 1000000 1000000 1000001 1000001 1000002 1000002
+  units active before the save that act again after the load: 5 of 5: 1000005 1000029 1000043 1000000 1000001
+  units with more activations in the turn than without a load: 12; activations before+after vs without: 1000000:1+5/2, 1000001:1+2/1, 1000002:0+4/2, 1000005:1+2/2, 1000006:0+2/1, 1000013:0+2/1, 1000029:1+1/1, 1000031:0+3/2, 1000034:0+2/1, 1000042:0+2/1, 1000043:1+2/2, 1000046:0+2/1
+  activations in the turn, before+after the load: 92 vs 93 without a load
+  AI decisions for player units in the hostile turn: 0

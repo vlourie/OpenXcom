@@ -1,0 +1,7 @@
+1 RN M6 s1 turns=8
+2 RN M6 s1 turns=8
+3 RN M6 s2 turns=8
+4 RV M3 s1 turns=8
+5 LOAD ri4_RV_M3_s1 hive_3.asav turns=8
+6 RF M6 s1 turns=8
+7 RN M6 s1 turns=8

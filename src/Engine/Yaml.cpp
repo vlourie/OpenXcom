@@ -20,6 +20,7 @@
 #include "Yaml.h"
 #include "../Engine/CrossPlatform.h"
 #include <string>
+#include <limits>
 #include <c4/format.hpp>
 
 namespace OpenXcom
@@ -463,6 +464,11 @@ YamlNodeReader YamlRootNodeReader::toBase() const
 	return YamlNodeReader(_node);
 }
 
+size_t YamlRootNodeReader::getNodeCount() const
+{
+	return (size_t)_tree->size();
+}
+
 ryml::Location YamlRootNodeReader::getLocationInFile(const ryml::ConstNodeRef& node) const
 {
 	if (_parser)
@@ -608,6 +614,23 @@ YamlString YamlNodeWriter::emit()
 	return YamlString(ryml::emitrs_yaml<std::string>(_node));
 }
 
+void YamlNodeWriter::emitTo(std::string& out, size_t sizeHint)
+{
+	// the emitter writes into the string's capacity and, when the text doesn't fit, only measures it and writes again
+	if (sizeHint > 0 && sizeHint < out.max_size() - out.size())
+	{
+		try
+		{
+			out.reserve(out.size() + sizeHint);
+		}
+		catch (const std::exception&)
+		{
+			// no memory for the hint: the text gets the room it really needs after the measuring pass
+		}
+	}
+	ryml::emitrs_yaml(ryml::ConstNodeRef(_node), &out, true);
+}
+
 
 ////////////////////////////////////////////////////////////
 //					YamlRootNodeWriter
@@ -627,6 +650,40 @@ YamlRootNodeWriter::YamlRootNodeWriter(size_t bufferCapacity) : YamlNodeWriter(r
 YamlNodeWriter YamlRootNodeWriter::toBase()
 {
 	return YamlNodeWriter(_node);
+}
+
+/// Whether a block of this size can be had now. The tree's own allocation has no way to fail softly.
+static bool canAllocate(size_t bytes)
+{
+	// volatile: the compiler removes a malloc/free pair whose result does not escape and answers "true" itself
+	void* volatile probe = SDL_malloc(bytes);
+	const bool ok = probe != nullptr;
+	SDL_free(probe);
+	return ok;
+}
+
+void YamlRootNodeWriter::reserve(size_t nodes, size_t arenaBytes)
+{
+	const size_t maxBytes = std::numeric_limits<size_t>::max() / 4;
+	if (nodes > (size_t)_tree->capacity() && nodes <= maxBytes / sizeof(ryml::NodeData) && canAllocate(nodes * sizeof(ryml::NodeData)))
+	{
+		_tree->reserve((ryml::id_type)nodes);
+		_node = _tree->rootref();
+	}
+	if (arenaBytes > _tree->arena_capacity() && arenaBytes <= maxBytes && canAllocate(arenaBytes))
+	{
+		_tree->reserve_arena(arenaBytes);
+	}
+}
+
+size_t YamlRootNodeWriter::getNodeCount() const
+{
+	return (size_t)_tree->size();
+}
+
+size_t YamlRootNodeWriter::getArenaSize() const
+{
+	return _tree->arena_size();
 }
 
 } // namespace YAML

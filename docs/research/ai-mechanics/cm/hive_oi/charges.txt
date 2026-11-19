@@ -1,0 +1,12 @@
+==== scpa_D_M3_s1 melee entries (weapon, act, tu): [(('AUX_CHRYSSALID_WEAPON', 10, 15), 697), (('AUX_SILACOID_WEAPON_MELEE', 10, 12), 360), (('AUX_ZOMBIE_WEAPON', 10, 15), 170)]
+ t1 unit 1000001 from (21,38,0) tu 157 act 2 to (16,35,0) src melee spent 47 dmg 10 downed 1 stunned 11
+ t2 unit 1000001 from (17,36,0) tu 175 act 2 to (18,43,0) src melee spent 49 dmg 70 downed 1 stunned 14
+ t5 unit 1000000 from (44,30,3) tu 173 act 2 to (45,26,0) src melee spent 161 dmg 96 downed 0 stunned 0
+ t7 unit 1000085 from (48,26,0) tu 177 act 2 to (47,26,0) src melee spent 49 dmg 30 downed 1 stunned 0
+ t9 unit 1000085 from (28,12,0) tu 177 act 2 to (29,25,0) src melee spent 174 dmg 30 downed 0 stunned 0
+ t10 unit 1000085 from (30,24,0) tu 175 act 2 to (38,14,0) src melee spent 161 dmg 22 downed 0 stunned 0
+ t12 unit 1000087 from (49,43,0) tu 100 act 2 to (42,36,0) src melee spent 87 dmg 46 downed 0 stunned 0
+ sample act10: {'turn': '1', 'unit': '1000005', 'from': '(62,58,3)', 'tu': '49', 'to': '(63,59,3)', 'weapon': 'AUX_CHRYSSALID_WEAPON'} {'v': 1, 'rec': 129, 'unit': 1000005, 'walk': None, 'pos': [62, 58, 3], 'dir': 3, 'tu': 34, 'spent': 15, 'kneel': 0, 'hp': 11
+ list: [{'id': 'f36c5fe9e8461675', 'k': 'a', 't': 10, 'to': [32, 10, 2], 'tu': 15, 'u': 448, 'w': 'AUX_CHRYSSALID_WEAPON', 'p': 124, 'lof': 0, 'd': 57}, {'id': 'ab4374f754607b48', 'k': 'a', 't': 10, 'to': [34, 12, 1], 'tu': 15, 'u': 470, 'w': 'AUX_CHRYSSALID_W
+==== scpa_D_M6_s2 melee entries (weapon, act, tu): [(('AUX_PRED_CLAWS', 10, 7), 214), (('STR_GLADIUS', 10, 9), 24)]
+==== cc3_CO_M6_s1 melee entries (weapon, act, tu): [(('AUX_PRED_CLAWS', 10, 7), 109), (('STR_GLADIUS', 10, 9), 97)]

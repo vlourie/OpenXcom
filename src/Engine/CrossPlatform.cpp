@@ -26,6 +26,9 @@
 #include <fstream>
 #include <string>
 #include <list>
+#include <mutex>
+#include <atomic>
+#include <fcntl.h>
 #include <stdint.h>
 #include <time.h>
 #include <signal.h>
@@ -33,6 +36,7 @@
 #include <assert.h>
 #include "Logger.h"
 #include "Exception.h"
+#include "CrashTrace.h"
 #include "Options.h"
 #include "Unicode.h"
 #ifdef _WIN32
@@ -41,6 +45,8 @@
 #endif
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <psapi.h>
+#include <cstdio>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <shellapi.h>
@@ -92,6 +98,7 @@
 #include "FileMap.h"
 #include "SDL2Helpers.h"
 #include "../version.h"
+#include "../Battlescape/AiProbe.h"
 
 namespace OpenXcom
 {
@@ -598,7 +605,10 @@ std::vector<std::tuple<std::string, bool, time_t>> getFolderContents(const std::
 	Log(LOG_VERBOSE) << "getFolderContents("<<path<<", "<<ext<<") -> " << search_path;
 	auto pathW = pathToWindows(search_path);
 	WIN32_FIND_DATAW ffd;
-	auto handle = FindFirstFileW(pathW.c_str(), &ffd);
+	// (the names and attributes only, fetched in large portions: the plain FindFirstFileW also asks the file system
+	// for the 8.3 name of every file and reads the folder a few entries at a time - the folders of a mod are listed
+	// whole at every start, and an HD pack has a hundred thousand files)
+	auto handle = FindFirstFileExW(pathW.c_str(), FindExInfoBasic, &ffd, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 	if (handle == INVALID_HANDLE_VALUE) {
 		Log(LOG_VERBOSE) << "getFolderContents("<<path<<", "<<ext<<"): fail outright.";
 		return files;
@@ -985,9 +995,20 @@ std::pair<std::string, std::string> timeToString(time_t time)
 	GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &st, NULL, localTime, 25);
 #endif*/
 
-	struct tm *timeinfo = localtime(&(time));
-	strftime(localDate, 25, "%Y-%m-%d", timeinfo);
-	strftime(localTime, 25, "%H:%M", timeinfo);
+	// a file time the C library cannot convert (before 1970 on Windows, a broken stamp) gives no date, not a crash;
+	// the buffer is our own: localtime() shares one with every other caller
+	struct tm timeinfo {};
+#ifdef _WIN32
+	const bool known = localtime_s(&timeinfo, &time) == 0;
+#else
+	const bool known = localtime_r(&time, &timeinfo) != nullptr;
+#endif
+	if (!known)
+	{
+		return std::make_pair(std::string(), std::string());
+	}
+	strftime(localDate, 25, "%Y-%m-%d", &timeinfo);
+	strftime(localTime, 25, "%H:%M", &timeinfo);
 
 	return std::make_pair(localDate, localTime);
 }
@@ -1047,12 +1068,38 @@ bool copyFile(const std::string& src, const std::string& dest)
 }
 
 /**
+ * Asks the system to put a written and closed file on the disk.
+ * @param filename - the file
+ * @return if the system confirmed it.
+ */
+static bool flushFileToDisk(const std::string& filename)
+{
+#ifdef _WIN32
+	auto nameW = pathToWindows(filename);
+	HANDLE h = CreateFileW(nameW.c_str(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (h == INVALID_HANDLE_VALUE)
+		return false;
+	bool ok = FlushFileBuffers(h) != 0;
+	CloseHandle(h);
+	return ok;
+#else
+	FILE *f = fopen(filename.c_str(), "rb+");
+	if (!f)
+		return false;
+	bool ok = fsync(fileno(f)) == 0;
+	fclose(f);
+	return ok;
+#endif
+}
+
+/**
  * Writes a file.
  * @param filename - where to writeFile
  * @param data - what to writeFile
+ * @param durable - also wait until the system has put the file on the disk (a saved game that replaces the previous one)
  * @return if we did write it.
  */
-bool writeFile(const std::string& filename, const std::string& data) {
+bool writeFile(const std::string& filename, const std::string& data, bool durable) {
 	// Even SDL1 file IO accepts UTF-8 file names on windows.
 	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "w");
 	if (!rwops) {
@@ -1064,7 +1111,15 @@ bool writeFile(const std::string& filename, const std::string& data) {
 		SDL_RWclose(rwops);
 		return false;
 	}
-	SDL_RWclose(rwops);
+	// a write the system put off fails here, not in SDL_RWwrite
+	if (0 != SDL_RWclose(rwops)) {
+		Log(LOG_ERROR) << "Failed to write " << filename << ": " << SDL_GetError();
+		return false;
+	}
+	if (durable && !flushFileToDisk(filename)) {
+		Log(LOG_ERROR) << "Failed to write " << filename << ": the system did not confirm it is on the disk";
+		return false;
+	}
 	return true;
 }
 
@@ -1086,7 +1141,10 @@ bool writeFile(const std::string& filename, const std::vector<unsigned char>& da
 		SDL_RWclose(rwops);
 		return false;
 	}
-	SDL_RWclose(rwops);
+	if (0 != SDL_RWclose(rwops)) {
+		Log(LOG_ERROR) << "Failed to write " << filename << ": " << SDL_GetError();
+		return false;
+	}
 	return true;
 }
 
@@ -1398,11 +1456,11 @@ void stackTrace(void *ctx)
 				{
 					filename = filename.substr(n + 1);
 				}
-				Log(LOG_FATAL) << "0x" << std::hex << symbol->Address << std::dec << " " << symname << " (" << filename << ":" << line->LineNumber << ")";
+				Log(LOG_FATAL) << "0x" << std::hex << frame.AddrPC.Offset << " " << symname << "+0x" << (frame.AddrPC.Offset - symbol->Address) << std::dec << " (" << filename << ":" << line->LineNumber << ")";
 			}
 			else
 			{
-				Log(LOG_FATAL) << "0x" << std::hex << symbol->Address << std::dec << " " << symname;
+				Log(LOG_FATAL) << "0x" << std::hex << frame.AddrPC.Offset << " " << symname << "+0x" << (frame.AddrPC.Offset - symbol->Address) << std::dec;
 			}
 		}
 		else
@@ -1475,10 +1533,10 @@ std::string now()
 #else
 	char buffer[MAX_LEN];
 	time_t rawtime;
-	struct tm *timeinfo;
+	struct tm timeinfo {};
 	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(buffer, MAX_LEN, "%d-%m-%Y_%H-%M-%S", timeinfo);
+	localtime_r(&rawtime, &timeinfo); // every thread that logs comes here: localtime() shares one buffer
+	strftime(buffer, MAX_LEN, "%d-%m-%Y_%H-%M-%S", &timeinfo);
 	sprintf(result, "%s", buffer);
 #endif
 	return result;
@@ -1547,12 +1605,18 @@ void crashDump(void *ex, const std::string &err)
 		}
 	}
 	Log(LOG_FATAL) << "A fatal error has occurred: " << error.str();
-	stackTrace(0);
+	if (!CrashTrace::recorded())
+	{
+		// an exception or abort(): a normal context, the names can be looked up. After a crash the frames are
+		// already in the log (CrashTrace), and no symbol library is called from the broken process
+		stackTrace(0);
+	}
 #endif
 	std::ostringstream msg;
-	msg << "OpenXcom has crashed: " << error.str() << std::endl;
+	msg << "OXCE-HD has crashed: " << error.str() << std::endl;
 	msg << "Log file: " << getLogFileName() << std::endl;
-	msg << "If this error was unexpected, please report it on the OpenXcom forum (OXCE board)." << std::endl;
+	msg << "This is OXCE-HD, an unofficial build: please do not report this on the OpenXcom forum." << std::endl;
+	msg << "Report it to us: the launcher's \"Report a problem\" or https://x-piratez.mywire.org:8443/tickets/new" << std::endl;
 	msg << "The following can help us solve the problem:" << std::endl;
 	msg << "1. a saved game from just before the crash (helps 98%)" << std::endl;
 	msg << "2. a detailed description how to reproduce the crash (helps 80%)" << std::endl;
@@ -1588,21 +1652,74 @@ bool openExplorer(const std::string &url)
  * @param data - what to writeFile
  * @return if we did write it.
  */
-static bool logToFile(const std::string& filename, const std::string& data) {
-	// Even SDL1 file IO accepts UTF-8 file names on windows.
-	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "a+");
-	if (rwops) {
-		auto rv = SDL_RWwrite(rwops, data.c_str(), data.size(), 1);
-		SDL_RWclose(rwops);
-		return rv == 1;
+// The log file stays open from the first line to the end of the program (opening it for each line cost about 4 ms a
+// line). Each line is one write of the system in append mode, with no buffer of ours: a line is in the file when
+// log() returns, so nothing has to be flushed or closed on the way out or in a crash. Other programs may read the
+// file meanwhile. The handle is changed under the log's lock; it is atomic for the one reader without the lock -
+// a fatal line that could not get the lock.
+#ifdef _WIN32
+typedef HANDLE LogHandle;
+static const LogHandle NO_LOG = INVALID_HANDLE_VALUE;
+#else
+typedef int LogHandle;
+static const LogHandle NO_LOG = -1;
+#endif
+static std::atomic<LogHandle> logHandle(NO_LOG);
+
+static bool logWrite(LogHandle handle, const std::string& data) {
+#ifdef _WIN32
+	DWORD done = 0;
+	return WriteFile(handle, data.data(), (DWORD)data.size(), &done, NULL) && done == data.size();
+#else
+	return write(handle, data.data(), data.size()) == (ssize_t)data.size();
+#endif
+}
+
+static void logClose() {
+	LogHandle handle = logHandle.exchange(NO_LOG);
+	if (handle != NO_LOG) {
+#ifdef _WIN32
+		CloseHandle(handle);
+#else
+		close(handle);
+#endif
 	}
-	return false;
+}
+
+static bool logToFile(const std::string& filename, const std::string& data) {
+	LogHandle handle = logHandle.load();
+	// another program may hold the file without sharing it for a moment: a failed line waits in the buffer for the
+	// next one, so the last line before quitting would be lost - wait out a short read instead
+	for (int retry = 0; handle == NO_LOG && retry < 20; ++retry) {
+		if (retry) {
+			SDL_Delay(5);
+		}
+#ifdef _WIN32
+		handle = CreateFileW(pathToWindows(filename).c_str(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
+		handle = open(filename.c_str(), O_WRONLY | O_APPEND | O_CREAT, 0644);
+#endif
+	}
+	if (handle == NO_LOG) {
+		return false;
+	}
+	logHandle.store(handle);
+	return logWrite(handle, data);
 }
 
 static const size_t LOG_BUFFER_LIMIT = 1<<10;
-static std::list<std::pair<int, std::string>> logBuffer;
-static std::string logFileName;
-const std::string& getLogFileName() { return logFileName; }
+// The buffer, the name and the lock are one state for every thread that logs (the HD render threads do: a failed job,
+// an unreadable picture); the same thread may come again from the crash handler, hence recursive. They are never
+// destroyed: the crash handlers leave by exit() on whatever thread crashed, and the other threads still log while
+// the statics of the program are being taken down
+static std::list<std::pair<int, std::string>> &logBuffer = *new std::list<std::pair<int, std::string>>();
+static std::string &logFileName = *new std::string();
+static std::recursive_mutex &logLock = *new std::recursive_mutex();
+std::string getLogFileName() {
+	// a copy made under the lock: the name is changed by setLogFileName() while other threads log
+	std::lock_guard<std::recursive_mutex> logGuard(logLock);
+	return logFileName;
+}
 
 /**
  * Setting the log file name and setting the effective reportingLevel
@@ -1610,22 +1727,71 @@ const std::string& getLogFileName() { return logFileName; }
  * and turns on writing them to the actual log (and flushes the buffer).
  */
 void setLogFileName(const std::string& name) {
+	// under the log's lock: the name is read and the buffer is written by log() on other threads
+	std::lock_guard<std::recursive_mutex> logGuard(logLock);
+	logClose();
 	deleteFile(name);
 	size_t sz = logBuffer.size();
 	Log(LOG_DEBUG) << "setLogFileName("<<name<<") was '"<<logFileName<<"'; "<<sz<<" in buffer";
 	logFileName = name;
+	CrashTrace::setLogFile(name);
+}
+/// Players' logs stay clean: the HD service lines only with verbose logging, the AI harness or OXCE_HD_PERFLOG (tools read them).
+static bool hdServiceLineHidden(int level, const std::string& bare)
+{
+	if (level != LOG_INFO || (bare.compare(0, 3, "HD ") != 0 && bare.compare(0, 2, "Hd") != 0))
+		return false;
+	static const bool tools = AiProbe::harness() || getenv("OXCE_HD_PERFLOG"); // env only: nothing here may log (R-474)
+	return !tools && !Options::verboseLogging;
 }
 void log(int level, const std::ostringstream& baremsgstream) {
+	const std::string bare = baremsgstream.str();
+	if (hdServiceLineHidden(level, bare)) {
+		return;
+	}
 	std::ostringstream msgstream;
 	msgstream << "[" << CrossPlatform::now() << "]" << "\t"
-			  << "[" << Logger::toString(level) << "]" << "\t"
-			  << baremsgstream.str() << std::endl;
+			  << "[" << Logger::toString(level) << "]" << "\t";
+#ifdef _WIN32
+	// OXCE_HD_MEMLOG (tools only): the process's private and working memory before each line - which loading
+	// step takes how much
+	static const bool memLog = getenv("OXCE_HD_MEMLOG") != nullptr;
+	if (memLog)
+	{
+		PROCESS_MEMORY_COUNTERS_EX pmc {};
+		if (GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc)))
+		{
+			msgstream << "[mem " << (pmc.PrivateUsage >> 20) << "/" << (pmc.WorkingSetSize >> 20) << "]\t";
+		}
+	}
+#endif
+	msgstream << bare << std::endl;
 	auto msg = msgstream.str();
 
 	int effectiveLevel = Logger::reportingLevel();
 	if (effectiveLevel >= LOG_DEBUG) {
 		fwrite(msg.c_str(), msg.size(), 1, stderr);
 		fflush(stderr);
+	}
+	// the HD render threads log too (a failed job, an unreadable picture): the buffer below is one list for all of
+	// them, and two lines at once broke the heap (found with injected faults, 17.11); the same thread may come here
+	// again from the crash handler
+	std::unique_lock<std::recursive_mutex> logGuard(logLock, std::defer_lock);
+	if (level == LOG_FATAL) {
+		// a crash line must not hang on a lock whose owner will never give it back: after a moment it goes to the
+		// file as it is, past the buffer and the name, which belong to the lock
+		for (int i = 0; i < 200 && !logGuard.try_lock(); ++i) {
+			SDL_Delay(1);
+		}
+		if (!logGuard.owns_lock()) {
+			LogHandle handle = logHandle.load();
+			if (handle != NO_LOG) {
+				logWrite(handle, msg);
+			}
+			return;
+		}
+	} else {
+		logGuard.lock();
 	}
 	if (logBuffer.size() > LOG_BUFFER_LIMIT) { // drop earliest message so as to not eat all memory
 		logBuffer.pop_front();
@@ -1639,7 +1805,7 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	while (!logBuffer.empty()) {
 		if (effectiveLevel >= logBuffer.front().first) {
 			if (!logToFile(logFileName, logBuffer.front().second)) {
-				std::string err = "Failed to append to '" + logFileName + "': " + SDL_GetError();
+				std::string err = "Failed to append to '" + logFileName + "'";
 				logBuffer.push_back(std::make_pair(LOG_ERROR, err));
 				failed = true;
 				break;
@@ -1651,6 +1817,16 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	if (failed || !logToFile(logFileName, msg)) {
 		logBuffer.push_back(std::make_pair(level, msg));
 	}
+}
+
+void exitNow() {
+	// the log has nothing to flush (each line is written at once) and its lock is not needed here
+	fflush(nullptr);
+#ifdef _WIN32
+	TerminateProcess(GetCurrentProcess(), 0);
+#else
+	_exit(0);
+#endif
 }
 
 #if defined(EMBED_ASSETS)

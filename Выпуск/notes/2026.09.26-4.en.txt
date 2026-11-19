@@ -1,0 +1,1 @@
+— Two new options on the HD settings tab: "Base facility animations" and "Craft animations". Turn them off to keep facilities still and crafts without lights.

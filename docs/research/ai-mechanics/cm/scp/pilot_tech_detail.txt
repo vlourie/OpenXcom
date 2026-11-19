@@ -1,0 +1,528 @@
+﻿== L10_s1: A vs d0p IDENTICAL
+d0p_D_L10_s1 332e7338bbf65cea13063b7a33eb8f03
+scpa_D_L10_s1 332e7338bbf65cea13063b7a33eb8f03 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 36
+  S: activations 226, decisions/activation {1: 31, 2: 194, 4: 1}, max n 2, activations/unit-turn {1: 26, 2: 79, 3: 14}, TU rise 0, decisions at TU<=5 1
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 194, decisions/activation {1: 25, 2: 166, 3: 2, 5: 1}, max n 2, activations/unit-turn {1: 25, 2: 71, 3: 9}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 5; the chosen unit's AIModule then attacked 3, the attack executed (time units spent, no walk) 3
+  decisions at TU<=5: S 1 of 430, control 1 of 375; max activations/unit-turn S 3, control 3
+  LIMITS OK
+
+== L10_s2: A vs d0p IDENTICAL
+d0p_D_L10_s2 24a49c9bde1eceb01affc721069a3279
+scpa_D_L10_s2 24a49c9bde1eceb01affc721069a3279 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 23
+  S: activations 221, decisions/activation {1: 48, 2: 170, 3: 1, 4: 2}, max n 2, activations/unit-turn {1: 27, 2: 97}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 186, decisions/activation {1: 40, 2: 142, 3: 3, 4: 1}, max n 2, activations/unit-turn {1: 26, 2: 80}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 6; the chosen unit's AIModule then attacked 4, the attack executed (time units spent, no walk) 4
+  decisions at TU<=5: S 0 of 406, control 0 of 338; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== L11_s1: A vs d0p IDENTICAL
+d0p_D_L11_s1 7ca75125dd6b50023d236558405de3d0
+scpa_D_L11_s1 7ca75125dd6b50023d236558405de3d0 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 63
+  S: activations 1034, decisions/activation {1: 204, 2: 825, 3: 3, 4: 2}, max n 2, activations/unit-turn {1: 194, 2: 387, 3: 22}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 1145, decisions/activation {1: 237, 2: 904, 3: 3, 4: 1}, max n 2, activations/unit-turn {1: 228, 2: 418, 3: 27}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 20; the chosen unit's AIModule then attacked 14, the attack executed (time units spent, no walk) 14
+  decisions at TU<=5: S 0 of 1884, control 1 of 2079; max activations/unit-turn S 3, control 3
+  LIMITS OK
+
+== L11_s2: A vs d0p IDENTICAL
+d0p_D_L11_s2 2d5dddb5ffcb177dfbdbc53a0d75f745
+scpa_D_L11_s2 2d5dddb5ffcb177dfbdbc53a0d75f745 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 53
+  S: activations 1017, decisions/activation {1: 267, 2: 742, 3: 2, 4: 6}, max n 2, activations/unit-turn {1: 259, 2: 379}, TU rise 0, decisions at TU<=5 3
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 1520, decisions/activation {1: 245, 2: 1270, 3: 4, 5: 1}, max n 2, activations/unit-turn {1: 238, 2: 641}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 37; the chosen unit's AIModule then attacked 35, the attack executed (time units spent, no walk) 35
+  decisions at TU<=5: S 3 of 1813, control 0 of 2811; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== L12_s1: A vs d0p IDENTICAL
+d0p_D_L12_s1 7ca13d2cd7fdbfcc52e23b9b7e2c096a
+scpa_D_L12_s1 7ca13d2cd7fdbfcc52e23b9b7e2c096a IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 68
+  S: activations 259, decisions/activation {1: 55, 2: 204}, max n 2, activations/unit-turn {1: 53, 2: 62, 3: 26, 4: 1}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 260, decisions/activation {1: 58, 2: 201, 3: 1}, max n 2, activations/unit-turn {1: 51, 2: 67, 3: 14, 4: 7, 5: 1}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 8; the chosen unit's AIModule then attacked 8, the attack executed (time units spent, no walk) 2
+  decisions at TU<=5: S 0 of 463, control 0 of 463; max activations/unit-turn S 4, control 5
+  LIMITS OK
+
+== L12_s2: A vs d0p IDENTICAL
+d0p_D_L12_s2 7d61a275ebc415aef9658444b0cd3f35
+scpa_D_L12_s2 7d61a275ebc415aef9658444b0cd3f35 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 68
+  S: activations 407, decisions/activation {1: 104, 2: 302, 4: 1}, max n 2, activations/unit-turn {1: 87, 2: 143, 3: 6, 4: 4}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 527, decisions/activation {1: 114, 2: 410, 3: 1, 4: 2}, max n 2, activations/unit-turn {1: 95, 2: 169, 3: 30, 4: 1}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 8; the chosen unit's AIModule then attacked 8, the attack executed (time units spent, no walk) 7
+  decisions at TU<=5: S 0 of 714, control 0 of 946; max activations/unit-turn S 4, control 4
+  LIMITS OK
+
+== L1_s1: A vs d0p IDENTICAL
+d0p_D_L1_s1 e1122de765733f579cc4e70949aa1b1c
+scpa_D_L1_s1 e1122de765733f579cc4e70949aa1b1c IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 40
+  S: activations 250, decisions/activation {1: 46, 2: 201, 3: 3}, max n 2, activations/unit-turn {1: 55, 2: 88, 3: 5, 4: 1}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 192, decisions/activation {1: 45, 2: 144, 3: 3}, max n 2, activations/unit-turn {1: 47, 2: 63, 3: 5, 4: 1}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 45; the chosen unit's AIModule then attacked 36, the attack executed (time units spent, no walk) 36
+  decisions at TU<=5: S 0 of 476, control 1 of 351; max activations/unit-turn S 4, control 4
+  LIMITS OK
+
+== L1_s2: A vs d0p IDENTICAL
+d0p_D_L1_s2 c69523afb1c237e05150a818f7394a3d
+scpa_D_L1_s2 c69523afb1c237e05150a818f7394a3d IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 38
+  S: activations 200, decisions/activation {1: 53, 2: 143, 3: 1, 4: 3}, max n 2, activations/unit-turn {1: 40, 2: 80}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 164, decisions/activation {1: 39, 2: 125}, max n 2, activations/unit-turn {1: 34, 2: 65}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 34; the chosen unit's AIModule then attacked 25, the attack executed (time units spent, no walk) 25
+  decisions at TU<=5: S 0 of 358, control 0 of 294; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== L2_s1: A vs d0p IDENTICAL
+d0p_D_L2_s1 f40e69a9970f15134c57331fd7f060d3
+scpa_D_L2_s1 f40e69a9970f15134c57331fd7f060d3 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 182
+  S: activations 427, decisions/activation {1: 65, 2: 346, 3: 12, 4: 4}, max n 2, activations/unit-turn {1: 40, 2: 146, 3: 3, 4: 19, 5: 2}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 699, decisions/activation {1: 103, 2: 585, 3: 10, 4: 1}, max n 2, activations/unit-turn {1: 56, 2: 200, 3: 30, 4: 24, 5: 5, 6: 3, 7: 2}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 73; the chosen unit's AIModule then attacked 43, the attack executed (time units spent, no walk) 43
+  decisions at TU<=5: S 0 of 850, control 1 of 1335; max activations/unit-turn S 5, control 7
+  LIMITS OK
+
+== L2_s2: A vs d0p IDENTICAL
+d0p_D_L2_s2 d3324f4d0db46edbb8914238bae62ffc
+scpa_D_L2_s2 d3324f4d0db46edbb8914238bae62ffc IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 192
+  S: activations 883, decisions/activation {1: 158, 2: 710, 3: 13, 4: 1, 7: 1}, max n 2, activations/unit-turn {1: 105, 2: 279, 3: 72, 4: 1}, TU rise 0, decisions at TU<=5 2
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 1279, decisions/activation {1: 171, 2: 1081, 3: 15, 4: 6, 5: 2, 6: 1, 7: 2, 8: 1}, max n 2, activations/unit-turn {1: 98, 2: 421, 3: 31, 4: 16, 5: 3, 6: 1, 7: 23}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 155; the chosen unit's AIModule then attacked 107, the attack executed (time units spent, no walk) 107
+  decisions at TU<=5: S 2 of 1677, control 1 of 2532; max activations/unit-turn S 4, control 7
+  LIMITS OK
+
+== L3_s1: A vs d0p IDENTICAL
+d0p_D_L3_s1 d1f2e85b1014df354a0437167aebfeb4
+scpa_D_L3_s1 d1f2e85b1014df354a0437167aebfeb4 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 9
+  S: activations 4, decisions/activation {1: 3, 2: 1}, max n 2, activations/unit-turn {1: 2, 2: 1}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 4, decisions/activation {1: 3, 2: 1}, max n 2, activations/unit-turn {1: 2, 2: 1}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 1; the chosen unit's AIModule then attacked 1, the attack executed (time units spent, no walk) 1
+  decisions at TU<=5: S 0 of 5, control 0 of 5; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== L3_s2: A vs d0p IDENTICAL
+d0p_D_L3_s2 d0c7a0e2a6f988825f12082b6c48b5e6
+scpa_D_L3_s2 d0c7a0e2a6f988825f12082b6c48b5e6 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 17
+  S: activations 11, decisions/activation {0: 1, 1: 5, 2: 5}, max n 2, activations/unit-turn {1: 2, 2: 1, 3: 1, 4: 1}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 13, decisions/activation {0: 1, 1: 6, 2: 6}, max n 2, activations/unit-turn {1: 2, 2: 1, 4: 1, 5: 1}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 1; the chosen unit's AIModule then attacked 1, the attack executed (time units spent, no walk) 1
+  decisions at TU<=5: S 0 of 18, control 0 of 21; max activations/unit-turn S 4, control 5
+  LIMITS OK
+
+== L4_s1: A vs d0p IDENTICAL
+d0p_D_L4_s1 886d780a3f571b073012469016ce8dea
+scpa_D_L4_s1 886d780a3f571b073012469016ce8dea IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 47
+  S: activations 85, decisions/activation {1: 45, 2: 39, 4: 1}, max n 2, activations/unit-turn {1: 34, 2: 24, 3: 1}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 109, decisions/activation {1: 57, 2: 49, 3: 1, 4: 1, 5: 1}, max n 2, activations/unit-turn {1: 37, 2: 24, 3: 8}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 23; the chosen unit's AIModule then attacked 14, the attack executed (time units spent, no walk) 14
+  decisions at TU<=5: S 0 of 130, control 0 of 175; max activations/unit-turn S 3, control 3
+  LIMITS OK
+
+== L4_s2: A vs d0p IDENTICAL
+d0p_D_L4_s2 a92f5b70912088cd0de061fd51883f87
+scpa_D_L4_s2 a92f5b70912088cd0de061fd51883f87 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 55
+  S: activations 91, decisions/activation {1: 42, 2: 46, 3: 2, 4: 1}, max n 2, activations/unit-turn {1: 34, 2: 20, 3: 3, 4: 2}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 86, decisions/activation {1: 38, 2: 47, 4: 1}, max n 2, activations/unit-turn {1: 22, 2: 22, 3: 1, 8: 1, 9: 1}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 19; the chosen unit's AIModule then attacked 16, the attack executed (time units spent, no walk) 16
+  decisions at TU<=5: S 0 of 153, control 0 of 140; max activations/unit-turn S 4, control 9
+  LIMITS OK
+
+== L5_s1: A vs d0p IDENTICAL
+d0p_D_L5_s1 d0e8673024672fe96ad2f8bfc0bbe7b1
+scpa_D_L5_s1 d0e8673024672fe96ad2f8bfc0bbe7b1 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 102
+  S: activations 381, decisions/activation {1: 36, 2: 321, 3: 21, 4: 2, 5: 1}, max n 2, activations/unit-turn {1: 33, 2: 168, 3: 4}, TU rise 0, decisions at TU<=5 1
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 483, decisions/activation {1: 50, 2: 416, 3: 14, 4: 2, 5: 1}, max n 2, activations/unit-turn {1: 38, 2: 135, 3: 29, 4: 22}, TU rise 0, decisions at TU<=5 2
+  picks out of the engine's order: 91; the chosen unit's AIModule then attacked 66, the attack executed (time units spent, no walk) 66
+  decisions at TU<=5: S 1 of 833, control 2 of 993; max activations/unit-turn S 3, control 4
+  LIMITS OK
+
+== L5_s2: A vs d0p IDENTICAL
+d0p_D_L5_s2 bd3238fc6d229563c46b465839f83f38
+scpa_D_L5_s2 bd3238fc6d229563c46b465839f83f38 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 78
+  S: activations 147, decisions/activation {1: 27, 2: 112, 3: 6, 4: 2}, max n 2, activations/unit-turn {1: 27, 2: 50, 3: 4, 4: 2}, TU rise 0, decisions at TU<=5 2
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 312, decisions/activation {1: 56, 2: 244, 3: 9, 4: 3}, max n 2, activations/unit-turn {1: 49, 2: 125, 3: 3, 4: 1}, TU rise 0, decisions at TU<=5 4
+  picks out of the engine's order: 27; the chosen unit's AIModule then attacked 16, the attack executed (time units spent, no walk) 16
+  decisions at TU<=5: S 2 of 312, control 4 of 611; max activations/unit-turn S 4, control 4
+  LIMITS OK
+
+== L6_s1: A vs d0p IDENTICAL
+d0p_D_L6_s1 9482b4e8bab51ee539f9cca1fede819e
+scpa_D_L6_s1 9482b4e8bab51ee539f9cca1fede819e IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 58
+  S: activations 427, decisions/activation {1: 52, 2: 355, 3: 4, 4: 16}, max n 2, activations/unit-turn {1: 43, 2: 180, 3: 8}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 394, decisions/activation {1: 54, 2: 306, 3: 5, 4: 29}, max n 2, activations/unit-turn {1: 55, 2: 154, 3: 1, 4: 7}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 35; the chosen unit's AIModule then attacked 30, the attack executed (time units spent, no walk) 30
+  decisions at TU<=5: S 0 of 861, control 0 of 809; max activations/unit-turn S 3, control 4
+  LIMITS OK
+
+== L6_s2: A vs d0p IDENTICAL
+d0p_D_L6_s2 3712d5ac13f7adc547cd1a3ebce356c4
+scpa_D_L6_s2 3712d5ac13f7adc547cd1a3ebce356c4 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 61
+  S: activations 262, decisions/activation {1: 33, 2: 227, 3: 2}, max n 2, activations/unit-turn {1: 21, 2: 113, 3: 5}, TU rise 0, decisions at TU<=5 1
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 455, decisions/activation {1: 50, 2: 402, 3: 2, 4: 1}, max n 2, activations/unit-turn {1: 45, 2: 178, 3: 14, 4: 3}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 56; the chosen unit's AIModule then attacked 47, the attack executed (time units spent, no walk) 47
+  decisions at TU<=5: S 1 of 516, control 1 of 874; max activations/unit-turn S 3, control 4
+  LIMITS OK
+
+== L7_s1: A vs d0p IDENTICAL
+d0p_D_L7_s1 6a69cc1d228270a23cda31b4944b4ac0
+scpa_D_L7_s1 6a69cc1d228270a23cda31b4944b4ac0 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 60
+  S: activations 466, decisions/activation {1: 90, 2: 369, 3: 6, 4: 1}, max n 2, activations/unit-turn {1: 50, 2: 205, 3: 2}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 579, decisions/activation {1: 146, 2: 430, 3: 3}, max n 2, activations/unit-turn {1: 113, 2: 200, 3: 6, 4: 12}, TU rise 0, decisions at TU<=5 4
+  picks out of the engine's order: 69; the chosen unit's AIModule then attacked 60, the attack executed (time units spent, no walk) 60
+  decisions at TU<=5: S 0 of 877, control 4 of 1068; max activations/unit-turn S 3, control 4
+  LIMITS OK
+
+== L7_s2: A vs d0p IDENTICAL
+d0p_D_L7_s2 541817307e1673d8ded043478a42f75d
+scpa_D_L7_s2 541817307e1673d8ded043478a42f75d IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 61
+  S: activations 376, decisions/activation {1: 92, 2: 265, 3: 16, 4: 3}, max n 2, activations/unit-turn {1: 67, 2: 150, 3: 3}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 344, decisions/activation {1: 58, 2: 274, 3: 9, 4: 2, 5: 1}, max n 2, activations/unit-turn {1: 46, 2: 149}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 81; the chosen unit's AIModule then attacked 62, the attack executed (time units spent, no walk) 62
+  decisions at TU<=5: S 0 of 750, control 1 of 670; max activations/unit-turn S 3, control 2
+  LIMITS OK
+
+== L8_s1: A vs d0p IDENTICAL
+d0p_D_L8_s1 605079bb13413c11e0cc45697e742074
+scpa_D_L8_s1 605079bb13413c11e0cc45697e742074 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 53
+  S: activations 196, decisions/activation {1: 101, 2: 90, 3: 5}, max n 2, activations/unit-turn {1: 96, 2: 50}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 327, decisions/activation {1: 172, 2: 148, 3: 7}, max n 2, activations/unit-turn {1: 179, 2: 71, 3: 2}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 13; the chosen unit's AIModule then attacked 11, the attack executed (time units spent, no walk) 11
+  decisions at TU<=5: S 0 of 306, control 0 of 506; max activations/unit-turn S 2, control 3
+  LIMITS OK
+
+== L8_s2: A vs d0p IDENTICAL
+d0p_D_L8_s2 eb1e2a28ead7389eec7c5ea862e2327f
+scpa_D_L8_s2 eb1e2a28ead7389eec7c5ea862e2327f IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 64
+  S: activations 260, decisions/activation {1: 104, 2: 152, 3: 2, 4: 2}, max n 2, activations/unit-turn {1: 96, 2: 82}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 282, decisions/activation {1: 151, 2: 125, 3: 6}, max n 2, activations/unit-turn {1: 136, 2: 73}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 31; the chosen unit's AIModule then attacked 20, the attack executed (time units spent, no walk) 20
+  decisions at TU<=5: S 0 of 435, control 0 of 441; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== L9_s1: A vs d0p IDENTICAL
+d0p_D_L9_s1 02e284eb8832f4f8130b94a11224a73a
+scpa_D_L9_s1 02e284eb8832f4f8130b94a11224a73a IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 47
+  S: activations 73, decisions/activation {1: 28, 2: 43, 3: 1, 4: 1}, max n 2, activations/unit-turn {1: 24, 2: 18, 3: 3, 4: 1}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 71, decisions/activation {0: 1, 1: 32, 2: 36, 3: 2}, max n 2, activations/unit-turn {1: 25, 2: 11, 3: 8}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 8; the chosen unit's AIModule then attacked 5, the attack executed (time units spent, no walk) 5
+  decisions at TU<=5: S 0 of 126, control 0 of 113; max activations/unit-turn S 4, control 3
+  LIMITS OK
+
+== L9_s2: A vs d0p IDENTICAL
+d0p_D_L9_s2 dfafce1993b0275d7d489a7d8a3605a4
+scpa_D_L9_s2 dfafce1993b0275d7d489a7d8a3605a4 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 47
+  S: activations 148, decisions/activation {1: 41, 2: 97, 3: 4, 4: 6}, max n 2, activations/unit-turn {1: 35, 2: 52, 3: 3}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 166, decisions/activation {1: 57, 2: 106, 3: 3}, max n 2, activations/unit-turn {1: 38, 2: 49, 3: 10}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 12; the chosen unit's AIModule then attacked 6, the attack executed (time units spent, no walk) 5
+  decisions at TU<=5: S 0 of 281, control 0 of 293; max activations/unit-turn S 3, control 3
+  LIMITS OK
+
+== M10_s1: A vs d0p IDENTICAL
+d0p_D_M10_s1 cf773420896f14a5d624777982c7cbd4
+scpa_D_M10_s1 cf773420896f14a5d624777982c7cbd4 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 77
+  S: activations 673, decisions/activation {1: 234, 2: 425, 3: 13, 4: 1}, max n 2, activations/unit-turn {1: 248, 2: 208, 3: 3}, TU rise 0, decisions at TU<=5 1
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 883, decisions/activation {1: 264, 2: 585, 3: 17, 4: 16, 7: 1}, max n 2, activations/unit-turn {1: 290, 2: 292, 3: 3}, TU rise 0, decisions at TU<=5 6
+  picks out of the engine's order: 215; the chosen unit's AIModule then attacked 140, the attack executed (time units spent, no walk) 139
+  decisions at TU<=5: S 1 of 1273, control 6 of 1766; max activations/unit-turn S 3, control 3
+  LIMITS OK
+
+== M10_s2: A vs d0p IDENTICAL
+d0p_D_M10_s2 927584f6b02e693a65070e46e2c325bb
+scpa_D_M10_s2 927584f6b02e693a65070e46e2c325bb IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 86
+  S: activations 918, decisions/activation {1: 314, 2: 582, 3: 17, 4: 2, 5: 3}, max n 2, activations/unit-turn {1: 335, 2: 290, 3: 1}, TU rise 0, decisions at TU<=5 6
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 665, decisions/activation {1: 254, 2: 383, 3: 22, 4: 3, 5: 2, 7: 1}, max n 2, activations/unit-turn {1: 255, 2: 205}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 169; the chosen unit's AIModule then attacked 96, the attack executed (time units spent, no walk) 96
+  decisions at TU<=5: S 6 of 1818, control 0 of 1279; max activations/unit-turn S 3, control 2
+  LIMITS OK
+
+== M11_s1: A vs d0p IDENTICAL
+d0p_D_M11_s1 8d4102f99594dda4b577ce7267f80608
+scpa_D_M11_s1 8d4102f99594dda4b577ce7267f80608 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 44
+  S: activations 662, decisions/activation {1: 310, 2: 352}, max n 2, activations/unit-turn {1: 76, 2: 278, 3: 10}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 557, decisions/activation {1: 299, 2: 258}, max n 2, activations/unit-turn {1: 95, 2: 207, 3: 16}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 7; the chosen unit's AIModule then attacked 5, the attack executed (time units spent, no walk) 5
+  decisions at TU<=5: S 0 of 1014, control 0 of 815; max activations/unit-turn S 3, control 3
+  LIMITS OK
+
+== M11_s2: A vs d0p IDENTICAL
+d0p_D_M11_s2 3c718b0c543b746f9c351c3da3f3f1b5
+scpa_D_M11_s2 3c718b0c543b746f9c351c3da3f3f1b5 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 42
+  S: activations 1105, decisions/activation {1: 102, 2: 1001, 3: 2}, max n 2, activations/unit-turn {1: 117, 2: 461, 3: 22}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 1031, decisions/activation {1: 99, 2: 931, 3: 1}, max n 2, activations/unit-turn {1: 106, 2: 431, 3: 17, 4: 3}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 6; the chosen unit's AIModule then attacked 6, the attack executed (time units spent, no walk) 6
+  decisions at TU<=5: S 0 of 2111, control 0 of 1964; max activations/unit-turn S 3, control 4
+  LIMITS OK
+
+== M12_s1: A vs d0p IDENTICAL
+d0p_D_M12_s1 f92857d3ba1218a5e1b21e9013401183
+scpa_D_M12_s1 f92857d3ba1218a5e1b21e9013401183 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 7
+  S: activations 6, decisions/activation {1: 1, 2: 4, 3: 1}, max n 2, activations/unit-turn {1: 2, 2: 2}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 6, decisions/activation {1: 1, 2: 4, 3: 1}, max n 2, activations/unit-turn {1: 2, 2: 2}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 0; the chosen unit's AIModule then attacked 0, the attack executed (time units spent, no walk) 0
+  decisions at TU<=5: S 0 of 12, control 0 of 12; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== M12_s2: A vs d0p IDENTICAL
+d0p_D_M12_s2 3ab16a4e77d8821d0dcc9fd7f4869cfc
+scpa_D_M12_s2 3ab16a4e77d8821d0dcc9fd7f4869cfc IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 8
+  S: activations 12, decisions/activation {1: 3, 2: 8, 4: 1}, max n 2, activations/unit-turn {1: 4, 2: 4}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 12, decisions/activation {1: 3, 2: 8, 4: 1}, max n 2, activations/unit-turn {1: 4, 2: 4}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 0; the chosen unit's AIModule then attacked 0, the attack executed (time units spent, no walk) 0
+  decisions at TU<=5: S 0 of 25, control 0 of 25; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== M1_s1: A vs d0p IDENTICAL
+d0p_D_M1_s1 f1e2bcb2ca2b506a9c22e4d266df6aa3
+scpa_D_M1_s1 f1e2bcb2ca2b506a9c22e4d266df6aa3 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 64
+  S: activations 556, decisions/activation {1: 33, 2: 513, 3: 9, 4: 1}, max n 2, activations/unit-turn {1: 38, 2: 253, 3: 4}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 519, decisions/activation {1: 45, 2: 464, 3: 10}, max n 2, activations/unit-turn {1: 27, 2: 246}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 51; the chosen unit's AIModule then attacked 33, the attack executed (time units spent, no walk) 33
+  decisions at TU<=5: S 0 of 1107, control 0 of 1044; max activations/unit-turn S 3, control 2
+  LIMITS OK
+
+== M1_s2: A vs d0p IDENTICAL
+d0p_D_M1_s2 0ca1186b54da1dca399f9d801bec53a4
+scpa_D_M1_s2 0ca1186b54da1dca399f9d801bec53a4 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 64
+  S: activations 382, decisions/activation {1: 29, 2: 348, 3: 4, 5: 1}, max n 2, activations/unit-turn {1: 14, 2: 184}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 671, decisions/activation {1: 43, 2: 620, 3: 8}, max n 2, activations/unit-turn {1: 25, 2: 323}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 51; the chosen unit's AIModule then attacked 38, the attack executed (time units spent, no walk) 38
+  decisions at TU<=5: S 0 of 761, control 0 of 1328; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== M2_s1: A vs d0p IDENTICAL
+d0p_D_M2_s1 729a94143a147b02e13914b1a600e6b2
+scpa_D_M2_s1 729a94143a147b02e13914b1a600e6b2 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 139
+  S: activations 1010, decisions/activation {1: 155, 2: 833, 3: 14, 4: 8}, max n 2, activations/unit-turn {1: 72, 2: 415, 3: 36}, TU rise 0, decisions at TU<=5 1
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 1037, decisions/activation {1: 174, 2: 841, 3: 18, 4: 2, 5: 2}, max n 2, activations/unit-turn {1: 83, 2: 392, 3: 13, 4: 11, 5: 3, 6: 12}, TU rise 0, decisions at TU<=5 2
+  picks out of the engine's order: 165; the chosen unit's AIModule then attacked 95, the attack executed (time units spent, no walk) 95
+  decisions at TU<=5: S 1 of 1963, control 2 of 1992; max activations/unit-turn S 3, control 6
+  LIMITS OK
+
+== M2_s2: A vs d0p IDENTICAL
+d0p_D_M2_s2 3ec328cb50e1e05b94464d55c058f7fe
+scpa_D_M2_s2 3ec328cb50e1e05b94464d55c058f7fe IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 199
+  S: activations 1832, decisions/activation {1: 156, 2: 1653, 3: 16, 4: 6, 5: 1}, max n 2, activations/unit-turn {1: 41, 2: 823, 3: 9, 4: 22, 5: 6}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 1211, decisions/activation {1: 152, 2: 1039, 3: 13, 4: 5, 5: 2}, max n 2, activations/unit-turn {1: 76, 2: 454, 3: 73, 4: 2}, TU rise 0, decisions at TU<=5 1
+  picks out of the engine's order: 135; the chosen unit's AIModule then attacked 96, the attack executed (time units spent, no walk) 96
+  decisions at TU<=5: S 0 of 3621, control 1 of 2389; max activations/unit-turn S 5, control 4
+  LIMITS OK
+
+== M3_s1: A vs d0p IDENTICAL
+d0p_D_M3_s1 c1dab3f01c549b30fc7e6eb7cd9f91e0
+scpa_D_M3_s1 c1dab3f01c549b30fc7e6eb7cd9f91e0 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 97
+  S: activations 474, decisions/activation {0: 1, 1: 187, 2: 270, 3: 10, 4: 2, 5: 4}, max n 2, activations/unit-turn {1: 210, 2: 123, 3: 6}, TU rise 0, decisions at TU<=5 6
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 460, decisions/activation {1: 171, 2: 264, 3: 17, 4: 6, 5: 2}, max n 2, activations/unit-turn {1: 198, 2: 120, 3: 6, 4: 1}, TU rise 0, decisions at TU<=5 6
+  picks out of the engine's order: 54; the chosen unit's AIModule then attacked 40, the attack executed (time units spent, no walk) 37
+  decisions at TU<=5: S 6 of 928, control 6 of 902; max activations/unit-turn S 3, control 4
+  LIMITS OK
+
+== M3_s2: A vs d0p IDENTICAL
+d0p_D_M3_s2 bb11022bec57c6d198e3779a990fe12c
+scpa_D_M3_s2 bb11022bec57c6d198e3779a990fe12c IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 121
+  S: activations 503, decisions/activation {1: 148, 2: 335, 3: 14, 4: 4, 5: 1, 6: 1}, max n 2, activations/unit-turn {1: 167, 2: 139, 3: 8, 4: 1, 5: 6}, TU rise 0, decisions at TU<=5 2
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 382, decisions/activation {1: 146, 2: 221, 3: 10, 4: 4, 5: 1}, max n 2, activations/unit-turn {1: 149, 2: 94, 3: 15}, TU rise 0, decisions at TU<=5 2
+  picks out of the engine's order: 54; the chosen unit's AIModule then attacked 39, the attack executed (time units spent, no walk) 39
+  decisions at TU<=5: S 2 of 984, control 2 of 755; max activations/unit-turn S 5, control 3
+  LIMITS OK
+
+== M4_s1: A vs d0p IDENTICAL
+d0p_D_M4_s1 a9570b485311377fa94509c58c300a87
+scpa_D_M4_s1 a9570b485311377fa94509c58c300a87 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 81
+  S: activations 451, decisions/activation {1: 150, 2: 295, 3: 5, 6: 1}, max n 2, activations/unit-turn {1: 164, 2: 130, 3: 9}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 214, decisions/activation {1: 79, 2: 129, 3: 4, 4: 2}, max n 2, activations/unit-turn {1: 66, 2: 74}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 41; the chosen unit's AIModule then attacked 22, the attack executed (time units spent, no walk) 22
+  decisions at TU<=5: S 0 of 828, control 0 of 393; max activations/unit-turn S 3, control 2
+  LIMITS OK
+
+== M4_s2: A vs d0p IDENTICAL
+d0p_D_M4_s2 d95fec4b7d86e46a34299916a0565b33
+scpa_D_M4_s2 d95fec4b7d86e46a34299916a0565b33 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 97
+  S: activations 190, decisions/activation {1: 36, 2: 153, 3: 1}, max n 2, activations/unit-turn {1: 26, 2: 82}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 261, decisions/activation {1: 62, 2: 195, 3: 3, 5: 1}, max n 2, activations/unit-turn {1: 59, 2: 101}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 30; the chosen unit's AIModule then attacked 18, the attack executed (time units spent, no walk) 18
+  decisions at TU<=5: S 0 of 358, control 0 of 486; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== M5_s1: A vs d0p IDENTICAL
+d0p_D_M5_s1 de559e317f07b4c9883e4296beec2941
+scpa_D_M5_s1 de559e317f07b4c9883e4296beec2941 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 136
+  S: activations 355, decisions/activation {0: 1, 1: 63, 2: 273, 3: 12, 4: 3, 5: 2, 7: 1}, max n 2, activations/unit-turn {1: 36, 2: 70, 3: 49, 4: 8}, TU rise 0, decisions at TU<=5 1
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 543, decisions/activation {0: 1, 1: 113, 2: 414, 3: 10, 4: 2, 5: 3}, max n 2, activations/unit-turn {1: 50, 2: 132, 3: 72, 4: 2, 5: 1}, TU rise 0, decisions at TU<=5 4
+  picks out of the engine's order: 72; the chosen unit's AIModule then attacked 42, the attack executed (time units spent, no walk) 40
+  decisions at TU<=5: S 1 of 700, control 4 of 1053; max activations/unit-turn S 4, control 5
+  LIMITS OK
+
+== M5_s2: A vs d0p IDENTICAL
+d0p_D_M5_s2 0d626fd6fce5f71dea1f54f7e5d0a864
+scpa_D_M5_s2 0d626fd6fce5f71dea1f54f7e5d0a864 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 121
+  S: activations 467, decisions/activation {1: 119, 2: 334, 3: 12, 4: 2}, max n 2, activations/unit-turn {1: 47, 2: 150, 3: 28, 4: 9}, TU rise 0, decisions at TU<=5 2
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 437, decisions/activation {1: 107, 2: 324, 3: 2, 4: 2, 6: 2}, max n 2, activations/unit-turn {1: 31, 2: 100, 3: 53, 4: 8, 5: 3}, TU rise 0, decisions at TU<=5 2
+  picks out of the engine's order: 63; the chosen unit's AIModule then attacked 35, the attack executed (time units spent, no walk) 35
+  decisions at TU<=5: S 2 of 879, control 2 of 818; max activations/unit-turn S 4, control 5
+  LIMITS OK
+
+== M6_s1: A vs d0p IDENTICAL
+d0p_D_M6_s1 a7ffa223cfd7127179e4448108cf00c0
+scpa_D_M6_s1 a7ffa223cfd7127179e4448108cf00c0 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 1; max picks in a turn 101
+  S: activations 446, decisions/activation {1: 55, 2: 382, 3: 7, 4: 2}, max n 2, activations/unit-turn {1: 31, 2: 177, 3: 15, 4: 4}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 570, decisions/activation {1: 119, 2: 448, 3: 3}, max n 2, activations/unit-turn {1: 24, 2: 266, 3: 2, 4: 2}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 68; the chosen unit's AIModule then attacked 54, the attack executed (time units spent, no walk) 54
+  decisions at TU<=5: S 0 of 870, control 0 of 1046; max activations/unit-turn S 4, control 4
+  LIMITS VIOLATED
+
+== M6_s2: A vs d0p IDENTICAL
+d0p_D_M6_s2 0ca0cd1e4fcb351a802a897f4bd932cd
+scpa_D_M6_s2 0ca0cd1e4fcb351a802a897f4bd932cd IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 67
+  S: activations 515, decisions/activation {1: 62, 2: 440, 3: 7, 4: 5, 5: 1}, max n 2, activations/unit-turn {1: 21, 2: 247}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 615, decisions/activation {1: 61, 2: 541, 3: 10, 4: 3}, max n 2, activations/unit-turn {1: 19, 2: 262, 3: 24}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 52; the chosen unit's AIModule then attacked 32, the attack executed (time units spent, no walk) 32
+  decisions at TU<=5: S 0 of 1020, control 0 of 1215; max activations/unit-turn S 2, control 3
+  LIMITS OK
+
+== M7_s1: A vs d0p IDENTICAL
+d0p_D_M7_s1 6841ce7bdb59d2162d99c95cff3749d3
+scpa_D_M7_s1 6841ce7bdb59d2162d99c95cff3749d3 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 52
+  S: activations 123, decisions/activation {1: 30, 2: 90, 3: 3}, max n 2, activations/unit-turn {1: 19, 2: 52}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 85, decisions/activation {1: 22, 2: 58, 3: 4, 4: 1}, max n 2, activations/unit-turn {1: 15, 2: 35}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 16; the chosen unit's AIModule then attacked 7, the attack executed (time units spent, no walk) 7
+  decisions at TU<=5: S 0 of 228, control 0 of 165; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== M7_s2: A vs d0p IDENTICAL
+d0p_D_M7_s2 add15ed48d945f018b3e390d06275793
+scpa_D_M7_s2 add15ed48d945f018b3e390d06275793 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 47
+  S: activations 129, decisions/activation {1: 29, 2: 97, 3: 2, 4: 1}, max n 2, activations/unit-turn {1: 23, 2: 50, 3: 2}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 209, decisions/activation {1: 39, 2: 166, 3: 4}, max n 2, activations/unit-turn {1: 48, 2: 76, 3: 3}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 16; the chosen unit's AIModule then attacked 10, the attack executed (time units spent, no walk) 10
+  decisions at TU<=5: S 0 of 252, control 0 of 398; max activations/unit-turn S 3, control 3
+  LIMITS OK
+
+== M8_s1: A vs d0p IDENTICAL
+d0p_D_M8_s1 c0332b2e0e3ea48047757d82f67f4a00
+scpa_D_M8_s1 c0332b2e0e3ea48047757d82f67f4a00 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 72
+  S: activations 161, decisions/activation {1: 44, 2: 113, 3: 4}, max n 2, activations/unit-turn {1: 22, 2: 50, 3: 8, 5: 3}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 175, decisions/activation {1: 30, 2: 139, 3: 6}, max n 2, activations/unit-turn {1: 21, 2: 42, 3: 18, 4: 4}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 13; the chosen unit's AIModule then attacked 4, the attack executed (time units spent, no walk) 4
+  decisions at TU<=5: S 0 of 291, control 0 of 338; max activations/unit-turn S 5, control 4
+  LIMITS OK
+
+== M8_s2: A vs d0p IDENTICAL
+d0p_D_M8_s2 b48ef9c04e635d68a3bb18631660c617
+scpa_D_M8_s2 b48ef9c04e635d68a3bb18631660c617 IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 88
+  S: activations 111, decisions/activation {0: 1, 1: 32, 2: 73, 3: 2, 4: 2, 9: 1}, max n 2, activations/unit-turn {1: 21, 2: 15, 3: 7, 4: 1, 5: 1, 6: 5}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 73, decisions/activation {1: 25, 2: 45, 3: 2, 4: 1}, max n 2, activations/unit-turn {1: 19, 2: 20, 3: 2, 4: 2}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 20; the chosen unit's AIModule then attacked 8, the attack executed (time units spent, no walk) 7
+  decisions at TU<=5: S 0 of 211, control 0 of 132; max activations/unit-turn S 6, control 4
+  LIMITS OK
+
+== M9_s1: A vs d0p IDENTICAL
+d0p_D_M9_s1 812a207e6e39e00f5c120a46d449defd
+scpa_D_M9_s1 812a207e6e39e00f5c120a46d449defd IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 119
+  S: activations 118, decisions/activation {1: 21, 2: 96, 3: 1}, max n 2, activations/unit-turn {1: 14, 2: 52}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 231, decisions/activation {1: 48, 2: 180, 3: 2, 8: 1}, max n 2, activations/unit-turn {1: 33, 2: 99}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 1; the chosen unit's AIModule then attacked 1, the attack executed (time units spent, no walk) 1
+  decisions at TU<=5: S 0 of 229, control 0 of 435; max activations/unit-turn S 2, control 2
+  LIMITS OK
+
+== M9_s2: A vs d0p IDENTICAL
+d0p_D_M9_s2 fb11eb2b8f5d48b0b0b93dba0634424f
+scpa_D_M9_s2 fb11eb2b8f5d48b0b0b93dba0634424f IDENTICAL
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 124
+  S: activations 238, decisions/activation {1: 52, 2: 183, 3: 1, 5: 2}, max n 2, activations/unit-turn {1: 46, 2: 96}, TU rise 0, decisions at TU<=5 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 255, decisions/activation {1: 50, 2: 202, 3: 1, 4: 2}, max n 2, activations/unit-turn {1: 29, 2: 113}, TU rise 0, decisions at TU<=5 0
+  picks out of the engine's order: 8; the chosen unit's AIModule then attacked 7, the attack executed (time units spent, no walk) 7
+  decisions at TU<=5: S 0 of 471, control 0 of 515; max activations/unit-turn S 2, control 2
+  LIMITS OK
+

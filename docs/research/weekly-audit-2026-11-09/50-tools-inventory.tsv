@@ -1,0 +1,941 @@
+﻿файл	строк	последний коммит	ссылок из кода	ссылок из docs	класс	новый после 27.10
+tools/ai_arena.py	556	20d7f73a9 2026-10-22	5	13	живой	
+tools/ai_blind.py	185	613400e99 2026-09-27	0	4	живой	
+tools/ai_cell_cost.py	99	3bd419b31 2026-10-22	0	3	живой	
+tools/ai_cell_report.py	128	46ffad525 2026-10-22	0	2	живой	
+tools/ai_probe.py	444	3de6698ff 2026-10-28	22	17	живой	
+tools/ai_sweep.py	109	ed98d7822 2026-10-02	0	3	живой	
+tools/aibench/decide_diff.py	69	c38276be8 2026-09-26	0	6	живой	
+tools/aibench/parse_aibench.py	91	1bda1f701 2026-09-20	1	1	живой	
+tools/aibench/run_bench.py	229	c38276be8 2026-09-26	0	4	живой	
+tools/aibench/run_series.py	513	c38276be8 2026-09-26	2	6	живой	
+tools/aibench/setup_brutal_bench.ps1	56	c38276be8 2026-09-26	0	2	живой	
+tools/aibench/style_report.py	136	c8fdf4508 2026-10-05	0	3	живой	
+tools/ao_census.py	270	88cee7f39 2026-10-30	1	2	живой	да
+tools/art_status.py	162	c8fdf4508 2026-10-05	1	6	живой	
+tools/art_tidy.py	320	1ab9314e6 2026-10-07	0	2	живой	
+tools/attic/ai_speed/_common.py	40	1c4faec1b 2026-10-05	24	1	живой	
+tools/attic/ai_speed/ambush_fail.py	87	1c4faec1b 2026-10-05	0	3	живой	
+tools/attic/ai_speed/ambush_prof.py	194	1c4faec1b 2026-10-05	1	3	живой	
+tools/attic/ai_speed/attach_all.py	58	1c4faec1b 2026-10-05	0	3	живой	
+tools/attic/ai_speed/blocked_kr.py	193	1c4faec1b 2026-10-05	2	4	живой	
+tools/attic/ai_speed/blocked_pair.py	247	1c4faec1b 2026-10-05	2	5	живой	
+tools/attic/ai_speed/blocked_repeat.py	186	1c4faec1b 2026-10-05	1	2	живой	
+tools/attic/ai_speed/blocked_step.py	130	1c4faec1b 2026-10-05	0	2	живой	
+tools/attic/ai_speed/cmp_runs.py	78	1c4faec1b 2026-10-05	1	5	живой	
+tools/attic/ai_speed/diag_nolof_census.py	297	1c4faec1b 2026-10-05	0	2	живой	
+tools/attic/ai_speed/failed_goal.py	212	1c4faec1b 2026-10-05	1	2	живой	
+tools/attic/ai_speed/fp_interaction.py	154	1c4faec1b 2026-10-05	0	1	живой	
+tools/attic/ai_speed/hang_count.py	46	1c4faec1b 2026-10-05	0	4	живой	
+tools/attic/ai_speed/hang_stack.py	76	1c4faec1b 2026-10-05	1	3	живой	
+tools/attic/ai_speed/known_occupant_census.py	197	1c4faec1b 2026-10-05	0	2	живой	
+tools/attic/ai_speed/mutual_block.py	42	1c4faec1b 2026-10-05	0	2	живой	
+tools/attic/ai_speed/mutual_diag_audit.py	316	1c4faec1b 2026-10-05	1	3	живой	
+tools/attic/ai_speed/mutual_diag_summary.py	86	1c4faec1b 2026-10-05	0	1	живой	
+tools/attic/ai_speed/mutual_episodes.py	161	1c4faec1b 2026-10-05	1	1	живой	
+tools/attic/ai_speed/par_test.py	63	1c4faec1b 2026-10-05	0	2	живой	
+tools/attic/ai_speed/path_prof.py	150	1c4faec1b 2026-10-05	2	4	живой	
+tools/attic/ai_speed/prof_battle.py	254	1c4faec1b 2026-10-05	2	4	живой	
+tools/attic/ai_speed/prof_report.py	130	1c4faec1b 2026-10-05	1	5	живой	
+tools/attic/ai_speed/run_one.py	170	1c4faec1b 2026-10-05	4	3	живой	
+tools/attic/ai_speed/series_eq.py	116	1c4faec1b 2026-10-05	3	8	живой	
+tools/attic/ai_speed/stagnation_classes.py	544	1c4faec1b 2026-10-05	0	4	живой	
+tools/attic/ai_speed/stagnation_profile.py	402	1c4faec1b 2026-10-05	1	4	живой	
+tools/attic/ai_speed/stale_late_est.py	57	1c4faec1b 2026-10-05	0	2	живой	
+tools/attic/ai_speed/stale_shadow_report.py	113	1c4faec1b 2026-10-05	0	2	живой	
+tools/attic/ai_speed/stale_trigger_est.py	114	1c4faec1b 2026-10-05	0	3	живой	
+tools/attic/ai_speed/unknown_occupant_census.py	312	1c4faec1b 2026-10-05	1	2	живой	
+tools/award_pages_en.py	179	c8fdf4508 2026-10-05	0	3	живой	
+tools/backdrop_colors.py	91	5a70811a0 2026-10-23	0	0	сирота	
+tools/build/BuildGUI.ps1	229	2884d9ffe 2026-09-26	1	1	живой	
+tools/build/build.ps1	1163	55d3ecb98 2026-10-29	16	24	живой	
+tools/builds_accept.py	286	b34b0f0ed 2026-11-02	0	5	живой	
+tools/changelog_check.py	49	5179cc92c 2026-11-07	1	1	живой	да
+tools/collapse_attach.py	367	b76d9aae3 2026-10-15	2	2	живой	
+tools/collapse_attach_v2.py	160	b76d9aae3 2026-10-15	24	1	поколение	
+tools/collapse_battles.py	434	f128ed825 2026-10-21	7	2	живой	
+tools/collapse_blob.py	222	a066b39da 2026-10-27	7	0	живой	
+tools/collapse_census.py	1079	b76d9aae3 2026-10-15	45	6	живой	
+tools/collapse_ctype.py	268	b76d9aae3 2026-10-15	24	1	живой	
+tools/collapse_ctype_marks.py	347	b76d9aae3 2026-10-15	1	1	живой	
+tools/collapse_debris_biomes.py	79	faf339c47 2026-10-21	0	1	живой	
+tools/collapse_debris_census.py	181	a066b39da 2026-10-27	1	2	живой	
+tools/collapse_debris_families.py	28	4e881ec85 2026-10-22	1	1	живой	
+tools/collapse_debris_set.py	399	463448a38 2026-10-22	1	2	живой	
+tools/collapse_debris_sheet.py	168	faf339c47 2026-10-21	1	1	живой	
+tools/collapse_debris_short.py	116	4e881ec85 2026-10-22	1	2	живой	
+tools/collapse_fallen_hd.py	114	0e9c9b859 2026-10-23	0	1	живой	
+tools/collapse_holdout.py	190	b76d9aae3 2026-10-15	5	1	живой	
+tools/collapse_holdout2.py	31	b76d9aae3 2026-10-15	1	0	живой	
+tools/collapse_holdout3.py	31	0f667806b 2026-10-15	0	0	сирота	
+tools/collapse_partial10_scen.py	48	f128ed825 2026-10-21	1	0	одноразовый	
+tools/collapse_partial11_scen.py	49	f128ed825 2026-10-21	1	0	одноразовый	
+tools/collapse_partial12_scen.py	49	f128ed825 2026-10-21	1	0	одноразовый	
+tools/collapse_partial13_scen.py	49	1305e3709 2026-10-21	1	0	одноразовый	
+tools/collapse_partial14_scen.py	67	25ba380d3 2026-10-21	1	0	одноразовый	
+tools/collapse_partial15_scen.py	49	7d60373c2 2026-10-21	1	0	одноразовый	
+tools/collapse_partial16_scen.py	67	7d60373c2 2026-10-21	1	0	одноразовый	
+tools/collapse_partial17_scen.py	49	2ed9ef951 2026-10-23	1	0	одноразовый	
+tools/collapse_partial18_scen.py	67	2ed9ef951 2026-10-23	1	0	одноразовый	
+tools/collapse_partial19_scen.py	49	ad409f9d1 2026-10-26	1	0	одноразовый	
+tools/collapse_partial20_scen.py	67	ad409f9d1 2026-10-26	1	0	одноразовый	
+tools/collapse_partial21_scen.py	67	ad409f9d1 2026-10-26	1	0	одноразовый	
+tools/collapse_partial22_scen.py	49	c1771f8f6 2026-10-27	1	0	одноразовый	да
+tools/collapse_partial23_scen.py	67	c1771f8f6 2026-10-27	1	0	одноразовый	да
+tools/collapse_partial7_scen.py	49	85e54b8b2 2026-10-15	1	1	одноразовый	
+tools/collapse_partial8_scen.py	66	8f326ff73 2026-10-20	1	0	одноразовый	
+tools/collapse_partial9_scen.py	117	33bfe6e15 2026-10-20	9	1	одноразовый	
+tools/collapse_partial_scen.py	294	ac8a66f2c 2026-10-15	10	2	одноразовый	
+tools/collapse_pilot.py	441	b76d9aae3 2026-10-15	10	2	живой	
+tools/collapse_pilot10_scen.py	434	f128ed825 2026-10-21	5	0	одноразовый	
+tools/collapse_pilot10_split.py	29	f128ed825 2026-10-21	1	0	одноразовый	
+tools/collapse_pilot11_scen.py	169	f128ed825 2026-10-21	5	0	одноразовый	
+tools/collapse_pilot11_split.py	30	f128ed825 2026-10-21	0	0	одноразовый	
+tools/collapse_pilot12_scen.py	126	f128ed825 2026-10-21	5	0	одноразовый	
+tools/collapse_pilot12_split.py	30	f128ed825 2026-10-21	0	0	одноразовый	
+tools/collapse_pilot13_scen.py	95	1305e3709 2026-10-21	5	1	одноразовый	
+tools/collapse_pilot13_split.py	30	1305e3709 2026-10-21	0	0	одноразовый	
+tools/collapse_pilot14_scen.py	123	25ba380d3 2026-10-21	5	0	одноразовый	
+tools/collapse_pilot14_split.py	30	25ba380d3 2026-10-21	0	0	одноразовый	
+tools/collapse_pilot15_scen.py	286	7d60373c2 2026-10-21	5	0	одноразовый	
+tools/collapse_pilot15_split.py	30	7d60373c2 2026-10-21	0	0	одноразовый	
+tools/collapse_pilot16_scen.py	491	7d60373c2 2026-10-21	5	0	одноразовый	
+tools/collapse_pilot16_split.py	30	7d60373c2 2026-10-21	0	0	одноразовый	
+tools/collapse_pilot17_scen.py	186	2ed9ef951 2026-10-23	5	0	одноразовый	
+tools/collapse_pilot17_split.py	30	2ed9ef951 2026-10-23	0	0	одноразовый	
+tools/collapse_pilot18_scen.py	279	2ed9ef951 2026-10-23	5	0	одноразовый	
+tools/collapse_pilot18_split.py	30	2ed9ef951 2026-10-23	0	0	одноразовый	
+tools/collapse_pilot19_scen.py	139	ad409f9d1 2026-10-26	5	0	одноразовый	
+tools/collapse_pilot19_split.py	30	ad409f9d1 2026-10-26	0	0	одноразовый	
+tools/collapse_pilot20_scen.py	193	ad409f9d1 2026-10-26	5	0	одноразовый	
+tools/collapse_pilot20_split.py	30	ad409f9d1 2026-10-26	0	0	одноразовый	
+tools/collapse_pilot21_scen.py	102	ad409f9d1 2026-10-26	5	0	одноразовый	
+tools/collapse_pilot21_split.py	30	ad409f9d1 2026-10-26	0	0	одноразовый	
+tools/collapse_pilot22_scen.py	103	c1771f8f6 2026-10-27	5	0	одноразовый	да
+tools/collapse_pilot22_split.py	30	c1771f8f6 2026-10-27	0	0	одноразовый	да
+tools/collapse_pilot23_scen.py	112	c1771f8f6 2026-10-27	5	0	одноразовый	да
+tools/collapse_pilot23_split.py	30	c1771f8f6 2026-10-27	0	0	одноразовый	да
+tools/collapse_pilot2_run.py	668	d013e89ba 2026-10-09	1	2	живой	
+tools/collapse_pilot3_scen.py	64	6e0be49d0 2026-10-14	4	2	одноразовый	
+tools/collapse_pilot4_scen.py	107	cad8e599d 2026-10-14	4	1	одноразовый	
+tools/collapse_pilot5_scen.py	100	cad8e599d 2026-10-14	4	1	одноразовый	
+tools/collapse_pilot6_scen.py	97	cad8e599d 2026-10-14	4	1	одноразовый	
+tools/collapse_pilot7_scen.py	124	85e54b8b2 2026-10-15	5	1	одноразовый	
+tools/collapse_pilot7_split.py	91	85e54b8b2 2026-10-15	3	1	одноразовый	
+tools/collapse_pilot8_scen.py	143	8f326ff73 2026-10-20	11	0	одноразовый	
+tools/collapse_pilot8_split.py	63	8f326ff73 2026-10-20	1	1	одноразовый	
+tools/collapse_pilot9_scen.py	131	33bfe6e15 2026-10-20	19	1	одноразовый	
+tools/collapse_pilot9_split.py	68	33bfe6e15 2026-10-20	14	1	одноразовый	
+tools/collapse_pilot_export.py	1010	c1771f8f6 2026-10-27	7	6	живой	
+tools/collapse_pilot_run.py	624	c1771f8f6 2026-10-27	3	7	живой	
+tools/collapse_pilot_scen.py	204	b76d9aae3 2026-10-15	26	2	одноразовый	
+tools/collapse_review5.py	384	b76d9aae3 2026-10-15	4	1	живой	
+tools/collapse_review6.py	591	b76d9aae3 2026-10-15	1	2	живой	
+tools/collapse_span_probe.py	255	0f667806b 2026-10-15	5	2	живой	
+tools/collapse_spans.py	140	0f667806b 2026-10-15	1	0	живой	
+tools/collapse_summary.py	267	b76d9aae3 2026-10-15	9	2	живой	
+tools/collapse_v2.py	897	b76d9aae3 2026-10-15	47	4	поколение	
+tools/collapse_v3.py	796	b76d9aae3 2026-10-15	20	2	поколение	
+tools/collapse_v4.py	1025	b76d9aae3 2026-10-15	8	2	поколение	
+tools/collapse_v5.py	745	b76d9aae3 2026-10-15	11	2	поколение	
+tools/collapse_v6.py	812	b76d9aae3 2026-10-15	10	3	поколение	
+tools/collapse_v6b.py	264	b76d9aae3 2026-10-15	5	2	поколение	
+tools/collapse_v7.py	607	b76d9aae3 2026-10-15	6	4	поколение	
+tools/collapse_v7b.py	307	b76d9aae3 2026-10-15	5	2	поколение	
+tools/collapse_v7c.py	427	b76d9aae3 2026-10-15	5	1	поколение	
+tools/collapse_v7d.py	458	fd455b553 2026-10-14	14	1	поколение	
+tools/collapse_v8.py	239	1a5248355 2026-10-21	13	2	поколение	
+tools/compat/hd_core_switch.py	227	fce687184 2026-10-03	2	1	живой	
+tools/compat/hd_layout.py	169	fce687184 2026-10-03	2	2	живой	
+tools/compat/hd_split.py	197	87d92b5c7 2026-10-02	0	3	живой	
+tools/compat/mod_probe.py	177	cbe33a1b5 2026-10-27	1	1	живой	
+tools/compat/xcf_compare.py	132	87d92b5c7 2026-10-02	0	3	живой	
+tools/compat/xcf_probe.py	121	40666ffb5 2026-11-04	3	3	живой	
+tools/compat/xcf_ui.py	71	87d92b5c7 2026-10-02	0	1	живой	
+tools/describe_modules.py	184	c23d1e3fe 2026-09-19	4	5	живой	
+tools/editq.py	1028	d67633205 2026-10-28	17	24	живой	
+tools/fix_bom.ps1	154	54cd5b66b 2026-10-05	0	5	живой	
+tools/flash_light_census.py	81	61cf19368 2026-10-30	1	1	живой	да
+tools/game_hidden.py	75	96bad1f7a 2026-10-27	8	46	живой	
+tools/gen_gpu.py	154	f0808d649 2026-09-26	1	5	живой	
+tools/gfx_unused.py	336	9fbe21e0c 2026-09-27	0	2	живой	
+tools/git_hunks.py	57	c8fdf4508 2026-10-05	2	2	живой	
+tools/gl_probe.py	54	4ab890815 2026-10-27	0	1	живой	да
+tools/gpt_check.py	230	f24c07eee 2026-10-15	1	6	живой	
+tools/gpuq.py	1010	f73737dfb 2026-10-27	117	33	живой	
+tools/hd_demo_mod/make_demo_frames.py	142	c8fdf4508 2026-10-05	1	3	живой	
+tools/hd_sheet.py	129	910b71815 2026-09-23	0	6	живой	
+tools/hd_tabs_shots.py	35	5a70811a0 2026-10-23	0	0	сирота	
+tools/hd_test_mod/make_demo_frames.py	142	c8fdf4508 2026-10-05	1	3	живой	
+tools/hdart/acceptance_batch.py	124	773d43a43 2026-10-15	2	3	живой	
+tools/hdart/acceptance_plan.py	563	3910ec417 2026-10-07	8	4	живой	
+tools/hdart/acceptance_report.py	358	773d43a43 2026-10-15	1	3	живой	
+tools/hdart/acceptance_run.py	366	3910ec417 2026-10-07	10	5	живой	
+tools/hdart/aligned_recolor_v1.py	181	3910ec417 2026-10-07	10	2	поколение	
+tools/hdart/aligned_recolor_v2.py	104	3910ec417 2026-10-07	6	3	поколение	
+tools/hdart/anim_flicker.py	695	450df88bc 2026-10-21	4	2	живой	
+tools/hdart/ar_boundary_validation.py	421	3910ec417 2026-10-07	6	3	живой	
+tools/hdart/arbiter.py	846	773d43a43 2026-10-15	7	4	живой	
+tools/hdart/arbiter_v2.py	477	773d43a43 2026-10-15	3	2	поколение	
+tools/hdart/assembly_discovery_v1.py	241	3910ec417 2026-10-07	11	3	поколение	
+tools/hdart/assembly_evidence_v2_prep.py	546	3910ec417 2026-10-07	3	3	живой	
+tools/hdart/assembly_group_v1.py	224	3910ec417 2026-10-07	7	3	поколение	
+tools/hdart/assembly_repeated_v1.py	201	3910ec417 2026-10-07	6	2	поколение	
+tools/hdart/asset_fidelity.py	261	3910ec417 2026-10-07	4	4	живой	
+tools/hdart/asset_rev.py	113	3910ec417 2026-10-07	17	4	живой	
+tools/hdart/attic/ab_sdxl.py	162	23f51c9d9 2026-09-26	1	7	живой	
+tools/hdart/attic/ab_sheet.py	132	23f51c9d9 2026-09-26	1	6	живой	
+tools/hdart/attic/check_floors.py	182	23f51c9d9 2026-09-26	0	3	живой	
+tools/hdart/attic/field_sweep.py	232	23f51c9d9 2026-09-26	2	3	живой	
+tools/hdart/attic/gen_tile.py	603	23f51c9d9 2026-09-26	4	6	живой	
+tools/hdart/attic/keep_batch.py	118	23f51c9d9 2026-09-26	3	3	живой	
+tools/hdart/attic/merge_best.py	152	9aba74e83 2026-09-26	1	6	живой	
+tools/hdart/attic/paint3.py	525	23f51c9d9 2026-09-26	5	7	живой	
+tools/hdart/attic/pick_old_grey.py	136	23f51c9d9 2026-09-26	0	4	живой	
+tools/hdart/attic/prompt_writer.py	639	9aba74e83 2026-09-26	3	5	живой	
+tools/hdart/attic/repack_all.py	74	23f51c9d9 2026-09-26	0	3	живой	
+tools/hdart/attic/run_batch.py	196	23f51c9d9 2026-09-26	2	4	живой	
+tools/hdart/attic/run_detached.cmd	17	23f51c9d9 2026-09-26	0	3	живой	
+tools/hdart/axis_a_clean_v5.py	141	3910ec417 2026-10-07	2	4	поколение	
+tools/hdart/b3b_build.py	154	40741a3fd 2026-11-05	0	0	сирота	да
+tools/hdart/base_census.py	80	aa827386a 2026-10-22	0	0	сирота	
+tools/hdart/base_fits_install.py	100	835163e9e 2026-10-23	0	1	живой	
+tools/hdart/base_flow_bake.py	429	337c9711e 2026-10-26	4	1	живой	
+tools/hdart/base_flow_install.py	110	337c9711e 2026-10-26	0	1	живой	
+tools/hdart/base_hangar_edit.py	94	0463073c2 2026-10-22	1	2	живой	
+tools/hdart/base_lights.py	120	aa827386a 2026-10-22	2	2	живой	
+tools/hdart/base_live_install.py	76	e79c61513 2026-10-27	1	0	живой	
+tools/hdart/base_pack.py	101	44d272a73 2026-09-27	4	3	живой	
+tools/hdart/base_pool_repair.py	95	0463073c2 2026-10-22	2	1	живой	
+tools/hdart/base_scene_pack.py	775	8458b2503 2026-10-28	6	3	живой	
+tools/hdart/base_scene_preview.py	945	aa827386a 2026-10-22	5	2	живой	
+tools/hdart/base_spin_layer.py	99	b3bc54ffb 2026-10-22	1	1	живой	
+tools/hdart/base_turret_split.py	432	c232bb3c8 2026-10-22	2	1	живой	
+tools/hdart/battle_view.py	358	773d43a43 2026-10-15	22	21	живой	
+tools/hdart/blood_spray_pack.py	54	ce91dd18a 2026-10-26	0	0	сирота	
+tools/hdart/build_dataset.py	620	c8fdf4508 2026-10-05	11	8	живой	
+tools/hdart/build_hd_pack.py	425	773d43a43 2026-10-15	62	11	живой	
+tools/hdart/build_pack.py	592	c8fdf4508 2026-10-05	20	11	живой	
+tools/hdart/cast_faces.py	60	aff369aee 2026-10-22	1	0	живой	
+tools/hdart/check_lora.py	91	c8fdf4508 2026-10-05	1	4	живой	
+tools/hdart/check_triton.py	94	33b147528 2026-09-23	2	2	живой	
+tools/hdart/cockpit_census.py	142	53c869c14 2026-10-20	0	0	сирота	
+tools/hdart/cockpit_pilot.py	173	53c869c14 2026-10-20	2	2	живой	
+tools/hdart/common.py	13	9aba74e83 2026-09-26	24	4	живой	
+tools/hdart/contour_check.py	100	92b144c4f 2026-10-14	6	1	живой	
+tools/hdart/cover_check.py	100	c76a4b706 2026-09-28	2	6	живой	
+tools/hdart/craft_launch_frames.py	196	27524bcd2 2026-10-22	2	2	живой	
+tools/hdart/craft_launch_pack.py	109	9feba52f7 2026-10-22	0	0	сирота	
+tools/hdart/craft_launch_swap.py	148	817bd9f9b 2026-10-22	2	1	живой	
+tools/hdart/craft_launch_video.py	146	f73737dfb 2026-10-27	1	1	живой	
+tools/hdart/cube_seam.py	151	68270977a 2026-10-20	0	1	живой	
+tools/hdart/cube_seam_scan.py	100	68270977a 2026-10-20	1	1	живой	
+tools/hdart/cut_gloves.py	60	127089d6d 2026-09-18	1	3	живой	
+tools/hdart/derive_recolor_acceptance_v2.py	776	3910ec417 2026-10-07	9	3	поколение	
+tools/hdart/derive_recolor_acceptance_v3.py	765	3910ec417 2026-10-07	7	4	поколение	
+tools/hdart/derive_recolor_acceptance_v31.py	539	3910ec417 2026-10-07	4	4	поколение	
+tools/hdart/derive_recolor_acceptance_v32.py	856	3910ec417 2026-10-07	3	3	поколение	
+tools/hdart/derive_recolor_base_acceptance_v1.py	850	3910ec417 2026-10-07	4	4	поколение	
+tools/hdart/derive_recolor_base_acceptance_v11.py	660	3910ec417 2026-10-07	2	3	поколение	
+tools/hdart/derive_recolor_base_v1.py	98	3910ec417 2026-10-07	5	3	поколение	
+tools/hdart/derive_recolor_safe_acceptance_v1.py	533	3910ec417 2026-10-07	3	3	поколение	
+tools/hdart/derive_recolor_v3.py	265	3910ec417 2026-10-07	9	4	поколение	
+tools/hdart/derive_recolor_v31.py	263	3910ec417 2026-10-07	7	4	поколение	
+tools/hdart/derive_recolor_v32.py	168	3910ec417 2026-10-07	2	3	поколение	
+tools/hdart/derive_recolor_v33_dev.py	539	3910ec417 2026-10-07	2	3	живой	
+tools/hdart/detail_class.py	317	3910ec417 2026-10-07	3	5	живой	
+tools/hdart/doll_armor_batch.py	354	f4b2b3019 2026-11-09	5	3	живой	да
+tools/hdart/doll_armor_fit.py	834	866a312df 2026-11-05	0	3	живой	да
+tools/hdart/doll_armor_over.py	201	dea981461 2026-11-05	2	2	живой	да
+tools/hdart/doll_armor_seal.py	130	361a56ce3 2026-11-05	0	1	живой	да
+tools/hdart/doll_armor_solo.py	162	616009980 2026-11-05	4	1	живой	да
+tools/hdart/doll_b2_render.py	318	5e382a5ed 2026-11-06	36	5	живой	
+tools/hdart/doll_bikini.py	168	21e7e93e4 2026-11-06	1	2	живой	да
+tools/hdart/doll_body_census.py	165	866a312df 2026-11-05	2	3	живой	да
+tools/hdart/doll_camo.py	99	15693b577 2026-11-07	1	1	живой	да
+tools/hdart/doll_ctl_pilot.py	278	6d5d38fca 2026-10-20	10	1	живой	
+tools/hdart/doll_dd/dd_cover.py	23	94acde455 2026-11-09	0	1	живой	да
+tools/hdart/doll_dd/dd_cut.py	32	94acde455 2026-11-09	0	0	сирота	да
+tools/hdart/doll_dd/dd_flux.py	69	94acde455 2026-11-09	0	1	живой	да
+tools/hdart/doll_dd/dd_grid.py	25	94acde455 2026-11-09	1	0	живой	да
+tools/hdart/doll_dd/dd_init.py	35	94acde455 2026-11-09	1	0	живой	да
+tools/hdart/doll_dd/dd_panel.py	28	94acde455 2026-11-09	0	0	сирота	да
+tools/hdart/doll_dd/dd_pasty.py	23	94acde455 2026-11-09	0	0	сирота	да
+tools/hdart/doll_dd/dd_tint.py	33	94acde455 2026-11-09	0	0	сирота	да
+tools/hdart/doll_dd/dd_view.py	34	94acde455 2026-11-09	0	0	сирота	да
+tools/hdart/doll_face_ctl.py	158	b28221026 2026-10-20	2	1	живой	
+tools/hdart/doll_face_paste.py	134	b28221026 2026-10-20	0	2	живой	
+tools/hdart/doll_face_pilot.py	248	b28221026 2026-10-20	3	1	живой	
+tools/hdart/doll_gnome_assemble.py	87	15693b577 2026-11-07	0	0	сирота	да
+tools/hdart/doll_gnome_bodies.py	97	15693b577 2026-11-07	2	0	живой	да
+tools/hdart/doll_gnome_heads.py	102	15693b577 2026-11-07	0	0	сирота	да
+tools/hdart/doll_gnome_pasties.py	88	15693b577 2026-11-07	2	1	живой	да
+tools/hdart/doll_gnome_series.py	97	15693b577 2026-11-07	1	0	живой	да
+tools/hdart/doll_hybrid_assemble.py	60	547b294e4 2026-11-07	0	1	живой	да
+tools/hdart/doll_hybrid_bodies.py	111	547b294e4 2026-11-07	2	1	живой	да
+tools/hdart/doll_hybrid_heads.py	166	547b294e4 2026-11-07	0	2	живой	да
+tools/hdart/doll_layers_rul.py	151	94acde455 2026-11-09	2	3	живой	да
+tools/hdart/doll_loknar_sheet.py	56	d4b3c040e 2026-11-05	0	1	живой	да
+tools/hdart/doll_mhuman_assemble.py	140	66f71fc5d 2026-11-06	0	1	живой	да
+tools/hdart/doll_mhuman_bodies.py	103	66f71fc5d 2026-11-06	3	0	живой	да
+tools/hdart/doll_mhuman_heads.py	122	66f71fc5d 2026-11-06	2	1	живой	да
+tools/hdart/doll_neko_assemble.py	104	f7c6efd6e 2026-11-07	0	2	живой	да
+tools/hdart/doll_neko_bodies.py	138	f7c6efd6e 2026-11-07	2	2	живой	да
+tools/hdart/doll_neko_classic.py	89	f7c6efd6e 2026-11-07	3	1	живой	да
+tools/hdart/doll_neko_heads.py	185	581adeb19 2026-11-08	2	1	живой	да
+tools/hdart/doll_neko_heads_531.py	32	581adeb19 2026-11-08	0	0	сирота	да
+tools/hdart/doll_ogre_assemble.py	92	3407c9342 2026-11-07	0	1	живой	да
+tools/hdart/doll_ogre_bodies.py	82	3407c9342 2026-11-07	2	1	живой	да
+tools/hdart/doll_ogre_heads.py	38	3407c9342 2026-11-07	0	2	живой	да
+tools/hdart/doll_paint_pilot.py	182	5941b743d 2026-10-20	5	1	живой	
+tools/hdart/doll_photo_pilot.py	407	0f32e7391 2026-10-20	23	1	живой	
+tools/hdart/doll_pipe_pilot.py	1058	5020ad366 2026-11-06	10	4	живой	да
+tools/hdart/doll_race_assemble.py	288	f7c6efd6e 2026-11-07	7	3	живой	да
+tools/hdart/doll_race_bodies.py	217	66f71fc5d 2026-11-06	8	2	живой	да
+tools/hdart/doll_race_heads.py	415	f4b2b3019 2026-11-09	7	2	живой	да
+tools/hdart/doll_race_install.py	91	94acde455 2026-11-09	2	3	живой	да
+tools/hdart/doll_race_loknar.py	613	48a65e061 2026-11-05	1	3	живой	да
+tools/hdart/doll_recolor_try.py	245	866a312df 2026-11-05	0	1	живой	да
+tools/hdart/doll_seam_check.py	68	d13c0c3ca 2026-11-06	0	2	живой	да
+tools/hdart/doll_ubergal_pasties.py	150	5e382a5ed 2026-11-06	4	1	живой	да
+tools/hdart/doll_wedge_fix.py	167	44ea51c85 2026-11-05	0	2	живой	да
+tools/hdart/dupe_frames.py	171	c8fdf4508 2026-10-05	1	3	живой	
+tools/hdart/dupe_plan.py	149	c8fdf4508 2026-10-05	6	8	живой	
+tools/hdart/dupe_sets.py	148	c8fdf4508 2026-10-05	1	3	живой	
+tools/hdart/egg_build.py	249	f906f5901 2026-11-05	0	0	сирота	да
+tools/hdart/extract_pck.py	157	c8fdf4508 2026-10-05	10	6	живой	
+tools/hdart/facility_sheet.py	254	c8fdf4508 2026-10-05	6	2	живой	
+tools/hdart/families_recolor_diff.py	234	3910ec417 2026-10-07	4	3	живой	
+tools/hdart/family_relation_v2.py	193	3910ec417 2026-10-07	12	3	поколение	
+tools/hdart/family_review.py	208	773d43a43 2026-10-15	0	3	живой	
+tools/hdart/fetch_fonts.py	494	c8fdf4508 2026-10-05	1	5	живой	
+tools/hdart/final_select.py	247	3910ec417 2026-10-07	2	1	живой	
+tools/hdart/flat_tile.py	86	2aa64ba04 2026-10-08	1	1	живой	
+tools/hdart/floor_batch.py	1148	2d2539a43 2026-10-15	5	2	живой	
+tools/hdart/floor_context.py	224	c76a4b706 2026-09-28	1	2	живой	
+tools/hdart/floor_edge.py	341	cffc6f671 2026-11-05	0	1	живой	да
+tools/hdart/floor_group.py	364	c76a4b706 2026-09-28	2	6	живой	
+tools/hdart/floor_scene.py	196	92b144c4f 2026-10-14	0	0	сирота	
+tools/hdart/floors_cut_build.py	244	04c7e3ad2 2026-10-30	1	0	живой	да
+tools/hdart/floors_cut_install.py	98	04c7e3ad2 2026-10-30	1	0	живой	да
+tools/hdart/forest_tree_fix.py	622	40741a3fd 2026-11-05	0	0	сирота	да
+tools/hdart/fx_census.py	111	c8fdf4508 2026-10-05	1	3	живой	
+tools/hdart/fx_map.py	129	fa2c45dfd 2026-10-23	1	3	живой	
+tools/hdart/gen_all.ps1	214	23f51c9d9 2026-09-26	3	10	живой	
+tools/hdart/gen_base.py	199	c8fdf4508 2026-10-05	6	2	живой	
+tools/hdart/gen_base_anim.py	870	c8fdf4508 2026-10-05	5	5	живой	
+tools/hdart/gen_base_bubbles.py	210	c8fdf4508 2026-10-05	1	4	живой	
+tools/hdart/gen_base_paint.py	363	8333ca740 2026-10-22	8	2	живой	
+tools/hdart/gen_combat_fx.py	1373	ff5ee58c5 2026-10-28	6	7	живой	
+tools/hdart/gen_craft_lights.py	397	ffb1effc4 2026-10-27	6	7	живой	
+tools/hdart/gen_cursor.py	355	33b147528 2026-09-23	2	6	живой	
+tools/hdart/gen_cursor_box.py	158	c8fdf4508 2026-10-05	0	3	живой	
+tools/hdart/gen_fire.py	273	33b147528 2026-09-23	18	7	живой	
+tools/hdart/gen_fx.py	1364	368beb022 2026-10-05	2	6	живой	
+tools/hdart/gen_hd.py	1907	3910ec417 2026-10-07	54	15	живой	
+tools/hdart/gen_icons.py	547	c8fdf4508 2026-10-05	0	3	живой	
+tools/hdart/gen_lora_batch.py	228	9aba74e83 2026-09-26	6	9	живой	
+tools/hdart/gen_lora_test.py	237	33b147528 2026-09-23	6	7	живой	
+tools/hdart/gen_path.py	466	9aba74e83 2026-09-26	1	5	живой	
+tools/hdart/gen_promo.py	411	3d3e1ee91 2026-10-23	7	6	живой	
+tools/hdart/gen_reticle.py	306	c8fdf4508 2026-10-05	0	5	живой	
+tools/hdart/gen_screens.py	448	8bac789b3 2026-10-31	4	2	живой	
+tools/hdart/gen_ufo_pedia.py	614	450f880b7 2026-10-21	2	3	живой	
+tools/hdart/glass_alpha.py	482	1a56907c3 2026-10-21	8	2	живой	
+tools/hdart/glass_probe_map.py	67	53c869c14 2026-10-20	1	2	живой	
+tools/hdart/green_tone.py	134	6f005e201 2026-10-20	0	1	живой	
+tools/hdart/ground_dump.py	75	c8fdf4508 2026-10-05	1	4	живой	
+tools/hdart/ground_field.py	202	88bb3077f 2026-10-07	1	1	живой	
+tools/hdart/ground_relief.py	297	c76a4b706 2026-09-28	2	5	живой	
+tools/hdart/ground_seam.py	596	d0905eec0 2026-10-08	14	3	живой	
+tools/hdart/hb515_install.py	66	e59cc51a3 2026-11-05	0	0	сирота	да
+tools/hdart/hb516_install.py	67	790bd1a03 2026-11-06	0	0	сирота	да
+tools/hdart/hb516_v4.py	59	790bd1a03 2026-11-06	1	0	поколение	да
+tools/hdart/hb517_build.py	411	e59cc51a3 2026-11-05	4	0	живой	да
+tools/hdart/hb517_gen.py	284	790bd1a03 2026-11-06	1	0	живой	да
+tools/hdart/hb517_install.py	67	e9958c831 2026-11-05	0	0	сирота	да
+tools/hdart/hb517_v2.py	138	e9958c831 2026-11-05	1	0	поколение	да
+tools/hdart/hb_common.py	86	f906f5901 2026-11-05	4	0	живой	да
+tools/hdart/hb_stairs.py	88	95a02bb40 2026-11-05	1	0	живой	да
+tools/hdart/hd_e2e_v1.py	913	3910ec417 2026-10-07	8	2	поколение	
+tools/hdart/hd_e2e_v1_r2.py	789	3910ec417 2026-10-07	3	2	живой	
+tools/hdart/hd_e2e_v1_r3.py	1140	3910ec417 2026-10-07	6	2	живой	
+tools/hdart/hd_e2e_v1_r31.py	134	3910ec417 2026-10-07	4	2	живой	
+tools/hdart/hd_e2e_v1_r32.py	311	3910ec417 2026-10-07	3	3	живой	
+tools/hdart/hd_e2e_v1_r33.py	389	3910ec417 2026-10-07	2	2	живой	
+tools/hdart/hd_e2e_v1_review.py	309	3910ec417 2026-10-07	2	2	живой	
+tools/hdart/hd_e2e_v1_run.py	323	3910ec417 2026-10-07	5	2	живой	
+tools/hdart/hd_manifest.py	497	773d43a43 2026-10-15	2	4	живой	
+tools/hdart/hd_tracks_gen.py	132	b1a1887c5 2026-10-30	0	0	сирота	да
+tools/hdart/hill_census.py	184	22a034a5b 2026-10-20	1	0	живой	
+tools/hdart/hints.py	293	187df8dd3 2026-09-17	3	6	живой	
+tools/hdart/hints_apply.py	91	33b147528 2026-09-23	1	2	живой	
+tools/hdart/hud_buttons_cut.py	303	6f79871fa 2026-10-20	1	0	живой	
+tools/hdart/hud_panel_pilot.py	331	71c669021 2026-10-20	3	1	живой	
+tools/hdart/identity_auto.py	634	3910ec417 2026-10-07	4	3	живой	
+tools/hdart/identity_card.py	768	3910ec417 2026-10-07	7	3	живой	
+tools/hdart/identity_propose.py	939	3910ec417 2026-10-07	7	4	живой	
+tools/hdart/identity_routing.py	514	3910ec417 2026-10-07	46	3	живой	
+tools/hdart/inv_redo_prep.py	278	e2ef38f6d 2026-10-15	1	1	живой	
+tools/hdart/item_asset_check.py	158	e2ef38f6d 2026-10-15	5	5	живой	
+tools/hdart/item_b2_install.py	128	e37d497e9 2026-10-19	1	3	живой	
+tools/hdart/item_b2_render.py	331	ae3ecc80c 2026-10-15	2	2	живой	
+tools/hdart/item_backpack_hd.py	158	5587369a8 2026-11-08	0	0	сирота	да
+tools/hdart/item_geometry.py	399	3b35c1ea0 2026-10-03	1	3	живой	
+tools/hdart/item_photo.py	1098	6d016a973 2026-10-03	18	3	живой	
+tools/hdart/jungle_509_install.py	80	40741a3fd 2026-11-05	0	0	сирота	да
+tools/hdart/jungle_spot.py	143	f906f5901 2026-11-05	0	0	сирота	да
+tools/hdart/lines_material.py	192	ce6fae88b 2026-10-15	0	1	живой	
+tools/hdart/link_frames.py	224	33b147528 2026-09-23	5	3	живой	
+tools/hdart/long_object.py	573	c76a4b706 2026-09-28	4	7	живой	
+tools/hdart/loop_twins.py	281	39731497f 2026-10-14	5	1	живой	
+tools/hdart/make_ref.py	192	33b147528 2026-09-23	3	4	живой	
+tools/hdart/map_catalog.py	635	773d43a43 2026-10-15	1	1	живой	
+tools/hdart/map_mockup.py	351	3910ec417 2026-10-07	96	12	живой	
+tools/hdart/map_paint.py	1286	90fb6ac5e 2026-09-27	13	15	живой	
+tools/hdart/map_pick.py	502	773d43a43 2026-10-15	2	5	живой	
+tools/hdart/map_screen_check.py	442	773d43a43 2026-10-15	2	1	живой	
+tools/hdart/map_truth.py	700	773d43a43 2026-10-15	7	1	живой	
+tools/hdart/map_update.py	436	773d43a43 2026-10-15	4	5	живой	
+tools/hdart/map_verdict.py	267	773d43a43 2026-10-15	0	1	живой	
+tools/hdart/mcd_state.py	226	3910ec417 2026-10-07	12	4	живой	
+tools/hdart/merge_gens.py	191	773d43a43 2026-10-15	1	8	живой	
+tools/hdart/mirror_frames.py	223	c8fdf4508 2026-10-05	1	6	живой	
+tools/hdart/model_lock.py	248	3910ec417 2026-10-07	11	8	живой	
+tools/hdart/nuke_puddle.py	85	07066b797 2026-11-05	0	1	живой	да
+tools/hdart/obj_batch.py	94	773d43a43 2026-10-15	0	4	живой	
+tools/hdart/obj_derive.py	215	3910ec417 2026-10-07	21	6	живой	
+tools/hdart/obj_families.py	558	3910ec417 2026-10-07	9	7	живой	
+tools/hdart/obj_gen_spec.py	266	3910ec417 2026-10-07	15	5	живой	
+tools/hdart/obj_generation.py	512	3910ec417 2026-10-07	5	5	живой	
+tools/hdart/obj_photo.py	526	3910ec417 2026-10-07	27	10	живой	
+tools/hdart/obj_push.py	147	773d43a43 2026-10-15	0	3	живой	
+tools/hdart/obj_queue.py	285	773d43a43 2026-10-15	0	4	живой	
+tools/hdart/obj_review.py	191	3910ec417 2026-10-07	3	3	живой	
+tools/hdart/obj_series.py	510	c76a4b706 2026-09-28	20	7	живой	
+tools/hdart/obj_struct.py	297	3910ec417 2026-10-07	13	6	живой	
+tools/hdart/optimize_hd.py	322	1ab9314e6 2026-10-07	3	8	живой	
+tools/hdart/p509_bush3_cut.py	39	95a02bb40 2026-11-05	0	0	сирота	да
+tools/hdart/p509_common.py	74	95a02bb40 2026-11-05	3	0	живой	да
+tools/hdart/p509_defringe.py	42	95a02bb40 2026-11-05	2	0	живой	да
+tools/hdart/p509_flower_build.py	62	95a02bb40 2026-11-05	1	0	живой	да
+tools/hdart/p509_gen.py	125	95a02bb40 2026-11-05	0	0	сирота	да
+tools/hdart/p509_liana_build.py	47	95a02bb40 2026-11-05	1	0	живой	да
+tools/hdart/p510_bush4.py	49	95a02bb40 2026-11-05	1	0	живой	да
+tools/hdart/palette_shift_sets.py	99	92b144c4f 2026-10-14	3	1	живой	
+tools/hdart/pedia_ab.py	260	3899ff159 2026-10-29	7	4	живой	
+tools/hdart/pedia_batch.py	488	773d43a43 2026-10-15	8	4	живой	
+tools/hdart/pedia_content.py	233	0fe67302c 2026-10-29	0	2	живой	да
+tools/hdart/pedia_notes.py	342	d5b44beb5 2026-10-30	3	1	живой	да
+tools/hdart/pedia_nudecheck.py	114	d5de558e0 2026-09-27	2	2	живой	
+tools/hdart/pedia_push.py	109	c8fdf4508 2026-10-05	1	3	живой	
+tools/hdart/pedia_recraft.py	225	cb905b5b5 2026-10-30	2	1	живой	да
+tools/hdart/pedia_review.py	162	368beb022 2026-10-05	0	6	живой	
+tools/hdart/pedia_settle.py	73	f67ea5d82 2026-11-02	1	1	живой	да
+tools/hdart/pedia_text.py	252	c8fdf4508 2026-10-05	1	4	живой	
+tools/hdart/photo_accept.py	625	3910ec417 2026-10-07	9	4	живой	
+tools/hdart/photo_base.py	671	3910ec417 2026-10-07	20	7	живой	
+tools/hdart/photo_render.py	274	3910ec417 2026-10-07	16	5	живой	
+tools/hdart/photo_struct.py	592	3910ec417 2026-10-07	4	3	живой	
+tools/hdart/photo_struct_render.py	121	3910ec417 2026-10-07	7	3	живой	
+tools/hdart/photo_ui.py	1050	c2fb9fcb2 2026-10-20	22	11	живой	
+tools/hdart/pilot_batch.py	479	3910ec417 2026-10-07	12	3	живой	
+tools/hdart/pilot_report.py	310	773d43a43 2026-10-15	1	3	живой	
+tools/hdart/pixel_lines.py	239	92b144c4f 2026-10-14	6	1	живой	
+tools/hdart/placeholder_sheet.py	49	c8fdf4508 2026-10-05	0	3	живой	
+tools/hdart/post_review_safety.py	70	3910ec417 2026-10-07	9	5	живой	
+tools/hdart/probe_floor.py	456	c76a4b706 2026-09-28	3	5	живой	
+tools/hdart/probe_object.py	315	c76a4b706 2026-09-28	61	7	живой	
+tools/hdart/prod2_final.py	163	3910ec417 2026-10-07	2	0	живой	
+tools/hdart/prod_two_pass_v1.py	430	3910ec417 2026-10-07	4	4	поколение	
+tools/hdart/prod_two_pass_v2.py	239	3910ec417 2026-10-07	3	4	поколение	
+tools/hdart/prod_two_pass_v3.py	148	3910ec417 2026-10-07	3	1	поколение	
+tools/hdart/promo_compare.py	40	ebb119b26 2026-10-27	0	0	сирота	
+tools/hdart/qwen_literal.py	93	773d43a43 2026-10-15	2	2	живой	
+tools/hdart/recipe_guard.py	412	2d2539a43 2026-10-15	2	1	живой	
+tools/hdart/relation_discovery_v2.py	929	3910ec417 2026-10-07	32	2	поколение	
+tools/hdart/relation_discovery_v3.py	854	3910ec417 2026-10-07	28	3	поколение	
+tools/hdart/relation_discovery_v4.py	818	3910ec417 2026-10-07	23	3	поколение	
+tools/hdart/relation_discovery_v5.py	607	3910ec417 2026-10-07	8	3	поколение	
+tools/hdart/relation_holdout_v4.py	1102	3910ec417 2026-10-07	15	4	поколение	
+tools/hdart/relation_holdout_v4_axis_zip.py	128	3910ec417 2026-10-07	4	4	живой	
+tools/hdart/relation_holdout_v4_ref.py	343	3910ec417 2026-10-07	7	3	живой	
+tools/hdart/relation_holdout_v5.py	1120	3910ec417 2026-10-07	7	2	поколение	
+tools/hdart/relation_holdout_v7.py	1104	3910ec417 2026-10-07	3	3	поколение	
+tools/hdart/relation_probe.py	701	3910ec417 2026-10-07	17	4	живой	
+tools/hdart/relation_safety_v7_prep.py	611	3910ec417 2026-10-07	6	3	живой	
+tools/hdart/relation_taxonomy.py	1043	3910ec417 2026-10-07	22	4	живой	
+tools/hdart/relation_truth_v2.py	575	3910ec417 2026-10-07	11	4	поколение	
+tools/hdart/relation_v6_prep.py	498	3910ec417 2026-10-07	4	3	живой	
+tools/hdart/relief_object.py	484	162e2b6b1 2026-10-20	0	1	живой	
+tools/hdart/render_chunks.py	160	3910ec417 2026-10-07	18	4	живой	
+tools/hdart/repro_smoke.py	232	773d43a43 2026-10-15	3	6	живой	
+tools/hdart/restore_batch_v1.py	618	3910ec417 2026-10-07	3	4	поколение	
+tools/hdart/restore_probe_v1.py	263	3910ec417 2026-10-07	4	4	поколение	
+tools/hdart/restore_probe_v1b.py	47	3910ec417 2026-10-07	4	3	поколение	
+tools/hdart/review_floors.py	707	9aba74e83 2026-09-26	3	6	живой	
+tools/hdart/review_server.py	369	3910ec417 2026-10-07	8	4	живой	
+tools/hdart/rim_alpha.py	541	68e829c2d 2026-10-21	11	1	живой	
+tools/hdart/routing_holdout.py	1010	3910ec417 2026-10-07	17	4	живой	
+tools/hdart/routing_holdout_diag.py	237	3910ec417 2026-10-07	4	3	живой	
+tools/hdart/routing_holdout_diag2.py	321	3910ec417 2026-10-07	4	3	живой	
+tools/hdart/routing_holdout_table.py	99	773d43a43 2026-10-15	1	2	живой	
+tools/hdart/routing_holdout_v5.py	758	3910ec417 2026-10-07	7	3	поколение	
+tools/hdart/routing_holdout_v7.py	683	3910ec417 2026-10-07	9	4	поколение	
+tools/hdart/routing_holdout_v8.py	778	3910ec417 2026-10-07	5	2	поколение	
+tools/hdart/routing_model_v8.py	1057	3910ec417 2026-10-07	22	4	поколение	
+tools/hdart/routing_rules.py	325	3910ec417 2026-10-07	10	3	живой	
+tools/hdart/routing_rules_v5.py	539	3910ec417 2026-10-07	7	3	поколение	
+tools/hdart/routing_rules_v6.py	842	3910ec417 2026-10-07	5	4	поколение	
+tools/hdart/routing_rules_v7.py	704	3910ec417 2026-10-07	11	4	поколение	
+tools/hdart/score_batch.py	379	9aba74e83 2026-09-26	12	7	живой	
+tools/hdart/setup_gen.ps1	44	c8fdf4508 2026-10-05	4	4	живой	
+tools/hdart/setup_photo.ps1	38	c23d1e3fe 2026-09-19	1	3	живой	
+tools/hdart/setup_qwen21.ps1	70	33b147528 2026-09-23	0	4	живой	
+tools/hdart/setup_train.ps1	109	c8fdf4508 2026-10-05	1	2	живой	
+tools/hdart/shore_build.py	219	f906f5901 2026-11-05	0	0	сирота	да
+tools/hdart/snow_seam.py	371	748ebd2c7 2026-10-13	1	1	живой	
+tools/hdart/sprite_scale.py	313	187df8dd3 2026-09-17	18	3	живой	
+tools/hdart/strict_ctl_v1.py	302	3910ec417 2026-10-07	4	6	поколение	
+tools/hdart/struct_guide.py	359	3910ec417 2026-10-07	12	9	живой	
+tools/hdart/struct_probe.py	338	3910ec417 2026-10-07	12	4	живой	
+tools/hdart/struct_report.py	325	773d43a43 2026-10-15	1	5	живой	
+tools/hdart/subjects_terrain.py	310	0b1f7c07c 2026-09-20	8	3	живой	
+tools/hdart/t098_gen.py	94	8bac789b3 2026-10-31	1	0	одноразовый	да
+tools/hdart/t098_install.py	74	8bac789b3 2026-10-31	1	0	одноразовый	да
+tools/hdart/t098_sheet.py	115	8bac789b3 2026-10-31	1	0	одноразовый	да
+tools/hdart/t1031_install.py	119	ad48bd00e 2026-10-31	1	0	живой	да
+tools/hdart/t1031_sheet.py	61	0bd0b7547 2026-10-31	0	0	сирота	да
+tools/hdart/t1031b_install.py	110	d6b1fc2a4 2026-10-31	2	0	живой	да
+tools/hdart/t1031b_notes.py	60	d6b1fc2a4 2026-10-31	0	0	сирота	да
+tools/hdart/t1031b_scene384.py	41	d6b1fc2a4 2026-10-31	0	0	сирота	да
+tools/hdart/t1031b_sheet.py	81	d6b1fc2a4 2026-10-31	0	0	сирота	да
+tools/hdart/t1031b_verify.py	40	d6b1fc2a4 2026-10-31	0	0	сирота	да
+tools/hdart/t1031c_install.py	137	cbb1c1d6d 2026-10-31	0	0	сирота	да
+tools/hdart/t222_lines.py	288	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t222_path.py	114	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t242_mud.py	99	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t247_barrel_splice.py	105	da817a4a1 2026-10-22	0	1	одноразовый	
+tools/hdart/t248_bin.py	42	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t249_asphalt_edge.py	170	aa1a8a406 2026-10-28	3	0	одноразовый	да
+tools/hdart/t249_box.py	238	5a70811a0 2026-10-23	3	0	одноразовый	
+tools/hdart/t249_box_gen.py	107	5a70811a0 2026-10-23	2	0	одноразовый	
+tools/hdart/t249_box_series.py	144	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t249_wheel.py	294	5a70811a0 2026-10-23	1	0	одноразовый	
+tools/hdart/t250_room.py	337	18ade8a17 2026-10-23	0	0	одноразовый	
+tools/hdart/t251_roof.py	245	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t253_rails.py	286	5a70811a0 2026-10-23	1	0	одноразовый	
+tools/hdart/t253_sheet.py	290	5a70811a0 2026-10-23	1	0	одноразовый	
+tools/hdart/t254_silo_edit.py	101	ba403f810 2026-10-22	1	1	одноразовый	
+tools/hdart/t259_wall_b2.py	56	835163e9e 2026-10-23	0	0	одноразовый	
+tools/hdart/t262_pits.py	308	5a70811a0 2026-10-23	2	0	одноразовый	
+tools/hdart/t264_crate.py	69	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t264_crate_v3.py	88	5a70811a0 2026-10-23	0	0	одноразовый	
+tools/hdart/t266_pull_image.py	66	e4a2223e7 2026-10-23	0	0	одноразовый	
+tools/hdart/t276_277_cracks.py	234	1b1f41b86 2026-10-23	0	0	одноразовый	
+tools/hdart/t276_build.py	527	128c04395 2026-10-23	1	0	одноразовый	
+tools/hdart/t276_gen.py	137	128c04395 2026-10-23	2	1	одноразовый	
+tools/hdart/t277_pits_rim.py	121	1b1f41b86 2026-10-23	0	0	одноразовый	
+tools/hdart/t280_install.py	53	278f1bf69 2026-10-27	0	0	одноразовый	
+tools/hdart/t280_probe.py	134	278f1bf69 2026-10-27	2	0	одноразовый	
+tools/hdart/t280_sheet.py	91	278f1bf69 2026-10-27	0	0	одноразовый	
+tools/hdart/t286_jukebox.py	125	1b1f41b86 2026-10-23	0	0	одноразовый	
+tools/hdart/t295_install.py	53	aca03d158 2026-10-23	0	0	одноразовый	
+tools/hdart/t300_install.py	54	55bf97f1c 2026-10-26	0	0	одноразовый	
+tools/hdart/t300a_gen.py	264	55bf97f1c 2026-10-26	2	0	живой	
+tools/hdart/t300r_gen.py	229	55bf97f1c 2026-10-26	1	0	живой	
+tools/hdart/t302_install.py	141	02653bdee 2026-10-26	0	0	одноразовый	
+tools/hdart/t302_seam.py	666	02653bdee 2026-10-26	1	1	одноразовый	
+tools/hdart/t322_333_install.py	281	3ec4696d3 2026-10-26	1	0	одноразовый	
+tools/hdart/t337_install.py	80	43980a8a2 2026-10-27	1	0	одноразовый	да
+tools/hdart/t337_probe.py	289	43980a8a2 2026-10-27	3	0	одноразовый	да
+tools/hdart/t337_sheet.py	104	43980a8a2 2026-10-27	0	0	одноразовый	да
+tools/hdart/t343_cage.py	42	a6bac7f25 2026-10-27	1	0	одноразовый	да
+tools/hdart/t343_install.py	87	a6bac7f25 2026-10-27	0	0	одноразовый	да
+tools/hdart/t343_pit.py	149	a6bac7f25 2026-10-27	1	0	одноразовый	да
+tools/hdart/t349_compare_sheet.py	71	ff5ee58c5 2026-10-28	0	0	одноразовый	да
+tools/hdart/t349_install.py	47	ff5ee58c5 2026-10-28	0	0	одноразовый	да
+tools/hdart/t350_hangar_install.py	57	a6acf234d 2026-10-28	0	0	одноразовый	да
+tools/hdart/t351_build.py	190	ff5ee58c5 2026-10-28	2	0	одноразовый	да
+tools/hdart/t351_install.py	58	ff5ee58c5 2026-10-28	1	0	одноразовый	да
+tools/hdart/t352_build.py	419	aa1a8a406 2026-10-28	2	0	одноразовый	да
+tools/hdart/t352_install.py	66	aa1a8a406 2026-10-28	1	0	одноразовый	да
+tools/hdart/t352_sheet.py	120	aa1a8a406 2026-10-28	0	0	одноразовый	да
+tools/hdart/t355_build.py	153	e69aacae6 2026-10-28	1	0	одноразовый	да
+tools/hdart/t355_sheet.py	291	e69aacae6 2026-10-28	0	0	одноразовый	да
+tools/hdart/t357_floor.py	263	660958b14 2026-10-28	1	0	одноразовый	да
+tools/hdart/t357_install.py	57	660958b14 2026-10-28	0	0	одноразовый	да
+tools/hdart/t358_build.py	203	8d0226eed 2026-10-28	4	0	одноразовый	да
+tools/hdart/t358_install.py	57	8d0226eed 2026-10-28	1	0	одноразовый	да
+tools/hdart/t358_sheet.py	235	8d0226eed 2026-10-28	0	0	одноразовый	да
+tools/hdart/t360_grille.py	112	01fd3a981 2026-10-28	0	0	одноразовый	да
+tools/hdart/t363_build.py	280	042c348e6 2026-10-28	0	1	одноразовый	да
+tools/hdart/t364_build.py	288	eee85d4c2 2026-10-28	3	0	одноразовый	да
+tools/hdart/t364_install.py	59	eee85d4c2 2026-10-28	1	0	одноразовый	да
+tools/hdart/t364_sheet.py	284	eee85d4c2 2026-10-28	0	0	одноразовый	да
+tools/hdart/t365_build.py	264	53045310f 2026-10-29	0	0	одноразовый	да
+tools/hdart/t365_sheet.py	167	f982b3b9a 2026-10-29	1	0	одноразовый	да
+tools/hdart/t379_391_gen.py	356	ad48bd00e 2026-10-31	6	1	одноразовый	да
+tools/hdart/t383_gen.py	377	0bd0b7547 2026-10-31	1	0	одноразовый	да
+tools/hdart/t390_gen2.py	396	4b8b25c22 2026-11-04	1	1	одноразовый	да
+tools/hdart/t390_gen3.py	673	4b8b25c22 2026-11-04	1	1	одноразовый	да
+tools/hdart/t390_install.py	63	4b8b25c22 2026-11-04	0	0	одноразовый	да
+tools/hdart/t394_395_gen.py	547	297683fb3 2026-10-31	2	0	одноразовый	да
+tools/hdart/t395_v2.py	365	0a1a5a9c2 2026-10-31	1	0	одноразовый	да
+tools/hdart/t402_409_cand.py	116	9eefe09a0 2026-10-30	1	0	одноразовый	да
+tools/hdart/t402_409_install.py	83	fc1be391e 2026-10-30	2	0	одноразовый	да
+tools/hdart/t404_radar_gen.py	576	9bbd49ca4 2026-10-30	1	1	одноразовый	да
+tools/hdart/t405_409_gen.py	705	fc1be391e 2026-10-30	18	1	одноразовый	да
+tools/hdart/t410_build.py	377	262975db3 2026-10-30	3	1	одноразовый	да
+tools/hdart/t410_fld.py	194	262975db3 2026-10-30	3	1	одноразовый	да
+tools/hdart/t410_gen.py	178	262975db3 2026-10-30	6	1	одноразовый	да
+tools/hdart/t410_install.py	67	76ef78b6b 2026-10-30	0	0	одноразовый	да
+tools/hdart/t413_fam.py	350	2c9b7c738 2026-10-30	1	1	одноразовый	да
+tools/hdart/t413_fam_build.py	585	2c9b7c738 2026-10-30	2	1	одноразовый	да
+tools/hdart/t413_gen.py	429	8fdce1933 2026-10-30	2	0	одноразовый	да
+tools/hdart/t413_install.py	84	d46a9d844 2026-10-30	1	0	одноразовый	да
+tools/hdart/t417_container_gen.py	890	433b43e23 2026-10-30	7	1	одноразовый	да
+tools/hdart/t417_proc.py	356	914451ece 2026-10-30	1	1	одноразовый	да
+tools/hdart/t417_sheet2.py	114	433b43e23 2026-10-30	0	0	одноразовый	да
+tools/hdart/t417_sheet3.py	105	914451ece 2026-10-30	0	0	одноразовый	да
+tools/hdart/t417_v3.py	136	433b43e23 2026-10-30	1	1	одноразовый	да
+tools/hdart/t418_booth.py	260	c7dbe81ea 2026-10-30	2	1	одноразовый	да
+tools/hdart/t418_edge.py	53	c7dbe81ea 2026-10-30	1	1	одноразовый	да
+tools/hdart/t418_final.py	74	c7dbe81ea 2026-10-30	0	0	одноразовый	да
+tools/hdart/t418_install.py	57	1c08ba3c4 2026-10-30	0	0	одноразовый	да
+tools/hdart/t418_post.py	290	1c08ba3c4 2026-10-30	1	0	одноразовый	да
+tools/hdart/t418_stand.py	111	c7dbe81ea 2026-10-30	1	1	одноразовый	да
+tools/hdart/t423_carcass_gen.py	159	e680b689f 2026-10-30	1	0	одноразовый	да
+tools/hdart/t423_mirror.py	195	6a8c2b534 2026-10-30	1	0	одноразовый	да
+tools/hdart/t423_post.py	403	6a8c2b534 2026-10-30	2	1	одноразовый	да
+tools/hdart/t425_433_438_install.py	85	5cae29537 2026-10-30	0	0	одноразовый	да
+tools/hdart/t425_proc.py	206	5cae29537 2026-10-30	1	0	одноразовый	да
+tools/hdart/t431_install.py	66	6240bc967 2026-10-30	0	0	одноразовый	да
+tools/hdart/t431_scene.py	94	448129b00 2026-10-30	0	0	одноразовый	да
+tools/hdart/t431_slopes.py	171	448129b00 2026-10-30	4	1	одноразовый	да
+tools/hdart/t433_proc.py	164	5cae29537 2026-10-30	1	0	одноразовый	да
+tools/hdart/t435_gen.py	205	2e3de93e2 2026-10-30	3	0	одноразовый	да
+tools/hdart/t435_install.py	71	2e3de93e2 2026-10-30	0	0	одноразовый	да
+tools/hdart/t435_scene.py	45	2e3de93e2 2026-10-30	1	0	одноразовый	да
+tools/hdart/t435_sheet.py	74	2e3de93e2 2026-10-30	0	0	одноразовый	да
+tools/hdart/t435b_gen.py	159	0d6c518a1 2026-10-30	1	0	живой	да
+tools/hdart/t435b_install.py	72	0d6c518a1 2026-10-30	0	0	сирота	да
+tools/hdart/t436_build.py	233	6240bc967 2026-10-30	1	0	одноразовый	да
+tools/hdart/t436_install.py	72	6240bc967 2026-10-30	0	0	одноразовый	да
+tools/hdart/t436_sheet.py	98	6240bc967 2026-10-30	0	0	одноразовый	да
+tools/hdart/t436_sheet2.py	136	6240bc967 2026-10-30	0	0	одноразовый	да
+tools/hdart/t438_proc.py	251	5cae29537 2026-10-30	1	0	одноразовый	да
+tools/hdart/t443_fix.py	320	cbb1c1d6d 2026-10-31	2	0	одноразовый	да
+tools/hdart/t443_fix_sheets.py	192	cbb1c1d6d 2026-10-31	0	0	одноразовый	да
+tools/hdart/t443_gen.py	231	f4c23b996 2026-10-30	1	0	одноразовый	да
+tools/hdart/t443_install.py	71	f4c23b996 2026-10-30	0	0	одноразовый	да
+tools/hdart/t443_scene.py	97	f4c23b996 2026-10-30	1	0	одноразовый	да
+tools/hdart/t445_install.py	62	fc25e49e5 2026-10-30	0	0	одноразовый	да
+tools/hdart/t445_scene.py	120	fc25e49e5 2026-10-30	0	0	одноразовый	да
+tools/hdart/t445_slopes.py	236	fc25e49e5 2026-10-30	3	1	одноразовый	да
+tools/hdart/t455_install.py	60	e26f5f940 2026-11-02	0	0	одноразовый	да
+tools/hdart/t463_edge.py	144	82bfbcd79 2026-11-02	1	0	одноразовый	да
+tools/hdart/t463_install.py	87	82bfbcd79 2026-11-02	0	0	одноразовый	да
+tools/hdart/t477_build.py	186	258563527 2026-11-02	1	0	одноразовый	да
+tools/hdart/t477_edge.py	56	258563527 2026-11-02	1	0	одноразовый	да
+tools/hdart/t477_gen.py	78	258563527 2026-11-02	1	0	одноразовый	да
+tools/hdart/t477_install.py	87	258563527 2026-11-02	0	0	одноразовый	да
+tools/hdart/t477_sheet.py	55	258563527 2026-11-02	0	0	одноразовый	да
+tools/hdart/t477_tone.py	57	258563527 2026-11-02	1	0	одноразовый	да
+tools/hdart/t485_486_alpha.py	127	f5cb0f870 2026-11-04	1	0	одноразовый	да
+tools/hdart/t485_486_install.py	61	f5cb0f870 2026-11-04	0	0	одноразовый	да
+tools/hdart/t486_regen_cut.py	118	f5cb0f870 2026-11-04	1	0	одноразовый	да
+tools/hdart/t486_regen_edges.py	52	f5cb0f870 2026-11-04	0	0	одноразовый	да
+tools/hdart/t486_regen_gen.py	93	f5cb0f870 2026-11-04	2	0	одноразовый	да
+tools/hdart/t486_regen_install.py	62	f5cb0f870 2026-11-04	0	0	одноразовый	да
+tools/hdart/t486_regen_sheet.py	64	f5cb0f870 2026-11-04	0	0	одноразовый	да
+tools/hdart/t492_build.py	228	79d45f738 2026-11-04	4	1	одноразовый	да
+tools/hdart/t492_install.py	116	506882fcf 2026-11-04	0	0	одноразовый	да
+tools/hdart/t492_plant.py	490	506882fcf 2026-11-04	0	0	одноразовый	да
+tools/hdart/t497_build.py	163	1481c4ead 2026-11-05	1	1	одноразовый	да
+tools/hdart/t497_install.py	56	1481c4ead 2026-11-05	0	0	одноразовый	да
+tools/hdart/t_grass.py	46	5a70811a0 2026-10-23	0	0	сирота	
+tools/hdart/t_installed.py	167	5a70811a0 2026-10-23	0	0	сирота	
+tools/hdart/t_jungle_stumps.py	104	0d91a4938 2026-10-27	2	1	живой	да
+tools/hdart/t_jungle_stumps_build.py	202	282e236ae 2026-10-27	1	1	живой	да
+tools/hdart/t_regen_obj.py	325	5a70811a0 2026-10-23	2	0	живой	
+tools/hdart/t_regen_sheet.py	26	5a70811a0 2026-10-23	0	0	сирота	
+tools/hdart/t_slope_edge.py	143	5fdf3ea9a 2026-10-31	2	1	живой	да
+tools/hdart/t_slope_edge_install.py	65	5fdf3ea9a 2026-10-31	0	0	сирота	да
+tools/hdart/tank_turret.py	786	368beb022 2026-10-05	1	7	живой	
+tools/hdart/test_photo_swapper.py	100	c2fb9fcb2 2026-10-20	0	1	тест	
+tools/hdart/ticket_family.py	145	62e5a4470 2026-10-22	20	4	живой	
+tools/hdart/ticket_scene.py	223	18ade8a17 2026-10-23	130	1	живой	
+tools/hdart/tile_forge.py	490	c8fdf4508 2026-10-05	18	7	живой	
+tools/hdart/tile_qa.py	456	3910ec417 2026-10-07	3	4	живой	
+tools/hdart/tracks_load.py	37	b1a1887c5 2026-10-30	1	0	живой	да
+tools/hdart/train_lora.ps1	213	33b147528 2026-09-23	6	5	живой	
+tools/hdart/tree_family.py	802	4d3a9f3db 2026-10-14	5	1	живой	
+tools/hdart/tree_family_asm.py	1358	4b7b6a0e4 2026-10-14	2	1	живой	
+tools/hdart/tree_qc.py	298	5ebc8c1f3 2026-10-13	1	0	живой	
+tools/hdart/tree_render.py	900	a903942c5 2026-10-13	5	1	живой	
+tools/hdart/tree_render_v2.py	1826	b405441b6 2026-10-13	2	1	поколение	
+tools/hdart/triage/build.py	246	9aba74e83 2026-09-26	16	24	живой	
+tools/hdart/triage/caption.py	113	3bdefefb1 2026-09-25	4	3	живой	
+tools/hdart/triage/server.py	199	3bdefefb1 2026-09-25	7	2	живой	
+tools/hdart/triage/start.cmd	6	3bdefefb1 2026-09-25	0	3	живой	
+tools/hdart/truth_codex.py	186	773d43a43 2026-10-15	0	2	живой	
+tools/hdart/truth_sheet.py	269	773d43a43 2026-10-15	1	2	живой	
+tools/hdart/two_component_v1.py	178	3910ec417 2026-10-07	6	2	поколение	
+tools/hdart/unit_direct.py	208	773d43a43 2026-10-15	2	4	живой	
+tools/hdart/unit_parts.py	706	773d43a43 2026-10-15	5	5	живой	
+tools/hdart/unit_pilot.py	643	773d43a43 2026-10-15	6	4	живой	
+tools/hdart/unit_ref.py	307	773d43a43 2026-10-15	0	3	живой	
+tools/hdart/unit_refit.py	682	773d43a43 2026-10-15	1	4	живой	
+tools/hdart/unit_turnaround.py	1150	773d43a43 2026-10-15	2	3	живой	
+tools/hdart/unpanel_batch.py	74	c8fdf4508 2026-10-05	1	6	живой	
+tools/hdart/upscale_ui.py	201	187df8dd3 2026-09-17	5	6	живой	
+tools/hdart/upscale_units.py	846	f7d56d9e9 2026-10-02	10	15	живой	
+tools/hdart/v3_baseline.py	150	9c1d10a79 2026-10-07	0	2	живой	
+tools/hdart/v5_ar2_recount.py	597	3910ec417 2026-10-07	9	3	живой	
+tools/hdart/v5_component_validation.py	629	3910ec417 2026-10-07	5	2	живой	
+tools/hdart/v5_freeze_readiness.py	404	3910ec417 2026-10-07	5	4	живой	
+tools/hdart/visual_judge.py	553	3910ec417 2026-10-07	6	4	живой	
+tools/hdart/vx_control.py	175	c76a4b706 2026-09-28	17	5	живой	
+tools/hdart/wall_exact.py	337	474f7ec2c 2026-10-15	2	1	живой	
+tools/hdart/wall_final_render.py	157	22c805b89 2026-10-15	2	2	живой	
+tools/hdart/wall_neighbors.py	132	773d43a43 2026-10-15	1	0	живой	
+tools/hdart/wall_restore.py	187	0dd863dc8 2026-10-08	5	2	живой	
+tools/hdart/wall_section.py	909	c8dd285bb 2026-10-08	19	3	живой	
+tools/hdart/wall_thru.py	214	c8dd285bb 2026-10-08	3	0	живой	
+tools/hdart/wall_v2.py	171	c8dd285bb 2026-10-08	2	1	поколение	
+tools/hdart/water_build.py	394	cbe83e964 2026-10-07	45	3	живой	
+tools/hdart/weapon_classes.py	317	9aba74e83 2026-09-26	2	2	живой	
+tools/hdart/weapons_batch.py	129	773d43a43 2026-10-15	2	2	живой	
+tools/hdart/weapons_edit.py	331	773d43a43 2026-10-15	5	2	живой	
+tools/hdart/weapons_probe3.py	200	773d43a43 2026-10-15	4	2	живой	
+tools/hdart/weapons_probe4.py	122	773d43a43 2026-10-15	2	2	живой	
+tools/hdart/weapons_probe5.py	204	773d43a43 2026-10-15	11	2	живой	
+tools/hdart/weapons_sr.py	104	773d43a43 2026-10-15	2	2	живой	
+tools/hdart/wreck_object.py	132	bbde596a9 2026-10-22	1	0	живой	
+tools/hdart/xbrz_py/__init__.py	34	3bdefefb1 2026-09-25	1	0	живой	
+tools/hdart/xbrz_py/build.cmd	5	3bdefefb1 2026-09-25	17	24	живой	
+tools/hdart/xcom_sprites.py	316	735a5a76b 2026-09-26	35	6	живой	
+tools/hdbench.py	439	979ff6be4 2026-11-07	12	9	живой	
+tools/hdtest_compare.py	235	7768a9906 2026-10-06	6	35	живой	
+tools/hidden_game.py	112	b34b0f0ed 2026-11-02	6	3	живой	
+tools/index_mod.py	281	c23d1e3fe 2026-09-19	7	4	живой	
+tools/index_project.py	221	1ab9314e6 2026-10-07	3	6	живой	
+tools/intro/build_intro.py	340	9fcfb294a 2026-10-28	2	8	живой	
+tools/intro/make_script.py	171	7622b193e 2026-09-20	1	2	живой	
+tools/launcher_icon.py	318	124d39cb9 2026-10-02	2	1	живой	
+tools/launcher_press_play.ps1	37	d5bb0058e 2026-10-03	1	1	живой	
+tools/launcher_smoke.py	302	69a0467a8 2026-10-27	0	4	живой	
+tools/lua_api2/bank_mod.py	114	979ff6be4 2026-11-07	0	1	живой	да
+tools/lua_api2/stage0.py	290	f05d8ce05 2026-11-07	0	5	живой	да
+tools/lua_api2/stage1.py	713	f05d8ce05 2026-11-07	7	7	живой	да
+tools/lua_api2/stage2.py	876	d631543a1 2026-11-07	2	5	живой	да
+tools/lua_api2/stage3.py	1134	f05d8ce05 2026-11-07	1	3	живой	да
+tools/lua_api2/stage3_native.py	177	f05d8ce05 2026-11-07	0	3	живой	да
+tools/lua_api2/stage4.py	1157	c28f97a9e 2026-11-07	0	2	живой	да
+tools/lua_api_doc.py	1575	53905acc6 2026-11-07	6	7	живой	да
+tools/lua_catalog.py	194	fc9aa7aa7 2026-11-06	3	2	живой	да
+tools/lua_mod_check.py	706	d631543a1 2026-11-07	19	8	живой	да
+tools/lua_mod_sandbox.py	143	62d6f6abc 2026-11-06	3	0	живой	да
+tools/lua_mods.py	77	62d6f6abc 2026-11-06	1	1	живой	да
+tools/lua_sandbox_test.ps1	14	8bcfeb226 2026-11-06	1	6	живой	да
+tools/lua_stage1/compare.py	24	f05d8ce05 2026-11-07	0	4	живой	да
+tools/lua_stage1/compare_ufo.py	11	8bcfeb226 2026-11-06	0	1	живой	да
+tools/lua_stage1/make_mods0.py	76	8bcfeb226 2026-11-06	1	1	живой	да
+tools/lua_stage1/make_mods1.py	142	8bcfeb226 2026-11-06	1	1	живой	да
+tools/lua_stage1/stage1.py	417	f05d8ce05 2026-11-07	7	7	живой	да
+tools/lua_stage2/recipes.py	450	c28f97a9e 2026-11-07	1	4	живой	да
+tools/lua_stage2/stage2.py	205	2d8075d5f 2026-11-06	2	5	живой	да
+tools/lua_stage3/stage5.py	71	62d6f6abc 2026-11-06	0	0	сирота	да
+tools/lua_stage3/test_check.py	126	8af07b341 2026-11-06	0	1	тест	да
+tools/lua_stage3/test_sandbox.py	63	62d6f6abc 2026-11-06	0	0	тест	да
+tools/lua_stage4/e2e.py	162	fc9aa7aa7 2026-11-06	0	1	живой	да
+tools/lua_stage4/portal_path.py	162	9151c6e38 2026-11-06	0	1	живой	да
+tools/lua_stage5/api.py	962	c28f97a9e 2026-11-07	0	8	живой	да
+tools/lua_stage5/defects.py	177	fc9aa7aa7 2026-11-06	5	2	живой	да
+tools/measure_hd.ps1	107	c23d1e3fe 2026-09-19	1	7	живой	
+tools/modio_publish.py	207	e23309cb9 2026-10-28	1	2	живой	да
+tools/packs_seed.py	82	79e61ae34 2026-09-25	0	2	живой	
+tools/pck_census.py	430	f128ed825 2026-10-21	35	10	живой	
+tools/pck_roadmap.py	153	c8fdf4508 2026-10-05	0	6	живой	
+tools/perf_sample.py	318	2584494de 2026-10-27	0	2	живой	да
+tools/perf_weak.py	231	2584494de 2026-10-27	0	2	живой	
+tools/piratez_weapons.py	391	773d43a43 2026-10-15	0	2	живой	
+tools/portal_mod_art.py	229	3d3e1ee91 2026-10-23	0	0	сирота	
+tools/portal_palette.py	187	c8fdf4508 2026-10-05	2	2	живой	
+tools/portal_wiki.py	716	c8fdf4508 2026-10-05	4	4	живой	
+tools/rake.py	303	d59fd08c4 2026-10-15	8	26	живой	
+tools/review/answerlib.py	189	4c8eefc10 2026-11-09	2	1	живой	да
+tools/review/apply.py	166	4c8eefc10 2026-11-09	4	1	живой	да
+tools/review/pilot_voices.py	42	4c8eefc10 2026-11-09	1	1	живой	да
+tools/review/pull.py	194	4c8eefc10 2026-11-09	3	1	живой	да
+tools/review/push.py	272	1cc84cd7a 2026-11-09	5	2	живой	да
+tools/review/review_api.py	125	4c8eefc10 2026-11-09	2	1	живой	да
+tools/review/voicepkg.py	265	1cc84cd7a 2026-11-09	5	2	живой	да
+tools/rotation_census.py	256	b2fca1f4f 2026-10-20	2	1	живой	
+tools/rotation_census2.py	280	b2fca1f4f 2026-10-20	1	1	живой	
+tools/rotation_groups_inc.py	95	d9dc99b6d 2026-10-20	2	2	живой	
+tools/rotation_step2.py	1005	d7663603e 2026-10-20	1	2	живой	
+tools/rul_map.py	750	c8fdf4508 2026-10-05	7	20	живой	
+tools/rupatch_levels.py	95	c8fdf4508 2026-10-05	0	3	живой	
+tools/save_profile.py	230	c8fdf4508 2026-10-05	1	6	живой	
+tools/savecheck/soldier_stat_audit.py	192	c8fdf4508 2026-10-05	0	1	живой	
+tools/session_usage.py	121	b5918efd0 2026-10-15	0	1	живой	
+tools/setup_workstation.ps1	118	2a961918f 2026-09-18	1	2	живой	
+tools/sfx/audit_voicepack.py	105	eb2be0f44 2026-10-22	2	2	живой	
+tools/sfx/battle_sound_check.py	310	eb2be0f44 2026-10-22	0	3	живой	
+tools/sfx/build_pilot_voices.py	231	495e3858e 2026-11-06	4	1	живой	
+tools/sfx/build_test_mods.py	338	87285104d 2026-10-27	2	4	живой	
+tools/sfx/build_voicepack_mods.py	315	4c8eefc10 2026-11-09	1	7	живой	
+tools/sfx/check_voice_mods.py	71	4e4674f18 2026-10-17	0	2	живой	
+tools/sfx/game_match_page.py	85	eb2be0f44 2026-10-22	0	1	живой	
+tools/sfx/game_voice_clips.py	56	eb2be0f44 2026-10-22	1	2	живой	
+tools/sfx/game_voice_match.py	82	eb2be0f44 2026-10-22	1	1	живой	
+tools/sfx/game_voice_probe.py	256	eb2be0f44 2026-10-22	2	1	живой	
+tools/sfx/gen_pilot_types.py	239	495e3858e 2026-11-06	2	0	живой	да
+tools/sfx/gen_pilot_voices.py	45	8e4e10da1 2026-10-27	2	2	живой	
+tools/sfx/gen_steps_test.py	162	c96cdb2d0 2026-10-15	3	1	живой	
+tools/sfx/gen_voicepack.py	576	aa78709c0 2026-11-04	7	4	живой	
+tools/sfx/gen_voices_test.py	281	cf0059fd9 2026-10-15	3	2	живой	
+tools/sfx/hb518_gen.py	72	9d0686f62 2026-11-05	1	0	живой	да
+tools/sfx/hb518_install.py	81	9d0686f62 2026-11-05	0	0	сирота	да
+tools/sfx/pilot_types_probe.py	365	495e3858e 2026-11-06	1	0	живой	да
+tools/sfx/probe_mmaudio.py	104	c8fdf4508 2026-10-05	1	2	живой	
+tools/sfx/probe_sa3.py	140	ffd1dfce7 2026-09-27	4	3	живой	
+tools/sfx/probe_stable_audio.py	91	c8fdf4508 2026-10-05	1	2	живой	
+tools/sfx/probe_tasks.py	39	ffd1dfce7 2026-09-27	3	2	живой	
+tools/sfx/test_set.py	195	cf0059fd9 2026-10-15	3	1	тест	
+tools/sfx/voice100_progress.py	36	eb2be0f44 2026-10-22	0	1	живой	
+tools/sfx/voice_emotion_pilot.py	289	eb2be0f44 2026-10-22	1	0	живой	
+tools/sfx/voice_more_batches.py	81	eb2be0f44 2026-10-22	0	1	живой	
+tools/sfx/voice_script.py	152	eb2be0f44 2026-10-22	14	4	живой	
+tools/sfx/voice_text_check.py	120	eb2be0f44 2026-10-22	2	2	живой	
+tools/sfx/voicepack_events.py	100	eb2be0f44 2026-10-22	1	2	живой	
+tools/sfx/voicepack_map.py	135	5b3d9a5be 2026-10-16	0	1	живой	
+tools/sfx/voicepack_page.py	118	eb2be0f44 2026-10-22	0	2	живой	
+tools/shadow2_census.py	245	cbead1878 2026-10-30	0	1	живой	да
+tools/shot_window.ps1	83	e4c066b54 2026-09-24	0	4	живой	
+tools/site_art_2x.py	106	d8d446721 2026-10-22	1	1	живой	
+tools/sound_census.py	368	ffd1dfce7 2026-09-27	1	2	живой	
+tools/subject_plan.py	178	c23d1e3fe 2026-09-19	2	2	живой	
+tools/subject_report.py	113	c23d1e3fe 2026-09-19	1	3	живой	
+tools/test_acceptance_freeze.py	229	773d43a43 2026-10-15	0	4	тест	
+tools/test_acceptance_run.py	240	773d43a43 2026-10-15	0	2	тест	
+tools/test_ai_arena_commit.py	152	a88afef6d 2026-10-01	0	4	тест	
+tools/test_ai_arena_contract.py	144	f14085833 2026-10-04	0	5	тест	
+tools/test_ai_tags.py	24	cafc97804 2026-10-22	0	1	тест	
+tools/test_aligned_recolor_v1.py	157	773d43a43 2026-10-15	3	2	поколение	
+tools/test_aligned_recolor_v2.py	92	773d43a43 2026-10-15	2	3	поколение	
+tools/test_anim_flicker.py	227	773d43a43 2026-10-15	0	1	тест	
+tools/test_ar_boundary_validation.py	70	773d43a43 2026-10-15	1	2	тест	
+tools/test_arbiter.py	211	773d43a43 2026-10-15	0	3	тест	
+tools/test_arbiter_v2.py	190	773d43a43 2026-10-15	0	2	поколение	
+tools/test_assembly_discovery_v1.py	198	773d43a43 2026-10-15	2	2	поколение	
+tools/test_assembly_group_v1.py	143	773d43a43 2026-10-15	2	3	поколение	
+tools/test_assembly_repeated_v1.py	99	773d43a43 2026-10-15	2	3	поколение	
+tools/test_asset_fidelity.py	85	773d43a43 2026-10-15	0	3	тест	
+tools/test_backslash_guard.py	128	69f6d11aa 2026-10-15	1	7	тест	
+tools/test_base_pack.py	89	44d272a73 2026-09-27	0	5	тест	
+tools/test_battle_view.py	85	773d43a43 2026-10-15	0	6	тест	
+tools/test_blocked_pair.py	74	1c4faec1b 2026-10-05	1	3	тест	
+tools/test_build_hd_pack.py	136	773d43a43 2026-10-15	0	4	тест	
+tools/test_collapse_lock_eol.py	103	b76d9aae3 2026-10-15	1	2	тест	
+tools/test_collapse_pilot_run.py	65	fd455b553 2026-10-14	0	1	тест	
+tools/test_derive_recolor_acceptance_v2.py	41	773d43a43 2026-10-15	0	2	поколение	
+tools/test_detail_class.py	89	773d43a43 2026-10-15	0	3	тест	
+tools/test_editq.py	299	d67633205 2026-10-28	1	9	тест	
+tools/test_families_recolor_diff.py	56	773d43a43 2026-10-15	0	2	тест	
+tools/test_family_relation_v2.py	53	773d43a43 2026-10-15	0	2	поколение	
+tools/test_floor_batch_palshift.py	100	92b144c4f 2026-10-14	0	1	тест	
+tools/test_floor_batch_plan.py	70	109cc82c0 2026-10-14	0	1	тест	
+tools/test_floor_batch_variants.py	84	feafa488d 2026-10-13	0	0	тест	
+tools/test_game_guard.py	74	bca1c3e95 2026-09-28	1	4	тест	
+tools/test_gentle_determinism.py	187	ff31a4060 2026-10-02	1	5	тест	
+tools/test_gentle_scope.py	96	69ef77978 2026-10-19	1	8	тест	
+tools/test_gpu_guard.py	71	f73737dfb 2026-10-27	1	5	тест	
+tools/test_gpu_scripts.py	303	f73737dfb 2026-10-27	1	8	тест	
+tools/test_gpuq.py	351	c2fb9fcb2 2026-10-20	0	6	тест	
+tools/test_ground_field.py	146	88bb3077f 2026-10-07	1	1	тест	
+tools/test_hd_e2e_v1.py	114	773d43a43 2026-10-15	0	2	поколение	
+tools/test_hd_e2e_v1_r2.py	244	773d43a43 2026-10-15	0	2	тест	
+tools/test_hd_e2e_v1_r3.py	211	773d43a43 2026-10-15	1	2	тест	
+tools/test_hd_e2e_v1_r31.py	104	773d43a43 2026-10-15	0	2	тест	
+tools/test_hd_manifest.py	118	773d43a43 2026-10-15	0	3	тест	
+tools/test_hdtest_compare.py	61	7768a9906 2026-10-06	0	3	тест	
+tools/test_identity_card.py	122	773d43a43 2026-10-15	0	3	тест	
+tools/test_identity_propose.py	220	773d43a43 2026-10-15	0	4	тест	
+tools/test_identity_routing.py	162	773d43a43 2026-10-15	0	2	тест	
+tools/test_intro_startup.py	138	8a03d16f3 2026-10-17	0	5	тест	
+tools/test_item_asset_check.py	123	e2ef38f6d 2026-10-15	0	4	тест	
+tools/test_junction_guard.py	98	23015c262 2026-10-15	1	1	тест	
+tools/test_knowledge_armor.py	139	3de6698ff 2026-10-28	1	2	тест	да
+tools/test_loop_twins.py	73	39731497f 2026-10-14	0	1	тест	
+tools/test_map_paint_input.py	58	3bdefefb1 2026-09-25	0	5	тест	
+tools/test_map_paint_tiled.py	221	735a5a76b 2026-09-26	1	6	тест	
+tools/test_map_scenes.py	35	c8fdf4508 2026-10-05	0	6	тест	
+tools/test_map_update.py	96	735a5a76b 2026-09-26	0	2	тест	
+tools/test_mcd_state.py	77	773d43a43 2026-10-15	0	3	тест	
+tools/test_model_lock.py	225	773d43a43 2026-10-15	0	4	тест	
+tools/test_obj_families.py	116	773d43a43 2026-10-15	0	3	тест	
+tools/test_obj_generation.py	286	773d43a43 2026-10-15	0	5	тест	
+tools/test_obj_struct.py	98	773d43a43 2026-10-15	0	4	тест	
+tools/test_option_defaults.py	53	c8fdf4508 2026-10-05	0	4	тест	
+tools/test_pack_guard.py	64	69f6d11aa 2026-10-15	1	5	тест	
+tools/test_pedestal_budget.py	345	a2a146337 2026-10-15	0	2	тест	
+tools/test_photo_accept.py	154	773d43a43 2026-10-15	0	3	тест	
+tools/test_photo_base.py	135	773d43a43 2026-10-15	0	4	тест	
+tools/test_pilot_batch.py	77	773d43a43 2026-10-15	0	3	тест	
+tools/test_pixel_lines_contour.py	112	92b144c4f 2026-10-14	0	1	тест	
+tools/test_player_build.py	168	e6122c80e 2026-10-27	0	3	тест	
+tools/test_post_review_safety.py	67	773d43a43 2026-10-15	1	3	тест	
+tools/test_rake_check.py	173	d59fd08c4 2026-10-15	0	4	тест	
+tools/test_read_pck.py	37	735a5a76b 2026-09-26	0	4	тест	
+tools/test_recipe_guard.py	103	145f118c9 2026-10-14	0	1	тест	
+tools/test_relation_discovery_v2.py	181	773d43a43 2026-10-15	2	2	поколение	
+tools/test_relation_discovery_v3.py	207	773d43a43 2026-10-15	1	2	поколение	
+tools/test_relation_discovery_v4.py	172	773d43a43 2026-10-15	1	2	поколение	
+tools/test_relation_discovery_v5.py	122	773d43a43 2026-10-15	3	2	поколение	
+tools/test_relation_holdout_v4.py	221	773d43a43 2026-10-15	1	3	поколение	
+tools/test_relation_holdout_v4_ref.py	137	773d43a43 2026-10-15	0	2	тест	
+tools/test_relation_holdout_v5.py	152	773d43a43 2026-10-15	1	2	поколение	
+tools/test_relation_holdout_v7.py	146	773d43a43 2026-10-15	1	3	поколение	
+tools/test_relation_probe.py	88	773d43a43 2026-10-15	0	3	тест	
+tools/test_relation_safety_v7_prep.py	97	773d43a43 2026-10-15	2	3	тест	
+tools/test_relation_taxonomy.py	166	773d43a43 2026-10-15	0	2	тест	
+tools/test_release_fresh.py	165	0bdb6e8e2 2026-10-08	0	1	тест	
+tools/test_release_stage_notes.py	136	0250d6bc6 2026-10-08	0	0	тест	
+tools/test_render_chunks.py	112	773d43a43 2026-10-15	0	2	тест	
+tools/test_routing_holdout.py	112	773d43a43 2026-10-15	0	2	тест	
+tools/test_routing_holdout_diag.py	87	773d43a43 2026-10-15	0	2	тест	
+tools/test_routing_holdout_diag2.py	100	773d43a43 2026-10-15	0	2	тест	
+tools/test_routing_holdout_v5.py	111	773d43a43 2026-10-15	0	2	поколение	
+tools/test_routing_holdout_v7.py	111	773d43a43 2026-10-15	0	3	поколение	
+tools/test_routing_holdout_v8.py	223	773d43a43 2026-10-15	1	2	поколение	
+tools/test_routing_model_v8.py	351	773d43a43 2026-10-15	1	3	поколение	
+tools/test_routing_rules.py	132	773d43a43 2026-10-15	0	2	тест	
+tools/test_routing_rules_v5.py	137	773d43a43 2026-10-15	0	3	поколение	
+tools/test_routing_rules_v6.py	203	773d43a43 2026-10-15	0	3	поколение	
+tools/test_routing_rules_v7.py	177	773d43a43 2026-10-15	0	3	поколение	
+tools/test_rul_map.py	132	c8fdf4508 2026-10-05	0	4	тест	
+tools/test_struct_guide.py	159	773d43a43 2026-10-15	0	4	тест	
+tools/test_struct_report.py	67	773d43a43 2026-10-15	0	2	тест	
+tools/test_tickets.py	216	77d9efcff 2026-10-26	0	1	тест	
+tools/test_two_component_v1.py	113	773d43a43 2026-10-15	2	3	поколение	
+tools/test_ufo_pedia_style.py	38	988601bd6 2026-10-21	0	2	тест	
+tools/test_unit_census.py	112	726dbebde 2026-10-03	0	2	тест	
+tools/test_v5_ar2_recount.py	108	773d43a43 2026-10-15	2	3	тест	
+tools/test_v5_component_validation.py	111	773d43a43 2026-10-15	2	2	тест	
+tools/test_v5_freeze_readiness.py	111	773d43a43 2026-10-15	0	2	тест	
+tools/test_voice_deps.py	101	c50915f5b 2026-10-03	0	2	тест	
+tools/test_voice_duplex.py	68	ae03bd25a 2026-10-03	1	4	тест	
+tools/test_voicepack_audit.py	42	4e4674f18 2026-10-17	0	1	тест	
+tools/ticket_choice.py	175	93afbe216 2026-10-30	1	1	живой	да
+tools/tickets.py	536	84fddfdd4 2026-11-07	4	8	живой	
+tools/unit_census.py	1229	726dbebde 2026-10-03	3	6	живой	
+tools/unit_coverage.py	1985	5e605bf35 2026-10-03	0	3	живой	
+tools/unit_explicit.py	1171	5e605bf35 2026-10-03	0	3	живой	
+tools/unit_perf.py	257	10b81ea9c 2026-10-03	0	5	живой	
+tools/unit_shadow_census.py	166	88cee7f39 2026-10-30	1	1	живой	да
+tools/voice_compare.py	308	93fb8643d 2026-10-02	0	1	живой	
+tools/voice_deps.py	203	c50915f5b 2026-10-03	7	4	живой	
+tools/voice_ma_patch.py	156	ae03bd25a 2026-10-03	4	3	живой	

@@ -1,0 +1,5 @@
+build_label=cmrun-CF
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + COUNTERFIRE V0 (AiProbe.cpp/.h, BattlescapeGame.cpp), flag OXCE_AI_COUNTERFIRE=1
+patch_sha256=42adcce5d465f8b61b2623d5f73292b9757239c722391921cf9fc538af135ea6
+exe_sha256=a215791608b60d71269a091be8e2b9b09622e193d80c4923bba6ee8aa3038b25

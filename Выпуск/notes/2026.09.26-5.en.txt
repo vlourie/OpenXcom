@@ -1,0 +1,1 @@
+— Units hanging in the air or in the water with no floor below no longer stand frozen: they hover in the air and slowly sway and drift under water. Aiming and vision are unaffected.

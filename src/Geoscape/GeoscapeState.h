@@ -19,6 +19,8 @@
  */
 #include "../Engine/State.h"
 #include <list>
+#include <set>
+#include <string>
 
 namespace OpenXcom
 {
@@ -27,6 +29,7 @@ class Surface;
 class Globe;
 class TextButton;
 class InteractiveSurface;
+class MusicNoteButton;
 class Text;
 class ComboBox;
 class Timer;
@@ -53,9 +56,25 @@ private:
 	TextButton *_btn5Secs, *_btn1Min, *_btn5Mins, *_btn30Mins, *_btn1Hour, *_btn1Day;
 	TextButton *_sideTop, *_sideBottom;
 	InteractiveSurface *_btnRotateLeft, *_btnRotateRight, *_btnRotateUp, *_btnRotateDown, *_btnZoomIn, *_btnZoomOut;
+	MusicNoteButton *_btnMusic;
 	Text *_txtFunds, *_txtHour, *_txtHourSep, *_txtMin, *_txtMinSep, *_txtSec, *_txtWeekday, *_txtDay, *_txtMonth, *_txtYear;
+	/// HD interface, funds on the geoscape: the time as one line (the classic hour, minutes and seconds
+	/// are three texts laid out for the pixel font; set in TrueType they stood apart around the colons)
+	Text *_txtHdTime = nullptr;
+	Text *_txtHdDate = nullptr;
 	Timer *_gameTimer, *_zoomInEffectTimer, *_zoomOutEffectTimer, *_dogfightStartTimer, *_dogfightTimer;
 	bool _pause, _zoomInEffectDone, _zoomOutEffectDone;
+	/// A UFO as it was before it arrived for a base assault: put back when the defense battle cannot be generated.
+	struct AssaultArrival
+	{
+		int ufoId = 0;
+		size_t trajectoryPoint = 0, waveCountdown = 0;
+		std::string altitude;
+		bool detected = false, hyperDetected = false;
+		int landId = 0, speed = 0;
+	} _assaultArrival;
+	/// Base assaults whose battle could not be generated (UFO ids): on hold, not tried again by this screen.
+	std::set<int> _heldAssaults;
 	Text *_txtDebug;
 	ComboBox *_cbxRegion, *_cbxZone, *_cbxArea, *_cbxCountry;
 	Text *_txtSlacking;
@@ -127,6 +146,8 @@ public:
 	void btnGlobalResearchClick(Action *action);
 	/// Handler for clicking the [GlobalAlienContainment] key.
 	void btnGlobalAlienContainmentClick(Action *action);
+	/// Handler for clicking the [GlobalTransfers] key.
+	void btnGlobalTransfersClick(Action *action);
 	/// Handler for clicking the [DogfightExperience] key.
 	void btnDogfightExperienceClick(Action *action);
 	/// Handler for clicking the [Debug] key.
@@ -165,6 +186,8 @@ public:
 	void btnZoomOutLeftClick(Action *action);
 	/// Handler for right-clicking the Zoom Out icon.
 	void btnZoomOutRightClick(Action *action);
+	/// OXCE-HD (oxceHdFundsToggle): a click on the funds line shows the rating instead of the money, and back.
+	void txtFundsClick(Action *action);
 	/// Blit method - renders the state and dogfights.
 	void blit() override;
 	/// Globe zoom in effect for dogfights.
@@ -188,10 +211,12 @@ public:
 	bool processMissionSite(MissionSite *site);
 	/// Handles base defense
 	void handleBaseDefense(Base *base, Ufo *ufo);
+	/// Puts a base assault whose battle cannot be generated on hold.
+	void holdBaseAssault(Ufo *ufo);
 	/// Update the resolution settings, we just resized the window.
 	void resize(int &dX, int &dY) override;
 	/// Handle alien mission generation.
-	void determineAlienMissions(bool isNewMonth = true, const RuleEvent* eventRules = nullptr);
+	void determineAlienMissions(bool isNewMonth = true, const RuleEvent* p_eventRules = nullptr);
 private:
 	bool attemptAlienRaceEvolution(int month, AlienBase* ab) const;
 	/// Process each individual mission script command.

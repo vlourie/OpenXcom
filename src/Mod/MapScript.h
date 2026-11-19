@@ -189,6 +189,9 @@ private:
 	/// Randomly generate a block number from within the array.
 	int getBlockNumber();
 public:
+	/// Owns its resources: not copied.
+	MapScript(const MapScript&) = delete;
+	MapScript& operator=(const MapScript&) = delete;
 	MapScript();
 	~MapScript();
 	/// Loads information from a ruleset file.

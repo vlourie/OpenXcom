@@ -1,0 +1,17 @@
+tallies: {'ce.fire': 292, 'ce.fire.walk': 1, 'ce.outside': 6273, 'ce.solo': 150}
+exposed patrol/combat: distance of its last decision's start to the closest player unit: {'<=12 dz0-1': 30, '<=12 dz2+': 9, '13-20 dz0-1': 4, '13-20 dz2+': 3}
+exposed unit-turns, last decision: {'escape/2': 40, 'patrol/2': 27, 'combat/2': 19, 'ambush/2': 12, 'escape/0': 4}
+exposed, how the last walk ended: {'-': 37, 'walk.stop.spotted': 20, 'walk.stop.turnspot': 13, 'walk.stop.tu': 12, 'walk.stop.reaction': 10, 'walk.stop.reserve': 9, 'walk.stop.energy': 1}
+exposed, last three decisions:
+    23  escape/2
+    14  patrol/2 patrol/2 patrol/2
+     6  combat/2 combat/2
+     5  patrol/2 patrol/2 escape/2
+     5  combat/2 combat/2 combat/2
+     5  patrol/2 escape/2
+     4  patrol/2
+     4  combat/2 patrol/2 patrol/2
+     4  combat/2 combat/2 escape/2
+     4  ambush/2 ambush/2
+     3  escape/0 escape/0
+     3  patrol/2 patrol/2

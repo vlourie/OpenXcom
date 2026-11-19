@@ -55,6 +55,9 @@ protected:
 	/// Set a mouse button's internal state.
 	void setButtonPressed(Uint8 button, bool pressed);
 public:
+	/// Owns its resources: not copied.
+	InteractiveSurface(const InteractiveSurface&) = delete;
+	InteractiveSurface& operator=(const InteractiveSurface&) = delete;
 	/// Creates a new interactive surface with the specified size and position.
 	InteractiveSurface(int width, int height, int x = 0, int y = 0);
 	/// Cleans up the interactive surface.

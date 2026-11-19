@@ -18,6 +18,7 @@
  */
 #include "Country.h"
 #include "../Mod/RuleCountry.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Engine/RNG.h"
 #include "../Engine/ScriptBind.h"
@@ -172,7 +173,7 @@ std::vector<int> &Country::getActivityAlien()
  * @param averageFunding current average funding across all countries (including withdrawn countries)
  */
 
-void Country::newMonth(int xcomTotal, int alienTotal, int pactScore, int averageFunding, const SavedGame* save)
+void Country::newMonth(int xcomTotal, int alienTotal, int pactScore, int averageFunding, const SavedGame* save, LuaHost *lua)
 {
 	// Note: this is a TEMPORARY variable! it's not saved in the save file, i.e. we don't know the value from the previous month!
 	_satisfaction = Satisfaction::SATISFIED;
@@ -234,6 +235,10 @@ void Country::newMonth(int xcomTotal, int alienTotal, int pactScore, int average
 	ModScript::NewMonthCountry::Output args{ newFunding, static_cast<int>(_satisfaction), _newPact, _cancelPact };
 	ModScript::NewMonthCountry::Worker work{ this, save, xcomTotal, alienTotal };
 	work.execute(_rules->getScript<ModScript::NewMonthCountry>(), args);
+	if (lua)
+	{
+		lua->fire(LuaHost::NEW_MONTH_COUNTRY, args.data, { this, save, xcomTotal, alienTotal });
+	}
 
 	newFunding = std::get<0>(args.data);
 	_satisfaction = static_cast<Satisfaction>(std::get<1>(args.data));

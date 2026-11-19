@@ -1,0 +1,6 @@
+1 AN M6 s1 turns=8
+2 AN M6 s2 turns=8
+3 AV M3 s1 turns=8
+4 AF M6 s1 turns=8
+5 AO M6 s1 turns=8
+6 AN M6 s1 turns=8

@@ -1,0 +1,86 @@
+result: {'how': 'over', 'turn': '10', 'livesoldiers': '35', 'livealiens': '0', 'player': '38', 'pdead': '3', 'pout': '0', 'phplost': '537', 'hostile': '37', 'hdead': '37', 'hout': '0', 'hmoves': '97', 'hattacks': '63', 'pattacks': '37', 'ms': '68473'}
+--- objective / plan / done / release:
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=1.87813 why=none
+  what=plan turn=1 cell=4,3 fighters=1000010>44,34,3;1000023>47,34,3
+  what=release turn=1 unit=1000010 why=out
+  what=release turn=1 unit=1000023 why=out
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=2.33412 why=few
+  what=plan turn=1 cell=4,3 fighters=1000019>44,34,3;1000036>47,34,3
+  what=release turn=1 unit=1000019 why=out
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=2.49642 why=few
+  what=plan turn=1 cell=4,3 fighters=1000015>47,34,3;1000036>44,34,3
+  what=release turn=1 unit=1000036 why=out
+  what=objective turn=1 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=2.71373 why=few
+  what=plan turn=1 cell=4,3 fighters=1000006>47,34,3;1000015>44,34,3
+  what=release turn=2 unit=1000006 why=out
+  what=objective turn=2 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=3.08199 why=few
+  what=plan turn=2 cell=4,3 fighters=1000015>44,34,3;1000018>47,34,3
+  what=release turn=2 unit=1000015 why=out
+  what=objective turn=2 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=3.17985 why=few
+  what=plan turn=2 cell=4,3 fighters=1000004>44,34,3;1000018>47,34,3
+  what=release turn=3 unit=1000004 why=out
+  what=objective turn=3 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=3.41244 why=few
+  what=plan turn=3 cell=4,3 fighters=1000016>47,34,3;1000022>44,34,3
+  what=release turn=4 unit=1000022 why=out
+  what=objective turn=4 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=3.46392 why=few
+  what=plan turn=4 cell=4,3 fighters=1000005>47,34,3;1000016>44,34,3
+  what=release turn=5 unit=1000016 why=out
+  what=objective turn=5 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=4.07464 why=few
+  what=plan turn=5 cell=4,3 fighters=1000005>44,34,3;1000008>47,34,3
+  what=release turn=5 unit=1000008 why=out
+  what=objective turn=5 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=4.60471 why=few
+  what=plan turn=5 cell=4,3 fighters=1000005>44,34,3;1000033>47,34,3
+  what=release turn=5 unit=1000005 why=out
+  what=objective turn=5 cell=4,3 fac=STR_PSIONIC_LABORATORY left=1 score=5.36597 why=few
+  what=plan turn=5 cell=4,3 fighters=1000033>44,34,3;1000035>47,34,3
+  what=release turn=7 unit=1000033 why=out
+  what=noplan turn=7 why=few candidates=0 fighters=1
+  what=noplan turn=8 why=none candidates=0 fighters=1
+  what=noplan turn=9 why=none candidates=0 fighters=1
+  what=noplan turn=10 why=none candidates=0 fighters=1
+--- D0's protocol aims: 29; no line of fire to the target: 18; a legal alternative in the same room at that moment: 29; both: 18
+  t3 1000033 3,5,3 > 4,2,1 lof0 l3 impact 3,4,3 alt 2,5,3 armor 14
+  t3 1000033 3,5,3 > 4,2,1 lof0 l0 impact 3,4,3 alt 2,5,3 armor 14
+  t3 1000033 3,5,3 > 4,2,1 lof0 l0 impact 3,4,3 alt 2,5,3 armor 14
+  t3 1000035 5,0,3 > 4,2,1 lof0 l0 impact 4,1,3 alt 6,2,3 armor 12
+  t3 1000035 5,0,3 > 4,2,1 lof0 l0 impact 4,1,3 alt 6,2,3 armor 12
+  t4 1000033 3,5,3 > 4,2,1 lof0 l0 impact 3,4,3 alt 2,5,3 armor 14
+  t4 1000033 3,5,3 > 4,2,1 lof0 l0 impact 4,3,2 alt 2,5,3 armor 14
+  t4 1000035 5,0,3 > 4,2,1 lof0 l0 impact 4,1,3 alt 6,2,3 armor 12
+--- nomodule (on a target node, nothing at z=1): 6; with a legal alternative: 4
+  t1 1000016 24,4,3 alt - armor None
+  t2 1000005 2,25,3 alt - armor None
+  t3 1000012 5,11,3 alt 5,12,3 armor 20
+  t4 1000008 4,15,3 alt 3,15,3 armor 20
+  t7 1000033 3,5,3 alt 2,5,3 armor 14
+  t7 1000035 5,0,3 alt 6,2,3 armor 12
+--- tasks by unit and kind: [(('1000006', 'walk'), 1), (('1000015', 'walk'), 20), (('1000016', 'walk'), 1), (('1000033', 'walk'), 9), (('1000035', 'walk'), 9)]
+--- chain: turn unit task > actual (mode act to spent) | hits
+  t1 1000006 walk 47,34,3 (20,44,4) > m2 a8 (40,45,2) sp14 | 40,45,2:p4:37/-1:m0
+  t1 1000015 walk 44,34,3 (20,40,4) > m3 a0 (20,40,4) sp0 | 
+  t1 1000015 walk 44,34,3 (20,40,4) > m3 a0 (20,40,4) sp0 | 
+  t1 1000015 walk 44,34,3 (20,40,4) > m3 a0 (20,40,4) sp0 | 
+  t2 1000015 walk 44,34,3 (20,40,4) > m2 a7 (40,44,2) sp28 | 40,45,2:p4:52/-1:m0 40,44,2:p4:40/-1:m0 42,43,2:p3:57/150:m0
+  t3 1000016 walk 47,34,3 (22,11,0) > m0 a2 (24,4,3) sp56 | 
+  t5 1000033 walk 44,34,3 (3,5,3) > m0 a8 (4,2,1) sp26 | 4,4,2:p0:79/50:m0
+  t5 1000033 walk 44,34,3 (3,5,3) > m0 a8 (4,2,1) sp26 | 4,2,2:p0:39/50:m0
+  t5 1000035 walk 47,34,3 (5,0,3) > m0 a8 (4,2,1) sp26 | 4,2,2:p0:63/50:m0
+  t5 1000035 walk 47,34,3 (5,0,3) > m0 a8 (4,2,1) sp26 | 5,1,2:p0:75/50:m0
+  t5 1000033 walk 44,34,3 (3,5,3) > m0 a8 (4,2,1) sp26 | 4,3,2:p0:41/50:m0
+  t5 1000033 walk 44,34,3 (3,5,3) > m0 a8 (4,2,1) sp0 | 
+  t5 1000035 walk 47,34,3 (5,0,3) > m0 a8 (4,2,1) sp26 | 4,1,3:p0:60/80:m0
+  t5 1000035 walk 47,34,3 (5,0,3) > m0 a8 (4,2,1) sp0 | 
+  t6 1000033 walk 44,34,3 (3,5,3) > m0 a8 (4,2,1) sp26 | 3,4,3:p0:65/80:m0
+  t6 1000033 walk 44,34,3 (3,5,3) > m0 a8 (4,2,1) sp26 | 3,4,3:p3:67/40:m0
+  t6 1000035 walk 47,34,3 (5,0,3) > m0 a8 (4,2,1) sp26 | 4,2,1:p3:68/50:m1
+  t6 1000035 walk 47,34,3 (5,0,3) > m0 a8 (5,2,1) sp27 | 5,1,3:p0:47/80:m0
+  t6 1000033 walk 44,34,3 (3,5,3) > m3 a0 (3,5,3) sp0 | 
+  t6 1000035 walk 47,34,3 (5,0,3) > m0 a8 (5,2,1) sp26 | 5,1,3:p0:84/80:m0
+  t6 1000035 walk 47,34,3 (5,0,3) > m0 a8 (5,2,1) sp0 | 
+  t7 1000033 walk 44,34,3 (3,5,3) > m0 a8 (5,2,1) sp27 | 5,2,1:p3:51/50:m1
+  t7 1000033 walk 44,34,3 (3,5,3) > m0 a2 (47,28,4) sp44 | 
+  t7 1000035 walk 47,34,3 (5,0,3) > m0 a2 (26,12,1) sp12 | 
+--- how tasks went: [(('walk', 'other mode0 act2'), 3), (('walk', 'other mode0 act8'), 12), (('walk', 'other mode0 act8 notpaid'), 3), (('walk', 'other mode2 act7'), 1), (('walk', 'other mode2 act8'), 1), (('walk', 'other mode3 act0 notpaid'), 4)]
+--- by fighter: {'1000006': {'other': 1}, '1000015': {'other': 4}, '1000016': {'other': 1}, '1000033': {'other': 9}, '1000035': {'other': 9}}
+--- hostile hits on module objects 2, breaking 2; blasts 8
+--- OBJECTIVE RESULT at what=grid when=end turn=10 l: module tiles 527 > 517 (lost 10); facilities demolished: 0 []

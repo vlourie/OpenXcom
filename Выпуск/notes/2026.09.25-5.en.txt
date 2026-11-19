@@ -1,0 +1,6 @@
+﻿Language and mods set right after installation.
+
+— The old OAK Russian patch is no longer switched on together with RU-patch 12.3.2: the new one is built on it and replaces it, and the two fought over the same texts. The launcher switches OAK off for players who already had it on.
+— The game no longer asks again for the language chosen in the launcher's setup.
+— The Controls and Advanced option screens show real captions again instead of raw STR_… keys.
+— In the setup wizard, the "To the launcher" and "Play" buttons now stand side by side.

@@ -20,6 +20,7 @@
 #include "../Engine/InteractiveSurface.h"
 #include <vector>
 #include <string>
+#include <functional>
 #include "../Engine/Unicode.h"
 
 namespace OpenXcom
@@ -50,6 +51,10 @@ private:
 	TextVAlign _valign;
 	Uint8 _color, _color2;
 	int _scrollY;
+	float _hdCapScale = 1.0f;
+	int _hdShiftX = 0, _hdShiftY = 0;
+	/// Lays the glyphs out as draw() does and reports each: fn(font, code, x, y, color, mul, mid).
+	void forEachGlyph(const std::function<void(Font*, UCode, int, int, int, int, int)> &fn) const;
 
 	/// Processes the contained text.
 	void processText();
@@ -66,6 +71,10 @@ public:
 	void setSmall();
 	/// Gets the text's current font.
 	Font *getFont() const;
+	/// Is the big font in use?
+	bool isBig() const { return _font == _big; }
+	/// Is the high-contrast colour rule in use?
+	bool isHighContrast() const { return _contrast; }
 	/// Initializes the resources for the text.
 	void initText(Font *big, Font *small, Language *lang) override;
 	/// Sets the text's string.
@@ -102,6 +111,19 @@ public:
 	int getTextHeight(int line = -1) const;
 	/// Draws the text.
 	void draw() override;
+	/// HD interface: the text from the font's glyphs with smooth edges.
+	void hdMirror() override;
+	/// HD interface: draws the text at a base position (for surfaces that hold texts inside them),
+	/// cut to its own rectangle and, when given (w > 0), to the holder's rectangle. `cutOnly`: the holder
+	/// only cuts the letters, the line keeps its own room (a globe label at the globe's edge, XP-000594).
+	void hdDrawAt(int x, int y, int clipX = 0, int clipY = 0, int clipW = 0, int clipH = 0, int padX = 0, bool cutOnly = false);
+	/// HD interface: the TrueType letters set this much smaller than the classic font's capitals
+	/// (rows stacked a classic line apart, as the geoscape's clock: the TrueType line has no gap).
+	void setHdCapScale(float s) { _hdCapScale = s; }
+	float getHdCapScale() const { return _hdCapScale; }
+	/// HD interface, TrueType letters only: the text is drawn this many base pixels away from its classic place
+	/// (the classic layer and the mouse keep the place; rows given the room the pixel font did not need).
+	void setHdShift(int dx, int dy) { _hdShiftX = dx; _hdShiftY = dy; }
 	/// Sets the text's scrollable setting.
 	void setScrollable(bool scroll);
 	/// Special handling for mouse presses.

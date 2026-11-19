@@ -1,0 +1,274 @@
+diff -ru --strip-trailing-cr orig/src/Battlescape/BattlescapeState.cpp up/src/Battlescape/BattlescapeState.cpp
+--- orig/src/Battlescape/BattlescapeState.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Battlescape/BattlescapeState.cpp	2026-10-27 14:14:51.271649100 +0200
+@@ -856,6 +856,31 @@
+ /**
+  * Runs the timers and handles popups.
+  */
++// Stage 0B driver (OXCE_U0_SAVE): end the loaded player turn, save at the next one, quit
++static void u0Drive(Game *game, SavedBattleGame *save, BattlescapeGame *bg, bool ready)
++{
++	static const char *saveAs = getenv("OXCE_U0_SAVE");
++	static int endedAt = -1;
++	static bool done = false;
++	if (!saveAs || !*saveAs || done || save->getSide() != FACTION_PLAYER || bg->isBusy() || !ready)
++	{
++		return;
++	}
++	if (endedAt < 0)
++	{
++		endedAt = save->getTurn();
++		Log(LOG_INFO) << "[U0] end turn " << endedAt;
++		bg->requestEndTurn(false);
++	}
++	else if (save->getTurn() > endedAt)
++	{
++		game->getSavedGame()->save(saveAs, game->getMod());
++		Log(LOG_INFO) << "[U0] saved: " << saveAs << " turn " << save->getTurn();
++		done = true;
++		game->quit();
++	}
++}
++
+ void BattlescapeState::think()
+ {
+ 	static bool popped = false;
+@@ -865,6 +890,7 @@
+ 		if (_popups.empty())
+ 		{
+ 			State::think();
++			u0Drive(_game, _save, _battleGame, allowButtons());
+ 			int ret = _battleGame->think();
+ 			if (ret > -1)
+ 			{
+diff -ru --strip-trailing-cr orig/src/Battlescape/InfoboxOKState.cpp up/src/Battlescape/InfoboxOKState.cpp
+--- orig/src/Battlescape/InfoboxOKState.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Battlescape/InfoboxOKState.cpp	2026-10-27 14:31:32.400271900 +0200
+@@ -25,6 +25,8 @@
+ #include "../Engine/Options.h"
+ #include "../Savegame/SavedGame.h"
+ #include "../Savegame/SavedBattleGame.h"
++#include "../Engine/Logger.h"
++#include <cstdlib>
+ 
+ namespace OpenXcom
+ {
+@@ -84,6 +86,17 @@
+  * Returns to the previous screen.
+  * @param action Pointer to an action.
+  */
++void InfoboxOKState::think()
++{
++	State::think();
++	const char *u0 = getenv("OXCE_U0_SAVE");
++	if (u0 && *u0)
++	{
++		Log(LOG_INFO) << "[U0] closed: " << _txtTitle->getText();
++		btnOkClick(nullptr);
++	}
++}
++
+ void InfoboxOKState::btnOkClick(Action *)
+ {
+ 	_game->popState();
+diff -ru --strip-trailing-cr orig/src/Battlescape/InfoboxOKState.h up/src/Battlescape/InfoboxOKState.h
+--- orig/src/Battlescape/InfoboxOKState.h	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Battlescape/InfoboxOKState.h	2026-10-27 14:31:32.400271900 +0200
+@@ -43,6 +43,8 @@
+ 	~InfoboxOKState();
+ 	/// Handler for clicking the OK button.
+ 	void btnOkClick(Action *action);
++	/// Stage 0B driver: closes itself under OXCE_U0_SAVE.
++	void think() override;
+ };
+ 
+ }
+diff -ru --strip-trailing-cr orig/src/Battlescape/NextTurnState.cpp up/src/Battlescape/NextTurnState.cpp
+--- orig/src/Battlescape/NextTurnState.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Battlescape/NextTurnState.cpp	2026-10-27 14:31:32.401774900 +0200
+@@ -307,7 +307,7 @@
+ 		}
+ 	}
+ 
+-	if (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty())
++	if ((getenv("OXCE_U0_SAVE") && *getenv("OXCE_U0_SAVE")) || (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty()))
+ 	{
+ 		_timer = new Timer(NEXT_TURN_DELAY);
+ 		_timer->onTimer((StateHandler)&NextTurnState::close);
+diff -ru --strip-trailing-cr orig/src/CMakeLists.txt up/src/CMakeLists.txt
+--- orig/src/CMakeLists.txt	2026-09-19 12:57:20.000000000 +0300
++++ up/src/CMakeLists.txt	2026-10-27 14:16:53.394743200 +0200
+@@ -627,7 +627,7 @@
+   set(WIN32_LIBS imagehlp dbghelp)
+ endif(WIN32)
+ 
+-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
++target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )
+ 
+ # Pack libraries into bundle and link executable appropriately
+ if ( APPLE AND CREATE_BUNDLE )
+diff -ru --strip-trailing-cr orig/src/Geoscape/GeoscapeState.cpp up/src/Geoscape/GeoscapeState.cpp
+--- orig/src/Geoscape/GeoscapeState.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Geoscape/GeoscapeState.cpp	2026-10-27 14:24:09.376192900 +0200
+@@ -3766,7 +3766,8 @@
+ 				disabledRngArcs = tmp; // copy for us to modify
+ 				for (auto& rngArc : tmp.getNames())
+ 				{
+-					auto* research = mod->getResearch(rngArc, true);
++					// HD: имя дуги может оказаться пустышкой - тогда темы в _research нет
++					auto* research = mod->getResearchOrPlaceholder(rngArc);
+ 					if (save->isResearched(research))
+ 					{
+ 						++arcsEnabled;
+@@ -3778,7 +3779,7 @@
+ 			bool canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
+ 			if (canAddOneMore && !disabledSeqArcs.empty())
+ 			{
+-				auto* ruleResearchSeq = mod->getResearch(disabledSeqArcs.front(), true); // take first
++				auto* ruleResearchSeq = mod->getResearchOrPlaceholder(disabledSeqArcs.front()); // take first
+ 				save->addFinishedResearch(ruleResearchSeq, mod, hq, true);
+ 				++arcsEnabled;
+ 				if (ruleResearchSeq)
+@@ -3797,7 +3798,7 @@
+ 			canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
+ 			if (canAddOneMore && !disabledRngArcs.empty())
+ 			{
+-				auto* ruleResearchRng = mod->getResearch(disabledRngArcs.choose(), true); // take random
++				auto* ruleResearchRng = mod->getResearchOrPlaceholder(disabledRngArcs.choose()); // take random
+ 				save->addFinishedResearch(ruleResearchRng, mod, hq, true);
+ 				++arcsEnabled; // for good measure :)
+ 				if (ruleResearchRng)
+Only in up/src/Geoscape: GeoscapeState.cpp.orig
+diff -ru --strip-trailing-cr orig/src/Mod/Mod.cpp up/src/Mod/Mod.cpp
+--- orig/src/Mod/Mod.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Mod/Mod.cpp	2026-10-27 14:24:09.383246300 +0200
+@@ -734,6 +734,10 @@
+ 	{
+ 		delete pair.second;
+ 	}
++	for (auto& pair : _missingResearch)   // HD: пустышки для тем, которых мод не объявил
++	{
++		delete pair.second;
++	}
+ 	for (auto& pair : _manufacture)
+ 	{
+ 		delete pair.second;
+@@ -4624,6 +4628,38 @@
+ }
+ 
+ /**
++ * Gets the research, or a placeholder that can never be discovered.
++ *
++ * HD: с OXCE 8.7.1 ссылка на несуществующую тему исследования - это исключение при
++ * загрузке рулсетов, и X-Piratez с тремя такими опечатками просто не запускается.
++ * Выбросить ссылку нельзя: условие исчезнет и запертое станет доступным, то есть
++ * поменяется механика. Поэтому заводим тему с тем же именем, которой нет в _research:
++ * в списки исследований она не попадает, открыть её невозможно, и условие остаётся
++ * невыполнимым - ровно как в 8.7.0. Каждая дыра один раз называется в логе.
++ */
++const RuleResearch *Mod::getResearchOrPlaceholder(const std::string &id) const
++{
++	if (isEmptyRuleName(id))
++	{
++		return nullptr;
++	}
++	if (auto *rule = getResearch(id, false))
++	{
++		return rule;
++	}
++	auto it = _missingResearch.find(id);
++	if (it != _missingResearch.end())
++	{
++		return it->second;
++	}
++	Log(LOG_WARNING) << "Mod refers to research '" << id << "', which no mod declares."
++		<< " Treating it as never discovered (OXCE 8.7.0 behaviour).";
++	auto *placeholder = new RuleResearch(id, 0);
++	_missingResearch[id] = placeholder;
++	return placeholder;
++}
++
++/**
+  * Gets the ruleset list for from research list.
+  */
+ std::vector<const RuleResearch*> Mod::getResearch(const std::vector<std::string> &id) const
+Only in up/src/Mod: Mod.cpp.orig
+diff -ru --strip-trailing-cr orig/src/Mod/Mod.h up/src/Mod/Mod.h
+--- orig/src/Mod/Mod.h	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Mod/Mod.h	2026-10-27 14:24:09.392381700 +0200
+@@ -192,6 +192,10 @@
+ 	std::map<std::string, RuleInventory*> _invs;
+ 	bool _inventoryOverlapsPaperdoll;
+ 	std::map<std::string, RuleResearch *> _research;
++	// HD: темы, на которые мод ссылается, но не объявляет. С 8.7.1 апстрим падает на
++	// такой ссылке при загрузке; мы держим для каждой пустышку, которую нельзя открыть,
++	// - поведение остаётся прежним (условие не выполняется никогда), а игра запускается
++	mutable std::map<std::string, RuleResearch *> _missingResearch;
+ 	std::map<std::string, RuleManufacture *> _manufacture;
+ 	std::map<std::string, RuleManufactureShortcut *> _manufactureShortcut;
+ 	std::map<std::string, RuleSoldierBonus *> _soldierBonus;
+@@ -610,7 +614,7 @@
+ 		}
+ 		else if constexpr (std::is_same_v<T, RuleResearch>)
+ 		{
+-			rule = getResearch(name, true);
++			rule = getResearchOrPlaceholder(name);
+ 		}
+ 		else if constexpr (std::is_same_v<T, Unit>)
+ 		{
+@@ -1038,6 +1042,8 @@
+ 
+ 	/// Gets the ruleset for a specific research project.
+ 	RuleResearch *getResearch(const std::string &id, bool error = false) const;
++	/// Gets the research, or an unobtainable placeholder if the mod never declared it.
++	const RuleResearch *getResearchOrPlaceholder(const std::string &id) const;
+ 	/// Gets the ruleset for a specific research project.
+ 	std::vector<const RuleResearch*> getResearch(const std::vector<std::string> &id) const;
+ 	/// Gets the ruleset for a specific research project.
+Only in up/src/Mod: Mod.h.orig
+diff -ru --strip-trailing-cr orig/src/Mod/RuleArcScript.cpp up/src/Mod/RuleArcScript.cpp
+--- orig/src/Mod/RuleArcScript.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Mod/RuleArcScript.cpp	2026-10-27 14:24:09.399373200 +0200
+@@ -93,13 +93,14 @@
+ 	// No link, only check
+ 	for (auto& name : _randomArcs.getNames())
+ 	{
+-		auto* research = mod->getResearch(name, true); // crash if doesn't exist
++		mod->getResearchOrPlaceholder(name);   // HD: только назвать дыру в логе, не падать
+ 	}
+ 
+ 	// Link manually
+ 	for (auto& entry : _researchTriggerNames)
+ 	{
+-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
++		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
++		auto* research = mod->getResearchOrPlaceholder(entry.first);
+ 		if (research)
+ 		{
+ 			_researchTriggers[research] = entry.second;
+diff -ru --strip-trailing-cr orig/src/Mod/RuleEventScript.cpp up/src/Mod/RuleEventScript.cpp
+--- orig/src/Mod/RuleEventScript.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Mod/RuleEventScript.cpp	2026-10-27 14:24:09.406883300 +0200
+@@ -108,7 +108,8 @@
+ 	// Link manually
+ 	for (auto& entry : _researchTriggerNames)
+ 	{
+-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
++		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
++		auto* research = mod->getResearchOrPlaceholder(entry.first);
+ 		if (research)
+ 		{
+ 			_researchTriggers[research] = entry.second;
+diff -ru --strip-trailing-cr orig/src/Mod/RuleMissionScript.cpp up/src/Mod/RuleMissionScript.cpp
+--- orig/src/Mod/RuleMissionScript.cpp	2026-09-19 12:57:20.000000000 +0300
++++ up/src/Mod/RuleMissionScript.cpp	2026-10-27 14:24:09.408883400 +0200
+@@ -135,7 +135,8 @@
+ 	// Link manually
+ 	for (auto& entry : _researchTriggerNames)
+ 	{
+-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
++		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
++		auto* research = mod->getResearchOrPlaceholder(entry.first);
+ 		if (research)
+ 		{
+ 			_researchTriggers[research] = entry.second;

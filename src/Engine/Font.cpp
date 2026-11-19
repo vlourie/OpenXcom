@@ -21,6 +21,7 @@
 #include "Surface.h"
 #include "FileMap.h"
 #include "Unicode.h"
+#include "Exception.h"
 
 namespace OpenXcom
 {
@@ -68,6 +69,16 @@ void Font::load(const YAML::YamlNodeReader& reader)
 		_images.push_back(image);
 		init(_images.size() - 1, chars);
 	}
+	if (_chars.empty())
+	{
+		// the sizes of the font are those of its first image, and there is nothing to draw a character with
+		throw Exception("Invalid font: no images or no characters.");
+	}
+	if (_chars.find('?') == _chars.end())
+	{
+		// every character the font lacks is drawn as '?': a font without it draws them as its first character
+		_chars['?'] = _chars.begin()->second;
+	}
 }
 
 /**
@@ -105,6 +116,10 @@ void Font::init(size_t index, const UString &str)
 {
 	FontImage *image = &_images[index];
 	Surface *surface = image->surface;
+	if (image->width <= 0 || image->height <= 0 || surface->getWidth() < image->width)
+	{
+		throw Exception("Invalid font image: the size of a character is zero or wider than the image.");
+	}
 	surface->lock();
 	int length = (surface->getWidth() / image->width);
 

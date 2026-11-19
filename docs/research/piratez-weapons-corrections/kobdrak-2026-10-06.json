@@ -1,0 +1,1487 @@
+{
+ "format": "piratez-weapons-corrections",
+ "version": 1,
+ "data_built": "2026-10-04",
+ "exported": "2026-10-06T21:41:06.498Z",
+ "reviewer": "kobdrak(Дмитрий)",
+ "general": "",
+ "items": {
+  "STR_KNOIF_POISON": {
+   "name": "Отравленный кинжал",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "био урон, прицела нет"
+  },
+  "STR_HELL_KNUCKLES": {
+   "name": "Кастет берсерка",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "специфичная вещица + плазменный урон милишки, хоть и бьет на одну клетку из за этого прицела нет отсортированно"
+  },
+  "STR_GHOST_DAGGER": {
+   "name": "Призрачный кинжал",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "хоть и пси но магическая категория для изначально магических предметов заклинания чары артефакты"
+  },
+  "STR_SLICER": {
+   "name": "Медицинская ломтерезка",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "она умеет добивать танки не подрывая,"
+  },
+  "STR_PLASMA_SWORD": {
+   "name": "Плазменный меч",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "редкость"
+  },
+  "STR_POISON_LANCE": {
+   "name": "Токси-копье",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "био"
+  },
+  "STR_POWER_MACE": {
+   "name": "Булава Мощи",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "плазма"
+  },
+  "STR_FORCE_BLADE": {
+   "name": "Силовой клинок",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "отсылка на звездные войны"
+  },
+  "STR_PHOTON_BLADE": {
+   "name": "Фотонный клинок",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": "для полного разделения"
+  },
+  "STR_SHAWL": {
+   "name": "Модная шаль",
+   "class_was": 4,
+   "class_new": 2,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_FAN": {
+   "name": "Веер",
+   "class_was": 4,
+   "class_new": 1,
+   "ammo": "",
+   "note": "дубинка, с некоторыми защитными функциями"
+  },
+  "STR_NOOSE": {
+   "name": "Веревка",
+   "class_was": 4,
+   "class_new": 2,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_CHAINSAW_HEAVY": {
+   "name": "Тяжелая бензопила",
+   "class_was": 4,
+   "class_new": 2,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_AUTO_AXE": {
+   "name": "Автотопор",
+   "class_was": 4,
+   "class_new": 2,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_CHAINSAW_LOLI": {
+   "name": "Лоли-бензопила",
+   "class_was": 4,
+   "class_new": 2,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_CHAINSAW": {
+   "name": "Бензопила",
+   "class_was": 4,
+   "class_new": 2,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_RIPPER": {
+   "name": "Потрошитель",
+   "class_was": 4,
+   "class_new": 1,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_ELECTRIC_LASSO": {
+   "name": "Электрическое лассо",
+   "class_was": 15,
+   "class_new": 4,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_ANCHOR": {
+   "name": "Якорь",
+   "class_was": 15,
+   "class_new": 3,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_WRECKIN_BALL": {
+   "name": "Разбубенчик",
+   "class_was": 15,
+   "class_new": 3,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_TESLA_COIL": {
+   "name": "Катушка Тесла",
+   "class_was": 15,
+   "class_new": 6,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SHREDDER": {
+   "name": "Шреддер",
+   "class_was": 15,
+   "class_new": null,
+   "ammo": "",
+   "note": "Специально от производного специализация, требует навыка для эффективности, дальнобойное то есть не считается не отрываемым от рук, в данном случае метательное"
+  },
+  "STR_ANUS": {
+   "name": "Шакрам",
+   "class_was": 15,
+   "class_new": null,
+   "ammo": "",
+   "note": "метательное, требует навыков бойца"
+  },
+  "STR_DAZZLING_DISC": {
+   "name": "Дзынь-Динь-Бум",
+   "class_was": 15,
+   "class_new": null,
+   "ammo": "",
+   "note": "метательное,  дальнобойное, требует навыков"
+  },
+  "STR_RETICULAN_ELECTROGUN": {
+   "name": "Электропушка Ретикулян",
+   "class_was": 15,
+   "class_new": 11,
+   "ammo": "",
+   "note": "снайперка, по своей сути"
+  },
+  "STR_ZAP_GUN": {
+   "name": "Разрядник",
+   "class_was": 15,
+   "class_new": 5,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_MEGAVOLT": {
+   "name": "Мегавольтный разрядник",
+   "class_was": 15,
+   "class_new": 9,
+   "ammo": "",
+   "note": "при дальности стрельбы только 10 клеток это винтовка, с конским уроном."
+  },
+  "STR_ELECTRIC_NET": {
+   "name": "Электрическая сеть",
+   "class_was": 15,
+   "class_new": null,
+   "ammo": "",
+   "note": "требует идеальной точности от бойца, другим давать нельзя"
+  },
+  "STR_TOXIGUN": {
+   "name": "Токсиган",
+   "class_was": 15,
+   "class_new": 12,
+   "ammo": "",
+   "note": "навесной недо огнемет, был бы огнеметом отправился бы в артиллерию"
+  },
+  "STR_HAND_FLAMER": {
+   "name": "Ручной обжигатель",
+   "class_was": 15,
+   "class_new": 12,
+   "ammo": "",
+   "note": "не артиллерия, недоогнемет"
+  },
+  "STR_FLAMETHROWER": {
+   "name": "Огнемет",
+   "class_was": 15,
+   "class_new": 12,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_FLAMETHROWER_LR": {
+   "name": "Дальнобойный огнемет",
+   "class_was": 15,
+   "class_new": 12,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_HEAVY_FLAMER": {
+   "name": "Тяжелый огнемет",
+   "class_was": 15,
+   "class_new": 12,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_MEGA_FLAMER": {
+   "name": "Мегаогнемет МарСек",
+   "class_was": 15,
+   "class_new": 12,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_FLAME_PISTOL": {
+   "name": "Пистолет 'Инферно'",
+   "class_was": 15,
+   "class_new": 5,
+   "ammo": "",
+   "note": "огнеметы внеклассовое в основном оружие"
+  },
+  "STR_FIREBALL_LAUNCHER": {
+   "name": "Огнешаромет Арены",
+   "class_was": 15,
+   "class_new": 11,
+   "ammo": "",
+   "note": "30 клеток! не навесное, это снайперка сэр"
+  },
+  "STR_BIOFRESH_GUN": {
+   "name": "Универсальный освежитель",
+   "class_was": 15,
+   "class_new": 14,
+   "ammo": "",
+   "note": "это скорее дальнобойный лечащий предмет, его нужно рассматривать как ооочень специфичную аптечку, и отправлять в категорию лечащего снаряжения. Как таковое все же ближе к специальному, но требует навык вуду, открывается мистикой, а это заявка на магическое, пока что отправляется в магическое"
+  },
+  "STR_PLANT_X": {
+   "name": "Метагенное растение",
+   "class_was": 15,
+   "class_new": null,
+   "ammo": "",
+   "note": "верно"
+  },
+  "STR_SHROOM_BAG": {
+   "name": "Споры грибов",
+   "class_was": 15,
+   "class_new": 12,
+   "ammo": "",
+   "note": "лечебный предмет???, пока в навесное."
+  },
+  "STR_SINGING_SPEAR": {
+   "name": "Поющее копье",
+   "class_was": 3,
+   "class_new": 4,
+   "ammo": "",
+   "note": "специальный урон"
+  },
+  "STR_PHOTON_SPEAR": {
+   "name": "Фотонное копье",
+   "class_was": 3,
+   "class_new": 4,
+   "ammo": "",
+   "note": "лазерный урон"
+  },
+  "STR_WHIP": {
+   "name": "Нейрохлыст",
+   "class_was": 3,
+   "class_new": 4,
+   "ammo": "",
+   "note": "пси урон"
+  },
+  "STR_POISONOUS_TENTACLE": {
+   "name": "Ядовитый тентакль",
+   "class_was": 3,
+   "class_new": 4,
+   "ammo": "",
+   "note": "био урон"
+  },
+  "STR_WHIP_BLOOD_VINE": {
+   "name": "Кнут из Кровавой Лозы",
+   "class_was": 3,
+   "class_new": 4,
+   "ammo": "",
+   "note": "био урон"
+  },
+  "STR_FOWLER_SWORD": {
+   "name": "Черный Сокол",
+   "class_was": 4,
+   "class_new": 1,
+   "ammo": "",
+   "note": "хоть и конский урон от навыков,  сюжетная вещица,  артефакт, но по своей сути, обычный ножик."
+  },
+  "STR_THUNDERSTRIKER": {
+   "name": "Гром-дубинка",
+   "class_was": 4,
+   "class_new": 14,
+   "ammo": "",
+   "note": "а это магический жезл, с молниевым уроном,"
+  },
+  "STR_IMPALER": {
+   "name": "Колосажатель",
+   "class_was": 4,
+   "class_new": 14,
+   "ammo": "",
+   "note": "Посох мага, в виде копья,"
+  },
+  "STR_CAT_PAWS": {
+   "name": "Кошачьи Лапки",
+   "class_was": 4,
+   "class_new": 2,
+   "ammo": "",
+   "note": "обычные перчатки с ножиками, ничего особого"
+  },
+  "STR_POLICE_SHIELD": {
+   "name": "Полицейский щит",
+   "class_was": 4,
+   "class_new": 1,
+   "ammo": "",
+   "note": "защитное снаряжение, применимое как дубина, без прицела, в упор."
+  },
+  "STR_ENERGY_SHIELD_SMALL": {
+   "name": "Энергощит",
+   "class_was": 4,
+   "class_new": 1,
+   "ammo": "",
+   "note": "защитное снаряжение, с возможностью использовать как дубину,"
+  },
+  "STR_CATTLE_PROD": {
+   "name": "Электрострекало",
+   "class_was": 2,
+   "class_new": 4,
+   "ammo": "",
+   "note": "таких мало"
+  },
+  "STR_BANE_BLADE": {
+   "name": "Клинок погибели",
+   "class_was": 2,
+   "class_new": 4,
+   "ammo": "",
+   "note": "хим урон на милишке"
+  },
+  "STR_FISTY": {
+   "name": "Шок-кастет",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_STUN_BATON": {
+   "name": "Парализующая дубинка",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_PLASMA_DAGGER": {
+   "name": "Плазменный кинжал",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_THUNDER_SICKLE": {
+   "name": "Стигийский серп",
+   "class_was": 1,
+   "class_new": 4,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_LASER_FIST": {
+   "name": "Лазер-кулак",
+   "class_was": 5,
+   "class_new": null,
+   "ammo": "",
+   "note": "по своим ттх скорее карабин, но из за дальности не дотянул, было бы хотя бы 15 клеток это был бы карабин."
+  },
+  "STR_LASER_BALL": {
+   "name": "Лазербол",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "не решусь отправлять в автоматы, по этому пп, по характеристикам, ближе к автоматам"
+  },
+  "STR_BLACK_ADDER": {
+   "name": "Черный Аспид",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "автоматический пистолет"
+  },
+  "STR_PEACEMAKER": {
+   "name": "Серебряный Змей",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков специалиста"
+  },
+  "STR_MAUSER": {
+   "name": "Точный пистолет",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков бойца"
+  },
+  "STR_LUGER": {
+   "name": "Офицерский пистолет",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от звания"
+  },
+  "STR_PISTOL_SILENCED": {
+   "name": "Пистолет с глушителем",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыка бойца"
+  },
+  "STR_SPY_PISTOL": {
+   "name": "Шпионский пистолет",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков бойца"
+  },
+  "STR_PISTOL_ADV": {
+   "name": "Смарт-пистолет",
+   "class_was": 5,
+   "class_new": null,
+   "ammo": "",
+   "note": "сам по себе обычный пистолет, из за пластисталевого боеприпаса, может дать бонус от навыка, но из за самого боеприпаса категория не меняется."
+  },
+  "STR_PREDATOR_PISTOL": {
+   "name": "Автопистолет 'Хищник'",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков бойца"
+  },
+  "STR_UAC_PISTOL": {
+   "name": "Пистолет UAC",
+   "class_was": 5,
+   "class_new": 7,
+   "ammo": "",
+   "note": "условно дробовик"
+  },
+  "STR_SLUGGA": {
+   "name": "Ручница",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "прям со старта, с бонусным уроном от навыков"
+  },
+  "STR_SLUGGA_MK2": {
+   "name": "Болтер",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "скорее дробовик, но от храбрости растет, из за боеприпасов"
+  },
+  "STR_LASER_PISTOL_DUELIST": {
+   "name": "Лазерный пистоль",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков и звания"
+  },
+  "STR_BLACK_DRAGON_PLASMAGUN": {
+   "name": "Сумеречный плазмаган",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "по своим характеристикам скорее пп"
+  },
+  "STR_LAWGIVER": {
+   "name": "Юстициар",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "не только пп по характеристикам, но еще и растет от навыков бойца"
+  },
+  "STR_MRSHAN_PISTOL": {
+   "name": "Золотой пистоль",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "по ттх базово пп, хоть и зовется пистолем, но так как растет вместе с бойцом, то специальное"
+  },
+  "STR_LASER_PISTOL_PIR": {
+   "name": "Лазпистолет",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "пп, по характеристикам."
+  },
+  "STR_ASSAULT_LASER": {
+   "name": "Огонек",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "пп по характеристикам"
+  },
+  "STR_XG_PISTOL": {
+   "name": "XG-пистолет",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "по характеристикам скорее пп, из за роста от навыка, базового патрона специальное"
+  },
+  "STR_BOOTLEG_PLASMA_PISTOL": {
+   "name": "Левый плазмопистолет",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "по характеристикам пп"
+  },
+  "STR_PIR_PLASMA_PISTOL": {
+   "name": "Плазмопистолет",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "по характеристикам пп"
+  },
+  "STR_PIR_PLASMA_PISTOL_2": {
+   "name": "Скорострельный плазмер",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "по характеристикам пп"
+  },
+  "STR_ELITE_PLASMA_PISTOL": {
+   "name": "Мастер-плазмер",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "очереди"
+  },
+  "STR_VR_PLASMA_PISTOL": {
+   "name": "Искаженный плазменный пистолет",
+   "class_was": 5,
+   "class_new": 6,
+   "ammo": "",
+   "note": "очереди"
+  },
+  "STR_HELL_PISTOL": {
+   "name": "Проклятый пистолет",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон от навыков"
+  },
+  "STR_CD_PISTOL": {
+   "name": "CD-пистолет",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "стреляет очередями пп, растет от навыка специальное"
+  },
+  "STR_SHOULDER_LAUNCHER": {
+   "name": "Наплечный гранатомет",
+   "class_was": 5,
+   "class_new": 13,
+   "ammo": "",
+   "note": "гранатомет и этим все сказано"
+  },
+  "STR_CUPID_GUN": {
+   "name": "Пистолет Купидона",
+   "class_was": 5,
+   "class_new": 14,
+   "ammo": "",
+   "note": "не важно какой формы магический амулет, он все равно магический."
+  },
+  "STR_DREAMSHOOTER": {
+   "name": "Снострел",
+   "class_was": 5,
+   "class_new": 14,
+   "ammo": "",
+   "note": "пси пистолет сумрака (артефакт) амулет"
+  },
+  "STR_BORING_PISTOL": {
+   "name": "Унылый ствол",
+   "class_was": 5,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыка"
+  },
+  "STR_HELL_SMG": {
+   "name": "Проклятая брызгалка",
+   "class_was": 6,
+   "class_new": 14,
+   "ammo": "",
+   "note": "одноразовый амулет, в форм факторе брызгалки"
+  },
+  "STR_PPSH": {
+   "name": "ПП 'Линукс'",
+   "class_was": 6,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_PPSH_3": {
+   "name": "ПП 'Мандрейк'",
+   "class_was": 6,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_PPSH_4": {
+   "name": "ПП 'Оригами'",
+   "class_was": 6,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SMG_50CAL": {
+   "name": "ПП 'Биг Бен'",
+   "class_was": 6,
+   "class_new": 10,
+   "ammo": "",
+   "note": "слишком тяжелый для обычного пп,  по характеристикам автомат,"
+  },
+  "STR_MRSHAN_SMG": {
+   "name": "Золотой ПП",
+   "class_was": 6,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков"
+  },
+  "STR_SCOURGE_SMG": {
+   "name": "ПП 'Бич'",
+   "class_was": 6,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон растет"
+  },
+  "STR_BLUNDERBUSS_ADV": {
+   "name": "Мушкетонище",
+   "class_was": 7,
+   "class_new": 15,
+   "ammo": "",
+   "note": "золотой барабан дает растущий урон от подвижности"
+  },
+  "STR_SLUGTHROWER": {
+   "name": "Тяжелый Пробойник",
+   "class_was": 7,
+   "class_new": 9,
+   "ammo": "",
+   "note": "кроме хим боеприпаса, в остальном обычный карабин, с низкой дальностью"
+  },
+  "STR_CAWS": {
+   "name": "ШОББ",
+   "class_was": 7,
+   "class_new": 9,
+   "ammo": "",
+   "note": "базово карабин, с осколочными боеприпасами"
+  },
+  "STR_LASLOCK_SHOTGUN": {
+   "name": "Лазерный тромблон",
+   "class_was": 7,
+   "class_new": 15,
+   "ammo": "",
+   "note": "дробовик для офицера, растет от звания"
+  },
+  "STR_HELL_SHOTGUN": {
+   "name": "Проклятый дробовик",
+   "class_was": 7,
+   "class_new": 14,
+   "ammo": "",
+   "note": "амулет - дробовик"
+  },
+  "STR_PIR_HEAVY_BOLTER": {
+   "name": "Пушка 'Рвач'",
+   "class_was": 7,
+   "class_new": 13,
+   "ammo": "",
+   "note": "слишком тяжелое, скорее шрапнельная пушка"
+  },
+  "STR_BOOM_GUN": {
+   "name": "Бумер",
+   "class_was": 7,
+   "class_new": 13,
+   "ammo": "",
+   "note": "слишком тяжелый для простого дробовика"
+  },
+  "STR_MAMMOTH_SHOTGUN": {
+   "name": "Дробовик 'Мамонт'",
+   "class_was": 7,
+   "class_new": 13,
+   "ammo": "",
+   "note": "слишком тяжелый, скорее шрапнельная пушка"
+  },
+  "STR_PIR_PLASMA_SUB": {
+   "name": "Плазмокарабин",
+   "class_was": 7,
+   "class_new": 9,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_RAIL_RIFLE": {
+   "name": "XG-штурмовик",
+   "class_was": 7,
+   "class_new": 15,
+   "ammo": "",
+   "note": "карабин, растет за счет навыка из за боеприпасов в уроне"
+  },
+  "STR_NOVA_PLASMA_GUN": {
+   "name": "Плазменная винтовка 'Нова'",
+   "class_was": 7,
+   "class_new": 9,
+   "ammo": "",
+   "note": "карабин с огромным уроном, но никакой дальностью"
+  },
+  "STR_DREAMCRUSHER": {
+   "name": "Снокрушитель",
+   "class_was": 7,
+   "class_new": 14,
+   "ammo": "",
+   "note": "амулет, пси"
+  },
+  "STR_STORM_LASER": {
+   "name": "Штурмлазер",
+   "class_was": 8,
+   "class_new": 6,
+   "ammo": "",
+   "note": "слишком слаб чтобы считаться пулеметом"
+  },
+  "STR_MPG": {
+   "name": "Магнито-плазмаган",
+   "class_was": 8,
+   "class_new": 6,
+   "ammo": "",
+   "note": "не дорос, до пулемета"
+  },
+  "STR_SHOOTA_MK2": {
+   "name": "Модифицированное Стреляло",
+   "class_was": 8,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон растет от навыка"
+  },
+  "STR_KILLGUN": {
+   "name": "Убивало",
+   "class_was": 8,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыка"
+  },
+  "STR_SHOOTA_MK3": {
+   "name": "Суперстреляло",
+   "class_was": 8,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыка"
+  },
+  "STR_SAW": {
+   "name": "Автоган",
+   "class_was": 8,
+   "class_new": 10,
+   "ammo": "",
+   "note": "не дорос до пулемета"
+  },
+  "STR_SAW_GYRO": {
+   "name": "Автоган с гиростабилизатором",
+   "class_was": 8,
+   "class_new": 10,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SAW_MERIDIAN": {
+   "name": "Автоган Меридиана",
+   "class_was": 8,
+   "class_new": 14,
+   "ammo": "",
+   "note": "артефактное оружие"
+  },
+  "STR_HYDRA_LASER": {
+   "name": "Гидра-лазер",
+   "class_was": 8,
+   "class_new": 10,
+   "ammo": "",
+   "note": "не дотягивает до пулемета"
+  },
+  "STR_CHAINGUN": {
+   "name": "Пулемет UAC",
+   "class_was": 8,
+   "class_new": 6,
+   "ammo": "",
+   "note": "даже описание говорит, что это скорее пистолет пулемет"
+  },
+  "STR_MRSHAN_MINIGUN": {
+   "name": "Золотой пулемет",
+   "class_was": 8,
+   "class_new": 15,
+   "ammo": "",
+   "note": "эталонный пулемет, но растет от навыков"
+  },
+  "STR_HELL_CHAINGUN": {
+   "name": "Проклятый пулемет",
+   "class_was": 8,
+   "class_new": 14,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_MINIGUN": {
+   "name": "Миниган",
+   "class_was": 8,
+   "class_new": null,
+   "ammo": "",
+   "note": "локализовано как машинган"
+  },
+  "STR_MINIGUN_ADV": {
+   "name": "Смарт-миниган",
+   "class_was": 8,
+   "class_new": null,
+   "ammo": "",
+   "note": "локализовано как Улучшенный-машинган"
+  },
+  "STR_MINIGUN_2": {
+   "name": "Миниган 'Вулкан'",
+   "class_was": 8,
+   "class_new": null,
+   "ammo": "",
+   "note": "локализовано, как машинган \"Вулкан\""
+  },
+  "STR_FIRE_EXT": {
+   "name": "Огнетушитель",
+   "class_was": 3,
+   "class_new": 1,
+   "ammo": "",
+   "note": "как оружие одноручное холодное.  \nДля режима тушения прицел полевая артиллерия , сами огнетушители по идеи должны лежать в категории одноручное холодное, либо в конце либо в начале."
+  },
+  "STR_FIRE_EXT_ADV": {
+   "name": "Компактный огнетушитель",
+   "class_was": 3,
+   "class_new": 1,
+   "ammo": "",
+   "note": "как и у обычного образца прицел как для полевой артиллерии для режима тушения, сами огнетушители по идеи должны лежать в категории одноручное холодное, но либо в конце либо в начале."
+  },
+  "STR_NINJA_CARBINE": {
+   "name": "Тяжелый карабин",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "пули ручницы дают бонус от храбрости"
+  },
+  "STR_HAXXOR": {
+   "name": "Хакссор-1",
+   "class_was": 9,
+   "class_new": 11,
+   "ammo": "",
+   "note": "30 клеток дальности, это снайперский карабин"
+  },
+  "STR_RAY_RIFLE": {
+   "name": "Военный Лучемет",
+   "class_was": 9,
+   "class_new": null,
+   "ammo": "",
+   "note": "без прицела с точностью 100 это все же карабин, так как эффективная дальность откровенно не снайперская"
+  },
+  "STR_RUGER": {
+   "name": "Карабин с оптикой",
+   "class_was": 9,
+   "class_new": 11,
+   "ammo": "",
+   "note": "вероятно баг дальность прицельной стрельбы указана как 200(предел) стрельбы очередью 7 стрельбы навскидку 22 но режима очередью не предусмотрено, из за  этого есть вероятность что дальность прицельной стрельбы не ограниченна, требуется тестирование"
+  },
+  "STR_INFANTRY_RIFLE": {
+   "name": "Пехотная винтовка",
+   "class_was": 9,
+   "class_new": null,
+   "ammo": "",
+   "note": "недотянула до снайперки немного, на снайперских 25 дальности точность будет 70% - уклонение противника = 30?"
+  },
+  "STR_UAC_RIFLE": {
+   "name": "Винтовка UAC",
+   "class_was": 9,
+   "class_new": 10,
+   "ammo": "",
+   "note": "высокая скорострельность, да выстрел один, но сбрасывает по 3 выстрела а это 12 выстрелов за ход на пределе, это уже пп, но из за высокой дальности, отправляется в автоматы,"
+  },
+  "STR_LASER_SUPERCHARGER": {
+   "name": "Самозарядник",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков бойца"
+  },
+  "STR_WARP_RIFLE": {
+   "name": "Варп-ружье Черного Солнца",
+   "class_was": 9,
+   "class_new": 14,
+   "ammo": "",
+   "note": "описание и урон"
+  },
+  "STR_BIOPLASMA_RIFLE": {
+   "name": "Биоплазменное ружье",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон растет от навыков бойца"
+  },
+  "STR_VARMINT_RIFLE": {
+   "name": "Мелкашка",
+   "class_was": 9,
+   "class_new": 11,
+   "ammo": "",
+   "note": "по характеристикам снайперка"
+  },
+  "STR_ZIPGUN": {
+   "name": "Ружье О'Харти",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет вместе с бойцом"
+  },
+  "STR_DRAGOON_RIFLE": {
+   "name": "Драгунская винтовка",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет с бойцом"
+  },
+  "STR_NITRO_EXPRESS": {
+   "name": "Винтовка 'Жнец'",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыков бойца"
+  },
+  "STR_COMMANDO_RIFLE": {
+   "name": "Винтовка Коммандо",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон яростно растет от навыков бойца"
+  },
+  "STR_NARLOCK_LASGUN": {
+   "name": "Лазган Нарлоков",
+   "class_was": 9,
+   "class_new": 11,
+   "ammo": "",
+   "note": "в описании сказано, что снайперка"
+  },
+  "STR_FLINTLOCK_RIFLE": {
+   "name": "Кремневый штуцер",
+   "class_was": 9,
+   "class_new": 15,
+   "ammo": "",
+   "note": "от патронов урон от навыков"
+  },
+  "STR_REGICIDE": {
+   "name": "Цареубийца",
+   "class_was": 9,
+   "class_new": 14,
+   "ammo": "",
+   "note": "завязано на навыки вуду (вероятно амулет)"
+  },
+  "STR_PRECISION_PLASMA": {
+   "name": "Плазменный Ликвидатор",
+   "class_was": 9,
+   "class_new": 13,
+   "ammo": "",
+   "note": "скорее пушка если смотреть по урону"
+  },
+  "STR_HEAVY_LASER_PIR": {
+   "name": "Тяжелый лазер",
+   "class_was": 9,
+   "class_new": 13,
+   "ammo": "",
+   "note": "слишком тяжелый, скорее пушка"
+  },
+  "STR_DREAMCHASER": {
+   "name": "Снохотник",
+   "class_was": 9,
+   "class_new": 14,
+   "ammo": "",
+   "note": "как и все остальное оружие мира грез, является амулетом"
+  },
+  "STR_DREAMZOOKA": {
+   "name": "Баснука",
+   "class_was": 9,
+   "class_new": 14,
+   "ammo": "",
+   "note": "оружие грез"
+  },
+  "STR_OMEGA_RIFLE": {
+   "name": "Винтовка 'Омега'",
+   "class_was": 10,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_MRSHAN_RIFLE": {
+   "name": "Золотая винтовка",
+   "class_was": 10,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SMARTRIFLE": {
+   "name": "Смарт-винтовка",
+   "class_was": 10,
+   "class_new": 8,
+   "ammo": "",
+   "note": "скорее пулемет по весу и скорострельности дальности кинжальная"
+  },
+  "STR_BOZAR": {
+   "name": "Боззар",
+   "class_was": 10,
+   "class_new": 8,
+   "ammo": "",
+   "note": "слишком тяжелый для обычной винтовки"
+  },
+  "STR_COVERT_OPS_RIFLE": {
+   "name": "Тактический карабин",
+   "class_was": 10,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон от навыка"
+  },
+  "STR_SHOOTA": {
+   "name": "Стреляло",
+   "class_was": 10,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон растет от навыка"
+  },
+  "STR_BATTLE_LASER": {
+   "name": "Боевой лазер",
+   "class_was": 10,
+   "class_new": 13,
+   "ammo": "",
+   "note": "слишком тяжелый"
+  },
+  "STR_RETICULAN_LASER_GUN": {
+   "name": "Лазган Ретикулян",
+   "class_was": 10,
+   "class_new": 6,
+   "ammo": "",
+   "note": "по совокупности характеристик пп, по описанию модификация пистолета"
+  },
+  "STR_XG_RIFLE": {
+   "name": "XG-винтовка",
+   "class_was": 10,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон от навыков, дают базовые патроны"
+  },
+  "STR_HELL_RIFLE": {
+   "name": "Проклятая винтовка",
+   "class_was": 10,
+   "class_new": 14,
+   "ammo": "",
+   "note": "амулет"
+  },
+  "STR_VR_PLASMA_RIFLE": {
+   "name": "Искаженный плазмаган",
+   "class_was": 10,
+   "class_new": 14,
+   "ammo": "",
+   "note": "амулет сумрака"
+  },
+  "STR_VR_HEAVY_PLASMA": {
+   "name": "Искаженная тяжелая плазма",
+   "class_was": 10,
+   "class_new": 14,
+   "ammo": "",
+   "note": "амулет сумрак"
+  },
+  "STR_BOOTLEG_HEAVY_PLASMA": {
+   "name": "Левая тяжелая плазма",
+   "class_was": 10,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_PIR_HEAVY_PLASMA": {
+   "name": "Тяжелая плазма",
+   "class_was": 10,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_ELITE_HEAVY_PLASMA": {
+   "name": "Сверхтяжелая плазма",
+   "class_was": 10,
+   "class_new": 13,
+   "ammo": "",
+   "note": "урон, вес"
+  },
+  "STR_DREAMINGUN": {
+   "name": "Снулемет",
+   "class_was": 10,
+   "class_new": 14,
+   "ammo": "",
+   "note": "сумрак амулет"
+  },
+  "STR_BATTLE_PLASMA": {
+   "name": "Икс-Уничтожитель",
+   "class_was": 10,
+   "class_new": 13,
+   "ammo": "",
+   "note": "тяжелое + тонна урона"
+  },
+  "STR_CD_RIFLE": {
+   "name": "CD-ружье",
+   "class_was": 10,
+   "class_new": 15,
+   "ammo": "",
+   "note": "урон от навыков"
+  },
+  "STR_SAW_GNOME": {
+   "name": "Гномский Автоган",
+   "class_was": 10,
+   "class_new": null,
+   "ammo": "",
+   "note": "для каждого режима нужно настроить свой тип огня, для автогана автомат, для дроби дробовик, для гранатомета артиллерия"
+  },
+  "STR_MRSHAN_SNIPER_RIFLE": {
+   "name": "Золотая снайперка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SONIC_RIFLE": {
+   "name": "Звуковое ружье",
+   "class_was": 11,
+   "class_new": 13,
+   "ammo": "",
+   "note": "высокоточная пушка"
+  },
+  "STR_BM_RIFLE": {
+   "name": "Шварцмарк-винтовка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_OLD_SNIPER_RIFLE": {
+   "name": "Старина Снайперка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": "растет от навыка"
+  },
+  "STR_SNIPER_RIFLE_LT": {
+   "name": "Легкая снайперка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SNIPER_RIFLE": {
+   "name": "Снайперка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": "навыки"
+  },
+  "STR_SNIPER_RIFLE_ADV": {
+   "name": "Дуплет-снайперка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_HSR": {
+   "name": "ТСВ 'Питон'",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_UAC_LASER_RIFLE": {
+   "name": "Лазер UAC",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_MRSHAN_MARKSMAN_LASER": {
+   "name": "Точный лазер Некомими",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SNIPER_LASER_PIR": {
+   "name": "Точный лазер",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SNIPER_LASER": {
+   "name": "Гадючка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_XG_SNIPER_RIFLE": {
+   "name": "XG-снайперка",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_GAUSS_SNIPER": {
+   "name": "Снайпер-Гаусс",
+   "class_was": 11,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_BOW_PRIMITIVE": {
+   "name": "Примитивный лук",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": "все луки сильно растут от навыков"
+  },
+  "STR_BOW_H": {
+   "name": "Охотничий лук",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_BOW": {
+   "name": "Боевой лук",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SURVIVAL_BOW": {
+   "name": "Лук выживальщика",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_LONGBOW": {
+   "name": "Длинный лук",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_BOW_NEON": {
+   "name": "Футуристический лук",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_TASER": {
+   "name": "Тазган",
+   "class_was": 12,
+   "class_new": 5,
+   "ammo": "",
+   "note": "это не метательное оружие а стрелковое"
+  },
+  "STR_ROCK_T": {
+   "name": "Симпатичный камушек",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_FUSO_KNIVES": {
+   "name": "Ножи Фусо",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_THROWING_STARS": {
+   "name": "Сюрикены Ниндзя",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SUNBLADES": {
+   "name": "Солнечные клинки",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_FIRESTARS": {
+   "name": "Огнезвезды",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_LASER_STARS": {
+   "name": "Лазерные сюрикены",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_JAVELINS_PRIMITIVE": {
+   "name": "Острые палки",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_JAVELINS": {
+   "name": "Метательные копья",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_JAVELINS_AQUA": {
+   "name": "Аква-копья",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_THROWING_AXES": {
+   "name": "Метательные топоры",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_THROWING_HAMMER": {
+   "name": "Метательный молот",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_BLOWPIPE": {
+   "name": "Духовая трубка",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_BALLISTA": {
+   "name": "Баллиста",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": "из за нюки артиллерия, тут нужно по прицелу, на режим огня"
+  },
+  "STR_GRENADE_LAUNCHER": {
+   "name": "40-мм гранатомет",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_GRENADE_LAUNCHER_ADV": {
+   "name": "Смарт-гранатомет",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_HGL": {
+   "name": "Тяжелый гранатомет",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_AGL": {
+   "name": "Штурмовой гранатомет",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_TTGL": {
+   "name": "ТТГЛ",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_BLIZZARD_LAUNCHER": {
+   "name": "Портативная РСЗО 'Метелица'",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_MORTAR": {
+   "name": "Мортира",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_MORTAR_ADV": {
+   "name": "Сервомортира",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_HAND_MORTAR": {
+   "name": "Ручная мортира",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_DAVY_CROCKET": {
+   "name": "Мини-мортира 'Дэви Крокет'",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_3RL": {
+   "name": "Реактивный миномет 'Торнадо'",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_SSRL": {
+   "name": "Панцерфауст",
+   "class_was": 12,
+   "class_new": 13,
+   "ammo": "",
+   "note": ""
+  },
+  "STR_EXECUTIONER_XBOW": {
+   "name": "Презрение Палача",
+   "class_was": 12,
+   "class_new": null,
+   "ammo": "",
+   "note": "не видно в инвентаре"
+  },
+  "STR_COCONUT": {
+   "name": "Кокос",
+   "class_was": 12,
+   "class_new": 15,
+   "ammo": "",
+   "note": ""
+  }
+ }
+}

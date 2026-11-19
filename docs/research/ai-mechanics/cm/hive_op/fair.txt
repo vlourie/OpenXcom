@@ -1,0 +1,45 @@
+===== op1_OA_M3_s1
+ proposal: turn 4 target 470 logged at (42,26,0) | state line: (42,26,0) seenby 2 spotted 0
+ states: ['PROPOSED', 'VALIDATED', 'STAGING', 'READY', 'ABORTED'] EXECUTING reached: False operations: 1
+ cells: [('1000000', '(44,30,3)', '118', '10'), ('1000005', '(44,31,3)', '120', '10')] different cells: True
+   1000000 at the start of the player's turn 5: (44,30,3) on its cell: True tu 59 seenby 0
+   1000005 at the start of the player's turn 5: (45,25,0) on its cell: False tu 35 seenby 0
+ fighters' modes on the two turns: [(('1000000', '4', '0'), 4), (('1000000', '5', '0'), 1), (('1000000', '5', '2'), 1), (('1000005', '4', '0'), 1), (('1000005', '4', '2'), 3)]
+ events: Counter({'SIDE_END': 96, 'ACT': 8, 'STATE': 5, 'DEFER': 3, 'ASSIGN': 2, 'ARRIVED': 2, 'FEEDBACK': 2, 'PROPOSED': 1, 'FIGHTER_OUT': 1, 'RESULT': 1})
+  event=RESULT op=1 turn=5 state=ABORTED why=fighter_out target=470 target_out=0 attacked=0 target_hp_log=132 stage_turn=4 exec_turn=-1
+===== op3_OS_M3_s1
+ proposal: turn 4 target 470 logged at (42,26,0) | state line: (42,26,0) seenby 2 spotted 0
+ states: ['PROPOSED', 'VALIDATED', 'ABORTED'] EXECUTING reached: False operations: 1
+ cells: [('1000000', '(44,30,3)', '118', '10'), ('1000005', '(44,31,3)', '120', '10')] different cells: True
+   1000000 at the start of the player's turn 5: (44,32,3) on its cell: False tu 31 seenby 1
+   1000005 at the start of the player's turn 5: (40,54,3) on its cell: False tu 58 seenby 0
+ fighters' modes on the two turns: [(('1000000', '4', '0'), 3), (('1000000', '4', '2'), 2), (('1000000', '5', '2'), 2), (('1000005', '4', '0'), 2), (('1000005', '4', '2'), 4), (('1000005', '5', '2'), 4)]
+ events: Counter({'STATE': 3, 'ASSIGN': 2, 'PROPOSED': 1})
+  no result
+===== op4_OA_M3_s1
+ proposal: turn 4 target 470 logged at (42,26,0) | state line: (42,26,0) seenby 2 spotted 0
+ states: ['PROPOSED', 'VALIDATED', 'STAGING', 'READY', 'ABORTED'] EXECUTING reached: False operations: 1
+ cells: [('1000000', '(44,30,3)', '118', '10'), ('1000005', '(44,31,3)', '120', '10')] different cells: True
+   1000000 at the start of the player's turn 5: (44,30,3) on its cell: True tu 59 seenby 0
+   1000005 at the start of the player's turn 5: (44,31,3) on its cell: True tu 65 seenby 1
+ fighters' modes on the two turns: [(('1000000', '4', '0'), 4), (('1000000', '5', '2'), 2), (('1000005', '4', '0'), 2), (('1000005', '4', '2'), 1)]
+ events: Counter({'SIDE_END': 96, 'ACT': 7, 'STATE': 5, 'ASSIGN': 2, 'DEFER': 2, 'ARRIVED': 2, 'FEEDBACK': 2, 'PROPOSED': 1, 'FIGHTER_OUT': 1, 'RESULT': 1})
+  event=RESULT op=1 turn=5 state=ABORTED why=fighter_out target=470 target_out=0 attacked=0 target_hp_log=132 stage_turn=4 exec_turn=-1
+===== op5_OG_M3_s1
+ proposal: turn 1 target 470 logged at (34,12,1) | state line: (34,12,1) seenby 3 spotted 0
+ states: ['PROPOSED', 'VALIDATED', 'STAGING', 'ABORTED'] EXECUTING reached: False operations: 1
+ cells: [('1000003', '(38,13,0)', '138', '10'), ('1000001', '(38,14,0)', '138', '10')] different cells: True
+   1000003 at the start of the player's turn 2: (38,11,0) on its cell: False tu 16 seenby 1
+   1000001 at the start of the player's turn 2: (24,41,0) on its cell: False tu 33 seenby 0
+ fighters' modes on the two turns: [(('1000001', '1', '2'), 8), (('1000001', '2', '2'), 3), (('1000003', '1', '2'), 8)]
+ events: Counter({'ACT': 16, 'DIVERT': 10, 'SIDE_END': 8, 'STATE': 4, 'ASSIGN': 2, 'FEEDBACK': 2, 'PROPOSED': 1, 'FIGHTER_OUT': 1, 'RESULT': 1})
+  event=RESULT op=1 turn=2 state=ABORTED why=fighter_out target=470 target_out=0 attacked=0 target_hp_log=140 stage_turn=1 exec_turn=-1
+===== op6_OG_M3_s2
+ proposal: turn 1 target 545 logged at (5,36,0) | state line: (5,36,0) seenby 1 spotted 0
+ states: ['PROPOSED', 'VALIDATED', 'STAGING', 'ABORTED'] EXECUTING reached: False operations: 1
+ cells: [('1000005', '(4,40,0)', '158', '11'), ('1000006', '(7,44,0)', '176', '10')] different cells: True
+   1000005 at the start of the player's turn 2: (4,46,0) on its cell: False tu 0 seenby 1
+   1000006 at the start of the player's turn 2: (7,44,0) on its cell: True tu 1 seenby 0
+ fighters' modes on the two turns: [(('1000005', '1', '0'), 1), (('1000005', '1', '2'), 4), (('1000006', '1', '2'), 4), (('1000006', '2', '2'), 2)]
+ events: Counter({'ACT': 9, 'SIDE_END': 8, 'STATE': 4, 'ASSIGN': 2, 'FEEDBACK': 2, 'PROPOSED': 1, 'DIVERT': 1, 'FIGHTER_OUT': 1, 'RESULT': 1})
+  event=RESULT op=1 turn=2 state=ABORTED why=fighter_out target=545 target_out=0 attacked=0 target_hp_log=64 stage_turn=1 exec_turn=-1

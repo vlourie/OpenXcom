@@ -1,0 +1,510 @@
+﻿run	turn	unit	n	tu	mode	act	rolled	hold	label	task	why	has_p	prepared	src	shot_now	shot_tu	nmoves	frm	to	aim	trail	cls
+ci5_IA_M6_s1	1	1000001	0	96	2	2	2		ENGAGE	SEARCH	contact_fire	1	0	firepoint.random	2	28	788	(42,42,0)	(37,47,0)	503		combat_walk
+ci5_IA_M6_s1	1	1000001	1	62	2	8	-		NONE			0	1	sniper	3	28	481	(37,47,0)	(36,29,2)	503		attack
+ci5_IA_M6_s1	1	1000001	2	34	2	8	-		NONE			0	1	sniper	3	28	293	(37,47,0)	(36,29,2)	503		attack
+ci5_IA_M6_s1	1	1000002	1	96	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	5	38	610	(5,5,0)	(24,4,0)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000002	2	80	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	583	(9,5,0)	(24,4,0)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000003	0	96	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	0	-1	885	(10,40,0)	(9,37,0)	545		combat_walk
+ci5_IA_M6_s1	1	1000003	1	80	2	8	-		NONE			0	1	sniper	2	28	792	(9,37,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000003	2	52	0	0	2		NONE			0	0		1	28	546	(9,37,0)	(-1,-1,-1)	444		patrol_stand
+ci5_IA_M6_s1	1	1000004	1	96	0	2	0		NONE			1	0	patrol.node	0	-1	361	(23,23,2)	(24,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000004	2	82	0	2	0		NONE			1	0	patrol.node	0	-1	344	(24,20,2)	(23,23,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000005	1	96	2	8	2		NONE			1	1	shot	2	21	916	(40,10,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000005	2	75	2	2	2		NONE			0	0	firepoint.random	2	21	729	(40,10,0)	(44,7,0)	470		combat_walk
+ci5_IA_M6_s1	1	1000006	1	96	2	8	2		NONE			1	1	shot	14	21	1079	(36,14,0)	(36,29,2)	503		attack
+ci5_IA_M6_s1	1	1000006	2	75	2	8	-		NONE			0	1	sniper	14	21	841	(36,14,0)	(36,29,2)	503		attack
+ci5_IA_M6_s1	1	1000007	1	96	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	459	(8,20,1)	(22,25,1)	448		patrol_walk
+ci5_IA_M6_s1	1	1000007	2	34	3	0	3		REINFORCE	SEARCH	contact_approach	1	0	escape.known	0	-1	264	(21,25,1)	(21,25,1)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	1	1000008	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	742	(6,44,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000009	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	674	(8,15,0)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000010	1	96	0	2	0		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	0	-1	1015	(20,23,0)	(27,19,0)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000010	2	84	2	8	2		ENGAGE	SEARCH	contact_fire	0	1	shot	3	21	994	(20,25,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000012	1	96	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	458	(17,22,1)	(26,20,1)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000012	2	56	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	319	(26,20,1)	(24,18,1)	448		patrol_walk
+ci5_IA_M6_s1	1	1000014	1	111	2	8	2		NONE			1	1	sniper	10	33	5650	(37,42,2)	(36,29,2)	503		attack
+ci5_IA_M6_s1	1	1000014	2	78	2	8	2		NONE			0	1	sniper	6	33	3310	(37,42,2)	(36,29,2)	503		attack
+ci5_IA_M6_s1	1	1000015	1	111	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	358	(6,19,2)	(20,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000015	2	37	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	281	(16,17,2)	(20,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000016	1	111	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	3593	(8,47,0)	(-1,-1,-1)	545		held_patrol_stand
+ci5_IA_M6_s1	1	1000017	1	111	2	8	2		NONE			1	1	shot	6	33	4604	(44,12,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000017	2	78	2	8	-		NONE			0	1	sniper	5	33	2519	(44,12,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000018	0	111	2	2	2		ENGAGE	SEARCH	contact_fire	1	0	firepoint.random	0	-1	5076	(14,42,0)	(13,37,0)	545		combat_walk
+ci5_IA_M6_s1	1	1000018	1	89	0	2	2		NONE			0	0	patrol.node	2	44	3889	(13,37,0)	(14,32,2)	444		patrol_walk
+ci5_IA_M6_s1	1	1000018	2	73	2	8	2		ENGAGE	SEARCH	contact_fire	0	1	sniper	5	33	2535	(13,33,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000019	0	111	2	2	2		ENGAGE	SEARCH	contact_fire	1	0	firepoint.random	0	-1	6593	(23,36,0)	(28,35,0)	545		combat_walk
+ci5_IA_M6_s1	1	1000019	0	109	2	2	-		NONE			0	0	firepoint	0	-1	6353	(23,36,0)	(28,35,0)	545		combat_walk
+ci5_IA_M6_s1	1	1000019	1	87	2	8	-		NONE			0	1	shot	5	25	3987	(28,35,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000019	2	61	2	8	-		NONE			0	1	sniper	5	25	1608	(28,35,0)	(33,29,2)	543		attack
+ci5_IA_M6_s1	1	1000021	1	111	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	339	(7,17,2)	(20,17,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000021	2	37	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	262	(15,17,2)	(20,17,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000022	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	1		2	33	4248	(41,6,0)	(-1,-1,-1)	470		held_patrol_stand
+ci5_IA_M6_s1	1	1000023	1	111	2	9	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	2	72	4624	(34,4,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000023	2	13	0	0	0		NONE			0	0		0	-1	237	(34,4,0)	(-1,-1,-1)	470		patrol_stand
+ci5_IA_M6_s1	1	1000024	1	111	2	8	2		ENGAGE	SEARCH	contact_approach	1	1	sniper	6	33	5242	(8,26,0)	(36,29,2)	-1		attack
+ci5_IA_M6_s1	1	1000024	2	76	2	8	-		NONE			0	1	sniper	3	33	2325	(8,26,0)	(36,29,2)	503		attack
+ci5_IA_M6_s1	1	1000025	0	111	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	1	44	4432	(2,25,0)	(6,30,0)	448		combat_walk
+ci5_IA_M6_s1	1	1000025	1	62	2	6	-		NONE			0	1	sniper	6	33	3717	(4,27,0)	(31,25,2)	448		attack
+ci5_IA_M6_s1	1	1000025	2	17	0	0	0		NONE			0	0		0	-1	267	(4,27,0)	(-1,-1,-1)	444		patrol_stand
+ci5_IA_M6_s1	1	1000026	1	111	2	2	-		NONE			1	0	melee	2	33	7244	(26,30,0)	(30,28,2)	444		combat_walk
+ci5_IA_M6_s1	1	1000026	2	97	2	8	-		NONE			0	1	sniper	6	33	5282	(29,29,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000027	1	74	2	6	2		NONE			1	1	sniper	3	33	4955	(48,32,2)	(36,29,2)	470		attack
+ci5_IA_M6_s1	1	1000027	2	29	0	2	2		NONE			0	0	patrol.node	0	-1	379	(48,32,2)	(16,5,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000028	1	111	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	381	(8,15,2)	(20,15,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000028	2	43	3	0	3	arrived	REINFORCE	SEARCH	contact_approach	1	0	escape.known	0	-1	288	(20,15,2)	(20,15,2)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	1	1000029	0	111	2	2	2		NONE			1	0	firepoint.random	2	33	6813	(20,26,0)	(22,28,0)	448		combat_walk
+ci5_IA_M6_s1	1	1000029	1	105	2	8	-		NONE			0	1	sniper	8	33	6203	(21,27,0)	(31,25,2)	448		attack
+ci5_IA_M6_s1	1	1000029	2	71	2	8	-		NONE			0	1	sniper	4	33	2216	(21,27,0)	(31,29,2)	444		attack
+ci5_IA_M6_s1	1	1000001	1	6	3	2	3		NONE			0	0	escape	0	-1	218	(37,47,0)	(32,46,0)	545		esc_dice_walk
+ci5_IA_M6_s1	1	1000002	1	34	0	2	0		ENGAGE	SEARCH	contact_approach	0	1	patrol.node	1	22	365	(20,6,0)	(24,4,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000002	2	34	0	2	0		ENGAGE	SEARCH	contact_approach	0	1	patrol.node	1	22	365	(20,6,0)	(24,4,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000003	1	52	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	shot	1	28	545	(9,37,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000003	2	24	0	0	2		NONE			0	0		0	-1	284	(9,37,0)	(-1,-1,-1)	444		patrol_stand
+ci5_IA_M6_s1	1	1000004	1	68	0	2	0		NONE			1	0	patrol.node	0	-1	316	(23,23,2)	(24,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000004	2	54	0	2	0		NONE			1	0	patrol.node	0	-1	299	(24,20,2)	(23,23,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000005	0	50	2	2	-		NONE			0	0	firepoint	0	-1	445	(44,7,0)	(48,7,0)	470		combat_walk
+ci5_IA_M6_s1	1	1000005	1	30	2	2	2		NONE			0	0	firepoint.fallback	2	21	295	(48,7,0)	(47,7,0)	470		combat_walk
+ci5_IA_M6_s1	1	1000005	2	26	2	8	-		NONE			0	1	sniper	1	21	280	(47,7,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000006	1	54	2	8	-		NONE			0	1	sniper	14	21	575	(36,14,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000006	2	33	2	8	-		NONE			0	1	shot	4	21	326	(36,14,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000007	1	34	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	264	(21,25,1)	(22,21,1)	448		patrol_walk
+ci5_IA_M6_s1	1	1000007	2	34	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	264	(21,25,1)	(22,21,1)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000008	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	743	(6,44,0)	(-1,-1,-1)	545		held_patrol_stand
+ci5_IA_M6_s1	1	1000009	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	673	(8,15,0)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000010	1	63	2	8	-		NONE			0	1	sniper	3	21	661	(20,25,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000010	2	42	2	9	-		NONE			0	1	sniper	3	21	423	(20,25,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000014	1	45	2	8	2		NONE			0	1	sniper	6	33	1148	(37,42,2)	(31,25,2)	448		attack
+ci5_IA_M6_s1	1	1000014	2	12	0	2	2		NONE			0	0	patrol.node	0	-1	237	(37,42,2)	(15,49,0)	545		patrol_walk
+ci5_IA_M6_s1	1	1000015	1	37	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	276	(16,17,2)	(20,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000015	2	37	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	276	(16,17,2)	(20,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000016	1	111	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	3624	(8,47,0)	(-1,-1,-1)	545		held_patrol_stand
+ci5_IA_M6_s1	1	1000017	1	45	2	8	-		NONE			0	1	sniper	4	33	756	(44,12,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000017	2	12	0	2	2		NONE			0	0	patrol.node	0	-1	239	(44,12,0)	(35,4,2)	470		patrol_walk
+ci5_IA_M6_s1	1	1000018	1	39	2	8	2		NONE			0	1	sniper	3	33	700	(13,33,0)	(31,25,2)	448		attack
+ci5_IA_M6_s1	1	1000000	1	96	2	2	2		ENGAGE	SEARCH	contact_fire	1	0	firepoint.random	0	-1	590	(45,48,0)	(41,45,0)	545		combat_walk
+ci5_IA_M6_s1	1	1000000	2	83	2	8	-		NONE			0	1	sniper	4	28	589	(43,46,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000002	1	34	3	2	3		ENGAGE	SEARCH	contact_approach	0	1	escape.known	1	22	364	(20,6,0)	(19,1,0)	470		esc_dice_walk
+ci5_IA_M6_s1	1	1000003	1	24	0	0	0		NONE			0	0		0	-1	285	(9,37,0)	(-1,-1,-1)	545		patrol_stand
+ci5_IA_M6_s1	1	1000004	1	40	0	2	2		NONE			1	0	patrol.node	0	-1	251	(23,23,2)	(24,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000004	2	34	3	0	3		NONE			0	0	escape.known	0	-1	245	(24,22,2)	(24,22,2)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	1	1000006	1	12	2	2	-		NONE			0	0	firepoint	0	-1	230	(36,14,0)	(38,17,0)	470		combat_walk
+ci5_IA_M6_s1	1	1000007	1	34	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	263	(21,25,1)	(22,21,1)	448		patrol_walk
+ci5_IA_M6_s1	1	1000007	2	34	0	2	0	pause	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	263	(21,25,1)	(22,21,1)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000008	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	752	(6,44,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000009	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	674	(8,15,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000012	1	42	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	306	(24,18,1)	(26,20,1)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000012	2	32	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	261	(26,19,1)	(26,20,1)	448		patrol_walk
+ci5_IA_M6_s1	1	1000014	1	12	0	2	2		NONE			0	0	patrol.node	0	-1	237	(37,42,2)	(15,49,0)	545		patrol_walk
+ci5_IA_M6_s1	1	1000014	2	12	3	2	3		NONE			0	0	escape	0	-1	237	(37,42,2)	(37,44,2)	545		esc_dice_walk
+ci5_IA_M6_s1	1	1000015	1	37	0	2	0	pause	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	276	(16,17,2)	(20,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000015	2	37	0	2	0	pause	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	276	(16,17,2)	(20,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000016	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	3624	(8,47,0)	(-1,-1,-1)	545		held_patrol_stand
+ci5_IA_M6_s1	1	1000017	1	12	0	2	2		NONE			0	0	patrol.node	0	-1	239	(44,12,0)	(35,4,2)	470		patrol_walk
+ci5_IA_M6_s1	1	1000017	2	12	3	2	3		NONE			0	0	escape	0	-1	239	(44,12,0)	(44,9,0)	470		esc_dice_walk
+ci5_IA_M6_s1	1	1000019	1	35	2	8	-		NONE			0	1	sniper	2	25	498	(28,35,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000019	2	9	3	2	3		NONE			0	0	escape	0	-1	221	(28,35,0)	(28,36,0)	545		esc_dice_walk
+ci5_IA_M6_s1	1	1000021	1	37	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	263	(15,17,2)	(20,17,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000021	2	37	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	263	(15,17,2)	(20,17,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000022	1	111	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	2	33	4249	(41,6,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000022	2	78	2	8	-		NONE			0	1	sniper	1	33	2387	(41,6,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000023	1	13	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	236	(34,4,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000024	1	43	2	8	-		NONE			0	1	sniper	3	33	673	(8,26,0)	(31,29,2)	444		attack
+ci5_IA_M6_s1	1	1000024	2	10	0	2	0		NONE			0	0	patrol.node	0	-1	227	(8,26,0)	(32,28,0)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000025	1	17	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	266	(4,27,0)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000026	1	62	2	8	-		NONE			0	1	sniper	3	33	1748	(29,29,0)	(31,29,2)	444		attack
+ci5_IA_M6_s1	1	1000026	2	28	0	2	2		NONE			0	0	patrol.node	0	-1	397	(29,29,0)	(2,42,0)	444		patrol_walk
+ci5_IA_M6_s1	1	1000027	1	29	0	2	2		NONE			0	0	patrol.node	0	-1	378	(48,32,2)	(16,5,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000027	2	29	0	2	0		NONE			0	0	patrol.node	0	-1	378	(48,32,2)	(16,5,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000028	1	43	3	0	3	arrived	REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	287	(20,15,2)	(20,15,2)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	1	1000030	0	96	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.fallback	0	-1	742	(2,39,0)	(5,35,0)	444		combat_walk
+ci5_IA_M6_s1	1	1000030	1	86	2	8	-		NONE			0	1	shot	4	28	718	(3,37,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000030	2	57	2	8	-		NONE			0	1	shot	2	28	490	(3,37,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000031	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	455	(8,23,1)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000032	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		6	28	847	(4,34,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000033	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	460	(20,15,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000034	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	594	(11,19,0)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000035	1	96	0	2	2		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	747	(17,19,0)	(23,19,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000035	2	64	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	409	(23,19,0)	(17,19,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000036	1	96	2	9	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	1	1	sniper	3	38	742	(45,7,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000036	2	11	0	2	2		NONE			0	0	patrol.node	0	-1	227	(45,7,0)	(19,45,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000037	1	96	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	414	(14,17,0)	(23,22,0)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000037	2	38	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	296	(23,21,0)	(23,22,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000038	1	134	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	381	(8,21,2)	(24,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000039	1	134	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	377	(10,19,2)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000040	1	134	0	2	2		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	0	-1	1429	(14,21,0)	(26,25,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000040	2	96	2	8	2		ENGAGE	SEARCH	contact_fire	0	1	shot	3	29	1266	(20,25,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000000	1	54	2	8	-		NONE			0	1	sniper	2	28	422	(43,46,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000000	2	26	0	2	2		NONE			0	0	patrol.node	0	-1	276	(43,46,0)	(41,38,0)	545		patrol_walk
+ci5_IA_M6_s1	1	1000003	1	24	0	0	2		NONE			0	0		0	-1	285	(9,37,0)	(-1,-1,-1)	444		patrol_stand
+ci5_IA_M6_s1	1	1000004	1	34	0	2	2		NONE			0	0	patrol.node	0	-1	228	(24,22,2)	(24,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000004	2	34	0	2	2		NONE			0	0	patrol.node	0	-1	228	(24,22,2)	(24,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000007	1	34	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	263	(21,25,1)	(22,21,1)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000007	2	34	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	263	(21,25,1)	(22,21,1)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000008	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	750	(6,44,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000009	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	724	(8,15,0)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000012	1	32	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	261	(26,19,1)	(26,20,1)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000012	2	32	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	261	(26,19,1)	(26,20,1)	448		patrol_walk
+ci5_IA_M6_s1	1	1000015	1	37	0	2	2	pause	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	285	(16,17,2)	(20,20,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000015	2	37	0	2	0	pause	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	285	(16,17,2)	(20,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000016	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	3623	(8,47,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000021	1	37	0	2	0	pause	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	270	(15,17,2)	(20,17,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000021	2	37	0	2	2	pause	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	270	(15,17,2)	(20,17,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000022	1	45	2	8	-		NONE			0	1	sniper	1	33	792	(41,6,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000022	2	12	0	0	0		NONE			0	0		0	-1	240	(41,6,0)	(-1,-1,-1)	470		patrol_stand
+ci5_IA_M6_s1	1	1000023	1	13	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	236	(34,4,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000024	1	10	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	227	(8,26,0)	(32,28,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000024	2	10	0	2	2		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	227	(8,26,0)	(32,28,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000025	1	17	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	266	(4,27,0)	(-1,-1,-1)	444		held_patrol_stand
+ci5_IA_M6_s1	1	1000026	1	28	0	2	2		NONE			0	0	patrol.node	0	-1	397	(29,29,0)	(2,42,0)	444		patrol_walk
+ci5_IA_M6_s1	1	1000026	2	28	0	2	2		NONE			0	0	patrol.node	0	-1	397	(29,29,0)	(2,42,0)	444		patrol_walk
+ci5_IA_M6_s1	1	1000027	1	29	0	2	2		NONE			0	0	patrol.node	0	-1	378	(48,32,2)	(16,5,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000027	2	29	0	2	0		NONE			0	0	patrol.node	0	-1	378	(48,32,2)	(16,5,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000028	1	43	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	287	(20,15,2)	(7,17,2)	-1		patrol_walk
+ci5_IA_M6_s1	1	1000028	2	39	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	287	(20,16,2)	(7,17,2)	448		patrol_walk
+ci5_IA_M6_s1	1	1000030	1	29	2	8	-		NONE			0	1	sniper	2	28	293	(3,37,0)	(32,36,2)	545		attack
+ci5_IA_M6_s1	1	1000031	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	455	(8,23,1)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000032	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		6	28	846	(4,34,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000033	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	399	(20,15,0)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000034	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	471	(11,19,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	1	1000035	1	42	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	309	(18,20,0)	(17,19,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000035	2	42	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	309	(18,20,0)	(17,19,0)	448		patrol_walk
+ci5_IA_M6_s1	1	1000036	1	11	0	2	2		NONE			0	0	patrol.node	0	-1	227	(45,7,0)	(19,45,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000036	2	11	0	2	2		NONE			0	0	patrol.node	0	-1	227	(45,7,0)	(19,45,0)	470		patrol_walk
+ci5_IA_M6_s1	1	1000037	1	38	3	0	3	arrived	REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	284	(23,21,0)	(23,21,0)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	1	1000039	1	134	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	369	(10,19,2)	(-1,-1,-1)	448		held_patrol_stand
+ci5_IA_M6_s1	1	1000040	1	67	2	8	-		NONE			0	1	sniper	3	29	749	(20,25,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	1	1000040	2	38	2	8	-		NONE			0	1	shot	1	29	411	(20,25,0)	(39,24,0)	470		attack
+ci5_IA_M6_s1	2	1000001	1	96	3	2	-		ENGAGE	SEARCH	contact_fire	1	1	escape	6	28	761	(36,48,0)	(34,44,0)	470		esc_kept_walk
+ci5_IA_M6_s1	2	1000002	1	96	0	2	0		ENGAGE	SEARCH	contact_approach	0	1	patrol.node	2	22	746	(19,1,0)	(24,4,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000002	2	83	2	8	2		ENGAGE	SEARCH	contact_approach	0	1	sniper	2	22	681	(21,3,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000003	1	96	2	8	2		GUARD	HOLD	take_post	1	1	sniper	4	28	906	(9,37,0)	(40,23,0)	545		attack
+ci5_IA_M6_s1	2	1000003	2	67	2	8	-		NONE			0	1	sniper	2	28	708	(9,37,0)	(40,23,0)	470		attack
+ci5_IA_M6_s1	2	1000004	1	96	0	2	0		NONE			0	0	patrol.node	0	-1	265	(24,22,2)	(24,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000004	2	96	0	2	0		NONE			0	0	patrol.node	0	-1	265	(24,22,2)	(24,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000005	1	96	2	8	-		NONE			0	1	sniper	2	21	692	(47,7,0)	(40,23,0)	470		attack
+ci5_IA_M6_s1	2	1000005	2	75	2	8	-		NONE			0	1	shot	2	21	542	(47,7,0)	(40,23,0)	470		attack
+ci5_IA_M6_s1	2	1000006	1	96	2	2	-		NONE			0	0	firepoint	1	38	1078	(37,16,0)	(38,17,0)	470		combat_walk
+ci5_IA_M6_s1	2	1000006	2	58	2	6	-		NONE			0	1	sniper	1	38	1036	(38,17,0)	(40,23,0)	470		attack
+ci5_IA_M6_s1	2	1000007	1	96	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	455	(21,25,1)	(17,16,1)	448		patrol_walk
+ci5_IA_M6_s1	2	1000007	2	46	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	373	(17,16,1)	(17,22,1)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000008	1	96	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	2	28	750	(6,44,0)	(31,32,0)	448		attack
+ci5_IA_M6_s1	2	1000008	2	68	2	8	-		NONE			0	1	sniper	1	28	543	(6,44,0)	(31,32,0)	448		attack
+ci5_IA_M6_s1	2	1000009	1	96	0	2	0		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	721	(8,15,0)	(2,25,0)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000009	2	38	0	2	2		GUARD	HOLD	take_post	0	0	patrol.node	0	-1	341	(8,24,0)	(2,25,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000012	1	96	0	2	2		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	429	(26,19,1)	(22,25,1)	448		patrol_walk
+ci5_IA_M6_s1	2	1000012	2	64	3	0	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	escape.known	0	-1	363	(22,25,1)	(22,25,1)	448	walk.self	art_esc_stand
+ci5_IA_M6_s1	2	1000015	1	111	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	341	(16,17,2)	(20,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000015	2	81	3	0	0		REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	294	(20,20,2)	(20,20,2)	-1	walk.self	natural_fallback_stand
+ci5_IA_M6_s1	2	1000016	1	111	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	4	38	3605	(8,47,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000016	2	73	2	7	-		NONE			0	1	sniper	4	38	1612	(8,47,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000017	1	111	3	2	-		NONE			0	0	escape	2	33	4236	(44,9,0)	(47,9,0)	448		esc_kept_walk
+ci5_IA_M6_s1	2	1000021	1	111	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	347	(15,17,2)	(20,17,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000021	2	91	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	307	(20,17,2)	(15,18,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000022	1	111	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	shot	4	33	4250	(41,6,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000022	2	76	2	8	-		NONE			0	1	shot	2	33	2282	(41,6,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000023	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		2	72	4624	(34,4,0)	(-1,-1,-1)	444		held_patrol_stand
+ci5_IA_M6_s1	2	1000024	1	111	0	2	0		ENGAGE	SEARCH	contact_approach	0	1	patrol.node	6	33	5177	(8,26,0)	(32,28,0)	448		patrol_walk
+ci5_IA_M6_s1	2	1000024	2	91	2	8	2		ENGAGE	SEARCH	contact_approach	0	1	sniper	9	33	3846	(13,26,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000025	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	1		4	33	4693	(4,27,0)	(-1,-1,-1)	545		held_patrol_stand
+ci5_IA_M6_s1	2	1000027	1	111	0	2	2		NONE			0	0	patrol.node	2	33	4987	(48,32,2)	(16,5,0)	448		patrol_walk
+ci5_IA_M6_s1	2	1000027	2	41	0	2	2		NONE			0	0	patrol.node	1	33	978	(35,23,2)	(16,5,0)	448		patrol_walk
+ci5_IA_M6_s1	2	1000028	1	111	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	338	(20,16,2)	(7,17,2)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000028	2	37	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	259	(4,16,2)	(7,17,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000030	1	96	2	8	-		GUARD	HOLD	take_post	1	1	shot	6	28	760	(3,37,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000030	2	68	0	2	0		NONE			0	0	patrol.node	3	28	568	(3,37,0)	(5,49,0)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000031	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	522	(8,23,1)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	2	1000032	1	96	0	2	2		GUARD	HOLD	advance_post	1	0	patrol.node	2	28	793	(4,34,0)	(8,26,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000032	2	56	2	8	2	arrived	GUARD	HOLD	advance_post	0	1	sniper	2	28	482	(8,26,0)	(31,32,0)	448		attack
+ci5_IA_M6_s1	2	1000033	1	96	0	2	0		GUARD	HOLD	advance_post	1	0	patrol.node	0	-1	544	(20,15,0)	(23,16,0)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000033	2	82	0	0	0	arrived	GUARD	HOLD	advance_post	0	0		0	-1	448	(23,16,0)	(23,16,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	2	1000034	1	96	0	2	2		GUARD	HOLD	advance_post	1	0	patrol.node	0	-1	445	(11,19,0)	(5,19,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000034	2	64	0	0	0	arrived	GUARD	HOLD	advance_post	0	0		0	-1	386	(5,19,0)	(5,19,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	2	1000035	0	96	2	2	2		ENGAGE	SEARCH	contact_approach	1	0	firepoint	0	-1	410	(18,20,0)	(17,21,0)	545		combat_walk
+ci5_IA_M6_s1	2	1000035	0	86	2	2	-	arrived	ENGAGE	SEARCH	contact_approach	0	0	firepoint	0	-1	384	(18,22,0)	(17,21,0)	545		combat_walk
+ci5_IA_M6_s1	2	1000035	1	78	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	359	(17,21,0)	(20,23,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000035	2	74	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	356	(17,22,0)	(20,23,0)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000036	1	96	2	9	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	sniper	5	38	738	(45,7,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000036	2	10	3	2	3	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	0	escape	0	-1	222	(45,7,0)	(43,12,0)	448		esc_dice_walk
+ci5_IA_M6_s1	2	1000037	0	96	2	2	2		REINFORCE	SEARCH	contact_approach	1	0	firepoint.fallback	0	-1	454	(23,21,0)	(18,23,0)	448		combat_walk
+ci5_IA_M6_s1	2	1000037	1	70	2	7	-		NONE			0	1	sniper	2	33	349	(18,23,0)	(31,32,0)	448		attack
+ci5_IA_M6_s1	2	1000037	2	24	0	2	2		NONE			0	0	patrol.node	0	-1	250	(18,23,0)	(14,17,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000038	1	134	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	452	(24,20,2)	(8,15,2)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000038	2	54	3	0	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	252	(8,15,2)	(8,15,2)	444	walk.self	art_esc_stand
+ci5_IA_M6_s1	2	1000039	1	134	0	2	0		GUARD	HOLD	advance_post	1	0	patrol.node	0	-1	284	(10,19,2)	(7,23,2)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000039	2	72	0	0	0	arrived	GUARD	HOLD	advance_post	0	0		0	-1	282	(7,23,2)	(7,23,2)	-1		held_patrol_stand
+ci5_IA_M6_s1	2	1000040	1	90	2	6	-		ENGAGE	SEARCH	contact_fire	0	1	grenade	9	29	2128	(20,25,0)	(31,32,0)	448		attack
+ci5_IA_M6_s1	2	1000040	2	36	2	8	-		ENGAGE	SEARCH	contact_fire	0	1	sniper	3	29	384	(20,25,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000002	1	59	2	8	-		ENGAGE	SEARCH	contact_approach	0	1	sniper	2	22	493	(21,3,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000002	2	37	2	8	-		ENGAGE	SEARCH	contact_approach	0	1	sniper	1	22	335	(21,3,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000003	1	39	2	8	-		NONE			0	1	shot	2	28	413	(9,37,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000003	2	10	0	2	2		NONE			0	0	patrol.node	0	-1	223	(9,37,0)	(11,44,0)	545		patrol_walk
+ci5_IA_M6_s1	2	1000004	1	96	0	2	2		NONE			0	0	patrol.node	0	-1	403	(24,22,2)	(24,20,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000004	2	88	0	2	0		NONE			1	0	patrol.node	0	-1	393	(24,20,2)	(23,23,2)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000005	1	54	0	2	2		NONE			0	0	patrol.node	0	-1	426	(47,7,0)	(26,25,0)	545		patrol_walk
+ci5_IA_M6_s1	2	1000006	1	20	3	0	3		NONE			0	0	escape.known	0	-1	250	(38,17,0)	(38,17,0)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	2	1000007	1	34	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	300	(17,19,1)	(17,22,1)	444		patrol_walk
+ci5_IA_M6_s1	2	1000007	2	34	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	300	(17,19,1)	(17,22,1)	444		patrol_walk
+ci5_IA_M6_s1	2	1000008	0	40	2	2	2		NONE			0	0	firepoint.fallback	1	28	348	(6,44,0)	(7,46,0)	545		combat_walk
+ci5_IA_M6_s1	2	1000008	1	30	2	8	-		NONE			0	1	shot	2	28	283	(7,46,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000009	1	38	0	2	2		GUARD	HOLD	take_post	0	0	patrol.node	0	-1	365	(8,24,0)	(2,25,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000009	2	34	0	2	0		GUARD	HOLD	take_post	0	0	patrol.node	2	21	358	(8,25,0)	(2,25,0)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000012	1	64	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	363	(22,25,1)	(18,25,1)	545		patrol_walk
+ci5_IA_M6_s1	2	1000012	2	48	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	339	(18,25,1)	(22,25,1)	444		patrol_walk
+ci5_IA_M6_s1	2	1000015	1	81	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	364	(20,20,2)	(20,17,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000015	2	69	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	364	(20,17,2)	(20,20,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000016	1	20	0	0	0		NONE			0	0		0	-1	269	(8,47,0)	(-1,-1,-1)	545		patrol_stand
+ci5_IA_M6_s1	2	1000021	1	69	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	339	(15,18,2)	(20,17,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000021	2	47	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	327	(20,17,2)	(15,18,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000022	1	43	2	8	-		NONE			0	1	sniper	2	33	726	(41,6,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000022	2	10	0	0	2		NONE			0	0		0	-1	229	(41,6,0)	(-1,-1,-1)	444		patrol_stand
+ci5_IA_M6_s1	2	1000023	1	111	2	9	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	2	72	4622	(34,4,0)	(13,11,0)	444		attack
+ci5_IA_M6_s1	2	1000023	2	12	0	0	2		NONE			0	0		0	-1	235	(34,4,0)	(-1,-1,-1)	444		patrol_stand
+ci5_IA_M6_s1	2	1000024	1	57	2	8	2		ENGAGE	SEARCH	contact_approach	0	1	sniper	6	33	1219	(13,26,0)	(31,36,0)	545		attack
+ci5_IA_M6_s1	2	1000024	2	24	3	2	3		ENGAGE	SEARCH	contact_approach	0	0	escape	0	-1	326	(13,26,0)	(16,25,0)	545		esc_dice_walk
+ci5_IA_M6_s1	2	1000025	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	1		6	33	4692	(4,27,0)	(-1,-1,-1)	545		held_patrol_stand
+ci5_IA_M6_s1	2	1000027	1	41	0	2	2		NONE			0	0	patrol.node	1	33	978	(35,23,2)	(16,5,0)	545		patrol_walk
+ci5_IA_M6_s1	2	1000027	2	41	0	2	2		NONE			0	0	patrol.node	1	33	978	(35,23,2)	(16,5,0)	545		patrol_walk
+ci5_IA_M6_s1	2	1000028	1	37	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	261	(4,16,2)	(7,17,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000028	2	37	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	261	(4,16,2)	(7,17,2)	444		patrol_walk
+ci5_IA_M6_s1	2	1000030	1	32	0	2	0		GUARD	HOLD	take_post	0	0	patrol.node	1	28	284	(3,45,0)	(5,49,0)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000030	2	32	0	2	0		GUARD	HOLD	take_post	0	0	patrol.node	1	28	284	(3,45,0)	(5,49,0)	-1		patrol_walk
+ci5_IA_M6_s1	2	1000031	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	503	(8,23,1)	(-1,-1,-1)	444		held_patrol_stand
+ci5_IA_M6_s1	2	1000032	1	27	0	0	0	arrived	GUARD	HOLD	advance_post	0	0		0	-1	287	(8,26,0)	(8,26,0)	545		held_patrol_stand
+ci5_IA_M6_s1	2	1000033	1	82	0	0	0	arrived	GUARD	HOLD	advance_post	0	0		0	-1	455	(23,16,0)	(23,16,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	2	1000034	1	64	0	0	0	arrived	GUARD	HOLD	advance_post	0	0		0	-1	393	(5,19,0)	(5,19,0)	444		held_patrol_stand
+ci5_IA_M6_s1	2	1000035	1	60	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	324	(20,23,0)	(23,22,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000035	2	46	0	2	2	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	291	(23,22,0)	(23,19,0)	444		patrol_walk
+ci5_IA_M6_s1	2	1000037	1	24	3	2	3		REINFORCE	SEARCH	contact_approach	0	0	escape	0	-1	250	(18,23,0)	(20,24,0)	444		esc_dice_walk
+ci5_IA_M6_s1	2	1000038	1	54	3	0	3	arrived	REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	251	(8,15,2)	(8,15,2)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	2	1000039	1	72	0	0	0	arrived	GUARD	HOLD	advance_post	0	0		0	-1	282	(7,23,2)	(7,23,2)	-1		held_patrol_stand
+ci5_IA_M6_s1	2	1000040	1	7	3	2	3		ENGAGE	SEARCH	contact_fire	0	0	escape	0	-1	213	(20,25,0)	(18,26,0)	444		esc_dice_walk
+ci5_IA_M6_s1	3	1000001	1	96	3	2	-	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	1	escape	8	28	926	(34,44,0)	(37,41,0)	470		esc_kept_walk
+ci5_IA_M6_s1	3	1000002	1	96	2	8	-		REINFORCE	SEARCH	contact_fire	1	1	shot	3	22	800	(21,3,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000002	2	40	2	6	-		NONE			0	1	sniper	3	22	585	(21,3,0)	(41,22,0)	470		attack
+ci5_IA_M6_s1	3	1000005	1	96	2	2	-		NONE			0	0	melee	0	-1	1092	(40,16,0)	(29,14,0)	444		combat_walk
+ci5_IA_M6_s1	3	1000005	2	92	2	2	-		NONE			0	0	melee	0	-1	1074	(39,16,0)	(29,14,0)	444		combat_walk
+ci5_IA_M6_s1	3	1000006	1	96	3	2	-		NONE			0	0	escape	0	-1	1161	(38,17,0)	(37,14,0)	444		esc_kept_walk
+ci5_IA_M6_s1	3	1000007	1	96	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	485	(17,19,1)	(24,18,1)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000007	2	66	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	369	(24,18,1)	(26,20,1)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000008	1	96	2	8	-	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	shot	4	28	729	(7,46,0)	(21,39,0)	545		attack
+ci5_IA_M6_s1	3	1000008	2	68	2	8	-		NONE			0	1	shot	2	28	511	(7,46,0)	(21,39,0)	545		attack
+ci5_IA_M6_s1	3	1000009	1	96	3	2	3		GUARD	HOLD	take_post	0	1	escape	6	21	1010	(8,25,0)	(5,27,0)	545		esc_dice_walk
+ci5_IA_M6_s1	3	1000012	1	96	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	454	(22,25,1)	(22,21,1)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000012	2	80	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	429	(22,21,1)	(22,25,1)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000015	1	111	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	413	(20,20,2)	(23,22,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000015	2	37	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	275	(24,19,0)	(23,22,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000016	1	111	2	7	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	4	38	3619	(8,47,0)	(21,39,0)	545		attack
+ci5_IA_M6_s1	3	1000016	2	58	2	7	-		NONE			0	1	sniper	2	38	1051	(8,47,0)	(30,33,0)	448		attack
+ci5_IA_M6_s1	3	1000017	1	111	2	8	2		NONE			0	1	shot	5	33	3822	(47,9,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000017	2	78	2	8	-		NONE			0	1	sniper	3	33	1976	(47,9,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000021	1	111	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	444	(18,17,2)	(20,23,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000021	2	43	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	291	(23,19,0)	(20,23,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000022	1	111	2	8	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	1	1	sniper	2	33	4401	(41,6,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000022	2	77	2	8	-	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	1	sniper	1	33	2342	(41,6,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000023	1	111	2	9	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	1	1	sniper	5	44	4827	(34,4,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000023	2	13	0	2	2		NONE			0	0	patrol.node	0	-1	238	(34,4,0)	(41,25,1)	444		patrol_walk
+ci5_IA_M6_s1	3	1000025	1	111	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	4839	(4,27,0)	(-1,-1,-1)	444		held_patrol_stand
+ci5_IA_M6_s1	3	1000028	1	111	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	413	(4,16,2)	(24,20,2)	444		patrol_walk
+ci5_IA_M6_s1	3	1000028	2	39	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	303	(20,19,2)	(24,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000030	1	96	0	2	0		GUARD	HOLD	take_post	0	0	patrol.node	2	28	673	(3,45,0)	(5,49,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000030	1	76	2	2	2	arrived	GUARD	HOLD	take_post	0	0	firepoint.fallback	0	-1	385	(5,49,0)	(1,44,0)	448		combat_walk
+ci5_IA_M6_s1	3	1000030	2	42	0	0	0	arrived	GUARD	HOLD	take_post	0	0		1	28	302	(1,44,0)	(5,49,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	3	1000031	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	503	(8,23,1)	(-1,-1,-1)	444		held_patrol_stand
+ci5_IA_M6_s1	3	1000032	1	96	2	8	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	1	sniper	2	28	1011	(8,26,0)	(30,33,0)	448		attack
+ci5_IA_M6_s1	3	1000032	2	68	2	8	-		NONE			0	1	shot	1	28	638	(8,26,0)	(30,33,0)	448		attack
+ci5_IA_M6_s1	3	1000033	1	96	0	2	0	arrived	ENGAGE	HOLD	advance_post	1	0	patrol.node	0	-1	457	(23,16,0)	(20,15,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000033	2	82	0	2	2	arrived	ENGAGE	HOLD	advance_post	1	0	patrol.node	0	-1	411	(20,15,0)	(23,16,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000034	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	836	(5,19,0)	(5,19,0)	444		held_patrol_stand
+ci5_IA_M6_s1	3	1000035	1	96	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	440	(23,20,0)	(23,19,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000035	2	96	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	440	(23,20,0)	(23,19,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000036	1	96	3	2	-	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	escape	5	38	807	(45,9,0)	(47,4,0)	444		esc_kept_walk
+ci5_IA_M6_s1	3	1000037	0	96	2	2	2		REINFORCE	SEARCH	contact_fire	1	0	firepoint.fallback	0	-1	1155	(20,24,0)	(25,27,0)	444		combat_walk
+ci5_IA_M6_s1	3	1000037	1	88	2	8	-		NONE			0	1	sniper	4	33	1125	(20,25,0)	(30,33,0)	448		attack
+ci5_IA_M6_s1	3	1000037	2	55	2	8	-		NONE			0	1	sniper	4	33	587	(20,25,0)	(30,33,0)	448		attack
+ci5_IA_M6_s1	3	1000038	1	134	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	417	(8,15,2)	(20,15,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000038	2	58	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	320	(20,15,0)	(14,17,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000039	1	134	0	0	2	stay:locked	GUARD	HOLD	locked	0	0		0	-1	368	(7,23,2)	(7,23,2)	444		held_patrol_stand
+ci5_IA_M6_s1	3	1000004	1	96	0	2	2		NONE			1	0	patrol.node	0	-1	289	(23,23,2)	(17,23,2)	444		patrol_walk
+ci5_IA_M6_s1	3	1000004	2	72	0	2	2		NONE			1	0	patrol.node	0	-1	289	(17,23,2)	(23,23,2)	444		patrol_walk
+ci5_IA_M6_s1	3	1000007	1	52	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	310	(26,20,1)	(22,21,1)	444		patrol_walk
+ci5_IA_M6_s1	3	1000007	2	34	3	0	3	arrived	REINFORCE	SEARCH	contact_approach	1	0	escape.known	0	-1	296	(22,21,1)	(22,21,1)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	3	1000008	1	40	0	0	2		NONE			0	0		0	-1	334	(7,46,0)	(-1,-1,-1)	444		patrol_stand
+ci5_IA_M6_s1	3	1000012	1	64	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	354	(22,25,1)	(32,28,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000012	2	32	3	0	3	arrived	REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	289	(15,23,1)	(15,23,1)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	3	1000015	1	37	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	259	(24,19,0)	(23,22,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000015	2	37	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	259	(24,19,0)	(23,22,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000017	1	45	2	8	-		NONE			0	1	sniper	3	33	654	(47,9,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000017	2	12	0	2	0		NONE			0	0	patrol.node	0	-1	233	(47,9,0)	(35,4,2)	444		patrol_walk
+ci5_IA_M6_s1	3	1000021	1	43	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	294	(23,19,0)	(20,23,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000021	2	39	0	2	0		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	287	(22,19,0)	(20,23,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000022	1	44	2	8	-	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	1	sniper	1	33	801	(41,6,0)	(27,15,0)	444		attack
+ci5_IA_M6_s1	3	1000022	2	11	0	2	2	stay:guard_sector	ENGAGE	HOLD	guard_sector	0	0	patrol.node	0	-1	226	(41,6,0)	(24,18,1)	444		patrol_walk
+ci5_IA_M6_s1	3	1000023	1	13	0	2	2		NONE			0	0	patrol.node	0	-1	237	(34,4,0)	(41,25,1)	444		patrol_walk
+ci5_IA_M6_s1	3	1000023	2	13	3	2	3		NONE			0	0	escape	0	-1	237	(34,4,0)	(35,5,0)	444		esc_dice_walk
+ci5_IA_M6_s1	3	1000025	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	4828	(4,27,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	3	1000028	1	39	3	0	3		REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	302	(20,19,2)	(20,19,2)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	3	1000030	1	42	0	0	2	arrived	GUARD	HOLD	take_post	0	0		0	-1	301	(1,44,0)	(5,49,0)	444		held_patrol_stand
+ci5_IA_M6_s1	3	1000031	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	493	(8,23,1)	(-1,-1,-1)	444		held_patrol_stand
+ci5_IA_M6_s1	3	1000032	1	40	3	2	3		NONE			0	0	escape.known	0	-1	406	(8,26,0)	(10,23,0)	-1		esc_dice_walk
+ci5_IA_M6_s1	3	1000033	1	68	0	2	2	arrived	ENGAGE	HOLD	advance_post	1	0	patrol.node	0	-1	346	(23,16,0)	(20,15,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000033	2	54	0	2	0	arrived	ENGAGE	HOLD	advance_post	1	0	patrol.node	0	-1	305	(20,15,0)	(23,16,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000034	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	828	(5,19,0)	(5,19,0)	444		held_patrol_stand
+ci5_IA_M6_s1	3	1000035	1	96	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	440	(23,20,0)	(23,19,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000035	2	92	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	416	(23,19,0)	(17,19,0)	-1		patrol_walk
+ci5_IA_M6_s1	3	1000037	1	22	3	2	3		NONE			0	0	escape	0	-1	277	(20,25,0)	(15,23,0)	444		esc_dice_walk
+ci5_IA_M6_s1	3	1000038	1	30	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	237	(14,17,0)	(8,15,0)	444		patrol_walk
+ci5_IA_M6_s1	3	1000039	1	134	0	0	0	stay:locked	GUARD	HOLD	locked	0	0		0	-1	368	(7,23,2)	(7,23,2)	-1		held_patrol_stand
+ci5_IA_M6_s1	4	1000001	1	96	3	2	-	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	0	1	escape	2	28	1018	(37,41,0)	(40,43,0)	470		esc_kept_walk
+ci5_IA_M6_s1	4	1000004	1	96	0	2	0		NONE			1	0	patrol.node	0	-1	290	(23,23,2)	(17,23,2)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000004	2	72	0	2	0		NONE			1	0	patrol.node	0	-1	290	(17,23,2)	(23,23,2)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000005	1	96	2	2	-		NONE			0	0	melee	0	-1	1278	(29,14,0)	(33,18,0)	444		combat_walk
+ci5_IA_M6_s1	4	1000005	2	90	2	2	-		NONE			0	0	melee	0	-1	1189	(30,15,0)	(33,18,0)	444		combat_walk
+ci5_IA_M6_s1	4	1000007	1	96	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	454	(22,21,1)	(26,20,1)	470		patrol_walk
+ci5_IA_M6_s1	4	1000007	2	78	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	376	(26,20,1)	(22,21,1)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000008	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	734	(7,46,0)	(-1,-1,-1)	470		held_patrol_stand
+ci5_IA_M6_s1	4	1000009	1	96	2	9	2		GUARD	HOLD	take_post	0	1	sniper	2	21	941	(5,27,0)	(41,23,0)	-1		attack
+ci5_IA_M6_s1	4	1000009	2	57	2	9	-		NONE			0	1	sniper	2	21	493	(5,27,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	4	1000012	1	96	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	455	(15,23,1)	(22,25,1)	470		patrol_walk
+ci5_IA_M6_s1	4	1000012	2	64	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	354	(22,25,1)	(2,18,1)	470		patrol_walk
+ci5_IA_M6_s1	4	1000015	1	111	0	2	0		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	2392	(24,19,0)	(22,32,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000015	2	41	0	2	0	arrived	REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	724	(22,32,0)	(15,46,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000016	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	3622	(8,47,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	4	1000017	1	111	2	8	2		NONE			0	1	sniper	2	33	3930	(47,9,0)	(41,23,0)	-1		attack
+ci5_IA_M6_s1	4	1000017	2	77	2	8	-		NONE			0	1	sniper	1	33	1943	(47,9,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	4	1000021	1	111	0	2	0		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	2728	(22,19,0)	(26,30,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000021	2	77	0	2	0		REINFORCE	SEARCH	contact_fire	0	1	patrol.node	1	33	2611	(20,25,0)	(26,30,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000022	0	111	2	2	2		SEARCH	SEARCH	sweep_sector	1	0	firepoint.random	0	-1	4481	(41,6,0)	(46,2,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000022	1	83	2	8	-		NONE			0	1	sniper	2	33	1739	(46,2,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	4	1000022	2	50	2	8	-		NONE			0	1	sniper	1	33	707	(46,2,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	4	1000023	1	111	3	2	-		SEARCH	SEARCH	sweep_sector	1	1	escape	3	44	5045	(35,5,0)	(40,4,0)	470		esc_kept_walk
+ci5_IA_M6_s1	4	1000025	0	111	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.fallback	0	-1	4828	(4,27,0)	(6,28,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000025	1	101	0	0	0		NONE			0	0		2	33	4241	(6,28,0)	(-1,-1,-1)	-1		patrol_stand
+ci5_IA_M6_s1	4	1000028	1	111	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	449	(20,19,2)	(23,19,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000028	2	39	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	284	(23,19,0)	(23,22,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000030	0	96	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.fallback	0	-1	646	(1,44,0)	(0,40,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000030	0	78	2	2	-		NONE			0	0	firepoint	0	-1	551	(0,40,0)	(0,35,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000030	1	58	0	0	0		NONE			0	0		1	28	442	(0,35,0)	(5,49,0)	-1		patrol_stand
+ci5_IA_M6_s1	4	1000031	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	453	(8,23,1)	(-1,-1,-1)	470		held_patrol_stand
+ci5_IA_M6_s1	4	1000032	0	96	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	0	-1	825	(10,23,0)	(14,27,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000032	1	50	2	8	-		NONE			0	1	sniper	1	28	503	(14,27,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	4	1000032	2	22	0	0	2		NONE			0	0		0	-1	283	(14,27,0)	(8,26,0)	470		patrol_stand
+ci5_IA_M6_s1	4	1000033	1	96	0	2	2		SEARCH	SEARCH	sweep_sector	1	0	patrol.node	0	-1	667	(23,16,0)	(36,7,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000033	2	38	0	2	0		SEARCH	SEARCH	sweep_sector	0	1	patrol.node	1	28	415	(21,26,0)	(36,7,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000034	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	696	(5,19,0)	(5,19,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	4	1000035	1	96	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	753	(17,19,0)	(27,33,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000035	2	38	3	2	3		REINFORCE	SEARCH	contact_approach	0	1	escape	1	28	412	(23,29,0)	(27,29,0)	470		esc_dice_walk
+ci5_IA_M6_s1	4	1000036	1	96	3	2	-	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	escape	3	38	666	(47,4,0)	(46,0,0)	470		esc_kept_walk
+ci5_IA_M6_s1	4	1000037	0	96	2	2	2		REINFORCE	SEARCH	contact_fire	1	0	firepoint.fallback	0	-1	1091	(16,24,0)	(20,25,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000037	1	90	0	2	0		NONE			0	0	patrol.node	0	-1	1062	(17,25,0)	(19,35,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000037	2	46	0	2	0	arrived	REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	510	(19,35,0)	(34,29,1)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000038	1	134	0	2	2		REINFORCE	SEARCH	contact_fire	1	0	patrol.node	0	-1	1081	(8,15,0)	(15,30,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000038	2	34	2	2	2	arrived	REINFORCE	SEARCH	contact_fire	1	0	firepoint.fallback	1	29	380	(15,30,0)	(14,32,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000039	1	134	0	2	0		GUARD	HOLD	take_post	1	0	patrol.node	0	-1	393	(7,23,2)	(5,22,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000004	1	48	0	2	0		NONE			1	0	patrol.node	0	-1	268	(23,23,2)	(24,20,2)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000004	2	34	3	0	3		NONE			1	0	escape.known	0	-1	256	(24,20,2)	(24,20,2)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	4	1000007	1	60	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	371	(22,21,1)	(22,25,1)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000007	2	44	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	294	(22,25,1)	(22,21,1)	470		patrol_walk
+ci5_IA_M6_s1	4	1000008	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	731	(7,46,0)	(-1,-1,-1)	470		held_patrol_stand
+ci5_IA_M6_s1	4	1000009	1	19	0	2	2		NONE			0	0	patrol.node	0	-1	256	(5,27,0)	(2,25,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000009	2	19	0	2	2		NONE			0	0	patrol.node	0	-1	256	(5,27,0)	(2,25,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000012	1	32	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	289	(15,23,1)	(2,18,1)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000012	2	32	3	0	3	arrived	REINFORCE	SEARCH	contact_approach	0	0	escape.known	0	-1	289	(15,23,1)	(15,23,1)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	4	1000015	1	37	3	0	3	arrived	REINFORCE	SEARCH	contact_fire	0	0	escape.known	0	-1	589	(22,33,0)	(22,33,0)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	4	1000016	1	111	3	0	3	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	escape.known	0	-1	3625	(8,47,0)	(8,47,0)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	4	1000017	1	44	2	2	2		NONE			0	0	firepoint.fallback	0	-1	655	(47,9,0)	(46,7,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000017	2	34	2	2	-		NONE			0	0	firepoint	0	-1	475	(46,7,0)	(44,7,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000021	0	43	2	2	2	arrived	REINFORCE	SEARCH	contact_fire	1	0	firepoint.fallback	0	-1	758	(26,30,0)	(26,29,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000021	0	39	2	2	-	arrived	REINFORCE	SEARCH	contact_fire	0	0	firepoint	0	-1	639	(26,29,0)	(25,28,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000021	1	33	2	8	-	arrived	REINFORCE	SEARCH	contact_fire	0	1	sniper	1	33	490	(25,28,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	4	1000022	1	17	2	2	2		NONE			0	0	firepoint	0	-1	255	(46,2,0)	(46,1,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000022	2	13	0	2	0		NONE			0	0	patrol.node	0	-1	230	(46,1,0)	(34,4,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000025	1	101	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	4250	(6,28,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	4	1000028	1	39	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	293	(23,19,0)	(23,22,0)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000028	2	39	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	293	(23,19,0)	(23,22,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000030	0	58	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.fallback	1	28	442	(0,35,0)	(5,31,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000030	1	30	0	0	2		NONE			0	0		1	28	330	(5,31,0)	(5,49,0)	470		patrol_stand
+ci5_IA_M6_s1	4	1000031	1	96	3	0	3	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	escape.known	0	-1	500	(8,23,1)	(8,23,1)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	4	1000032	1	22	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	283	(14,27,0)	(8,26,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	4	1000033	1	34	2	8	2		SEARCH	SEARCH	sweep_sector	0	1	sniper	1	28	366	(22,26,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	4	1000033	2	6	0	2	2		NONE			0	0	patrol.node	0	-1	215	(22,26,0)	(36,7,0)	470		patrol_walk
+ci5_IA_M6_s1	4	1000034	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	858	(5,19,0)	(5,19,0)	470		held_patrol_stand
+ci5_IA_M6_s1	4	1000037	0	42	2	2	2	arrived	REINFORCE	SEARCH	contact_fire	0	0	firepoint	0	-1	461	(19,34,0)	(19,32,0)	470		combat_walk
+ci5_IA_M6_s1	4	1000037	1	34	0	2	0	arrived	REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	381	(19,32,0)	(34,29,1)	-1		patrol_walk
+ci5_IA_M6_s1	4	1000037	2	34	0	2	2	arrived	REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	381	(19,32,0)	(34,29,1)	470		patrol_walk
+ci5_IA_M6_s1	4	1000038	1	24	0	2	0	arrived	REINFORCE	SEARCH	contact_fire	0	0	patrol.node	0	-1	298	(14,32,0)	(18,3,0)	470		patrol_walk
+ci5_IA_M6_s1	5	1000001	0	96	2	2	2		REINFORCE	SEARCH	contact_fire	1	0	firepoint.fallback	0	-1	846	(40,43,0)	(39,43,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000001	1	91	2	8	-		NONE			0	1	sniper	2	28	824	(39,43,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000001	2	63	2	8	-		NONE			0	1	sniper	1	28	564	(39,43,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000004	1	96	0	2	2		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	392	(24,20,2)	(23,16,0)	470		patrol_walk
+ci5_IA_M6_s1	5	1000004	2	34	0	2	2		REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	267	(20,15,0)	(23,16,0)	470		patrol_walk
+ci5_IA_M6_s1	5	1000007	1	96	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	457	(22,22,1)	(26,20,1)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000007	2	76	0	2	0	arrived	ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	370	(26,20,1)	(22,21,1)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000008	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	731	(7,46,0)	(-1,-1,-1)	470		held_patrol_stand
+ci5_IA_M6_s1	5	1000009	0	96	2	2	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	firepoint.random	2	21	935	(5,27,0)	(2,31,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000009	1	74	2	9	-		NONE			0	1	sniper	2	21	606	(2,31,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000009	2	36	0	0	0		NONE			0	0		1	21	332	(2,31,0)	(2,25,0)	-1		patrol_stand
+ci5_IA_M6_s1	5	1000012	1	96	0	2	0		REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	487	(15,23,1)	(24,18,1)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000012	2	50	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	318	(24,18,1)	(26,20,1)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000015	1	111	0	2	0		ENGAGE	SEARCH	contact_fire	1	0	patrol.node	0	-1	7112	(22,33,0)	(26,25,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000015	2	97	2	8	2		ENGAGE	SEARCH	contact_fire	0	1	shot	2	33	5358	(23,30,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000016	1	111	3	0	3	stay:guard_sector	GUARD	HOLD	guard_sector	0	0	escape.known	0	-1	3618	(8,47,0)	(8,47,0)	-1	walk.self	esc_dice_stand
+ci5_IA_M6_s1	5	1000021	1	111	2	8	-	arrived	ENGAGE	SEARCH	contact_fire	0	1	sniper	2	33	7618	(25,28,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000021	2	78	2	8	-	arrived	ENGAGE	SEARCH	contact_fire	0	1	sniper	1	33	3226	(25,28,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000022	1	111	2	2	2		ENGAGE	SEARCH	sweep_sector	0	0	firepoint.random	0	-1	3424	(43,1,0)	(48,5,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000022	2	91	0	2	0		NONE			0	0	patrol.node	0	-1	2080	(47,3,0)	(34,4,0)	470		patrol_walk
+ci5_IA_M6_s1	5	1000023	1	111	2	9	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	sniper	3	44	4296	(40,4,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000023	2	12	0	2	2		NONE			0	0	patrol.node	0	-1	232	(40,4,0)	(35,5,1)	470		patrol_walk
+ci5_IA_M6_s1	5	1000025	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	5181	(6,28,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000028	1	111	0	2	0		ENGAGE	SEARCH	contact_approach	1	0	patrol.node	0	-1	2528	(23,19,0)	(32,28,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000028	2	75	0	2	0		ENGAGE	SEARCH	contact_approach	0	1	patrol.node	2	44	2441	(20,25,0)	(32,28,0)	470		patrol_walk
+ci5_IA_M6_s1	5	1000030	0	96	2	2	2		GUARD	HOLD	take_post	1	0	firepoint.fallback	2	28	892	(5,31,0)	(4,34,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000030	1	82	2	9	-		NONE			0	1	sniper	2	28	716	(4,34,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000030	2	10	0	2	2		NONE			0	0	patrol.node	0	-1	220	(4,34,0)	(6,44,0)	470		patrol_walk
+ci5_IA_M6_s1	5	1000031	1	96	0	0	2	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	502	(8,23,1)	(-1,-1,-1)	470		held_patrol_stand
+ci5_IA_M6_s1	5	1000032	0	96	2	2	2		GUARD	HOLD	take_post	1	0	firepoint.fallback	0	-1	1117	(14,27,0)	(12,29,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000032	0	84	2	2	-		NONE			0	0	firepoint	0	-1	936	(12,29,0)	(7,30,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000032	1	62	2	8	-	arrived	GUARD	HOLD	take_post	0	1	sniper	1	28	594	(7,30,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000032	2	34	0	0	0	arrived	GUARD	HOLD	take_post	0	0		1	28	369	(7,30,0)	(5,30,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000033	1	96	2	8	2		ENGAGE	SEARCH	sweep_sector	0	1	sniper	2	28	1362	(22,26,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000033	2	68	2	8	-		ENGAGE	SEARCH	sweep_sector	0	1	shot	1	28	777	(22,26,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000034	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	833	(5,19,0)	(5,19,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000035	1	96	0	2	0		REINFORCE	SEARCH	contact_fire	1	1	patrol.node	2	28	1393	(27,29,0)	(27,19,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000035	2	56	2	8	2	stay:contact_in_place	REINFORCE	SEARCH	contact_in_place	1	1	sniper	1	28	574	(27,19,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000036	1	96	2	9	2	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	1	sniper	2	62	616	(46,0,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000036	2	12	3	2	3	stay:contact_in_place	ENGAGE	SEARCH	contact_in_place	0	0	escape.known	0	-1	222	(46,0,0)	(48,0,0)	470		esc_dice_walk
+ci5_IA_M6_s1	5	1000037	1	96	2	7	2	arrived	ENGAGE	SEARCH	contact_fire	0	1	sniper	2	33	1228	(19,32,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000037	2	50	2	7	-	arrived	ENGAGE	SEARCH	contact_fire	0	1	sniper	2	33	567	(19,32,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000038	0	134	2	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	firepoint.fallback	3	29	1943	(18,29,0)	(13,26,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000038	1	108	2	2	2	arrived	ENGAGE	SEARCH	contact_fire	0	0	firepoint.fallback	3	29	1277	(13,26,0)	(8,30,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000038	2	80	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	2	29	792	(8,30,0)	(18,3,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000039	1	134	0	2	0		GUARD	HOLD	take_post	0	0	patrol.node	0	-1	1345	(19,15,0)	(5,22,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000039	2	44	0	0	0	arrived	GUARD	HOLD	take_post	0	0		0	-1	297	(5,22,0)	(5,22,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000001	0	35	2	2	2		NONE			0	0	firepoint.fallback	1	28	332	(39,43,0)	(39,42,0)	470		combat_walk
+ci5_IA_M6_s1	5	1000001	1	31	2	8	-		NONE			0	1	sniper	1	28	305	(39,42,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000004	1	34	2	8	2		REINFORCE	SEARCH	contact_approach	0	1	sniper	1	21	270	(20,15,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000004	2	11	0	2	0		NONE			0	0	patrol.node	0	-1	222	(20,15,0)	(23,16,0)	470		patrol_walk
+ci5_IA_M6_s1	5	1000007	1	58	3	0	2	arrived	ENGAGE	SEARCH	contact_approach	0	0	escape.known	0	-1	366	(22,21,1)	(22,21,1)	470	walk.self	art_esc_stand
+ci5_IA_M6_s1	5	1000008	1	96	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	734	(7,46,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000009	1	36	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	332	(2,31,0)	(2,25,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000012	1	36	0	2	0	arrived	REINFORCE	SEARCH	contact_approach	1	0	patrol.node	0	-1	268	(26,20,1)	(24,18,1)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000012	2	32	0	2	2	arrived	REINFORCE	SEARCH	contact_approach	0	0	patrol.node	0	-1	267	(25,20,1)	(24,18,1)	470		patrol_walk
+ci5_IA_M6_s1	5	1000015	1	63	2	8	2		NONE			0	1	sniper	1	33	1807	(23,30,0)	(41,23,0)	470		attack
+ci5_IA_M6_s1	5	1000015	2	30	0	2	0		NONE			0	0	patrol.node	0	-1	457	(23,30,0)	(26,25,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000016	1	111	0	0	0	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	3619	(8,47,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000021	1	45	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	826	(25,28,0)	(15,18,2)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000021	2	45	0	2	0	arrived	ENGAGE	SEARCH	contact_fire	0	0	patrol.node	0	-1	826	(25,28,0)	(15,18,2)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000022	1	33	0	2	0		NONE			1	0	patrol.node	0	-1	463	(34,4,0)	(34,44,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000023	1	12	0	2	0		NONE			0	0	patrol.node	0	-1	231	(40,4,0)	(35,5,1)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000023	2	12	0	2	0		NONE			0	0	patrol.node	0	-1	231	(40,4,0)	(35,5,1)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000025	1	111	0	0	-	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	5171	(6,28,0)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000028	1	37	0	2	0		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	558	(29,26,0)	(32,28,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000028	2	37	0	2	-		ENGAGE	SEARCH	contact_approach	0	0	patrol.node	0	-1	558	(29,26,0)	(32,28,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000030	1	10	0	2	-		GUARD	HOLD	take_post	0	0	patrol.node	0	-1	219	(4,34,0)	(6,44,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000030	2	10	0	2	-		GUARD	HOLD	take_post	0	0	patrol.node	0	-1	219	(4,34,0)	(6,44,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000031	1	96	0	0	-	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	498	(8,23,1)	(-1,-1,-1)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000032	1	34	0	0	-	arrived	GUARD	HOLD	take_post	0	0		0	-1	368	(7,30,0)	(5,30,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000033	1	40	0	2	0		ENGAGE	SEARCH	sweep_sector	0	0	patrol.node	0	-1	431	(22,26,0)	(36,7,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000033	2	34	0	2	-		ENGAGE	SEARCH	sweep_sector	0	0	patrol.node	0	-1	355	(23,25,0)	(36,7,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000034	1	96	0	0	-	stay:guard_sector	GUARD	HOLD	guard_sector	0	0		0	-1	795	(5,19,0)	(5,19,0)	-1		held_patrol_stand
+ci5_IA_M6_s1	5	1000035	1	26	0	2	0		NONE			0	0	patrol.node	0	-1	285	(27,19,0)	(48,23,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000035	2	26	0	2	-		NONE			0	0	patrol.node	0	-1	285	(27,19,0)	(48,23,0)	-1		patrol_walk
+ci5_IA_M6_s1	5	1000039	1	44	0	0	-	arrived	GUARD	HOLD	take_post	0	0		0	-1	296	(5,22,0)	(5,22,0)	-1		held_patrol_stand

@@ -1,0 +1,95 @@
+﻿
+===== GoldGalZ.sav bytes 11614326
+ ironman true
+ battle inside: False
+ missions 1600 by stage {'early 0-11': 210, 'mid 12-35': 607, 'late 36+': 783} months 60 repeat of None
+
+===== NoCodexCatZ.sav bytes 13998735
+ ironman true
+ battle inside: False
+ missions 1961 by stage {'early 0-11': 217, 'mid 12-35': 547, 'late 36+': 1197} months 62 repeat of None
+
+===== NoCodexManZ.sav bytes 36472096
+ ironman true
+ battle inside: False
+ missions 4883 by stage {'early 0-11': 323, 'mid 12-35': 788, 'late 36+': 3772} months 108 repeat of None
+
+===== PeasGray.sav bytes 3812475
+ ironman true
+ battle inside: False
+ missions 712 by stage {'early 0-11': 367, 'mid 12-35': 345} months 20 repeat of None
+
+===== RedCatZ.sav bytes 9952407
+ ironman true
+ battle inside: False
+ missions 1485 by stage {'early 0-11': 278, 'mid 12-35': 826, 'late 36+': 381} months 44 repeat of None
+
+===== стрим.sav bytes 7494621
+ ironman true
+ battle inside: {'turn': '11', 'missionType': 'STR_UFO_GROUND_ASSAULT', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '475', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+ missions 1093 by stage {'early 0-11': 192, 'mid 12-35': 529, 'late 36+': 372} months 46 repeat of None
+
+===== Missions and deaths, repeats removed. NOTE: deaths from deadSoldiers include those not in missionStatistics only if the file disagrees
+early 0-11 missions 1587 night share 0.51 deaths 187 per mission 0.118 with cause 158 no cause 29
+  missions with deaths 113 7.1% of them 3+ deaths 9 deaths in those 30 (19% of deaths)
+  phase of death: player 79 hostile 79 neutral 0
+  rounds {'1': 26, '11+': 45, '2': 14, '3': 22, '4-5': 22, '6-10': 29}
+  top killers [('STR_BANDIT_HIGHWAYMAN', 11), ('STR_DOGG_TERRORIST', 10), ('STR_HUMAN_CITY_GIRL', 8), ('STR_HUMAN_MALE_3', 7), ('STR_BANDIT_PUNK', 7), ('STR_BANDIT_RUFFIAN', 7), ('STR_ADRONE_TERRORIST', 6), ('STR_GOVT_ELITE', 6), ('STR_BANDIT_RATMAN_HUNTER', 5), ('STR_CHURCH_SOLDIER', 4), ('STR_GUILD_GUARD', 4), ('STR_BANDIT_DRIFTER', 4), ('STR_GUILD_SOLDIER', 4), ('STR_HUMAN_FEMALE_4', 4)]
+  top weapons [('STR_OLD_PISTOL', 12), ('AUX_DOGG_WEAPON', 10), ('STR_SHOTGUN_LT', 9), ('STR_PISTOL_BM', 7), ('AUX_ADRONE_WEAPON', 6), ('STR_SHOTGUN_PA', 5), ('STR_MP', 5), ('STR_GRENADE_FRAG', 5), ('STR_HSMG', 5), ('STR_SAWED_OFF', 4), ('STR_GAUSS_RIFLE', 4), ('STR_OLD_REVOLVER', 4), ('STR_GRENADE', 3), ('STR_REVOLVER_LT', 2)]
+mid 12-35 missions 3642 night share 0.32 deaths 270 per mission 0.074 with cause 219 no cause 51
+  missions with deaths 123 3.4% of them 3+ deaths 14 deaths in those 88 (40% of deaths)
+  phase of death: player 81 hostile 129 neutral 9
+  rounds {'1': 25, '11+': 89, '2': 20, '3': 18, '4-5': 26, '6-10': 41}
+  top killers [('STR_NINJA_WARRIOR', 12), ('STR_NINJA_ASSASSIN', 9), ('STR_MUTON_NAVIGATOR', 8), ('STR_CYBERDISC_TERRORIST', 8), ('STR_NINJA_GAL', 8), ('STR_WORKER', 8), ('STR_NINJA_MEDIC', 8), ('STR_BLOOD_DOG_TERRORIST', 6), ('STR_HUMAN_CITY_GIRL', 6), ('STR_SECTOPOD_TERRORIST', 6), ('STR_CHURCH_NAVIGATOR', 5), ('STR_SECTOID_NAVIGATOR', 5), ('STR_CHURCH_MAIDEN', 5), ('STR_BANDIT_HITMAN', 5)]
+  top weapons [('STR_PIR_PLASMA_RIFLE', 13), ('STR_CD_RIFLE', 8), ('AUX_CYBERDISC_WEAPON', 8), ('AUX_BLOOD_DOG_WEAPON', 6), ('STR_SHOTGUN_LT', 6), ('AUX_SECTOPOD_WEAPON', 6), ('STR_NINJA_DEATHPACK', 6), ('STR_PLASMA_SCORCHER', 5), ('STR_GAUSS_RIFLE', 5), ('STR_PIR_HEAVY_PLASMA', 5), ('STR_ROCKET_LAUNCHER', 4), ('STR_LASER_RIFLE_PIR', 4), ('STR_CD_PISTOL', 4), ('AUX_XTANK_GAUSS_WEAPON', 3)]
+late 36+ missions 6505 night share 0.25 deaths 156 per mission 0.024 with cause 121 no cause 35
+  missions with deaths 88 1.4% of them 3+ deaths 9 deaths in those 32 (26% of deaths)
+  phase of death: player 37 hostile 83 neutral 1
+  rounds {'1': 32, '11+': 34, '2': 13, '3': 15, '4-5': 20, '6-10': 7}
+  top killers [('STR_MARSEC_SECURITY', 12), ('STR_MARSEC_TROOPER', 12), ('STR_MUTON_NAVIGATOR', 8), ('STR_CHURCH_ELITE', 6), ('STR_ACADEMY_PIONEER', 6), ('STR_CHURCH_NAVIGATOR', 5), ('STR_NINJA_ASSAULT', 4), ('STR_NINJA_WARRIOR', 4), ('STR_LOBSTERMAN_TERRORIST', 4), ('STR_STAR_GOD_PUBLIC_ENEMY', 4), ('STR_SECTOPOD_TERRORIST', 3), ('STR_SECTOID_NAVIGATOR', 3), ('STR_ZOMBIE_GRUBAS_TERRORIST', 3), ('STR_WASPITE_SOLDIER', 3)]
+  top weapons [('STR_ROCKET_LAUNCHER', 10), ('STR_PLASMA_SCORCHER', 10), ('STR_ELITE_HEAVY_PLASMA', 9), ('AUX_FORCE_LANCE', 6), ('STR_PIR_HEAVY_PLASMA', 5), ('AUX_ZOMBIE_WEAPON', 4), ('STR_CD_PISTOL', 4), ('STR_PHOTON_BLADE', 4), ('AUX_SECTOPOD_WEAPON', 3), ('STR_KATANA', 3), ('STR_CRY_GRENADE', 3), ('LOBSTER_CLAWS', 3), ('STR_PIR_PLASMA_RIFLE', 3), ('STR_PIR_BLASTER_LAUNCHER', 3)]
+
+===== Saves in ticket folders
+ candidate files 130 {'.sav': 29, '.asav': 96, '.zip': 5}
+ with a battle inside 58
+ mission types [('STR_LOC_JUNKFORT_CHALLENGE', 7), ('STR_BASE_DEFENSE', 6), ('STR_GOVT_BASE_DEFENSE', 5), ('STR_LOC_ACADEMY_OUTPOST_TEMPERATE', 5), ('STR_LOC_GHOUL_REFINERY', 5), ('STR_LOC_CHURCH_OUTPOST_TEMPERATE', 4), ('STR_LOC_COMMS_TOWER_DESERT', 3), ('STR_LOC_HOT_PURSUITS', 2), ('STR_LOC_DRIFTER_CAMP', 2), ('STR_UFO_CRASH_RECOVERY', 2), ('STR_LOC_WASTELAND_TROUBLE_COLD', 2), ('STR_LOC_MONSTER_HUNT_GIANTSPIDER', 2), ('STR_LOC_COMMS_TOWER_JUNGLE', 2), ('STR_LOC_BEASTMEN_ALTAR', 1), ('STR_DISTRESS_CALL_DESERT', 1), ('STR_LOC_BANDIT_SALOON_DESERT', 1), ('STR_LOC_BANDIT_SALOON_TEMPERATE', 1), ('STR_SEA_SUNKEN_UFO', 1), ("''", 1), ('STR_LOC_TRAITORS', 1)]
+  XP-000148\files\02_snapshot.sav iron False {'turn': '1', 'missionType': 'STR_LOC_BEASTMEN_ALTAR', 'cheatTurn': '20', 'globalshade': '1', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '3', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000151\files\02_snapshot.sav iron False {'turn': '1', 'missionType': 'STR_DISTRESS_CALL_DESERT', 'cheatTurn': '20', 'globalshade': '14', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000163\files\02_snapshot.sav iron False {'turn': '3', 'missionType': 'STR_LOC_HOT_PURSUITS', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '5', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000164\files\02_snapshot.sav iron False {'turn': '5', 'missionType': 'STR_LOC_HOT_PURSUITS', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '5', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000165\files\02_snapshot.sav iron False {'turn': '2', 'missionType': 'STR_LOC_JUNKFORT_CHALLENGE', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '18', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000166\files\02_snapshot.sav iron False {'turn': '2', 'missionType': 'STR_LOC_JUNKFORT_CHALLENGE', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '5', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000167\files\02_snapshot.sav iron False {'turn': '2', 'missionType': 'STR_LOC_JUNKFORT_CHALLENGE', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '38', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000168\files\02_snapshot.sav iron False {'turn': '1', 'missionType': 'STR_BASE_DEFENSE', 'cheatTurn': '20', 'globalshade': '6', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1000023', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000174\files\02_snapshot.sav iron False {'turn': '1', 'missionType': 'STR_LOC_BANDIT_SALOON_DESERT', 'cheatTurn': '20', 'globalshade': '13', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '6', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000185\files\02_snapshot.sav iron False {'turn': '1', 'missionType': 'STR_LOC_DRIFTER_CAMP', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '3', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000258\files\_ident\ctl_k4\piratez\hiddentest.sav iron False {'turn': '2', 'missionType': 'STR_GOVT_BASE_DEFENSE', 'cheatTurn': '20', 'globalshade': '2', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000258\files\_ident\new_k1\piratez\hiddentest.sav iron False {'turn': '2', 'missionType': 'STR_GOVT_BASE_DEFENSE', 'cheatTurn': '20', 'globalshade': '2', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000258\files\_ident\new_k4\piratez\hiddentest.sav iron False {'turn': '2', 'missionType': 'STR_GOVT_BASE_DEFENSE', 'cheatTurn': '20', 'globalshade': '2', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000258\files\_ident\ref_k1\piratez\hiddentest.sav iron False {'turn': '2', 'missionType': 'STR_GOVT_BASE_DEFENSE', 'cheatTurn': '20', 'globalshade': '2', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000258\files\_ident\ref_k4\piratez\hiddentest.sav iron False {'turn': '2', 'missionType': 'STR_GOVT_BASE_DEFENSE', 'cheatTurn': '20', 'globalshade': '2', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000262\files\02__autobattle_.asav iron False {'turn': '2', 'missionType': 'STR_LOC_CHURCH_OUTPOST_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '41', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000264\files\02__autobattle_.asav iron False {'turn': '2', 'missionType': 'STR_LOC_CHURCH_OUTPOST_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '41', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000299\files\02__autobattle_.asav iron False {'turn': '3', 'missionType': 'STR_UFO_CRASH_RECOVERY', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '30', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000326\files\02_стрим.sav iron True {'turn': '1', 'missionType': 'STR_LOC_ACADEMY_OUTPOST_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '589', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000327\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_LOC_BANDIT_SALOON_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '28', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000329\files\02__autobattle_.asav iron False {'turn': '2', 'missionType': 'STR_LOC_ACADEMY_OUTPOST_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '21', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000330\files\02__autobattle_.asav iron False {'turn': '2', 'missionType': 'STR_LOC_ACADEMY_OUTPOST_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '21', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000331\files\02__autobattle_.asav iron False {'turn': '2', 'missionType': 'STR_LOC_ACADEMY_OUTPOST_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '21', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000332\files\02__autobattle_.asav iron False {'turn': '2', 'missionType': 'STR_LOC_ACADEMY_OUTPOST_TEMPERATE', 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '21', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000335\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_SEA_SUNKEN_UFO', 'cheatTurn': '20', 'globalshade': '12', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '34', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000356\files\02_snapshot.sav iron False {'turn': '0', 'missionType': "''", 'cheatTurn': '20', 'globalshade': '0', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000357\files\02__autobattle_.asav iron False {'turn': '4', 'missionType': 'STR_LOC_JUNKFORT_CHALLENGE', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '53', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000358\files\02__autobattle_.asav iron False {'turn': '4', 'missionType': 'STR_LOC_JUNKFORT_CHALLENGE', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '53', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000359\files\02__autobattle_.asav iron False {'turn': '4', 'missionType': 'STR_LOC_JUNKFORT_CHALLENGE', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '53', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000360\files\02__autobattle_.asav iron False {'turn': '4', 'missionType': 'STR_LOC_JUNKFORT_CHALLENGE', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '53', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000363\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_LOC_COMMS_TOWER_DESERT', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '47', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000364\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_LOC_COMMS_TOWER_DESERT', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '47', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000365\files\02__autobattle_.asav iron False {'turn': '9', 'missionType': 'STR_LOC_COMMS_TOWER_DESERT', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '46', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000384\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_UFO_CRASH_RECOVERY', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '47', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000387\files\02__autobattle_.asav iron False {'turn': '3', 'missionType': 'STR_LOC_WASTELAND_TROUBLE_COLD', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1000019', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000388\files\02__autobattle_.asav iron False {'turn': '3', 'missionType': 'STR_LOC_WASTELAND_TROUBLE_COLD', 'cheatTurn': '20', 'globalshade': '15', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '1000019', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000398\files\02__autobattle_.asav iron False {'turn': '2', 'missionType': 'STR_LOC_DRIFTER_CAMP', 'cheatTurn': '20', 'globalshade': '4', 'bughuntMode': 'false', 'tuReserved': '0', 'selectedUnit': '49', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000401\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_BASE_DEFENSE', 'globalshade': '6', 'bughuntMode': 'false', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000402\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_BASE_DEFENSE', 'globalshade': '6', 'bughuntMode': 'false', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}
+  XP-000403\files\02__autobattle_.asav iron False {'turn': '1', 'missionType': 'STR_BASE_DEFENSE', 'globalshade': '6', 'bughuntMode': 'false', 'selectedUnit': '1', 'live_by_faction': {}, 'units_parsed': 0, 'mean_tu_share': {}, 'spotted': {}}

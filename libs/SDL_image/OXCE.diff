@@ -1,0 +1,337 @@
+--- a/IMG_bmp.c
++++ b/IMG_bmp.c
+@@ -29,6 +29,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_BMP
+ 
+--- a/IMG_gif.c
++++ b/IMG_gif.c
+@@ -27,6 +27,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_GIF
+ 
+@@ -516,6 +517,11 @@
+ 		RWSetMsg("invalid LWZ data");
+ 		return -3;
+ 	    }
++	    /* OXCE: the stack is full - codes that point at each other in a ring (upstream main, b0c94a0b) */
++	    if (state->sp == &state->stack[SDL_arraysize(state->stack)]) {
++	        RWSetMsg("invalid LWZ data");
++	        return -3;
++	    }
+ 	    *state->sp++ = state->table[1][code];
+ 	    if (code == state->table[0][code]) {
+ 		RWSetMsg("circular table entry BIG ERROR");
+@@ -526,6 +532,11 @@
+ 
+ 	/* Guard against buffer overruns */
+ 	if (code < 0 || code >= (1 << MAX_LWZ_BITS)) {
++	    RWSetMsg("invalid LWZ data");
++	    return -4;
++	}
++	/* OXCE: the stack is full - codes that point at each other in a ring (upstream main, b0c94a0b) */
++	if (state->sp == &state->stack[SDL_arraysize(state->stack)]) {
+ 	    RWSetMsg("invalid LWZ data");
+ 	    return -4;
+ 	}
+--- a/IMG_jpg.c
++++ b/IMG_jpg.c
+@@ -28,6 +28,7 @@
+ #include <setjmp.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_JPG
+ 
+--- a/IMG_lbm.c
++++ b/IMG_lbm.c
+@@ -36,6 +36,7 @@
+ 
+ #include "SDL_endian.h"
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_LBM
+ 
+@@ -222,6 +223,13 @@
+ 		if ( memcmp( id, "BODY", 4 ) )
+ 		{
+ 			if ( size & 1 )	++size;  	/* padding ! */
++			/* OXCE: a chunk shorter than what was read of it, or one of 2 GiB and more, turns the skip below
++			   into a seek backwards - the same chunks are then read again without an end */
++			if ( size < bytesloaded || size - bytesloaded > 0x7FFFFFFF )
++			{
++				error="invalid IFF chunk size";
++				goto done;
++			}
+ 			size -= bytesloaded;
+ 			/* skip the remaining bytes of this chunk */
+ 			if ( size )	SDL_RWseek( src, size, RW_SEEK_CUR );
+--- a/IMG_pcx.c
++++ b/IMG_pcx.c
+@@ -38,6 +38,7 @@
+ #include "SDL_endian.h"
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_PCX
+ 
+--- a/IMG_png.c
++++ b/IMG_png.c
+@@ -27,6 +27,7 @@
+ #include <stdio.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_PNG
+ 
+@@ -334,7 +335,12 @@
+ 	SDL_RWops *src;
+ 
+ 	src = (SDL_RWops *)lib.png_get_io_ptr(ctx);
+-	SDL_RWread(src, area, size, 1);
++	/* OXCE: past the end of the file libpng gets zeros, not what its buffer held before: a chunk header left
++	   there from the last read is taken for the next chunk again and again, without an end. Zeros are a chunk
++	   of no type, which libpng refuses. (upstream main raises png_error at this place, 99982b9b) */
++	if ( SDL_RWread(src, area, size, 1) != 1 ) {
++		memset(area, 0, size);
++	}
+ }
+ 
+ struct loadpng_vars {
+--- a/IMG_pnm.c
++++ b/IMG_pnm.c
+@@ -34,6 +34,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_PNM
+ 
+--- a/IMG_tga.c
++++ b/IMG_tga.c
+@@ -30,6 +30,7 @@
+ #include "SDL_endian.h"
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_TGA
+ 
+--- a/IMG_tif.c
++++ b/IMG_tif.c
+@@ -26,6 +26,7 @@
+ #include <stdio.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_TIF
+ 
+--- a/IMG_webp.c
++++ b/IMG_webp.c
+@@ -25,6 +25,7 @@
+ #include <stdio.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_WEBP
+ 
+--- a/IMG_xcf.c
++++ b/IMG_xcf.c
+@@ -28,6 +28,56 @@
+ 
+ #include "SDL_endian.h"
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
++
++/* OXCE: a read past the end of the file gives 0, which ends every list of offsets and is PROP_END
++   (SDL_ReadBE32 of SDL 1.2 gives back what its variable held - the lists then never end) */
++static Uint32 xcf_read_be32 (SDL_RWops * src) {
++  Uint32 v = 0;
++  if (SDL_RWread (src, &v, sizeof (v), 1) != 1)
++    return 0;
++  return SDL_SwapBE32 (v);
++}
++#define SDL_ReadBE32 xcf_read_be32
++
++/* OXCE: the read budget. Every list of the file (layers, channels, levels, tiles) is a list of offsets, and
++   nothing makes two entries point at different data: a file of a few KiB whose entries all point at one
++   layer and one tile is decoded layers x tiles times. A file that is what GIMP writes has every structure
++   once, so its decoder reads no byte twice, except that the last tile of a layer is read by its largest
++   possible length (24576 bytes). The budget is twice the file plus that tail for every layer; a layer with
++   its hierarchy, level and list of tiles takes 64 bytes at the least, a tile takes the 4 bytes of its
++   offset. Past the budget every read gives nothing and the decoder stops. */
++typedef struct {
++  SDL_RWops * src;
++  Uint64 left;
++  int spent;
++} xcf_budget;
++
++static int xcf_budget_seek (SDL_RWops * ctx, int offset, int whence) {
++  xcf_budget * b = (xcf_budget *) ctx->hidden.unknown.data1;
++  return b->src->seek (b->src, offset, whence);
++}
++
++static int xcf_budget_read (SDL_RWops * ctx, void * ptr, int size, int maxnum) {
++  xcf_budget * b = (xcf_budget *) ctx->hidden.unknown.data1;
++  Uint64 want = (Uint64) (size > 0 ? size : 0) * (Uint64) (maxnum > 0 ? maxnum : 0);
++  if (want == 0)
++    want = 1;
++  if (b->spent || want > b->left) {
++    b->spent = 1;
++    return 0;
++  }
++  b->left -= want;
++  return b->src->read (b->src, ptr, size, maxnum);
++}
++
++static int xcf_spent (SDL_RWops * src) {
++  return src->read == xcf_budget_read && ((xcf_budget *) src->hidden.unknown.data1)->spent;
++}
++
++static Uint64 xcf_tiles (Uint32 width, Uint32 height) {
++  return (((Uint64) width + 63) / 64) * (((Uint64) height + 63) / 64);
++}
+ 
+ #ifdef LOAD_XCF
+ 
+@@ -310,8 +360,11 @@
+     break;
+   default:
+     //    SDL_RWread (src, &prop->data, prop->length, 1);
+-    if (SDL_RWseek (src, prop->length, RW_SEEK_CUR) < 0)
++    /* OXCE: a length of 2 GiB and more is a seek backwards: the same properties again, without an end */
++    if ((Sint32) prop->length < 0 || SDL_RWseek (src, prop->length, RW_SEEK_CUR) < 0) {
++      prop->id = PROP_END;
+       return 0;  // ERROR
++    }
+   }
+   return 1;  // OK
+ }
+@@ -693,6 +746,11 @@
+ 
+     ty = tx = 0;
+     for (j = 0; level->tile_file_offsets [j]; j++) {
++      if (xcf_spent (src)) {  /* OXCE: the read budget */
++        free_xcf_level (level);
++        free_xcf_hierarchy (hierarchy);
++        return 1;
++      }
+       SDL_RWseek (src, level->tile_file_offsets [j], RW_SEEK_SET);
+       ox = tx+64 > level->width ? level->width % 64 : 64;
+       oy = ty+64 > level->height ? level->height % 64 : 64;
+@@ -850,6 +908,10 @@
+   Sint32 offset, fp;
+ 
+   unsigned char * (* load_tile) (SDL_RWops *, Uint32, int, int, int);
++  /* OXCE: the read budget, see xcf_budget */
++  SDL_RWops budget_rw;
++  xcf_budget budget;
++  Uint64 file_size, tiles;
+ 
+   if ( !src ) {
+     /* The error message has been set in SDL_RWFromFile */
+@@ -859,6 +921,21 @@
+ 
+   /* Initialize the data we will clean up when we're done */
+   surface = NULL;
++
++  {  /* OXCE: the read budget */
++    int end = SDL_RWseek (src, 0, RW_SEEK_END);
++    SDL_RWseek (src, start, RW_SEEK_SET);
++    file_size = end > start ? (Uint64) (end - start) : 0;
++  }
++  budget.src = src;
++  budget.left = 2 * file_size + 4096;
++  budget.spent = 0;
++  memset (&budget_rw, 0, sizeof (budget_rw));
++  budget_rw.seek = xcf_budget_seek;
++  budget_rw.read = xcf_budget_read;
++  budget_rw.hidden.unknown.data1 = &budget;
++  src = &budget_rw;
++  tiles = 0;
+ 
+   head = read_xcf_header (src);
+   if (!head) {
+@@ -896,6 +973,13 @@
+   }
+   fp = SDL_RWtell (src);
+ 
++  /* OXCE: a layer takes 64 bytes of the file at the least */
++  if ((Uint64) offsets > file_size / 64) {
++    error = "XCF: more layers than the file can hold";
++    goto done;
++  }
++  budget.left += (Uint64) offsets * 24576;
++
+   lays = SDL_AllocSurface(SDL_SWSURFACE, head->width, head->height, 32,
+ 			  0x00FF0000,0x0000FF00,0x000000FF,0xFF000000);
+ 
+@@ -911,6 +995,13 @@
+ 
+     layer = read_xcf_layer (src, head);
+     if (layer != NULL) {
++      /* OXCE: every tile of every layer has its own offset in the file, 4 bytes at the least */
++      tiles += xcf_tiles (layer->width, layer->height);
++      if (tiles > file_size / 4 || xcf_spent (src)) {
++        free_xcf_layer (layer);
++        error = "XCF: the lists of the file point at the same data again and again";
++        break;
++      }
+       do_layer_surface (lays, src, head, layer, load_tile);
+       rs.x = 0;
+       rs.y = 0;
+@@ -929,12 +1020,19 @@
+ 
+   SDL_FreeSurface (lays);
+ 
++  if (error)  /* OXCE: the read budget */
++    goto done;
++
+   SDL_RWseek (src, fp, RW_SEEK_SET);
+ 
+   // read channels
+   channel = NULL;
+   chnls   = 0;
+   while ((offset = read_offset (src, head))) {
++    /* OXCE: a channel is as large as the image and has its tiles too */
++    tiles += xcf_tiles (head->width, head->height);
++    if (tiles > file_size / 4 || xcf_spent (src))
++      break;
+     channel = (xcf_channel **) realloc (channel, sizeof (xcf_channel *) * (chnls+1));
+     fp = SDL_RWtell (src);
+     SDL_RWseek (src, offset, RW_SEEK_SET);
+--- a/IMG_xpm.c
++++ b/IMG_xpm.c
+@@ -48,6 +48,7 @@
+ #include <ctype.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_XPM
+ 
+--- a/IMG_xv.c
++++ b/IMG_xv.c
+@@ -25,6 +25,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_XV
+ 

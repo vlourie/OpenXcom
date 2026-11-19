@@ -1,0 +1,89 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/b0/AiProbe.before_al3.cpp	2026-10-27 18:57:11.789930100 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/c2/tree/src/Battlescape/AiProbe.cpp	2026-10-27 18:57:11.853675600 +0200
+@@ -716,6 +716,16 @@
+ 	return Options::oxceBetterAi && Options::oxceBetterAiFixes;
+ }
+ 
++/// P0 vs P1: the battle the frame hook last saw (think), for releaseAi
++static const SavedBattleGame *releaseSave = nullptr;
++
++/// P0 vs P1: under RELEASE_BASE the fixes inside the AI's own decisions follow the release formula for the AI sides only; on
++/// the bot's turn (it plays the player's side, which BetterAI never changes) they stay off. The engine ones stay releaseFixes
++bool releaseAi()
++{
++	return releaseFixes() && !(bot() && releaseSave && releaseSave->getSide() == FACTION_PLAYER);
++}
++
+ bool autoClose()
+ {
+ 	static const bool on = harness() || (play() && bot());
+@@ -872,6 +882,7 @@
+ 
+ void think(BattlescapeState *state, SavedBattleGame *save)
+ {
++	releaseSave = save;
+ 	if (!active() || phase == FINISHED)
+ 	{
+ 		return;
+@@ -1998,8 +2009,8 @@
+ 
+ bool counterFix()
+ {
+-	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: P0-C always in the bench
+-	return on;
++	static const bool on = active(); // clean1: P0-C always in the bench
++	return releaseBase() ? releaseAi() : on;
+ }
+ 
+ bool counterCheck(SavedBattleGame *save, const BattleUnit *unit, int counter)
+@@ -2067,22 +2078,22 @@
+ 
+ bool escapeSignFix()
+ {
+-	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: U2 always in the bench
+-	return on;
++	static const bool on = active(); // clean1: U2 always in the bench
++	return releaseBase() ? releaseAi() : on;
+ }
+ 
+ bool staleEscapeFix()
+ {
+-	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: U3-A and U3-B always in the bench
+-	return on;
++	static const bool on = active(); // clean1: U3-A and U3-B always in the bench
++	return releaseBase() ? releaseAi() : on;
+ }
+ 
+ bool oxceFixes()
+ {
+ 	// the play mode has every clean fix on (active()), these with them; the harness only by its switch, so the runs measured
+ 	// before them keep their decisions
+-	static const bool on = releaseBase() ? releaseFixes() : play() || (harness() && envOn("OXCE_AI_OXCE_FIXES"));
+-	return on;
++	static const bool on = play() || (harness() && envOn("OXCE_AI_OXCE_FIXES"));
++	return releaseBase() ? releaseAi() : on;
+ }
+ 
+ bool upstreamSpot()
+@@ -4961,8 +4972,8 @@
+ 
+ bool stalePatrolNode()
+ {
+-	static const bool on = releaseBase() ? releaseFixes() : active() && envOn("OXCE_AI_STALE_PATROL_NODE");
+-	return on;
++	static const bool on = active() && envOn("OXCE_AI_STALE_PATROL_NODE");
++	return releaseBase() ? releaseAi() : on;
+ }
+ 
+ void stalePatrolChecked(const BattleUnit *unit, bool cleared, const Position &old, int age, const Position &now)
+@@ -5018,8 +5029,8 @@
+ 
+ int staleExact()
+ {
+-	static const int mode = [] { const int m = stalePatrolNode() ? (releaseBase() ? 1 : (int)param("OXCE_AI_STALE_EXACT", 0)) : 0; return m >= 0 && m <= 3 ? m : 0; }();
+-	return mode;
++	static const int mode = [] { const int m = releaseBase() ? (releaseFixes() ? 1 : 0) : stalePatrolNode() ? (int)param("OXCE_AI_STALE_EXACT", 0) : 0; return m >= 0 && m <= 3 ? m : 0; }();
++	return releaseBase() && !releaseAi() ? 0 : mode;
+ }
+ 
+ void staleExactAsked(const BattleUnit *unit, const Position &node, int ans, int expanded, int full)

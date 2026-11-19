@@ -1,0 +1,5 @@
+build_label=cmrun-US
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=UA + UNIFIED ARMY SAFETY: no map-wide step over scout=false, timings (OXCE_AI_HIVE=1 shadow, 2 active)
+patch_sha256=f8c0700a34cfdf4333fef8f3af3dd0498f4aa7c111c82b164d187ee67f288a19
+exe_sha256=5af392a0383a557b2a71c8992cc12b983e3b5d6df4c3efe810ca9c365a9fcafe

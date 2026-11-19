@@ -41,6 +41,8 @@ private:
 	std::vector<MapData*> _objects;
 	SurfaceSet *_surfaceSet;
 	bool _loaded;
+	/// Reads the files of the set.
+	void loadDataNow(MCDPatch *patch, bool validate, int hdScale);
 	static MapData *_blankTile;
 	static MapData *_scorchedTile;
 public:
@@ -59,9 +61,26 @@ public:
 	/// Gets the surfaces in this dataset.
 	SurfaceSet *getSurfaceset() const;
 	/// Loads the objects from an MCD file.
-	void loadData(MCDPatch *patch, bool validate = true);
+	void loadData(MCDPatch *patch, bool validate = true, int hdScale = 1);
 	///	Unloads to free memory.
 	void unloadData();
+	/// The loaded contents of a set taken aside (Mod::parkHdScale): the set itself is then not loaded.
+	struct Parked
+	{
+		MapDataSet *set = nullptr;
+		std::vector<MapData*> objects;
+		SurfaceSet *surfaces = nullptr;
+	};
+	/// Is the set loaded?
+	bool isLoaded() const { return _loaded; }
+	/// Hands the loaded contents over; the set can be loaded again (at another HD scale). Does not fail.
+	void park(Parked &to);
+	/// Unloads what the set holds and takes the parked contents back. Does not fail.
+	void unpark(Parked &from);
+	/// Frees parked contents.
+	static void drop(Parked &parked);
+	/// Puts back the two tiles of BLANKS (they point into a set's contents).
+	static void setBlankTiles(MapData *blank, MapData *scorched);
 	/// Gets a blank floor tile.
 	static MapData *getBlankFloorTile();
 	/// Gets a scorched earth tile.

@@ -17,6 +17,11 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "NumberText.h"
+#include "../Engine/HdBattleHud.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/Unicode.h"
+#include <algorithm>
+#include <cmath>
 #include <sstream>
 #include <string>
 
@@ -270,6 +275,57 @@ void NumberText::setPalette(const SDL_Color *colors, int firstcolor, int ncolors
 /**
  * Draws all the digits in the number.
  */
+void NumberText::hdMirror()
+{
+	HdUi &ui = HdUi::instance();
+	if (HdUi::skin() && _hdPlate && _hdBoxW > 2 && _hdBoxH > 2)
+	{
+		// the marker's field again, with a relief: lighter at the top, a lit edge up and left, a dark one down and right
+		const SDL_Color *pp = HdUi::paletteOf(_hdPlate);
+		if (pp)
+		{
+			const SDL_Color c = pp[_hdPlate->getPixel(1, 1)];
+			auto shade = [&](int num, int add) -> Uint32
+			{
+				return HdUi::rgba(SDL_Color{ (Uint8)std::min(255, c.r * num / 100 + add), (Uint8)std::min(255, c.g * num / 100 + add),
+					(Uint8)std::min(255, c.b * num / 100 + add), 255 });
+			};
+			const float k = (float)HdUi::scale();
+			const float x0 = (getX() + _hdBoxX + 1) * k, y0 = (getY() + _hdBoxY + 1) * k;
+			const float x1 = (getX() + _hdBoxX + _hdBoxW - 1) * k, y1 = (getY() + _hdBoxY + _hdBoxH - 1) * k;
+			const float b = std::max(1.0f, std::floor(k / 4.0f));
+			ui.fillRoundRect(x0, y0, x1, y1, 0.0f, shade(108, 12), shade(72, 0));
+			ui.fillRoundRect(x0, y0, x1, y0 + b, 0.0f, shade(120, 60), shade(120, 60));
+			ui.fillRoundRect(x0, y0 + b, x0 + b, y1 - b, 0.0f, shade(115, 40), shade(100, 20));
+			ui.fillRoundRect(x1 - b, y0 + b, x1, y1 - b, 0.0f, shade(60, 0), shade(48, 0));
+			ui.fillRoundRect(x0, y1 - b, x1, y1, 0.0f, shade(45, 0), shade(45, 0));
+		}
+	}
+	if (!HdUi::skin() || !ui.hasFonts())
+	{
+		Surface::hdMirror();
+		return;
+	}
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	std::ostringstream ss;
+	ss << _value;
+	const UString s = Unicode::convUtf8ToUtf32(ss.str());
+	// the classic digits are 5 rows tall from the top of the surface
+	const Uint32 face = HdUi::rgba(pal[(Uint8)(_color + 1)]);
+	Uint32 plate, edge;
+	if (HdBattleHud::counter(this, plate, edge))
+	{
+		ui.drawCounter(s, getX(), getY(), 5.0f, face, plate, edge);
+		return;
+	}
+	if (_hdBoxW > 0 && _hdBoxH > 0)
+	{
+		ui.drawTtfCentred(s, false, 5.0f, getX() + _hdBoxX, getY() + _hdBoxY, _hdBoxW, _hdBoxH, face, _bordered ? 0xE0000000u : 0x90000000u);
+		return;
+	}
+	ui.drawTtfString(s, false, 5.0f, getX(), getY() - 2, face, _bordered ? 0xE0000000u : 0x90000000u);
+}
+
 void NumberText::draw()
 {
 	Surface::draw();

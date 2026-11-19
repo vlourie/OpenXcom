@@ -1,0 +1,49 @@
+battles: 48
+I. the army by unit-turns: [('unit-turns', 11622), ('only patrol mode', 4760), ('attacked', 3345), ("side saw no enemy (seen= is the side's list, not the unit's)", 633)]
+A. put out (dead or stunned) inside the player's turn, of AI units alive at the end of the AI's turn
+   all: 715/10867 = 6.6% (battles 45 with 5+: p10 0, p90 35)
+   hidden fact, player's units seeing it (seenby) at that moment 0 329/9521 = 3.5% (battles 45 with 5+: p10 0, p90 19)
+   hidden fact, player's units seeing it (seenby) at that moment 1 247/1038 = 23.8% (battles 38 with 5+: p10 0, p90 68)
+   hidden fact, player's units seeing it (seenby) at that moment 2+ 139/308 = 45.1% (battles 20 with 5+: p10 11, p90 100)
+   legal, distance to the nearest player's unit the side sees <=5 215/1122 = 19.2% (battles 35 with 5+: p10 4, p90 67)
+   legal, distance to the nearest player's unit the side sees 6-10 143/1385 = 10.3% (battles 41 with 5+: p10 0, p90 44)
+   legal, distance to the nearest player's unit the side sees 11-20 223/2803 = 8.0% (battles 44 with 5+: p10 0, p90 29)
+   legal, distance to the nearest player's unit the side sees >20 95/3542 = 2.7% (battles 42 with 5+: p10 0, p90 14)
+   legal, distance to the nearest player's unit the side sees none seen 39/2015 = 1.9% (battles 23 with 5+: p10 0, p90 12)
+    ('seenby 0', '11-20') 100/2330 = 4.3% (battles 43 with 5+: p10 0, p90 18)
+    ('seenby 0', '6-10') 55/1117 = 4.9% (battles 39 with 5+: p10 0, p90 33)
+    ('seenby 0', '<=5') 96/804 = 11.9% (battles 28 with 5+: p10 0, p90 57)
+    ('seenby 0', '>20') 48/3273 = 1.5% (battles 39 with 5+: p10 0, p90 10)
+    ('seenby 0', 'none seen') 30/1997 = 1.5% (battles 23 with 5+: p10 0, p90 12)
+    ('seenby 1+', '11-20') 123/473 = 26.0% (battles 29 with 5+: p10 0, p90 83)
+    ('seenby 1+', '6-10') 88/268 = 32.8% (battles 21 with 5+: p10 0, p90 100)
+    ('seenby 1+', '<=5') 119/318 = 37.4% (battles 21 with 5+: p10 5, p90 71)
+    ('seenby 1+', '>20') 47/269 = 17.5% (battles 14 with 5+: p10 0, p90 60)
+    ('seenby 1+', 'none seen') 9/18 = 50.0% (battles 0 with 5+: p10 0, p90 0)
+B. cell someone already stood on through an earlier player's turn and was not put out, this battle: 172/3567 = 4.8% (battles 39 with 5+: p10 0, p90 25)
+   cell nobody had yet: 543/7300 = 7.4% (battles 45 with 5+: p10 0, p90 39)
+C. player's unit the side sees at the end of its turn, over the player's turn
+   soldier alive after it: 1213/1231 = 98.5% (battles 39 with 5+: p10 96, p90 100) | moved 3+ cells: 661/1213 = 54.5% (battles 39 with 5+: p10 33, p90 84) | still seen at the AI's start: 851/1213 = 70.2% (battles 39 with 5+: p10 22, p90 99) | direction changed: 748/1213 = 61.7% (battles 39 with 5+: p10 45, p90 83) | moved: {'1-2': 183, '6-10': 206, '3-5': 186, 'same': 369, '>10': 269}
+D. full TU at the AI's start, of AI units that lived through the player's turn: 10088/10152 = 99.4% (battles 44 with 5+: p10 99, p90 100) | of those hit in it: 757/776 = 97.6% (battles 27 with 5+: p10 92, p90 100)
+E. walk reached its cell in one decision
+   all 10152/31874 = 31.9% (battles 47 with 5+: p10 16, p90 53)
+   mode0 4996/25060 = 19.9% (battles 46 with 5+: p10 6, p90 44)
+   mode1 1105/1292 = 85.5% (battles 19 with 5+: p10 57, p90 100)
+   mode2 3145/4418 = 71.2% (battles 43 with 5+: p10 50, p90 87)
+   mode3 906/1104 = 82.1% (battles 39 with 5+: p10 67, p90 100)
+   stops: [('no step', 12756), ('other stop', 4895), ('spotted something', 4064), ('hit on the way', 7)]
+F. modes of AI decisions: [('0', 25388), ('2', 10031), ('3', 2778), ('1', 1311)] | attack or charge on the table, taken: 6537/7793 = 83.9% (battles 46 with 5+: p10 75, p90 95)
+   instead: [('attack', 6537), ('other mode0 act2', 549), ('other mode3 act2', 503), ('other mode1 act2', 122), ('other mode3 act0', 73), ('other mode2 act2', 9)]
+G. p of [AICAND] (BattleUnit::getFiringAccuracy: the shooter's accuracy, no distance, no armour, not a chance to hit) of the chosen attack, against the action doing any damage or stun to the other side
+   ('fire', '0-19') 0/27 = 0.0% (battles 2 with 5+: p10 0, p90 0)
+   ('fire', '20-39') 170/925 = 18.4% (battles 27 with 5+: p10 0, p90 62)
+   ('fire', '40-59') 349/1710 = 20.4% (battles 37 with 5+: p10 0, p90 35)
+   ('fire', '60-79') 228/1402 = 16.3% (battles 31 with 5+: p10 0, p90 56)
+   ('fire', '80+') 136/1002 = 13.6% (battles 31 with 5+: p10 0, p90 33)
+   ('melee', '40-59') 1/1 = 100.0% (battles 0 with 5+: p10 0, p90 0)
+   ('melee', '60-79') 3/16 = 18.8% (battles 1 with 5+: p10 0, p90 0)
+   ('melee', '80+') 48/168 = 28.6% (battles 9 with 5+: p10 0, p90 75)
+H. two AI fighters within 3 cells, a player's unit seen within 15 of the first: pair over the player's turn
+   both still in the fight: 2661/3099 = 85.9% (battles 40 with 5+: p10 48, p90 100)
+   and both with full TU: 2636/3099 = 85.1% (battles 40 with 5+: p10 48, p90 100)
+   and the target alive and seen at the AI's start: 2046/3099 = 66.0% (battles 40 with 5+: p10 15, p90 100)

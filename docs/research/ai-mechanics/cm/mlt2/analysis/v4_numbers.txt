@@ -1,0 +1,63 @@
+p1_PL_L4_s1:
+hostile decisions per unit-turn: max 6, max n 2; spent over the TU at the decision: 1; patrol-mode shots: {'paid': 20, 'no TU, not fired': 7}
+result lines: 1 crash markers: 0
+p4_PL_L4_s2:
+hostile decisions per unit-turn: max 17, max n 2; spent over the TU at the decision: 1; patrol-mode shots: {'paid': 3, 'no TU, not fired': 5}
+result lines: 1 crash markers: 0
+p3_PO_L4_s1:
+hostile decisions per unit-turn: max 6, max n 2; spent over the TU at the decision: 1; patrol-mode shots: {'paid': 20, 'no TU, not fired': 7}
+result lines: 1 crash markers: 0
+p2_PN_L4_s1:
+hostile decisions per unit-turn: max 8, max n 2; spent over the TU at the decision: 2; patrol-mode shots: {'paid': 4}
+result lines: 1 crash markers: 0
+p3_PO_L4_s1  ms=69653 vms=1056820
+p1_PL_L4_s1  ms=69512 vms=1056820
+== p2_PN_L4_s1
+--- how tasks went: [(('shoot', 'obeyed'), 4), (('shoot', 'other mode0 act15 notpaid'), 1), (('shoot', 'other mode0 act2'), 1), (('shoot', 'other mode2 act2'), 2), (('shoot', 'other mode2 act7'), 1), (('shoot', 'other mode3 act2'), 1), (('shot landed', 'module'), 3), (('shot landed', 'nothing logged'), 0), (('shot landed', 'other terrain'), 1), (('walk', 'obeyed'), 9), (('walk', 'other mode2 act2'), 1), (('walk', 'other mode2 act7'), 3)]
+--- by fighter: {'1000015': {'walk': 1, 'other': 3, 'module_hits': 2, 'broke': 1, 'shoot': 2}, '1000018': {'walk': 2, 'other': 2, 'module_hits': 0, 'broke': 0}, '1000022': {'walk': 1, 'shoot': 2, 'module_hits': 1, 'broke': 0, 'other': 1}, '1000034': {'walk': 1}, '1000005': {'walk': 2}, '1000012': {'walk': 1}, '1000013': {'other': 2}, '1000021': {'walk': 1, 'other': 2}}
+== p4_PN_L4_s2
+--- how tasks went: [(('shoot', 'other mode3 act2'), 1), (('shot landed', 'nothing logged'), 0), (('walk', 'obeyed'), 11), (('walk', 'other mode2 act2'), 1), (('walk', 'other mode2 act7'), 8), (('walk', 'other mode2 act8'), 6)]
+--- by fighter: {'1000006': {'other': 3, 'walk': 2}, '1000008': {'walk': 1, 'other': 1}, '1000014': {'other': 3}, '1000022': {'other': 2, 'walk': 2}, '1000015': {'walk': 1, 'other': 1, 'module_hits': 0, 'broke': 0}, '1000021': {'other': 3, 'walk': 2}, '1000035': {'other': 3, 'walk': 3}}
+== p5_PN_L4_s3
+--- how tasks went: [(('shoot', 'other mode0 act15 notpaid'), 3), (('shoot', 'other mode3 act2'), 1), (('shot landed', 'nothing logged'), 0), (('walk', 'obeyed'), 7), (('walk', 'other mode2 act2'), 3), (('walk', 'other mode2 act7'), 4), (('walk', 'other mode2 act8'), 1), (('walk', 'other mode3 act2'), 2)]
+--- by fighter: {'1000013': {'walk': 1}, '1000021': {'walk': 2, 'other': 3, 'module_hits': 0, 'broke': 0}, '1000024': {'walk': 1, 'other': 3, 'module_hits': 0, 'broke': 0}, '1000007': {'walk': 2, 'other': 3}, '1000020': {'other': 2}, '1000033': {'other': 3, 'walk': 1}}
+== who stays in a walk's end, TU of snap
+ what=task turn=1 unit=1000021 kind=shoot from=20,35,2 tile=21,30,2 armor=50 tu=12 on=1
+ what=task turn=1 unit=1000021 kind=shoot from=20,35,2 tile=21,30,2 armor=50 tu=12 on=1
+ what=task turn=1 unit=1000024 kind=shoot from=18,33,2 tile=27,31,2 armor=50 tu=16 on=1
+ what=task turn=1 unit=1000024 kind=shoot from=18,33,2 tile=27,31,2 armor=50 tu=16 on=1
+ what=task turn=1 unit=1000021 kind=shoot from=20,35,2 tile=21,30,2 armor=50 tu=12 on=1
+ what=task turn=1 unit=1000021 kind=shoot from=20,35,2 tile=21,30,2 armor=50 tu=12 on=1
+ what=task turn=1 unit=1000021 kind=shoot from=20,35,2 tile=21,30,2 armor=50 tu=12 on=1
+ what=task turn=1 unit=1000021 kind=shoot from=20,35,2 tile=21,30,2 armor=50 tu=12 on=1
+ what=task turn=1 unit=1000015 kind=shoot from=23,36,2 tile=20,37,2 armor=40 tu=57 on=1
+ what=task turn=1 unit=1000015 kind=shoot from=21,37,2 tile=20,37,2 armor=40 tu=47 on=1
+ what=task turn=1 unit=1000015 kind=shoot from=21,37,2 tile=20,31,2 armor=50 tu=23 on=1
+ what=task turn=1 unit=1000018 kind=shoot from=23,36,2 tile=20,31,2 armor=50 tu=17 on=1
+ what=task turn=1 unit=1000018 kind=shoot from=23,36,2 tile=20,31,2 armor=50 tu=17 on=1
+ what=task turn=1 unit=1000018 kind=shoot from=23,36,2 tile=20,31,2 armor=50 tu=17 on=1
+ what=task turn=1 unit=1000018 kind=shoot from=23,36,2 tile=20,31,2 armor=50 tu=17 on=1
+ what=task turn=2 unit=1000015 kind=shoot from=21,37,2 tile=27,31,2 armor=50 tu=89 on=1
+ what=task turn=2 unit=1000015 kind=shoot from=21,35,2 tile=27,31,2 armor=50 tu=15 on=1
+ what=task turn=2 unit=1000022 kind=shoot from=20,35,2 tile=21,30,2 armor=50 tu=89 on=1
+ what=task turn=2 unit=1000022 kind=shoot from=20,35,2 tile=20,31,2 armor=50 tu=66 on=1
+ what=task turn=2 unit=1000022 kind=shoot from=20,35,2 tile=20,31,2 armor=50 tu=45 on=1
+== own side hits on own units by battle (casualties with both factions hostile)
+p1_PL_L4_s1: [AICASUALTY] turn=1 side=0 victim=1000010 vfaction=1 type=STR_DOOM_SOLDIER how=dead pos=(34,44,2) tu=81 kneel=0 seenby=0 killer=1000024 kfaction=1 ktype=STR_DOO
+4
+p2_PN_L4_s1: [AICASUALTY] turn=1 side=0 victim=1000010 vfaction=1 type=STR_DOOM_SOLDIER how=dead pos=(34,44,2) tu=81 kneel=0 seenby=0 killer=1000024 kfaction=1 ktype=STR_DOO
+2
+p4_PL_L4_s2: [AICASUALTY] turn=1 side=0 victim=1000019 vfaction=1 type=STR_DOOM_SARGE how=dead pos=(24,49,2) tu=89 kneel=0 seenby=1 killer=340 kfaction=0 ktype=SOLDIER dist=
+0
+p4_PN_L4_s2: [AICASUALTY] turn=1 side=0 victim=1000019 vfaction=1 type=STR_DOOM_SARGE how=dead pos=(24,49,2) tu=89 kneel=0 seenby=1 killer=340 kfaction=0 ktype=SOLDIER dist=
+1
+p5_PL_L4_s3: [AICASUALTY] turn=1 side=0 victim=1000019 vfaction=1 type=STR_DOOM_SARGE how=dead pos=(34,51,2) tu=89 kneel=0 seenby=2 killer=366 kfaction=0 ktype=SOLDIER dist=
+6
+p5_PN_L4_s3: [AICASUALTY] turn=1 side=0 victim=1000019 vfaction=1 type=STR_DOOM_SARGE how=dead pos=(34,51,2) tu=89 kneel=0 seenby=2 killer=366 kfaction=0 ktype=SOLDIER dist=
+1
+113:| Попаданий врага в модули | 16 → **27** (21 по приказу) | 22 → **31** (24 по приказу) | 0 → 0 (в D0 за весь бой 2) |
+114:| Сломано модулей выстрелами врага | 11 → **21** | 19 → **26** | 0 → 0 |
+132:| M1_s2 D0 | ход 17 | все выбыли | 21 / 16 | 0 |
+139:- **M1:** рост связан с приказом. Бойцы группы дали 21 и 24 попадания из 27 и 31, у остальных бойцов попаданий стало м
+179:| 1–2 | mlp | флаг не сработал (R-621) | L4_s1, M1_s1 | 12 | как D0 |
+188:Два боя (1–2) потеряны из-за моей ошибки: имя флага `OXCE_AI_MISSION` совпало с переменной стенда, которая задаёт наз�

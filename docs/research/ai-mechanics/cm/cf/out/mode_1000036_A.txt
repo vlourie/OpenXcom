@@ -1,0 +1,5 @@
+rec 86 turn 1 n=1 pos=[27, 17, 0] tu=65 morale=99 mode=2 slot=x src=shot t=8 to=[25, 24, 0] odds=[{'p': 16, 'a': 0, 'c': 36, 'e': 1, 'roll': 29, 'mode': 2}]
+rec 87 turn 1 n=2 pos=[27, 17, 0] tu=39 morale=99 mode=2 slot=x src=sniper t=8 to=[15, 35, 0] odds=[]
+rec 151 turn 1 n=1 pos=[27, 17, 0] tu=9 morale=100 mode=0 slot=p src=patrol.node t=2 to=[60, 1, 0] odds=[{'p': 15, 'a': 0, 'c': 36, 'e': 4, 'roll': 52, 'mode': 0}]
+rec 273 turn 2 n=0 pos=[28, 16, 0] tu=65 morale=99 mode=2 slot=x src=firepoint t=2 to=[26, 15, 0] odds=[{'p': 0, 'a': 0, 'c': 39, 'e': 3, 'roll': 14, 'mode': 2}]
+rec 274 turn 2 n=1 pos=[26, 15, 0] tu=55 morale=99 mode=2 slot=x src=shot t=9 to=[31, 16, 0] odds=[]

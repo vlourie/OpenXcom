@@ -1,0 +1,6 @@
+ua1_UN_M6_s1 thinks 95 five tries with the condition's node 0 {} condition's node tried 93 path failed 0
+ua2_UN_M3_s1 thinks 199 five tries with the condition's node 4 {('1000027', '1'): 2, ('1000050', '1'): 2} condition's node tried 203 path failed 12
+ua3_UN_M8_s1 thinks 127 five tries with the condition's node 0 {} condition's node tried 115 path failed 0
+us1_QN_M6_s1 thinks 256 five tries with the condition's node 0 {} condition's node tried 158 path failed 0
+us2_QN_M3_s1 thinks 221 five tries with the condition's node 5 {('1000027', '1'): 3, ('1000050', '1'): 2} condition's node tried 198 path failed 15
+us3_QN_M8_s1 thinks 181 five tries with the condition's node 0 {} condition's node tried 106 path failed 0

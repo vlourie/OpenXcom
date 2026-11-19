@@ -24,6 +24,7 @@
 namespace OpenXcom
 {
 
+class LuaHost;
 class RuleCountry;
 class SavedGame;
 
@@ -50,6 +51,8 @@ private:
 	ScriptValues<Country> _scriptValues;
 
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<Country> &getScriptValuesRaw() const { return _scriptValues; }
 	/// Creates a new country of the specified type.
 	Country(RuleCountry *rules, bool gen = true);
 	/// Cleans up the country.
@@ -75,7 +78,7 @@ public:
 	/// get xcom activity to this country
 	std::vector<int> &getActivityAlien();
 	/// store last month's counters, start new counters, set this month's change.
-	void newMonth(int xcomTotal, int alienTotal, int pactScore, int averageFunding, const SavedGame* save);
+	void newMonth(int xcomTotal, int alienTotal, int pactScore, int averageFunding, const SavedGame* save, LuaHost *lua);
 	/// are we signing a new pact?
 	bool getNewPact() const;
 	/// sign a pact at the end of this month.
@@ -91,7 +94,6 @@ public:
 	/// can be (re)infiltrated?
 	bool canBeInfiltrated();
 
-private:
 	int getCurrentFunding() const { return _funding.back(); }
 	int getCurrentActivityAlien()  const { return _activityAlien.back(); }
 	int getCurrentActivityXcom() const { return _activityXcom.back(); }

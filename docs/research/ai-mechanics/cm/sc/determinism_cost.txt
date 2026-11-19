@@ -1,0 +1,10 @@
+sc2s_S_L2_s1 4ed532dc48ab779e966bdc46c25fe700
+sc3r_S_L2_s1 4ed532dc48ab779e966bdc46c25fe700 IDENTICAL
+sc3r_S_L2_s1 4ed532dc48ab779e966bdc46c25fe700
+sc4t_S_L2_s1 4ed532dc48ab779e966bdc46c25fe700 IDENTICAL
+  picks 473, total 20.2 ms, mean 43 us, median 13 us, p95 167 us, max 382 us
+sc2s_S_M10_s1 c8f3ef7cd6410e401a7c58e0ad62aaf1
+sc3r_S_M10_s1 c8f3ef7cd6410e401a7c58e0ad62aaf1 IDENTICAL
+sc3r_S_M10_s1 c8f3ef7cd6410e401a7c58e0ad62aaf1
+sc4t_S_M10_s1 c8f3ef7cd6410e401a7c58e0ad62aaf1 IDENTICAL
+  picks 522, total 24.2 ms, mean 46 us, median 24 us, p95 186 us, max 547 us

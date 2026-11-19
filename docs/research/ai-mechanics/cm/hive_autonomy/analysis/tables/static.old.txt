@@ -1,0 +1,13 @@
+== cc8_CC_M6_s1
+   {'STAND:art_esc_stand': 78, 'FREE:art_esc_stand': 42, 'STAND:attack': 15, 'STAND:combat_walk': 14, 'FREE:attack': 11, 'STAND:esc_dice_stand': 5, 'FREE:art_esc_walk': 5, 'FREE:esc_kept_walk': 3, 'STAND:esc_kept_walk': 3, 'FREE:esc_dice_stand': 3, 'FREE:held_patrol_stand': 3, 'STAND:esc_kept_stand': 2, 'FREE:combat_walk': 2, 'FREE:esc_dice_walk': 1, 'FREE:esc_kept_stand': 1, 'STAND:art_esc_walk': 1}
+   artificial: {'STAND:GUARD:guard_sector': 65, 'FREE:REINFORCE:arrived': 20, 'FREE:ENGAGE:arrived': 16, 'STAND:GUARD:arrived': 11, 'FREE:SEARCH:arrived': 6, 'FREE:ENGAGE:contact_in_place': 6, 'STAND:GUARD:locked': 2, 'FREE:ENGAGE:pause': 1, 'FREE:REINFORCE:pause': 1, 'STAND:GUARD:pause': 1}
+== cc5_CC_M6_s2
+   {'FREE:art_esc_stand': 134, 'STAND:art_esc_stand': 31, 'FREE:attack': 12, 'STAND:combat_walk': 8, 'STAND:attack': 7, 'FREE:combat_walk': 6, 'STAND:art_esc_walk': 3, 'STAND:esc_kept_stand': 2, 'FREE:esc_dice_walk': 2, 'FREE:esc_kept_walk': 2, 'FREE:art_esc_walk': 2, 'FREE:esc_dice_stand': 2, 'FREE:esc_kept_stand': 1, 'FREE:patrol_walk': 1}
+   artificial: {'FREE:REINFORCE:arrived': 48, 'STAND:GUARD:guard_sector': 30, 'FREE:ENGAGE:arrived': 27, 'FREE:SEARCH:locked': 25, 'FREE:SEARCH:arrived': 25, 'FREE:SEARCH:no_closer_node': 5, 'FREE:SEARCH:at_node': 3, 'STAND:GUARD:arrived': 2, 'STAND:ENGAGE:guard_sector': 2, 'FREE:ENGAGE:at_node': 2, 'FREE:REINFORCE:pause': 1}
+== cc6_CV_M3_s1
+   {'STAND:art_esc_stand': 167, 'FREE:art_esc_stand': 120, 'FREE:attack': 40, 'FREE:combat_walk': 30, 'FREE:art_esc_walk': 18, 'STAND:combat_walk': 13, 'FREE:esc_kept_walk': 13, 'STAND:esc_dice_stand': 9, 'FREE:esc_dice_stand': 8, 'STAND:attack': 7, 'FREE:esc_kept_stand': 5, 'STAND:art_esc_walk': 2, 'STAND:esc_kept_walk': 2, 'FREE:esc_dice_walk': 2}
+   artificial: {'STAND:GUARD:guard_sector': 155, 'FREE:ENGAGE:arrived': 55, 'FREE:REINFORCE:arrived': 25, 'FREE:SEARCH:at_node': 20, 'FREE:SEARCH:no_closer_node': 17, 'STAND:GUARD:arrived': 14, 'FREE:SEARCH:arrived': 14, 'FREE:ENGAGE:at_node': 3, 'FREE:ENGAGE:contact_in_place': 3, 'FREE:REINFORCE:pause': 1}
+== cc7_CL_M3_s1
+   {'STAND:art_esc_stand': 133, 'FREE:art_esc_stand': 37, 'FREE:attack': 28, 'STAND:combat_walk': 25, 'FREE:combat_walk': 17, 'STAND:attack': 10, 'FREE:art_esc_walk': 7, 'FREE:esc_kept_walk': 7, 'STAND:esc_kept_stand': 3, 'FREE:esc_dice_walk': 2, 'STAND:patrol_walk': 1}
+   artificial: {'STAND:GUARD:guard_sector': 118, 'STAND:GUARD:arrived': 15, 'FREE:SEARCH:at_node': 10, 'FREE:SEARCH:arrived': 8, 'FREE:ENGAGE:arrived': 8, 'FREE:SEARCH:no_closer_node': 5, 'FREE:ENGAGE:contact_in_place': 4, 'FREE:REINFORCE:contact_in_place': 3, 'FREE:ENGAGE:no_closer_node': 3, 'FREE:REINFORCE:arrived': 2, 'FREE:SEARCH:pause': 1}
+total artificial decisions {'FREE': 368, 'STAND': 415}

@@ -47,6 +47,8 @@ public:
 	Uint8 getColor() const;
 	/// Draws the cursor.
 	void draw() override;
+	/// HD interface, modern skin: a smooth arrow.
+	void hdMirror() override;
 };
 
 }

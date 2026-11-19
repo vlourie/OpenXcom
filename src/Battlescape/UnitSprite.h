@@ -27,6 +27,7 @@ class BattleUnit;
 class BattleItem;
 class SavedBattleGame;
 class SurfaceSet;
+class HdCanvas;
 class Mod;
 
 /**
@@ -52,13 +53,22 @@ private:
 	const BattleUnit *_unit;
 	const BattleItem *_itemR, *_itemL;
 	const SurfaceSet *_unitSurface, *_itemSurface, *_fireSurface, *_breathSurface, *_facingArrowSurface;
-	Surface *_dest;
+	HdCanvas *_dest;
 	const SavedBattleGame *_save;
 	const Mod *_mod;
 	int _part, _animationFrame, _drawingRoutine;
 	bool _helmet;
 	int _red, _blue;
 	int _x, _y, _shade, _burn;
+	/// HD render scale k: body part / item offsets are in original pixels and multiplied by k at blit time.
+	int _scale;
+	/// HD lab: the turned view shows every direction this many eighths further round (0 unturned).
+	int _dirShift = 0;
+	/// The unit's direction and its turret's, as the view shows them.
+	int shownDir() const;
+	int shownTurretDir() const;
+	/// HD: walking phase of a walker treading on the spot after a turn, -1 when standing.
+	int treadPhase() const;
 	GraphSubset _mask;
 
 	/// Drawing routine for XCom soldiers in overalls, sectoids (routine 0),
@@ -109,9 +119,13 @@ private:
 	void blitBody(Part& body);
 public:
 	/// Creates a new UnitSprite at the specified position and size.
-	UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue);
+	UnitSprite(HdCanvas* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue);
 	/// Cleans up the UnitSprite.
 	~UnitSprite();
+	/// Sets the HD render scale k (offsets in original pixels are multiplied by it).
+	void setScale(int scale) { _scale = scale < 1 ? 1 : scale; }
+	/// HD lab: turns the directions the unit is drawn in by `shift` eighths (the turned view).
+	void setDirectionShift(int shift) { _dirShift = ((shift % 8) + 8) % 8; }
 	/// Draws the unit.
 	void draw(const BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool drawFacingIndicator);
 };

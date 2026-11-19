@@ -1,0 +1,188 @@
+sc6k_K_M10_s1 vs sc6s_S_M10_s1: record lines 2671 / 2755, identical up to line 58
+  first difference K: turn=1 side=1 pick=6 pass=1 site=limit wrap=0 left=1000001 order=1000002 chosen=1000002 why=order aim=-1 cands=1000002:-81,1000003:-81,1000004:-81,100
+                   S: [AIEXEC] {"v":1,"rec":26,"unit":1000000,"walk":1,"pos":[45,48,0],"dir":0,"tu":63,"spent":16,"kneel":0,"hp":36,"hp_lost":0,"stun":0,"down":0,"seen":2,"
+  sc6k_K_M10_s1: result how=timeout turn=11 pdead=2 hdead=28 livesoldiers=3 livealiens=16
+  sc6s_S_M10_s1: result how=timeout turn=11 pdead=4 hdead=22 livesoldiers=1 livealiens=22
+COVER orders: 20
+
+== turn 1 pick 5: B 1000001 at (23,5,2) tu 81 dir 4 -> face 2 (2 steps, tu after 79), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 16 at (50,3,0) distSq 737; order 1 of the turn
+  A 1000043: pick 3 (attack, aim 46): snap->46 tu114 spent31; snap->46 tu83 spent31; snap->114 tu52 spent32; walk tu20 spent16 walk
+  B 1000001: decisions after the order in turn 1: 0 -
+  C 1000002: pick 6 (order, left 1000001): -
+  B at the player's turn 2: tu 79 (snap 32: kept), dir 2 (face 2: facing), pos (23,5,2), hp 36/36
+  B's reactions in the player's turn 2: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000001 in turn 1: walk tu81 spent80 walk
+    at the player's turn 2: tu 1, dir 4, pos (22,7,0); reactions 0 at -; casualties by it: -
+
+== turn 1 pick 6: B 1000002 at (26,41,0) tu 81 dir 3 -> face 1 (2 steps, tu after 79), STR_UAC_RIFLE snap 20 TU, reactions 44; enemy 115 at (51,10,0) distSq 1586; order 2 of the turn
+  A 1000043: pick 3 (attack, aim 46): snap->46 tu114 spent31; snap->46 tu83 spent31; snap->114 tu52 spent32; walk tu20 spent16 walk
+  B 1000002: decisions after the order in turn 1: 0 -
+  C 1000003: pick 7 (order, left 1000002): walk tu81 spent72 walk; walk tu9 spent0 walk; walk tu9 spent0 walk; walk tu9 spent0 walk
+  B at the player's turn 2: tu 79 (snap 20: kept), dir 1 (face 1: facing), pos (26,41,0), hp 36/36
+  B's reactions in the player's turn 2: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000002 in turn 1: walk tu81 spent4 walk; aimed->114 tu77 spent48; walk tu29 spent26 walk
+    at the player's turn 2: tu 3, dir 2, pos (27,36,0); reactions 0 at -; casualties by it: -
+
+== turn 2 pick 14: B 1000001 at (23,5,2) tu 81 dir 2 -> face 2 (0 steps, tu after 81), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 114 at (36,7,0) distSq 177; order 1 of the turn
+  A 1000044: pick 13 (attack, aim 1): snap->1 tu114 spent31; snap->1 tu83 spent31; snap->1 tu52 spent31; walk tu21 spent18 walk
+  B 1000001: decisions after the order in turn 2: 0 -
+  C 1000002: pick 15 (order, left 1000001): -
+  B at the player's turn 3: tu 81 (snap 32: kept), dir 2 (face 2: facing), pos (23,5,2), hp 36/36
+  B's reactions in the player's turn 3: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000001 in turn 2: walk tu81 spent30 walk; snap->46 tu51 spent33; walk tu18 spent18 walk
+    at the player's turn 3: tu 0, dir 7, pos (22,9,0); reactions 0 at -; casualties by it: -
+
+== turn 2 pick 15: B 1000002 at (26,41,0) tu 81 dir 1 -> face 1 (0 steps, tu after 81), STR_UAC_RIFLE snap 20 TU, reactions 44; enemy 1 at (53,29,0) distSq 873; order 2 of the turn
+  A 1000044: pick 13 (attack, aim 1): snap->1 tu114 spent31; snap->1 tu83 spent31; snap->1 tu52 spent31; walk tu21 spent18 walk
+  B 1000002: decisions after the order in turn 2: 0 -
+  C 1000003: pick 16 (order, left 1000002): walk tu81 spent78 walk
+  B at the player's turn 3: tu 81 (snap 20: kept), dir 1 (face 1: facing), pos (26,41,0), hp 36/36
+  B's reactions in the player's turn 3: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000002 in turn 2: walk tu81 spent78 walk
+    at the player's turn 3: tu 3, dir 3, pos (37,45,0); reactions 0 at -; casualties by it: -
+
+== turn 3 pick 9: B 1000000 at (52,39,0) tu 81 dir 3 -> face 7 (4 steps, tu after 77), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 1 at (47,29,0) distSq 125; order 1 of the turn
+  A 1000037: pick 8 (attack, aim 1): auto->1 tu74 spent23; auto->1 tu51 spent23; auto->1 tu28 spent23
+  B 1000000: decisions after the order in turn 3: 0 -
+  C 1000001: pick 10 (order, left 1000000): -
+  B at the player's turn 4: tu 77 (snap 32: kept), dir 7 (face 7: facing), pos (52,39,0), hp 36/36
+  B's reactions in the player's turn 4: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000000 in turn 3: walk tu81 spent66 walk; walk tu15 spent6 walk
+    at the player's turn 4: no state
+
+== turn 3 pick 10: B 1000001 at (23,5,2) tu 81 dir 2 -> face 2 (0 steps, tu after 81), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 114 at (36,7,0) distSq 177; order 2 of the turn
+  A 1000037: pick 8 (attack, aim 1): auto->1 tu74 spent23; auto->1 tu51 spent23; auto->1 tu28 spent23
+  B 1000001: decisions after the order in turn 3: 0 -
+  C 1000003: pick 11 (order, left 1000001): walk tu81 spent1 walk; aimed->114 tu80 spent59; walk tu21 spent20 walk
+  B at the player's turn 4: tu 81 (snap 32: kept), dir 2 (face 2: facing), pos (23,5,2), hp 36/36
+  B's reactions in the player's turn 4: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000001 in turn 3: walk tu81 spent80 walk
+    at the player's turn 4: tu 1, dir 4, pos (20,28,0); reactions 0 at -; casualties by it: -
+
+== turn 4 pick 11: B 1000001 at (23,5,2) tu 81 dir 2 -> face 2 (0 steps, tu after 81), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 114 at (36,7,0) distSq 177; order 1 of the turn
+  A 1000045: pick 10 (attack, aim 1): walk tu114 spent22 walk; walk tu92 spent14 walk; walk tu78 spent74 walk
+  B 1000001: decisions after the order in turn 4: 0 -
+  C 1000002: pick 12 (order, left 1000001): -
+  B at the player's turn 5: tu 81 (snap 32: kept), dir 2 (face 2: facing), pos (23,5,2), hp 36/36
+  B's reactions in the player's turn 5: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000001 in turn 4: walk tu81 spent6 walk; aimed->1 tu75 spent58; walk tu17 spent12 walk
+    at the player's turn 5: tu 5, dir 4, pos (21,30,0); reactions 0 at -; casualties by it: -
+
+== turn 4 pick 12: B 1000002 at (28,44,0) tu 81 dir 5 -> face 1 (4 steps, tu after 77), STR_UAC_RIFLE snap 20 TU, reactions 44; enemy 1 at (47,29,0) distSq 586; order 2 of the turn
+  A 1000045: pick 10 (attack, aim 1): walk tu114 spent22 walk; walk tu92 spent14 walk; walk tu78 spent74 walk
+  B 1000002: decisions after the order in turn 4: 0 -
+  C 1000003: pick 13 (order, left 1000002): walk tu81 spent4 walk; walk tu77 spent16 walk; walk tu61 spent22 walk; walk tu39 spent24 walk
+  B at the player's turn 5: tu 77 (snap 20: kept), dir 1 (face 1: facing), pos (28,44,0), hp 36/36
+  B's reactions in the player's turn 5: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000002 in turn 4: snap->1 tu81 spent23; snap->1 tu58 spent20; snap->1 tu38 spent20; walk tu18 spent14 walk
+    at the player's turn 5: tu 4, dir 6, pos (35,47,0); reactions 0 at -; casualties by it: -
+
+== turn 5 pick 2: B 1000003 at (16,27,0) tu 59 dir 1 -> face 1 (0 steps, tu after 59), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 114 at (36,8,0) distSq 761; order 1 of the turn
+  A 1000003: pick 2 (attack, aim 1): walk tu81 spent22 walk
+  B 1000003: decisions after the order in turn 5: 0 -
+  C 1000006: pick 3 (attack, left 1000003): aimed->1 tu81 spent58; walk tu23 spent18 walk
+  B at the player's turn 6: tu 59 (snap 32: kept), dir 1 (face 1: facing), pos (16,27,0), hp 36/36
+  B's reactions in the player's turn 6: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000003 in turn 5: walk tu81 spent36 walk; walk tu45 spent4 walk; walk tu41 spent16 walk; walk tu25 spent18 walk
+    at the player's turn 6: tu 7, dir 3, pos (33,37,0); reactions 0 at -; casualties by it: -
+
+== turn 5 pick 14: B 1000001 at (23,5,2) tu 81 dir 2 -> face 2 (0 steps, tu after 81), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 114 at (36,8,0) distSq 182; order 2 of the turn
+  A 1000044: pick 13 (attack, aim 1): walk tu114 spent24 walk; walk tu90 spent87 walk
+  B 1000001: decisions after the order in turn 5: 0 -
+  C 1000002: pick 15 (order, left 1000001): walk tu81 spent46 walk; walk tu35 spent8 walk; walk tu27 spent22 walk
+  B at the player's turn 6: tu 81 (snap 32: kept), dir 2 (face 2: facing), pos (23,5,2), hp 36/36
+  B's reactions in the player's turn 6: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000001 in turn 5: walk tu81 spent30 walk; walk tu51 spent6 walk; walk tu45 spent24 walk; walk tu21 spent20 walk
+    at the player's turn 6: tu 1, dir 2, pos (28,31,0); reactions 0 at -; casualties by it: -
+
+== turn 6 pick 7: B 1000024 at (28,14,0) tu 55 dir 3 -> face 0 (3 steps, tu after 52), STR_GRENADE_LAUNCHER snap 31 TU, reactions 59; enemy 46 at (28,13,0) distSq 1; order 1 of the turn
+  A 1000024: pick 7 (attack, aim 46): walk tu71 spent24 walk; walk tu65 spent4 walk; walk tu61 spent9 walk
+  B 1000024: decisions after the order in turn 6: 0 -
+  C 1000028: pick 8 (attack, left 1000024): auto->1 tu89 spent28; auto->1 tu61 spent29
+  B at the player's turn 7: no state (out or the battle ended)
+  B's reactions in the player's turn 7: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000024 in turn 6: walk tu89 spent20 walk; walk tu69 spent32 walk; snap->46 tu37 spent31; walk tu6 spent4 walk
+    at the player's turn 7: tu 2, dir 0, pos (17,18,0); reactions 0 at -; casualties by it: -
+
+== turn 6 pick 17: B 1000000 at (56,41,0) tu 81 dir 5 -> face 7 (2 steps, tu after 79), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 1 at (47,29,0) distSq 225; order 2 of the turn
+  A 1000047: pick 16 (attack, aim 46): snap->46 tu114 spent31; snap->46 tu83 spent31; snap->46 tu52 spent31; walk tu21 spent1 walk
+  B 1000000: decisions after the order in turn 6: 0 -
+  C 1000001: pick 18 (order, left 1000000): walk tu81 spent10 walk; walk tu71 spent56 walk; walk tu15 spent12 walk
+  B at the player's turn 7: tu 79 (snap 32: kept), dir 7 (face 7: facing), pos (56,41,0), hp 36/36
+  B's reactions in the player's turn 7: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000000 in turn 6: -
+    at the player's turn 7: no state
+
+== turn 7 pick 12: B 1000001 at (28,8,0) tu 68 dir 2 -> face 4 (2 steps, tu after 66), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 46 at (27,15,0) distSq 50; order 1 of the turn
+  A 1000047: pick 11 (attack, aim 46): snap->46 tu114 spent32; snap->46 tu82 spent31; snap->46 tu51 spent31; walk tu20 spent16 walk
+  B 1000001: decisions after the order in turn 7: 0 -
+  C 1000002: pick 13 (order, left 1000001): -
+  B at the player's turn 8: tu 66 (snap 32: kept), dir 4 (face 4: facing), pos (28,8,0), hp 5/36
+  B's reactions in the player's turn 8: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000001 in turn 7: walk tu81 spent36 walk; snap->1 tu45 spent32; walk tu13 spent8 walk
+    at the player's turn 8: tu 5, dir 2, pos (36,24,0); reactions 0 at -; casualties by it: -
+
+== turn 7 pick 13: B 1000002 at (13,40,0) tu 81 dir 7 -> face 1 (2 steps, tu after 79), STR_UAC_RIFLE snap 20 TU, reactions 44; enemy 46 at (27,15,0) distSq 821; order 2 of the turn
+  A 1000047: pick 11 (attack, aim 46): snap->46 tu114 spent32; snap->46 tu82 spent31; snap->46 tu51 spent31; walk tu20 spent16 walk
+  B 1000002: decisions after the order in turn 7: 0 -
+  C 1000003: pick 14 (order, left 1000002): walk tu81 spent1 walk; aimed->46 tu80 spent59; walk tu21 spent20 walk
+  B at the player's turn 8: tu 79 (snap 20: kept), dir 1 (face 1: facing), pos (13,40,0), hp 36/36
+  B's reactions in the player's turn 8: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000002 in turn 7: walk tu63 spent42 walk; walk tu39 spent38 walk
+    at the player's turn 8: tu 1, dir 0, pos (39,39,0); reactions 0 at -; casualties by it: -
+
+== turn 8 pick 11: B 1000000 at (51,37,0) tu 81 dir 3 -> face 7 (4 steps, tu after 77), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 1 at (45,28,0) distSq 117; order 1 of the turn
+  A 1000046: pick 10 (attack, aim 46): walk tu114 spent22 walk
+  B 1000000: decisions after the order in turn 8: 0 -
+  C 1000002: pick 12 (order, left 1000000): -
+  B at the player's turn 9: tu 77 (snap 32: kept), dir 7 (face 7: facing), pos (51,37,0), hp 25/36
+  B's reactions in the player's turn 9: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000000 in turn 8: -
+    at the player's turn 9: no state
+
+== turn 8 pick 12: B 1000002 at (13,40,0) tu 81 dir 1 -> face 1 (0 steps, tu after 81), STR_UAC_RIFLE snap 20 TU, reactions 44; enemy 46 at (29,16,0) distSq 832; order 2 of the turn
+  A 1000046: pick 10 (attack, aim 46): walk tu114 spent22 walk
+  B 1000002: decisions after the order in turn 8: 0 -
+  C 1000003: pick 13 (order, left 1000002): walk tu81 spent78 walk
+  B at the player's turn 9: tu 81 (snap 20: kept), dir 1 (face 1: facing), pos (13,40,0), hp 36/36
+  B's reactions in the player's turn 9: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000002 in turn 8: walk tu81 spent32 walk; snap->114 tu49 spent20; walk tu29 spent12 walk
+    at the player's turn 9: no state
+
+== turn 9 pick 9: B 1000002 at (13,40,0) tu 81 dir 1 -> face 0 (1 steps, tu after 80), STR_UAC_RIFLE snap 20 TU, reactions 44; enemy 115 at (24,13,0) distSq 850; order 1 of the turn
+  A 1000046: pick 8 (attack, aim 1): walk tu114 spent28 walk
+  B 1000002: decisions after the order in turn 9: 0 -
+  C 1000003: pick 10 (order, left 1000002): -
+  B at the player's turn 10: tu 80 (snap 20: kept), dir 0 (face 0: facing), pos (13,40,0), hp 36/36
+  B's reactions in the player's turn 10: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000002 in turn 9: -
+    at the player's turn 10: no state
+
+== turn 9 pick 10: B 1000003 at (30,46,0) tu 81 dir 2 -> face 1 (1 steps, tu after 80), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 1 at (45,28,0) distSq 549; order 2 of the turn
+  A 1000046: pick 8 (attack, aim 1): walk tu114 spent28 walk
+  B 1000003: decisions after the order in turn 9: 0 -
+  C 1000010: pick 11 (order, left 1000003): walk tu81 spent12 walk; walk tu69 spent26 walk; walk tu43 spent38 walk
+  B at the player's turn 10: tu 80 (snap 32: kept), dir 1 (face 1: facing), pos (30,46,0), hp 36/36
+  B's reactions in the player's turn 10: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000003 in turn 9: -
+    at the player's turn 10: tu 19, dir 3, pos (37,32,0); reactions 0 at -; casualties by it: -
+
+== turn 10 pick 7: B 1000002 at (13,40,0) tu 81 dir 0 -> face 1 (1 steps, tu after 80), STR_UAC_RIFLE snap 20 TU, reactions 44; enemy 46 at (27,17,0) distSq 725; order 1 of the turn
+  A 1000046: pick 6 (attack, aim 1): walk tu114 spent28 walk
+  B 1000002: decisions after the order in turn 10: 0 -
+  C 1000003: pick 8 (order, left 1000002): -
+  B at the player's turn 11: tu 80 (snap 20: kept), dir 1 (face 1: facing), pos (13,40,0), hp 36/36
+  B's reactions in the player's turn 11: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000002 in turn 10: -
+    at the player's turn 11: no state
+
+== turn 10 pick 8: B 1000003 at (30,46,0) tu 81 dir 1 -> face 1 (0 steps, tu after 81), STR_SHOTGUN_PA snap 32 TU, reactions 44; enemy 1 at (48,27,0) distSq 685; order 2 of the turn
+  A 1000046: pick 6 (attack, aim 1): walk tu114 spent28 walk
+  B 1000003: decisions after the order in turn 10: 0 -
+  C 1000010: pick 9 (order, left 1000003): walk tu81 spent34 walk; walk tu47 spent8 walk; walk tu39 spent36 walk
+  B at the player's turn 11: tu 81 (snap 32: kept), dir 1 (face 1: facing), pos (30,46,0), hp 36/36
+  B's reactions in the player's turn 11: 0 at -; casualties by B: -
+  without COVER (sc6s_S_M10_s1): B 1000003 in turn 10: -
+    at the player's turn 11: tu 19, dir 3, pos (37,32,0); reactions 0 at -; casualties by it: -
+
+COVER orders followed by a reaction of B in the player's next turn: 0 of 20

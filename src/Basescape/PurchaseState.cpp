@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PurchaseState.h"
+#include "TradeConfirmState.h"
 #include "ItemLocationsState.h"
 #include <sstream>
 #include <climits>
@@ -51,6 +52,7 @@
 #include "../Battlescape/CannotReequipState.h"
 #include "../Savegame/Country.h"
 #include "../Mod/RuleCountry.h"
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -130,6 +132,10 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 
 	touchComponentsAdd("button2", "buyMenu", _window);
 
+	addBaseSwitch(_base, "buyMenu", "text", "button", 24, nullptr,
+		[](Base *other) { return withBaseSwitch(new PurchaseState(other)); },
+		[this]() { return std::any_of(_items.begin(), _items.end(), [](const TransferRow &row) { return row.amount > 0; }); });
+
 	centerAllSurfaces();
 
 	// Set up objects
@@ -174,6 +180,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 	_lstItems->onRightArrowRelease((ActionHandler)&PurchaseState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&PurchaseState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&PurchaseState::lstItemsMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstItems);
 
 	_cats.push_back("STR_ALL_ITEMS");
 	_cats.push_back("STR_FILTER_HIDDEN");
@@ -234,7 +241,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			}
 		}
 	}
-	if ((_game->getMod()->getHireScientistsUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireScientistsUnlockResearch(), true))
+	if ((!_game->getMod()->getHireScientistsUnlockResearch() || _game->getSavedGame()->isResearched(_game->getMod()->getHireScientistsUnlockResearch(), true))
 		&& (~providedBaseFunc & _game->getMod()->getHireScientistsRequiresBaseFunc()).none())
 	{
 		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), _game->getMod()->getHireScientistCost(), _base->getTotalScientists(), 0, 0, -3, 0, 0, 0 };
@@ -245,7 +252,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			_cats.push_back(cat);
 		}
 	}
-	if ((_game->getMod()->getHireEngineersUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireEngineersUnlockResearch(), true))
+	if ((!_game->getMod()->getHireEngineersUnlockResearch() || _game->getSavedGame()->isResearched(_game->getMod()->getHireEngineersUnlockResearch(), true))
 		&& (~providedBaseFunc & _game->getMod()->getHireEngineersRequiresBaseFunc()).none())
 	{
 		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), _game->getMod()->getHireEngineerCost(), _base->getTotalEngineers(), 0, 0, -2, 0, 0, 0 };
@@ -390,6 +397,18 @@ void PurchaseState::init()
 {
 	State::init();
 
+	if (!_keepCat.empty())
+	{
+		auto cat = std::find(_cats.begin(), _cats.end(), _keepCat);
+		if (cat != _cats.end())
+		{
+			_cbxCategory->setSelected(cat - _cats.begin());
+			updateList();
+			_lstItems->scrollTo(_keepScroll);
+		}
+		_keepCat.clear();
+	}
+
 	touchComponentsRefresh();
 }
 
@@ -398,7 +417,7 @@ void PurchaseState::init()
  */
 void PurchaseState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
@@ -655,6 +674,8 @@ void PurchaseState::updateList()
 					}
 					else
 					{
+						// the same limit as an order made by hand (increaseByValue): no more than the stores can count
+						missingQty = std::max(0, std::min(missingQty, _base->getStoreRoom(rule) - _items[i].amount));
 						_items[i].amount += missingQty; // buy automatically
 
 						_iQty  += missingQty * rule->getSize(); // update total size
@@ -776,6 +797,20 @@ void PurchaseState::btnOkClick(Action *)
 		}
 	}
 
+	if (TradeConfirmState::wanted(_items))
+	{
+		_game->pushState(new TradeConfirmState(_items, _total, "STR_TRADE_CONFIRM_BUY", "buyMenu", [this]() { purchase(); }));
+		return;
+	}
+	purchase();
+}
+
+/**
+ * Buys the chosen items. A screen opened from the basescape opens anew on the same base,
+ * category and scroll (option oxceTradeStay), so the base arrows work again; the rest closes.
+ */
+void PurchaseState::purchase()
+{
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - _total);
 	for (const auto& transferRow : _items)
 	{
@@ -864,7 +899,17 @@ void PurchaseState::btnOkClick(Action *)
 			}
 		}
 	}
+	// nothing bought (XP-000593): the screen just closes, there is nothing to go on with
+	const bool bought = std::any_of(_items.begin(), _items.end(), [](const TransferRow &r) { return r.amount > 0; });
+	if (_parent || !bought || !baseSwitchAllowed() || !Options::oxceTradeStay)
+	{
+		_game->popState();
+		return;
+	}
+	auto *next = withBaseSwitch(new PurchaseState(_base));
+	next->keepView(_cats[_cbxCategory->getSelected()], _lstItems->getScroll());
 	_game->popState();
+	_game->pushState(next);
 }
 
 /**
@@ -874,6 +919,23 @@ void PurchaseState::btnOkClick(Action *)
 void PurchaseState::btnCancelClick(Action *)
 {
 	_game->popState();
+}
+
+/**
+ * How much one click or one tick of a held arrow changes the quantity:
+ * Shift - by 100, Ctrl - by 10 (ticket XP-000580), else the touch step (1 unless set).
+ */
+static int clickStep(const Game *game)
+{
+	if (game->isShiftPressed())
+	{
+		return 100;
+	}
+	if (game->isCtrlPressed())
+	{
+		return 10;
+	}
+	return game->getScrollStep();
 }
 
 /**
@@ -908,7 +970,7 @@ void PurchaseState::lstItemsLeftArrowClick(Action *action)
 	if (_game->isRightClick(action, true)) increaseByValue(INT_MAX);
 	if (_game->isLeftClick(action, true))
 	{
-		increaseByValue(_game->getScrollStep());
+		increaseByValue(clickStep(_game));
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -946,7 +1008,7 @@ void PurchaseState::lstItemsRightArrowClick(Action *action)
 	if (_game->isRightClick(action, true)) decreaseByValue(INT_MAX);
 	if (_game->isLeftClick(action, true))
 	{
-		decreaseByValue(_game->getScrollStep());
+		decreaseByValue(clickStep(_game));
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -1061,7 +1123,7 @@ void PurchaseState::increase()
 {
 	_timerDec->setInterval(50);
 	_timerInc->setInterval(50);
-	increaseByValue(_game->getScrollStep());
+	increaseByValue(clickStep(_game));
 }
 
 /**
@@ -1163,9 +1225,13 @@ void PurchaseState::increaseByValue(int change)
 
 	if (errorMessage.empty())
 	{
-		int maxByMoney = (_game->getSavedGame()->getFunds() - _total) / getRow().cost;
-		if (maxByMoney >= 0)
-			change = std::min(maxByMoney, change);
+		// a row that costs nothing (free hire of a mod, a price the coefficient or a script brings to 0) is not limited by money
+		if (getRow().cost > 0)
+		{
+			int64_t maxByMoney = (_game->getSavedGame()->getFunds() - _total) / getRow().cost;
+			if (maxByMoney >= 0)
+				change = (int)std::min<int64_t>(maxByMoney, change);
+		}
 		switch (getRow().type)
 		{
 		case TRANSFER_SOLDIER:
@@ -1225,7 +1291,9 @@ void PurchaseState::increaseByValue(int change)
 					{
 						maxByStores = (freeStores + 0.05) / storesNeededPerItem;
 					}
-					change = std::min((int)maxByStores, change);
+					// the stores count an item in an int: never buy what the base could not count (it would be paid for and lost)
+					maxByStores = std::min(maxByStores, std::max(0.0, (double)_base->getStoreRoom(rule) - getRow().amount));
+					change = std::min((int)std::max(0.0, maxByStores), change); // never a negative purchase
 					_iQty += change * storesNeededPerItem;
 				}
 				if (rule->isAlien())
@@ -1261,7 +1329,7 @@ void PurchaseState::decrease()
 {
 	_timerInc->setInterval(50);
 	_timerDec->setInterval(50);
-	decreaseByValue(_game->getScrollStep());
+	decreaseByValue(clickStep(_game));
 }
 
 /**
@@ -1333,6 +1401,7 @@ void PurchaseState::updateItemStrings()
 	}
 	ss5 << ":" << _base->getAvailableStores();
 	_txtSpaceUsed->setText(tr("STR_SPACE_USED").arg(ss5.str()));
+	updateBaseSwitch();
 }
 
 /**
@@ -1341,6 +1410,23 @@ void PurchaseState::updateItemStrings()
 void PurchaseState::cbxCategoryChange(Action *)
 {
 	updateList();
+}
+
+const RuleItem* PurchaseState::GetItemForTooltip()
+{
+	if (_lstItems->getSelectedRow() < 0)
+		return nullptr;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return nullptr;
+
+	return (RuleItem*)(getRow().rule);
+}
+
+const Base* PurchaseState::GetBase()
+{
+	return _base;
 }
 
 }

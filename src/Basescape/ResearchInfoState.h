@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../Engine/State.h"
+#include "../Engine/TouchState.h"
 
 namespace OpenXcom
 {
@@ -35,7 +35,7 @@ class InteractiveSurface;
 /**
  * Window which allows changing of the number of assigned scientist to a project.
  */
-class ResearchInfoState : public State
+class ResearchInfoState : public TouchState
 {
 private:
 	Base *_base;
@@ -44,7 +44,11 @@ private:
 	ArrowButton *_btnMore, *_btnLess;
 	Window *_window;
 	Text *_txtTitle, *_txtAvailableScientist, *_txtAvailableSpace, *_txtAllocatedScientist, *_txtMore, *_txtLess;
+	Text *_txtEta = nullptr; // the line of the approximate term (option oxceHdResearchEta, XP-000491)
 	void setAssignedScientist();
+	Text *_txtEtaExpected = nullptr; // "expected about N days" under it (XP-000493)
+	std::string etaText() const;
+	std::string etaExpectedText() const;
 	ResearchProject *_project;
 	RuleResearch *_rule;
 	void buildUi();
@@ -56,6 +60,12 @@ public:
 	ResearchInfoState(Base *base, ResearchProject *project);
 	/// Cleans up the ResearchInfo state
 	~ResearchInfoState();
+	/// The days to the end by the ruleset cost, for the assign window and the research list (option oxceHdResearchEta).
+	static bool etaDays(const ResearchProject *project, long long &fromDays, long long &toDays, long long &expectedDays);
+	/// The short term "(2-5d)" for a cell of the research list; empty with no scientists.
+	static std::string etaShort(const State *state, const ResearchProject *project);
+	/// Resets state.
+	void init() override;
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Cancel button.

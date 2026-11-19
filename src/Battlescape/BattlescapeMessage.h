@@ -43,6 +43,9 @@ private:
 	Text *_txtThinking;
 	ProgressBar *_progressBar;
 public:
+	/// Owns its resources: not copied.
+	BattlescapeMessage(const BattlescapeMessage&) = delete;
+	BattlescapeMessage& operator=(const BattlescapeMessage&) = delete;
 	/// Creates a new Battlescape message with the specified size and position.
 	BattlescapeMessage(int width, int height, int x = 0, int y = 0);
 	/// Cleans up the Battlescape message.
@@ -63,6 +66,10 @@ public:
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Blits the warning message.
 	void blit(SDL_Surface *surface) override;
+	/// Will the HD interface draw the two lines with its own fonts?
+	bool hdText() const;
+	/// Draws those two lines over the already scaled picture.
+	void hdDrawAt(int ox, int oy);
 	/// Special handling for setting the height of the battlescape message.
 	void setHeight(int height) override;
 	/// Sets the text color of the battlescape message.

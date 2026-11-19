@@ -1,0 +1,7 @@
+2026-10-30 14:46:41 prefix cfb arms CF bflag - turns 60 runs 1 jobs 1
+1/1 cfb_CF_M3_s1 code=0 72s total=72s
+ALL DONE
+logs 1 -> C:\OXCE_AIWorker\cmrun\res_cfb.zip 3.1 MB
+cfb_CF_M3_s1
+
+[exited with code 0]

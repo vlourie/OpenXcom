@@ -45,12 +45,16 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Language.h"
+#include "../Menu/ErrorMessageState.h"
+#include "../Mod/RuleInterface.h"
 #include "../Mod/MapBlock.h"
 #include "../Mod/MapDataSet.h"
 #include "../Mod/RuleUfo.h"
 #include "../Mod/RuleCraft.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/Mod.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/MapData.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Unit.h"
@@ -62,6 +66,7 @@
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/Texture.h"
 #include "Pathfinding.h"
+#include "CollapsePilot.h"
 
 namespace OpenXcom
 {
@@ -236,6 +241,11 @@ void BattlescapeGenerator::setMissionSite(MissionSite *mission)
  */
 void BattlescapeGenerator::nextStage()
 {
+	if (auto *lua = _game->getMod()->getLuaHost())
+	{
+		lua->dropQueue();
+	}
+
 	// check if the unit is available in the next stage
 	auto isUnitStillActive = [](const BattleUnit* u)
 	{
@@ -633,7 +643,7 @@ void BattlescapeGenerator::nextStage()
 			{
 				++soldiersTotal;
 				bu->resetTurnsSinceStunned();
-				bu->resetTurnsSince();
+				bu->resetTurnsSince(_save, "RESET_STAGE");
 				if (!selectedFirstSoldier && bu->getGeoscapeSoldier())
 				{
 					_save->setSelectedUnit(bu);
@@ -760,14 +770,182 @@ void BattlescapeGenerator::nextStage()
 	setMusic(ruleDeploy, true);
 	_save->setGlobalShade(_worldShade);
 	_save->getTileEngine()->calculateLighting(LL_AMBIENT, TileEngine::invalid, 0, true);
+	// building collapse pilot: the new stage's map, its own buildings
+	CollapsePilot::scanNew(_save);
 }
 
 /**
  * Starts the generator; it fills up the battlescape savegame with data.
  */
+/**
+ * Why a craft or UFO block got no place: the map is too small for it (no other draw of the RNG can help,
+ * the rules of the mission are at fault), or its place was taken (the only case another draw can change).
+ */
+std::string BattlescapeGenerator::placementRefusal(const MapBlock *block) const
+{
+	std::ostringstream ss;
+	ss << "The map is " << _mapsize_x / 10 << "x" << _mapsize_y / 10 << " blocks, the block needs " << block->getSizeX() / 10 << "x" << block->getSizeY() / 10 << ". ";
+	if (_mapsize_x < 10 || _mapsize_y < 10)
+	{
+		ss << "The mission (" << _save->getMissionType() << ", map script " << _save->getLastUsedMapScript() << ") defines no map size: its deployment has no width/length and its script does not resize the map.";
+	}
+	else if (block->getSizeX() > _mapsize_x || block->getSizeY() > _mapsize_y)
+	{
+		ss << "The block is bigger than the map of this mission.";
+	}
+	else
+	{
+		ss << "No free place of that size was left. You may try turning on 'save scumming' to work around this issue.";
+	}
+	return ss.str();
+}
+
+State *BattlescapeGenerator::refusalMessage(Game *game, SDL_Color *palette, bool basescape, const char *textId)
+{
+	const LocalizedText &text = game->getLanguage()->getString(textId);
+	if (basescape)
+	{
+		RuleInterface *ui = game->getMod()->getInterface("basescape");
+		return new ErrorMessageState(text, palette, ui->getElement("errorMessage")->color, "BACK13.SCR", ui->getElement("errorPalette")->color);
+	}
+	RuleInterface *ui = game->getMod()->getInterface("errorMessages");
+	return new ErrorMessageState(text, palette, ui->getElement("geoscapeColor")->color, "BACK01.SCR", ui->getElement("geoscapePalette")->color);
+}
+
+const std::string BattlescapeGenerator::STAGE_KEEP = "_stagekeep_.asav", BattlescapeGenerator::STAGE_KEEP_OLD = "_stagekeep_old_.asav";
+
+/**
+ * nextStage() takes the running battle apart as it goes (items are sorted out and deleted, units leave the map,
+ * the map itself is rebuilt), so a refusal in the middle of it leaves nothing to continue with. What can be put
+ * back is the whole game as it was before the stage ended: it is written the way every save is, and a refusal
+ * loads it the way every save is loaded - soldiers, equipment, what was done in the stage and the RNG come back together.
+ * The player's decision to abort is not part of what is kept: the battle comes back before it.
+ * The record is written beside its name and put in place whole (as SaveGameState does): a write that fails, or a game
+ * that is closed in the middle of it, leaves the record that was there. A record that is not of this battle (left by
+ * a transition that never finished: the game was closed, or went to the main menu) is not overwritten, it is kept
+ * under STAGE_KEEP_OLD. No save of the player has these names: theirs end in ".sav".
+ * @param ownRecord The record that is there is of this very battle (it came back from it).
+ * @return False when the game could not be written: the stage must not be taken apart then.
+ */
+bool BattlescapeGenerator::keepStage(Game *game, bool ownRecord)
+{
+	SavedBattleGame *battle = game->getSavedGame()->getSavedBattle();
+	const bool aborted = battle->isAborted();
+	battle->setAborted(false);
+	bool kept = true;
+	const std::string folder = Options::getMasterUserFolder();
+	const std::string beside = STAGE_KEEP + ".bak";
+	try
+	{
+		game->getSavedGame()->save(beside, game->getMod());
+		if (!ownRecord && CrossPlatform::fileExists(folder + STAGE_KEEP) && !CrossPlatform::moveFile(folder + STAGE_KEEP, folder + STAGE_KEEP_OLD))
+		{
+			throw Exception("the record of another battle could not be moved aside");
+		}
+		if (!CrossPlatform::moveFile(folder + beside, folder + STAGE_KEEP))
+		{
+			throw Exception("the record could not be put in place");
+		}
+	}
+	catch (std::exception &e)
+	{
+		Log(LOG_ERROR) << "The battle was not kept before its next stage: " << e.what();
+		CrossPlatform::deleteFile(folder + beside);
+		kept = false;
+	}
+	battle->setAborted(aborted);
+	return kept;
+}
+
+bool BattlescapeGenerator::nextStageOrRefuse(std::string &error)
+{
+	try
+	{
+		nextStage();
+		return true;
+	}
+	catch (Exception &e)
+	{
+		error = e.what();
+	}
+	Log(LOG_ERROR) << "The next stage of the battle (" << _save->getMissionType() << ") was refused by the generator: " << error;
+	return false;
+}
+
+bool BattlescapeGenerator::runOrRollback(std::string &error)
+{
+	// everything of the campaign run() can touch before it refuses: the stores of the base (disabled vehicles and items go
+	// back there, a base defense takes its items out), the armor of the soldiers (starting conditions, enviro effects)
+	// and their voice (given at the first battle), the global RNG and the "in battlescape" marks
+	Base *base = _base ? _base : (_craft ? _craft->getBase() : nullptr);
+	const uint64_t seed = RNG::getSeed();
+	struct ArmorState { Soldier *soldier; Armor *armor, *replaced, *transformed; std::string voice; };
+	std::vector<ArmorState> armors;
+	std::map<const RuleItem*, int> stores;
+	if (base)
+	{
+		stores = *base->getStorageItems()->getContents();
+		armors.reserve(base->getSoldiers()->size());
+		for (auto* soldier : *base->getSoldiers())
+		{
+			armors.push_back({ soldier, soldier->getArmor(), soldier->getReplacedArmor(), soldier->getTransformedArmor(), soldier->getVoiceSetType() });
+		}
+	}
+
+	try
+	{
+		run();
+		return true;
+	}
+	catch (Exception &e)
+	{
+		error = e.what();
+	}
+
+	Log(LOG_ERROR) << "Battle generation refused, the campaign is left as it was: " << error;
+	delete _dummy;
+	_dummy = 0;
+	if (base)
+	{
+		base->getStorageItems()->clear();
+		for (const auto& pair : stores)
+		{
+			base->getStorageItems()->addItem(pair.first, pair.second);
+		}
+		for (const auto& a : armors)
+		{
+			a.soldier->setArmor(a.armor);
+			a.soldier->setReplacedArmor(a.replaced);
+			a.soldier->setTransformedArmor(a.transformed);
+			a.soldier->setVoiceSetType(a.voice);
+		}
+	}
+	if (_craft) _craft->setInBattlescape(false);
+	if (_ufo) _ufo->setInBattlescape(false);
+	if (_base) _base->setInBattlescape(false);
+	if (_mission) _mission->setInBattlescape(false);
+	if (_alienBase) _alienBase->setInBattlescape(false);
+	RNG::setSeed(seed);
+	_game->getSavedGame()->setBattleGame(0);
+	_save = 0;
+	return false;
+}
+
 void BattlescapeGenerator::run()
 {
 	bool isPreview = _save->isPreview();
+
+	// a new battle of a running campaign: Lua variables start over here too, not only at the load of a save
+	if (!isPreview)
+	{
+		if (auto *lua = _game->getMod()->getLuaHost())
+		{
+			lua->reload();
+		}
+	}
+
+	// HD render: a new battle picks up the HD scale option (its terrain loads at that scale)
+	_game->getMod()->refreshHdScale();
 
 	_save->setAlienCustom(_alienCustomDeploy ? _alienCustomDeploy->getType() : "", _alienCustomMission ? _alienCustomMission->getType() : "");
 
@@ -950,6 +1128,12 @@ void BattlescapeGenerator::run()
 
 	_save->getTileEngine()->calculateLighting(LL_AMBIENT, TileEngine::invalid, 0, true);
 
+	// building collapse pilot: the buildings are found before anything below can damage them
+	if (!isPreview)
+	{
+		CollapsePilot::scanNew(_save);
+	}
+
 	if (!isPreview && _ufo && _ufo->getStatus() == Ufo::CRASHED)
 	{
 		explodePowerSources();
@@ -958,6 +1142,15 @@ void BattlescapeGenerator::run()
 	if (!isPreview)
 	{
 		explodeOtherJunk();
+	}
+
+	if (!isPreview)
+	{
+		if (auto *lua = _game->getMod()->getLuaHost())
+		{
+			lua->resetTurnBudgets();
+			lua->fire(LuaHost::BATTLE_START, { _save });
+		}
 	}
 }
 
@@ -1230,7 +1423,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 	if (_craft != 0)
 	{
 		// add items that are in the craft
-		for (const auto& pair : *_craft->getItems()->getContents())
+		for (const auto& pair : _craft->getItems()->getContentsInListOrder())
 		{
 			if (startingCondition != 0 && !startingCondition->isItemPermitted(pair.first->getType(), _game->getMod(), _craft))
 			{
@@ -1252,9 +1445,9 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		if (_game->getSavedGame()->getMonthsPassed() != -1)
 		{
 			// add items that are in the base
-			for (auto i = _base->getStorageItems()->getContents()->begin(); i != _base->getStorageItems()->getContents()->end();)
+			for (const auto& pair : _base->getStorageItems()->getContentsInListOrder())
 			{
-				const RuleItem *rule = i->first;
+				const RuleItem *rule = pair.first;
 				if (
 					// is item allowed in base defense?
 					rule->canBeEquippedBeforeBaseDefense() &&
@@ -1266,20 +1459,14 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 					// we know how to use this item
 					_game->getSavedGame()->isResearched(rule->getRequirements()))
 				{
-					for (int count = 0; count < i->second; count++)
+					for (int count = 0; count < pair.second; count++)
 					{
-						_save->createItemForTile(i->first, _craftInventoryTile);
+						_save->createItemForTile(pair.first, _craftInventoryTile);
 					}
-					auto tmp = i; // copy
-					++i;
 					if (!_baseInventory)
 					{
-						_base->getStorageItems()->removeItem(tmp->first, tmp->second);
+						_base->getStorageItems()->removeItem(pair.first, pair.second);
 					}
-				}
-				else
-				{
-					++i;
 				}
 			}
 		}
@@ -1288,7 +1475,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		{
 			if (craft->getStatus() == "STR_OUT")
 				continue;
-			for (const auto& pair : *craft->getItems()->getContents())
+			for (const auto& pair : craft->getItems()->getContentsInListOrder())
 			{
 				for (int count = 0; count < pair.second; count++)
 				{
@@ -1669,6 +1856,147 @@ bool BattlescapeGenerator::canPlaceXCOMUnit(Tile *tile)
  * @param race Pointer to the alien race.
  * @param deployment Pointer to the deployment rules.
  */
+/**
+ * Checks, before anything of the battle exists, that every alien rank the deployment asks of the race is
+ * a member of it (U-03). Pure: no RNG, no state. The depth and the race are resolved as run(), setDepth()
+ * and deployAliens() resolve them; a rank is reported only if it is missing at every depth the battle can
+ * get, so a landing that may be generated goes on exactly as before.
+ * @param ruleDeploy Deployment that picks the terrain and the depth (as in run()).
+ * @param alienDeploy Deployment passed to deployAliens().
+ * @param alienRace Race of the UFO, mission site or alien base.
+ * @param missionTexture Texture passed to the generator, may be 0.
+ * @param where Mission description for the log.
+ * @return Empty if the aliens can be generated, otherwise the details for the log.
+ */
+std::string BattlescapeGenerator::checkAlienRanks(const Mod *mod, const SavedGame *save, const AlienDeployment *ruleDeploy,
+	const AlienDeployment *alienDeploy, const std::string &alienRace, Texture *missionTexture, const std::string &where)
+{
+	if (!ruleDeploy || !alienDeploy)
+	{
+		return ""; // the generator reports a missing deployment itself
+	}
+
+	// depths the battle can get (setDepth())
+	bool dry = false, wet = false;
+	auto addDepths = [&](int minDepth, int maxDepth)
+	{
+		if (maxDepth > 0)
+		{
+			wet = true;
+			if (minDepth <= 0) dry = true;
+		}
+		else
+		{
+			dry = true;
+		}
+	};
+	if (ruleDeploy->getMaxDepth() > 0)
+	{
+		addDepths(ruleDeploy->getMinDepth(), ruleDeploy->getMaxDepth());
+	}
+	else
+	{
+		// terrains run() can pick
+		std::vector<std::string> terrains = ruleDeploy->getTerrains();
+		if (terrains.empty() && missionTexture && !missionTexture->getTerrain()->empty())
+		{
+			for (const auto& crit : *missionTexture->getTerrain())
+			{
+				if (crit.weight > 0) terrains.push_back(crit.name);
+			}
+		}
+		if (terrains.empty() && !mod->getTerrainList().empty())
+		{
+			terrains.push_back(mod->getTerrainList().front());
+		}
+		for (const auto& name : terrains)
+		{
+			const RuleTerrain *terrain = mod->getTerrain(name);
+			if (terrain) addDepths(terrain->getMinDepth(), terrain->getMaxDepth());
+		}
+	}
+
+	// race at each of these depths (deployAliens())
+	std::string raceName = alienRace;
+	if (!alienDeploy->getRace().empty() && save->getMonthsPassed() > -1)
+	{
+		raceName = alienDeploy->getRace();
+	}
+	bool underwater = raceName.find("_UNDERWATER") != std::string::npos;
+	std::vector<std::string> variants;
+	if (dry || (wet && underwater)) variants.push_back(raceName);
+	if (wet && !underwater) variants.push_back(raceName + "_UNDERWATER");
+	std::vector<const AlienRace*> races;
+	for (const auto& name : variants)
+	{
+		const AlienRace *race = mod->getAlienRace(name);
+		if (!race)
+		{
+			return ""; // the generator reports an unknown race itself
+		}
+		races.push_back(race);
+	}
+	if (races.empty())
+	{
+		return "";
+	}
+
+	for (const auto& dd : *alienDeploy->getDeploymentData())
+	{
+		if (!dd.customUnitType.empty())
+		{
+			continue;
+		}
+		// the largest quantity deployAliens() can roll; with none no member is asked for
+		int quantity;
+		switch (save->getDifficulty())
+		{
+		case DIFF_BEGINNER:
+			quantity = dd.lowQty;
+			break;
+		case DIFF_EXPERIENCED:
+			quantity = dd.medQty > 0 ? dd.lowQty + ((dd.medQty - dd.lowQty) / 2) : dd.lowQty;
+			break;
+		case DIFF_VETERAN:
+			quantity = dd.medQty > 0 ? dd.medQty : dd.lowQty + ((dd.highQty - dd.lowQty) / 2);
+			break;
+		case DIFF_GENIUS:
+			quantity = dd.medQty > 0 ? dd.medQty + ((dd.highQty - dd.medQty) / 2) : dd.lowQty + ((dd.highQty - dd.lowQty) / 2);
+			break;
+		case DIFF_SUPERHUMAN:
+		default:
+			quantity = dd.highQty;
+		}
+		quantity += mod->isDemigod() ? dd.dQty : std::max(0, dd.dQty);
+		quantity += mod->isDemigod() ? dd.extraQty : std::max(0, dd.extraQty);
+		if (quantity <= 0)
+		{
+			continue;
+		}
+
+		bool missingEverywhere = true;
+		for (const auto* race : races)
+		{
+			if (dd.alienRank >= 0 && dd.alienRank < race->getMembers())
+			{
+				missingEverywhere = false;
+			}
+		}
+		if (missingEverywhere)
+		{
+			std::ostringstream ss;
+			ss << "Invalid alien deployment: deployment=" << alienDeploy->getType();
+			for (const auto* race : races)
+			{
+				ss << " race=" << race->getId() << " members=" << race->getMembers();
+			}
+			ss << " rank=" << dd.alienRank << " " << where;
+			return ss.str();
+		}
+	}
+	return "";
+}
+
 void BattlescapeGenerator::deployAliens(const AlienDeployment *deployment)
 {
 	// race defined by deployment if there is one.
@@ -1733,6 +2061,13 @@ void BattlescapeGenerator::deployAliens(const AlienDeployment *deployment)
 				}
 			}
 
+			if (dd.customUnitType.empty() && (dd.alienRank < 0 || dd.alienRank >= race->getMembers()))
+			{
+				// U-03: the rank is missing only at this depth (checkAlienRanks() lets such landings through); getMember() throws below
+				Log(LOG_ERROR) << "Invalid alien deployment: deployment=" << deployment->getType() << " race=" << race->getId()
+					<< " rank=" << dd.alienRank << " members=" << race->getMembers() << " depth=" << _save->getDepth()
+					<< " mission=" << _save->getMissionType() << (_ufo ? " ufo=" + _ufo->getRules()->getType() : std::string());
+			}
 			std::string alienName = dd.customUnitType.empty() ? race->getMember(dd.alienRank) : dd.customUnitType;
 
 			bool outside = RNG::percent(dd.percentageOutsideUfo);
@@ -1806,7 +2141,7 @@ BattleUnit *BattlescapeGenerator::addAlien(Unit *rules, int alienRank, bool outs
 		if (outside)
 			node = _save->getSpawnNode(0, unit); // when alien is instructed to spawn outside, we only look for node 0 spawnpoints
 		else
-			node = _save->getSpawnNode(Node::nodeRank[alienRank][i], unit);
+			node = _save->getSpawnNode(Node::getNodeRank(alienRank, i), unit);
 	}
 
 	int aliensFacingCraftOdds = 20 * _game->getSavedGame()->getDifficultyCoefficient();
@@ -2143,6 +2478,11 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 
 	while (mapFile->read((char*)&value, sizeof(value)))
 	{
+		if (!_save->getTile(Position(x, y, z)))
+		{
+			// more records than the block has tiles, or a block of no height: the next tile is outside the map
+			throw Exception("Invalid MAP file: " + filename);
+		}
 		for (int part = O_FLOOR; part < O_MAX; ++part)
 		{
 			terrainObjectID = ((unsigned char)value[part]);
@@ -2457,7 +2797,7 @@ int BattlescapeGenerator::loadExtraTerrain(RuleTerrain *terrain)
 
 		for (auto* mds : *terrain->getMapDataSets())
 		{
-			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 			_save->getMapDataSets()->push_back(mds);
 		}
 
@@ -2804,7 +3144,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 	// Load in the default terrain data
 	for (auto* mds : *_terrain->getMapDataSets())
 	{
-		mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+		mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 		_save->getMapDataSets()->push_back(mds);
 		mapDataSetIDOffset++;
 	}
@@ -3029,7 +3369,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 						{
 							throw Exception("Map generator encountered an error: Craft (MapBlock: "
 								+ craftMap->getName()
-								+ ") could not be placed on the map. You may try turning on 'save scumming' to work around this issue.");
+								+ ") could not be placed on the map. " + placementRefusal(craftMap));
 						}
 						if (craftPlaced)
 						{
@@ -3116,7 +3456,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 							{
 								throw Exception("Map generator encountered an error: UFO (MapBlock: "
 									+ ufoMap->getName()
-									+ ") could not be placed on the map. You may try turning on 'save scumming' to work around this issue.");
+									+ ") could not be placed on the map. " + placementRefusal(ufoMap));
 							}
 						}
 						if (ufoPlaced)
@@ -3279,7 +3619,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 	{
 		for (auto* mds : *ufoTerrain->getMapDataSets())
 		{
-			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 			_save->getMapDataSets()->push_back(mds);
 			craftDataSetIDOffset++;
 		}
@@ -3305,7 +3645,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 		_craftRules->getBattlescapeTerrainData()->refreshMapDataSets(_craft->getSkinIndex(), _game->getMod()); // change skin if needed
 		for (auto* mds : *_craftRules->getBattlescapeTerrainData()->getMapDataSets())
 		{
-			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 			_save->getMapDataSets()->push_back(mds);
 		}
 		loadMAP(craftMap, _craftPos.x * 10, _craftPos.y * 10, _craftZ, _craftRules->getBattlescapeTerrainData(), mapDataSetIDOffset + craftDataSetIDOffset, _craftRules->isMapVisible(), true);
@@ -3335,6 +3675,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 	}
 
 	delete _dummy;
+	_dummy = 0;
 
 	// special hacks to fill in empty floors on level 0
 	for (int x = 0; x < _mapsize_x; ++x)

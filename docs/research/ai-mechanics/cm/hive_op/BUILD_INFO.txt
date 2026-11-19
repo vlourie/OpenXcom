@@ -1,0 +1,5 @@
+build_label=cmrun-OP
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=CI + COORDINATED OPERATION V0 (OXCE_AI_HIVE_OP=1 shadow, 2 active, over OXCE_AI_HIVE=1)
+patch_sha256=d593256f57746bcc8d005a061a261455128070d9125fa0aef6f268af4193cfad
+exe_sha256=2f6ea2c96f4a59318b68cb9a3487f7056b5b2cb6273c8e79b15553510ffa3623

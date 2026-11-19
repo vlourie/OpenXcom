@@ -1,0 +1,6 @@
+sc6k_K_M10_s1 ccda1963618846a3b1cbacc3ef33193c
+sc7k_K_M10_s1 ccda1963618846a3b1cbacc3ef33193c IDENTICAL
+  picks 506, total 17.5 ms, mean 35 us, median 12 us, p95 144 us, max 330 us
+sc6k_K_L2_s1 9bcaa9422630b3283a5262e199a6175b
+sc7k_K_L2_s1 9bcaa9422630b3283a5262e199a6175b IDENTICAL
+  picks 873, total 32.1 ms, mean 37 us, median 9 us, p95 188 us, max 798 us

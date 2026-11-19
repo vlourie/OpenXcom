@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2033002	STR_VESSEL_USO_HEAVY_CRUISER	over	STR_VESSEL_USO_HEAVY_CRUISER	STR_UFO_GROUND_ASSAULT	108	8	POLARPLANE	STR_DEEP_ONE	STR_DROPSHIP#3	11	10	8	1	0	1	80	32	27	5	0	7	0	0	44	45	h.rec.in:224,h.rec.out.a6:1,p.rec.in:258,p.rec.out.a8:1	259	0	0	1	0	1	225	0	0	3	0	1	27		win

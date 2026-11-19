@@ -55,7 +55,7 @@ Ufo::Ufo(const RuleUfo *rules, int uniqueId, int hunterKillerPercentage, int hun
 	_rules(rules), _missionWaveNumber(-1), _crashId(0), _landId(0), _damage(0), _direction("STR_NORTH"),
 	_altitude("STR_HIGH_UC"), _status(FLYING), _secondsRemaining(0),
 	_inBattlescape(false), _mission(0), _trajectory(0),
-	_trajectoryPoint(0), _detected(false), _hyperDetected(false), _processedIntercept(false),
+	_trajectoryPoint(0), _detected(false), _hyperDetected(false), _processedIntercept(false), _hdDecoded(false),
 	_shootingAt(0), _hitFrame(0), _fireCountdown(0), _escapeCountdown(0), _stats(), _shield(-1), _shieldRechargeHandle(0),
 	_tractorBeamSlowdown(0), _isHunterKiller(false), _isEscort(false), _huntMode(0), _huntBehavior(0),
 	_isHunting(false), _isEscorting(false), _softlockShotCounter(0), _origWaypoint(0)
@@ -121,6 +121,9 @@ void Ufo::load(const YAML::YamlNodeReader& node, const ScriptGlobal *shared, con
 	reader.tryRead("direction", _direction);
 	reader.tryRead("detected", _detected);
 	reader.tryRead("hyperDetected", _hyperDetected);
+	reader.tryRead("hdDecoded", _hdDecoded);
+	reader.tryRead("baseDefenseDone", _baseDefenseDone);
+	_hdDecoded = _hdDecoded || _hyperDetected;
 	reader.tryRead("secondsRemaining", _secondsRemaining);
 	reader.tryRead("inBattlescape", _inBattlescape);
 	_dest = new Waypoint();
@@ -271,6 +274,10 @@ void Ufo::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared, bool new
 		writer.write("detected", _detected);
 	if (_hyperDetected)
 		writer.write("hyperDetected", _hyperDetected);
+	if (_hdDecoded)
+		writer.write("hdDecoded", _hdDecoded);
+	if (_baseDefenseDone)
+		writer.write("baseDefenseDone", _baseDefenseDone);
 	if (_secondsRemaining)
 		writer.write("secondsRemaining", _secondsRemaining);
 	if (_inBattlescape)
@@ -488,7 +495,8 @@ void Ufo::setDamage(int damage, const Mod *mod)
  */
 int Ufo::getDamagePercentage() const
 {
-	return (int)floor((double)_damage / _stats.damageMax * 100);
+	// damageMax 0 is a rule of the mods (a UFO that is only a place on the globe): 0 %, not the cast of a NaN to int
+	return _stats.damageMax > 0 ? (int)floor((double)_damage / _stats.damageMax * 100) : 0;
 }
 
 /**
@@ -834,6 +842,7 @@ bool Ufo::getHyperDetected() const
 void Ufo::setHyperDetected(bool hyperdetected)
 {
 	_hyperDetected = hyperdetected;
+	_hdDecoded = _hdDecoded || hyperdetected;
 }
 
 /**

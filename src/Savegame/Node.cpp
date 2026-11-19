@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Node.h"
+#include "../fmath.h"
 
 namespace OpenXcom
 {
@@ -63,6 +64,19 @@ const int Node::nodeRank[8][7] = {
 	{ 2, 5, 3, 4, 6, 8, 0 }, //soldier
 	{ 2, 5, 3, 4, 6, 8, 0 }, //terrorist
 	{ 2, 5, 3, 4, 6, 8, 0 }  }; //also terrorist
+
+/**
+ * The one place the table is read. A unit's rank is not a row of it: for an alien it is the number of its
+ * race member (mods have more than eight; reinforcements keep the number as it is), a save may hold anything.
+ * Members past the table are "also terrorists", as the battle generator has always placed them.
+ * @param unitRank BattleUnit::getRankInt() or the deployment's alienRank.
+ * @param preference Order of preference, 0 (the unit's own node rank) to 6.
+ * @return Node rank.
+ */
+int Node::getNodeRank(int unitRank, int preference)
+{
+	return nodeRank[Clamp(unitRank, 0, 7)][Clamp(preference, 0, 6)];
+}
 
 
 

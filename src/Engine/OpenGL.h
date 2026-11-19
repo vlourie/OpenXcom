@@ -63,7 +63,8 @@ public:
   /// make all the pixels go away
   void clear();
   /// make the buffer show up on screen
-  void refresh(bool smooth, unsigned inwidth, unsigned inheight, unsigned outwidth, unsigned outheight, int topBlackBand, int bottomBlackBand, int leftBlackBand, int rightBlackBand);
+  /// Draws the frame; the pixels come from the internal buffer, or from `pixels` (a same-format 32-bit image of the buffer's size, `pitch` bytes per row) when given.
+  void refresh(bool smooth, unsigned inwidth, unsigned inheight, unsigned outwidth, unsigned outheight, int topBlackBand, int bottomBlackBand, int leftBlackBand, int rightBlackBand, const void *pixels = nullptr, int pitch = 0);
   /// set a shader! but what kind?
   bool set_shader(const char *source);
   /// same but for fragment shader?

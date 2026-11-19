@@ -1,0 +1,4 @@
+build_label=c1run-C2
+git_commit=4ee3d1d3724465fff02dfa45aed8b8eecc6b4b31
+note=DEV (OXCE_AI_DEV=ON, DEV_BUILD=ON, Release) HEAD + C2 PREATTACK_COVER (flag OXCE_AI_PREATTACK_COVER, default off), without C1
+exe_sha256=d513dbdbe9ef64754fe77bbccfdc4d833aa377e9ef0d7033fb0210d94056029a

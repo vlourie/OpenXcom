@@ -1,0 +1,4 @@
+— Soldier lists can be sorted by two things at once: in "Options → Advanced" pick "Group soldiers" (by type, rank or craft), and any sort puts soldiers into groups first, then by the chosen criterion inside each group.
+— The "Race badge in soldier lists" option puts the soldier's rank badge before the name: the colour tells the race, the picture the rank.
+— The soldier's inventory in battle shows stats again, not just weight and TUs: firing, throwing, melee and the armour's energy shield charge ("Shield>95/120"). Without a shield, voodoo takes its place.
+— HD firing effects now depend on the weapon: buckshot throws yellow sparks and blood, blood grows with the calibre, gauss hits with a blue flash, plasma is bright green without a dark tail, CD-weapon discs are visible in flight again, spears and whips no longer show a muzzle flash.

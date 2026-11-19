@@ -1,0 +1,29 @@
+# The clang-tidy checks of the OXCE-HD checks (.github/workflows/checks.yml, tools/ci_checks.py): the kinds of
+# defects the audits of the HD layer found, not style. Passed with --config-file, so editors do not pick it up.
+Checks: >
+  -*,
+  bugprone-unused-return-value,
+  bugprone-use-after-move,
+  bugprone-dangling-handle,
+  bugprone-infinite-loop,
+  bugprone-exception-escape,
+  bugprone-undefined-memory-manipulation,
+  bugprone-sizeof-expression,
+  bugprone-integer-division,
+  bugprone-misplaced-widening-cast,
+  bugprone-signed-char-misuse,
+  bugprone-string-constructor,
+  bugprone-suspicious-memset-usage,
+  bugprone-unhandled-self-assignment,
+  clang-analyzer-core.*,
+  clang-analyzer-cplusplus.*,
+  clang-analyzer-deadcode.DeadStores,
+  performance-move-const-arg
+WarningsAsErrors: 'bugprone-unused-return-value,bugprone-use-after-move,clang-analyzer-cplusplus.NewDelete,clang-analyzer-core.NullDereference'
+HeaderFilterRegex: 'src/Engine/Hd[A-Za-z]*\.h$'
+CheckOptions:
+  # (void)run(...) is how runCounted() says the answer is counted elsewhere
+  - key: bugprone-unused-return-value.AllowCastToVoid
+    value: true
+  - key: bugprone-unused-return-value.CheckedFunctions
+    value: '::OpenXcom::HdWorkers::run;::std::async;::std::launder;::std::remove;::std::remove_if;::std::unique'

@@ -1,0 +1,8 @@
+2026-10-30 14:41:05 prefix cfa arms CF bflag - turns 60 runs 4 jobs 4
+1/4 cfa_CF_M3_s2 code=0 44s total=44s
+2/4 cfa_CF_M6_s1 code=0 64s total=64s
+3/4 cfa_CF_M6_s2 code=0 75s total=75s
+4/4 cfa_CF_M3_s1 code=0 87s total=87s
+ALL DONE
+
+[exited with code 0]

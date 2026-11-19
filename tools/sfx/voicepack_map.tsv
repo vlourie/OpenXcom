@@ -1,0 +1,373 @@
+﻿kind	target	target_en	gender	voice	voice_name
+soldier	STR_SOLDIER	Lunatic	оба	V001	Убер: наглая пиратка
+soldier	STR_SOLDIER_S	Hand	оба	V001	Убер: наглая пиратка
+soldier	STR_SOLDIER_M	Warrior	оба	V002	Убер: ветеранша
+soldier	STR_SOLDIER_V	Veteran	оба	V002	Убер: ветеранша
+soldier	STR_SOLDIER_X	Freak	оба	V003	Убер: фрик
+soldier	STR_SOLDIER_W	Weirdgal	оба	V004	Убер: Weirdgal
+soldier	STR_SOLDIER_R	Repentia	оба	V005	Убер: кающаяся
+soldier	STR_SOLDIER_SLAVE	Slave Soldier	оба	V006	Человек: раб-солдат
+soldier	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	оба	V006	Человек: раб-солдат
+soldier	STR_SOLDIER_HERO	Hero	оба	V007	Человек: герой
+soldier	STR_SOLDIER_PEASANT	Peasant	оба	V008	Человек: крестьянка
+soldier	STR_SOLDIER_DAMSEL	Damsel	оба	V009	Человек: барышня
+soldier	STR_SOLDIER_HYBRID	Bugeye	М	V010	Bugeye: мужской
+soldier	STR_SOLDIER_HYBRID	Bugeye	Ж	V011	Bugeye: женский
+soldier	STR_SOLDIER_LOKNAR	Lokk'Naar	оба	V012	Lokk’Naar: гоблинка
+soldier	STR_SOLDIER_GNOME	Gnome	оба	V013	Гномка
+soldier	STR_SOLDIER_NEKOMIMI	Catgirl	оба	V014	Нэкомими: обычная
+soldier	STR_SOLDIER_NEKOMIMI_O	Outlaw Catgirl	оба	V015	Нэкомими: преступница
+soldier	STR_SOLDIER_NEKOMIMI_W	Catwarrior	оба	V016	Нэкомими: воительница
+soldier	STR_SOLDIER_NEKOMIMI_H	Herbalist	оба	V017	Нэкомими: травница
+soldier	STR_SOLDIER_OGRE	Ogre	оба	V018	Огр
+soldier	STR_SOLDIER_LAMIA	Lamia	оба	V019	Ламия: воительница
+soldier	STR_SOLDIER_SYNTH	Syn	оба	V021	Syn: синтетическая женщина
+soldier	STR_SOLDIER_DOLL	Soul Doll	оба	V022	Soul Doll: кукла
+soldier	STR_SOLDIER_SPECTRE	Shade	оба	V023	Shade: тень
+soldier	STR_SOLDIER_CHORT	Chort	оба	V024	Chort: демон команды
+soldier	STR_SOLDIER_KILLBOT	Destroid	оба	V025	Киллбот / Destroid
+soldier	STR_SOLDIER_XENFORCER	Xenforcer	оба	V026	Xenforcer: робот-палач
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V112	Железное племя: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V112	Железное племя: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V112	Железное племя: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V113	Железное племя: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V113	Железное племя: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V114	Конфедерация: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V114	Конфедерация: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V114	Конфедерация: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V115	Конфедерация: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V115	Конфедерация: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V116	Евразийская автономия: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V116	Евразийская автономия: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V116	Евразийская автономия: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V117	Евразийская автономия: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V117	Евразийская автономия: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V118	Евросиндикат: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V118	Евросиндикат: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V118	Евросиндикат: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V119	Евросиндикат: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V119	Евросиндикат: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V120	Шварцмарка: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V120	Шварцмарка: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V120	Шварцмарка: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V121	Шварцмарка: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V121	Шварцмарка: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V122	Романика: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V122	Романика: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V122	Романика: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V123	Романика: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V123	Романика: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V124	Норд-Федерация: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V124	Норд-Федерация: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V124	Норд-Федерация: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V125	Норд-Федерация: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V125	Норд-Федерация: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V126	Срединное царство: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V126	Срединное царство: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V126	Срединное царство: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V127	Срединное царство: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V127	Срединное царство: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V128	Фусо: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V128	Фусо: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V128	Фусо: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V129	Фусо: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V129	Фусо: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V130	Долина смерти: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V130	Долина смерти: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V130	Долина смерти: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V131	Долина смерти: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V131	Долина смерти: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V132	Скрытоземье: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V132	Скрытоземье: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V132	Скрытоземье: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V133	Скрытоземье: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V133	Скрытоземье: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V134	Врата духов: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V134	Врата духов: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V134	Врата духов: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V135	Врата духов: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V135	Врата духов: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V136	Дикополье: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V136	Дикополье: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V136	Дикополье: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V137	Дикополье: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V137	Дикополье: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V138	Фивейский улей: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V138	Фивейский улей: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V138	Фивейский улей: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V139	Фивейский улей: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V139	Фивейский улей: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V140	Королевство Канады: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V140	Королевство Канады: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V140	Королевство Канады: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V141	Королевство Канады: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V141	Королевство Канады: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V142	Республика Кали: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V142	Республика Кали: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V142	Республика Кали: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V143	Республика Кали: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V143	Республика Кали: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V144	Тёмный доминион: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V144	Тёмный доминион: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V144	Тёмный доминион: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V145	Тёмный доминион: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V145	Тёмный доминион: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V146	Латинская империя: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V146	Латинская империя: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V146	Латинская империя: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V147	Латинская империя: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V147	Латинская империя: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V148	Технократия: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V148	Технократия: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V148	Технократия: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V149	Технократия: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V149	Технократия: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V150	Пиратские проливы: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V150	Пиратские проливы: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V150	Пиратские проливы: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V151	Пиратские проливы: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V151	Пиратские проливы: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V152	Туран: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V152	Туран: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V152	Туран: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V153	Туран: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V153	Туран: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V154	Стальной пакт: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V154	Стальной пакт: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V154	Стальной пакт: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V155	Стальной пакт: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V155	Стальной пакт: женский
+choice	STR_SOLDIER_SLAVE	Slave Soldier	М	V156	Красная революция: мужской
+choice	STR_SOLDIER_HERO	Hero	М	V156	Красная революция: мужской
+choice	STR_SOLDIER_PUREBLOOD	Pureblood Soldier	М	V156	Красная революция: мужской
+choice	STR_SOLDIER_PEASANT	Peasant	Ж	V157	Красная революция: женский
+choice	STR_SOLDIER_DAMSEL	Damsel	Ж	V157	Красная революция: женский
+unit	STR_ACADEMY_COUNSELLOR	Academy Counsellor	-	V041	Академия: эспер
+unit	STR_ACADEMY_NURSE	Academy Nurse	-	V040	Академия: медик
+unit	STR_ACADEMY_SCIENTIST	Academy Scientist	-	V039	Академия: исследователь
+unit	STR_ADRONE_TERRORIST	Academy Drone	-	V029	Дроны, камеры и турели
+unit	STR_ANIMATRON_MARAUDER	Animatron Marauder	-	V084	Animatron Marauder
+unit	STR_APOC_DISCIPLE	Disciple of Apocalypse	-	V066	Культист Апокалипсиса
+unit	STR_APOC_MARAUDER	Marauder of Apocalypse	-	V066	Культист Апокалипсиса
+unit	STR_APOC_SADIST	Sadist of Apocalypse	-	V066	Культист Апокалипсиса
+unit	STR_AQUAMAN_TERRORIST	Aquaman	-	V090	Аквамен
+unit	STR_AQUATOID_MEDIC	Aquatoid	-	V091	Акватоид
+unit	STR_AUR_1	Aurora	-	V031	Aurora
+unit	STR_AUR_2	Aurora Doll	-	V022	Soul Doll: кукла
+unit	STR_BANDIT_BOSS	Bandit Boss	-	V054	Бандитский босс
+unit	STR_BANDIT_BOY	B-Boy	-	V053	Бандит
+unit	STR_BANDIT_DRIFTER	Drifter	-	V053	Бандит
+unit	STR_BANDIT_DUDE	Brigand	-	V053	Бандит
+unit	STR_BANDIT_FUSSBALLER	Baller	-	V054	Бандитский босс
+unit	STR_BANDIT_GHOUL	Ghoul	-	V097	Гуль
+unit	STR_BANDIT_GHOUL_SCI	Ghoul Scientist	-	V097	Гуль
+unit	STR_BANDIT_HIGHWAYMAN	Highwayman	-	V053	Бандит
+unit	STR_BANDIT_HITMAN	Hitman	-	V053	Бандит
+unit	STR_BANDIT_PMC	Gun Runner	-	V054	Бандитский босс
+unit	STR_BANDIT_PUNK	Mohawk	-	V053	Бандит
+unit	STR_BANDIT_RATMAN	Ratman	-	V079	Крысочеловек
+unit	STR_BANDIT_RATMAN_HUNTER	Ratman Brigand	-	V079	Крысочеловек
+unit	STR_BANDIT_RATMAN_LEADER	Ratman Mob Lieutenant	-	V079	Крысочеловек
+unit	STR_BANDIT_RATMAN_STORMRAT	Stormrat	-	V079	Крысочеловек
+unit	STR_BANDIT_RUFFIAN	Ruffian	-	V053	Бандит
+unit	STR_BANDIT_TOMB_RUNNER	Tomb Runner	-	V054	Бандитский босс
+unit	STR_BANDIT_TROUBLEMAKER	Troublemaker	-	V053	Бандит
+unit	STR_BEASTMASTER_TERRORIST	Church Beastmaster	-	V042	Церковь: фанатик
+unit	STR_BOSSBRAIN	Oversized... Brain?	-	V108	Огромный мозг
+unit	STR_BUTCH	Carnodemon	-	V101	Барон ада
+unit	STR_BUTCH_WARDEN	Demon Warden	-	V102	Демон-надзиратель
+unit	STR_CHURCH_COMMANDER	Church Cardinal	-	V044	Церковь: жрец
+unit	STR_CHURCH_ELITE	Church Exalt	-	V042	Церковь: фанатик
+unit	STR_CHURCH_HANDMAID	Shrine Maiden	-	V043	Церковь: воительница
+unit	STR_CHURCH_LEADER	Church Reverend	-	V044	Церковь: жрец
+unit	STR_CHURCH_MAIDEN	Church Warmaiden	-	V043	Церковь: воительница
+unit	STR_CHURCH_MATRON	Church Matron	-	V043	Церковь: воительница
+unit	STR_CHURCH_NAVIGATOR	Church Zealot	-	V042	Церковь: фанатик
+unit	STR_CHURCH_PRIEST	Church Priest	-	V044	Церковь: жрец
+unit	STR_CHURCH_SOLDIER	Church Neophyte	-	V042	Церковь: фанатик
+unit	STR_CIVILIAN_CATGIRL_TOURIST_BUSY	Busy Catgirl Tourist	-	V014	Нэкомими: обычная
+unit	STR_CIVILIAN_CATGIRL_TOURIST_FRIENDLY	Friendly Catgirl Tourist	-	V014	Нэкомими: обычная
+unit	STR_CIVILIAN_KNIGHT_ERRANT	Knight Errant	-	V007	Человек: герой
+unit	STR_CLICKOR_SOLDIER	Clickor	-	V082	Clickor
+unit	STR_CYCLOPS_CONVERT	Converted Cyclops	-	V087	Циклоп / громила
+unit	STR_CYCLOPS_SOLDIER	Cyclops Guard	-	V087	Циклоп / громила
+unit	STR_DEEP_ONE_BERSERKER	Deep One Berserker	-	V088	Житель глубин: Deep One
+unit	STR_DEEP_ONE_NOMAD	Deep One Nomad	-	V088	Житель глубин: Deep One
+unit	STR_DEEP_ONE_SOLDIER	Deep One Warrior	-	V088	Житель глубин: Deep One
+unit	STR_DOCTOR_X_VAMPIRE	X-Vampiress	-	V095	Вампирша
+unit	STR_DOOM_GUNNER	Possessed Gunner	-	V069	Одержимый солдат
+unit	STR_DOOM_HELL_BARON_TERRORIST	Baron of Hell	-	V101	Барон ада
+unit	STR_DOOM_IMP_TERRORIST	Imp	-	V100	Бес / Imp
+unit	STR_DOOM_SARGE	Possessed Sarge	-	V069	Одержимый солдат
+unit	STR_DOOM_SOLDIER	Possessed Soldier	-	V069	Одержимый солдат
+unit	STR_DREADKNIGHT	Dreadknight	-	V104	Рыцарь ужаса
+unit	STR_ERIDIAN_BEASTMASTER	Eridian Beastmaster	-	V074	Эридиан: змеечеловек
+unit	STR_ERIDIAN_FENCER	Eridian Fencer	-	V074	Эридиан: змеечеловек
+unit	STR_ERIDIAN_LEADER	Eridian Warchief	-	V074	Эридиан: змеечеловек
+unit	STR_ERIDIAN_SOLDIER	Eridian Warrior	-	V074	Эридиан: змеечеловек
+unit	STR_ETHEREAL_NOVICE	Star God Novice	-	V076	Звёздный бог / этериал
+unit	STR_ETHEREAL_SOLDIER	Star God Guardian	-	V085	Мутон-страж
+unit	STR_ETHEREAL_UNDEAD	Fallen One	-	V107	Падший
+unit	STR_GHOST_GAL	Ghost Gal	-	V023	Shade: тень
+unit	STR_GNOME_ARMORED	Armored Gnome	-	V013	Гномка
+unit	STR_GOLDEN_SAINT_1	Golden Saint	-	V106	Золотая святая
+unit	STR_GOLDEN_SAINT_2	Golden Saint	-	V106	Золотая святая
+unit	STR_GOVT_AGENT	Govt Agent	-	V062	Правительство: офицер
+unit	STR_GOVT_DETECTIVE_CIV	Govt Detective	-	V062	Правительство: офицер
+unit	STR_GOVT_ELITE	Govt Elite Soldier	-	V061	Правительство: солдат
+unit	STR_GOVT_ELITE_CIV	Govt Elite Soldier	-	V061	Правительство: солдат
+unit	STR_GOVT_ENFORCER	Govt Enforcer	-	V061	Правительство: солдат
+unit	STR_GOVT_ENFORCER_CIV	Govt Enforcer	-	V061	Правительство: солдат
+unit	STR_GOVT_GENERAL	Govt General	-	V062	Правительство: офицер
+unit	STR_GOVT_GENERAL_CIV	Govt General	-	V062	Правительство: офицер
+unit	STR_GOVT_MP	Military Police	-	V061	Правительство: солдат
+unit	STR_GOVT_MP_CIV	Military Police	-	V061	Правительство: солдат
+unit	STR_GOVT_PILOT	Govt Pilot	-	V061	Правительство: солдат
+unit	STR_GOVT_ROGUE_COLONEL	Govt Rogue Colonel	-	V062	Правительство: офицер
+unit	STR_GOVT_ROGUE_OFFICER	Govt Rogue Officer	-	V062	Правительство: офицер
+unit	STR_GOVT_SIREN	Govt Siren	-	V063	Правительство: сирена
+unit	STR_GUILD_ATTENDANT	Guild Hostess	-	V046	Гильдия: стюардесса
+unit	STR_GUILD_COMMANDER	Guildmaster	-	V047	Гильдия: офицер
+unit	STR_GUILD_EXTERMINATOR	Pest Control Manager	-	V045	Гильдия: охранник
+unit	STR_GUILD_GUARD	Guild Security	-	V045	Гильдия: охранник
+unit	STR_GUILD_LEADER	Guild Rep	-	V047	Гильдия: офицер
+unit	STR_GUILD_NAVIGATOR	Guild Navigator	-	V047	Гильдия: офицер
+unit	STR_GUILD_SHIP_OFFICER	Guild Ship Officer	-	V047	Гильдия: офицер
+unit	STR_GUILD_SPACEMAN	Guild Spaceman	-	V047	Гильдия: офицер
+unit	STR_GUILD_TEAM_LEADER	Guild Team Leader	-	V045	Гильдия: охранник
+unit	STR_HALF_UBER_GIRL	Half-Uber Girl	-	V008	Человек: крестьянка
+unit	STR_HITLUR	Deathly Charming Spectre	-	V023	Shade: тень
+unit	STR_HOLOGAL	Hologal	-	V032	Hologal
+unit	STR_HUMAN_NOBLEWOMAN	Noblewoman	-	V009	Человек: барышня
+unit	STR_JUNGLE_GAL	Canny Gal	-	V067	Людоедка Canny
+unit	STR_KILLBOT_HERO	Destroid	-	V025	Киллбот / Destroid
+unit	STR_KOBOLD_HUNTRESS	Kobold Huntress	-	V081	Кобольд-охотница
+unit	STR_LAMIA_MAN	Lamia Man	-	V020	Ламия: мужчина
+unit	STR_LOBSTERMAN_TERRORIST	Lobsterman	-	V093	Лобстермен
+unit	STR_LOKNAR_VILLAGER	Lokk'Naar Villager	-	V012	Lokk’Naar: гоблинка
+unit	STR_MAGICAL_GIRL	Magical Girl	-	V109	Волшебница
+unit	STR_MARSEC_HUNTER_DRONE_TERRORIST	Marsec Hunter Drone	-	V029	Дроны, камеры и турели
+unit	STR_MARSEC_SECURITY	Marsec Operative	-	V048	Marsec: корпоративный солдат
+unit	STR_MEGAPOL_APEMAN	Megapol Apeman	-	V049	Megapol: полицейский
+unit	STR_MEGAPOL_DETECTIVE	Megapol Detective	-	V049	Megapol: полицейский
+unit	STR_MEGAPOL_ENFORCER	Megapol Enforcer	-	V049	Megapol: полицейский
+unit	STR_MEGAPOL_WOLFMAN	Megapol Wolfman	-	V049	Megapol: полицейский
+unit	STR_MUTON_COMMANDER	MERC Commander	-	V038	MERC: командир
+unit	STR_MUTON_ENGINEER	MERC Engineer	-	V035	MERC: инженер
+unit	STR_MUTON_HEAVY	MERC Shock Trooper	-	V036	MERC: штурмовик
+unit	STR_MUTON_LEADER	MERC Captain	-	V037	MERC: капитан
+unit	STR_MUTON_NAVIGATOR	MERC Commando	-	V034	MERC: коммандос
+unit	STR_MUTON_SOLDIER	MERC Soldier	-	V033	MERC: рядовой
+unit	STR_MUTON_TRUMAN	Muton Guardian	-	V085	Мутон-страж
+unit	STR_MUTON_TRUWOMAN	Muton Gal	-	V086	Мутон: воительница
+unit	STR_MUTON_ULTRA	Muton Primaris	-	V085	Мутон-страж
+unit	STR_NARLOCK_LEADER	Narlock Noble	-	V078	Нарлок: знать
+unit	STR_NARLOCK_SOLDIER	Narlock Soldier	-	V077	Нарлок: солдат
+unit	STR_NAZI_BLACK_KNIGHT	Black Knight	-	V065	Гуманист
+unit	STR_NAZI_SOLDIER	Humanist Soldier	-	V065	Гуманист
+unit	STR_NECROPIRATE	Necropirate	-	V068	Некропират
+unit	STR_NEKOMIMI_RENEGADE	Nekomimi Renegade	-	V015	Нэкомими: преступница
+unit	STR_NINJA_ASSASSIN	Assassin	-	V051	Ниндзя: воин
+unit	STR_NINJA_ASSAULT	Assault Ninja	-	V051	Ниндзя: воин
+unit	STR_NINJA_GAL	Ninja Gal	-	V052	Ниндзя: воительница
+unit	STR_NINJA_MEDIC	Ninja Medic	-	V052	Ниндзя: воительница
+unit	STR_NINJA_WARRIOR	Ninja Warrior	-	V051	Ниндзя: воин
+unit	STR_NUBIRAN_GUARDIAN	Nubiran Guardian	-	V075	Нубириец
+unit	STR_OGRE_KONVIKT	Ogre Convict	-	V018	Огр
+unit	STR_OGRE_WORKER	Ogre Worker	-	V018	Огр
+unit	STR_OSIRON_LAD	Osiron Yeoman	-	V050	Osiron: служба безопасности
+unit	STR_PARROT_PIR	Parrot	-	V111	Пиратский попугай
+unit	STR_RAIDER_BOSS	Raider Boss	-	V055	Рейдерша
+unit	STR_RAIDER_BUZZARD	Raider Buzzard	-	V055	Рейдерша
+unit	STR_RAIDER_FIREBAT	Raider Firebat	-	V057	Рейдерша-огнемётчица
+unit	STR_RAIDER_FLAME_GUARD	Raider Flame Guard	-	V057	Рейдерша-огнемётчица
+unit	STR_RAIDER_HUMONGOUS	Humongous Raider	-	V055	Рейдерша
+unit	STR_RAIDER_MISTRESS	Raider Mistress	-	V055	Рейдерша
+unit	STR_RAIDER_MUDDER	Raider Mudder	-	V056	Рейдерша Ила
+unit	STR_RAIDER_SCOUT	Raider Scout	-	V055	Рейдерша
+unit	STR_RAIDER_SLUDGEBRINGER	Raider Sludgebringer	-	V056	Рейдерша Ила
+unit	STR_RAIDER_SLUDGER	Raider Sludger	-	V056	Рейдерша Ила
+unit	STR_RAIDER_THUG	Raider Thug	-	V055	Рейдерша
+unit	STR_RAYNERD_VICTIM	Raynerd	-	V059	Повстанец
+unit	STR_REAPER_CAVALRY_TERRORIST	Reaper Cavalry	-	V079	Крысочеловек
+unit	STR_REBEL_BRUTE	Rebel Brute	-	V087	Циклоп / громила
+unit	STR_REBEL_BRUTE_CIV	Rebel Brute	-	V087	Циклоп / громила
+unit	STR_REBEL_BUGEYE	Rebel Bugeye	-	V011	Bugeye: женский
+unit	STR_REBEL_BUGEYE_CIV	Rebel Bugeye	-	V011	Bugeye: женский
+unit	STR_REBEL_BUGEYE_TRAITOR	Traitor Bugeye	-	V011	Bugeye: женский
+unit	STR_REBEL_FEMALE	Rebel Smoothie	-	V060	Повстанка
+unit	STR_REBEL_FEMALE_CIV	Rebel Smoothie	-	V060	Повстанка
+unit	STR_REBEL_FEMALE_TRAITOR	Traitor Smoothie	-	V060	Повстанка
+unit	STR_REBEL_LAMIA	Rebel Lamia	-	V019	Ламия: воительница
+unit	STR_REBEL_LAMIA_CIV	Rebel Lamia	-	V019	Ламия: воительница
+unit	STR_REBEL_LAMIA_CIV_2	Lamia Guard	-	V019	Ламия: воительница
+unit	STR_REBEL_MALE	Rebel Soldier	-	V059	Повстанец
+unit	STR_REBEL_MALE_CIV	Rebel Soldier	-	V059	Повстанец
+unit	STR_RED_MAGE_ASC_30	Red Mage Ascendant	-	V109	Волшебница
+unit	STR_RED_MAGE_RITUAL	Red Mage	-	V109	Волшебница
+unit	STR_RETICULAN_CHOSEN	Reticulan Chosen	-	V071	Ретикулянин
+unit	STR_RET_COMMANDO	Reticulan Technician	-	V071	Ретикулянин
+unit	STR_RET_ELDER	Reticulan Elder	-	V071	Ретикулянин
+unit	STR_RET_HYBRID	Reticulan Hybrid	-	V010	Bugeye: мужской
+unit	STR_RET_PEON	Reticulan Peon	-	V071	Ретикулянин
+unit	STR_RET_SECTOGRE	Sectogre	-	V073	Сектогр
+unit	STR_RET_SIREN	Siren	-	V072	Ретикулянская сирена
+unit	STR_RET_SIREN_BANDIT	Wild Siren	-	V072	Ретикулянская сирена
+unit	STR_ROBOT_MAID	Robo-Maid	-	V028	Робо-служанка
+unit	STR_ROBO_PARROT_PIR	Robo-Parrot	-	V111	Пиратский попугай
+unit	STR_ROGUE_SECTOID	Rogue Sectoid	-	V071	Ретикулянин
+unit	STR_ROYAL_GUARD	Royal Guard	-	V061	Правительство: солдат
+unit	STR_SECTOID_COMMANDER	Academy Provost	-	V039	Академия: исследователь
+unit	STR_SECTOID_ENGINEER	Academy Engineer	-	V039	Академия: исследователь
+unit	STR_SECTOID_LEADER	Academy Esper	-	V041	Академия: эспер
+unit	STR_SECTOID_MEDIC	Academy Medic	-	V040	Академия: медик
+unit	STR_SECTOID_NAVIGATOR	Osiron Security	-	V050	Osiron: служба безопасности
+unit	STR_SECTOID_SOLDIER	Researcher	-	V039	Академия: исследователь
+unit	STR_SECTOPOD_TERRORIST	Sectopod	-	V029	Дроны, камеры и турели
+unit	STR_SECURITY_CAMERA	Security Camera	-	V029	Дроны, камеры и турели
+unit	STR_SHARKMAN_TERRORIST	Sharkman	-	V092	Акулочеловек
+unit	STR_SHD_ETHEREAL	Ethereal Tulpa	-	V110	Тульпа / чужое сознание
+unit	STR_SHD_MUTON	Muton Tulpa	-	V110	Тульпа / чужое сознание
+unit	STR_SHD_SECTOID	Sectoid Tulpa	-	V110	Тульпа / чужое сознание
+unit	STR_SKELETON_CIV	Dead Resident	-	V098	Зомби и пробуждённые мертвецы
+unit	STR_SKELETON_SWAT	Dead Cop	-	V098	Зомби и пробуждённые мертвецы
+unit	STR_SKELETON_TERRORIST	Awakened Dead	-	V098	Зомби и пробуждённые мертвецы
+unit	STR_SLAVE_GLADIATRIX	SLAVE GLADIATRIX	-	V070	Рабыня-гладиаторша
+unit	STR_SLAVE_MAID	SLAVE MAID	-	V070	Рабыня-гладиаторша
+unit	STR_SLAVE_SKILLED	SLAVE SPECIALIST	-	V070	Рабыня-гладиаторша
+unit	STR_SMUGGLER_CAPTAIN	Smuggler Captain	-	V058	Контрабандист: капитан
+unit	STR_SMUGGLER_CATGIRL	Smuggler Catgirl	-	V015	Нэкомими: преступница
+unit	STR_SMUGGLER_ENGINEER	Bugbear	-	V058	Контрабандист: капитан
+unit	STR_SMUGGLER_NEGOTIATOR	Smuggler Negotiator	-	V058	Контрабандист: капитан
+unit	STR_SPARTAN_CAPTAIN	Spartan Lieutenant	-	V064	Спартанец
+unit	STR_SPARTAN_HEAVY	Spartan Heavy Trooper	-	V064	Спартанец
+unit	STR_SPARTAN_RIFLEMAN	Spartan Rifleman	-	V064	Спартанец
+unit	STR_SPARTAN_SCOUT	Spartan Scout	-	V064	Спартанец
+unit	STR_SPECTRAL_EYE	Spectral Eye	-	V110	Тульпа / чужое сознание
+unit	STR_SPIDERGIRL_MISTRESS	Quirian Mistress	-	V083	Quirian Mistress
+unit	STR_STYGIAN_GUARD	Stygian Guardian	-	V105	Стигийский слуга
+unit	STR_STYGIAN_SERF_FEMALE	Stygian Serf	-	V105	Стигийский слуга
+unit	STR_STYGIAN_SERF_MALE	Stygian Serf	-	V105	Стигийский слуга
+unit	STR_SUCCUBUS_TERRORIST	Succubus	-	V099	Суккуб
+unit	STR_SURVIVOR	Former Commando	-	V006	Человек: раб-солдат
+unit	STR_TASOTH_SOLDIER_LAND	Tasoth	-	V089	Тасот
+unit	STR_TASOTH_SOLDIER_SEA	Tasoth	-	V089	Тасот
+unit	STR_TECHNOCRACY_CYBORG	Technocracy Cyborg	-	V030	Киборг Технократии
+unit	STR_TECHNOCRACY_MEK_LEADER	Technomancer	-	V030	Киборг Технократии
+unit	STR_TECHNOCRACY_TERMINATOR_TERRORIST	Killer Droid Mk.801	-	V027	Дроид Mk.801
+unit	STR_UAC_SECURITY_DRONE	UAC Security Drone	-	V029	Дроны, камеры и турели
+unit	STR_VAMPIRE_DUDE	Vampire Dude	-	V094	Вампир
+unit	STR_VAMPIRE_GAL	Vampire Gal	-	V095	Вампирша
+unit	STR_VAMPIRE_KNIGHT	Vampire Lord	-	V096	Вампирский лорд
+unit	STR_WEREDOGE	Tamed Werewolf	-	V080	Оборотень
+unit	STR_WEREWOLF_WARRIOR	Werewolf Savage	-	V080	Оборотень
+unit	STR_WRAITH_ELITE	Wraith Elite Guard	-	V103	Wraith: призрачный страж
+unit	STR_WRAITH_ELITE_FEM	Wraith Tormentress	-	V103	Wraith: призрачный страж
+unit	STR_WRAITH_GUARD	Wraith Guard	-	V103	Wraith: призрачный страж
+unit	STR_WRAITH_GUARD_FEM	Wraith Guard	-	V103	Wraith: призрачный страж
+unit	STR_WRAITH_SOLDIER	Wraith	-	V103	Wraith: призрачный страж
+unit	STR_WRAITH_SOLDIER_FEM	Wraith	-	V103	Wraith: призрачный страж
+unit	STR_ZOMBIE_SENTINEL	Zombie Sentinel	-	V098	Зомби и пробуждённые мертвецы
+unit	STR_ZOMBIE_STERILE_TERRORIST	Zombie	-	V098	Зомби и пробуждённые мертвецы
+unit	STR_ZOMBIE_TROOPER_1	Zombie Trooper	-	V098	Зомби и пробуждённые мертвецы
+unit	STR_ZOMBIE_TROOPER_2	Zombie Trooper	-	V098	Зомби и пробуждённые мертвецы

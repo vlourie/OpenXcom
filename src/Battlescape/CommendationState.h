@@ -18,6 +18,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include <memory>
+#include <vector>
 
 namespace OpenXcom
 {
@@ -27,6 +29,7 @@ class Window;
 class Text;
 class TextList;
 class Soldier;
+struct SoldierStatChange;
 
 /**
  * Medals screen that displays new soldier medals.
@@ -39,9 +42,11 @@ private:
 	Text *_txtTitle;
 	TextList *_lstSoldiers;
 	std::vector<std::string> _commendationsNames;
+	std::vector<Soldier*> _rowSoldiers; ///< soldier of each list row (nullptr for medal titles)
+	std::shared_ptr<std::vector<SoldierStatChange>> _statChanges; ///< optional, from the debriefing
 public:
 	/// Creates the Medals state.
-	CommendationState(std::vector<Soldier*> soldiers);
+	CommendationState(std::vector<Soldier*> soldiers, std::shared_ptr<std::vector<SoldierStatChange>> statChanges = nullptr);
 	/// Cleans up the Medals state.
 	~CommendationState();
 	/// Handler for clicking on a medal.

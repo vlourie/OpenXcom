@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2032002	STR_BATTLESHIP	over	STR_BATTLESHIP	STR_UFO_CRASH_RECOVERY	62	8	JUNGLE	STR_ETHEREAL	STR_DRAKKAR#2	3	5	8	7	1	8	801	37	2	0	35	0	35	0	15	85	h.rec.in:368,h.rec.out.a12:2,p.rec.in:65,p.rec.out.a8:1	66	0	0	0	0	1	370	0	0	6	5	0	21		loss
