@@ -801,6 +801,54 @@ void removeSet(const SurfaceSet *surfaceSet)
 	++registryGeneration;
 }
 
+struct Parked
+{
+	std::unordered_map<const void*, Entry> registry;
+	std::unordered_map<const void*, std::vector<Entry>> variants;
+	std::unordered_map<const void*, WallSlots> walls[2];
+	std::unordered_map<const void*, std::array<ViewFile, 15>> views;
+	size_t loadedTotal = 0;
+};
+
+namespace
+{
+	/// The registry and a parked one change places: only pointers move, no frame is copied.
+	void swapWith(Parked &p)
+	{
+		beforeChange();
+		registry.swap(p.registry);
+		variants.swap(p.variants);
+		walls[0].swap(p.walls[0]);
+		walls[1].swap(p.walls[1]);
+		views.swap(p.views);
+		std::swap(loadedTotal, p.loadedTotal);
+		++wallsGeneration;
+		noteAll();
+		++registryGeneration;
+	}
+}
+
+Parked *park()
+{
+	Parked *parked = new Parked;
+	swapWith(*parked);
+	return parked;
+}
+
+void unpark(Parked *parked)
+{
+	if (parked)
+	{
+		swapWith(*parked);
+		delete parked;
+	}
+}
+
+void drop(Parked *parked)
+{
+	delete parked;
+}
+
 void clear()
 {
 	beforeChange();

@@ -203,6 +203,8 @@ private:
 	std::map<const Surface*, Surface*> _hdSurfaces;
 	/// HD render: the animation phases of a single picture (hd/UI/anim/<name>/<i>.png), keyed by the classic picture.
 	std::map<const Surface*, std::vector<Surface*> > _hdSurfaceFrames;
+	/// HD render: frees the scaled copies of the current scale.
+	void freeHdScaled();
 	std::map<std::string, SoundSet*> _sounds;
 	std::map<std::string, Music*> _musics;
 	/// The player's own music (XP-000373): a track file of <user folder>/music. The key (GMGEO_USER_<hash> / GMTACTIC_USER_<hash>)
@@ -569,6 +571,15 @@ public:
 	void refreshHdScale();
 	/// HD render: would refreshHdScale() change the scale now?
 	bool hdScaleStale();
+	/// HD render: everything made for one HD scale, held by a load while two battles of two scales exist.
+	struct HdScalePark;
+	/// HD render: takes aside all that depends on the HD scale; the mod is then at no scale and loads the next
+	/// one beside it. Throws when out of memory, with nothing changed.
+	HdScalePark *parkHdScale();
+	/// HD render: frees what was loaded since parkHdScale() and puts the parked scale back. Does not fail.
+	void unparkHdScale(HdScalePark *park);
+	/// HD render: frees a parked scale (when nothing made at it is left).
+	void dropHdScale(HdScalePark *park);
 	/// HD render: the scale the options and the mod ask for.
 	int wantedHdScale();
 	/// HD render: gets a surface set scaled k times for the battlescape (the set itself when k = 1).

@@ -62,6 +62,11 @@ private:
 	int _worldScale;
 	Surface::UniqueBufferPtr _worldBuffer;
 	Surface::UniqueSurfacePtr _world;
+	/// The world layer of the game a load starts from (parkWorld).
+	Surface::UniqueBufferPtr _parkedWorldBuffer;
+	Surface::UniqueSurfacePtr _parkedWorld;
+	int _parkedWorldScale = 0;
+	bool _parkedWorldFixed = false, _worldParked = false;
 	/// (Re)allocates the world layer to match the base resolution and scale.
 	void allocateWorld();
 	/// The classic layer over the world layer with xBRZ (see composeInto).
@@ -138,6 +143,11 @@ public:
 	static Screen *current() { return _current; }
 	/// Sets the world layer scale factor k (reallocates the world layer).
 	void setWorldScale(int scale);
+	/// A load begins: the world layer and its scale are kept aside, the screens of the loaded game get their own.
+	void parkWorld();
+	/// The load ended. `back`: the kept layer and scale return (call resetDisplay() next; a layer of the
+	/// right size is taken as it is, nothing is allocated); otherwise the kept layer is freed.
+	void unparkWorld(bool back);
 	/// Checks whether a 32bit scaler is requested and works for the selected resolution
 	static bool use32bitScaler();
 	/// Checks whether OpenGL output is requested

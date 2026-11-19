@@ -2614,6 +2614,7 @@ void HdHudPanel::addPart(Part part, const Surface *widget, Uint8 color)
 	if (part == PART_BAR || part == PART_COUNT)
 	{
 		(part == PART_BAR ? grooves : counters).push_back(widget);
+		_listed.push_back(widget);
 		return;
 	}
 	_parts.push_back(Item{ part, widget, color });
@@ -2622,8 +2623,12 @@ void HdHudPanel::addPart(Part part, const Surface *widget, Uint8 color)
 HdHudPanel::~HdHudPanel()
 {
 	// the bars and the keys go with the screen; one made later at the same address is not this one
-	grooves.clear();
-	counters.clear();
+	// (only its own: while a save loads, the panel of the loaded battle is made before this one goes)
+	for (const Surface *widget : _listed)
+	{
+		grooves.erase(std::remove(grooves.begin(), grooves.end(), widget), grooves.end());
+		counters.erase(std::remove(counters.begin(), counters.end(), widget), counters.end());
+	}
 	anims.clear();
 }
 

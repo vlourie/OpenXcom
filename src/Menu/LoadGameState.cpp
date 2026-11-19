@@ -148,10 +148,9 @@ void LoadGameState::init()
  * Builds the screens of a loaded game, which must be the current one: the display takes their size on the way.
  * @param save The loaded game.
  * @param screens The screens are added here, bottom first; on a failure those already built stay in it.
- * @param keepHdScale The battle's terrain loads at the HD scale of the battle before.
  * @return The battle screen, if the game is in a battle.
  */
-BattlescapeState *LoadGameState::buildScreens(SavedGame *save, std::list<State*> &screens, bool keepHdScale)
+BattlescapeState *LoadGameState::buildScreens(SavedGame *save, std::list<State*> &screens)
 {
 	if (save->getEnding() != END_NONE)
 	{
@@ -168,7 +167,7 @@ BattlescapeState *LoadGameState::buildScreens(SavedGame *save, std::list<State*>
 	BattlescapeState *bs = 0;
 	if (save->getSavedBattle() != 0)
 	{
-		save->getSavedBattle()->loadMapResources(_game->getMod(), keepHdScale);
+		save->getSavedBattle()->loadMapResources(_game->getMod());
 		Options::baseXResolution = Options::baseXBattlescape;
 		Options::baseYResolution = Options::baseYBattlescape;
 		_game->getScreen()->resetDisplay(false);
@@ -186,6 +185,11 @@ BattlescapeState *LoadGameState::buildScreens(SavedGame *save, std::list<State*>
  * screens are built with the loaded game put in the place of the running one, which is kept whole aside
  * (Game::parkSavedGame): its screens stay in the stack, its Lua, its terrain and its palettes are kept or put back.
  * Only when the screens stand does the game before go (Game::commitSavedGame), and nothing after that fails.
+ *
+ * A battle loads at the HD scale of the options. When that is not the scale the game before stands at, all that
+ * was made for that scale (Mod::parkHdScale) is handed to this load: nothing is copied, the loaded battle gets its
+ * own beside it, and the two sets exist together only until the load ends - the parked one is freed when the
+ * screens and the game before are gone, or comes back untouched, with nothing read or allocated, when the load fails.
  */
 void LoadGameState::think()
 {
@@ -226,14 +230,12 @@ void LoadGameState::think()
 	const bool debugPlay = BattlescapeGame::_debugPlay;
 	const std::string music = mod->getPlayingMusic();
 	std::list<State*> screens;
+	Mod::HdScalePark *scalePark = 0;
 	bool failed = false, palettes = false;
 	std::string failure;
 	try
 	{
 		s->load(_filename, mod, _game->getLanguage());
-		// Two battles cannot stand on terrain of two HD scales. The player changed the scale during the battle
-		// the save is loaded from: that battle goes first, as every game did before a load was made safe
-		const bool scaleChanges = origBattleState != 0 && s->getSavedBattle() != 0 && mod->hdScaleStale();
 		_game->parkSavedGame(s);
 		CollapsePilot::park();
 		if (origBattleState != 0 && s->getEnding() == END_NONE)
@@ -241,36 +243,22 @@ void LoadGameState::think()
 			// We need to reset palettes here already, can't wait for the destructor
 			palettes = origBattleState->resetPalettes();
 		}
-		if (scaleChanges)
+		if (s->getSavedBattle() != 0 && s->getEnding() == END_NONE && mod->hdScaleStale())
 		{
-			// A trial first, on the terrain of the scale the battle before stands on: whatever a bad save breaks
-			// in the map resources and the screens shows here, with the game before still whole
-			buildScreens(s, screens, true);
-			while (!screens.empty())
-			{
-				delete screens.back();
-				screens.pop_back();
-			}
-			s->getSavedBattle()->setBattleState(0);
-			s->getSavedBattle()->releaseMapData(before->getSavedBattle());
-			// only now the game before goes, and the screens are built again at the new scale
-			std::list<State*> none;
-			_game->commitSavedGame(none);
-			CollapsePilot::unpark(false);
+			// The loaded battle takes another HD scale than the game before stands at
+			scalePark = mod->parkHdScale();
 		}
-		BattlescapeState *bs = buildScreens(s, screens, false);
+		_game->getScreen()->parkWorld();
+		BattlescapeState *bs = buildScreens(s, screens);
 		// the destructor of the battle screen before, on its way out, turns the HD frame skip off
 		const int frameSkipNow = Timer::hdFrameSkip;
-		if (_game->hasParkedGame())
-		{
-			// The loaded game stands. The game before goes here; nothing from here on is undone, and nothing fails
-			_game->commitSavedGame(screens);
-			CollapsePilot::unpark(false);
-		}
-		else
-		{
-			_game->replaceStates(screens);
-		}
+		// The loaded game stands. The game before goes here; nothing from here on is undone, and nothing fails
+		_game->commitSavedGame(screens);
+		CollapsePilot::unpark(false);
+		// nothing made at the scale before is left to point at what was parked
+		mod->dropHdScale(scalePark);
+		scalePark = 0;
+		_game->getScreen()->unparkWorld(false);
 		Timer::hdFrameSkip = frameSkipNow;
 		if (bs != 0)
 		{
@@ -315,9 +303,12 @@ void LoadGameState::think()
 			// Rejected with the game before still whole: it comes back as it was
 			if (s->getSavedBattle() != 0)
 			{
-				s->getSavedBattle()->releaseMapData(before != 0 ? before->getSavedBattle() : 0);
+				// (with the scale before parked the two battles share no terrain: all of this one's goes)
+				s->getSavedBattle()->releaseMapData(scalePark == 0 && before != 0 ? before->getSavedBattle() : 0);
 				BattlescapeState::restorePalettes(mod);
 			}
+			mod->unparkHdScale(scalePark);
+			scalePark = 0;
 			_game->unparkSavedGame();
 			CollapsePilot::unpark(true);
 			BattlescapeGame::_debugPlay = debugPlay;
@@ -329,6 +320,7 @@ void LoadGameState::think()
 			}
 			Options::baseXResolution = baseX;
 			Options::baseYResolution = baseY;
+			_game->getScreen()->unparkWorld(true);
 			try
 			{
 				_game->getScreen()->resetDisplay(false);

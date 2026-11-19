@@ -570,14 +570,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
  * Loads the resources required by the map in the battle save.
  * @param mod Pointer to the mod.
  */
-void SavedBattleGame::loadMapResources(Mod *mod, bool keepHdScale)
+void SavedBattleGame::loadMapResources(Mod *mod)
 {
 	// HD render: a loaded battle picks up the HD scale option before its terrain loads
-	// (not while the battle it is loaded from still stands on the terrain of the scale before, see LoadGameState)
-	if (!keepHdScale)
-	{
-		mod->refreshHdScale();
-	}
+	// (what a battle before it holds at another scale is parked by then, see LoadGameState)
+	mod->refreshHdScale();
 	_mapDataPending = false;
 	for (auto* mds : _mapDataSets)
 	{

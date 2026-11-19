@@ -58,7 +58,7 @@ public:
 	/// Loads the game.
 	void think() override;
 	/// Builds the screens of a loaded game.
-	BattlescapeState *buildScreens(SavedGame *save, std::list<State*> &screens, bool keepHdScale);
+	BattlescapeState *buildScreens(SavedGame *save, std::list<State*> &screens);
 	/// Shows an error message.
 	void error(const std::string &msg, SavedGame *save);
 };

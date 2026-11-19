@@ -129,6 +129,7 @@ private:
 		Uint8 color;
 	};
 	std::vector<Item> _parts;
+	std::vector<const Surface*> _listed; ///< its widgets in the lists of bars and counters
 };
 
 /**

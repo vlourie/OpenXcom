@@ -445,7 +445,7 @@ public:
 	/// Gets bug hunt mode.
 	bool getBughuntMode() const;
 	/// Load map resources.
-	void loadMapResources(Mod *mod, bool keepHdScale = false);
+	void loadMapResources(Mod *mod);
 	/// Gives up the map data sets before this battle is deleted, unloading those the other battle does not use.
 	void releaseMapData(const SavedBattleGame *keeper);
 	/// Resets tiles units are standing on

@@ -490,6 +490,39 @@ void Screen::setWorldScale(int scale)
 	}
 }
 
+void Screen::parkWorld()
+{
+	if (_worldParked)
+	{
+		return;
+	}
+	HdGpuWorld::instance().forget();
+	_parkedWorldBuffer = std::move(_worldBuffer);
+	_parkedWorld = std::move(_world);
+	_parkedWorldScale = _worldScale;
+	_parkedWorldFixed = _worldScaleFixed;
+	_worldParked = true;
+}
+
+void Screen::unparkWorld(bool back)
+{
+	if (!_worldParked)
+	{
+		return;
+	}
+	_worldParked = false;
+	if (back)
+	{
+		HdGpuWorld::instance().forget();
+		_world = std::move(_parkedWorld);
+		_worldBuffer = std::move(_parkedWorldBuffer);
+		_worldScale = _parkedWorldScale;
+		_worldScaleFixed = _parkedWorldFixed;
+	}
+	_parkedWorld.reset();
+	_parkedWorldBuffer.reset();
+}
+
 /**
  * Composes the classic 8-bit layer over a true-color surface of world size:
  * every non-zero index is looked up in the layer's palette and written as an

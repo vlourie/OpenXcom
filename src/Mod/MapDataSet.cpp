@@ -294,6 +294,41 @@ void MapDataSet::unloadData()
 	}
 }
 
+void MapDataSet::park(Parked &to)
+{
+	to.set = this;
+	to.objects.swap(_objects);
+	to.surfaces = _surfaceSet;
+	_surfaceSet = 0;
+	_loaded = false;
+}
+
+void MapDataSet::unpark(Parked &from)
+{
+	unloadData();
+	_objects.swap(from.objects);
+	_surfaceSet = from.surfaces;
+	from.surfaces = 0;
+	_loaded = true;
+}
+
+void MapDataSet::drop(Parked &parked)
+{
+	for (auto* mapdata : parked.objects)
+	{
+		delete mapdata;
+	}
+	parked.objects.clear();
+	delete parked.surfaces;
+	parked.surfaces = 0;
+}
+
+void MapDataSet::setBlankTiles(MapData *blank, MapData *scorched)
+{
+	_blankTile = blank;
+	_scorchedTile = scorched;
+}
+
 /**
  * Loads the LOFTEMPS.DAT into the ruleset voxeldata.
  * @param filename Filename of the DAT file.

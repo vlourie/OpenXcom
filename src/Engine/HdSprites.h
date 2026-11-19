@@ -194,6 +194,15 @@ namespace HdSprites
 	void removeSet(const SurfaceSet *set);
 	/// Forgets everything.
 	void clear();
+	/// The whole registry taken aside and an empty one put in its place: a load that changes the HD scale
+	/// keeps the frames of the scale before until it knows which of the two battles stays.
+	struct Parked;
+	/// Takes the registry aside. Throws when out of memory, with nothing changed.
+	Parked *park();
+	/// Forgets everything registered since park() and puts the registry back as it was. Does not fail.
+	void unpark(Parked *parked);
+	/// Frees a registry taken aside.
+	void drop(Parked *parked);
 	/// Number of registered frames.
 	size_t count();
 	/// Number of frames read into memory now.

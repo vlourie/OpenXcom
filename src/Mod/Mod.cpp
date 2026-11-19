@@ -1027,31 +1027,146 @@ void Mod::refreshHdScale()
 	{
 		Log(LOG_INFO) << "HD render: battlescape sprite scale changes from " << _hdScale << "x to " << k << "x";
 		HdSprites::clear();
-		for (auto& pair : _hdSets)
-		{
-			delete pair.second;
-		}
-		_hdSets.clear();
-		_hdPacksLoaded.clear();
-		for (auto& pair : _hdSurfaces)
-		{
-			delete pair.second;
-		}
-		_hdSurfaces.clear();
-		for (auto& pair : _hdSurfaceFrames)
-		{
-			for (Surface *frame : pair.second)
-			{
-				delete frame;
-			}
-		}
-		_hdSurfaceFrames.clear();
+		freeHdScaled();
 	}
 	else if (k > 1)
 	{
 		Log(LOG_INFO) << "HD render: battlescape sprite scale is " << k << "x";
 	}
 	_hdScale = k;
+}
+
+void Mod::freeHdScaled()
+{
+	for (auto& pair : _hdSets)
+	{
+		delete pair.second;
+	}
+	_hdSets.clear();
+	_hdPacksLoaded.clear();
+	for (auto& pair : _hdSurfaces)
+	{
+		delete pair.second;
+	}
+	_hdSurfaces.clear();
+	for (auto& pair : _hdSurfaceFrames)
+	{
+		for (Surface *frame : pair.second)
+		{
+			delete frame;
+		}
+	}
+	_hdSurfaceFrames.clear();
+}
+
+/**
+ * Everything the mod holds for one HD scale: the scale, the scaled copies of the sprite sets and pictures,
+ * the registry of HD frames (they are found by the pixels of those copies), the reticle put into CURSOR.PCK,
+ * and the contents of every loaded terrain (its frames are scaled in place, its tiles are what a battle stands on).
+ */
+struct Mod::HdScalePark
+{
+	int scale = 0;
+	int reticle = -1;
+	std::map<const SurfaceSet*, SurfaceSet*> sets;
+	std::set<const SurfaceSet*> packs;
+	std::map<const Surface*, Surface*> surfaces;
+	std::map<const Surface*, std::vector<Surface*> > frames;
+	HdSprites::Parked *sprites = nullptr;
+	std::vector<MapDataSet::Parked> terrain;
+	MapData *blank = nullptr, *scorched = nullptr;
+};
+
+Mod::HdScalePark *Mod::parkHdScale()
+{
+	// all the memory parking needs is taken first: from the first change on nothing can fail
+	std::unique_ptr<HdScalePark> park(new HdScalePark);
+	size_t loaded = 0;
+	for (auto& pair : _mapDataSets)
+	{
+		if (pair.second->isLoaded())
+		{
+			++loaded;
+		}
+	}
+	park->terrain.resize(loaded);
+	park->sprites = HdSprites::park();
+
+	park->scale = _hdScale;
+	park->reticle = _hdReticleApplied;
+	park->sets.swap(_hdSets);
+	park->packs.swap(_hdPacksLoaded);
+	park->surfaces.swap(_hdSurfaces);
+	park->frames.swap(_hdSurfaceFrames);
+	park->blank = MapDataSet::getBlankFloorTile();
+	park->scorched = MapDataSet::getScorchedEarthTile();
+	size_t n = 0;
+	for (auto& pair : _mapDataSets)
+	{
+		if (pair.second->isLoaded())
+		{
+			pair.second->park(park->terrain[n++]);
+		}
+	}
+	_hdScale = 0;
+	_hdReticleApplied = -1;
+	return park.release();
+}
+
+void Mod::unparkHdScale(HdScalePark *park)
+{
+	if (!park)
+	{
+		return;
+	}
+	// what was loaded at the other scale goes first, then the registry that knows its frames
+	for (auto& pair : _mapDataSets)
+	{
+		pair.second->unloadData();
+	}
+	HdSprites::unpark(park->sprites);
+	freeHdScaled();
+	_hdSets.swap(park->sets);
+	_hdPacksLoaded.swap(park->packs);
+	_hdSurfaces.swap(park->surfaces);
+	_hdSurfaceFrames.swap(park->frames);
+	_hdScale = park->scale;
+	_hdReticleApplied = park->reticle;
+	for (auto& terrain : park->terrain)
+	{
+		terrain.set->unpark(terrain);
+	}
+	MapDataSet::setBlankTiles(park->blank, park->scorched);
+	delete park;
+}
+
+void Mod::dropHdScale(HdScalePark *park)
+{
+	if (!park)
+	{
+		return;
+	}
+	HdSprites::drop(park->sprites);
+	for (auto& pair : park->sets)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : park->surfaces)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : park->frames)
+	{
+		for (Surface *frame : pair.second)
+		{
+			delete frame;
+		}
+	}
+	for (auto& terrain : park->terrain)
+	{
+		MapDataSet::drop(terrain);
+	}
+	delete park;
 }
 
 /**
