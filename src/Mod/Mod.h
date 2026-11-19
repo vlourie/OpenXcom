@@ -423,7 +423,7 @@ private:
 	void loadResourceConfigFile(const FileMap::FileRecord &filerec);
 	void loadConstants(const YAML::YamlNodeReader& reader);
 	/// Loads a ruleset from a YAML file.
-	void loadFile(const FileMap::FileRecord &filerec, ModScript &parsers);
+	void loadFile(const FileMap::FileRecord &filerec, ModScript &parsers, YAML::YamlRootNodeReader *parsed = nullptr);
 
 	template<typename T>
 	struct RuleFactory

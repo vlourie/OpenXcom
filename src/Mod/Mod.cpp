@@ -4463,13 +4463,41 @@ void Mod::loadMod(const std::vector<FileMap::FileRecord> &rulesetFiles, ModScrip
 	std::sort(sortedRulesetFiles.begin(), sortedRulesetFiles.end(),
 		[](const FileMap::FileRecord& a, const FileMap::FileRecord& b)
 		{ return a.fullpath > b.fullpath; });
+	// The text of every file becomes a YAML tree ahead, in the worker threads: a third of the time of the rulesets of
+	// a large mod is this parse, and the trees do not depend on each other. The rules are still taken from the trees
+	// one file at a time, in the same order, on this thread, and a tree is dropped as soon as its file is done. A file
+	// that did not parse here (or lies in an archive) is left to loadFile, which reads it as before - with the same
+	// error, at the same place in the order.
+	std::vector<std::unique_ptr<YAML::YamlRootNodeReader>> parsedAhead(sortedRulesetFiles.size());
+	if (sortedRulesetFiles.size() > 1)
+	{
+		HdWorkers::instance().runCounted((int)sortedRulesetFiles.size(), [&sortedRulesetFiles, &parsedAhead](int i)
+		{
+			const FileMap::FileRecord &rec = sortedRulesetFiles[i];
+			if (rec.zip != NULL)
+			{
+				return;
+			}
+			try
+			{
+				RawData data = CrossPlatform::readFileRaw(rec.fullpath);
+				parsedAhead[i].reset(new YAML::YamlRootNodeReader(data, rec.fullpath));
+			}
+			catch (...)
+			{
+				parsedAhead[i].reset();
+			}
+		});
+	}
+	size_t fileIndexAhead = 0;
 	for (const auto& filerec : sortedRulesetFiles)
 	{
 		Log(LOG_VERBOSE) << "- " << filerec.fullpath;
+		std::unique_ptr<YAML::YamlRootNodeReader> parsedFile = std::move(parsedAhead[fileIndexAhead++]);
 		try
 		{
 			_scriptGlobal->fileLoad(filerec.fullpath);
-			loadFile(filerec, parsers);
+			loadFile(filerec, parsers, parsedFile.get());
 		}
 		catch (Exception &e)
 		{
@@ -4705,9 +4733,15 @@ void Mod::loadConstants(const YAML::YamlNodeReader &reader)
  * @param filename YAML filename.
  * @param parsers Object with all available parsers.
  */
-void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
+void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers, YAML::YamlRootNodeReader *parsed)
 {
-	YAML::YamlRootNodeReader r = filerec.getYAML();
+	std::unique_ptr<YAML::YamlRootNodeReader> parsedHere;
+	if (!parsed)
+	{
+		parsedHere.reset(new YAML::YamlRootNodeReader(filerec.getYAML()));
+		parsed = parsedHere.get();
+	}
+	YAML::YamlRootNodeReader &r = *parsed;
 	YAML::YamlNodeReader reader = r.useIndex();
 
 	auto loadDocInfoHelper = [&](const char* nodeName)
