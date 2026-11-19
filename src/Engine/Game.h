@@ -53,6 +53,11 @@ private:
 	Language *_lang;
 	std::list<State*> _states, _deleted;
 	SavedGame *_save;
+	/// Loading a save: the game that was running, kept whole while the loaded one is tried in its place.
+	SavedGame *_parkedSave = nullptr;
+	bool _parked = false;
+	/// Frames shown since the start.
+	unsigned _frames = 0;
 	Mod *_mod;
 	bool _quit, _init, _update;
 	FpsCounter *_fpsCounter;
@@ -112,6 +117,20 @@ public:
 	SavedGame *getSavedGame() const { return _save; }
 	/// Sets a new saved game for the game.
 	void setSavedGame(SavedGame *save);
+	/// Loading a save: puts the loaded game in the place of the running one, which stays whole aside.
+	void parkSavedGame(SavedGame *save);
+	/// Is a loaded game being tried in the place of the running one?
+	bool hasParkedGame() const { return _parked; }
+	/// The loaded game is rejected: the running one is back in its place. Returns the rejected one.
+	SavedGame *unparkSavedGame();
+	/// The loaded game stays: the game before it goes, its screens first, and these screens take the stack.
+	void commitSavedGame(std::list<State*> &screens);
+	/// Deletes every screen of the stack at once and puts these in their place (not from the code of a screen in the stack).
+	void replaceStates(std::list<State*> &screens);
+	/// Frames shown since the start: a screen that waits to be seen compares two readings.
+	unsigned getFrameCount() const { return _frames; }
+	/// Has a frame been shown since this reading of the count and of the clock, or will none be?
+	bool shownSince(unsigned frame, Uint32 since) const;
 	/// Gets the currently loaded mod.
 	Mod *getMod() const { return _mod; }
 	/// Loads the mods specified in the game options.

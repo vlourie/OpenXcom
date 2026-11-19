@@ -1711,6 +1711,29 @@ void scanNew(SavedBattleGame *save)
 	store(save);
 }
 
+namespace
+{
+decltype(st) parkedSt;
+bool parkedOn = false;
+}
+
+void park()
+{
+	parkedSt = st;
+	parkedOn = true;
+}
+
+void unpark(bool restore)
+{
+	if (parkedOn && restore)
+	{
+		st = parkedSt;
+		trunkSeen.clear();
+	}
+	parkedSt = decltype(st)();
+	parkedOn = false;
+}
+
 void begin(SavedBattleGame *save)
 {
 	st = decltype(st)();

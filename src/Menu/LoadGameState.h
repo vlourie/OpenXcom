@@ -20,6 +20,7 @@
 #include "../Engine/State.h"
 #include <SDL.h>
 #include <string>
+#include <list>
 #include "OptionsBaseState.h"
 #include "../Savegame/SavedGame.h"
 
@@ -28,6 +29,7 @@ namespace OpenXcom
 
 class Text;
 class SavedGame;
+class BattlescapeState;
 
 /**
  * Loads a saved game, with an optional message.
@@ -36,6 +38,9 @@ class LoadGameState : public State
 {
 private:
 	int _firstRun;
+	/// The frame count and the clock when the screen first ran: its work waits for a frame to be shown.
+	unsigned _shownFrame = 0;
+	Uint32 _shownSince = 0;
 	OptionsOrigin _origin;
 	Text *_txtStatus;
 	std::string _filename;
@@ -52,6 +57,8 @@ public:
 	void init() override;
 	/// Loads the game.
 	void think() override;
+	/// Builds the screens of a loaded game.
+	BattlescapeState *buildScreens(SavedGame *save, std::list<State*> &screens, bool keepHdScale);
 	/// Shows an error message.
 	void error(const std::string &msg, SavedGame *save);
 };

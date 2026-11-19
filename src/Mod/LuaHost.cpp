@@ -3830,6 +3830,55 @@ std::string LuaHost::reload()
 	return result;
 }
 
+void LuaHost::park()
+{
+	if (_parked.on)
+	{
+		return;
+	}
+	std::vector<Entry> fresh(_entries.size());
+	for (size_t i = 0; i < _entries.size(); ++i)
+	{
+		fresh[i].id = _entries[i].id;
+		fresh[i].path = _entries[i].path;
+		fresh[i].capsError = _entries[i].capsError;
+		fresh[i].api = _entries[i].api;
+		fresh[i].caps = _entries[i].caps;
+	}
+	// from here nothing fails
+	_parked.entries.swap(_entries);
+	_entries.swap(fresh);
+	_parked.queue.swap(_queue);
+	_parked.undo.swap(_undo);
+	_parked.screens.swap(_screens);
+	_parked.menuScreens = _menuScreens;
+	std::copy(std::begin(_handled), std::end(_handled), std::begin(_parked.handled));
+	_parked.on = true;
+}
+
+void LuaHost::unpark(bool restore)
+{
+	if (!_parked.on)
+	{
+		return;
+	}
+	if (restore)
+	{
+		// the sandboxes of the rejected game go with what they queued
+		_entries.swap(_parked.entries);
+		_queue.swap(_parked.queue);
+		_undo.swap(_parked.undo);
+		_screens.swap(_parked.screens);
+		_menuScreens = _parked.menuScreens;
+		std::copy(std::begin(_parked.handled), std::end(_parked.handled), std::begin(_handled));
+	}
+	else if (!_parked.queue.empty())
+	{
+		writeJournal("lua", "queue", std::to_string(_parked.queue.size()) + " queued changes are dropped: the battle they were for is gone");
+	}
+	_parked = Parked();
+}
+
 void LuaHost::writeJournal(const std::string &id, const std::string &event, const std::string &text)
 {
 	_journal += CrossPlatform::now() + " " + id + " " + event + ": " + text + "\n\n";

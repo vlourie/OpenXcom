@@ -54,6 +54,11 @@ void scanNew(SavedBattleGame *save);
 /// or, for a save without one, looks for the buildings that are still whole.
 void begin(SavedBattleGame *save);
 
+/// Loading a save from a battle: begin() of the loaded battle takes the pilot's place; park() keeps what the pilot
+/// knows of the running battle, unpark(true) gives it back when the loaded one is rejected, unpark(false) drops it.
+void park();
+void unpark(bool restore);
+
 /// The units stopped falling (UnitFallBState): the debug stand (OXCE_AI_DEV builds) reports its units and their
 /// things once, at that moment (a unit knocked out below is not yet unconscious there).
 void afterFall(BattlescapeGame *battle);

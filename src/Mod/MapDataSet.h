@@ -41,6 +41,8 @@ private:
 	std::vector<MapData*> _objects;
 	SurfaceSet *_surfaceSet;
 	bool _loaded;
+	/// Reads the files of the set.
+	void loadDataNow(MCDPatch *patch, bool validate, int hdScale);
 	static MapData *_blankTile;
 	static MapData *_scorchedTile;
 public:

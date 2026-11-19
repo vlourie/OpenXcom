@@ -148,6 +148,10 @@ public:
 
 	/// Reads every mod's main.lua again: Lua variables are gone, a switched off mod is back. What happened, in a line.
 	std::string reload();
+	/// Loading a save: the running game's Lua (sandboxes, queue, screens) goes aside whole; reload() then starts the loaded game's.
+	void park();
+	/// The loaded game is rejected (restore): the Lua put aside is back. Accepted: it is dropped, as reload() drops it.
+	void unpark(bool restore);
 	/// A battle turn of any side, the start or end of a battle, a geoscape day: every mod's count of spent instructions begins again.
 	void resetTurnBudgets();
 	/// Puts a new item on the battle's map, later: a handler may be called from a walk over the game's lists.
@@ -276,6 +280,17 @@ private:
 	std::vector<std::pair<size_t, size_t>> _screens;
 	bool _menuScreens = false;
 	bool _handled[EVENT_COUNT] = { };
+	struct Parked
+	{
+		bool on = false;
+		std::vector<Entry> entries;
+		std::vector<Pending> queue;
+		std::vector<std::function<void()>> undo;
+		std::vector<std::pair<size_t, size_t>> screens;
+		bool menuScreens = false;
+		bool handled[EVENT_COUNT] = { };
+	};
+	Parked _parked;
 	std::string _notice, _journal;
 };
 

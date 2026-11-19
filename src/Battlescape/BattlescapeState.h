@@ -42,6 +42,7 @@ class SavedBattleGame;
 class BattleItem;
 class Timer;
 class WarningMessage;
+class Mod;
 class BattlescapeGame;
 
 /**
@@ -141,7 +142,12 @@ public:
 	BattlescapeState();
 	/// Cleans up the Battlescape state.
 	~BattlescapeState();
-	void resetPalettes();
+	/// Puts the palettes the battle's environment changed back; says whether there was anything to put back.
+	bool resetPalettes();
+	/// Puts the mod's palettes back whatever battle changed them.
+	static void restorePalettes(Mod *mod);
+	/// Changes the palettes for the battle's environment again (a load that reset them was rejected).
+	void reapplyPalettes();
 	/// Initializes the battlescapestate.
 	void init() override;
 	/// Runs the timers and handles popups.
@@ -239,6 +245,8 @@ public:
 	void updateSoldierInfo(bool checkFOV = true);
 	/// Updates the special/psi/skill button display based on the battle unit
 	void updateUiButton(const BattleUnit* battleUnit);
+	/// Changes the mod's palettes as the battle's environment asks.
+	void applyPaletteTransformations();
 	/// Animates map objects on the map, also smoke,fire, ...
 	void animate();
 	/// A menu is open over the battle (XP-000097): the picture's animation goes on, nothing else of animate() does.

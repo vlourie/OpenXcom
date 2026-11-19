@@ -329,19 +329,7 @@ BattlescapeState::BattlescapeState() :
 
 	// Palette transformations
 	auto* enviro = _save->getEnviroEffects();
-	if (enviro)
-	{
-		for (auto& change : enviro->getPaletteTransformations())
-		{
-			Palette *origPal = _game->getMod()->getPalette(change.first, false);
-			Palette *newPal = _game->getMod()->getPalette(change.second, false);
-			if (origPal && newPal)
-			{
-				origPal->copyFrom(newPal);
-				_paletteResetNeeded = true;
-			}
-		}
-	}
+	applyPaletteTransformations();
 
 	// Set palette
 	_save->setPaletteByDepth(this);
@@ -884,26 +872,57 @@ BattlescapeState::~BattlescapeState()
 	resetPalettes();
 }
 
-void BattlescapeState::resetPalettes()
+bool BattlescapeState::resetPalettes()
 {
 	if (_paletteResetNeeded)
 	{
-		// HD render: the frames go back to their own colours (read again from their files)
-		HdPaletteShift::remove();
-		for (auto& origPal : _game->getMod()->getPalettes())
+		restorePalettes(_game->getMod());
+		_paletteResetNeeded = false;
+		return true;
+	}
+	return false;
+}
+
+void BattlescapeState::restorePalettes(Mod *mod)
+{
+	// HD render: the frames go back to their own colours (read again from their files)
+	HdPaletteShift::remove();
+	for (auto& origPal : mod->getPalettes())
+	{
+		if (origPal.first.find("PAL_") == 0)
 		{
-			if (origPal.first.find("PAL_") == 0)
+			std::string backupName = "BACKUP_" + origPal.first;
+			Palette *backupPal = mod->getPalette(backupName, false);
+			if (backupPal)
 			{
-				std::string backupName = "BACKUP_" + origPal.first;
-				Palette *backupPal = _game->getMod()->getPalette(backupName, false);
-				if (backupPal)
-				{
-					origPal.second->copyFrom(backupPal);
-				}
+				origPal.second->copyFrom(backupPal);
 			}
 		}
-		_paletteResetNeeded = false;
 	}
+}
+
+void BattlescapeState::applyPaletteTransformations()
+{
+	auto* enviro = _save->getEnviroEffects();
+	if (enviro)
+	{
+		for (auto& change : enviro->getPaletteTransformations())
+		{
+			Palette *origPal = _game->getMod()->getPalette(change.first, false);
+			Palette *newPal = _game->getMod()->getPalette(change.second, false);
+			if (origPal && newPal)
+			{
+				origPal->copyFrom(newPal);
+				_paletteResetNeeded = true;
+			}
+		}
+	}
+}
+
+void BattlescapeState::reapplyPalettes()
+{
+	applyPaletteTransformations();
+	syncHdPaletteShift(_game, _save, _paletteResetNeeded);
 }
 
 /**

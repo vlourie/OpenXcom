@@ -761,6 +761,7 @@ void Game::run()
 				const Uint32 hdFlipStart = SDL_GetTicks();
 				hdLogDraw1 = std::chrono::steady_clock::now();
 				_screen->flip();
+				++_frames;
 				hdLogFlip1 = std::chrono::steady_clock::now();
 				hdFlipMs = SDL_GetTicks() - hdFlipStart;
 			}
@@ -1010,6 +1011,107 @@ void Game::setSavedGame(SavedGame *save)
 	{
 		_mod->getLuaHost()->reload();
 	}
+}
+
+/**
+ * A screen that only says what is being done (saving, loading) starts its work once the player has seen it.
+ * It reads getFrameCount() and the clock on its first think() and asks here on the next ones.
+ * No frame may ever come - a minimised window, a stand that draws nothing, a display that failed - so the wait
+ * is bounded, and the AI stand, which draws nothing by design, does not wait at all.
+ * @param frame The frame count the screen read.
+ * @param since SDL_GetTicks() at that moment.
+ * @return True when the work may start.
+ */
+bool Game::shownSince(unsigned frame, Uint32 since) const
+{
+	return _frames != frame || Timer::probeClock || _quit || SDL_GetTicks() - since >= 200;
+}
+
+/**
+ * Loading a save, first half: the loaded game takes the place of the running one without ending it.
+ * The running game, its screens (they stay in the stack, nothing runs them meanwhile) and its Lua stay whole
+ * until commitSavedGame() or unparkSavedGame(): the screens of the loaded game are built in between,
+ * and whatever fails there must not cost the player the game they have.
+ * @param save The loaded game.
+ */
+void Game::parkSavedGame(SavedGame *save)
+{
+	_parkedSave = _save;
+	_parked = true;
+	_save = save;
+	if (_mod && _mod->getLuaHost())
+	{
+		// as setSavedGame(): Lua starts over for the loaded game, here with the running game's Lua put aside
+		_mod->getLuaHost()->park();
+		_mod->getLuaHost()->reload();
+	}
+}
+
+/**
+ * Loading a save, rejected: the running game is back in its place with its Lua.
+ * The screens built for the rejected game must be gone already.
+ * @return The rejected game, the caller's to delete.
+ */
+SavedGame *Game::unparkSavedGame()
+{
+	SavedGame *rejected = _save;
+	if (_parked)
+	{
+		_save = _parkedSave;
+		_parkedSave = nullptr;
+		_parked = false;
+		if (_mod && _mod->getLuaHost())
+		{
+			_mod->getLuaHost()->unpark(true);
+		}
+		_init = false;
+	}
+	return rejected;
+}
+
+/**
+ * Loading a save, accepted. Nothing here fails: the screens of the game before are deleted while that game
+ * is still the current one (a destructor may look into the save its screen was opened on), then the game itself,
+ * leaving the loaded battle the terrain they share; the screens built for the loaded game take the stack.
+ * Called from the code of a screen that has popped itself (it is in the deleted queue, not in the stack).
+ * @param screens The screens of the loaded game, bottom first; empty afterwards.
+ */
+void Game::commitSavedGame(std::list<State*> &screens)
+{
+	SavedGame *loaded = _save;
+	_save = _parkedSave;
+	std::list<State*> none;
+	replaceStates(none);
+	if (_parkedSave && _parkedSave->getSavedBattle())
+	{
+		_parkedSave->getSavedBattle()->releaseMapData(loaded ? loaded->getSavedBattle() : nullptr);
+	}
+	delete _parkedSave;
+	_parkedSave = nullptr;
+	_parked = false;
+	_save = loaded;
+	if (_mod && _mod->getLuaHost())
+	{
+		_mod->getLuaHost()->unpark(false);
+	}
+	_states.splice(_states.end(), screens);
+	_init = false;
+}
+
+/**
+ * Deletes every screen of the stack at once, the top one first, and puts the given ones in their place.
+ * @param screens The new screens, bottom first; empty afterwards.
+ */
+void Game::replaceStates(std::list<State*> &screens)
+{
+	while (!_states.empty())
+	{
+		State *state = _states.back();
+		_states.pop_back();
+		delete state;
+	}
+	_states.splice(_states.end(), screens);
+	_init = false;
 }
 
 /**

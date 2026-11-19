@@ -997,7 +997,7 @@ int Mod::getHdScale()
  * between battles (BattlescapeGenerator::run and the battle save loader call
  * it before any terrain is loaded).
  */
-void Mod::refreshHdScale()
+int Mod::wantedHdScale()
 {
 	int k = std::max(1, std::min(6, Options::oxceHdScale));
 	if (k == 1)
@@ -1008,6 +1008,17 @@ void Mod::refreshHdScale()
 			k = std::max(1, blanks->getFrame(0)->getWidth() / 32);
 		}
 	}
+	return k;
+}
+
+bool Mod::hdScaleStale()
+{
+	return _hdScale > 0 && wantedHdScale() != _hdScale;
+}
+
+void Mod::refreshHdScale()
+{
+	int k = wantedHdScale();
 	if (k == _hdScale)
 	{
 		return;

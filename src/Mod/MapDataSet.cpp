@@ -109,7 +109,20 @@ void MapDataSet::loadData(MCDPatch *patch, bool validate, int hdScale)
 	// prevents loading twice
 	if (_loaded) return;
 	_loaded = true;
+	try
+	{
+		loadDataNow(patch, validate, hdScale);
+	}
+	catch (...)
+	{
+		// a set that did not load is not loaded: half of its records would be taken for the whole set by the next battle
+		unloadData();
+		throw;
+	}
+}
 
+void MapDataSet::loadDataNow(MCDPatch *patch, bool validate, int hdScale)
+{
 	int objNumber = 0;
 
 	// the struct below helps to read the xcom file format
@@ -276,6 +289,7 @@ void MapDataSet::unloadData()
 		_objects.clear();
 		HdSprites::removeSet(_surfaceSet);
 		delete _surfaceSet;
+		_surfaceSet = 0;
 		_loaded = false;
 	}
 }

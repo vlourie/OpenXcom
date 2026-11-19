@@ -567,6 +567,10 @@ public:
 	int getHdScale();
 	/// HD render: re-reads the HD scale option (call at the start of a battle, before its terrain loads); drops the scaled sets when it changed.
 	void refreshHdScale();
+	/// HD render: would refreshHdScale() change the scale now?
+	bool hdScaleStale();
+	/// HD render: the scale the options and the mod ask for.
+	int wantedHdScale();
 	/// HD render: gets a surface set scaled k times for the battlescape (the set itself when k = 1).
 	SurfaceSet *getHdSurfaceSet(const std::string &name, bool error = true);
 	/// HD render: gets the k-times-scaled copy of a set (the set itself when k = 1 or null).
@@ -591,6 +595,8 @@ public:
 	void setCurrentMusicTrack(const std::string& currentMusicTrack) { _currentMusicTrack = currentMusicTrack; }
 	/// Plays a particular music.
 	void playMusic(const std::string &name, int id = 0);
+	/// Gets the name the music playing now was asked by.
+	const std::string &getPlayingMusic() const { return _playingMusic; }
 	/// XP-000575, the music player. The playlist of a side (0 geoscape, 1 battle) is kept in options.cfg, never in the save.
 	std::vector<std::string> getMusicPlaylist(int side) const;
 	void setMusicPlaylist(int side, const std::vector<std::string> &keys);

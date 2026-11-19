@@ -24,6 +24,7 @@
 #include "Craft.h"
 #include "SavedBattleGame.h"
 #include "SavedGame.h"
+#include "../Engine/FileMap.h"
 #include "Tile.h"
 #include "HitLog.h"
 #include "Node.h"
@@ -200,6 +201,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 	for (const auto& mdsReader : reader["mapdatasets"].children())
 	{
 		std::string name = mdsReader.readVal<std::string>();
+		// asking the mod for a set makes one: a name the game has no terrain for must not leave an empty set in the mod
+		if (!FileMap::fileExists("TERRAIN/" + name + ".MCD"))
+		{
+			throw Exception("The saved battle needs the terrain " + name + ", which this game does not have");
+		}
 		MapDataSet *mds = mod->getMapDataSet(name);
 		_mapDataSets.push_back(mds);
 	}
@@ -564,10 +570,14 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
  * Loads the resources required by the map in the battle save.
  * @param mod Pointer to the mod.
  */
-void SavedBattleGame::loadMapResources(Mod *mod)
+void SavedBattleGame::loadMapResources(Mod *mod, bool keepHdScale)
 {
 	// HD render: a loaded battle picks up the HD scale option before its terrain loads
-	mod->refreshHdScale();
+	// (not while the battle it is loaded from still stands on the terrain of the scale before, see LoadGameState)
+	if (!keepHdScale)
+	{
+		mod->refreshHdScale();
+	}
 	_mapDataPending = false;
 	for (auto* mds : _mapDataSets)
 	{
@@ -602,6 +612,38 @@ void SavedBattleGame::loadMapResources(Mod *mod)
 	resetUnitTiles();
 	getTileEngine()->calculateLighting(LL_AMBIENT, TileEngine::invalid, 0, true);
 	getTileEngine()->recalculateFOV();
+}
+
+/**
+ * Gives up the map data sets before this battle is deleted. The sets belong to the mod and a set loaded once
+ * serves every battle: while a save is being loaded two battles stand on them, and the one that goes
+ * (the battle before, or the loaded one when it is rejected) must not unload what the other one uses.
+ * @param keeper The battle that stays, or null.
+ */
+void SavedBattleGame::releaseMapData(const SavedBattleGame *keeper)
+{
+	if (_mapDataPending)
+	{
+		return;
+	}
+	// the tiles let go of the objects first (their numbers stay): loadMapResources() can then run on this battle again
+	for (int i = 0; i < _mapsize_z * _mapsize_y * _mapsize_x; ++i)
+	{
+		for (int part = O_FLOOR; part < O_MAX; part++)
+		{
+			int mdsID, mdID;
+			_tiles[i].getMapData(&mdID, &mdsID, (TilePart)part);
+			_tiles[i].setMapData(nullptr, mdID, mdsID, (TilePart)part);
+		}
+	}
+	for (auto* mds : _mapDataSets)
+	{
+		if (!keeper || keeper->_mapDataPending || std::find(keeper->_mapDataSets.begin(), keeper->_mapDataSets.end(), mds) == keeper->_mapDataSets.end())
+		{
+			mds->unloadData();
+		}
+	}
+	_mapDataPending = true;
 }
 
 /**

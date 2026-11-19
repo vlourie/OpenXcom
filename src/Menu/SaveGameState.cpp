@@ -155,12 +155,14 @@ void SaveGameState::buildUi(SDL_Color *palette)
 void SaveGameState::think()
 {
 	State::think();
-	// Make sure it gets drawn properly
-	if (_firstRun < 10)
+	// Make sure it gets drawn properly: the work starts after a frame with this screen (Game::shownSince)
+	if (_firstRun == 0)
 	{
-		_firstRun++;
+		_firstRun = 1;
+		_shownFrame = _game->getFrameCount();
+		_shownSince = SDL_GetTicks();
 	}
-	else
+	if (_game->shownSince(_shownFrame, _shownSince))
 	{
 		_game->popState();
 
