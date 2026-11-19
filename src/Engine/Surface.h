@@ -112,6 +112,13 @@ public:
 	/// Cleans up the surface.
 	virtual ~Surface();
 
+	/// HD render: bytes of an 8-bit frame of this size (the pitch is padded).
+	static size_t hdFrameBytes(int width, int height);
+	/// HD render: an 8-bit frame over pixels that belong to someone else (SurfaceSet's lazy copy); see hdRelease().
+	static Surface hdBorrowed(Uint8 *pixels, int width, int height, int x, int y);
+	/// HD render: lets go of borrowed pixels - must be called before a frame made by hdBorrowed() is destroyed.
+	void hdRelease() { _surface.reset(); (void)_alignedBuffer.release(); }
+
 	/// Is surface empty?
 	explicit operator bool() const
 	{

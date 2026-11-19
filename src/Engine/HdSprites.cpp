@@ -784,7 +784,7 @@ void removeSet(const SurfaceSet *surfaceSet)
 	beforeChange();
 	for (size_t i = 0; i < surfaceSet->getTotalFrames(); ++i)
 	{
-		const Surface *frame = surfaceSet->getFrame((int)i);
+		const Surface *frame = surfaceSet->frameKey((int)i);
 		if (frame)
 		{
 			noteKey(frame->getBuffer());
@@ -962,7 +962,7 @@ int preload(const SurfaceSet *surfaceSet)
 	};
 	for (size_t i = 0; i < surfaceSet->getTotalFrames(); ++i)
 	{
-		const Surface *frame = surfaceSet->getFrame((int)i);
+		const Surface *frame = surfaceSet->frameKey((int)i);
 		if (!frame)
 		{
 			continue;
@@ -1350,7 +1350,7 @@ size_t scanPictures(const std::vector<const SurfaceSet*> &sets, const std::funct
 		seen.push_back(surfaceSet);
 		for (size_t i = 0; i < surfaceSet->getTotalFrames(); ++i)
 		{
-			const Surface *frame = surfaceSet->getFrame((int)i);
+			const Surface *frame = surfaceSet->frameKey((int)i);
 			if (!frame)
 			{
 				continue;
@@ -1766,7 +1766,7 @@ namespace
 				++outside;
 				continue;
 			}
-			Surface *frame = surfaceSet->getFrame((int)index);
+			const Surface *frame = surfaceSet->frameKey((int)index);
 			if (!frame)
 			{
 				continue;
@@ -1868,7 +1868,7 @@ namespace
 		int marked = 0;
 		for (int index : frames)
 		{
-			Surface *frame = index < (int)surfaceSet->getTotalFrames() ? surfaceSet->getFrame(index) : nullptr;
+			const Surface *frame = index < (int)surfaceSet->getTotalFrames() ? surfaceSet->frameKey(index) : nullptr;
 			auto found = frame ? registry.find(frame->getBuffer()) : registry.end();
 			if (found == registry.end())
 			{
@@ -2213,7 +2213,7 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 		{
 			continue;
 		}
-		Surface *frame = surfaceSet->getFrame((int)index);
+		const Surface *frame = surfaceSet->frameKey((int)index);
 		if (!frame)
 		{
 			continue;

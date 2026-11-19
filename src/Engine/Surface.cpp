@@ -260,6 +260,34 @@ Surface::Surface(int width, int height, int x, int y) : _x(x), _y(y), _visible(t
 	SDL_SetColorKey(_surface.get(), SDL_SRCCOLORKEY, 0);
 }
 
+size_t Surface::hdFrameBytes(int width, int height)
+{
+	return (size_t)GetPitch(8, width) * height;
+}
+
+/**
+ * HD render: an 8-bit frame over pixels that belong to someone else. Nothing is written to or read from the pixels
+ * here (they may not be backed by memory yet); the owner calls hdRelease() before the frame is destroyed.
+ */
+Surface Surface::hdBorrowed(Uint8 *pixels, int width, int height, int x, int y)
+{
+	Surface frame;
+	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(pixels, width, height, 8, GetPitch(8, width), 0, 0, 0, 0);
+	if (!surface)
+	{
+		throw Exception(SDL_GetError());
+	}
+	frame._surface = NewSdlSurface(surface);
+	frame._alignedBuffer.reset(pixels);
+	frame._x = x;
+	frame._y = y;
+	frame._width = surface->w;
+	frame._height = surface->h;
+	frame._pitch = surface->pitch;
+	SDL_SetColorKey(surface, SDL_SRCCOLORKEY, 0);
+	return frame;
+}
+
 /**
  * Performs a deep copy of an existing surface.
  * @param other Surface to copy from.

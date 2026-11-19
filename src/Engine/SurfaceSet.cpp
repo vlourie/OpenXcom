@@ -22,6 +22,15 @@
 #include <climits>
 #include "Surface.h"
 #include "FileMap.h"
+#include "Exception.h"
+#include <atomic>
+#include <mutex>
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace OpenXcom
 {
@@ -39,9 +48,72 @@ SurfaceSet::SurfaceSet(int width, int height) : _width(width), _height(height), 
 /**
  * Deletes the images from memory.
  */
+/**
+ * HD render: a scaled copy whose frames get their memory on first use. A battle touches a few hundred frames of the
+ * thousands in the sets it opens (every item in hand, every pose of every armour), and scaled k times a frame is k*k
+ * times its size: 130-200 MB of X-Piratez sat in frames nobody drew, in the battle and on the globe after it. The
+ * addresses of all frames are reserved at once and never change - the HD packs are registered by them - and the pages
+ * of a frame are committed and filled when the frame is first asked for.
+ */
+struct SurfaceSet::HdLazy
+{
+	const SurfaceSet *source = nullptr;
+	int scale = 1;
+	Uint8 *region = nullptr;
+	std::vector<size_t> offset, bytes;
+	std::unique_ptr<std::atomic<Uint8>[]> ready;
+	std::mutex lock;
+	~HdLazy()
+	{
+#ifdef _WIN32
+		if (region)
+		{
+			VirtualFree(region, 0, MEM_RELEASE);
+		}
+#endif
+	}
+};
+
 SurfaceSet::~SurfaceSet()
 {
+	if (_hdLazy && _hdLazy.use_count() == 1)
+	{
+		// the pixels are the region's, not the frames'
+		for (Surface &frame : _frames)
+		{
+			if (frame)
+			{
+				frame.hdRelease();
+			}
+		}
+	}
+}
 
+void SurfaceSet::hdFill(size_t i) const
+{
+	HdLazy &lazy = *_hdLazy;
+	if (lazy.ready[i].load(std::memory_order_acquire))
+	{
+		return;
+	}
+	std::lock_guard<std::mutex> guard(lazy.lock);
+	if (lazy.ready[i].load(std::memory_order_relaxed))
+	{
+		return;
+	}
+#ifdef _WIN32
+	const Surface *src = lazy.source->getFrame((int)i);
+	if (!VirtualAlloc(lazy.region + lazy.offset[i], lazy.bytes[i], MEM_COMMIT, PAGE_READWRITE))
+	{
+		throw Exception("Failed to allocate surface");
+	}
+	if (src)
+	{
+		// committed pages are zero, as a new frame's buffer is
+		HdBlit::upscaleFrame(const_cast<Surface&>(_frames[i]).getSurface(), const_cast<Surface*>(src)->getSurface(), lazy.scale);
+	}
+#endif
+	lazy.ready[i].store(1, std::memory_order_release);
 }
 
 /**
@@ -199,6 +271,10 @@ Surface *SurfaceSet::getFrame(int i)
 	{
 		if (_frames[i])
 		{
+			if (_hdLazy)
+			{
+				hdFill((size_t)i);
+			}
 			return &_frames[i];
 		}
 	}
@@ -211,6 +287,28 @@ Surface *SurfaceSet::getFrame(int i)
  * @return Pointer to the respective surface.
  */
 const Surface *SurfaceSet::getFrame(int i) const
+{
+	if ((size_t)i < _frames.size())
+	{
+		if (_frames[i])
+		{
+			if (_hdLazy)
+			{
+				hdFill((size_t)i);
+			}
+			return &_frames[i];
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * HD render: a frame as a key and a size only. The HD packs are registered by the address of a frame's pixels, and
+ * asking for a frame of a lazy scaled copy through getFrame() would give it memory; this does not.
+ * @param i Frame number in the set.
+ * @return Pointer to the respective surface; its pixels must not be read or written.
+ */
+const Surface *SurfaceSet::frameKey(int i) const
 {
 	if ((size_t)i < _frames.size())
 	{
@@ -303,6 +401,60 @@ void SurfaceSet::hdScaleInPlace(int scale)
  */
 SurfaceSet *SurfaceSet::hdScaledCopy(int scale) const
 {
+#ifdef _WIN32
+	// a set of frames of a page and more each is copied lazily (HdLazy); small frames (dots, cursors) and a set
+	// that is itself lazy are copied whole, as before
+	if (scale > 1 && !_hdLazy)
+	{
+		const size_t page = 4096;
+		auto lazy = std::make_shared<HdLazy>();
+		lazy->source = this;
+		lazy->scale = scale;
+		lazy->offset.resize(_frames.size());
+		lazy->bytes.resize(_frames.size());
+		size_t total = 0, count = 0;
+		for (size_t i = 0; i < _frames.size(); ++i)
+		{
+			if (_frames[i])
+			{
+				const size_t bytes = Surface::hdFrameBytes(_frames[i].getWidth() * scale, _frames[i].getHeight() * scale);
+				lazy->offset[i] = total;
+				lazy->bytes[i] = (bytes + page - 1) / page * page;
+				total += lazy->bytes[i];
+				++count;
+			}
+		}
+		if (count >= 16 && total / count >= 2 * page)
+		{
+			lazy->region = (Uint8*)VirtualAlloc(NULL, total, MEM_RESERVE, PAGE_READWRITE);
+		}
+		if (lazy->region)
+		{
+			lazy->ready.reset(new std::atomic<Uint8>[_frames.size()]);
+			for (size_t i = 0; i < _frames.size(); ++i)
+			{
+				lazy->ready[i].store(0, std::memory_order_relaxed);
+			}
+			SurfaceSet *copy = new SurfaceSet(_width * scale, _height * scale);
+			copy->_sharedFrames = _sharedFrames;
+			copy->_frames.resize(_frames.size());
+			copy->_hdLazy = lazy;
+			for (size_t i = 0; i < _frames.size(); ++i)
+			{
+				if (_frames[i])
+				{
+					copy->_frames[i] = Surface::hdBorrowed(lazy->region + lazy->offset[i], _frames[i].getWidth() * scale, _frames[i].getHeight() * scale,
+						_frames[i].getX(), _frames[i].getY());
+					if (_frames[i].getPalette())
+					{
+						copy->_frames[i].setPalette(_frames[i].getPalette());
+					}
+				}
+			}
+			return copy;
+		}
+	}
+#endif
 	SurfaceSet *copy = new SurfaceSet(*this);
 	copy->hdScaleInPlace(scale);
 	return copy;
