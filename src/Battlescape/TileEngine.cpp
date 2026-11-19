@@ -2669,6 +2669,7 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 				// not dying or not about to pass out
 				!bu->isOutThresholdExceed() &&
 				// have any chances for reacting
+				bu->hasReactionFire() &&
 				bu->getReactionScore() >= threshold &&
 				// not a friend
 				bu->getFaction() != _save->getSide() &&
@@ -2793,7 +2794,7 @@ TileEngine::ReactionScore *TileEngine::getReactor(std::vector<TileEngine::Reacti
 			best = &(*i);
 		}
 	}
-	if (best &&(unit->getReactionScore() <= best->reactionScore))
+	if (best && unit->hasReactionFire() && (unit->getReactionScore() <= best->reactionScore))
 	{
 		if (best->unit->getOriginalFaction() == FACTION_PLAYER)
 		{
@@ -2835,7 +2836,7 @@ TileEngine::ReactionScore TileEngine::determineReactionType(BattleUnit *unit, Ba
 	{
 		re.attackType = type;
 		re.weapon = weapon;
-		re.reactionReduction = 1.0 * BattleActionCost(type, re.unit, weapon).Time * re.unit->getBaseStats()->reactions / re.unit->getBaseStats()->tu;
+		re.reactionReduction = BattleUnit::reactionScore(re.unit->getBaseStats()->reactions, BattleActionCost(type, re.unit, weapon).Time, re.unit->getBaseStats()->tu);
 	};
 
 	std::vector<BattleItem*> reactionWeapons;

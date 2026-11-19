@@ -2814,9 +2814,32 @@ int BattleUnit::getFatalWounds() const
  */
 double BattleUnit::getReactionScore() const
 {
+	return reactionScore(getBaseStats()->reactions, getTimeUnits(), getBaseStats()->tu);
+}
+
+/**
+ * The one formula of reaction fire: the score of a unit by its time units, and what a reaction of some cost
+ * takes from that score.
+ * A unit without time units (mods have such: max TU 0) has no score - 0, and not 0 / 0.
+ * @return Reaction score.
+ */
+double BattleUnit::reactionScore(int reactions, int timeUnits, int maxTimeUnits)
+{
+	if (maxTimeUnits <= 0)
+	{
+		return 0.0;
+	}
 	//(Reactions Stat) x (Current Time Units / Max TUs)
-	double score = ((double)getBaseStats()->reactions * (double)getTimeUnits()) / (double)getBaseStats()->tu;
-	return score;
+	return ((double)reactions * (double)timeUnits) / (double)maxTimeUnits;
+}
+
+/**
+ * Does the unit take part in reaction fire? One without time units does not: it does not react, and nothing
+ * reacts to it (as it was while its score was 0 / 0, which no comparison holds for).
+ */
+bool BattleUnit::hasReactionFire() const
+{
+	return getBaseStats()->tu > 0;
 }
 
 /**

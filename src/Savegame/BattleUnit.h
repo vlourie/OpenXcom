@@ -424,6 +424,10 @@ public:
 	int getAccuracyModifier(const BattleItem *item = 0) const;
 	/// Get the current reaction score.
 	double getReactionScore() const;
+	/// The formula of the reaction score; 0 without time units.
+	static double reactionScore(int reactions, int timeUnits, int maxTimeUnits);
+	/// Does the unit take part in reaction fire?
+	bool hasReactionFire() const;
 	/// Prepare for a new turn.
 	void prepareNewTurn(bool fullProcess = true);
 	/// Calculate change in unit stats.
