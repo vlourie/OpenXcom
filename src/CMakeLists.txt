@@ -740,6 +740,21 @@ if (WIN32)
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)
 
+if ( OXCE_BUNDLED_SDL_IMAGE )
+  # SDL_image 1.2 of the fixed SDL-1.2 branch, all the formats the package of MSYS2 had (libs/SDL_image/README_OXCE.md)
+  set ( sdl_image_dir ${CMAKE_SOURCE_DIR}/libs/SDL_image )
+  add_library ( oxce_sdl_image STATIC
+    ${sdl_image_dir}/IMG.c ${sdl_image_dir}/IMG_bmp.c ${sdl_image_dir}/IMG_gif.c ${sdl_image_dir}/IMG_jpg.c
+    ${sdl_image_dir}/IMG_lbm.c ${sdl_image_dir}/IMG_pcx.c ${sdl_image_dir}/IMG_png.c ${sdl_image_dir}/IMG_pnm.c
+    ${sdl_image_dir}/IMG_tga.c ${sdl_image_dir}/IMG_tif.c ${sdl_image_dir}/IMG_webp.c ${sdl_image_dir}/IMG_xcf.c
+    ${sdl_image_dir}/IMG_xpm.c ${sdl_image_dir}/IMG_xv.c )
+  target_compile_definitions ( oxce_sdl_image PRIVATE LOAD_BMP LOAD_GIF LOAD_JPG LOAD_LBM LOAD_PCX LOAD_PNG LOAD_PNM
+    LOAD_TGA LOAD_TIF LOAD_WEBP LOAD_XCF LOAD_XPM LOAD_XV )
+  # (the code of others: its warnings are not ours to fix; the flags of the game's build type apply as to any file)
+  target_compile_options ( oxce_sdl_image PRIVATE -w )
+  set ( system_libs ${system_libs} oxce_sdl_image )
+endif ()
+
 if ( WIN32 )
   # static MSYS2/MinGW link set for the portable Windows build
   target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )

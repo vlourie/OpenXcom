@@ -13,6 +13,10 @@ cmake ..        # только если менялся CMakeLists
 ninja
 ```
 
+SDL_image собирается из `libs/SDL_image` (ветка SDL-1.2 с исправлениями безопасности, статически, без сети);
+пакет MSYS2 `SDL_image` для сборки не нужен, взятый по ошибке его заголовок останавливает компиляцию.
+Откуда взято, как обновить и как проверить — `libs/SDL_image/README_OXCE.md`, тест — `tests/sdl_image/`.
+
 Пути тулчейна — `tools\build\build_config.json` (`MsysBin`) и `build-release\CMakeCache.txt`.
 Сборка релиза с упаковкой DLL — `Выпуск\OXCE_Build.cmd`. Сборка + подпись + публикация +
 архив для станции одним запуском — `Выпуск\OXCE_Release.cmd` (настройки `Выпуск\release_config.json`).

@@ -1,0 +1,218 @@
+diff -u -r a/IMG_bmp.c b/IMG_bmp.c
+--- a/IMG_bmp.c	2026-11-19 20:41:27.317407300 +0200
++++ b/IMG_bmp.c	2026-11-19 20:41:27.344897900 +0200
+@@ -29,6 +29,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_BMP
+ 
+diff -u -r a/IMG_gif.c b/IMG_gif.c
+--- a/IMG_gif.c	2026-11-19 20:41:27.364719900 +0200
++++ b/IMG_gif.c	2026-11-19 20:41:27.385601400 +0200
+@@ -27,6 +27,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_GIF
+ 
+@@ -516,6 +517,11 @@
+ 		RWSetMsg("invalid LWZ data");
+ 		return -3;
+ 	    }
++	    /* OXCE: the stack is full - codes that point at each other in a ring (upstream main, b0c94a0b) */
++	    if (state->sp == &state->stack[SDL_arraysize(state->stack)]) {
++	        RWSetMsg("invalid LWZ data");
++	        return -3;
++	    }
+ 	    *state->sp++ = state->table[1][code];
+ 	    if (code == state->table[0][code]) {
+ 		RWSetMsg("circular table entry BIG ERROR");
+@@ -529,6 +535,11 @@
+ 	    RWSetMsg("invalid LWZ data");
+ 	    return -4;
+ 	}
++	/* OXCE: the stack is full - codes that point at each other in a ring (upstream main, b0c94a0b) */
++	if (state->sp == &state->stack[SDL_arraysize(state->stack)]) {
++	    RWSetMsg("invalid LWZ data");
++	    return -4;
++	}
+ 	*state->sp++ = state->firstcode = state->table[1][code];
+ 
+ 	if ((code = state->max_code) < (1 << MAX_LWZ_BITS)) {
+diff -u -r a/IMG_jpg.c b/IMG_jpg.c
+--- a/IMG_jpg.c	2026-11-19 20:41:27.405568900 +0200
++++ b/IMG_jpg.c	2026-11-19 20:41:27.425824300 +0200
+@@ -28,6 +28,7 @@
+ #include <setjmp.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_JPG
+ 
+diff -u -r a/IMG_lbm.c b/IMG_lbm.c
+--- a/IMG_lbm.c	2026-11-19 20:41:27.446165400 +0200
++++ b/IMG_lbm.c	2026-11-19 20:41:27.466156000 +0200
+@@ -36,6 +36,7 @@
+ 
+ #include "SDL_endian.h"
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_LBM
+ 
+@@ -222,6 +223,13 @@
+ 		if ( memcmp( id, "BODY", 4 ) )
+ 		{
+ 			if ( size & 1 )	++size;  	/* padding ! */
++			/* OXCE: a chunk shorter than what was read of it, or one of 2 GiB and more, turns the skip below
++			   into a seek backwards - the same chunks are then read again without an end */
++			if ( size < bytesloaded || size - bytesloaded > 0x7FFFFFFF )
++			{
++				error="invalid IFF chunk size";
++				goto done;
++			}
+ 			size -= bytesloaded;
+ 			/* skip the remaining bytes of this chunk */
+ 			if ( size )	SDL_RWseek( src, size, RW_SEEK_CUR );
+diff -u -r a/IMG_pcx.c b/IMG_pcx.c
+--- a/IMG_pcx.c	2026-11-19 20:41:27.485929400 +0200
++++ b/IMG_pcx.c	2026-11-19 20:41:27.506018700 +0200
+@@ -38,6 +38,7 @@
+ #include "SDL_endian.h"
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_PCX
+ 
+diff -u -r a/IMG_png.c b/IMG_png.c
+--- a/IMG_png.c	2026-11-19 20:41:27.526991500 +0200
++++ b/IMG_png.c	2026-11-19 20:41:27.547718300 +0200
+@@ -27,6 +27,7 @@
+ #include <stdio.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_PNG
+ 
+@@ -334,7 +335,12 @@
+ 	SDL_RWops *src;
+ 
+ 	src = (SDL_RWops *)lib.png_get_io_ptr(ctx);
+-	SDL_RWread(src, area, size, 1);
++	/* OXCE: past the end of the file libpng gets zeros, not what its buffer held before: a chunk header left
++	   there from the last read is taken for the next chunk again and again, without an end. Zeros are a chunk
++	   of no type, which libpng refuses. (upstream main raises png_error at this place, 99982b9b) */
++	if ( SDL_RWread(src, area, size, 1) != 1 ) {
++		memset(area, 0, size);
++	}
+ }
+ 
+ struct loadpng_vars {
+diff -u -r a/IMG_pnm.c b/IMG_pnm.c
+--- a/IMG_pnm.c	2026-11-19 20:41:27.568161900 +0200
++++ b/IMG_pnm.c	2026-11-19 20:41:27.587314400 +0200
+@@ -34,6 +34,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_PNM
+ 
+diff -u -r a/IMG_tga.c b/IMG_tga.c
+--- a/IMG_tga.c	2026-11-19 20:41:27.608210500 +0200
++++ b/IMG_tga.c	2026-11-19 20:41:27.629797700 +0200
+@@ -30,6 +30,7 @@
+ #include "SDL_endian.h"
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_TGA
+ 
+diff -u -r a/IMG_tif.c b/IMG_tif.c
+--- a/IMG_tif.c	2026-11-19 20:41:27.649840600 +0200
++++ b/IMG_tif.c	2026-11-19 20:41:27.670923000 +0200
+@@ -26,6 +26,7 @@
+ #include <stdio.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_TIF
+ 
+diff -u -r a/IMG_webp.c b/IMG_webp.c
+--- a/IMG_webp.c	2026-11-19 20:41:27.691361200 +0200
++++ b/IMG_webp.c	2026-11-19 20:41:27.713165900 +0200
+@@ -25,6 +25,7 @@
+ #include <stdio.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_WEBP
+ 
+diff -u -r a/IMG_xcf.c b/IMG_xcf.c
+--- a/IMG_xcf.c	2026-11-19 20:41:27.736198400 +0200
++++ b/IMG_xcf.c	2026-11-19 20:41:27.761566800 +0200
+@@ -28,6 +28,17 @@
+ 
+ #include "SDL_endian.h"
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
++
++/* OXCE: a read past the end of the file gives 0, which ends every list of offsets and is PROP_END
++   (SDL_ReadBE32 of SDL 1.2 gives back what its variable held - the lists then never end) */
++static Uint32 xcf_read_be32 (SDL_RWops * src) {
++  Uint32 v = 0;
++  if (SDL_RWread (src, &v, sizeof (v), 1) != 1)
++    return 0;
++  return SDL_SwapBE32 (v);
++}
++#define SDL_ReadBE32 xcf_read_be32
+ 
+ #ifdef LOAD_XCF
+ 
+@@ -310,8 +321,11 @@
+     break;
+   default:
+     //    SDL_RWread (src, &prop->data, prop->length, 1);
+-    if (SDL_RWseek (src, prop->length, RW_SEEK_CUR) < 0)
++    /* OXCE: a length of 2 GiB and more is a seek backwards: the same properties again, without an end */
++    if ((Sint32) prop->length < 0 || SDL_RWseek (src, prop->length, RW_SEEK_CUR) < 0) {
++      prop->id = PROP_END;
+       return 0;  // ERROR
++    }
+   }
+   return 1;  // OK
+ }
+diff -u -r a/IMG_xpm.c b/IMG_xpm.c
+--- a/IMG_xpm.c	2026-11-19 20:41:27.784132800 +0200
++++ b/IMG_xpm.c	2026-11-19 20:41:27.806083400 +0200
+@@ -48,6 +48,7 @@
+ #include <ctype.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_XPM
+ 
+diff -u -r a/IMG_xv.c b/IMG_xv.c
+--- a/IMG_xv.c	2026-11-19 20:41:27.828187500 +0200
++++ b/IMG_xv.c	2026-11-19 20:41:27.855349200 +0200
+@@ -25,6 +25,7 @@
+ #include <string.h>
+ 
+ #include "SDL_image.h"
++#include "IMG_oxce.h"
+ 
+ #ifdef LOAD_XV
+ 

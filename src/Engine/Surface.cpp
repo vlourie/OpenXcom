@@ -26,6 +26,9 @@
 #include <algorithm>
 #include <SDL_gfxPrimitives.h>
 #include <SDL_image.h>
+#if defined(OXCE_BUNDLED_SDL_IMAGE) && SDL_VERSIONNUM(SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL) < SDL_VERSIONNUM(1, 2, 13)
+#error "SDL_image.h of the system (1.2.12 of 2012, no security fixes) was taken instead of libs/SDL_image"
+#endif
 #include "../lodepng.h"
 #include "Palette.h"
 #include "Exception.h"
