@@ -95,7 +95,7 @@ SoundSet *ExtraSounds::loadSoundSet(SoundSet *set) const
 	{
 		int startSound = pair.first;
 		const auto& fileName = pair.second;
-		if (fileName[fileName.length() - 1] == '/')
+		if (!fileName.empty() && fileName[fileName.length() - 1] == '/')
 		{
 			Log(LOG_VERBOSE) << "Loading sound set from folder: " << fileName << " starting at index: " << startSound;
 			int offset = startSound;

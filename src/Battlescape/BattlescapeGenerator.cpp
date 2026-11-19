@@ -2478,6 +2478,11 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 
 	while (mapFile->read((char*)&value, sizeof(value)))
 	{
+		if (!_save->getTile(Position(x, y, z)))
+		{
+			// more records than the block has tiles, or a block of no height: the next tile is outside the map
+			throw Exception("Invalid MAP file: " + filename);
+		}
 		for (int part = O_FLOOR; part < O_MAX; ++part)
 		{
 			terrainObjectID = ((unsigned char)value[part]);

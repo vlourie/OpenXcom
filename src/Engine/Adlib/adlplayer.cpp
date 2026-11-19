@@ -726,6 +726,13 @@ void init_music_data(unsigned char* music_ptr,int length)
 	adl_gv_samples_addr = music_ptr+1; //samples
 	music_ptr += ((*music_ptr) * 24) +1; //moving to next section - subtracks
 	adl_gv_subtracks_count = *(music_ptr++);
+	if (adl_gv_subtracks_count > 128)
+	{
+		// more subtracks than the table holds: not a track of the game, nothing is set up to play
+		adl_gv_subtracks_count = 0;
+		adl_gv_instruments_count = 0;
+		return;
+	}
 	for(i=0; i<adl_gv_subtracks_count; ++i)
 	{
 		to_add = peek_u16(music_ptr); //reading 16bit length
@@ -746,6 +753,7 @@ void init_music_data(unsigned char* music_ptr,int length)
 		if (adl_gv_FORMAT==0)
 		{
 			j = i;
+			if (j>15) j=15;
 			instruments[j].start_address = music_ptr+4; //old format, without title
 		}
 		music_ptr += to_add;

@@ -156,6 +156,11 @@ void SurfaceSet::loadDat(const std::string &filename)
 		_frames[i] = Surface(_width, _height);
 	}
 
+	if (nframes <= 0)
+	{
+		return; // the file is shorter than one frame
+	}
+
 	Uint8 value;
 	int x = 0, y = 0, frame = 0;
 
