@@ -27,6 +27,8 @@
 #include <string>
 #include <list>
 #include <mutex>
+#include <atomic>
+#include <fcntl.h>
 #include <stdint.h>
 #include <time.h>
 #include <signal.h>
@@ -43,7 +45,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <psapi.h>
-#include <share.h>
 #include <cstdio>
 #include <shlobj.h>
 #include <shlwapi.h>
@@ -1642,47 +1643,59 @@ bool openExplorer(const std::string &url)
  * @param data - what to writeFile
  * @return if we did write it.
  */
-// The AI probe's fast mode keeps the log open for the whole run (shared for reading, a 1 MB buffer flushed four
-// times a second and on every error): opening the file for each line was a third of a short battle.
-static FILE *probeLog = nullptr;
-static void probeLogFlush() { if (probeLog) { fflush(probeLog); } }
-static void probeLogClose() { if (probeLog) { fclose(probeLog); probeLog = nullptr; } }
-// probeLog belongs to the log's lock (log() and setLogFileName() hold it): the way out of the program takes it too,
-// other threads may still be logging (AUDIT-04 8)
-static void probeLogCloseAtExit();
+// The log file stays open from the first line to the end of the program (opening it for each line cost about 4 ms a
+// line). Each line is one write of the system in append mode, with no buffer of ours: a line is in the file when
+// log() returns, so nothing has to be flushed or closed on the way out or in a crash. Other programs may read the
+// file meanwhile. The handle is changed under the log's lock; it is atomic for the one reader without the lock -
+// a fatal line that could not get the lock.
+#ifdef _WIN32
+typedef HANDLE LogHandle;
+static const LogHandle NO_LOG = INVALID_HANDLE_VALUE;
+#else
+typedef int LogHandle;
+static const LogHandle NO_LOG = -1;
+#endif
+static std::atomic<LogHandle> logHandle(NO_LOG);
+
+static bool logWrite(LogHandle handle, const std::string& data) {
+#ifdef _WIN32
+	DWORD done = 0;
+	return WriteFile(handle, data.data(), (DWORD)data.size(), &done, NULL) && done == data.size();
+#else
+	return write(handle, data.data(), data.size()) == (ssize_t)data.size();
+#endif
+}
+
+static void logClose() {
+	LogHandle handle = logHandle.exchange(NO_LOG);
+	if (handle != NO_LOG) {
+#ifdef _WIN32
+		CloseHandle(handle);
+#else
+		close(handle);
+#endif
+	}
+}
 
 static bool logToFile(const std::string& filename, const std::string& data) {
-	if (AiProbe::fast()) {
-		static Uint32 flushed = 0;
-		if (!probeLog) {
+	LogHandle handle = logHandle.load();
+	// another program may hold the file without sharing it for a moment: a failed line waits in the buffer for the
+	// next one, so the last line before quitting would be lost - wait out a short read instead
+	for (int retry = 0; handle == NO_LOG && retry < 20; ++retry) {
+		if (retry) {
+			SDL_Delay(5);
+		}
 #ifdef _WIN32
-			probeLog = _fsopen(filename.c_str(), "ab", _SH_DENYNO);
+		handle = CreateFileW(pathToWindows(filename).c_str(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-			probeLog = fopen(filename.c_str(), "ab");
+		handle = open(filename.c_str(), O_WRONLY | O_APPEND | O_CREAT, 0644);
 #endif
-			if (probeLog) { setvbuf(probeLog, nullptr, _IOFBF, 1 << 20); atexit(probeLogCloseAtExit); }
-		}
-		if (probeLog) {
-			const bool ok = fwrite(data.c_str(), data.size(), 1, probeLog) == 1;
-			const Uint32 now = SDL_GetTicks();
-			if (now - flushed >= 250) { probeLogFlush(); flushed = now; }
-			return ok;
-		}
 	}
-	// Even SDL1 file IO accepts UTF-8 file names on windows.
-	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "a+");
-	// SDL opens for writing without sharing: while another program reads the log, the open fails. A failed line waits
-	// in the buffer for the next one, so the last line before quitting was lost - wait out a short read instead
-	for (int retry = 0; !rwops && retry < 20; ++retry) {
-		SDL_Delay(5);
-		rwops = SDL_RWFromFile(filename.c_str(), "a+");
+	if (handle == NO_LOG) {
+		return false;
 	}
-	if (rwops) {
-		auto rv = SDL_RWwrite(rwops, data.c_str(), data.size(), 1);
-		SDL_RWclose(rwops);
-		return rv == 1;
-	}
-	return false;
+	logHandle.store(handle);
+	return logWrite(handle, data);
 }
 
 static const size_t LOG_BUFFER_LIMIT = 1<<10;
@@ -1693,10 +1706,6 @@ static const size_t LOG_BUFFER_LIMIT = 1<<10;
 static std::list<std::pair<int, std::string>> &logBuffer = *new std::list<std::pair<int, std::string>>();
 static std::string &logFileName = *new std::string();
 static std::recursive_mutex &logLock = *new std::recursive_mutex();
-static void probeLogCloseAtExit() {
-	std::lock_guard<std::recursive_mutex> logGuard(logLock);
-	probeLogClose();
-}
 std::string getLogFileName() {
 	// a copy made under the lock: the name is changed by setLogFileName() while other threads log
 	std::lock_guard<std::recursive_mutex> logGuard(logLock);
@@ -1711,7 +1720,7 @@ std::string getLogFileName() {
 void setLogFileName(const std::string& name) {
 	// under the log's lock: the name is read and the buffer is written by log() on other threads
 	std::lock_guard<std::recursive_mutex> logGuard(logLock);
-	probeLogClose();
+	logClose();
 	deleteFile(name);
 	size_t sz = logBuffer.size();
 	Log(LOG_DEBUG) << "setLogFileName("<<name<<") was '"<<logFileName<<"'; "<<sz<<" in buffer";
@@ -1757,7 +1766,23 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	// the HD render threads log too (a failed job, an unreadable picture): the buffer below is one list for all of
 	// them, and two lines at once broke the heap (found with injected faults, 17.11); the same thread may come here
 	// again from the crash handler
-	std::lock_guard<std::recursive_mutex> logGuard(logLock);
+	std::unique_lock<std::recursive_mutex> logGuard(logLock, std::defer_lock);
+	if (level == LOG_FATAL) {
+		// a crash line must not hang on a lock whose owner will never give it back: after a moment it goes to the
+		// file as it is, past the buffer and the name, which belong to the lock
+		for (int i = 0; i < 200 && !logGuard.try_lock(); ++i) {
+			SDL_Delay(1);
+		}
+		if (!logGuard.owns_lock()) {
+			LogHandle handle = logHandle.load();
+			if (handle != NO_LOG) {
+				logWrite(handle, msg);
+			}
+			return;
+		}
+	} else {
+		logGuard.lock();
+	}
 	if (logBuffer.size() > LOG_BUFFER_LIMIT) { // drop earliest message so as to not eat all memory
 		logBuffer.pop_front();
 	}
@@ -1770,7 +1795,7 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	while (!logBuffer.empty()) {
 		if (effectiveLevel >= logBuffer.front().first) {
 			if (!logToFile(logFileName, logBuffer.front().second)) {
-				std::string err = "Failed to append to '" + logFileName + "': " + SDL_GetError();
+				std::string err = "Failed to append to '" + logFileName + "'";
 				logBuffer.push_back(std::make_pair(LOG_ERROR, err));
 				failed = true;
 				break;
@@ -1782,24 +1807,10 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	if (failed || !logToFile(logFileName, msg)) {
 		logBuffer.push_back(std::make_pair(level, msg));
 	}
-	if (level <= LOG_ERROR) {
-		probeLogFlush(); // an error may be the last line before a crash
-	}
 }
 
 void exitNow() {
-	{
-		// under the log's lock when it can be had: a thread that logs at this moment owns probeLog. Not waited for
-		// longer than a moment - the process ends here whatever the others do (AUDIT-04 8)
-		std::unique_lock<std::recursive_mutex> logGuard(logLock, std::defer_lock);
-		for (int i = 0; i < 100 && !logGuard.try_lock(); ++i) {
-			SDL_Delay(1);
-		}
-		// without the lock the journal is another thread's at this moment: left to fflush below
-		if (logGuard.owns_lock()) {
-			probeLogFlush();
-		}
-	}
+	// the log has nothing to flush (each line is written at once) and its lock is not needed here
 	fflush(nullptr);
 #ifdef _WIN32
 	TerminateProcess(GetCurrentProcess(), 0);
