@@ -392,9 +392,15 @@ int64_t Transfer::getTransferPrice(const Mod *mod, int64_t sum)
 	const int64_t mult = mod->getGlobalTransferCostMultiplier(), div = mod->getGlobalTransferCostDivider();
 	if (mult > 1 && sum > INT64_MAX / mult)
 	{
-		// the product would not fit 64 bits: divide first, and stop at the largest sum instead of wrapping to a negative price
-		const int64_t part = sum / div;
-		return part > INT64_MAX / mult ? INT64_MAX : std::max<int64_t>(1, part * mult);
+		// the product would not fit 64 bits: the same number by parts, (q * div + r) * mult / div = q * mult + r * mult / div,
+		// and the largest sum instead of a negative price where even that does not fit
+		const int64_t part = sum / div, rest = sum % div;
+		if (part > INT64_MAX / mult || rest > INT64_MAX / mult)
+		{
+			return INT64_MAX;
+		}
+		const int64_t tail = rest * mult / div;
+		return part * mult > INT64_MAX - tail ? INT64_MAX : std::max<int64_t>(1, part * mult + tail);
 	}
 	return std::max<int64_t>(1, sum * mult / div);
 }

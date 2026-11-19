@@ -33,6 +33,7 @@ namespace OpenXcom
 {
 
 class RuleCraft;
+class RuleItem;
 class Soldier;
 class Craft;
 class ItemContainer;
@@ -174,6 +175,8 @@ public:
 	ItemContainer *getStorageItems() { return _items; }
 	/// Gets the base's items.
 	const ItemContainer *getStorageItems() const { return _items; }
+	/// How many more of an item the stores can count, with what is already on its way here.
+	int getStoreRoom(const RuleItem *item) const;
 	/// Gets the base's scientists.
 	int getScientists() const;
 	/// Sets the base's scientists.
