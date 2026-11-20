@@ -1,0 +1,1 @@
+- The "Intro: voice" cutscene is high-resolution again: with lazy resource loading on (the default) its pictures stayed pixelated at 320x200; the HD pictures are now picked up.

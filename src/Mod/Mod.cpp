@@ -4353,6 +4353,30 @@ void Mod::loadHdUiArt()
 			&& dollLooks.count(s.substr(0, digits - 1)) > 0;
 	};
 	std::vector<std::string> dollImages;
+	// the files of the cutscenes' slides, in lower case: SlideshowState loads them by path, not by image name
+	std::unordered_set<std::string> slideFiles;
+	for (const auto &video : _videos)
+	{
+		if (const std::vector<SlideshowSlide> *slides = video.second->getSlides())
+		{
+			for (const SlideshowSlide &slide : *slides)
+			{
+				std::string path = slide.imagePath;
+				std::transform(path.begin(), path.end(), path.begin(), ::tolower);
+				slideFiles.insert(path);
+			}
+		}
+	}
+	const auto slideFile = [&slideFiles](ExtraSprites *s)
+	{
+		if (!s->getSingleImage() || !s->getSprites() || s->getSprites()->empty())
+		{
+			return false;
+		}
+		std::string path = s->getSprites()->begin()->second;
+		std::transform(path.begin(), path.end(), path.begin(), ::tolower);
+		return slideFiles.count(path) > 0;
+	};
 	int loaded = 0, layers = 0;
 	// one pack serves both games: on vanilla nearly every picture of it is unmatched, so one summary line, the names at debug
 	int unmatched = 0;
@@ -4466,12 +4490,16 @@ void Mod::loadHdUiArt()
 			if (sprites != _extraSprites.end() && !sprites->second.empty())
 			{
 				bool single = true;
-				for (const ExtraSprites *s : sprites->second)
+				bool onSlide = false;
+				for (ExtraSprites *s : sprites->second)
 				{
 					single = single && s->getSingleImage();
 					later = later || !s->isLoaded();
+					onSlide = onSlide || slideFile(s);
 				}
-				later = later && single;
+				// a cutscene slide is read from its file (SlideshowState), the image is never asked for by name:
+				// deferred, its picture would never be registered and the slide would stay classic (XP-000604)
+				later = later && single && !onSlide;
 			}
 		}
 		Surface *base = layer || later ? nullptr : getSurface(it->second, false);
