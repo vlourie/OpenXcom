@@ -305,7 +305,12 @@ void Transfer::advance(Base *base)
 		_hours = 0;
 		return;
 	}
-	_hours--;
+	// hours of 0 or less (a save, transferTime: 0) are not counted down any further: delivered now, and INT_MIN of a
+	// damaged save is not taken one lower
+	if (_hours > 0)
+	{
+		_hours--;
+	}
 	if (_hours <= 0)
 	{
 		_hours = 0;
