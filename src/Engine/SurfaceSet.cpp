@@ -258,6 +258,12 @@ void SurfaceSet::loadDat(const std::string &filename)
 				_frames[frame].lock();
 		}
 	}
+	// the read stopped inside a frame (the stream failed): what it has is kept, the frame is left unlocked as the
+	// others (the bytes past the last whole frame are never read: the loop ends at nframes)
+	if (frame < nframes)
+	{
+		_frames[frame].unlock();
+	}
 }
 
 /**
