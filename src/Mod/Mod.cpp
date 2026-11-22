@@ -3824,7 +3824,12 @@ void Mod::loadAll()
 		const RuleUfo *ufo = pair.second;
 		// a landed or crashed UFO is a battle generated from the deployment of the same name: that one needs a map
 		const AlienDeployment *battle = getDeployment(pair.first);
-		checkForSoftError(battle && !battle->hasMapSize(this), pair.first, "the deployment of this UFO has no map size: no width/length and no map script of its own that resizes the map", LOG_INFO);
+		// a note only, never a refusal: the terrain may come from the globe texture or a custom mission deployment at the
+		// battle, with a map script that resizes the map (BattlescapeGenerator::run)
+		if (battle && !battle->hasMapSize(this))
+		{
+			Log(LOG_INFO) << "Note: UFO " << pair.first << ": its deployment has no map size of its own: no width/length and no map script, its own or of its terrains, that resizes the map; a landing or crash site gets one only from the map script of the terrain drawn at the battle.";
+		}
 		auto overlays = [&](const RuleUfoStats &stats)
 		{
 			// overlays give units and items only: they have to exist, a map they do not need
@@ -3923,7 +3928,11 @@ void Mod::loadAll()
 		}
 		for (const auto& pair : battles)
 		{
-			checkForSoftError(!pair.first->hasMapSize(this), pair.first->getType(), "is a battle (" + pair.second + ") and has no map size: no width/length and no map script, its own or of its terrains, that resizes the map", LOG_INFO);
+			// a note only, never a refusal (see the UFOs above): the terrain may be drawn from the globe texture at the battle
+			if (!pair.first->hasMapSize(this))
+			{
+				Log(LOG_INFO) << "Note: deployment " << pair.first->getType() << " is a battle (" << pair.second << ") and has no map size of its own: no width/length and no map script, its own or of its terrains, that resizes the map; the battle gets one only from the map script of the terrain drawn at the battle.";
+			}
 		}
 		// Stages that come back to an earlier one. The next stage is taken whenever the stage is won with somebody left
 		// (BattlescapeState::finishBattle), so such a mission has no last stage: it ends only by abort or by defeat.

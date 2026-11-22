@@ -327,7 +327,12 @@ void AlienDeployment::afterLoad(const Mod* mod)
 		const AlienDeployment *next = mod->getDeployment(_nextStage);
 		note(!next, "nextStage '" + _nextStage + "' is not defined");
 		// a next stage is a battle of its own: it needs a map
-		note(next && !next->hasMapSize(mod), "nextStage '" + _nextStage + "' has no map size: no width/length and no map script of its own that resizes the map");
+		// a note only, never a refusal (in no validation level): a stage without terrains of its own goes on with the
+		// terrain of the stage before, whose map script is drawn at the battle and may resize the map
+		if (next && !next->hasMapSize(mod))
+		{
+			Log(LOG_INFO) << "Note: deployment " << _type << ": nextStage '" << _nextStage << "' has no map size of its own: no width/length and no map script, its own or of its terrains, that resizes the map; the battle gets one only from the map script of the terrain it goes on with.";
+		}
 	}
 	// what an alien base of this deployment starts and turns into (an empty name is "nothing", as the game reads it)
 	auto missions = [&](const WeightedOptions &options, const char *what)
