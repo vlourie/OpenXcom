@@ -45,9 +45,12 @@ private:
 	int _anim;
 	std::string _oldMaster;
 
-	SDL_Thread *_thread;
+	/// The data loading thread while it may still run (0 once it has been waited for).
+	static SDL_Thread *_thread;
 	std::ostringstream _output;
 public:
+	/// Waits for the data loading thread if it still runs; safe to call again (main thread only).
+	static void waitLoading();
 	/// The loading thread's verdict. The thread stores it as its very last step, after `error` and after the mod
 	/// and the language are complete; the main thread reads those only after it has seen the verdict here.
 	static std::atomic<LoadingPhase> loading;

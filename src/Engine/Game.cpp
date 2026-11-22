@@ -67,6 +67,7 @@
 #include "../Geoscape/SelectMusicTrackState.h"
 #include "../Battlescape/BattlescapeState.h"
 #include "../Menu/TestState.h"
+#include "../Menu/StartState.h"
 #include "../Battlescape/AiProbe.h"
 #include <algorithm>
 #include "../fallthrough.h"
@@ -870,6 +871,9 @@ void Game::run()
 		// the result line is in the log and nobody reads the options back: leave without unloading the mod
 		CrossPlatform::exitNow();
 	}
+	// a quit during the start-up: the loading thread still fills Options::mods, the language and the HD screen themes -
+	// let it finish before they are read here (AUDIT-05); after the start-up it is long done and this returns at once
+	StartState::waitLoading();
 	HdScreenThemes::instance().endEdit(false);   // a screen's theme left open at the end: the options go back as they were, not saved edited (XP-000484)
 	Options::save();
 }

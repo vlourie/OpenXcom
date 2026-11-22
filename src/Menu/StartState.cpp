@@ -48,6 +48,7 @@ namespace OpenXcom
 {
 
 std::atomic<LoadingPhase> StartState::loading(LOADING_STARTED);
+SDL_Thread *StartState::_thread = 0;
 std::string StartState::error;
 bool StartState::playIntroAfterReload = false;
 
@@ -66,8 +67,7 @@ StartState::StartState() : _anim(0)
 	Options::baseYResolution = Options::displayHeight;
 	_game->getScreen()->resetDisplay(false, true);
 
-	// Create objects
-	_thread = 0;
+	// Create objects (_thread: 0 here - the previous loading was waited for when its screen went)
 	loading = LOADING_STARTED;
 	error = "";
 	_oldMaster = Options::getActiveMaster();
@@ -119,20 +119,35 @@ StartState::StartState() : _anim(0)
 }
 
 /**
- * Join the loading thread, also when the game is quit while it still loads.
+ * Waits for the data loading thread if it still runs, also when the game is quit while it loads.
+ * Called by Game::run() before the options are written (the thread changes Options::mods, the language
+ * and the HD screen themes until its end) and again, harmlessly, by ~StartState.
  */
-StartState::~StartState()
+void StartState::waitLoading()
 {
 	if (_thread != 0)
 	{
 		// Killing the thread (SDL_KillThread = TerminateThread) freed its stack while the HdWorkers threads still ran
 		// a batch it had given them (the batch's function lives on that stack): they crashed reading it, and the exit
 		// waited for them in ~HdWorkers for good (a quit during the loading, AUDIT-05); a lock the thread held - the
-		// heap's, the DLL loader's - stayed taken too (R-150). The thread never waits for this one, and the mod and the
-		// language it fills are deleted after the states (Game::~Game): it comes to its end, and a quit takes the rest
-		// of the loading (about 2 s at most).
+		// heap's, the DLL loader's - stayed taken too (R-150). The thread never waits for the main one, and the mod
+		// and the language it fills are deleted after the states (Game::~Game): it comes to its end, and a quit takes
+		// the rest of the loading (about 2 s at most).
+		if (loading == LOADING_STARTED)
+		{
+			Log(LOG_INFO) << "Waiting for the data loading to finish before quitting...";
+		}
 		SDL_WaitThread(_thread, 0);
+		_thread = 0;
 	}
+}
+
+/**
+ * Join the loading thread, also when the game is quit while it still loads.
+ */
+StartState::~StartState()
+{
+	waitLoading();
 	delete _font;
 	delete _timer;
 	delete _lang;
