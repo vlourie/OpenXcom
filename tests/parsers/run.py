@@ -69,6 +69,14 @@ def write_samples(root):
     put("MAPS/MAPVALID.MAP", bytes((10, 10, 2)) + bytes(4 * 200))
     put("MAPS/MAPEXTRA.MAP", bytes((10, 10, 2)) + bytes(4 * 260))
     put("MAPS/MAPFLAT.MAP", bytes((10, 10, 0)) + bytes(4 * 100))
+    put("MAPS/MAPTAIL.MAP", bytes((10, 10, 2)) + bytes(4 * 200 + 1))
+    put("MAPS/MAPSHORT.MAP", bytes((10, 10)))
+    put("MAPS/MAPONE.MAP", bytes((10, 10, 1)) + bytes(4 * 100))
+    put("MAPS/MAPONEEXTRA.MAP", bytes((10, 10, 1)) + bytes(4 * 200))
+    # BLANKS: two MCD records of 62 bytes, one frame (32-bit TAB, a PCK that ends at once)
+    put("TERRAIN/BLANKS.MCD", bytes(62 * 2))
+    put("TERRAIN/BLANKS.TAB", bytes(4))
+    put("TERRAIN/BLANKS.PCK", bytes((0, 255)))
     put("FLC/SHORT.FLC", bytes(6)) # the header is read to its 16th byte at least
     put("FLC/NOTFLC.FLC", bytes(200))
     return put

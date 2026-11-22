@@ -43,6 +43,8 @@ private:
 	bool _loaded;
 	/// Reads the files of the set.
 	void loadDataNow(MCDPatch *patch, bool validate, int hdScale);
+	/// Forgets the two tiles of BLANKS when they are among these records (about to be deleted).
+	static void forgetBlankTiles(const std::vector<MapData*> &objects);
 	static MapData *_blankTile;
 	static MapData *_scorchedTile;
 public:

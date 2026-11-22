@@ -32,6 +32,8 @@
 #include "Engine/InteractiveSurface.h"
 #include "Mod/ExtraSounds.h"
 #include "Mod/MapBlock.h"
+#include "Mod/MapData.h"
+#include "Mod/MapDataSet.h"
 #include "Mod/Mod.h"
 #undef private
 #undef protected
@@ -183,6 +185,135 @@ void mapBlock(const char *name)
 	generator.loadMAP(&block, 0, 0, 0, &terrain, 0, false, false, -1);
 }
 
+/// A block put somewhere in a battle of its own; a refused block must leave every tile as it was (here: not discovered).
+void mapBlockAt(const char *name, int xoff, int zoff, int mapZ, bool refused, const char *what)
+{
+	static Mod *mod = 0;
+	static Game *game = 0;
+	static Language *lang = 0;
+	if (!mod)
+	{
+		mod = new Mod();
+		mod->_invs["STR_GROUND"] = new RuleInventory("STR_GROUND", 0);
+		lang = new Language();
+		game = (Game *)calloc(1, sizeof(Game));
+		game->_mod = mod;
+		game->_save = new SavedGame();
+	}
+	SavedBattleGame *battle = new SavedBattleGame(mod, lang);
+	battle->initMap(10, 10, mapZ);
+	game->_save->setBattleGame(battle);
+	BattlescapeGenerator generator(game);
+	MapBlock block(name);
+	block._size_x = 10;
+	block._size_y = 10;
+	RuleTerrain terrain("TEST");
+	bool threw = false;
+	try { generator.loadMAP(&block, xoff, 0, zoff, &terrain, 0, true, false, -1); } catch (const std::exception &) { threw = true; }
+	int discovered = 0;
+	for (int i = 0; i < battle->getMapSizeXYZ(); ++i)
+		discovered += battle->getTile(i)->isDiscovered(O_FLOOR) ? 1 : 0;
+	expect(threw == refused, what);
+	expect(!threw || discovered == 0, "a refused block changed tiles of the map");
+	expect(threw || discovered > 0, "a loaded block changed no tile");
+}
+
+// --- terrain sets: the two tiles of BLANKS (MapDataSet::getBlankFloorTile, getScorchedEarthTile) ---
+
+std::string dataRoot; // the data folder of the run, with the slash
+
+/// The PCK of BLANKS is taken away on disk (the file map still lists it): reading it fails.
+struct NoBlanksPck
+{
+	std::string path = dataRoot + "common/TERRAIN/BLANKS.PCK";
+	NoBlanksPck() { rename(path.c_str(), (path + ".away").c_str()); }
+	~NoBlanksPck() { rename((path + ".away").c_str(), path.c_str()); }
+};
+
+/// The tile is a record that lives: its fields are read (a freed one is a report of the sanitizer).
+int touch(const MapData *tile)
+{
+	return tile ? tile->getArmor() + tile->getTUCost(MT_WALK) : 0;
+}
+
+void blanksValid()
+{
+	MapDataSet set("BLANKS");
+	set.loadData(nullptr, true, 1);
+	expect(MapDataSet::getBlankFloorTile() == set.getObject(0), "the blank tile is not the first record of BLANKS");
+	expect(MapDataSet::getScorchedEarthTile() == set.getObject(1), "the scorched tile is not the second record of BLANKS");
+	touch(MapDataSet::getBlankFloorTile());
+	touch(MapDataSet::getScorchedEarthTile());
+	set.unloadData();
+	expect(!MapDataSet::getBlankFloorTile() && !MapDataSet::getScorchedEarthTile(), "the tiles of BLANKS point into an unloaded set");
+	// the next battle loads it again
+	set.loadData(nullptr, true, 1);
+	expect(MapDataSet::getScorchedEarthTile() == set.getObject(1), "BLANKS loaded again does not give its tiles");
+	touch(MapDataSet::getScorchedEarthTile());
+}
+
+void blanksNoPck()
+{
+	MapDataSet set("BLANKS");
+	{
+		NoBlanksPck away;
+		bool refused = false;
+		try { set.loadData(nullptr, true, 1); } catch (const std::exception &) { refused = true; }
+		expect(refused, "BLANKS without its PCK was loaded");
+	}
+	expect(!set.isLoaded(), "a refused set stays loaded");
+	touch(MapDataSet::getBlankFloorTile()); // the old code left both pointing into the deleted records
+	touch(MapDataSet::getScorchedEarthTile());
+	expect(!MapDataSet::getBlankFloorTile() && !MapDataSet::getScorchedEarthTile(), "a refused BLANKS published its tiles");
+	// the next battle, with the file back, starts
+	set.loadData(nullptr, true, 1);
+	expect(MapDataSet::getBlankFloorTile() == set.getObject(0), "BLANKS after a refusal does not give its tiles");
+	touch(MapDataSet::getBlankFloorTile());
+}
+
+void blanksScale()
+{
+	static Mod *mod = 0;
+	if (!mod)
+	{
+		Options::create();
+		Options::resetDefault(false);
+		mod = new Mod();
+	}
+	MapDataSet *set = new MapDataSet("BLANKS");
+	mod->_mapDataSets["BLANKS"] = set;
+	set->loadData(nullptr, true, 1);
+	MapData *blank = set->getObject(0), *scorched = set->getObject(1);
+
+	// a battle at another scale is refused: the parked battle comes back with its tiles
+	Mod::HdScalePark *park = mod->parkHdScale();
+	{
+		NoBlanksPck away;
+		bool refused = false;
+		try { set->loadData(nullptr, true, 2); } catch (const std::exception &) { refused = true; }
+		expect(refused, "BLANKS without its PCK was loaded at scale 2");
+	}
+	mod->unparkHdScale(park);
+	expect(set->isLoaded() && set->getObject(0) == blank, "the parked set did not come back");
+	expect(MapDataSet::getBlankFloorTile() == blank && MapDataSet::getScorchedEarthTile() == scorched, "the tiles of BLANKS are not the parked ones after a refusal");
+	touch(MapDataSet::getBlankFloorTile());
+	touch(MapDataSet::getScorchedEarthTile());
+
+	// the same at scale 2 with the file there: the new set, the parked one is freed
+	park = mod->parkHdScale();
+	set->loadData(nullptr, true, 2);
+	MapData *blank2 = set->getObject(0), *scorched2 = set->getObject(1);
+	mod->dropHdScale(park);
+	expect(MapDataSet::getBlankFloorTile() == blank2 && MapDataSet::getScorchedEarthTile() == scorched2, "the tiles of BLANKS are not those of the new scale");
+	touch(MapDataSet::getBlankFloorTile());
+	touch(MapDataSet::getScorchedEarthTile());
+
+	// the battle ends, the set goes
+	mod->_mapDataSets.erase("BLANKS");
+	delete set;
+	expect(!MapDataSet::getBlankFloorTile() && !MapDataSet::getScorchedEarthTile(), "the tiles of BLANKS outlive their set");
+}
+
 // --- video ---
 
 void flc(const char *file)
@@ -223,6 +354,17 @@ const Case cases[] = {
 	{ "map_valid",			[] { mapBlock("MAPVALID"); } },
 	{ "map_extra_records",	[] { mapBlock("MAPEXTRA"); } },
 	{ "map_no_height",		[] { mapBlock("MAPFLAT"); } },
+	// a byte past the last record: 1708 maps of X-Piratez end so, they load as they always did
+	{ "map_tail_byte",		[] { mapBlockAt("MAPTAIL", 0, 0, 2, false, "a map with a byte past its records was refused"); } },
+	{ "map_short_header",	[] { mapBlockAt("MAPSHORT", 0, 0, 2, true, "a map without its header was loaded"); } },
+	{ "map_outside",		[] { mapBlockAt("MAPVALID", 5, 0, 2, true, "a block past the edge of the map was loaded"); } },
+	{ "map_below_bottom",	[] { mapBlockAt("MAPVALID", 0, -1, 2, true, "a block below the bottom of the map was loaded"); } },
+	// a block of one layer with the records of two, put on layer 1 (a craft, a vertical level): the second layer is the ground
+	{ "map_extra_over_ground", [] { mapBlockAt("MAPONEEXTRA", 0, 1, 3, true, "a block wrote its extra records over the layer below"); } },
+	{ "map_upper_layer",	[] { mapBlockAt("MAPONE", 0, 1, 3, false, "a block of one layer on layer 1 was refused"); } },
+	{ "blanks_valid",		[] { blanksValid(); } },
+	{ "blanks_no_pck",		[] { blanksNoPck(); } },
+	{ "blanks_scale",		[] { blanksScale(); } },
 	{ "flc_short",			[] { flc("FLC/SHORT.FLC"); } },
 	{ "flc_not_video",		[] { flc("FLC/NOTFLC.FLC"); } },
 };
@@ -276,6 +418,7 @@ int main(int argc, char *argv[])
 	std::string data = argv[3];
 	if (!data.empty() && data.back() != '/')
 		data += '/';
+	dataRoot = data;
 	Options::setDataFolder(data);
 	FileMap::clear(false, false);
 

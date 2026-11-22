@@ -119,12 +119,36 @@ void MapDataSet::loadData(MCDPatch *patch, bool validate, int hdScale)
 		unloadData();
 		throw;
 	}
+	// store the 2 tiles of blanks in a static - so they are accessible everywhere; only a set that loaded whole
+	// publishes them (a refused one deletes its records), and they go when their records go (unloadData, drop)
+	if (_name.compare("BLANKS") == 0)
+	{
+		MapDataSet::_blankTile = _objects.size() > 0 ? _objects[0] : nullptr;
+		MapDataSet::_scorchedTile = _objects.size() > 1 ? _objects[1] : nullptr;
+	}
+}
+
+/**
+ * Forgets the two tiles of BLANKS when they are among the records about to be deleted.
+ * @param objects The records that go.
+ */
+void MapDataSet::forgetBlankTiles(const std::vector<MapData*> &objects)
+{
+	for (const auto* mapdata : objects)
+	{
+		if (mapdata == _blankTile)
+		{
+			_blankTile = nullptr;
+		}
+		if (mapdata == _scorchedTile)
+		{
+			_scorchedTile = nullptr;
+		}
+	}
 }
 
 void MapDataSet::loadDataNow(MCDPatch *patch, bool validate, int hdScale)
 {
-	int objNumber = 0;
-
 	// the struct below helps to read the xcom file format
 	#pragma pack(push, 1)
 	struct MCD
@@ -214,16 +238,6 @@ void MapDataSet::loadDataNow(MCDPatch *patch, bool validate, int hdScale)
 			int loft = (int)mcd.LOFT[layer];
 			to->setLoftID(loft, layer);
 		}
-
-		// store the 2 tiles of blanks in a static - so they are accessible everywhere
-		if (_name.compare("BLANKS") == 0)
-		{
-			if (objNumber == 0)
-				MapDataSet::_blankTile = to;
-			else if (objNumber == 1)
-				MapDataSet::_scorchedTile = to;
-		}
-		objNumber++;
 	}
 
 	if (!mapFile->eof())
@@ -282,6 +296,7 @@ void MapDataSet::unloadData()
 {
 	if (_loaded)
 	{
+		forgetBlankTiles(_objects);
 		for (auto* mapdata : _objects)
 		{
 			delete mapdata;
@@ -314,6 +329,7 @@ void MapDataSet::unpark(Parked &from)
 
 void MapDataSet::drop(Parked &parked)
 {
+	forgetBlankTiles(parked.objects);
 	for (auto* mapdata : parked.objects)
 	{
 		delete mapdata;
