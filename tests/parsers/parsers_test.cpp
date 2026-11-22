@@ -16,6 +16,8 @@
 #include <new>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <atomic>
 #include <vector>
 #include <SDL.h>
 #include <SDL_mixer.h>
@@ -35,6 +37,7 @@
 #include "Mod/MapData.h"
 #include "Mod/MapDataSet.h"
 #include "Mod/Mod.h"
+#include "Engine/SurfaceSet.h"
 #undef private
 #undef protected
 #include "Engine/Action.h"
@@ -425,6 +428,118 @@ void soldierRank()
 	}
 }
 
+/// The threads of the test meet here before each step.
+struct SpinBarrier
+{
+	const int n;
+	std::atomic<int> count{0}, generation{0};
+	explicit SpinBarrier(int threads) : n(threads) {}
+	void wait()
+	{
+		const int g = generation.load(std::memory_order_acquire);
+		if (count.fetch_add(1, std::memory_order_acq_rel) + 1 == n)
+		{
+			count.store(0, std::memory_order_relaxed);
+			generation.fetch_add(1, std::memory_order_release);
+		}
+		else
+		{
+			while (generation.load(std::memory_order_acquire) == g)
+			{
+				std::this_thread::yield();
+			}
+		}
+	}
+};
+
+bool sameFrame(Surface *a, Surface *b)
+{
+	if (!a || !b || a->getWidth() != b->getWidth() || a->getHeight() != b->getHeight())
+	{
+		return false;
+	}
+	SDL_Surface *sa = a->getSurface(), *sb = b->getSurface();
+	for (int y = 0; y < a->getHeight(); ++y)
+	{
+		if (memcmp((Uint8*)sa->pixels + (size_t)y * sa->pitch, (Uint8*)sb->pixels + (size_t)y * sb->pitch, a->getWidth()))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+/// A scaled copy of a set whose frames get their memory and pixels on first use (2688657a3, SurfaceSet::hdFill):
+/// eight threads ask for the same frame at the same moment, the first time it is asked for, frame after frame; every
+/// one of them must get the pixels of the copy made the old way (hdScaleInPlace) right away, and the sanitizers must
+/// see nothing. 48 frames of 32x40 at scale 4 (5 pages a frame), 20 fresh copies; the order of the frames changes with
+/// the copy, and in every copy a quarter of the frames is left untouched (destroyed without memory).
+void hdLazyConcurrent()
+{
+	const int frames = 48, scale = 4, threads = 8, rounds = 20;
+	SurfaceSet src(32, 40);
+	for (int i = 0; i < frames; ++i)
+	{
+		Surface *f = src.addFrame(i);
+		for (int y = 0; y < 40; ++y)
+		{
+			for (int x = 0; x < 32; ++x)
+			{
+				f->setPixel(x, y, (Uint8)(1 + (i * 37 + x * 3 + y * 11) % 254));
+			}
+		}
+	}
+	SurfaceSet eager(src);
+	eager.hdScaleInPlace(scale);
+	{
+		std::unique_ptr<SurfaceSet> probe(src.hdScaledCopy(scale));
+		expect(probe->_hdLazy != nullptr, "the scaled copy is not lazy - the test does not reach hdFill");
+	}
+	std::atomic<SurfaceSet*> current{nullptr};
+	std::atomic<int> wrong{0}, asked{0};
+	SpinBarrier barrier(threads);
+	auto body = [&](int t)
+	{
+		for (int round = 0; round < rounds; ++round)
+		{
+			if (t == 0)
+			{
+				current.store(src.hdScaledCopy(scale), std::memory_order_release);
+			}
+			barrier.wait();
+			SurfaceSet *set = current.load(std::memory_order_acquire);
+			for (int k = 0; k < frames * 3 / 4; ++k)
+			{
+				const int i = (k * 7 + round * 5) % frames; // 7 and 48 are coprime: no frame twice in a copy
+				barrier.wait();
+				Surface *f = set->getFrame(i);
+				asked.fetch_add(1, std::memory_order_relaxed);
+				if (!sameFrame(f, eager.getFrame(i)))
+				{
+					wrong.fetch_add(1, std::memory_order_relaxed);
+				}
+			}
+			barrier.wait();
+			if (t == 0)
+			{
+				delete set;
+			}
+		}
+	};
+	std::vector<std::thread> pool;
+	for (int t = 1; t < threads; ++t)
+	{
+		pool.emplace_back(body, t);
+	}
+	body(0);
+	for (auto &th : pool)
+	{
+		th.join();
+	}
+	expect(asked.load() == rounds * (frames * 3 / 4) * threads, "not every thread asked for every frame");
+	expect(wrong.load() == 0, "a thread got a frame of the lazy copy that differs from the copy made the old way");
+}
+
 /// The HD interface pictures of a mod in a .zip (run.py: hd/UI of the mod 'hdzip', 300 pictures with their palettes).
 /// Their sizes and palettes are read on the worker threads (61585af33); a .zip is one reader for all of its files:
 /// every picture must come in, of its size and with its own palette, in every one of ten loads.
@@ -522,6 +637,7 @@ const Case cases[] = {
 	{ "transfer_hours",		[] { transferHours(); } },
 	{ "soldier_rank",		[] { soldierRank(); } },
 	{ "hdui_zip",			[] { hdUiZip(); } },
+	{ "hd_lazy_concurrent",	[] { hdLazyConcurrent(); } },
 	{ "flc_short",			[] { flc("FLC/SHORT.FLC"); } },
 	{ "flc_not_video",		[] { flc("FLC/NOTFLC.FLC"); } },
 };
