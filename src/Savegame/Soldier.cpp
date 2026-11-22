@@ -178,11 +178,18 @@ void Soldier::load(const YAML::YamlNodeReader& node, const Mod *mod, SavedGame *
 		_initialStats.mana = reroll;
 	}
 
-	reader.tryRead("rank", _rank);
-	if (_rank < RANK_ROOKIE || _rank > RANK_COMMANDER)
+	// the rank is an index of fixed tables (rank counts, the best of a rank, soldiers per rank): read wide and checked
+	// before it is one (as an int, 4294967300 wrapped round to 4); no rank in the save - the soldier keeps the one it has
+	std::string rankText;
+	if (reader.tryRead("rank", rankText))
 	{
-		// the rank is an index of fixed tables (rank counts, the best of a rank, soldiers per rank)
-		throw Exception("Invalid soldier rank in the save");
+		const ryml::csubstr text = ryml::to_csubstr(rankText);
+		long long wide = 0;
+		if (!ryml::atoi(text, &wide) || c4::overflows<long long>(text) || wide < RANK_ROOKIE || wide > RANK_COMMANDER)
+		{
+			throw Exception("Invalid soldier rank in the save: " + rankText.substr(0, 40));
+		}
+		_rank = (SoldierRank)wide;
 	}
 	reader.tryRead("gender", _gender);
 	reader.tryRead("look", _look);
