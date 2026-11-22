@@ -161,7 +161,14 @@ struct output_status {
 	unsigned int delta;
 	unsigned int patch;
 	unsigned char prevcmd;
+	/// The commands read so far for the whole stream, calls of subsequences counted at every call.
+	unsigned long work;
 };
+
+/// No track of the game comes near either: the commands a stream may read (a subsequence called from a subsequence
+/// called many times multiplies them, and a call writes nothing) and the MIDI it may make.
+static const unsigned long GMEXT_MAX_WORK = 1ul << 24;
+static const size_t GMEXT_MAX_MIDI = 64u << 20;
 
 static int gmext_write_sequence (std::vector<unsigned char> &midi,
 	const struct gmstream *stream, unsigned int channel,
@@ -171,13 +178,17 @@ static int gmext_write_sequence (std::vector<unsigned char> &midi,
 	unsigned int left = seq->size;
 
 	// a subsequence that inserts itself (directly or in a ring) never ends: a chain of different subsequences
-	// is never deeper than their number; and no track of the game comes near 64 MiB of MIDI
-	if (depth > stream->nsubs || midi.size() > (64u << 20))
+	// is never deeper than their number
+	if (depth > stream->nsubs)
 		return -1;
 
 	unsigned char cmd = -1;
 
 	while (left) {
+
+		// every command of every branch: subsequences that call each other many times do not end in any time
+		if (++status->work > GMEXT_MAX_WORK || midi.size() > GMEXT_MAX_MIDI)
+			return -1;
 
 		// read delta
 		unsigned int ndelta = 0;
@@ -321,6 +332,7 @@ static int gmext_write_midi (const struct gmstream *stream,
 	gmext_write_end_ev(midi);
 
 	// write tracks
+	unsigned long work = 0;
 	for (int j=0; j<stream->ntracks; ++j) {
 
 		// header
@@ -340,11 +352,12 @@ static int gmext_write_midi (const struct gmstream *stream,
 			midi.push_back(midi_track_init[i]);
 
 		// body
-		struct output_status status = { 0, 0, 0 };
+		struct output_status status = { 0, 0, 0, work };
 		if (gmext_write_sequence(midi, stream,
 				stream->tracks[j].channel,
 				&stream->tracks[j].seq, &status) == -1)
 			return -1;
+		work = status.work;
 
 		// end of track
 		gmext_write_delta(midi, status.delta);
