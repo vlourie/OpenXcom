@@ -2,6 +2,7 @@
 //
 //   adlib_test bad [n | count]      damaged tracks made here (no game data needed): must end without a sanitizer report;
 //                                   n - one of them as a process of its own, count - how many there are
+//   adlib_test valid                whole tracks made here, the hash of the sound of each: compared with another tree
 //   adlib_test hash <ADLIB.CAT>     a hash of the sound of every track of the file: the same before and after a change
 //                                   of the player means the music of the game did not change
 //   adlib_test fuzz <ADLIB.CAT> <seed> <count>   tracks of the file cut and damaged at random: no report, no hang
@@ -110,6 +111,41 @@ static Bytes make(int samples, const std::vector<Bytes> &subtracks, const std::v
 	return t;
 }
 
+/// A whole track that reads more commands without a delay than it has bytes: 30 calls of one subtrack of 41 commands
+/// (a volume, then the same command repeated), then a note. The original player plays the note; a limit of the
+/// commands of one go by the length of the data stopped the track before it.
+static Bytes reuseTrack()
+{
+	Bytes sub = { 0, 0xB0, 0x07, 0x64, 0 };
+	for (int i = 0; i < 40; ++i) { sub.push_back(0x07); sub.push_back(0x64); sub.push_back(0); }
+	sub.push_back(0xFD);
+	Bytes main = { 0 };
+	for (int i = 0; i < 30; ++i) { main.push_back(0xFE); main.push_back(0); main.push_back(0); }
+	const unsigned char note[] = { 0xC0, 0, 0, 0x90, 40, 100, 10, 0x80, 40, 0, 1, 0xFF };
+	main.insert(main.end(), note, note + sizeof(note));
+	return make(1, { sub }, { main });
+}
+
+/// Whole tracks made here: their sound is compared with another tree (run.py --old), as the music of the game is.
+/// @param only the one track (a process of its own: what a track leaves in the player does not reach the next), or -1 all.
+static int runValid(int only)
+{
+	const struct { const char *name; Bytes track; } tracks[] = {
+		{ "reuse", reuseTrack() },
+		// an instrument starts at volume 0: the volume first, or nothing sounds
+		{ "one_note", make(1, {}, { { 0, 0xB0, 0x07, 0x7F, 0, 0xC0, 0, 0, 0x90, 40, 100, 10, 0x80, 40, 0, 1, 0xFF } }) },
+		// the loop command: the track starts over within the tick it is met
+		{ "loop", make(1, {}, { { 0, 0xB0, 0x07, 0x7F, 0, 0xC0, 0, 0, 0x90, 40, 100, 10, 0x80, 40, 0, 5, 0xC0, 0x7E, 0, 0xFF } }) },
+		{ "silence", make(1, {}, { { 0, 0xFF } }) },
+	};
+	for (int i = 0; i < (int)(sizeof(tracks) / sizeof(tracks[0])); ++i)
+	{
+		if (only < 0 || only == i)
+			printf("%s %016llx\n", tracks[i].name, (unsigned long long)playTrack(tracks[i].track, 200));
+	}
+	return 0;
+}
+
 /// @param only -1 all the cases, -2 prints their number, else the one case (a process of its own: the old player dies on it).
 static int runBad(int only)
 {
@@ -128,6 +164,8 @@ static int runBad(int only)
 	cases.push_back({ "number cut by the end of the data", make(1, {}, { { 0, 0x90, 40, 100, 0x81, 0x81 } }) });
 	cases.push_back({ "call of a subtrack that does not exist", make(1, {}, { { 0, 0xFE, 99 } }) });
 	cases.push_back({ "subtrack that calls itself", make(1, { { 0xFE, 0, 0 } }, { { 0, 0xFE, 0, 0 } }) });
+	cases.push_back({ "two subtracks that call each other", make(1, { { 0, 0xFE, 1 }, { 0, 0xFE, 0 } }, { { 0, 0xFE, 0 } }) });
+	cases.push_back({ "a subtrack called 30 times without a delay", reuseTrack() });
 	cases.push_back({ "loop command without a delay", make(1, {}, { { 0, 0xC0, 0x7E, 0 } }) });
 	cases.push_back({ "chorus instrument 0 (index -1)", make(1, {}, { { 0, 0xB0, 0x7E, 0, 0, 0x90, 40, 100, 5, 0xFF } }) });
 	cases.push_back({ "chorus instrument 127", make(1, {}, { { 0, 0xB0, 0x7E, 127, 0, 0x90, 40, 100, 5, 0xFF } }) });
@@ -156,6 +194,8 @@ static int runBad(int only)
 int main(int argc, char **argv)
 {
 	const std::string mode = argc > 1 ? argv[1] : "";
+	if (mode == "valid")
+		return runValid(argc > 2 ? atoi(argv[2]) : -1);
 	if (mode == "bad")
 		return runBad(argc > 2 ? (strcmp(argv[2], "count") ? atoi(argv[2]) : -2) : -1);
 	if ((mode == "hash" || mode == "fuzz") && argc > 2)

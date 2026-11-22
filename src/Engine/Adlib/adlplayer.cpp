@@ -582,14 +582,25 @@ int decode_op(int instrument, bool* another_loop)
 	unsigned char* music_ptr = instr1->cur_address;
 	unsigned char opcode,arg1,arg2;
 	int delay = 0;
-	// commands without a delay between them are read in one go: there cannot be more of them than bytes in the
-	// track, unless a subtrack calls itself
-	long budget = (long)(adl_gv_music_end - adl_gv_music_start);
+	// Commands without a delay between them are read in one go. The reader only moves forward (every command reads its
+	// byte and a delay) except at a call of a subtrack or a return from it, and what it reads next depends only on
+	// where it is, where it returns to and the running command. So a read that never reaches a delay (a subtrack that
+	// calls itself, two that call each other) goes round a circle that passes a jump: the state after each jump is
+	// watched for a repeat (Brent: the state is kept at jump 1, 2, 4, 8, ...; a circle is met within twice its length
+	// past its start). Any number of calls of a subtrack that do reach the end is played, as the original player did.
+	struct { unsigned char *ptr, *ret; unsigned char prev; } kept = { 0, 0, 0 };
+	bool keeping = false;
+	unsigned long power = 1, lam = 0;
+// the state after a jump: the same as the one kept - no progress, the track is over; else maybe keep it
+#define ADL_JUMPED() do { \
+		if (keeping && kept.ptr == music_ptr && kept.ret == instr1->return_address && kept.prev == instr1->prev_cmd) goto track_over; \
+		if (!keeping || ++lam == power) { kept.ptr = music_ptr; kept.ret = instr1->return_address; kept.prev = instr1->prev_cmd; \
+			if (keeping) { power <<= 1; lam = 0; } keeping = true; } \
+	} while (0)
 // one byte of the track; no more data - the track is over, as with command 0xff
 #define ADL_READ(var) do { if (music_ptr < adl_gv_music_start || music_ptr >= adl_gv_music_end) goto track_over; var = *(music_ptr++); } while (0)
 
 	do {
-		if (--budget < 0) goto track_over;
 		ADL_READ(opcode);
 		if (opcode == 0xfe) //call for subtrack
 		{
@@ -598,6 +609,7 @@ int decode_op(int instrument, bool* another_loop)
 				//printf("Call for subtrack [%d] %d\n",instrument,arg1);
 			instr1->return_address = music_ptr;
 			music_ptr = adl_gv_subtracks[arg1];
+			ADL_JUMPED();
 		}
 		else if (opcode == 0xfd) //return from subtrack
 		{
@@ -610,6 +622,7 @@ int decode_op(int instrument, bool* another_loop)
 				music_ptr = instr1->return_address;
 					//printf("Return from subtrack [%d] -> %x\n",instrument,instr1->return_address);
 				instr1->return_address = 0;
+				ADL_JUMPED();
 			}
 		}
 		else if (opcode == 0xff) //finishing track
@@ -724,6 +737,7 @@ int decode_op(int instrument, bool* another_loop)
 	return delay;
 track_over:
 #undef ADL_READ
+#undef ADL_JUMPED
 	adl_gv_music_playing = false;
 	instr1->cur_address = music_ptr;
 	return 0;
@@ -787,18 +801,19 @@ void init_music_data(unsigned char* music_ptr,int length)
 	{
 		if (!ADL_ROOM(adl_gv_FORMAT==1 ? 5 : 4)) break;
 		to_add = peek_u16(music_ptr); //reading 16bit length
+		// the player has 16 instruments: a part for a 17th one or later (old format: the 17th part and on, new format:
+		// a channel above 15) is not played and leaves the 16th one its own part (it took it over before); no track of
+		// the original game has such a part
 		if (adl_gv_FORMAT==1)
 		{
 			j = *(music_ptr+4);
-			if (j>15) j=15;
-			instruments[j].start_address = music_ptr+5;
+			if (j<=15) instruments[j].start_address = music_ptr+5;
 		}
 		else
 		if (adl_gv_FORMAT==0)
 		{
 			j = i;
-			if (j>15) j=15;
-			instruments[j].start_address = music_ptr+4; //old format, without title
+			if (j<=15) instruments[j].start_address = music_ptr+4; //old format, without title
 		}
 		if (!ADL_ROOM(to_add)) break;
 		music_ptr += to_add;
@@ -849,7 +864,13 @@ void func_load_music_state(int i)
 void func_play_tick()
 {
 	bool another_loop;
-	int restarts = 0;
+	// A restart puts every instrument at its start; the pass after it depends only on what a restart leaves as it was
+	// (the running command and the return address of each). The same of those after two restarts within one tick: the
+	// track restarts without a delay for ever. Watched as in decode_op (Brent), so a track that restarts once more and
+	// then goes on plays as before.
+	struct Kept { unsigned char prev[16]; unsigned char *ret[16]; bool playing; } kept, now;
+	bool keeping = false;
+	unsigned long power = 1, lam = 0;
 
 	if (!adl_gv_music_playing) return;
 	fade_volume_if_need();
@@ -872,14 +893,29 @@ void func_play_tick()
 			--instruments[instr].cur_delay;
 		}
 		if (!another_loop && adl_gv_music_playing) break;
-		if (++restarts > 16)
-		{
-			// the track restarts itself again and again within one tick: it has no delay at all
-			func_mute();
-			break;
-		}
 		init_music();
 		clear_channels();
+		if (another_loop)
+		{
+			for (int i = 0; i < 16; ++i)
+			{
+				now.prev[i] = instruments[i].prev_cmd;
+				now.ret[i] = instruments[i].return_address;
+			}
+			now.playing = adl_gv_music_playing;
+			if (keeping && now.playing == kept.playing && memcmp(now.prev, kept.prev, sizeof(now.prev)) == 0 && memcmp(now.ret, kept.ret, sizeof(now.ret)) == 0)
+			{
+				// no delay anywhere on the way round: it would restart within this tick for ever
+				func_mute();
+				break;
+			}
+			if (!keeping || ++lam == power)
+			{
+				kept = now;
+				if (keeping) { power <<= 1; lam = 0; }
+				keeping = true;
+			}
+		}
 	} while (another_loop);
 }
 

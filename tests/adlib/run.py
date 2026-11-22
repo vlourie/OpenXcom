@@ -40,6 +40,19 @@ def main():
         vo = verdict(*run([a.old, "bad", str(i)], 60)) if a.old else ""
         bad += v != "clean"
         print("%-48s %-10s %s" % (names[i] if i < len(names) else i, v, vo))
+    # whole tracks made here, each a process of its own: what one leaves in the player does not reach the next
+    names = [l.split()[0] for l in run([a.exe, "valid"])[1].splitlines() if l.strip()]
+    print("whole tracks made here: %d" % len(names))
+    for i, name in enumerate(names):
+        code, new = run([a.exe, "valid", str(i)], 60)
+        line = "  %-12s %s" % (name, verdict(code, new))
+        bad += code != 0
+        if a.old:
+            code2, old = run([a.old, "valid", str(i)], 60)
+            same = code2 == 0 and new == old
+            line += ", " + ("the same as the old player" if same else "DIFFERENT from the old player (%s / %s)" % (new.split()[-1] if new.split() else "-", old.split()[-1] if code2 == 0 and old.split() else verdict(code2, old)))
+            bad += not same
+        print(line)
     for cat in a.cat:
         code, new = run([a.exe, "hash", cat])
         print("%s: %d tracks, %s" % (cat, len(new.splitlines()), verdict(code, new)))
