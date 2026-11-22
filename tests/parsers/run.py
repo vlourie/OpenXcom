@@ -49,6 +49,8 @@ GM = {
     # two tracks: the old code counts the first one's length off and reads the second one from behind the file
     "gm_track_length_past_end": bytes((0, 120, 0, 2, 0)) + struct.pack("<I", 0xFFFFFFF0) + bytes(8),
     "gm_subsequence_calls_itself": gm(120, [[0, 0xFE, 0]], [(0, [0, 0xFE, 0, 0, 0xFF])]),
+    # 24 subsequences, each calls the next one 8 times: 8^23 calls that write nothing, the converter never ends
+    "gm_subsequence_fanout": gm(120, [[0, 0xFE, i + 1] * 8 for i in range(23)] + [[0, 0xFD]], [(0, [0, 0xFE, 0, 0, 0xFF])]),
     "gm_patch_past_table": gm(120, [], [(0, [0, 0xC0, 0xF0, 0, 0x90, 0x40, 0x64, 0, 0xFF])]),
     "gm_name_longer_than_record": bytes((200, 1, 2)),
 }
@@ -64,6 +66,7 @@ def write_samples(root):
     put("SOUND/SNDSHORT.CAT", cat([b"\0" + wav([128] * 64), b"\0RIFF\x10\0\0\0WAVEfmt "]))
     put("GEODATA/DATVALID.DAT", bytes(32 * 40 * 2))
     put("GEODATA/DATSHORT.DAT", bytes(10))
+    put("GEODATA/DATPARTIAL.DAT", bytes([7]) * (32 * 40) + bytes([9]) * (32 * 20))
     rows = [[(1 if (x + y) % 3 == 0 else 0) for x in range(24)] for y in range(8)]
     put("Language/FONTTEST.png", png8(24, 8, rows))
     put("MAPS/MAPVALID.MAP", bytes((10, 10, 2)) + bytes(4 * 200))

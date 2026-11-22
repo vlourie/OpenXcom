@@ -59,6 +59,14 @@
 #include "Savegame/SavedBattleGame.h"
 #include "Savegame/SavedGame.h"
 #include "Savegame/Tile.h"
+#include "Savegame/Base.h"
+#include "Savegame/ItemContainer.h"
+#include "Savegame/Soldier.h"
+#include "Savegame/Transfer.h"
+#include "Mod/Armor.h"
+#include "Mod/RuleItem.h"
+#include "Mod/RuleSoldier.h"
+#include <climits>
 
 extern "C" int oxce_game_main(int argc, char *argv[]);
 
@@ -99,6 +107,7 @@ void extraSoundsEmptyName()
 	extra._current = &mod;
 	SoundSet set;
 	extra.loadSoundSet(&set);
+	expect(set.getSound(0) == nullptr, "an empty file name made a sound");
 }
 
 // --- pictures ---
@@ -109,6 +118,25 @@ void surfaceSetDat(const char *file)
 	set.loadDat(file);
 }
 
+/// One whole frame and half of the next: the whole one is read, the half left out, no frame stays locked.
+void surfaceSetDatPartial()
+{
+	SurfaceSet set(32, 40);
+	set.loadDat("GEODATA/DATPARTIAL.DAT");
+	expect(set.getTotalFrames() == 1, "a set of one and a half frames has not one frame");
+	expect(set.getFrame(0)->getSurface()->locked == 0, "the frame is left locked");
+	expect(set.getFrame(0)->getPixel(0, 0) == 7 && set.getFrame(0)->getPixel(31, 39) == 7, "the frame is not the file's");
+}
+
+/// The font has no '?': every character it lacks is drawn as the first character of its first image.
+void fontNoQuestionFirst()
+{
+	const char *yaml = "width: 8\nheight: 8\nimages:\n  - file: FONTTEST.png\n    chars: \"BA\"\n";
+	YAML::YamlRootNodeReader reader(YAML::YamlString(yaml), "font of the test");
+	Font f;
+	f.load(reader);
+	expect(f.getChar('Z').getCrop()->x == f.getChar('B').getCrop()->x && f.getCharSize('Z').w == f.getCharSize('B').w, "a missing character is not drawn as the first one of the file");
+}
 void font(const char *yaml, bool draw)
 {
 	YAML::YamlRootNodeReader reader(YAML::YamlString(yaml), "font of the test");
@@ -314,6 +342,86 @@ void blanksScale()
 	expect(!MapDataSet::getBlankFloorTile() && !MapDataSet::getScorchedEarthTile(), "the tiles of BLANKS outlive their set");
 }
 
+// --- saves ---
+
+/// A mod with nothing in it but one item, one soldier and one armor of the test.
+Mod *plainMod()
+{
+	static Mod *mod = 0;
+	if (!mod)
+	{
+		Options::create();
+		Options::resetDefault(false);
+		mod = new Mod();
+		mod->_items["TEST_ITEM"] = new RuleItem("TEST_ITEM", 0);
+		mod->_soldiers["TEST_SOLDIER"] = new RuleSoldier("TEST_SOLDIER", 0);
+		mod->_armors["TEST_ARMOR"] = new Armor("TEST_ARMOR", 0);
+	}
+	return mod;
+}
+
+/// A transfer arrives once whatever its hours (a save, transferTime: 0, a damaged INT_MIN), and once more after a save.
+void transferHours()
+{
+	Mod *mod = plainMod();
+	const RuleItem *item = mod->getItem("TEST_ITEM");
+	for (int hours : { 2, 1, 0, -5, INT_MIN })
+	{
+		Base base(mod);
+		Transfer people(hours), things(hours);
+		people.setEngineers(3);
+		things.setItems(item, 4);
+		for (int hour = 0; hour < 6; ++hour)
+		{
+			people.advance(&base);
+			things.advance(&base);
+			expect(people.getHours() >= 0 && things.getHours() >= 0, "a transfer has hours below zero");
+		}
+		expect(base.getEngineers() == 3, "the engineers did not arrive once");
+		expect(base.getStorageItems()->getItem(item) == 4, "the items did not arrive once");
+	}
+	// delivered, saved and loaded: the next hours bring nothing more
+	Base base(mod);
+	Transfer things(0);
+	things.setItems(item, 2);
+	things.advance(&base);
+	YAML::YamlRootNodeWriter writer;
+	things.save(writer.toBase(), &base, mod);
+	const std::string yaml = writer.emit().yaml;
+	YAML::YamlRootNodeReader reader(YAML::YamlString(yaml), "transfer of the test");
+	Transfer *loaded = new Transfer(0);
+	expect(loaded->load(reader, &base, mod, nullptr), "the saved transfer was not loaded");
+	for (int hour = 0; hour < 3; ++hour)
+		loaded->advance(&base);
+	delete loaded;
+	expect(base.getStorageItems()->getItem(item) == 2, "a delivered transfer came again after a save");
+}
+
+/// The rank of a save: 0..5 is taken, anything else refused (as an int, 4294967300 was rank 4), no rank keeps the old one.
+void soldierRank()
+{
+	Mod *mod = plainMod();
+	auto load = [&](const std::string &rank, bool &refused) -> int
+	{
+		Soldier soldier(mod->getSoldier("TEST_SOLDIER"), nullptr, 0);
+		std::string yaml = "armor: TEST_ARMOR";
+		if (!rank.empty())
+			yaml += std::string(1, (char)10) + "rank: " + rank;
+		YAML::YamlRootNodeReader reader(YAML::YamlString(yaml), "soldier of the test");
+		refused = false;
+		try { soldier.load(reader, mod, nullptr, mod->getScriptGlobal()); } catch (const std::exception &) { refused = true; }
+		return soldier.getRank();
+	};
+	bool refused;
+	expect(load("4", refused) == RANK_COLONEL && !refused, "rank 4 was not read");
+	expect(load("", refused) == RANK_ROOKIE && !refused, "a soldier without a rank does not keep the one it has");
+	for (const char *bad : { "4294967300", "6", "-1", "99999999999999999999", "abc" })
+	{
+		load(bad, refused);
+		expect(refused, "a rank out of the tables was taken");
+	}
+}
+
 // --- video ---
 
 void flc(const char *file)
@@ -343,6 +451,8 @@ const Case cases[] = {
 	{ "extrasounds_empty_name", [] { extraSoundsEmptyName(); } },
 	{ "dat_valid",			[] { surfaceSetDat("GEODATA/DATVALID.DAT"); } },
 	{ "dat_short",			[] { surfaceSetDat("GEODATA/DATSHORT.DAT"); } },
+	{ "dat_partial_frame",	[] { surfaceSetDatPartial(); } },
+	{ "font_no_question_first", [] { fontNoQuestionFirst(); } },
 	{ "font_valid",			[] { font("images:\n  - file: FONTTEST.png\n    width: 8\n    height: 8\n    chars: \"AB?\"\n", true); } },
 	{ "font_zero_width",	[] { font("images:\n  - file: FONTTEST.png\n    width: 0\n    height: 8\n    chars: \"AB?\"\n", true); } },
 	{ "font_wider_than_image", [] { font("images:\n  - file: FONTTEST.png\n    width: 64\n    height: 8\n    chars: \"AB?\"\n", true); } },
@@ -365,6 +475,8 @@ const Case cases[] = {
 	{ "blanks_valid",		[] { blanksValid(); } },
 	{ "blanks_no_pck",		[] { blanksNoPck(); } },
 	{ "blanks_scale",		[] { blanksScale(); } },
+	{ "transfer_hours",		[] { transferHours(); } },
+	{ "soldier_rank",		[] { soldierRank(); } },
 	{ "flc_short",			[] { flc("FLC/SHORT.FLC"); } },
 	{ "flc_not_video",		[] { flc("FLC/NOTFLC.FLC"); } },
 };
