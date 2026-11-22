@@ -1,0 +1,73 @@
+﻿Черновик поправок к посту docs/QA/forum-oxce-audit05-bugreport-2026-11-20.txt по итогам повторного разбора AUDIT-05
+(docs/QA/AUDIT05/AUDIT05_REGRESSION_REVIEW.md). Не отправлен; публикация - отдельным решением Vitali.
+Ниже - ответ в ту же тему: вступление, затем пункты на замену старым. Номера строк - как в посте, по upstream f0134ef80.
+-----------------------------------------------------------------------------------------------------------------------
+
+[b]Corrections to the list above[/b]
+
+We re-checked every item and every commit of the list against f0134ef80 and against our own later changes. Three of our
+fixes were wrong or incomplete (E2, B2, B4); several descriptions were inaccurate. The corrected items follow; the
+others stand as written. Commit ids are of our fork; the fixes that replace earlier ones are named next to them.
+
+[b]A1. Empty clip of a built-in weapon is refilled by save/load[/b] (description corrected)
+[font=courier new]BattleItem::save[/font] ([font=courier new]src/Savegame/BattleItem.cpp:164[/font]) writes [font=courier new]ammoqty[/font] only for a non-zero quantity or a rechargeable clip, and [font=courier new]BattleItem::load[/font] ([font=courier new]:119[/font]) keeps the constructor value (a full clip, [font=courier new]:54[/font]) when the key is missing. An item with a clip of its own is normally removed when it reaches 0, but a special built-in weapon (owner set, no inventory slot) is not: [font=courier new]SavedBattleGame::removeItem[/font] returns early for it ([font=courier new]SavedBattleGame.cpp:1861[/font]). Its record therefore has no [font=courier new]ammoqty[/font], and save + load refills it. Fix: write the quantity also when it is 0 and the rules give the item a clip ([font=courier new]getClipSize() != 0[/font]); the saves of all other items stay byte-identical. Commit [font=courier new]fd85989c7[/font].
+
+[b]A2. Throw range: division by zero for a unit with strength 0[/b] (fix described wrongly)
+Integer division; strength can reach 0 through stat modifiers or in the rules (X-Piratez has nine such units). Our fix does [i]not[/i] treat strength below 1 as 1: [font=courier new]getMaxThrowDistance[/font] returns 0 when [font=courier new]strength <= 0[/font], before the division. [font=courier new]validThrowRange[/font] then computes a limit of (0 + 8) / 16 = 0.5 tiles, so a unit with no strength can only throw onto its own tile; for strength >= 1 the result is unchanged. Commit [font=courier new]9bb60528b[/font].
+
+[b]A4. Purchase screen: division by zero for a row that costs 0[/b] (trigger corrected)
+The trigger is a purchase row whose current price is 0 while the funds are not below the total already selected: a hire with [font=courier new]costScientist: 0[/font] / [font=courier new]costEngineer: 0[/font], or an item whose price becomes 0 after the buy price coefficient or a script (integer [font=courier new]cost * coefficient / 100[/font], e.g. [font=courier new]costBuy: 1[/font] at 50%). Every way of increasing the row (click, wheel, increase by maximum) reaches the division; a row with a raw [font=courier new]costBuy: 0[/font] is not listed at all. With negative funds the row is refused earlier by the "not enough money" check, so the division is not reached there and the fix does not change it. Commit [font=courier new]e93adc8a6[/font].
+
+[b]A7. Berserk with no weapon in hand[/b] (description corrected)
+[font=courier new]ba.weapon[/font] can be null (no weapon in hand). [font=courier new]canUseWeapon[/font] accepts null, but the condition on this line then calls [font=courier new]ba.weapon->getCurrentWaypoints()[/font] without a check. Only reachable with [font=courier new]extendedBerserkWithAimed: 1[/font]. Commit [font=courier new]47fb687a5[/font].
+
+[b]A10[/b] (one sentence added): on Windows a [font=courier new]time_t[/font] before 1970 makes [font=courier new]localtime[/font] return NULL.
+
+[b]B1[/b] (two additions)
+[list]
+[li]Transfer with [font=courier new]hours <= 0[/font]: the trigger is wider than [font=courier new]transferTime: 0[/font] on an item or craft - a missing or zero [font=courier new]timePersonnel[/font] (hired scientists and engineers; the default is 0) or a zero or negative [font=courier new]hours[/font] in a save do the same. Our first fix ([font=courier new]fa2c53ff7[/font]) still decremented before the check, so a save with [font=courier new]hours: -2147483648[/font] overflowed; [font=courier new]b1c6cf9d4[/font] decrements only a positive count. A transfer is delivered exactly once in both.[/li]
+[li][font=courier new]globalCostDiv[/font], [font=courier new]ufoBeamWidthParameter[/font], [font=courier new]soldiersPer*[/font], facility size, vehicle clip size: we did not guard each division - [font=courier new]76d5a66e5[/font] rejects an explicit 0 when the mod is loaded. The defaults are non-zero, so only a mod that sets 0 is affected; such a mod used to load and fail only when the game reached the division, now it does not load. Your call whether a guard at the use is preferable.[/li]
+[/list]
+
+[b]B2. Maps and terrain[/b] (two of our fixes were defective)
+[list]
+[li][font=courier new]BattlescapeGenerator::loadMAP[/font]: our first fix ([font=courier new]c8d199bb4[/font]) refused a bad record only after the records before it had already been written into the map. [font=courier new]dd8aa409f[/font] checks the whole block first - the header read, the records against the block size and height, the block against the map (also the Z offset of vertical levels and crafts) - and changes no tile of a block it refuses. A byte past the last record is allowed as before: 1708 maps of X-Piratez end that way (3028 maps of X-Piratez, the stock rulesets and the UFO data checked; all load as they did).[/li]
+[li][font=courier new]MapDataSet::loadData[/font] and the BLANKS tiles: our fix of the half-loaded set ([font=courier new]47605f79a[/font]) unloaded a failed set but left [font=courier new]_blankTile[/font] / [font=courier new]_scorchedTile[/font] pointing into it - a use-after-free on the next battle (the dangling pointer is ours; OXCE also set the two pointers inside the loop but never unloaded on failure). [font=courier new]e383d7dce[/font] publishes them only after the whole set is loaded and clears them with it.[/li]
+[/list]
+
+[b]B3. Saves[/b] (commits completed)
+[list]
+[li]Battle save tile data: the tile index is checked only by [font=courier new]assert()[/font], so a bad index writes outside the tile array; [font=courier new]totalTiles * tileTotalBytesPer[/font] is not compared with the decoded buffer, so a truncated buffer is read past its end; the field sizes are not validated ([font=courier new]unserializeInt[/font] accepts 1, 2 and 4, otherwise returns 0 and advances), so a damaged key loads a silently different map; the base-defence module map from the save is not compared with the map size and is indexed by [font=courier new]x / 10[/font], [font=courier new]y / 10[/font] without a check. Commits [font=courier new]1a9548f7e[/font] (buffer and index), [font=courier new]47fb687a5[/font] (field sizes, repeated tile, module map). The module map part is from reading the code; we did not reproduce it.[/li]
+[li]Soldier rank: our first fix ([font=courier new]1f5f36534[/font]) checked the range after the value had been read into the enum - [font=courier new]4294967300[/font] wrapped to 4 and passed. [font=courier new]c8d53f883[/font] reads the key as a 64-bit integer with an overflow check and refuses anything outside 0-5; a soldier without the key keeps the rank it has, as before.[/li]
+[li]Kill records: the record writes every key but [font=courier new]name[/font] / [font=courier new]type[/font], so the uninitialised fields need a damaged or hand-edited save; the loading constructor [font=courier new]BattleUnitStatistics(reader)[/font] ([font=courier new]:423[/font]) is not called anywhere in f0134ef80.[/li]
+[/list]
+
+[b]B4. Resource files[/b] (follow-ups to c8d199bb4 and 13fda711c)
+[list]
+[li]Adlib player: our [font=courier new]13fda711c[/font] stopped a track after as many commands in one tick as the data has bytes. A valid track can call a subsequence many times without a delay (a 40-command subsequence called 30 times in one tick was cut to silence). [font=courier new]94535d5b8[/font] replaces that budget with a check of progress: decoding stops only when the player state repeats without a delay (cycle detection on position, return address and command). The 25 tracks of ADLIB.CAT and AINTRO.CAT give the same PCM as f0134ef80; the size and bounds checks stay.[/li]
+[li]GMCat: the size limit was checked only on entering a subsequence, and a call writes nothing - 24 subsequences, each calling the next one 8 times, ran 8^23 calls without output. [font=courier new]e455a95a7[/font] counts every command of every branch against one limit.[/li]
+[li]Font without '?': our fallback was [font=courier new]_chars.begin()[/font] of an unordered_map, i.e. whatever hashing gave. [font=courier new]64863cfad[/font] uses the first character of the first image's [font=courier new]chars[/font].[/li]
+[li]ExtraSounds empty file name: after [font=courier new]c8d199bb4[/font] the name no longer read before the string but was still looked up as a file. [font=courier new]827c638ce[/font] skips it with a warning; the sound of that index stays as it was.[/li]
+[li]DAT cut inside a frame: the frame being read stayed locked; [font=courier new]009fb2c94[/font] unlocks it.[/li]
+[/list]
+
+[b]C[/b] (two descriptions corrected)
+[list]
+[li]YAML enum reader ([font=courier new]Yaml.h:530-536[/font]): the target is read ([font=courier new]int value = static_cast<int>(*v);[/font]) before parsing, unconditionally, and written back even when the parse failed, so a target that is not initialised yet is read. Commit [font=courier new]774addbd4[/font] parses into a zero value and writes only on success. Note: [font=courier new]ryml::atoi[/font] wraps on overflow, so the reader still accepts 4294967300 as 4 for any enum - inherited, not changed by us except for the soldier rank (B3).[/li]
+[li][font=courier new]ItemContainer[/font]: also [font=courier new]removeItem[/font] with a negative amount added to the stock.[/li]
+[li][font=courier new]Logger::~Logger[/font] ([font=courier new]Logger.h:52[/font]) calls [font=courier new]CrossPlatform::log[/font], which allocates; a destructor is implicitly [font=courier new]noexcept[/font], so any exception from it (e.g. [font=courier new]std::bad_alloc[/font]) is [font=courier new]std::terminate[/font], not only during unwinding.[/li]
+[li]The double to int conversion is [font=courier new](int)maxByStores[/font] in [font=courier new]PurchaseState.cpp:1228[/font] and [font=courier new](int)freeStoresForItem[/font] in [font=courier new]TransferItemsState.cpp:986[/font].[/li]
+[/list]
+
+[b]D[/b] (descriptions and numbers corrected)
+[list]
+[li][font=courier new]getAvailableResearchProjects[/font] re-sorts the helper vector [font=courier new]unlocked[/font] after every discovered topic ([font=courier new]SavedGame.cpp:1752[/font]), although it is only searched ([font=courier new]std::lower_bound[/font]) after the loop - not the result. Sorting once after the loop gives the same list: 8.8 ms -> 2.3 ms per call on our month-108 save (single runs). Commit [font=courier new]70d3cf602[/font].[/li]
+[li][font=courier new]manageCommendations[/font] recomputes the career totals for every commendation it checks. Computing each total at most once per call (not per soldier), and replacing the 14 nested loops by one helper that indexes the mission list when mission ids equal their positions (the old loop otherwise), took a full monthly pass over the 919 soldiers of a month-108 save from about 20 s to 0.8 s (one machine, four saves, single runs). The awarded commendations (type, noun, level per soldier) are identical. Commit [font=courier new]bdb1cfaff[/font].[/li]
+[/list]
+
+[b]E[/b] (two of our changes withdrawn or reduced)
+[list]
+[li]Loop budget for scripts: withdrawn. The budget of [font=courier new]b1dc204b7[/font] was defective - in a blit it stopped the script only for the current pixel (the rest of the pass ran on), and the budget was shared by the main script and all event handlers. Reverted in [font=courier new]6317cd616[/font]; scripts run as in OXCE, without a limit. The arithmetic fixes ([font=courier new]fa9deca80[/font], [font=courier new]309b7d131[/font]) stay.[/li]
+[li]Map size checks after loading the rules ([font=courier new]ca8d0b25e[/font], [font=courier new]61864658c[/font]): they could reject a mod whose map size comes from a terrain or script chosen only at generation time. Since [font=courier new]cace97f00[/font] they are only a note in the log and never reject a mod.[/li]
+[li]SDL_image: we now build it ourselves from the SDL-1.2 branch with our fixes ([font=courier new]9661c1074[/font], [font=courier new]de443bd32[/font]).[/li]
+[/list]
