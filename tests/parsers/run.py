@@ -82,6 +82,21 @@ def write_samples(root):
     put("TERRAIN/BLANKS.PCK", bytes((0, 255)))
     put("FLC/SHORT.FLC", bytes(6)) # the header is read to its 16th byte at least
     put("FLC/NOTFLC.FLC", bytes(200))
+    # a mod in a .zip with HD interface pictures (case hdui_zip): 300 PNG of 2x-4x an 8x8 image, each with a block of
+    # random bytes (the reads of a picture take a while) and its own palette (line j: i j 255-j)
+    import random, zipfile
+    rnd = random.Random(5)
+    os.makedirs(os.path.join(root, "mods"), exist_ok=True)
+    with zipfile.ZipFile(os.path.join(root, "mods", "hdzip.zip"), "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("hdzip/", b"")
+        z.writestr("hdzip/metadata.yml", "id: hdzip\nname: hdzip\nisMaster: true\n")
+        for i in range(300):
+            s = 8 * (2 + i % 3)
+            pic = png8(s, s, [[(x + y) % 256 for x in range(s)] for y in range(s)])
+            blob = bytes(rnd.getrandbits(8) for _ in range(24000))
+            pic = pic[:-12] + struct.pack(">I", len(blob)) + b"zzZz" + blob + struct.pack(">I", zlib.crc32(b"zzZz" + blob) & 0xffffffff) + pic[-12:]
+            z.writestr("hdzip/hd/UI/hdzip_%03d.png" % i, pic)
+            z.writestr("hdzip/hd/UI/hdzip_%03d.pal.txt" % i, "".join("%d %d %d\n" % (i % 256, j, 255 - j) for j in range(256)))
     return put
 
 def run(cmd, env, timeout=300):

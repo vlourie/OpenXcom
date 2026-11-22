@@ -4438,17 +4438,25 @@ void Mod::loadHdUiArt()
 		}
 		f.read = true;
 	};
+	// the files of a .zip are all read through the one reader of the archive (FileMap: a seek, then a read, no lock):
+	// a picture or palette of a .zip is left to this thread, below (as Surface::readPngAhead leaves them)
+	const auto onDisk = [](const std::string &path)
+	{
+		return !FileMap::fileExists(path) || FileMap::at(path)->zip == NULL;
+	};
 	{
 		HdWorkers &pool = HdWorkers::instance();
 		const int chunks = std::max(1, std::min((int)(files.size() / 64), pool.threads() * 4));
-		pool.runCounted(chunks, [&files, &pictureFiles, &readPictureFile, chunks](int chunk)
+		pool.runCounted(chunks, [&files, &pictureFiles, &readPictureFile, &onDisk, chunks](int chunk)
 		{
 			const size_t to = files.size() * (chunk + 1) / chunks;
 			for (size_t i = files.size() * chunk / chunks; i < to; ++i)
 			{
 				const std::string &file = files[i];
 				if (!pictureFiles[i].read && file.size() >= 5 && file.compare(file.size() - 4, 4, ".png") == 0
-					&& !(file.size() > 10 && file.compare(file.size() - 10, 10, ".erase.png") == 0))
+					&& !(file.size() > 10 && file.compare(file.size() - 10, 10, ".erase.png") == 0)
+					&& onDisk(HdSprites::artPath("UI/" + file))
+					&& onDisk(HdSprites::artPath("UI/" + file.substr(0, file.size() - 4) + ".pal.txt")))
 				{
 					readPictureFile(i);
 				}
@@ -4520,7 +4528,7 @@ void Mod::loadHdUiArt()
 		PictureFile &pictureFile = pictureFiles[fileIndex];
 		if (!pictureFile.read)
 		{
-			readPictureFile(fileIndex); // (its job failed twice, memory short for a moment - once more here)
+			readPictureFile(fileIndex); // a file of a .zip, or its job failed twice (memory short for a moment)
 		}
 		const int width = pictureFile.width, height = pictureFile.height;
 		const std::string picture = HdSprites::artPath("UI/" + file);

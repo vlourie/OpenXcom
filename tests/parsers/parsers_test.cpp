@@ -66,6 +66,9 @@
 #include "Mod/Armor.h"
 #include "Mod/RuleItem.h"
 #include "Mod/RuleSoldier.h"
+#include "Engine/HdUiArt.h"
+#include "Engine/ModInfo.h"
+#include "Engine/Surface.h"
 #include <climits>
 
 extern "C" int oxce_game_main(int argc, char *argv[]);
@@ -422,6 +425,47 @@ void soldierRank()
 	}
 }
 
+/// The HD interface pictures of a mod in a .zip (run.py: hd/UI of the mod 'hdzip', 300 pictures with their palettes).
+/// Their sizes and palettes are read on the worker threads (61585af33); a .zip is one reader for all of its files:
+/// every picture must come in, of its size and with its own palette, in every one of ten loads.
+void hdUiZip()
+{
+	static bool mapped = false;
+	static std::map<std::string, ModInfo> infos;
+	Mod *mod = plainMod();
+	const int PICTURES = 300;
+	if (!mapped)
+	{
+		FileMap::scanModDir(dataRoot, "mods", false);
+		infos = FileMap::getModInfos();
+		auto it = infos.find("hdzip");
+		expect(it != infos.end(), "the mod of the test in a .zip was not found");
+		FileMap::setup({ &it->second }, false);
+		expect(FileMap::fileExists("hd/UI/hdzip_000.png"), "the pictures of the .zip are not in the files of the game");
+		char name[32];
+		for (int i = 0; i < PICTURES; ++i)
+		{
+			snprintf(name, sizeof(name), "HDZIP_%03d", i);
+			mod->_surfaces[name] = new Surface(8, 8);
+		}
+		mapped = true;
+	}
+	char name[32];
+	for (int load = 0; load < 10; ++load)
+	{
+		mod->loadHdUiArt();
+		for (int i = 0; i < PICTURES; ++i)
+		{
+			snprintf(name, sizeof(name), "HDZIP_%03d", i);
+			const HdUiArt::Art *art = HdUiArt::find(mod->_surfaces[name]);
+			expect(art != nullptr, "a picture of the .zip did not come in");
+			expect(art->scale == 2 + i % 3, "a picture of the .zip came in of another size");
+			expect(art->palette.size() == 256 && art->palette[7].r == i % 256 && art->palette[7].g == 7
+				&& art->palette[255].b == 0, "a picture of the .zip came in without its own palette");
+		}
+	}
+}
+
 // --- video ---
 
 void flc(const char *file)
@@ -477,6 +521,7 @@ const Case cases[] = {
 	{ "blanks_scale",		[] { blanksScale(); } },
 	{ "transfer_hours",		[] { transferHours(); } },
 	{ "soldier_rank",		[] { soldierRank(); } },
+	{ "hdui_zip",			[] { hdUiZip(); } },
 	{ "flc_short",			[] { flc("FLC/SHORT.FLC"); } },
 	{ "flc_not_video",		[] { flc("FLC/NOTFLC.FLC"); } },
 };
