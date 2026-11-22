@@ -18,6 +18,8 @@
  */
 #include <algorithm>
 #include <assert.h>
+#include <cstring>
+#include <iterator>
 #include <sstream>
 #include "BattlescapeGenerator.h"
 #include "TileEngine.h"
@@ -2424,9 +2426,31 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 	auto mapFile = FileMap::getIStream(filename);
 
 	mapFile->read((char*)&size, sizeof(size));
+	if (!*mapFile)
+	{
+		throw Exception("Invalid MAP file: " + filename + " (no header)");
+	}
 	sizey = (int)size[0];
 	sizex = (int)size[1];
 	sizez = (int)size[2];
+	if (sizez < 0)
+	{
+		throw Exception("Invalid MAP file: " + filename + " (negative height)");
+	}
+
+	// the records, read before any tile is changed; a part of a record at the end is left out as it always was
+	// (many maps of mods end with one byte past their last record)
+	const std::vector<char> records((std::istreambuf_iterator<char>(*mapFile)), std::istreambuf_iterator<char>());
+	if (mapFile->bad())
+	{
+		throw Exception("Invalid MAP file: " + filename);
+	}
+	const long long recordCount = (long long)(records.size() / sizeof(value));
+	const long long blockTiles = (sizex > 0 && sizey > 0) ? (long long)sizex * sizey * sizez : 0;
+	if (recordCount > blockTiles)
+	{
+		throw Exception("Invalid MAP file: " + filename + " (more records than the tiles of the block)");
+	}
 
 	mapblock->setSizeZ(sizez);
 
@@ -2441,6 +2465,14 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 		sizey != mapblock->getSizeY())
 	{
 		ss << "Map block is not of the size specified " + filename + " is " << sizex << "x" << sizey << " , expected: " << mapblock->getSizeX() << "x" << mapblock->getSizeY();
+		throw Exception(ss.str());
+	}
+
+	// the tiles of the battle, not the size the generator was asked for: these are the ones written
+	const int mapX = _save->getMapSizeX(), mapY = _save->getMapSizeY();
+	if (xoff < 0 || yoff < 0 || xoff >= mapX || yoff >= mapY || xoff + sizex > mapX || yoff + sizey > mapY)
+	{
+		ss << "Map block " + filename + " placed outside the map: at " << xoff << "," << yoff << ", size " << sizex << "x" << sizey << ", map " << mapX << "x" << mapY;
 		throw Exception(ss.str());
 	}
 
@@ -2476,13 +2508,21 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 		throw Exception("Something is wrong in your map definitions, craft/ufo map is too tall?");
 	}
 
-	while (mapFile->read((char*)&value, sizeof(value)))
+	// the records fill the block from its top layer down: the lowest one they reach must be in the map
+	if (recordCount > 0 && z - (int)((recordCount - 1) / ((long long)sizex * sizey)) < 0)
 	{
-		if (!_save->getTile(Position(x, y, z)))
-		{
-			// more records than the block has tiles, or a block of no height: the next tile is outside the map
-			throw Exception("Invalid MAP file: " + filename);
-		}
+		ss << "Map block " + filename + " goes below the bottom of the map: top layer " << z << ", height " << sizez;
+		throw Exception(ss.str());
+	}
+	// the one refusal of RuleTerrain::getMapData, made before the first tile changes
+	if (terrain->getMapDataSets()->empty() && std::any_of(records.begin(), records.begin() + recordCount * sizeof(value), [](char c) { return c != 0; }))
+	{
+		throw Exception("Terrain " + terrain->getName() + " has no mapDataSets, a map cannot be built on it.");
+	}
+
+	for (long long record = 0; record < recordCount; ++record)
+	{
+		memcpy(value, records.data() + record * sizeof(value), sizeof(value));
 		for (int part = O_FLOOR; part < O_MAX; ++part)
 		{
 			terrainObjectID = ((unsigned char)value[part]);
@@ -2514,11 +2554,6 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 			y = yoff;
 			z--;
 		}
-	}
-
-	if (!mapFile->eof())
-	{
-		throw Exception("Invalid MAP file: " + filename);
 	}
 
 	// Add the craft offset to the positions of the items if we're loading a craft map
