@@ -118,7 +118,18 @@ void Sound::warm() const
 {
 	if (!Options::mute)
 	{
-		chunk();
+		// XP-000607: without lazyLoadResources the sound was decoded at the start, hours ago, with gigabytes of voice
+		// packs beside it; its pages may be out of memory, and the first play would page them in. Read one byte a page now
+		const Mix_Chunk *c = chunk();
+		if (c && c->abuf)
+		{
+			volatile Uint8 sink = 0;
+			for (Uint32 i = 0; i < c->alen; i += 4096)
+			{
+				sink = sink ^ c->abuf[i];
+			}
+			(void)sink;
+		}
 	}
 }
 
