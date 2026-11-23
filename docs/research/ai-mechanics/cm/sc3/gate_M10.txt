@@ -1,0 +1,99 @@
+sc7k_K_M10_s1: COVER orders 20, gate lines 294
+
+ turn 1 B 1000001 pos (23,5,2) face 2 STR_SHOTGUN_PA reactions 44: player turn 2: 27 checks from 4 movers; score:22 lof:5
+   deepest gate: lof; B's reactions in turn 2: 0
+   nearest check: mover 114 at (36,7,0) d2 173 mscore 59 uscore 42 udir 2 gate score
+   score gate: B 42 vs the lowest mover score 43 (mover 1, tu 52, d2 1445)
+
+ turn 1 B 1000002 pos (26,41,0) face 1 STR_UAC_RIFLE reactions 44: player turn 2: 27 checks from 4 movers; score:22 dist:2 lof:3
+   deepest gate: lof; B's reactions in turn 2: 0
+   nearest check: mover 1 at (54,28,0) d2 953 mscore 39 uscore 42 udir 1 gate lof
+   score gate: B 42 vs the lowest mover score 43 (mover 1, tu 52, d2 980)
+
+ turn 2 B 1000001 pos (23,5,2) face 2 STR_SHOTGUN_PA reactions 44: player turn 3: 22 checks from 4 movers; score:18 lof:4
+   deepest gate: lof; B's reactions in turn 3: 0
+   nearest check: mover 114 at (36,7,0) d2 173 mscore 70 uscore 44 udir 2 gate score
+   score gate: B 44 vs the lowest mover score 46 (mover 114, tu 56, d2 173)
+
+ turn 2 B 1000002 pos (26,41,0) face 1 STR_UAC_RIFLE reactions 44: player turn 3: 22 checks from 4 movers; score:18 dist:4
+   deepest gate: dist; B's reactions in turn 3: 0
+   nearest check: mover 1 at (48,29,0) d2 628 mscore 69 uscore 44 udir 1 gate score
+   score gate: B 44 vs the lowest mover score 46 (mover 114, tu 56, d2 1256)
+
+ turn 3 B 1000000 pos (52,39,0) face 7 STR_SHOTGUN_PA reactions 44: player turn 4: 17 checks from 4 movers; score:16 dist:1
+   deepest gate: dist; B's reactions in turn 4: 0
+   nearest check: mover 1 at (47,29,0) d2 125 mscore 77 uscore 41 udir 7 gate score
+   score gate: B 41 vs the lowest mover score 48 (mover 46, tu 53, d2 1640)
+
+ turn 3 B 1000001 pos (23,5,2) face 2 STR_SHOTGUN_PA reactions 44: player turn 4: 17 checks from 4 movers; score:16 lof:1
+   deepest gate: lof; B's reactions in turn 4: 0
+   nearest check: mover 114 at (36,7,0) d2 173 mscore 70 uscore 44 udir 2 gate score
+   score gate: B 44 vs the lowest mover score 48 (mover 46, tu 53, d2 241)
+
+ turn 4 B 1000001 pos (23,5,2) face 2 STR_SHOTGUN_PA reactions 44: player turn 5: 14 checks from 4 movers; score:14
+   deepest gate: score; B's reactions in turn 5: 0
+   nearest check: mover 114 at (36,8,0) d2 178 mscore 67 uscore 44 udir 2 gate score
+   score gate: B 44 vs the lowest mover score 51 (mover 114, tu 62, d2 178)
+
+ turn 4 B 1000002 pos (28,44,0) face 1 STR_UAC_RIFLE reactions 44: player turn 5: 14 checks from 4 movers; score:14
+   deepest gate: score; B's reactions in turn 5: 0
+   nearest check: mover 1 at (47,29,0) d2 586 mscore 77 uscore 41 udir 1 gate score
+   score gate: B 41 vs the lowest mover score 51 (mover 114, tu 62, d2 1360)
+
+ turn 5 B 1000003 pos (16,27,0) face 1 STR_SHOTGUN_PA reactions 44: player turn 6: 12 checks from 3 movers; score:12
+   deepest gate: score; B's reactions in turn 6: 0
+   nearest check: mover 46 at (29,12,0) d2 394 mscore 50 uscore 32 udir 1 gate score
+   score gate: B 32 vs the lowest mover score 50 (mover 46, tu 55, d2 394)
+
+ turn 5 B 1000001 pos (23,5,2) face 2 STR_SHOTGUN_PA reactions 44: player turn 6: 12 checks from 3 movers; score:12
+   deepest gate: score; B's reactions in turn 6: 0
+   nearest check: mover 46 at (29,12,0) d2 85 mscore 50 uscore 44 udir 2 gate score
+   score gate: B 44 vs the lowest mover score 50 (mover 46, tu 55, d2 85)
+
+ turn 6 B 1000024 pos (28,14,0) face 0 STR_GRENADE_LAUNCHER reactions 59: player turn 7: 8 checks from 3 movers; out:8
+   deepest gate: out; B's reactions in turn 7: 0
+   nearest check: mover 46 at (27,15,0) d2 2 mscore 79 uscore 21 udir 3 gate out
+
+ turn 6 B 1000000 pos (56,41,0) face 7 STR_SHOTGUN_PA reactions 44: player turn 7: 8 checks from 3 movers; score:8
+   deepest gate: score; B's reactions in turn 7: 0
+   nearest check: mover 1 at (45,28,0) d2 290 mscore 69 uscore 42 udir 7 gate score
+   score gate: B 42 vs the lowest mover score 52 (mover 46, tu 57, d2 1517)
+
+ turn 7 B 1000001 pos (28,8,0) face 4 STR_SHOTGUN_PA reactions 44: player turn 8: 12 checks from 3 movers; score:12
+   deepest gate: score; B's reactions in turn 8: 0
+   nearest check: mover 46 at (28,15,0) d2 49 mscore 85 uscore 35 udir 4 gate score
+   score gate: B 35 vs the lowest mover score 51 (mover 46, tu 56, d2 65)
+
+ turn 7 B 1000002 pos (13,40,0) face 1 STR_UAC_RIFLE reactions 44: player turn 8: 12 checks from 3 movers; score:12
+   deepest gate: score; B's reactions in turn 8: 0
+   nearest check: mover 46 at (29,16,0) d2 832 mscore 70 uscore 42 udir 1 gate score
+   score gate: B 42 vs the lowest mover score 51 (mover 46, tu 56, d2 832)
+
+ turn 8 B 1000000 pos (51,37,0) face 7 STR_SHOTGUN_PA reactions 44: player turn 9: 13 checks from 3 movers; score:12 visible:1
+   deepest gate: visible; B's reactions in turn 9: 0
+   nearest check: mover 1 at (45,28,0) d2 117 mscore 77 uscore 41 udir 7 gate score
+   score gate: B 41 vs the lowest mover score 50 (mover 46, tu 55, d2 1252)
+
+ turn 8 B 1000002 pos (13,40,0) face 1 STR_UAC_RIFLE reactions 44: player turn 9: 13 checks from 3 movers; score:12 lof:1
+   deepest gate: lof; B's reactions in turn 9: 0
+   nearest check: mover 46 at (27,15,0) d2 821 mscore 79 uscore 44 udir 1 gate score
+   score gate: B 44 vs the lowest mover score 50 (mover 46, tu 55, d2 873)
+
+ turn 9 B 1000002 pos (13,40,0) face 0 STR_UAC_RIFLE reactions 44: player turn 10: 22 checks from 3 movers; score:18 lof:4
+   deepest gate: lof; B's reactions in turn 10: 0
+   nearest check: mover 46 at (27,17,0) d2 725 mscore 48 uscore 43 udir 0 gate score
+   score gate: B 43 vs the lowest mover score 47 (mover 115, tu 45, d2 904)
+
+ turn 9 B 1000003 pos (30,46,0) face 1 STR_SHOTGUN_PA reactions 44: player turn 10: 22 checks from 3 movers; score:18 dist:4
+   deepest gate: dist; B's reactions in turn 10: 0
+   nearest check: mover 1 at (47,28,0) d2 613 mscore 79 uscore 43 udir 1 gate score
+   score gate: B 43 vs the lowest mover score 47 (mover 115, tu 45, d2 1521)
+
+ turn 10 B 1000002 pos (13,40,0) face 1 STR_UAC_RIFLE reactions 44: player turn 11: 0 checks from 0 movers; 
+   deepest gate: -; B's reactions in turn 11: 0
+
+ turn 10 B 1000003 pos (30,46,0) face 1 STR_SHOTGUN_PA reactions 44: player turn 11: 0 checks from 0 movers; 
+   deepest gate: -; B's reactions in turn 11: 0
+
+all checks by gate: out:8 score:256 dist:11 lof:18 visible:1
+orders by the deepest gate reached: out:1 score:7 dist:3 lof:6 visible:1 none:2

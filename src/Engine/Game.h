@@ -32,6 +32,9 @@ class SavedGame;
 class Mod;
 class ModInfo;
 class FpsCounter;
+class HdUpdateNotice;
+class HdChatNotice;
+class HdTrackNotice;
 class Action;
 class GeoscapeState;
 
@@ -50,9 +53,19 @@ private:
 	Language *_lang;
 	std::list<State*> _states, _deleted;
 	SavedGame *_save;
+	/// Loading a save: the game that was running, kept whole while the loaded one is tried in its place.
+	SavedGame *_parkedSave = nullptr;
+	bool _parked = false;
+	/// Frames shown since the start.
+	unsigned _frames = 0;
 	Mod *_mod;
 	bool _quit, _init, _update;
 	FpsCounter *_fpsCounter;
+	HdUpdateNotice *_updateNotice;
+	HdChatNotice *_chatNotice;
+	HdTrackNotice *_trackNotice;
+	/// The loading thread of StartState is rebuilding _mod and _lang. Written and read by the main thread only.
+	bool _backgroundLoad = false;
 	bool _mouseActive;
 	unsigned int _timeOfLastFrame;
 	int _timeUntilNextFrame;
@@ -79,18 +92,45 @@ public:
 	Cursor *getCursor() const { return _cursor; }
 	/// Gets the FpsCounter.
 	FpsCounter *getFpsCounter() const { return _fpsCounter; }
+	/// Gets the plate "a new update is available" (Engine/HdUpdateNotice.h).
+	HdUpdateNotice *getUpdateNotice() const { return _updateNotice; }
+	/// Gets the plate "a new message" (Engine/HdChatNotice.h).
+	HdChatNotice *getChatNotice() const { return _chatNotice; }
+	/// Gets the plate "the track's name" (Engine/HdTrackNotice.h, XP-000575).
+	HdTrackNotice *getTrackNotice() const { return _trackNotice; }
+	/// Brackets the time the loading thread owns the mod and the language (StartState; main thread only).
+	void setBackgroundLoad(bool loading) { _backgroundLoad = loading; }
+	/// May the main thread use the mod and the language? Not while the loading thread deletes and rebuilds them:
+	/// the pointers are non-null long before the data behind them is complete, and dangle during a reload.
+	bool isDataReady() const { return !_backgroundLoad && _mod && _lang; }
 	/// Resets the state stack to a new state.
 	void setState(State *state);
 	/// Pushes a new state into the state stack.
 	void pushState(State *state);
 	/// Pops the last state from the state stack.
 	void popState();
+	/// Pops the states above the lowest `keep` and deletes them at once (the HD test bench, between cycles only).
+	void dropStates(size_t keep = 0);
 	/// Gets the currently loaded language.
 	Language *getLanguage() const { return _lang; }
 	/// Gets the currently loaded saved game.
 	SavedGame *getSavedGame() const { return _save; }
 	/// Sets a new saved game for the game.
 	void setSavedGame(SavedGame *save);
+	/// Loading a save: puts the loaded game in the place of the running one, which stays whole aside.
+	void parkSavedGame(SavedGame *save);
+	/// Is a loaded game being tried in the place of the running one?
+	bool hasParkedGame() const { return _parked; }
+	/// The loaded game is rejected: the running one is back in its place. Returns the rejected one.
+	SavedGame *unparkSavedGame();
+	/// The loaded game stays: the game before it goes, its screens first, and these screens take the stack.
+	void commitSavedGame(std::list<State*> &screens);
+	/// Deletes every screen of the stack at once and puts these in their place (not from the code of a screen in the stack).
+	void replaceStates(std::list<State*> &screens);
+	/// Frames shown since the start: a screen that waits to be seen compares two readings.
+	unsigned getFrameCount() const { return _frames; }
+	/// Has a frame been shown since this reading of the count and of the clock, or will none be?
+	bool shownSince(unsigned frame, Uint32 since) const;
 	/// Gets the currently loaded mod.
 	Mod *getMod() const { return _mod; }
 	/// Loads the mods specified in the game options.
@@ -105,6 +145,8 @@ public:
 	bool containsNotesState() const;
 	/// Returns the GeoscapeState from the background (if available).
 	GeoscapeState* getGeoscapeState() const;
+	/// Gets the state stack, bottom first.
+	const std::list<State*> &getStates() const { return _states; }
 	/// Returns whether the game is shutting down.
 	bool isQuitting() const;
 	/// Loads the default and current language.

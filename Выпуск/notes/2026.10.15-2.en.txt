@@ -1,0 +1,1 @@
+- Building collapse is back on all twenty new houses: the twelve switched off in the last update (city houses, the cultist farm and a junkyard) are restored. On some of them a floor may stay up after a blast where it looks like it should fall - if you spot one, please send the save. Collapse still survives loading a save.

@@ -1,0 +1,753 @@
+--- D0/AIModule.cpp
++++ v4/AIModule.cpp
+@@ -20,6 +20,8 @@
+ #include <chrono>
+ #include <algorithm>
+ #include <sstream>
++#include <map>
++#include <set>
+ #include "AIModule.h"
+ #include "../Savegame/BattleItem.h"
+ #include "../Savegame/Node.h"
+@@ -943,6 +945,706 @@
+ 	return used;
+ }
+ 
++namespace
++{
++
++/// AI_TACTICAL_DIRECTOR_V1 (bench, OXCE_AI_TACTICAL_DIRECTOR): one plan of the hostile side per turn, made before its first unit
++/// chooses - groups of 2-4 able ranged units on a contact the side honestly knows, a role for each (A attack now, a a lone attack
++/// the unit may take, M maneuver, S support); AIModule::tacticalDirector has each unit carry its role out where it can.
++/// The side's knowledge: the player units its units see (true place - they are seen), remembered where last seen.
++struct TdContact
++{
++	int id = 0, seen = -1;
++	Position pos;
++	BattleUnit *unit = 0;
++};
++
++struct TdGroup
++{
++	int id = 0, target = 0, waits = 0;
++	bool strike = false;
++	std::vector<int> members;
++	std::set<int> attacked; // members whose attack was handed on in this turn (carried out before the next unit thinks)
++};
++
++struct TdState
++{
++	const SavedBattleGame *save = 0;
++	int turn = -1, nextGroup = 0;
++	std::map<int, TdContact> memory;
++	std::vector<int> contacts;        // the contacts of the plan (seen this turn or the last), in the masks' bit order
++	std::map<int, unsigned> seenMask; // tile index -> the contacts that would see a body standing there
++	std::map<long long, char> fire;   // (tile, contact, shooter height) -> a line of fire from there to the contact
++	std::vector<TdGroup> groups;
++	std::map<int, std::pair<int, char>> role; // unit -> (group index, role)
++	std::map<int, std::pair<int, int>> waits; // target -> (turn, turns its group waited) of the last plan
++	std::map<int, int> orders;        // unit -> the director's orders in this turn (the loop guard)
++	std::set<int> reserved;           // tiles a member was sent to in this turn
++	std::map<int, Position> parked;   // unit -> the tile it covers or waits on in this turn (held there when it thinks again)
++	std::map<int, Position> walked;   // unit -> where it stood when the director last sent it walking in this turn
++};
++TdState td;
++const int TD_WAIT_LIMIT = 2, TD_ORDER_LIMIT = 4, TD_GROUP_MAX = 4;
++
++bool tdOn()
++{
++	static const bool on = AiProbe::active() && (int)AiProbe::param("OXCE_AI_TACTICAL_DIRECTOR", 0) != 0;
++	return on;
++}
++
++bool tdAttack(BattleActionType t)
++{
++	return t == BA_THROW || t == BA_AUTOSHOT || t == BA_SNAPSHOT || t == BA_AIMEDSHOT || t == BA_HIT || t == BA_LAUNCH
++		|| t == BA_MINDCONTROL || t == BA_PANIC;
++}
++
++/// A ranged weapon in hand the unit may use, with ammo.
++BattleItem *tdRanged(SavedBattleGame *save, BattleUnit *bu)
++{
++	BattleItem *w = bu->getMainHandWeapon(false);
++	if (!w || w->getRules()->getBattleType() != BT_FIREARM || !save->canUseWeapon(w, bu, false, BA_NONE) || !w->haveAnyAmmo())
++		return 0;
++	return w;
++}
++
++/// The cheapest shot of the weapon (snap, auto or aimed).
++BattleActionCost tdShotCost(BattleUnit *bu, BattleItem *w)
++{
++	BattleActionCost best;
++	bool have = false;
++	for (BattleActionType t : { BA_SNAPSHOT, BA_AUTOSHOT, BA_AIMEDSHOT })
++	{
++		BattleActionCost cost(t, bu, w);
++		if (cost.Time > 0 && (!have || cost.Time < best.Time))
++		{
++			best = cost;
++			have = true;
++		}
++	}
++	return best;
++}
++
++/// Why a live hostile cannot take a role, or 0: the weak are not sent to fight.
++const char *tdUnable(SavedBattleGame *save, BattleUnit *bu)
++{
++	if (bu->getStatus() == STATUS_PANICKING || bu->getStatus() == STATUS_BERSERK)
++		return "panic";
++	if (bu->getAIModule() && bu->getAIModule()->getAIMode() == AI_ESCAPE)
++		return "escape";
++	if (bu->getHealth() < 2 * bu->getBaseStats()->health / 3)
++		return "hurt";
++	if (!tdRanged(save, bu))
++		return "noranged";
++	if (!bu->getArmor()->allowsMoving())
++		return "immobile";
++	if (bu->isLeeroyJenkins())
++		return "leeroy";
++	return 0;
++}
++
++/// The side sees what its units see now: their visible player units go to the memory at the place they stand. True if it changed.
++bool tdUpdateMemory(SavedBattleGame *save)
++{
++	bool changed = false;
++	const int turn = save->getTurn();
++	for (auto *bu : *save->getUnits())
++	{
++		if (bu->getFaction() != FACTION_HOSTILE || bu->isOut())
++			continue;
++		for (auto *v : *bu->getVisibleUnits())
++		{
++			if (v->getFaction() != FACTION_PLAYER || v->isOut())
++				continue;
++			TdContact &c = td.memory[v->getId()];
++			if (c.pos != v->getPosition() || c.seen != turn)
++				changed = true;
++			c.id = v->getId();
++			c.pos = v->getPosition();
++			c.seen = turn;
++			c.unit = v;
++		}
++	}
++	return changed;
++}
++
++/// The plan's contacts: seen in this turn or the last. The visibility masks start again.
++void tdContacts(SavedBattleGame *save)
++{
++	td.contacts.clear();
++	td.seenMask.clear();
++	td.fire.clear();
++	for (auto &m : td.memory)
++	{
++		// one the side saw this turn and that is down now: it fell in sight of the side's units (its shot or the body seen)
++		if (m.second.seen == save->getTurn() && m.second.unit->isOut())
++			continue;
++		if (save->getTurn() - m.second.seen <= 1 && td.contacts.size() < 32)
++			td.contacts.push_back(m.first);
++	}
++}
++
++/// An eye (or a body part) height above the floor of a tile, in voxels.
++Position tdVoxel(SavedBattleGame *save, Position p, int height)
++{
++	Tile *t = save->getTile(p);
++	Position v = p.toVoxel() + Position(8, 8, height - 1 - (t ? t->getTerrainLevel() : 0));
++	if (v.z >= (p.z + 1) * Position::TileZ)
++		v.z = (p.z + 1) * Position::TileZ - 1;
++	return v;
++}
++
++/// Would the contact, where the side knows it, see a body standing on the tile? Terrain only (no unit is read), the view distance;
++/// the light is not read (a dark tile counts as seen).
++bool tdSees(SavedBattleGame *save, const TdContact &c, Position t)
++{
++	if (Position::distance2d(c.pos, t) > save->getMod()->getMaxViewDistance())
++		return false;
++	if (c.pos == t)
++		return true;
++	const Position eye = tdVoxel(save, c.pos, c.unit->getStandHeight());
++	for (int h : { 20, 12 })
++	{
++		if (save->getTileEngine()->calculateLineVoxel(eye, tdVoxel(save, t, h), false, 0, c.unit, c.unit) == V_EMPTY)
++			return true;
++	}
++	return false;
++}
++
++/// The plan's contacts that would see a body on the tile (bit per td.contacts entry), cached per plan.
++unsigned tdMask(SavedBattleGame *save, Position t)
++{
++	const int idx = save->getTileIndex(t);
++	auto it = td.seenMask.find(idx);
++	if (it != td.seenMask.end())
++		return it->second;
++	unsigned m = 0;
++	for (size_t i = 0; i < td.contacts.size(); ++i)
++	{
++		if (tdSees(save, td.memory[td.contacts[i]], t))
++			m |= 1u << i;
++	}
++	td.seenMask[idx] = m;
++	return m;
++}
++
++/// Could the shooter fire at contact i from the tile: the engine's own test of findFirePoint (canTargetUnit from the weapon's
++/// height on that tile to the contact where the side knows it), cached per plan by tile, contact and the shooter's height.
++bool tdFire(SavedBattleGame *save, BattleUnit *shooter, Position t, size_t i)
++{
++	const TdContact &c = td.memory[td.contacts[i]];
++	const int height = shooter->getHeight() + shooter->getFloatHeight();
++	const long long key = ((long long)save->getTileIndex(t) * 32 + (long long)i) * 256 + height;
++	auto it = td.fire.find(key);
++	if (it != td.fire.end())
++		return it->second != 0;
++	Tile *tile = save->getTile(t), *at = save->getTile(c.pos);
++	bool ok = false;
++	if (tile && at)
++	{
++		Position origin = t.toVoxel() + Position(8, 8, height - tile->getTerrainLevel() - 4);
++		Position scan;
++		ok = save->getTileEngine()->canTargetUnit(&origin, at, &scan, shooter, false, at->getUnit() == c.unit ? 0 : c.unit);
++	}
++	td.fire[key] = ok ? 1 : 0;
++	return ok;
++}
++
++int tdBit(int contact)
++{
++	for (size_t i = 0; i < td.contacts.size(); ++i)
++	{
++		if (td.contacts[i] == contact)
++			return (int)i;
++	}
++	return -1;
++}
++
++/// The side's plan of a new turn: contacts, able units, what each can do against each contact, groups and roles. Logged.
++void tdPlanIfNew(SavedBattleGame *save)
++{
++	if (td.save != save)
++	{
++		td = TdState();
++		td.save = save;
++	}
++	const int turn = save->getTurn();
++	if (td.turn == turn)
++		return;
++	td.turn = turn;
++	td.groups.clear();
++	td.role.clear();
++	td.orders.clear();
++	td.reserved.clear();
++	td.parked.clear();
++	td.walked.clear();
++	tdUpdateMemory(save);
++	tdContacts(save);
++	std::ostringstream head;
++	head << "[AIPROBE] td plan turn=" << turn << " contacts=";
++	for (size_t i = 0; i < td.contacts.size(); ++i)
++	{
++		const TdContact &c = td.memory[td.contacts[i]];
++		head << (i ? "," : "") << c.id << "@" << c.pos << "/" << turn - c.seen;
++	}
++	if (td.contacts.empty())
++	{
++		Log(LOG_INFO) << head.str() << "- able=0 groups=0";
++		return;
++	}
++	// each able unit: can it attack a contact now (a tile it reaches with a shot's time units left, the contact in the weapon's
++	// range and it would see that tile), can it within two turns (the same with two turns of time units and energy)
++	struct Cand
++	{
++		BattleUnit *bu = 0;
++		std::vector<char> now, near;
++		bool used = false;
++	};
++	std::vector<Cand> cands;
++	std::ostringstream excluded;
++	const size_t n = td.contacts.size();
++	for (auto *bu : *save->getUnits())
++	{
++		if (bu->getFaction() != FACTION_HOSTILE || bu->getOriginalFaction() != FACTION_HOSTILE || bu->isOut())
++			continue;
++		if (const char *why = tdUnable(save, bu))
++		{
++			excluded << (excluded.tellp() > 0 ? "," : "") << bu->getId() << ":" << why;
++			continue;
++		}
++		BattleItem *w = tdRanged(save, bu);
++		const RuleItem *rule = w->getRules();
++		Cand c;
++		c.bu = bu;
++		c.now.assign(n, 0);
++		c.near.assign(n, 0);
++		const BattleActionCost shot = tdShotCost(bu, w);
++		// now: the engine's line of fire from the tile; within two turns: the contact would see the tile (the masks)
++		auto scan = [&](const std::vector<int> &tiles, std::vector<char> &out, bool fire)
++		{
++			for (int idx : tiles)
++			{
++				const Position t = save->getTileCoords(idx);
++				for (size_t i = 0; i < n; ++i)
++				{
++					if (!out[i] && !rule->isOutOfRange(Position::distanceSq(t, td.memory[td.contacts[i]].pos))
++						&& (fire ? tdFire(save, bu, t, i) : (tdMask(save, t) & (1u << i)) != 0))
++						out[i] = 1;
++				}
++			}
++		};
++		if (shot.Time > 0 && bu->getTimeUnits() >= shot.Time)
++		{
++			scan(save->getPathfinding()->findReachable(bu, shot), c.now, true);
++		}
++		BattleActionCost two;
++		two.Time = -bu->getBaseStats()->tu;
++		two.Energy = -bu->getBaseStats()->stamina;
++		scan(save->getPathfinding()->findReachable(bu, two), c.near, false);
++		for (size_t i = 0; i < n; ++i)
++			c.near[i] = c.near[i] || c.now[i];
++		cands.push_back(c);
++	}
++	// contacts: seen this turn first, then by how many able units can come at them
++	std::vector<size_t> order(n);
++	for (size_t i = 0; i < n; ++i)
++		order[i] = i;
++	auto nearCount = [&](size_t i) { int k = 0; for (auto &c : cands) k += c.near[i]; return k; };
++	std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b)
++	{
++		const int sa = td.memory[td.contacts[a]].seen, sb = td.memory[td.contacts[b]].seen;
++		return sa != sb ? sa > sb : nearCount(a) > nearCount(b);
++	});
++	std::map<int, std::pair<int, int>> waits;
++	for (size_t i : order)
++	{
++		const TdContact &target = td.memory[td.contacts[i]];
++		std::vector<Cand*> pool;
++		for (auto &c : cands)
++		{
++			if (!c.used && c.near[i])
++				pool.push_back(&c);
++		}
++		if (pool.size() < 2)
++			continue;
++		std::stable_sort(pool.begin(), pool.end(), [&](Cand *a, Cand *b)
++		{
++			if (a->now[i] != b->now[i])
++				return a->now[i] > b->now[i];
++			return Position::distanceSq(a->bu->getPosition(), target.pos) < Position::distanceSq(b->bu->getPosition(), target.pos);
++		});
++		if (pool.size() > (size_t)TD_GROUP_MAX)
++			pool.resize(TD_GROUP_MAX);
++		TdGroup g;
++		g.id = ++td.nextGroup;
++		g.target = target.id;
++		int attackers = 0;
++		for (auto *c : pool)
++		{
++			c->used = true;
++			g.members.push_back(c->bu->getId());
++			attackers += c->now[i];
++		}
++		g.strike = attackers >= 2;
++		auto last = td.waits.find(target.id);
++		g.waits = g.strike ? 0 : (last != td.waits.end() && last->second.first == turn - 1 ? last->second.second + 1 : 1);
++		waits[target.id] = std::make_pair(turn, g.waits);
++		std::ostringstream line;
++		line << "[AIPROBE] td group turn=" << turn << " id=" << g.id << " target=" << target.id << "@" << target.pos << "/" << turn - target.seen
++			<< " waits=" << g.waits;
++		if (g.waits > TD_WAIT_LIMIT)
++		{
++			// the group waited its limit: this turn its units are on their own
++			AiProbe::tally(pool.front()->bu, "td.group.limit");
++			line << " phase=LIMIT members=";
++			for (size_t k = 0; k < pool.size(); ++k)
++				line << (k ? "," : "") << pool[k]->bu->getId();
++			Log(LOG_INFO) << line.str();
++			waits[target.id] = std::make_pair(turn, 0);
++			continue;
++		}
++		// roles: attack now if two or more can (a strike); otherwise a lone attacker may take its own attack, the rest close in
++		// out of sight and, with three or more, the one nearest the target that cannot shoot it now covers them (the ground
++		// they cross must be within its sight)
++		const int gi = (int)td.groups.size();
++		int far = -1;
++		if (!g.strike && pool.size() >= 3)
++		{
++			int best = INT_MAX;
++			for (size_t k = 0; k < pool.size(); ++k)
++			{
++				const int d = Position::distanceSq(pool[k]->bu->getPosition(), target.pos);
++				if (!pool[k]->now[i] && d < best)
++				{
++					best = d;
++					far = (int)k;
++				}
++			}
++		}
++		line << " phase=" << (g.strike ? "STRIKE" : "APPROACH") << " members=";
++		for (size_t k = 0; k < pool.size(); ++k)
++		{
++			const char role = pool[k]->now[i] ? (g.strike ? 'A' : 'a') : ((int)k == far ? 'S' : 'M');
++			td.role[pool[k]->bu->getId()] = std::make_pair(gi, role);
++			line << (k ? "," : "") << pool[k]->bu->getId() << ":" << role << ":"
++				<< Position::distance2d(pool[k]->bu->getPosition(), target.pos);
++		}
++		AiProbe::tally(pool.front()->bu, g.strike ? "td.group.strike" : "td.group.approach");
++		Log(LOG_INFO) << line.str();
++		td.groups.push_back(g);
++	}
++	td.waits = waits;
++	int free = 0;
++	for (auto &c : cands)
++		free += c.used ? 0 : 1;
++	Log(LOG_INFO) << head.str() << " able=" << cands.size() << " free=" << free << " excluded=" << (excluded.tellp() > 0 ? excluded.str() : "-")
++		<< " groups=" << td.groups.size();
++}
++
++} // namespace
++
++/**
++ * AI_TACTICAL_DIRECTOR_V1 (bench): the unit of a group carries out its role, after its own AI chose. An attack it chose is kept,
++ * and so are escape and the mission's objective. A: attack now - the attack setupAttack found, or a walk to a point it shoots
++ * from. M: close in - the tile nearest the target that no contact would see, by a path no contact would see; none nearer than
++ * where it stands, out of sight - it waits there; once a member of its group has attacked in this turn it joins as A does.
++ * S: cover - a tile out of the contacts' sight that sees the ground between the target and its group, the time units of a shot
++ * kept, kneeling. Whatever cannot be done is left to the unit's own choice. Logged: [AIPROBE] td lines.
++ */
++void AIModule::tacticalDirector(BattleAction *action)
++{
++	const int turn = _save->getTurn();
++	if (tdUpdateMemory(_save))
++	{
++		tdContacts(_save); // new sightings in this turn: the masks start again
++	}
++	auto r = td.role.find(_unit->getId());
++	if (td.save != _save || td.turn != turn || r == td.role.end())
++	{
++		AiProbe::tally(_unit, "td.outside");
++		return;
++	}
++	TdGroup &g = td.groups[r->second.first];
++	const char role = r->second.second;
++	const TdContact &c = td.memory[g.target];
++	const int bit = tdBit(g.target);
++	std::ostringstream head;
++	head << "[AIPROBE] td turn=" << turn << " group=" << g.id << " unit=" << _unit->getId() << " role=" << role << " target=" << g.target
++		<< "@" << c.pos << "/" << turn - c.seen << " std=" << "paxe"[_AIMode] << "/" << (int)action->type << "@" << action->target
++		<< " tu=" << _unit->getTimeUnits();
++	auto say = [&](const char *order, const std::string &why)
++	{
++		AiProbe::tally(_unit, (std::string("td.") + order).c_str());
++		Log(LOG_INFO) << head.str() << " order=" << order << " why=" << why << " to=" << action->target
++			<< " attacked=" << g.attacked.size();
++	};
++	if (tdAttack(action->type))
++	{
++		g.attacked.insert(_unit->getId());
++		say("KEEP", "attack");
++		return;
++	}
++	if (_AIMode == AI_ESCAPE)
++	{
++		say("FREE", "escape");
++		return;
++	}
++	if (_foundBaseModuleToDestroy)
++	{
++		say("FREE", "objective");
++		return;
++	}
++	if (bit < 0)
++	{
++		say("FREE", "lost");
++		return;
++	}
++	const bool joined = !g.attacked.empty();
++	// it covers or waits where it was put in this turn: it stays (the engine thinks for it again in the second pass); not an
++	// order - the loop guard does not count it. A member that closes in still joins once its group has attacked; a tile a
++	// contact would see now is no longer held.
++	auto park = td.parked.find(_unit->getId());
++	if (park != td.parked.end() && park->second == _unit->getPosition() && !(joined && (role == 'M' || role == 'a'))
++		&& !tdMask(_save, _unit->getPosition()))
++	{
++		action->type = BA_NONE;
++		if (role == 'S')
++			_AIMode = AI_AMBUSH;
++		_reserve = BA_NONE;
++		_unit->setCharging(0);
++		say("HOLD", role == 'S' ? "cover" : "wait");
++		return;
++	}
++	if (td.orders[_unit->getId()] >= TD_ORDER_LIMIT)
++	{
++		say("FREE", "limit");
++		return;
++	}
++	// the director's last walk did not move it (the way was blocked): no more walks of its in this turn (a shot still goes)
++	auto was = td.walked.find(_unit->getId());
++	const bool stuck = was != td.walked.end() && was->second == _unit->getPosition();
++	if (_AIMode == AI_COMBAT && action->type == BA_WALK
++		&& std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(action->target)) != _reachableWithAttack.end())
++	{
++		say("KEEP", "firewalk");
++		return;
++	}
++	// is the path to a tile out of every contact's sight (the path the walk will take: handleAI calculates the same)
++	auto pathHidden = [&](Position to)
++	{
++		Pathfinding *pf = _save->getPathfinding();
++		pf->calculate(_unit, to, BAM_NORMAL);
++		if (pf->getStartDirection() == -1)
++			return false;
++		const std::vector<int> path = pf->getPath();
++		pf->abortPath();
++		Position p = _unit->getPosition();
++		for (auto it = path.rbegin(); it != path.rend(); ++it)
++		{
++			Position d;
++			Pathfinding::directionToVector(*it, &d);
++			p = p + d;
++			if (tdMask(_save, p))
++				return false;
++		}
++		return true;
++	};
++	auto walkTo = [&](Position to, bool final, bool kneel)
++	{
++		action->type = BA_WALK;
++		action->target = to;
++		action->run = false;
++		action->finalAction = final;
++		action->desperate = false;
++		action->kneel = kneel;
++		action->finalFacing = _save->getTileEngine()->getDirectionTo(to, c.pos);
++		td.walked[_unit->getId()] = _unit->getPosition();
++		td.reserved.insert(_save->getTileIndex(to));
++		td.orders[_unit->getId()]++;
++	};
++	if (role == 'A' || (joined && (role == 'M' || role == 'a')))
++	{
++		const char *order = role == 'A' ? "FIRE" : "JOIN";
++		if (tdAttack(_attackAction.type))
++		{
++			_AIMode = AI_COMBAT;
++			action->type = _attackAction.type;
++			action->target = _attackAction.target;
++			action->weapon = _attackAction.weapon;
++			action->finalAction = false;
++			action->desperate = false;
++			action->run = false;
++			if (action->weapon && action->type == BA_THROW && action->weapon->getRules()->isGrenadeOrProxy())
++			{
++				_unit->spendCost(_unit->getActionTUs(BA_PRIME, action->weapon));
++				_unit->spendTimeUnits(4);
++			}
++			action->finalFacing = _attackAction.finalFacing;
++			action->updateTU();
++			if (action->type == BA_LAUNCH)
++				action->waypoints = _attackAction.waypoints;
++			else if (action->type == BA_AIMEDSHOT || action->type == BA_AUTOSHOT)
++				action->kneel = _unit->getArmor()->allowsKneeling(false);
++			td.orders[_unit->getId()]++;
++			g.attacked.insert(_unit->getId());
++			say(order, "shot");
++			return;
++		}
++		if (stuck)
++		{
++			say("FREE", "stuck");
++			return;
++		}
++		// a point it reaches with a shot's time units left with the engine's line of fire to the target, in the weapon's range;
++		// the fewest other contacts that would see it, then the nearest
++		BattleItem *w = tdRanged(_save, _unit);
++		Position best(-1, -1, -1);
++		int bestOthers = INT_MAX, bestDist = INT_MAX;
++		if (w)
++		{
++			for (int idx : _reachableWithAttack)
++			{
++				const Position t = _save->getTileCoords(idx);
++				if (td.reserved.count(idx) || w->getRules()->isOutOfRange(Position::distanceSq(t, c.pos)))
++					continue;
++				if (!tdFire(_save, _unit, t, (size_t)bit))
++					continue;
++				const unsigned m = tdMask(_save, t);
++				int others = 0;
++				for (unsigned x = m & ~(1u << bit); x; x &= x - 1)
++					++others;
++				const int dist = Position::distanceSq(t, _unit->getPosition());
++				if (others < bestOthers || (others == bestOthers && dist < bestDist))
++				{
++					best = t;
++					bestOthers = others;
++					bestDist = dist;
++				}
++			}
++		}
++		if (best.x >= 0 && best != _unit->getPosition())
++		{
++			_AIMode = AI_COMBAT;
++			walkTo(best, false, false);
++			action->number -= 1; // as the attack's own firepoint walk: the shot comes after it
++			say((std::string(order) + "WALK").c_str(), "point others=" + std::to_string(bestOthers));
++			return;
++		}
++	}
++	if (stuck)
++	{
++		say("FREE", "stuck");
++		return;
++	}
++	// cover: out of the contacts' sight, a shot's time units and kneeling kept, the most of the ground between the target and the
++	// group seen (two points on the line to each other member); needs two of them at least
++	if (role == 'S')
++	{
++		BattleItem *w = tdRanged(_save, _unit);
++		std::vector<Position> ground;
++		for (int id : g.members)
++		{
++			BattleUnit *m = 0;
++			for (auto *bu : *_save->getUnits())
++				if (bu->getId() == id)
++					m = bu;
++			if (!m || m == _unit || m->isOut())
++				continue;
++			for (int f : { 3, 6 })
++			{
++				Position p(c.pos.x + (m->getPosition().x - c.pos.x) * f / 10, c.pos.y + (m->getPosition().y - c.pos.y) * f / 10, c.pos.z);
++				if (_save->getTile(p))
++					ground.push_back(p);
++			}
++		}
++		BattleActionCost keep = w ? tdShotCost(_unit, w) : BattleActionCost();
++		keep.Time += _unit->getArmor()->allowsKneeling(false) ? _unit->getKneelDownCost() : 0;
++		Position best(-1, -1, -1);
++		int bestSeen = 1, bestDist = INT_MAX;
++		if (w && keep.Time > 0 && _unit->getTimeUnits() >= keep.Time)
++		{
++			for (int idx : _save->getPathfinding()->findReachable(_unit, keep))
++			{
++				const Position t = _save->getTileCoords(idx);
++				if (td.reserved.count(idx) || tdMask(_save, t))
++					continue;
++				const Position eye = tdVoxel(_save, t, _unit->getStandHeight());
++				int seen = 0;
++				for (const Position &p : ground)
++				{
++					if (Position::distance2d(t, p) <= _save->getMod()->getMaxViewDistance()
++						&& _save->getTileEngine()->calculateLineVoxel(eye, tdVoxel(_save, p, 20), false, 0, _unit, _unit) == V_EMPTY)
++						++seen;
++				}
++				const int dist = Position::distanceSq(t, _unit->getPosition());
++				if (seen > bestSeen || (seen == bestSeen && seen > 1 && dist < bestDist))
++				{
++					best = t;
++					bestSeen = seen;
++					bestDist = dist;
++				}
++			}
++		}
++		if (best.x >= 0 && (best == _unit->getPosition() || pathHidden(best)))
++		{
++			if (best == _unit->getPosition())
++			{
++				action->type = BA_NONE;
++				td.orders[_unit->getId()]++;
++			}
++			else
++			{
++				walkTo(best, true, _unit->getArmor()->allowsKneeling(false));
++			}
++			td.parked[_unit->getId()] = best;
++			_AIMode = AI_AMBUSH;
++			_reserve = BA_NONE;
++			_unit->setCharging(0);
++			say("SUPPORT", "seen=" + std::to_string(bestSeen) + "/" + std::to_string(ground.size()) + " keep=" + std::to_string(keep.Time));
++			return;
++		}
++	}
++	// close in: the tile nearest the target (2 tiles off at least) no contact would see, by a hidden path; the others of the group
++	// do not share it
++	const bool exposed = tdMask(_save, _unit->getPosition()) != 0;
++	const int now = Position::distance2d(_unit->getPosition(), c.pos);
++	std::vector<std::pair<int, int>> stage; // (distance to the target, tile index)
++	for (int idx : _save->getPathfinding()->findReachable(_unit, BattleActionCost()))
++	{
++		const Position t = _save->getTileCoords(idx);
++		const int d = Position::distance2d(t, c.pos);
++		if (t == _unit->getPosition() || td.reserved.count(idx) || d < 2 || (!exposed && d >= now) || tdMask(_save, t))
++			continue;
++		stage.push_back(std::make_pair(d * 1000 + Position::distance2d(t, _unit->getPosition()), idx));
++	}
++	std::sort(stage.begin(), stage.end());
++	int tries = 0;
++	for (auto &s : stage)
++	{
++		if (++tries > 6)
++			break;
++		const Position t = _save->getTileCoords(s.second);
++		if (pathHidden(t))
++		{
++			if (_AIMode != AI_COMBAT)
++				_AIMode = AI_PATROL;
++			_reserve = BA_NONE;
++			_unit->setCharging(0);
++			walkTo(t, false, false);
++			say("MANEUVER", std::string(exposed ? "out" : "in") + " d=" + std::to_string(now) + ">" + std::to_string(s.first / 1000));
++			return;
++		}
++	}
++	if (!exposed)
++	{
++		action->type = BA_NONE;
++		td.orders[_unit->getId()]++;
++		td.parked[_unit->getId()] = _unit->getPosition();
++		say("WAIT","d=" + std::to_string(now) + " tried=" + std::to_string(tries));
++		return;
++	}
++	say("FREE", "exposed");
++}
++
+ /**
+  * Runs any code the state needs to keep updating every AI cycle.
+  * @param action (possible) AI action to execute after thinking is done.
+@@ -992,6 +1694,11 @@
+ 		}
+ 		_save->getPathfinding()->setKnownOccupant(_unit, occupant);
+ 	}
++	// AI_TACTICAL_DIRECTOR_V1 (bench): the side's plan of this turn is made before its first unit chooses
++	if (tdOn() && _unit->getFaction() == FACTION_HOSTILE)
++	{
++		tdPlanIfNew(_save);
++	}
+ 	_reachable = _save->getPathfinding()->findReachable(_unit, BattleActionCost());
+ 	const bool revived = AiProbe::revive(_save, _unit, action, _reachable);
+ 	if (revived || AiProbe::flee(_save, _unit, action, _reachable))
+@@ -1320,6 +2027,11 @@
+ 		break;
+ 	default:
+ 		break;
++	}
++	// AI_TACTICAL_DIRECTOR_V1 (bench): no flag - nothing runs
++	if (tdOn() && _unit->getFaction() == FACTION_HOSTILE)
++	{
++		tacticalDirector(action);
+ 	}
+ 	if (_AIMode >= AI_PATROL && _AIMode <= AI_ESCAPE)
+ 	{
+--- D0/AIModule.h
++++ v4/AIModule.h
+@@ -388,6 +388,8 @@
+ 	int getAIMode() const { return _AIMode; }
+ 	/// Is this the walk of a patrol to its node (the probe's slot p, patrol.node)?
+ 	bool isPatrolWalk(const BattleAction &action) const;
++	/// AI_TACTICAL_DIRECTOR_V1 (bench, OXCE_AI_TACTICAL_DIRECTOR): this unit carries out the role the side's plan gave it.
++	void tacticalDirector(BattleAction *action);
+ 	/// No more patrol walks for the rest of this unit-turn: it has no step left by energy (bench, ENERGY_PATROL_END_V2).
+ 	void spendPatrol();
+ 	/// The walk being done stopped at a unit on the step in dir: recorded if findFirePoint chose it (bench,

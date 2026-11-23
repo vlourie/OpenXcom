@@ -1,0 +1,24 @@
+cases 514
+melee best reason: {'unreachable': 350, 'armour_stops_reach': 82, 'armour_stops_adjacent': 47, 'useful_reach': 3}
+grenade through/tu/efficacy/valid: {'stopped/no_tu/no_eff/valid': 39, 'stopped/no_tu/no_eff/invalid': 39, 'stopped/tu/no_eff/valid': 32, 'stopped/tu/no_eff/invalid': 28, 'stopped/no_tu/eff/invalid': 18, 'stopped/tu/eff/invalid': 14, 'stopped/no_tu/eff/valid': 6, 'through/no_tu/no_eff/valid': 3, 'through/no_tu/no_eff/invalid': 2, 'through/tu/no_eff/invalid': 1, 'through/tu/no_eff/valid': 1, 'through/tu/eff/invalid': 1}
+other hand: {'STR_LONG_KNIFE notfire': 43, 'STR_VIBRO_BLADE notfire': 7, 'STR_CUTLASS notfire': 6, 'STR_BATTO notfire': 2, 'STR_STUN_BATON notfire': 1}
+distance: {'2-5': 62, '6-10': 92, '>10': 331, 'adjacent': 29}
+current shot ev10: {'0': 513, '1': 1}
+tu at the shot: {'40-59': 132, '20-39': 128, '>=60': 245, '<20': 9}
+distinct targets: 26 top: [(('G1_M10_s2', '114', '0'), 67), (('G1_M10_s1', '1', '0'), 53), (('G1_M10_s1', '114', '0'), 49), (('G1_L11_s1', '335', '0'), 48), (('G1_L5_s1', '229', '0'), 37), (('G1_L11_s2', '335', '0'), 36), (('G1_M10_s1', '115', '0'), 34), (('G1_M10_s2', '46', '0'), 27)]
+target faction: {'0': 514}
+alt/pos rows:
+   G1_M10_s2 turn 1 unit 1000001 STR_UAC_RIFLE target 46 alt 26:16:- pos 29:27,5,0:8:16 melee AUX_FISTO:16:-1:-1:-1:0;STR_UAC_RIFLE:15:-1:-1:-1:0 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000006 STR_DB_SHOTGUN target 46 alt 9:16:- pos 12:33,26,2:20:16 melee AUX_FISTO:16:-1:-1:-1:0;STR_DB_SHOTGUN:15:-1:-1:-1:0 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000007 STR_UAC_CARBINE target 1 alt 13:16:- pos 14:44,36,0:8:16 melee AUX_FISTO:16:-1:-1:-1:0 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000016 STR_UAC_CARBINE target 114 alt 0:-1:- pos 96:11,26,1:6:16 melee AUX_FISTO:16:-1:-1:-1:0 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000016 STR_UAC_CARBINE target 114 alt 0:-1:- pos 68:11,26,1:6:16 melee AUX_FISTO:16:-1:-1:-1:0 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000024 STR_UAC_RIFLE target 114 alt 142:16:- pos 107:6,44,2:4:16 melee AUX_FISTO:16:16:64:52:47;STR_UAC_RIFLE:15:16:64:37:34 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000024 STR_UAC_RIFLE target 114 alt 107:16:- pos 71:6,44,2:4:16 melee AUX_FISTO:16:114:30:0:-24;STR_UAC_RIFLE:15:114:30:0:-23 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000024 STR_UAC_RIFLE target 114 alt 71:16:- pos 36:6,44,2:4:16 melee AUX_FISTO:16:-1:-1:-1:0;STR_UAC_RIFLE:15:-1:-1:-1:0 fx_damage 0
+   G1_M10_s2 turn 1 unit 1000024 STR_UAC_RIFLE target 114 alt 36:16:- pos -:0 melee AUX_FISTO:16:-1:-1:-1:0;STR_UAC_RIFLE:15:-1:-1:-1:0 fx_damage 0
+   G1_M10_s2 turn 2 unit 1000024 STR_UAC_RIFLE target 114 alt 95:16:- pos 107:3,41,2:16:16 melee AUX_FISTO:16:16:28:157:47;STR_UAC_RIFLE:15:16:28:148:34 fx_damage 0
+   G1_M10_s2 turn 2 unit 1000024 STR_UAC_RIFLE target 114 alt 72:16:- pos 71:3,41,2:16:16 melee AUX_FISTO:16:16:28:105:47;STR_UAC_RIFLE:15:16:28:74:34 fx_damage 0
+damage-like effect rows:
+   G1_L5_s2 turn 12 unit 1000070 STR_MP target 344 ev10 0
+   G1_L5_s2 turn 14 unit 1000081 STR_PISTOL_BM target 157 ev10 0

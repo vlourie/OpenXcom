@@ -1,0 +1,52 @@
+    unit type                   start        tu   hp  weapon              sees seen| dec walk att dmg react  end          spot down
+ 1000000 STR_CHRYSSALID_TERRORI (40,54,3)    181 37/116 AUX_CHRYSSALID_WEAP    3    1|   4    3   0   0     0  [40, 54, 3]     1 
+ 1000001 STR_CHRYSSALID_TERRORI (16,35,0)    181 109/116 AUX_CHRYSSALID_WEAP    0    0|   4    4   0   0     0  [11, 37, 0]     1 stun turn 3/1 by 444(0) STR_WEAPON_UNKNOWN
+ 1000005 STR_CHRYSSALID_TERRORI (62,58,3)    181 116/116 AUX_CHRYSSALID_WEAP    0    0|   4    4   0   0     0  [43, 59, 0]     0 
+ 1000006 STR_SILACOID_TERRORIST (22,38,0)     59 98/137 AUX_SILACOID_WEAPON    1    0|   5    3   2  18     0  [22, 39, 0]     0 
+ 1000008 STR_SILACOID_TERRORIST (30,51,0)     59 137/137 AUX_SILACOID_WEAPON    0    0|   5    5   0   0     0  [33, 60, 0]     0 
+ 1000009 STR_ERIDIAN_SOLDIER    (19,41,0)     65  87/87 STR_CANISTER_GUN       0    0|   2    1   1   7     0  [16, 41, 0]     0 dead turn 3/1 by 444(0) AUX_TANK_CANNON
+ 1000010 STR_ERIDIAN_SOLDIER    (38,57,0)     65  87/87 STR_SR_RIFLE           1    0|   3    1   2   0     0  [39, 57, 0]     0 
+ 1000011 STR_ERIDIAN_SOLDIER    (34,57,0)     65  87/87 STR_CANISTER_GUN       0    0|   3    2   1   0     0  [39, 56, 0]     0 
+ 1000012 STR_ERIDIAN_SOLDIER    (7,57,0)      65  44/87 STR_CANISTER_GUN       0    0|   2    2   0   0     0  [9, 53, 0]      0 dead turn 3/1 by 444(0) AUX_TANK_CANNON
+ 1000014 STR_ERIDIAN_SOLDIER    (35,61,0)     65  87/87 STR_CANISTER_GUN       0    0|   4    4   0   0     0  [25, 52, 0]     0 
+ 1000016 STR_ERIDIAN_SOLDIER    (1,20,0)      65  87/87 STR_SR_RIFLE           0    0|   4    4   0   0     0  [11, 21, 0]     0 dead turn 3/1 by 444(0) STR_WEAPON_UNKNOWN
+ 1000017 STR_ERIDIAN_SOLDIER    (56,39,0)     65  87/87 STR_SR_RIFLE           0    0|   4    3   1  61     0  [51, 34, 0]     2 
+ 1000018 STR_ERIDIAN_SOLDIER    (38,56,0)     65  87/87 STR_SR_RIFLE           2    0|   4    2   2   0     0  [42, 53, 0]     0 
+ 1000019 STR_ERIDIAN_SOLDIER    (40,65,3)     65  87/87 STR_CANISTER_GUN       0    0|   3    3   0   0     0  [44, 59, 3]     0 
+ 1000020 STR_ERIDIAN_SOLDIER    (7,61,0)      65  87/87 STR_CANISTER_GUN       0    0|   5    5   0   0     0  [12, 63, 0]     0 
+ 1000021 STR_ERIDIAN_SOLDIER    (32,62,0)     65  87/87 STR_CANISTER_GUN       0    0|   1    1   0   0     0  [29, 56, 0]     0 
+ 1000022 STR_ERIDIAN_SOLDIER    (8,37,0)      65  87/87 STR_CANISTER_GUN       1    0|   2    1   1   0     0  [9, 33, 0]      0 
+ 1000023 STR_ERIDIAN_SOLDIER    (51,7,0)      65  84/87 STR_CANISTER_GUN       0    0|   7    6   1   0     0  [53, 7, 0]      0 
+ 1000024 STR_ERIDIAN_SOLDIER    (53,55,0)     65  87/87 STR_CANISTER_GUN       1    0|   1    1   0   0     0  [54, 49, 3]     1 
+ 1000025 STR_ERIDIAN_SOLDIER    (33,55,0)     65  87/87 STR_CANISTER_GUN       0    0|   6    4   1   0     0  [39, 54, 0]     0 
+ 1000026 STR_ERIDIAN_SOLDIER    (61,43,0)     65  87/87 STR_SR_RIFLE           0    0|   1    1   0   0     0  [50, 51, 0]     0 
+ 1000027 STR_ERIDIAN_SOLDIER    (2,20,0)      65  87/87 STR_CANISTER_GUN       0    0|   3    3   0   0     0  [16, 18, 0]     0 dead turn 3/1 by 444(0) AUX_TANK_CANNON
+ 1000028 STR_ERIDIAN_SOLDIER    (3,7,0)       65  87/87 STR_SR_RIFLE           1    0|   4    2   2   0     0  [7, 4, 0]       0 
+ 1000029 STR_ERIDIAN_SOLDIER    (62,9,0)      65  87/87 STR_SR_RIFLE           0    0|   2    1   1  64     0  [61, 8, 0]      0 dead own turn by 1000053(1) STR_WEAPON_UNKNOWN
+ 1000030 STR_ERIDIAN_SOLDIER    (21,16,2)     65  87/87 STR_CANISTER_GUN       0    0|   1    1   0   0     0  [22, 17, 2]     0 dead turn 3/1 by 444(0) AUX_TANK_CANNON
+ 1000032 STR_ERIDIAN_SOLDIER    (67,38,0)     65  87/87 STR_CANISTER_GUN       1    0|   1    1   0   0     0  [63, 49, 0]     0 
+ 1000033 STR_ERIDIAN_SOLDIER    (35,62,0)     65  87/87 STR_CANISTER_GUN       0    0|   4    4   0   0     0  [43, 51, 0]     0 
+ 1000034 STR_ERIDIAN_SOLDIER    (54,32,3)     65  87/87 STR_CANISTER_GUN       0    0|   4    3   1   0     1  [54, 27, 3]     1 dead turn 3/0 by 470(0) AUX_TANK_LASER_CANNON
+ 1000036 STR_ERIDIAN_SOLDIER    (28,16,0)     65  87/87 STR_CANISTER_GUN       1    1|   2    1   1   8     2  [26, 15, 0]     2 dead own turn by 444(0) AUX_TANK_CANNON
+ 1000037 STR_ERIDIAN_SOLDIER    (55,67,0)     65  87/87 STR_CANISTER_GUN       0    0|   1    1   0   0     0  [68, 61, 0]     0 
+ 1000038 STR_ERIDIAN_SOLDIER    (5,37,3)      65  87/87 STR_CANISTER_GUN       0    0|   1    1   0   0     0  [12, 44, 3]     0 
+ 1000039 STR_ERIDIAN_SOLDIER    (62,61,0)     65  87/87 STR_CANISTER_GUN       0    0|   2    2   0   0     0  [50, 60, 0]     0 
+ 1000040 STR_ERIDIAN_SOLDIER    (39,63,0)     65  87/87 STR_CANISTER_GUN       0    0|   4    4   0   0     0  [36, 54, 0]     0 
+ 1000041 STR_ERIDIAN_SOLDIER    (54,55,0)     65  87/87 STR_SR_RIFLE           1    0|   1    1   0   0     0  [48, 55, 3]     0 
+ 1000042 STR_ERIDIAN_SOLDIER    (25,18,0)     65  87/87 STR_CANISTER_GUN       0    0|   2    1   1   0     1  [26, 20, 0]     1 dead own turn by 444(0) AUX_TANK_CANNON
+ 1000044 STR_ERIDIAN_SOLDIER    (52,57,0)     65  87/87 STR_CANISTER_GUN       0    0|   1    1   0   0     0  [54, 50, 3]     0 
+ 1000045 STR_ERIDIAN_SOLDIER    (4,38,0)      65  87/87 STR_SR_RIFLE           1    0|   3    1   2  28     0  [8, 37, 0]      0 stun turn 3/1 by 444(0) STR_WEAPON_UNKNOWN
+ 1000046 STR_ERIDIAN_SOLDIER    (36,69,0)     65  87/87 STR_CANISTER_GUN       0    0|   4    4   0   0     0  [36, 64, 0]     0 
+ 1000047 STR_ERIDIAN_SOLDIER    (49,63,0)     65  87/87 STR_SR_RIFLE           0    0|   4    2   2   0     0  [49, 67, 0]     0 
+ 1000049 STR_ERIDIAN_SOLDIER    (66,6,3)      65  87/87 STR_SR_RIFLE           0    0|   3    3   0   0     0  [64, 14, 3]     0 dead own turn by 1000053(1) STR_WEAPON_UNKNOWN
+ 1000050 STR_ERIDIAN_SOLDIER    (4,18,0)      65  87/87 STR_CANISTER_GUN       1    0|   4    2   1   0     0  [8, 16, 0]      0 
+ 1000052 STR_ERIDIAN_BEASTMASTE (7,62,0)      71  94/94 STR_PIR_SMALL_LAUNC    0    0|   4    2   0   0     0  [18, 62, 0]     0 
+ 1000053 STR_ERIDIAN_BEASTMASTE (64,12,0)     71  94/94 STR_TOXIGUN            1    0|   1    0   1  80     0  [64, 12, 0]     0 dead own turn by 1000053(1) STR_WEAPON_UNKNOWN
+ 1000054 STR_ERIDIAN_BEASTMASTE (57,60,0)     71  94/94 STR_SR_RIFLE           0    0|   3    2   1   0     0  [49, 60, 0]     0 
+ 1000055 STR_ERIDIAN_BEASTMASTE (6,5,2)       71  94/94 STR_SR_RIFLE           1    1|   4    3   1   0     0  [3, 7, 0]       0 
+ 1000057 STR_ERIDIAN_LEADER     (14,5,0)      77 101/101 STR_PIR_PLASMA_RIFL    0    1|   3    3   0   0     2  [15, 6, 0]      1 dead turn 3/0 by 545(0) AUX_WOLVERIN_WEAPON_MINIGUN
+ 1000082 STR_ZOMBIE             (15,35,0)     59 101/101 AUX_ZOMBIE_WEAPON      1    0|   1    1   0   0     0  [25, 43, 0]     0 
+ 1000083 STR_ZOMBIE             (63,59,3)     59 101/101 AUX_ZOMBIE_WEAPON      0    0|   4    4   0   0     0  [64, 52, 3]     0 
+ 1000043 STR_ERIDIAN_SOLDIER    (52,33,3)     65  87/87 STR_CANISTER_GUN       0    0|   3    1   2  19     0  [50, 35, 3]     3 dead turn 3/0 by 470(0) AUX_TANK_LASER_CANNON
+ 1000048 STR_ERIDIAN_SOLDIER    (27,16,1)      1  11/87 -                      0    0|   0    0   0   0     0  -               - dead own turn by 444(0) AUX_TANK_CANNON
+ 1000051 STR_ERIDIAN_BEASTMASTE (24,19,0)     71  94/94 -                      1    1|   0    0   0   0     0  -               - dead own turn by 444(0) AUX_TANK_CANNON

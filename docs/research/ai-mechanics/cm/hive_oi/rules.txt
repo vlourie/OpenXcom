@@ -1,0 +1,63 @@
+== STR_GAUSS_RIFLE
+  Piratez.rul:38018 compatibleAmmo=STR_GAUSS_RIFLE_CLIP accuracySnap=70 accuracyAimed=95 tuSnap=30 tuAimed=75 time=40 battleType=1 snapRange=18
+  Piratez.rul:143285 
+== STR_GAUSS_RIFLE_CLIP
+  Piratez.rul:38052 power=100 damageType=1 damageAlter= RandomType=2 ToArmorPre=0.05 ToStun=0.5 FireThreshold=65 clipSize=14 time=40 battleType=2
+== STR_HEAVY_GAUSS
+  Piratez.rul:43756 compatibleAmmo=STR_HEAVY_GAUSS_CLIP accuracyAuto=50 accuracySnap=55 tuAuto=48 tuSnap=35 shots=3 time=40 battleType=1 autoRange=20 autoShots=4
+  Piratez.rul:143301 
+== STR_HEAVY_GAUSS_CLIP
+  Piratez.rul:43801 power=120 damageType=1 damageAlter= RandomType=2 ToArmorPre=0.05 ToStun=0.5 FireThreshold=65 clipSize=28 time=40 battleType=2
+== STR_GAUSS_SNIPER
+  Piratez.rul:41614 compatibleAmmo=STR_GAUSS_SNIPER_CLIP accuracySnap=75 accuracyAimed=140 tuSnap=65 tuAimed=88 time=40 battleType=1
+  Piratez.rul:143293 
+== STR_GAUSS_SNIPER_CLIP
+  Piratez.rul:41650 power=90 damageType=1 damageAlter= RandomType=2 ArmorEffectiveness=0.9 ToArmorPre=0.05 ToStun=0.5 FireThreshold=65 damageBonus= clipSize=10 time=40 battleType=2
+== STR_GAUSS_PISTOL
+  Piratez.rul:26993 compatibleAmmo=STR_GAUSS_PISTOL_CLIP accuracySnap=75 accuracyAimed=85 tuSnap=22 tuAimed=40 time=40 battleType=1 aimRange=20 dropoff=3
+  Piratez.rul:143277 
+== STR_GAUSS_PISTOL_CLIP
+  Piratez.rul:27026 power=70 damageType=1 damageAlter= RandomType=2 ToArmorPre=0.05 ToStun=0.5 FireThreshold=65 clipSize=8 time=40 battleType=2
+== STR_FLECHETTE_GUN
+  Piratez.rul:32990 power=32 damageType=16 damageAlter= ArmorEffectiveness=0.75 ToStun=0.5 ToArmorPre=0.075 ToWound=0.1 accuracySnap=200 tuSnap=23 time=40 battleType=1 clipSize=16 dropoff=8 snapRange=5
+  Piratez.rul:144461 
+  Shotguns_Rebalance.rul:307 
+== STR_BOOM_GUN
+  Piratez.rul:32532 compatibleAmmo=STR_BOOM_AMMO accuracySnap=115 accuracyAimed=135 tuSnap=32 tuAimed=70 time=40 battleType=1 aimRange=15 snapRange=9 dropoff=6
+  Piratez.rul:142033 
+  Piratez.rul:183603 time=4550
+  Shotguns_Rebalance.rul:225 
+== STR_SR_RIFLE
+  Piratez.rul:40537 compatibleAmmo=STR_SR_RIFLE_CLIP accuracySnap=100 accuracyAimed=150 tuSnap=32 tuAimed=64 time=40 battleType=1 snapRange=26
+  Piratez.rul:143261 
+== STR_SR_CLIP
+== STR_CANISTER_GUN
+  Piratez.rul:46553 compatibleAmmo=STR_CANISTER_GUN_CLIP,STR_CANISTER_GUN_CLIP_I,STR_CANISTER_GUN_CLIP_G accuracySnap=50 accuracyAimed=90 tuSnap=36 tuAimed=70 time=40 battleType=1 aimRange=15 dropoff=3
+  Piratez.rul:144410 
+== STR_PIR_PLASMA_RIFLE
+  Piratez.rul:38862 compatibleAmmo=STR_PIR_PLASMA_RIFLE_CLIP accuracyAuto=55 accuracySnap=90 accuracyAimed=100 tuAuto=32 tuSnap=24 tuAimed=42 time=40 battleType=1 autoRange=15 snapRange=20 aimRange=30
+  Piratez.rul:144511 
+== STR_PIR_SMALL_LAUNCHER
+  Piratez.rul:50773 compatibleAmmo=STR_SL_HE,STR_SL_I,STR_PIR_STUN_BOMB,STR_SL_ACID,STR_SL_SMOKE,STR_SL_EMP,STR_SL_GAS,STR_SL_HELL accuracySnap=70 accuracyAimed=110 tuSnap=40 tuAimed=70 time=40 battleType=1 aimRange=20
+  Piratez.rul:144402 
+== AUX_CHRYSSALID_WEAPON
+  Piratez_Factions.rul:8879 clipSize=-1 strengthApplied=true damageType=7 damageAlter= ToArmorPre=0.05 accuracyMelee=100 tuMelee=15 battleType=3
+== AUX_SILACOID_WEAPON
+  Piratez_Factions.rul:8974 power=40 damageType=2 damageAlter= FixRadius=3 ToArmorPre=1.0 accuracySnap=75 tuSnap=30 battleType=1 clipSize=-1 dropoff=3
+== STR_GLADIUS
+  Piratez.rul:16578 power=30 damageType=16 damageBonus= damageAlter= RandomType=2 ArmorEffectiveness=0.7 accuracyMelee=110 costMelee= time=9 time=40 battleType=3 clipSize=-1
+  Piratez.rul:143536 
+  Piratez.rul:180931 time=500
+== AUX_FISTO
+  Piratez.rul:13994 damageType=6 damageBonus= damageAlter= FixRadius=0 ArmorEffectiveness=1.25 ToHealth=0.3 accuracyMelee=100 tuMelee=16 battleType=3 clipSize=-1
+  Piratez.rul:131166 
+== STR_PIR_ALIEN_GRENADE
+  Piratez.rul:52910 power=96 damageType=3 damageAlter= ToStun=1.0 time=30 time=40 battleType=4 time=10 blastRadius=5
+  Piratez.rul:144371 
+== STR_GRENADE_BUG
+  Piratez.rul:52858 power=60 damageType=9 damageAlter= RandomType=4 ResistType=11 FixRadius=5 ArmorEffectiveness=0.125 ToHealth=4.5 ToStun=1.0 battleType=4 time=15 time=0 time=40
+  Piratez.rul:144359 
+== AUX_TANK_CANNON
+  Piratez.rul:12326 compatibleAmmo=STR_HWP_CANNON_SHELLS,STR_HWP_CANNON_SHELLS_NUKE,STR_HWP_CANNON_SHELLS_FUSION,STR_HWP_CANNON_SHELLS_HEAT accuracySnap=60 accuracyAimed=100 time=30 time=60 battleType=1 snapRange=200 dropoff=1
+== AUX_TANK_MG
+  Piratez.rul:12547 accuracySnap=50 accuracyAuto=40 time=15 time=20 autoShots=6 shots=3 autoRange=20 snapRange=20 dropoff=1 compatibleAmmo=STR_MACHINEGUN_BELT_LONG,STR_MACHINEGUN_BELT_LONG_PS battleType=1

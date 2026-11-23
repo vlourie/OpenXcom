@@ -1,0 +1,63 @@
+== A1: events 611..615, decision index 609
+609 610 rng=d24c268811448687 t=1 s=1 ev=decide unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 number=1 second=0 d=49
+610 611 rng=d24c268811448687 t=1 s=1 ev=fp at=decide S=22d53303792949c U=1535366346b76d39 A=a23514aeb5d1851 I=f92dc4edda191644 O=c882d97d505f3c4f M=aa6ca908503699c1 N=5be689259dbb8bc1 B=aed2aa519960
+611 612 rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612
+612 613 rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=boundary kind=shot.1
+613 614 rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0
+614 615 rng=5e388b00ea6589b8 t=1 s=1 ev=tick unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 counter=1 second=0 pos=29,9,1 hp=66 en=96
+615 616 rng=5e388b00ea6589b8 t=1 s=1 ev=decide unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 number=2 second=0 d=50
+-- engine lines
+   [FORGEDUMP] at=613 why=shot.1 S=22d53303792949c U=3565f8b95f1e8992 A=6fcc7346011b8253 I=f92dc4edda191644 O=c882d97d505f3c4f M=aa6ca908503699c1 N=cb6854513d715d91 B=aed2aa519960176f J=fc0f421c132b2321 R=c7bcd5cc1f42ddf4 C=41270 L=aafe8518bd5730a3 V=febf38fd9271
+   [AIDECIDE] turn=1 side=1 unit=1000006 n=1 from=(29,9,1) tu=98 mode=2 act=7 to=(12,17,0) run=0 kneel=0 aim=324 weapon=STR_PIR_PLASMA_RIFLE seen=191,91,157,324,344,301,229 hu=6188a10ff24742e5 hi=563b463885e347b7 ho=be229c54028f56b4 hou=4fdd9cd3c494dfca hm=a9ce74
+   [AICAND] moves=e14576822eab43ef unit=1000006 list=29.10.3:20;29.10.2:12;29.8.0:12;28.9.2:12;30.9.0:12;30.9.2:12;29.10.6:44;29.10.0:12;29.9.3:16;29.9.6:40;28.9.6:44;29.8.6:44;30.9.6:44;29.8.3:20;29.8.1:4;29.10.5:36;30.9.3:20;28.9.3:20;29.9.5:32;29.9.4:24;29.9.0
+   [AICAND] acts=5de6bbb9a5598b07 unit=1000006 list=[{"id":"60c227f63d43737d","k":"a","t":8,"to":[22,37,0],"tu":23,"u":191,"w":"STR_PIR_PLASMA_RIFLE","p":84,"lof":1,"d":29},{"id":"49214b5ac38258f6","k":"a","t":7,"to":[22,37,0],"tu":31,"u":191,"w":"STR_PIR_PLASMA_
+   [AIREC] {"v":1,"gen":"base_v2","cfg":"5d9ae01182ce2ef0","seed":2032001,"rec":48,"turn":1,"side":1,"unit":1000006,"order":6,"n":1,"state":{"pos":[29,9,1],"dir":5,"tu":98,"hp":66,"stun":0,"morale":100,"kneel":0,"h":{"u":"6188a10ff24742e5","i":"563b463885e347b7",
+   [AIEVENT] turn=1 side=1 what=view unit=1000006 pos=(1,0,0)
+-- units since the intervention
+   324 SOLDIER {'armor': ['82,79,79,64,57', '82,77,79,64,57']}
+   1000006 STR_ETHEREAL_SOLDIER {'ammo': ['24', '21'], 'tu': ['98', '67']}
+-- tiles tiles_changed=2827 floor=0
+   tile=4,7,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=5,7,0 was=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=6,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=7,7,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=8,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=9,7,0 was=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=10,7,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=1,8,0 was=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=2,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/
+   tile=3,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/
+   tile=4,8,0 was=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/
+   tile=5,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/
+   tile=6,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/
+   tile=7,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/
+-- casualties 24 dead 22 [{'n': 140, 'turn': '1', 'side': '0', 'unit': '335', 'dead': '1', 'fac': '0'}, {'n': 176, 'turn': '1', 'side': '0', 'unit': '1000019', 'dead': '1', 'fac': '1'}, {'n': 201, 'turn': '1', 'side': '0', 'unit': '1000017', 'dead': '1', 'fac': '1'}, {'n': 321, 'turn': '1', 'side': '0', 'unit': '1000033', 'dead': '1', 'fac': '1'}]
+== B1: events 611..615, decision index 609
+609 610 rng=d24c268811448687 t=1 s=1 ev=decide unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 number=1 second=0 d=49
+610 611 rng=d24c268811448687 t=1 s=1 ev=fp at=decide S=22d53303792949c U=1535366346b76d39 A=a23514aeb5d1851 I=f92dc4edda191644 O=c882d97d505f3c4f M=aa6ca908503699c1 N=5be689259dbb8bc1 B=aed2aa519960
+611 612 rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612
+612 613 rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=boundary kind=shot.1
+613 614 rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=75 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0
+614 615 rng=80c0adf90b729c5e t=1 s=1 ev=tick unit=1000006 fac=1 st=0 tu=75 noresel=0 hide=0 counter=1 second=0 pos=29,9,1 hp=66 en=96
+615 616 rng=80c0adf90b729c5e t=1 s=1 ev=decide unit=1000006 fac=1 st=0 tu=75 noresel=0 hide=0 number=2 second=0 d=50
+-- engine lines
+   [FORGEDUMP] at=613 why=shot.1 S=22d53303792949c U=3565f8b95f1e8992 A=6fcc7346011b8253 I=f92dc4edda191644 O=c882d97d505f3c4f M=aa6ca908503699c1 N=cb6854513d715d91 B=aed2aa519960176f J=fc0f421c132b2321 R=c7bcd5cc1f42ddf4 C=41270 L=aafe8518bd5730a3 V=febf38fd9271
+   [AIDECIDE] turn=1 side=1 unit=1000006 n=1 from=(29,9,1) tu=98 mode=2 act=8 to=(12,17,0) run=0 kneel=0 aim=324 weapon=STR_PIR_PLASMA_RIFLE seen=191,91,157,324,344,301,229 hu=6188a10ff24742e5 hi=563b463885e347b7 ho=be229c54028f56b4 hou=4fdd9cd3c494dfca hm=a9ce74
+   [AICAND] moves=e14576822eab43ef unit=1000006 list=29.10.3:20;29.10.2:12;29.8.0:12;28.9.2:12;30.9.0:12;30.9.2:12;29.10.6:44;29.10.0:12;29.9.3:16;29.9.6:40;28.9.6:44;29.8.6:44;30.9.6:44;29.8.3:20;29.8.1:4;29.10.5:36;30.9.3:20;28.9.3:20;29.9.5:32;29.9.4:24;29.9.0
+   [AICAND] acts=5de6bbb9a5598b07 unit=1000006 list=[{"id":"60c227f63d43737d","k":"a","t":8,"to":[22,37,0],"tu":23,"u":191,"w":"STR_PIR_PLASMA_RIFLE","p":84,"lof":1,"d":29},{"id":"49214b5ac38258f6","k":"a","t":7,"to":[22,37,0],"tu":31,"u":191,"w":"STR_PIR_PLASMA_
+   [AIREC] {"v":1,"gen":"base_v2","cfg":"5d9ae01182ce2ef0","seed":2032001,"rec":48,"turn":1,"side":1,"unit":1000006,"order":6,"n":1,"state":{"pos":[29,9,1],"dir":5,"tu":98,"hp":66,"stun":0,"morale":100,"kneel":0,"h":{"u":"6188a10ff24742e5","i":"563b463885e347b7",
+   [AIEVENT] turn=1 side=1 what=view unit=1000006 pos=(1,0,0)
+-- units since the intervention
+   324 SOLDIER {'armor': ['82,79,79,64,57', '82,77,79,64,57']}
+   1000006 STR_ETHEREAL_SOLDIER {'ammo': ['24', '23'], 'tu': ['98', '75']}
+-- tiles tiles_changed=0 None
+-- casualties 24 dead 19 [{'n': 140, 'turn': '1', 'side': '0', 'unit': '335', 'dead': '1', 'fac': '0'}, {'n': 176, 'turn': '1', 'side': '0', 'unit': '1000019', 'dead': '1', 'fac': '1'}, {'n': 201, 'turn': '1', 'side': '0', 'unit': '1000017', 'dead': '1', 'fac': '1'}, {'n': 321, 'turn': '1', 'side': '0', 'unit': '1000033', 'dead': '1', 'fac': '1'}]
+first section differences {"U": {"section": "units", "event_a": 617, "event_b": 617, "turn": ["1", "1"]}, "I": {"section": "items", "event_a": 617, "event_b": 617, "turn": ["1", "1"]}, "O": {"section": "inventory order", "event_a": 617, "event_b": 617, "turn": ["1", "1"]}, "M": {"section": "map", "event_a": 617, "event_b": 617, "turn": ["1", "1"]}, "R": {"section": "RNG", "event_a": 617, "event_b": 617, "turn": ["1", "1"]}, "C": {"section": "virtual clock from its first reading", "event_a": 617, "event_b": 617, "turn": ["1", "1"]}, "V": {"section": "what the auxiliary generator gave units and tiles", "event_a": 617, "event_b": 617, "turn": ["1", "1"]}, "A": {"section": "AI modules", "event_a": 625, "event_b": 626, "turn": ["1", "1"]}, "S": {"section": "scheduler", "event_a": 657, "event_b": 667, "turn": ["1", "1"]}, "N": {"section": "nodes", "event_a": 657, "event_b": 667, "turn": ["1", "1"]}, "B": {"section": "bot", "event_a": 657, "event_b": 667, "turn": ["1", "1"]}, "J": {"section": "item ids", "event_a": 984, "event_b": 996, "turn": ["1", "1"]}, "L": {"section": "auxiliary generator", "event_a": 1246, "event_b": 1269, "turn": ["2", "1"]}}
+sections at intervention {'S': '22d53303792949c', 'U': '3565f8b95f1e8992', 'A': '6fcc7346011b8253', 'I': 'f92dc4edda191644', 'O': 'c882d97d505f3c4f', 'M': 'aa6ca908503699c1', 'N': 'cb6854513d715d91', 'B': 'aed2aa519960176f', 'J': 'fc0f421c132b2321', 'R': 'c7bcd5cc1f42ddf4', 'C': '41270', 'L': 'aafe8518bd5730a3', 'V': 'febf38fd927122e'}
+fingerprint at decide {'sections': {'S': '22d53303792949c', 'U': '1535366346b76d39', 'A': 'a23514aeb5d1851', 'I': 'f92dc4edda191644', 'O': 'c882d97d505f3c4f', 'M': 'aa6ca908503699c1', 'N': '5be689259dbb8bc1', 'B': 'aed2aa519960176f', 'J': 'fc0f421c132b2321', 'R': 'd24c268811448687', 'C': '41270', 'L': 'aafe8518bd5730a3', 'V': 'febf38fd927122e'}, 'chain': '867d455d5479b994', 'rng': 'd24c268811448687'}
+actor {'u': '1000006', 'type': 'STR_ETHEREAL_SOLDIER', 'fac': '1', 'st': '0', 'pos': '29,9,1', 'dir': '5', 'tu': '98', 'en': '96', 'hp': '66', 'stun': '0', 'mor': '100', 'mana': '40', 'fire': '0', 'wounds': '0', 'noresel': '0', 'hide': '0', 'charge': '-1', 'seen': '5', 'uh': 'dc50dfd1f7e8053e', 'ai': '6ae4bc3348f79612', 'inv': 'd45605970fd9519d', 'right': 'STR_PIR_PLASMA_RIFLE', 'ammo': '24', 'kneel': '0', 'armor': '45,45,45,45,45', 'overkill': '0', 'motion': '0', 'tss': '255', 'tsu': '255', 'vis': '191,324,344,301,229,-', 'spot': '191,324,344,301,229,-'}
+next decision units [{"unit": "1000006", "type": "STR_ETHEREAL_SOLDIER", "fields": {"ammo": ["21", "23"], "inv": ["4f3863a706d9842", "6645556f0101dfc7"], "tu": ["67", "75"], "uh": ["45f40e0bb2a66171", "12e4c31217df121f"]}}]
+next decision floor floor=0
+end {'A1': {'result': {'how': 'over', 'turn': '10', 'vms': '320920'}, 'casualties': 24, 'dead': 22, 'decisions': 600}, 'B1': {'result': {'how': 'over', 'turn': '9', 'vms': '348680'}, 'casualties': 24, 'dead': 19, 'decisions': 556}}
+AC None True True
+dump lines [50, 50] prefix game lines [369, 369] prefix events [611, 611]

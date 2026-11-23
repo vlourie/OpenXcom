@@ -1,0 +1,5 @@
+build_label=cmrun-HV
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + HIVE COMMAND CORE V0 (OXCE_AI_HIVE=0 off, 1 shadow, 2 active)
+patch_sha256=ebbcfbf18005713416e0df4d0e643ced787d483388791b3185ec835350ad72c9
+exe_sha256=82924ab702352019c37a267be9b902c7d490c22ec55405c5697556271ac43b5d

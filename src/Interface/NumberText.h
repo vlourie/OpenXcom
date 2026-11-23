@@ -34,7 +34,18 @@ private:
 	Surface *_borderedChars[10];
 	bool _bordered;
 	Uint8 _color;
+	int _hdBoxX = 0, _hdBoxY = 0, _hdBoxW = 0, _hdBoxH = 0;
+	Surface *_hdPlate = nullptr;
 public:
+	/// HD interface, TrueType digits: the number stands in the middle of this box, given from the number's own
+	/// corner (the spotted units' markers: the classic digit is put at a fixed corner of the button).
+	void setHdBox(int dx, int dy, int w, int h) { _hdBoxX = dx; _hdBoxY = dy; _hdBoxW = w; _hdBoxH = h; }
+	/// HD interface, modern skin: the marker under the number (a flat field in a black frame, the box of setHdBox) gets a
+	/// relief - a gradient and a bevel in the field's own colour, read from this surface at (1, 1). Picture only.
+	void setHdPlate(Surface *plate) { _hdPlate = plate; }
+	/// Owns its resources: not copied.
+	NumberText(const NumberText&) = delete;
+	NumberText& operator=(const NumberText&) = delete;
 	/// Creates a new number text with the specified size and position.
 	NumberText(int width, int height, int x = 0, int y = 0);
 	/// Cleans up the number text.
@@ -51,6 +62,8 @@ public:
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Draws the number text.
 	void draw() override;
+	/// HD interface, modern skin: the digits with the TrueType font.
+	void hdMirror() override;
 	/// sets this numbertext to have a border or not
 	void setBordered(bool bordered);
 

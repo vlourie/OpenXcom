@@ -1,0 +1,1514 @@
+﻿{
+ "plan": {
+  "OFF": [
+   "YO",
+   "no arena variable at all, against the archived D0"
+  ],
+  "A1": [
+   "YA",
+   "A: full think(), the action through the arena unchanged"
+  ],
+  "A2": [
+   "YA",
+   "A again: control A/A"
+  ],
+  "B1": [
+   "YB",
+   "B: the same full think(), the mode of the shot changed before it is carried out"
+  ],
+  "B2": [
+   "YB",
+   "B again: control B/B"
+  ],
+  "C1": [
+   "YC",
+   "C: passive interception: the state and the action written, nothing changed"
+  ]
+ },
+ "branch_point": {
+  "decision": 49,
+  "unit": 1000006,
+  "to": "12.17.0",
+  "weapon": "STR_PIR_PLASMA_RIFLE",
+  "D0_type": 7,
+  "alternative_type": 8
+ },
+ "ledger": [
+  [
+   "STRAY",
+   "2026-11-06T22:02:17",
+   "not_FX_arm_XO_env_SD",
+   "XO",
+   "L8",
+   "a stray run: the arm name XO was taken, see WP2_1_PLAN_ADDENDUM.md; counted in the budget",
+   "turns=60"
+  ],
+  [
+   "A1",
+   "2026-11-06T22:04:41",
+   "3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1",
+   "YA",
+   "L8",
+   "A: full think(), the action through the arena unchanged",
+   "turns=60"
+  ],
+  [
+   "A2",
+   "2026-11-06T22:05:18",
+   "3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1",
+   "YA",
+   "L8",
+   "A again: control A/A",
+   "turns=60"
+  ],
+  [
+   "B1",
+   "2026-11-06T22:06:06",
+   "3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1",
+   "YB",
+   "L8",
+   "B: the same full think(), the mode of the shot changed before it is carried out",
+   "turns=60"
+  ],
+  [
+   "B2",
+   "2026-11-06T22:06:44",
+   "3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1",
+   "YB",
+   "L8",
+   "B again: control B/B",
+   "turns=60"
+  ],
+  [
+   "C1",
+   "2026-11-06T22:07:22",
+   "3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1",
+   "YC",
+   "L8",
+   "C: passive interception: the state and the action written, nothing changed",
+   "turns=60"
+  ],
+  [
+   "OFF",
+   "2026-11-06T22:22:19",
+   "3015ae0e32b1326ae6571727753a74acd00184101cf88bf78eeb7a4cf3ab7db1",
+   "YO",
+   "L8",
+   "no arena variable at all, against the archived D0",
+   "turns=60"
+  ]
+ ],
+ "AA": {
+  "a": "A1",
+  "b": "A2",
+  "forge_events": [
+   6748,
+   6748
+  ],
+  "game_lines": [
+   4366,
+   4366
+  ],
+  "chain_identical": true,
+  "chain_first_difference": null,
+  "game_identical": true,
+  "game_first_difference": null,
+  "dumps_compared": 20,
+  "dumps_only_one": [],
+  "dump_first_difference": null,
+  "branch_lines_equal": true,
+  "legal_lines_equal": true,
+  "actions": {
+   "counts": [
+    600,
+    600
+   ],
+   "identical": true
+  },
+  "tu_changes": {
+   "counts": [
+    2162,
+    2162
+   ],
+   "identical": true
+  },
+  "fingerprints": {
+   "counts": [
+    630,
+    630
+   ],
+   "identical": true
+  },
+  "casualties": {
+   "counts": [
+    24,
+    24
+   ],
+   "identical": true
+  },
+  "rng_identical": true,
+  "last_section_values": {
+   "S": "7a56d1bc0cd97d1d",
+   "U": "5a51690df6abf8dd",
+   "A": "d006a824008b63bd",
+   "I": "ea615e70bbf0dbe6",
+   "O": "770b24eab914b4c2",
+   "M": "7ffdb476082062bc",
+   "N": "2bb5cd89d10360ba",
+   "B": "c226b8e13fa85b3e",
+   "J": "69c33cb90a0eec76",
+   "R": "3e14fc1ad7835aea",
+   "C": "320920",
+   "L": "e654799969502ea7",
+   "V": "b57165e511ac4e95"
+  },
+  "verdict": "IDENTICAL",
+  "raw_differences": {
+   "lines": 1,
+   "first": [
+    [
+     "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=16889 vms=3209",
+     "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=18219 vms=3209"
+    ]
+   ]
+  },
+  "normalised": {
+   "[AIRESULT] ms=": {
+    "values": 1,
+    "not_zero": 1
+   },
+   "[AIREUSE] fallback_us=": {
+    "values": 1,
+    "not_zero": 0
+   }
+  }
+ },
+ "BB": {
+  "a": "B1",
+  "b": "B2",
+  "forge_events": [
+   6443,
+   6443
+  ],
+  "game_lines": [
+   4058,
+   4058
+  ],
+  "chain_identical": true,
+  "chain_first_difference": null,
+  "game_identical": true,
+  "game_first_difference": null,
+  "dumps_compared": 19,
+  "dumps_only_one": [],
+  "dump_first_difference": null,
+  "branch_lines_equal": true,
+  "legal_lines_equal": true,
+  "actions": {
+   "counts": [
+    556,
+    556
+   ],
+   "identical": true
+  },
+  "tu_changes": {
+   "counts": [
+    2212,
+    2212
+   ],
+   "identical": true
+  },
+  "fingerprints": {
+   "counts": [
+    583,
+    583
+   ],
+   "identical": true
+  },
+  "casualties": {
+   "counts": [
+    24,
+    24
+   ],
+   "identical": true
+  },
+  "rng_identical": true,
+  "last_section_values": {
+   "S": "3620ccd45871da4d",
+   "U": "50716f4df720a24e",
+   "A": "5f43c5d61f46004a",
+   "I": "b8f187f6d3b3b32b",
+   "O": "58db108a1d70e1fc",
+   "M": "7474004df5231a1c",
+   "N": "82a060469124492",
+   "B": "aaa84734157b010",
+   "J": "c26c4c92888e1eed",
+   "R": "3139934fe46a5a89",
+   "C": "348680",
+   "L": "955692d0a8d5934a",
+   "V": "7bcd7d67f986d3f9"
+  },
+  "verdict": "IDENTICAL",
+  "raw_differences": {
+   "lines": 1,
+   "first": [
+    [
+     "[AIRESULT] how=over tac=h.rec.in:438,h.rec.out.M2:2,p.rec.in:116 seed=2032001 livesoldiers=0 livealiens=20 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=9 player=8 pdead=7 pout=1 pwounded=8 phplost=748 hostile=34 hdead=12 hout=2 hleft=20 pmoves=95 pattacks=14 hmoves=353 hattacks=68 ms=20223 vms=3486",
+     "[AIRESULT] how=over tac=h.rec.in:438,h.rec.out.M2:2,p.rec.in:116 seed=2032001 livesoldiers=0 livealiens=20 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=9 player=8 pdead=7 pout=1 pwounded=8 phplost=748 hostile=34 hdead=12 hout=2 hleft=20 pmoves=95 pattacks=14 hmoves=353 hattacks=68 ms=20706 vms=3486"
+    ]
+   ]
+  },
+  "normalised": {
+   "[AIRESULT] ms=": {
+    "values": 1,
+    "not_zero": 1
+   },
+   "[AIREUSE] fallback_us=": {
+    "values": 1,
+    "not_zero": 0
+   }
+  }
+ },
+ "off": [
+  {
+   "a": "OFF",
+   "b": "arch:D0",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null,
+   "raw_differences": {
+    "lines": 1,
+    "first": [
+     [
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=14880 vms=3209",
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=22833 vms=3209"
+     ]
+    ]
+   }
+  },
+  {
+   "a": "OFF",
+   "b": "A1",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null,
+   "raw_differences": {
+    "lines": 1,
+    "first": [
+     [
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=14880 vms=3209",
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=16889 vms=3209"
+     ]
+    ]
+   }
+  },
+  {
+   "a": "OFF",
+   "b": "C1",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null,
+   "raw_differences": {
+    "lines": 1,
+    "first": [
+     [
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=14880 vms=3209",
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=18166 vms=3209"
+     ]
+    ]
+   }
+  },
+  {
+   "a": "A1",
+   "b": "arch:D0",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null,
+   "raw_differences": {
+    "lines": 1,
+    "first": [
+     [
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=16889 vms=3209",
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=22833 vms=3209"
+     ]
+    ]
+   }
+  },
+  {
+   "a": "C1",
+   "b": "arch:D0",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null,
+   "raw_differences": {
+    "lines": 1,
+    "first": [
+     [
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=18166 vms=3209",
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=22833 vms=3209"
+     ]
+    ]
+   }
+  },
+  {
+   "a": "A1",
+   "b": "C1",
+   "game_lines": [
+    4366,
+    4366
+   ],
+   "identical": true,
+   "first_difference": null,
+   "raw_differences": {
+    "lines": 1,
+    "first": [
+     [
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=16889 vms=3209",
+      "[AIRESULT] how=over tac=h.rec.in:504,h.rec.out.M2:2,p.rec.in:94 seed=2032001 livesoldiers=0 livealiens=19 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=10 player=8 pdead=7 pout=0 pwounded=7 phplost=599 hostile=34 hdead=16 hout=0 hleft=18 pmoves=74 pattacks=13 hmoves=409 hattacks=71 ms=18166 vms=3209"
+     ]
+    ]
+   }
+  }
+ ],
+ "chains": [
+  {
+   "a": "A1",
+   "b": "C1",
+   "events": [
+    6748,
+    6748
+   ],
+   "identical": true,
+   "first_difference": null
+  },
+  {
+   "a": "C1",
+   "b": "arch:WP2A1",
+   "events": [
+    6748,
+    6748
+   ],
+   "identical": true,
+   "first_difference": null
+  },
+  {
+   "a": "A1",
+   "b": "arch:WP2A1",
+   "events": [
+    6748,
+    6748
+   ],
+   "identical": true,
+   "first_difference": null
+  }
+ ],
+ "AB": {
+  "a": "A1",
+  "b": "B1",
+  "prefix_events": [
+   611,
+   611
+  ],
+  "prefix_chain_identical": true,
+  "prefix_first_difference": null,
+  "prefix_game_lines": [
+   369,
+   369
+  ],
+  "prefix_game_identical": true,
+  "fingerprint_at_decide": {
+   "sections": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "chain": "867d455d5479b994",
+   "rng": "d24c268811448687"
+  },
+  "pre": {
+   "chain": [
+    "867d455d5479b994",
+    "867d455d5479b994"
+   ],
+   "state": [
+    "f9f520b4481108e4",
+    "f9f520b4481108e4"
+   ],
+   "rng": [
+    "c7bcd5cc1f42ddf4",
+    "c7bcd5cc1f42ddf4"
+   ],
+   "actor": [
+    "1000006",
+    "1000006"
+   ],
+   "type": [
+    "7",
+    "7"
+   ],
+   "to": [
+    "12,17,0",
+    "12,17,0"
+   ],
+   "weapon": [
+    "STR_PIR_PLASMA_RIFLE",
+    "STR_PIR_PLASMA_RIFLE"
+   ],
+   "time": [
+    "31",
+    "31"
+   ],
+   "number": [
+    "1",
+    "1"
+   ],
+   "kneel": [
+    "0",
+    "0"
+   ]
+  },
+  "pre_all_same": true,
+  "dump_lines": [
+   50,
+   50
+  ],
+  "dump_identical": true,
+  "actor_at_intervention": {
+   "u": "1000006",
+   "type": "STR_ETHEREAL_SOLDIER",
+   "fac": "1",
+   "st": "0",
+   "pos": "29,9,1",
+   "dir": "5",
+   "tu": "98",
+   "en": "96",
+   "hp": "66",
+   "stun": "0",
+   "mor": "100",
+   "mana": "40",
+   "fire": "0",
+   "wounds": "0",
+   "noresel": "0",
+   "hide": "0",
+   "charge": "-1",
+   "seen": "5",
+   "uh": "dc50dfd1f7e8053e",
+   "ai": "6ae4bc3348f79612",
+   "inv": "d45605970fd9519d",
+   "right": "STR_PIR_PLASMA_RIFLE",
+   "ammo": "24",
+   "kneel": "0",
+   "armor": "45,45,45,45,45",
+   "overkill": "0",
+   "motion": "0",
+   "tss": "255",
+   "tsu": "255",
+   "vis": "191,324,344,301,229,-",
+   "spot": "191,324,344,301,229,-"
+  },
+  "sections_at_intervention": {
+   "S": "22d53303792949c",
+   "U": "3565f8b95f1e8992",
+   "A": "6fcc7346011b8253",
+   "I": "f92dc4edda191644",
+   "O": "c882d97d505f3c4f",
+   "M": "aa6ca908503699c1",
+   "N": "cb6854513d715d91",
+   "B": "aed2aa519960176f",
+   "J": "fc0f421c132b2321",
+   "R": "c7bcd5cc1f42ddf4",
+   "C": "41270",
+   "L": "aafe8518bd5730a3",
+   "V": "febf38fd927122e"
+  },
+  "chain_first_difference": {
+   "index": 611,
+   "a": "[FORGE] n=612 h=e18b14930c49aa8 rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+   "b": "[FORGE] n=612 h=24350c18f31367cb rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612"
+  },
+  "chain_first_difference_is_the_action": true,
+  "act_lines": [
+   "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+   "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612"
+  ],
+  "act_fields_differ": {
+   "type": [
+    "7",
+    "8"
+   ]
+  },
+  "post": "[FORGEBRANCH] d=49 phase=post from=7 to=8 fair=seen time_before=31 time_after=23 kneel_before=0 kneel_after=0 rng=c7bcd5cc1f42ddf4 actor=1000006 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE time=23 energy=0 morale=0 health=0 stun=0 mana=0 number=1 kneel=0 run=0 strafe=0 sneak=0 ignoreSpotted=0 desperate=0 facing=-1 final=0 value=0 diff=0 autoShot=0 spray=0 waypoints=0 targeting=0 origin=0 meleePart=0 result=-",
+  "first_rng_difference": {
+   "event_index": 614,
+   "events_after_act": 3,
+   "a": "rng=5e388b00ea6589b8 t=1 s=1 ev=tick unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 counter=1 second=0 pos=29,9,1 hp=66 en=96",
+   "b": "rng=80c0adf90b729c5e t=1 s=1 ev=tick unit=1000006 fac=1 st=0 tu=75 noresel=0 hide=0 counter=1 second=0 pos=29,9,1 hp=66 en=96",
+   "rng": [
+    "5e388b00ea6589b8",
+    "80c0adf90b729c5e"
+   ]
+  },
+  "first_tu_difference": {
+   "a": "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0",
+   "b": "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=75 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0"
+  },
+  "first_section_difference": {
+   "U": {
+    "section": "units",
+    "event_a": 617,
+    "event_b": 617,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "I": {
+    "section": "items",
+    "event_a": 617,
+    "event_b": 617,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "O": {
+    "section": "inventory order",
+    "event_a": 617,
+    "event_b": 617,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "M": {
+    "section": "map",
+    "event_a": 617,
+    "event_b": 617,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "R": {
+    "section": "RNG",
+    "event_a": 617,
+    "event_b": 617,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "C": {
+    "section": "virtual clock from its first reading",
+    "event_a": 617,
+    "event_b": 617,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "V": {
+    "section": "what the auxiliary generator gave units and tiles",
+    "event_a": 617,
+    "event_b": 617,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "A": {
+    "section": "AI modules",
+    "event_a": 625,
+    "event_b": 626,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "S": {
+    "section": "scheduler",
+    "event_a": 657,
+    "event_b": 667,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "N": {
+    "section": "nodes",
+    "event_a": 657,
+    "event_b": 667,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "B": {
+    "section": "bot",
+    "event_a": 657,
+    "event_b": 667,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "J": {
+    "section": "item ids",
+    "event_a": 984,
+    "event_b": 996,
+    "turn": [
+     "1",
+     "1"
+    ]
+   },
+   "L": {
+    "section": "auxiliary generator",
+    "event_a": 1246,
+    "event_b": 1269,
+    "turn": [
+     "2",
+     "1"
+    ]
+   }
+  },
+  "effects": {
+   "A1": {
+    "events_to_next_decision": 4,
+    "kinds": [
+     "act",
+     "boundary",
+     "tick",
+     "tu"
+    ],
+    "lines": [
+     "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+     "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0"
+    ],
+    "units": [
+     {
+      "unit": "324",
+      "type": "SOLDIER",
+      "fields": {
+       "ai": [
+        "b680323deab22e85",
+        "98b9d6f14c8364fe"
+       ],
+       "armor": [
+        "82,79,79,64,57",
+        "82,77,79,64,57"
+       ],
+       "uh": [
+        "64c76ef431163ec0",
+        "96316cbdc47ec1e6"
+       ]
+      }
+     },
+     {
+      "unit": "1000006",
+      "type": "STR_ETHEREAL_SOLDIER",
+      "fields": {
+       "ammo": [
+        "24",
+        "21"
+       ],
+       "inv": [
+        "d45605970fd9519d",
+        "4f3863a706d9842"
+       ],
+       "tu": [
+        "98",
+        "67"
+       ],
+       "uh": [
+        "dc50dfd1f7e8053e",
+        "45f40e0bb2a66171"
+       ]
+      }
+     }
+    ],
+    "first_floor": "floor=0",
+    "tiles": [
+     "tile=4,7,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=5,7,0 was=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=6,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=7,7,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=8,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=9,7,0 was=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=10,7,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=1,8,0 was=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=2,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=3,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=4,8,0 was=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=5,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=6,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=7,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=8,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/60.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/60.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=9,8,0 was=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=10,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/19.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/19.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=11,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=12,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=13,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/24.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/24.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=0,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=1,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=2,9,0 was=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=3,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=4,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=5,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=6,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=7,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=8,9,0 was=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=9,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=10,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=11,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=12,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=13,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=14,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=15,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=0,10,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=1,10,0 was=p:69.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:69.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=2,10,0 was=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=3,10,0 was=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/4/ now=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/4/"
+    ],
+    "tiles_changed": "tiles_changed=2827"
+   },
+   "B1": {
+    "events_to_next_decision": 4,
+    "kinds": [
+     "act",
+     "boundary",
+     "tick",
+     "tu"
+    ],
+    "lines": [
+     "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+     "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=75 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0"
+    ],
+    "units": [
+     {
+      "unit": "324",
+      "type": "SOLDIER",
+      "fields": {
+       "ai": [
+        "b680323deab22e85",
+        "98b9d6f14c8364fe"
+       ],
+       "armor": [
+        "82,79,79,64,57",
+        "82,77,79,64,57"
+       ],
+       "uh": [
+        "64c76ef431163ec0",
+        "96316cbdc47ec1e6"
+       ]
+      }
+     },
+     {
+      "unit": "1000006",
+      "type": "STR_ETHEREAL_SOLDIER",
+      "fields": {
+       "ammo": [
+        "24",
+        "23"
+       ],
+       "inv": [
+        "d45605970fd9519d",
+        "6645556f0101dfc7"
+       ],
+       "tu": [
+        "98",
+        "75"
+       ],
+       "uh": [
+        "dc50dfd1f7e8053e",
+        "12e4c31217df121f"
+       ]
+      }
+     }
+    ],
+    "first_floor": null,
+    "tiles": [],
+    "tiles_changed": "tiles_changed=0"
+   }
+  },
+  "next_decision_units": [
+   {
+    "unit": "1000006",
+    "type": "STR_ETHEREAL_SOLDIER",
+    "fields": {
+     "ammo": [
+      "21",
+      "23"
+     ],
+     "inv": [
+      "4f3863a706d9842",
+      "6645556f0101dfc7"
+     ],
+     "tu": [
+      "67",
+      "75"
+     ],
+     "uh": [
+      "45f40e0bb2a66171",
+      "12e4c31217df121f"
+     ]
+    }
+   }
+  ],
+  "next_decision_first_floor": "floor=0",
+  "end_raw_not_a_measure_of_use": {
+   "A1": {
+    "result": {
+     "how": "over",
+     "turn": "10",
+     "vms": "320920"
+    },
+    "casualties": 24,
+    "dead": 22,
+    "decisions": 600
+   },
+   "B1": {
+    "result": {
+     "how": "over",
+     "turn": "9",
+     "vms": "348680"
+    },
+    "casualties": 24,
+    "dead": 19,
+    "decisions": 556
+   }
+  },
+  "monitor": {
+   "A1": {
+    "events": 6748,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 138,
+     "tu.recover": 229,
+     "tu.script": 4,
+     "tu.spend": 1789,
+     "tu_marked_reaction": 32
+    }
+   },
+   "B1": {
+    "events": 6443,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 131,
+     "tu.recover": 210,
+     "tu.script": 6,
+     "tu.spend": 1863,
+     "tu_marked_reaction": 15
+    }
+   }
+  }
+ },
+ "AC": {
+  "a": "A1",
+  "b": "C1",
+  "prefix_events": [
+   611,
+   611
+  ],
+  "prefix_chain_identical": true,
+  "prefix_first_difference": null,
+  "prefix_game_lines": [
+   369,
+   369
+  ],
+  "prefix_game_identical": true,
+  "fingerprint_at_decide": {
+   "sections": {
+    "S": "22d53303792949c",
+    "U": "1535366346b76d39",
+    "A": "a23514aeb5d1851",
+    "I": "f92dc4edda191644",
+    "O": "c882d97d505f3c4f",
+    "M": "aa6ca908503699c1",
+    "N": "5be689259dbb8bc1",
+    "B": "aed2aa519960176f",
+    "J": "fc0f421c132b2321",
+    "R": "d24c268811448687",
+    "C": "41270",
+    "L": "aafe8518bd5730a3",
+    "V": "febf38fd927122e"
+   },
+   "chain": "867d455d5479b994",
+   "rng": "d24c268811448687"
+  },
+  "pre": {
+   "chain": [
+    "867d455d5479b994",
+    "867d455d5479b994"
+   ],
+   "state": [
+    "f9f520b4481108e4",
+    "f9f520b4481108e4"
+   ],
+   "rng": [
+    "c7bcd5cc1f42ddf4",
+    "c7bcd5cc1f42ddf4"
+   ],
+   "actor": [
+    "1000006",
+    "1000006"
+   ],
+   "type": [
+    "7",
+    "7"
+   ],
+   "to": [
+    "12,17,0",
+    "12,17,0"
+   ],
+   "weapon": [
+    "STR_PIR_PLASMA_RIFLE",
+    "STR_PIR_PLASMA_RIFLE"
+   ],
+   "time": [
+    "31",
+    "31"
+   ],
+   "number": [
+    "1",
+    "1"
+   ],
+   "kneel": [
+    "0",
+    "0"
+   ]
+  },
+  "pre_all_same": true,
+  "dump_lines": [
+   50,
+   50
+  ],
+  "dump_identical": true,
+  "actor_at_intervention": {
+   "u": "1000006",
+   "type": "STR_ETHEREAL_SOLDIER",
+   "fac": "1",
+   "st": "0",
+   "pos": "29,9,1",
+   "dir": "5",
+   "tu": "98",
+   "en": "96",
+   "hp": "66",
+   "stun": "0",
+   "mor": "100",
+   "mana": "40",
+   "fire": "0",
+   "wounds": "0",
+   "noresel": "0",
+   "hide": "0",
+   "charge": "-1",
+   "seen": "5",
+   "uh": "dc50dfd1f7e8053e",
+   "ai": "6ae4bc3348f79612",
+   "inv": "d45605970fd9519d",
+   "right": "STR_PIR_PLASMA_RIFLE",
+   "ammo": "24",
+   "kneel": "0",
+   "armor": "45,45,45,45,45",
+   "overkill": "0",
+   "motion": "0",
+   "tss": "255",
+   "tsu": "255",
+   "vis": "191,324,344,301,229,-",
+   "spot": "191,324,344,301,229,-"
+  },
+  "sections_at_intervention": {
+   "S": "22d53303792949c",
+   "U": "3565f8b95f1e8992",
+   "A": "6fcc7346011b8253",
+   "I": "f92dc4edda191644",
+   "O": "c882d97d505f3c4f",
+   "M": "aa6ca908503699c1",
+   "N": "cb6854513d715d91",
+   "B": "aed2aa519960176f",
+   "J": "fc0f421c132b2321",
+   "R": "c7bcd5cc1f42ddf4",
+   "C": "41270",
+   "L": "aafe8518bd5730a3",
+   "V": "febf38fd927122e"
+  },
+  "chain_first_difference": null,
+  "chain_first_difference_is_the_action": false,
+  "act_lines": [
+   "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+   "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612"
+  ],
+  "act_fields_differ": {},
+  "post": "",
+  "first_rng_difference": null,
+  "first_tu_difference": null,
+  "first_section_difference": {},
+  "effects": {
+   "A1": {
+    "events_to_next_decision": 4,
+    "kinds": [
+     "act",
+     "boundary",
+     "tick",
+     "tu"
+    ],
+    "lines": [
+     "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+     "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0"
+    ],
+    "units": [
+     {
+      "unit": "324",
+      "type": "SOLDIER",
+      "fields": {
+       "ai": [
+        "b680323deab22e85",
+        "98b9d6f14c8364fe"
+       ],
+       "armor": [
+        "82,79,79,64,57",
+        "82,77,79,64,57"
+       ],
+       "uh": [
+        "64c76ef431163ec0",
+        "96316cbdc47ec1e6"
+       ]
+      }
+     },
+     {
+      "unit": "1000006",
+      "type": "STR_ETHEREAL_SOLDIER",
+      "fields": {
+       "ammo": [
+        "24",
+        "21"
+       ],
+       "inv": [
+        "d45605970fd9519d",
+        "4f3863a706d9842"
+       ],
+       "tu": [
+        "98",
+        "67"
+       ],
+       "uh": [
+        "dc50dfd1f7e8053e",
+        "45f40e0bb2a66171"
+       ]
+      }
+     }
+    ],
+    "first_floor": "floor=0",
+    "tiles": [
+     "tile=4,7,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=5,7,0 was=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=6,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=7,7,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=8,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=9,7,0 was=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=10,7,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=1,8,0 was=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=2,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=3,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=4,8,0 was=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=5,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=6,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=7,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=8,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/60.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/60.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=9,8,0 was=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=10,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/19.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/19.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=11,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=12,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=13,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/24.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/24.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=0,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=1,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=2,9,0 was=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=3,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=4,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=5,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=6,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=7,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=8,9,0 was=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=9,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=10,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=11,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=12,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=13,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=14,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=15,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=0,10,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=1,10,0 was=p:69.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:69.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=2,10,0 was=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=3,10,0 was=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/4/ now=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/4/"
+    ],
+    "tiles_changed": "tiles_changed=2827"
+   },
+   "C1": {
+    "events_to_next_decision": 4,
+    "kinds": [
+     "act",
+     "boundary",
+     "tick",
+     "tu"
+    ],
+    "lines": [
+     "rng=c7bcd5cc1f42ddf4 t=1 s=1 ev=act unit=1000006 fac=1 st=0 tu=98 noresel=0 hide=0 type=7 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE fa=0 run=0 number=1 ai=6ae4bc3348f79612",
+     "rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0"
+    ],
+    "units": [
+     {
+      "unit": "324",
+      "type": "SOLDIER",
+      "fields": {
+       "ai": [
+        "b680323deab22e85",
+        "98b9d6f14c8364fe"
+       ],
+       "armor": [
+        "82,79,79,64,57",
+        "82,77,79,64,57"
+       ],
+       "uh": [
+        "64c76ef431163ec0",
+        "96316cbdc47ec1e6"
+       ]
+      }
+     },
+     {
+      "unit": "1000006",
+      "type": "STR_ETHEREAL_SOLDIER",
+      "fields": {
+       "ammo": [
+        "24",
+        "21"
+       ],
+       "inv": [
+        "d45605970fd9519d",
+        "4f3863a706d9842"
+       ],
+       "tu": [
+        "98",
+        "67"
+       ],
+       "uh": [
+        "dc50dfd1f7e8053e",
+        "45f40e0bb2a66171"
+       ]
+      }
+     }
+    ],
+    "first_floor": "floor=0",
+    "tiles": [
+     "tile=4,7,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=5,7,0 was=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:75.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=6,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=7,7,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=8,7,0 was=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:68.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=9,7,0 was=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:77.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=10,7,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/20.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=1,8,0 was=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=2,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/62.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=3,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=4,8,0 was=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:79.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=5,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=6,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=7,8,0 was=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:78.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=8,8,0 was=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/60.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:80.1.0.1/-1.-1.0.1/-1.-1.0.1/60.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=9,8,0 was=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=10,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/19.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/19.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=11,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=12,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/25.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=13,8,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/24.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/24.1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=0,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=1,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=2,9,0 was=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:70.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=3,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=4,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=5,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=6,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=7,9,0 was=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:76.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=8,9,0 was=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:72.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=9,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=10,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=11,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=12,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=13,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/0/",
+     "tile=14,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/2/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/2/",
+     "tile=15,9,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/1/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/1/0/0/",
+     "tile=0,10,0 was=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:32.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=1,10,0 was=p:69.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:69.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/2/0/3/",
+     "tile=2,10,0 was=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/3/ now=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/0/",
+     "tile=3,10,0 was=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/0/0/4/ now=p:64.1.0.1/-1.-1.0.1/-1.-1.0.1/-1.-1.0.0/,f:0,s:0,o:0,e:0.0,g:0,u:-1,l:0/3/0/4/"
+    ],
+    "tiles_changed": "tiles_changed=2827"
+   }
+  },
+  "next_decision_units": [],
+  "next_decision_first_floor": null,
+  "end_raw_not_a_measure_of_use": {
+   "A1": {
+    "result": {
+     "how": "over",
+     "turn": "10",
+     "vms": "320920"
+    },
+    "casualties": 24,
+    "dead": 22,
+    "decisions": 600
+   },
+   "C1": {
+    "result": {
+     "how": "over",
+     "turn": "10",
+     "vms": "320920"
+    },
+    "casualties": 24,
+    "dead": 22,
+    "decisions": 600
+   }
+  },
+  "monitor": {
+   "A1": {
+    "events": 6748,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 138,
+     "tu.recover": 229,
+     "tu.script": 4,
+     "tu.spend": 1789,
+     "tu_marked_reaction": 32
+    }
+   },
+   "C1": {
+    "events": 6748,
+    "violations": 0,
+    "first_violations": [],
+    "notes": 0,
+    "tu_kinds": {
+     "tu.clear": 2,
+     "tu.cost": 138,
+     "tu.recover": 229,
+     "tu.script": 4,
+     "tu.spend": 1789,
+     "tu_marked_reaction": 32
+    }
+   }
+  }
+ },
+ "legal_probes": [
+  "[FORGELEGAL] case=auto type=7 to=12,17,0 why=legal fair=seen time=31",
+  "[FORGELEGAL] case=snap type=8 to=12,17,0 why=legal fair=seen time=23",
+  "[FORGELEGAL] case=aimed type=9 to=12,17,0 why=legal fair=seen time=41",
+  "[FORGELEGAL] case=melee type=10 to=12,17,0 why=not_a_shot fair=- time=0",
+  "[FORGELEGAL] case=throw type=6 to=12,17,0 why=not_a_shot fair=- time=0",
+  "[FORGELEGAL] case=walk type=2 to=12,17,0 why=not_a_shot fair=- time=0",
+  "[FORGELEGAL] case=psi type=14 to=12,17,0 why=not_a_shot fair=- time=0",
+  "[FORGELEGAL] case=own_tile type=8 to=29,9,1 why=no_enemy_there fair=- time=23",
+  "[FORGELEGAL] case=empty_tile type=8 to=0,0,0 why=no_enemy_there fair=- time=23",
+  "[FORGELEGAL] case=hidden_enemy why=none_on_this_map"
+ ],
+ "costs": [
+  {
+   "run": "OFF",
+   "time": [],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "14880",
+    "vms": "320920"
+   },
+   "log_bytes": 9247484,
+   "forge_events": 0,
+   "dump_lines": 0
+  },
+  {
+   "run": "A1",
+   "time": [
+    "[FORGETIME] at=first clock0=5940 real_ms=1378",
+    "[FORGETIME] at=intervene d=49 real_ms=3819 battle_real_ms=2441 clock0=5940",
+    "[FORGETIME] at=end real_ms=18267 battle_real_ms=16889 clock=320920 clock0=5940"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "16889",
+    "vms": "320920"
+   },
+   "log_bytes": 10960630,
+   "forge_events": 6748,
+   "dump_lines": 1301
+  },
+  {
+   "run": "A2",
+   "time": [
+    "[FORGETIME] at=first clock0=6060 real_ms=1353",
+    "[FORGETIME] at=intervene d=49 real_ms=3655 battle_real_ms=2302 clock0=6060",
+    "[FORGETIME] at=end real_ms=19572 battle_real_ms=18219 clock=320920 clock0=6060"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "18219",
+    "vms": "320920"
+   },
+   "log_bytes": 10961363,
+   "forge_events": 6748,
+   "dump_lines": 1301
+  },
+  {
+   "run": "B1",
+   "time": [
+    "[FORGETIME] at=first clock0=6110 real_ms=1365",
+    "[FORGETIME] at=intervene d=49 real_ms=3979 battle_real_ms=2614 clock0=6110",
+    "[FORGETIME] at=end real_ms=21588 battle_real_ms=20223 clock=348680 clock0=6110"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "9",
+    "ms": "20223",
+    "vms": "348680"
+   },
+   "log_bytes": 11282317,
+   "forge_events": 6443,
+   "dump_lines": 951
+  },
+  {
+   "run": "B2",
+   "time": [
+    "[FORGETIME] at=first clock0=6140 real_ms=1374",
+    "[FORGETIME] at=intervene d=49 real_ms=3819 battle_real_ms=2445 clock0=6140",
+    "[FORGETIME] at=end real_ms=22080 battle_real_ms=20706 clock=348680 clock0=6140"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "9",
+    "ms": "20706",
+    "vms": "348680"
+   },
+   "log_bytes": 11282531,
+   "forge_events": 6443,
+   "dump_lines": 951
+  },
+  {
+   "run": "C1",
+   "time": [
+    "[FORGETIME] at=first clock0=5980 real_ms=1339",
+    "[FORGETIME] at=intervene d=49 real_ms=3637 battle_real_ms=2298 clock0=5980",
+    "[FORGETIME] at=end real_ms=19505 battle_real_ms=18166 clock=320920 clock0=5980"
+   ],
+   "result": {
+    "how": "over",
+    "turn": "10",
+    "ms": "18166",
+    "vms": "320920"
+   },
+   "log_bytes": 10959520,
+   "forge_events": 6748,
+   "dump_lines": 1301
+  }
+ ],
+ "monitor": {
+  "A1": {
+   "events": 6748,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 138,
+    "tu.recover": 229,
+    "tu.script": 4,
+    "tu.spend": 1789,
+    "tu_marked_reaction": 32
+   }
+  },
+  "A2": {
+   "events": 6748,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 138,
+    "tu.recover": 229,
+    "tu.script": 4,
+    "tu.spend": 1789,
+    "tu_marked_reaction": 32
+   }
+  },
+  "B1": {
+   "events": 6443,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 131,
+    "tu.recover": 210,
+    "tu.script": 6,
+    "tu.spend": 1863,
+    "tu_marked_reaction": 15
+   }
+  },
+  "B2": {
+   "events": 6443,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 131,
+    "tu.recover": 210,
+    "tu.script": 6,
+    "tu.spend": 1863,
+    "tu_marked_reaction": 15
+   }
+  },
+  "C1": {
+   "events": 6748,
+   "violations": 0,
+   "first_violations": [],
+   "notes": 0,
+   "tu_kinds": {
+    "tu.clear": 2,
+    "tu.cost": 138,
+    "tu.recover": 229,
+    "tu.script": 4,
+    "tu.spend": 1789,
+    "tu_marked_reaction": 32
+   }
+  }
+ }
+}

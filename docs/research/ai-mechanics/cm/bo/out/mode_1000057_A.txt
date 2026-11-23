@@ -1,0 +1,7 @@
+rec 120 turn 1 n=1 pos=[15, 5, 0] tu=77 morale=100 mode=2 slot=x src=shot t=8 to=[16, 5, 0] odds=[{'p': 0, 'a': 0, 'c': 39, 'e': 3, 'roll': 4, 'mode': 2}]
+rec 121 turn 1 n=2 pos=[15, 5, 0] tu=59 morale=100 mode=2 slot=x src=shot t=7 to=[16, 5, 0] odds=[]
+rec 170 turn 1 n=1 pos=[15, 5, 0] tu=35 morale=100 mode=2 slot=x src=shot t=7 to=[16, 5, 0] odds=[]
+rec 171 turn 1 n=2 pos=[15, 5, 0] tu=9 morale=100 mode=3 slot=e src=escape t=2 to=[10, 6, 0] odds=[{'p': 0, 'a': 0, 'c': 40, 'e': 11, 'roll': 8, 'mode': 3}]
+rec 305 turn 2 n=1 pos=[14, 5, 0] tu=77 morale=100 mode=3 slot=e src=escape t=2 to=[18, 2, 0] odds=[]
+rec 306 turn 2 n=2 pos=[18, 2, 0] tu=55 morale=100 mode=3 slot=e src=escape t=2 to=[13, 1, 0] odds=[]
+rec 352 turn 2 n=1 pos=[13, 1, 0] tu=33 morale=100 mode=3 slot=e src=escape t=2 to=[15, 6, 0] odds=[]

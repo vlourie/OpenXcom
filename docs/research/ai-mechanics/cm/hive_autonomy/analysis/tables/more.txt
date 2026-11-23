@@ -1,0 +1,14 @@
+ra1_AN_M6_s1
+  free answers by order why {'contact_approach:attack': 11, 'contact_approach:decisions': 107, 'contact_approach:patrol_step': 43, 'contact_fire:attack': 2, 'contact_fire:decisions': 5, 'contact_in_place:attack': 1, 'contact_in_place:decisions': 2, 'guard_sector:attack': 4, 'guard_sector:decisions': 11, 'guard_sector:patrol_step': 4}
+  contact_in_place left on a free step: unit-turns 0 attacked after it 0
+  most empty walks in one unit-turn ('1', '1000002') 6 tu ['64', '25', '25', '25', '25', '25', '25', '25'] ans Counter({'': 7, 'FREE': 1}) trail 
+ra2_AN_M6_s2
+  free answers by order why {'at_node:decisions': 4, 'at_node:patrol_step': 4, 'contact_approach:attack': 7, 'contact_approach:decisions': 145, 'contact_approach:patrol_step': 63, 'contact_fire:decisions': 4, 'contact_fire:patrol_step': 4, 'contact_in_place:attack': 9, 'contact_in_place:decisions': 22, 'contact_in_place:patrol_step': 2, 'guard_sector:attack': 6, 'guard_sector:decisions': 53, 'guard_sector:patrol_step': 19, 'locked:decisions': 27, 'locked:patrol_step': 23, 'no_closer_node:attack': 1, 'no_closer_node:decisions': 9, 'no_closer_node:patrol_step': 5, 'sweep_sector:attack': 4, 'sweep_sector:decisions': 71, 'sweep_sector:patrol_step': 39}
+  contact_in_place left on a free step: unit-turns 2 attacked after it 0
+  most empty walks in one unit-turn ('8', '1000019') 5 tu ['111', '27', '27', '27', '27', '27'] ans Counter({'': 6}) trail walk.stop.reserve 40,16,0>39,16,0 d6 bam0 mt1 sz1 tu27/4 en120/2 rs8 bu-1
+ra3_AV_M3_s1
+  free answers by order why {'at_node:attack': 6, 'at_node:decisions': 14, 'at_node:patrol_step': 3, 'contact_approach:attack': 15, 'contact_approach:decisions': 82, 'contact_approach:patrol_step': 40, 'contact_fire:attack': 13, 'contact_fire:decisions': 41, 'contact_fire:patrol_step': 15, 'contact_in_place:attack': 17, 'contact_in_place:decisions': 41, 'contact_in_place:patrol_step': 10, 'guard_sector:attack': 5, 'guard_sector:decisions': 16, 'guard_sector:patrol_step': 6, 'no_closer_node:decisions': 8, 'no_closer_node:patrol_step': 5, 'sweep_sector:decisions': 3, 'sweep_sector:patrol_step': 2}
+  contact_in_place left on a free step: unit-turns 10 attacked after it 7
+  most empty walks in one unit-turn ('4', '1000008') 10 tu ['59', '39', '23', '19', '19', '19', '19', '19', '19', '19', '19', '19', '19'] ans Counter({'': 12, 'FREE': 1}) trail walk.stop.reserve 19,57,0>20,57,0 d2 bam0 mt2 sz1 tu19/4 en60/2 rs8 bu-1
+M3: units above D0's highest TU: CC {'1000013': (52, 65), '1000035': (52, 65)} RA {'1000013': (52, 65), '1000035': (52, 65)}
+AISTATE sample [AISTATE] before turn=1 unit=448 type=SOLDIER faction=0 status=0 pos=(33,4,2) dir=7 tu=182 hp=171/171 stun=0 morale=94 kneel=0 weapon=AUX_TANK_LASER spotted=255 sniped=0 sees=- seenby=0 known=5 near=14 shade=0 tumax=182 wounds=0 threat=-1 reach=-1 rh=AUX_TANK_

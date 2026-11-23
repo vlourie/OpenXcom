@@ -21,6 +21,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -38,7 +39,7 @@ class Base;
  * Equipment screen that lets the player
  * pick the equipment to carry on a craft.
  */
-class CraftEquipmentState : public TouchState
+class CraftEquipmentState : public ItemCountTooltipMixin<TouchState>
 {
 private:
 	TextButton *_btnOk, *_btnClear, *_btnInventory;
@@ -57,6 +58,9 @@ private:
 	int _totalItems;
 	double _totalItemStorageSize;
 	Uint8 _ammoColor;
+	/// ammunition hint (oxceHdAmmoHint, XP-000257): the colour each row has without it, and the weapon whose ammunition is lit
+	std::vector<Uint8> _rowColors;
+	const RuleItem *_hintWeapon = nullptr;
 	bool _reload;
 	bool _returningFromGlobalTemplates;
 	bool _returningFromInventory;
@@ -64,6 +68,8 @@ private:
 	bool _isNewBattle;
 	/// Updates quantities of item.
 	void updateQuantity();
+	/// Lights the rows of the ammunition that fits the weapon (nullptr: the usual colours).
+	void showAmmoHint(const RuleItem *weapon);
 	/// initializes the displayed list
 	void initList();
 public:
@@ -94,6 +100,9 @@ public:
 	void lstEquipmentRightArrowRelease(Action *action);
 	/// Handler for clicking a Move Right arrow in the list.
 	void lstEquipmentRightArrowClick(Action *action);
+	/// Handlers for the cursor on the list rows: the ammunition hint.
+	void lstEquipmentMouseOver(Action *action);
+	void lstEquipmentMouseOut(Action *action);
 	/// Handler for pressing-down a mouse-button in the list.
 	void lstEquipmentMousePress(Action *action);
 	/// Moves an item to the base.
@@ -104,8 +113,12 @@ public:
 	void moveRight();
 	/// Moves the given number of items to the craft.
 	void moveRightByValue(int change, bool suppressErrors = false);
+	/// Moves all of the listed items (except vehicles) to the craft, as far as space allows.
+	void btnLoadAllClick(Action *action);
 	/// Empties the contents of the craft, moving all of the items back to the base.
 	void btnClearClick(Action *action);
+	/// Hotkey: empties the listed items, or loads them all if none is on board.
+	void btnClearOrLoadAll(Action *action);
 	/// Handler for clicking the Inventory button.
 	void btnInventoryClick(Action *action);
 	/// Methods for handling the global craft loadout save/load hotkeys.
@@ -115,6 +128,10 @@ public:
 	void btnLoadClick(Action *action);
 	/// Handler for clicking the Save button.
 	void btnSaveClick(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

@@ -1,0 +1,5 @@
+build_label=cmrun-D0
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV (OXCE_AI_DEV=ON, Release) HEAD + al.diff + al3.diff (P0 vs P1 switches, OXCE_AI_RELEASE_BASE)
+patch_sha256=-
+exe_sha256=0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf

@@ -1,0 +1,13 @@
+2026-10-30 16:37:14 prefix svn arms SN bflag - turns 60 runs 11 jobs 12
+1/11 svn_SN_M9_s2 code=0 19s total=19s
+2/11 svn_SN_M7_s2 code=0 20s total=20s
+3/11 svn_SN_L6_s2 code=0 39s total=39s
+4/11 svn_SN_L1_s1 code=0 41s total=41s
+5/11 svn_SN_L7_s2 code=0 46s total=46s
+6/11 svn_SN_M3_s2 code=0 54s total=54s
+7/11 svn_SN_L7_s1 code=0 57s total=57s
+8/11 svn_SN_L2_s1 code=0 61s total=61s
+9/11 svn_SN_L2_s2 code=0 87s total=87s
+10/11 svn_SN_M2_s2 code=0 217s total=217s
+11/11 svn_SN_M2_s1 code=0 232s total=232s
+ALL DONE

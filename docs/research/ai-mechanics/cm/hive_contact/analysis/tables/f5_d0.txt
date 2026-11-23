@@ -1,0 +1,38 @@
+== cc5_CC_M6_s2 against scpa_D_M6_s2
+== stand with a line (kind=in_place): what it came to, TU first->last, the same unit-turn in the baseline
+   t1 ENGAGE 1000000 attacked tu 96->18 modes {'2': 2, '3': 1}; baseline attacked
+   sum [(('ENGAGE', 'attacked'), 1)]
+== REINFORCE unit-turns, by kind: on and the same unit-turn in the baseline
+   ('approach', 'attacked', 'walked') 1
+   ('approach', 'walked', 'attacked') 2
+   ('approach', 'walked', 'no decision') 1
+   ('approach', 'walked', 'stood mode 3') 3
+   ('approach', 'walked', 'walked') 9
+   ('fire', 'attacked', 'attacked') 1
+   ('no_node', 'attacked', 'attacked') 1
+   ('no_node', 'attacked', 'walked') 2
+   ('no_node', 'stood mode 3', 'stood mode 3') 1
+   ('no_node', 'stood mode 3', 'walked') 14
+   ('no_node', 'walked', 'attacked') 1
+   ('no_node', 'walked', 'walked') 2
+   all on  [('walked', 18), ('stood mode 3', 15), ('attacked', 5)]
+   all off [('walked', 28), ('attacked', 5), ('stood mode 3', 4), ('no decision', 1)]
+   attacks on 10 off 8 damage on {'dmg': 50, 'downed': 0, 'stunned': 13, 'fdmg': 0} off {'dmg': 102, 'downed': 0, 'stunned': 0, 'fdmg': 0}
+== REINFORCE spells
+   squad 3 t1-4 contacts ['470'] units 6 kinds {'approach': 5, 'fire': 1, 'no_node': 15} attacks 7 (on a role contact 1) damage 50 downed 0 own lost 1 end term_over
+   squad 0 t3-5 contacts ['545'] units 3 kinds {'approach': 4, 'no_node': 5} attacks 0 (on a role contact 0) damage 0 downed 0 own lost 0 end no_progress
+   squad 1 t6-6 contacts ['448'] units 4 kinds {'approach': 3, 'no_node': 1} attacks 3 (on a role contact 3) damage 0 downed 0 own lost 1 end contact_not_in_sight
+   squad 3 t8-8 contacts ['470'] units 4 kinds {'approach': 4} attacks 0 (on a role contact 0) damage 0 downed 0 own lost 0 end battle_over
+== guards: from the headquarters' records
+   squad 0 anchor (43, 12, 0) why guard_sector roles by turn EERRRMMM units 5 attacks 5 farthest from anchor 19 hold exits []
+   squad 1 anchor (28, 5, 1) why guard_sector roles by turn MMMMMRME units 6 attacks 8 farthest from anchor 15 hold exits [('3', 'term_over')]
+   squad 2 anchor (4, 43, 1) why guard_sector roles by turn MEMEEE units 8 attacks 38 farthest from anchor 44 hold exits []
+   squad 4 anchor (15, 47, 1) why guard_sector roles by turn MEEE units 8 attacks 37 farthest from anchor 43 hold exits []
+== side, turns 1 to 8
+   on  attacks 84 damage by the side 636 casualties {'enemy': 35, 'player': 6} units deciding at the last turn 11
+   off attacks 111 damage by the side 576 casualties {'enemy': 32, 'player': 5} units deciding at the last turn 12
+   attacks by aim kinds in run on the side's own: friendly damage 31 off 91
+   ['[AIRESULT] how=timeout tac=h.rec.in:478,h.rec.out.M2:11,p.rec.in:111 seed=2018002 livesoldiers=3 livealiens=9 aborted=0 mission=STR_UFO_CRASH_RECOVERY turn=9 player=8 pdead=5 pout=0 pwounded']
+== orders in all
+   [(('REINFORCE', 'no_node'), 21), (('ENGAGE', 'approach'), 19), (('ENGAGE', 'own_fight'), 19), (('REINFORCE', 'approach'), 16), (('ENGAGE', 'fire'), 13), (('ENGAGE', 'no_node'), 2), (('REINFORCE', 'fire'), 1), (('ENGAGE', 'in_place'), 1)]
+   roles in one decision by turn [(1, 'EMR'), (2, 'EMR'), (3, 'EMR'), (4, 'EMR'), (5, 'EMR'), (6, 'EMR'), (7, 'M'), (8, 'EMR')]

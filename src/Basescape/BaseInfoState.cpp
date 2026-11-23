@@ -435,6 +435,23 @@ void BaseInfoState::edtBaseChange(Action *)
 }
 
 /**
+ * Shows another base; init() refreshes the stats when the screen is back on top.
+ * @param base Pointer to the base.
+ */
+void BaseInfoState::setBase(Base *base)
+{
+	for (size_t i = 0; i < _game->getSavedGame()->getBases()->size(); ++i)
+	{
+		if (_game->getSavedGame()->getBases()->at(i) == base)
+		{
+			_mini->setSelectedBase(i);
+			_base = base;
+			break;
+		}
+	}
+}
+
+/**
  * Selects a new base to display.
  * @param action Pointer to an action.
  */
@@ -507,7 +524,7 @@ void BaseInfoState::btnTransfersClick(Action *)
  */
 void BaseInfoState::btnStoresClick(Action *)
 {
-	_game->pushState(new StoresState(_base));
+	_game->pushState(withBaseSwitch(new StoresState(_base)));
 }
 
 /**

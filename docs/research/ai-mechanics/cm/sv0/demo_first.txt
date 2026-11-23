@@ -1,0 +1,235 @@
+=== L1_s1
+ORDER 1 turn 1 by unit 1000001: target 267 at (11,28,0) hp 81, 2 units with a legal useful shot now, expected damage sum 3.8
+  member 1000001: aimed cost 25 TU, expected 0.5 hp per attack
+  member 1000015: snap cost 29 TU, expected 3.2 hp per attack
+  ORDER SHOT unit 1000001 n2: aimed at 267 (hp then 81) instead of walk (mode 0), TU 30
+  order closed: turn_over
+members' turn 1 (decisions act/TU spent/damage):
+  1000001  D0: attacks 0 dmg 0 TU left 30 [walk/23/0 walk/4/0 walk/18/0 walk/6/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 5 [walk/23/0 walk/4/0 walk/18/0 walk/6/0 aimed/25/0]
+  1000015  D0: attacks 3 dmg 0 TU left 6 [auto/42/0 auto/42/0 snap/29/0 walk/0/0]
+           on: attacks 3 dmg 0 TU left 6 [auto/42/0 auto/42/0 snap/29/0 walk/0/0]
+  members together  D0: attacks 3 dmg 0  |  on: attacks 4 dmg 0
+  target 267 in D0: not down
+  target 267 in on: stun turn 3 by 1000019, dead turn 4 by 1000019
+=== L2_s1
+ORDER 1 turn 1 by unit 1000036: target 91 at (28,46,0) hp 113, 2 units with a legal useful shot now, expected damage sum 16.4
+  member 1000036: auto cost 53 TU, expected 9.3 hp per attack
+  member 1000059: snap cost 18 TU, expected 7.1 hp per attack
+  ORDER SHOT unit 1000036 n1: auto at 91 (hp then 113) instead of walk (mode 0), TU 56
+  order closed: turn_over
+members' turn 1 (decisions act/TU spent/damage):
+  1000036  D0: attacks 0 dmg 0 TU left 56 [walk/69/0 walk/9/0 walk/0/0 none/0/0 walk/0/0 walk/0/0 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 2 [walk/69/0 walk/9/0 auto/54/0]
+  1000059  D0: attacks 2 dmg 0 TU left 9 [snap/20/0 snap/18/0 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 0 TU left 9 [snap/20/0 snap/18/0 walk/0/0 walk/0/0]
+  members together  D0: attacks 2 dmg 0  |  on: attacks 3 dmg 0
+  target 91 in D0: dead turn 10 by 1000059
+  target 91 in on: stun turn 6 by 1000052
+=== L2_s2
+ORDER 1 turn 1 by unit 1000055: target 324 at (39,37,0) hp 88, 2 units with a legal useful shot now, expected damage sum 7.2
+  member 1000031: snap cost 29 TU, expected 0.9 hp per attack
+  member 1000055: auto cost 71 TU, expected 6.2 hp per attack
+  ORDER SHOT unit 1000055 n2: auto at 324 (hp then 88) instead of walk (mode 0), TU 139
+  ORDER SHOT unit 1000031 n1: snap at 324 (hp then 88) instead of walk (mode 0), TU 44
+  order closed: turn_over
+members' turn 1 (decisions act/TU spent/damage):
+  1000031  D0: attacks 2 dmg 0 TU left 44 [aimed/61/0 snap/29/0 walk/0/0 walk/0/0]
+           on: attacks 3 dmg 0 TU left 15 [aimed/61/0 snap/29/0 snap/29/0 walk/0/0]
+  1000055  D0: attacks 0 dmg 0 TU left 56 [walk/24/0 walk/83/0 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 67 [walk/24/0 auto/72/0 walk/0/0 walk/0/0]
+  members together  D0: attacks 2 dmg 0  |  on: attacks 4 dmg 0
+  target 324 in D0: stun turn 25 by 1000059
+  target 324 in on: stun turn 8 by 1000062, stun turn 9 by 1000062, dead turn 11 by 1000062
+=== L6_s2
+ORDER 1 turn 1 by unit 1000006: target 571 at (18,26,2) hp 75, 6 units with a legal useful shot now, expected damage sum 52.6
+  member 1000006: aimed cost 83 TU, expected 3.2 hp per attack
+  member 1000009: aimed cost 97 TU, expected 7.2 hp per attack
+  member 1000012: aimed cost 97 TU, expected 14.0 hp per attack
+  member 1000020: aimed cost 83 TU, expected 6.7 hp per attack
+  member 1000031: snap cost 65 TU, expected 10.8 hp per attack
+  member 1000032: snap cost 65 TU, expected 10.8 hp per attack
+  ORDER SHOT unit 1000006 n1: aimed at 571 (hp then 75) instead of walk (mode 0), TU 111
+  order closed: turn_over
+members' turn 1 (decisions act/TU spent/damage):
+  1000006  D0: attacks 1 dmg 0 TU left 14 [walk/4/0 walk/8/0 walk/4/0 throw/81/0 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 24 [aimed/87/0 walk/0/0 walk/0/0 walk/0/0 walk/0/0 walk/0/0]
+  1000009  D0: attacks 0 dmg 0 TU left 79 [walk/32/0]
+           on: attacks 1 dmg 0 TU left 27 [throw/84/0 walk/0/0 walk/0/0 none/0/0]
+  1000012  D0: attacks 1 dmg 0 TU left 10 [aimed/101/0 walk/0/0 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 4 [walk/10/0 aimed/97/0]
+  1000020  D0: attacks 1 dmg 0 TU left 29 [walk/1/0 throw/81/0 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 25 [throw/82/0 walk/4/0 walk/0/0 walk/0/0]
+  1000031  D0: attacks 2 dmg 0 TU left 138 [snap/65/0 snap/65/0 walk/30/0]
+           on: attacks 2 dmg 48 TU left 129 [snap/66/0 snap/65/48 walk/38/0]
+  1000032  D0: attacks 4 dmg 0 TU left 38 [snap/65/0 snap/65/0 snap/65/0 snap/65/0]
+           on: attacks 0 dmg 0 TU left 275 [walk/23/0]
+  members together  D0: attacks 9 dmg 0  |  on: attacks 6 dmg 48
+  target 571 in D0: dead turn 3 by 1000031
+  target 571 in on: dead turn 2 by 1000031
+=== L7_s1
+ORDER 1 turn 4 by unit 1000010: target 2 at (42,28,0) hp 143, 4 units with a legal useful shot now, expected damage sum 48.3
+  member 1000010: snap cost 21 TU, expected 15.0 hp per attack
+  member 1000018: auto cost 24 TU, expected 6.7 hp per attack
+  member 1000023: auto cost 47 TU, expected 11.1 hp per attack
+  member 1000027: aimed cost 84 TU, expected 15.6 hp per attack
+  ORDER SHOT unit 1000010 n2: snap at 2 (hp then 143) instead of walk (mode 0), TU 23
+  order closed: turn_over
+members' turn 4 (decisions act/TU spent/damage):
+  1000010  D0: attacks 0 dmg 0 TU left 23 [walk/44/0 walk/0/0 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 1 [walk/44/0 snap/22/0]
+  1000018  D0: attacks 3 dmg 0 TU left 0 [auto/25/0 auto/25/0 snap/17/0]
+           on: attacks 1 dmg 0 TU left 14 [throw/53/0 walk/0/0 walk/0/0 walk/0/0]
+  1000023  D0: attacks 0 dmg 0 TU left 99 [walk/20/0]
+           on: attacks 2 dmg 0 TU left 3 [auto/49/0 auto/49/0 walk/18/0]
+  1000027  D0: attacks 1 dmg 0 TU left 5 [walk/6/0 aimed/85/0]
+           on: attacks 1 dmg 0 TU left 5 [aimed/85/0 walk/0/0 walk/0/0 walk/6/0]
+  members together  D0: attacks 4 dmg 0  |  on: attacks 5 dmg 0
+  target 2 in D0: stun turn 6 by 1000022, dead turn 9 by 1000022
+  target 2 in on: dead turn 15 by 1000028
+=== L7_s2
+ORDER 1 turn 1 by unit 1000015: target 368 at (37,28,1) hp 104, 2 units with a legal useful shot now, expected damage sum 2.5
+  member 1000015: aimed cost 40 TU, expected 0.9 hp per attack
+  member 1000034: aimed cost 53 TU, expected 1.6 hp per attack
+  ORDER SHOT unit 1000015 n2: aimed at 368 (hp then 104) instead of walk (mode 0), TU 62
+  order closed: turn_over
+members' turn 1 (decisions act/TU spent/damage):
+  1000015  D0: attacks 2 dmg 41 TU left 6 [walk/5/0 walk/15/0 auto/25/30 snap/16/11]
+           on: attacks 2 dmg 0 TU left 6 [walk/5/0 aimed/40/0 walk/0/0 snap/16/0]
+  1000034  D0: attacks 2 dmg 0 TU left 2 [snap/26/0 aimed/53/0 walk/8/0]
+           on: attacks 0 dmg 0 TU left 67 [walk/22/0]
+  members together  D0: attacks 4 dmg 41  |  on: attacks 2 dmg 0
+  target 368 in D0: stun turn 8 by 1000023
+  target 368 in on: not down
+=== M2_s1
+ORDER 1 turn 1 by unit 1000017: target 108 at (56,54,1) hp 110, 8 units with a legal useful shot now, expected damage sum 191.9
+  member 1000017: snap cost 29 TU, expected 6.1 hp per attack
+  member 1000024: aimed cost 58 TU, expected 17.8 hp per attack
+  member 1000035: aimed cost 58 TU, expected 17.2 hp per attack
+  member 1000040: aimed cost 44 TU, expected 1.3 hp per attack
+  member 1000052: auto cost 71 TU, expected 28.7 hp per attack
+  member 1000057: aimed cost 89 TU, expected 28.7 hp per attack
+  member 1000124: snap cost 18 TU, expected 36.8 hp per attack
+  member 1000125: snap cost 18 TU, expected 55.2 hp per attack
+  ORDER SHOT unit 1000017 n2: snap at 108 (hp then 110) instead of walk (mode 0), TU 41
+  ORDER SHOT unit 1000024 n1: aimed at 108 (hp then 110) instead of walk (mode 0), TU 134
+  order closed: turn_over
+members' turn 1 (decisions act/TU spent/damage):
+  1000017  D0: attacks 2 dmg 0 TU left 12 [throw/93/0 walk/0/0 walk/0/0 snap/29/0]
+           on: attacks 2 dmg 0 TU left 12 [throw/93/0 snap/29/0 walk/0/0 walk/0/0 none/0/0]
+  1000024  D0: attacks 2 dmg 0 TU left 14 [auto/61/0 aimed/59/0 none/0/0]
+           on: attacks 2 dmg 22 TU left 15 [aimed/60/0 auto/59/22 walk/0/0 walk/0/0 walk/0/0 walk/0/0]
+  1000035  D0: attacks 2 dmg 55 TU left 0 [auto/59/55 walk/16/0 aimed/59/0]
+           on: attacks 0 dmg 0 TU left 124 [walk/10/0]
+  1000040  D0: attacks 2 dmg 52 TU left 11 [snap/41/50 snap/40/2 walk/42/0 walk/52/0]
+           on: attacks 4 dmg 55 TU left 1 [snap/41/2 snap/40/4 snap/40/0 snap/40/49 walk/24/0]
+  1000052  D0: attacks 0 dmg 0 TU left 143 [walk/20/0]
+           on: attacks 2 dmg 0 TU left 8 [throw/118/0 snap/37/0 none/0/0 none/0/0]
+  1000057  D0: attacks 2 dmg 0 TU left 0 [auto/62/0 auto/61/0 walk/20/0 walk/6/0]
+           on: attacks 2 dmg 40 TU left 18 [auto/60/29 auto/59/11 walk/12/0]
+  1000124  D0: attacks 2 dmg 138 TU left 10 [snap/18/90 snap/19/48 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 31 TU left 28 [snap/19/31]
+  1000125  D0: attacks 2 dmg 4 TU left 8 [snap/21/0 snap/18/4 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 106 TU left 7 [snap/21/55 snap/19/51 walk/0/0 walk/0/0]
+  members together  D0: attacks 14 dmg 249  |  on: attacks 15 dmg 254
+  target 108 in D0: dead turn 2 by 1000125
+  target 108 in on: dead turn 2 by 1000125
+=== M2_s2
+ORDER 1 turn 1 by unit 1000017: target 108 at (54,37,1) hp 110, 8 units with a legal useful shot now, expected damage sum 265.4
+  member 1000017: auto cost 58 TU, expected 22.0 hp per attack
+  member 1000024: aimed cost 32 TU, expected 3.1 hp per attack
+  member 1000027: auto cost 58 TU, expected 26.8 hp per attack
+  member 1000056: aimed cost 89 TU, expected 10.4 hp per attack
+  member 1000057: aimed cost 65 TU, expected 22.8 hp per attack
+  member 1000058: aimed cost 89 TU, expected 30.8 hp per attack
+  member 1000113: snap cost 18 TU, expected 70.2 hp per attack
+  member 1000114: snap cost 18 TU, expected 79.4 hp per attack
+  ORDER SHOT unit 1000017 n1: auto at 108 (hp then 110) instead of walk (mode 0), TU 134
+  ORDER SHOT unit 1000027 n1: auto at 108 (hp then 64) instead of walk (mode 0), TU 134
+  order closed: target_out
+members' turn 1 (decisions act/TU spent/damage):
+  1000017  D0: attacks 0 dmg 0 TU left 128 [walk/2/0 walk/4/0 none/0/0]
+           on: attacks 2 dmg 46 TU left 14 [auto/61/46 aimed/59/0 walk/0/0 walk/0/0]
+  1000024  D0: attacks 3 dmg 86 TU left 18 [snap/32/43 snap/29/12 aimed/33/31 walk/22/0]
+           on: attacks 4 dmg 55 TU left 0 [snap/32/28 snap/29/27 aimed/33/0 walk/8/0 aimed/32/0]
+  1000027  D0: attacks 2 dmg 55 TU left 16 [auto/60/0 auto/58/55 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 56 [auto/60/0 walk/18/0 walk/0/0 walk/0/0]
+  1000056  D0: attacks 2 dmg 114 TU left 2 [auto/61/55 auto/60/59 walk/26/0]
+           on: attacks 2 dmg 55 TU left 11 [auto/59/0 auto/59/55 walk/20/0]
+  1000057  D0: attacks 1 dmg 0 TU left 51 [walk/1/0 walk/28/0 walk/4/0 aimed/65/0]
+           on: attacks 2 dmg 20 TU left 15 [walk/1/0 aimed/66/20 aimed/67/0 walk/0/0]
+  1000058  D0: attacks 2 dmg 0 TU left 9 [walk/22/0 auto/59/0 auto/59/0 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 20 TU left 11 [aimed/92/0 snap/46/20 walk/0/0 walk/0/0]
+  1000113  D0: attacks 2 dmg 0 TU left 6 [snap/20/0 snap/21/0 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 90 TU left 6 [snap/22/35 snap/19/55 walk/0/0 walk/0/0]
+  1000114  D0: attacks 2 dmg 109 TU left 7 [snap/21/74 snap/19/35 walk/0/0 walk/0/0]
+           on: attacks 2 dmg 49 TU left 6 [snap/22/0 walk/0/0 snap/19/49 walk/0/0]
+  members together  D0: attacks 14 dmg 364  |  on: attacks 17 dmg 335
+  target 108 in D0: stun turn 1 by 1000024, dead turn 2 by 1000024
+  target 108 in on: dead turn 1 by 1000029
+=== M3_s2
+ORDER 1 turn 1 by unit 1000057: target 454 at (13,23,2) hp 31, 2 units with a legal useful shot now, expected damage sum 26.5
+  member 1000052: snap cost 22 TU, expected 8.3 hp per attack
+  member 1000057: aimed cost 32 TU, expected 18.2 hp per attack
+  ORDER SHOT unit 1000057 n1: aimed at 454 (hp then 31) instead of walk (mode 0), TU 77
+  order closed: turn_over
+members' turn 1 (decisions act/TU spent/damage):
+  1000052  D0: attacks 2 dmg 0 TU left 5 [snap/26/0 walk/17/0 snap/23/0]
+           on: attacks 2 dmg 17 TU left 5 [snap/26/0 walk/17/0 snap/23/17]
+  1000057  D0: attacks 2 dmg 39 TU left 2 [walk/1/0 auto/26/39 throw/48/0]
+           on: attacks 3 dmg 14 TU left 3 [aimed/34/14 walk/4/0 snap/18/0 snap/18/0]
+  members together  D0: attacks 4 dmg 39  |  on: attacks 5 dmg 31
+  target 454 in D0: not down
+  target 454 in on: dead turn 1 by 1000052
+=== M7_s2
+ORDER 1 turn 2 by unit 1000016: target 115 at (39,9,0) hp 74, 3 units with a legal useful shot now, expected damage sum 16.7
+  member 1000000: aimed cost 28 TU, expected 2.0 hp per attack
+  member 1000016: aimed cost 72 TU, expected 9.4 hp per attack
+  member 1000020: auto cost 17 TU, expected 5.3 hp per attack
+  ORDER SHOT unit 1000016 n1: aimed at 115 (hp then 74) instead of walk (mode 0), TU 104
+  order closed: turn_over
+members' turn 2 (decisions act/TU spent/damage):
+  1000000  D0: attacks 2 dmg 0 TU left 21 [walk/12/0 aimed/28/0 aimed/28/0 walk/0/0]
+           on: attacks 2 dmg 0 TU left 17 [walk/12/0 aimed/28/0 aimed/28/0 walk/4/0]
+  1000016  D0: attacks 0 dmg 0 TU left 4 [walk/54/0 walk/38/0 walk/4/0 walk/4/0]
+           on: attacks 1 dmg 0 TU left 3 [aimed/73/0 walk/28/0]
+  1000020  D0: attacks 0 dmg 0 TU left 41 [walk/18/0]
+           on: attacks 2 dmg 1 TU left 2 [auto/20/0 auto/17/1 walk/20/0]
+  members together  D0: attacks 2 dmg 0  |  on: attacks 5 dmg 1
+  target 115 in D0: dead turn 4 by 1000016
+  target 115 in on: dead turn 4 by 1000005
+=== M9_s2
+ORDER 1 turn 1 by unit 1000001: target 454 at (31,45,5) hp 70, 9 units with a legal useful shot now, expected damage sum 377.6
+  member 1000001: snap cost 64 TU, expected 10.0 hp per attack
+  member 1000057: aimed cost 44 TU, expected 66.2 hp per attack
+  member 1000060: aimed cost 44 TU, expected 66.2 hp per attack
+  member 1000062: aimed cost 44 TU, expected 66.2 hp per attack
+  member 1000063: aimed cost 44 TU, expected 66.2 hp per attack
+  member 1000064: aimed cost 44 TU, expected 30.5 hp per attack
+  member 1000067: aimed cost 44 TU, expected 26.9 hp per attack
+  member 1000068: snap cost 64 TU, expected 17.9 hp per attack
+  member 1000070: aimed cost 62 TU, expected 27.4 hp per attack
+  ORDER SHOT unit 1000001 n1: snap at 454 (hp then 70) instead of walk (mode 0), TU 98
+  order closed: target_out
+members' turn 1 (decisions act/TU spent/damage):
+  1000001  D0: attacks 1 dmg 0 TU left 24 [walk/3/0 walk/6/0 snap/65/0 walk/0/0]
+           on: attacks 1 dmg 0 TU left 22 [snap/68/0 walk/4/0 walk/0/0 walk/4/0]
+  1000057  D0: attacks 2 dmg 29 TU left 2 [aimed/44/29 snap/22/0 walk/0/0 walk/6/0]
+           on: attacks 2 dmg 29 TU left 30 [snap/22/0 snap/22/29 walk/0/0 walk/0/0]
+  1000060  D0: attacks 0 dmg 0 TU left 31 [walk/11/0 walk/11/0 walk/21/0 walk/0/0]
+           on: attacks 1 dmg 70 TU left 18 [walk/12/0 aimed/44/70 walk/0/0 walk/0/0 walk/0/0]
+  1000062  D0: attacks 0 dmg 0 TU left 36 [walk/2/0 walk/36/0]
+           on: attacks 0 dmg 0 TU left 25 [walk/25/0 walk/24/0 walk/0/0 walk/0/0 walk/0/0 walk/0/0]
+  1000063  D0: attacks 2 dmg 70 TU left 6 [aimed/46/70 snap/22/0 walk/0/0 walk/0/0]
+           on: attacks 1 dmg 11 TU left 24 [aimed/45/11 walk/5/0 walk/0/0 walk/0/0 walk/0/0]
+  1000064  D0: attacks 0 dmg 0 TU left 28 [walk/66/0 walk/4/0 walk/0/0 walk/0/0]
+           on: attacks 0 dmg 0 TU left 36 [walk/62/0 none/0/0 walk/0/0 walk/0/0]
+  1000067  D0: attacks 0 dmg 0 TU left 16 [walk/40/0 walk/22/0 walk/4/0 walk/16/0]
+           on: attacks 0 dmg 0 TU left 34 [walk/20/0 walk/12/0 walk/24/0 none/0/0 walk/8/0 walk/0/0]
+  1000068  D0: attacks 0 dmg 0 TU left 34 [walk/8/0 walk/12/0 walk/44/0 walk/0/0 walk/0/0 walk/0/0]
+           on: attacks 0 dmg 0 TU left 32 [walk/66/0 walk/0/0 walk/0/0 walk/0/0]
+  1000070  D0: attacks 0 dmg 0 TU left 12 [walk/64/0 walk/12/0 walk/6/0 walk/4/0]
+           on: attacks 1 dmg 0 TU left 26 [walk/10/0 aimed/62/0 walk/0/0 walk/0/0]
+  members together  D0: attacks 5 dmg 99  |  on: attacks 6 dmg 110
+  target 454 in D0: dead turn 1 by 1000063
+  target 454 in on: dead turn 1 by 1000038

@@ -1,0 +1,24 @@
+Got it, armor + commendations. No, they are not summed before rounding. Each commendation bonus is rounded to a whole number on its own first. Only then does it go into the armor's formula, which is rounded once more. This is upstream OXCE code (Yankes, 2019), not something we changed.
+
+BattleUnit::updateUnitStats (BattleUnit.cpp:2945-2957):
+    for each soldier bonus:  MNRecovery += bonus->getManaRecovery(unit);   // each one already rounded, .5 away from zero
+    prepareMana(armor->getManaRecovery(unit, MNRecovery));
+MNRecovery is the armor script's starting value. The armor adds its own terms and rounds, which is the part you tested years ago. Commendation bonuses call getBonus with no external value, so each is its own script with its own rounding (RuleSoldierBonus.cpp:108, RuleStatBonus.cpp:377-408). Nothing carries over between turns.
+
+So a single bonus under 0.5 is simply gone, and it never adds up with the armor or with other bonuses.
+
+With a real armor: the most common mana formula in your armors is moraleCurrent -0.014 (361 armors, e.g. STR_ADVENTURER_OUTFIT_UC). Freshness drain per turn, levels 1-10:
+
+  FIREKILL, morale 100
+    if summed:  -1 -2 -2 -2 -2 -2 -2 -2 -2 -2
+    actual:     -1 -1 -1 -1 -1 -1 -2 -2 -2 -2
+  SUCCUBUS, morale 100
+    if summed:  -2 -2 -2 -2 -2 -2 -2 -2 -2 -3
+    actual:     -1 -1 -1 -1 -2 -2 -2 -2 -2 -2
+  SUCCUBUS, morale 50
+    if summed:  -1 -1 -1 -1 -1 -1 -2 -2 -2 -2
+    actual:     -1 -1 -1 -1 -2 -2 -2 -2 -2 -2
+
+Easy in-game check: a girl with FIREKILL 2-6 in the Adventurer outfit at morale 100. If they were summed she'd lose 2 Freshness a turn; the engine gives 1.
+
+In Piratez only FIREKILL_1..10 and SUCCUBUS_1..10 have a fractional flat drain. POISONKILL, the two fatalWounds bonuses and FORMER_ZOMBIE also have fractional terms and are rounded per bonus the same way, but their numbers already come out as the pedia says. For a drain that grows per level on top of the armor, the medal needs whole numbers. Summing everything before rounding would be an engine change for Meridian/Yankes.

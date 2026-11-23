@@ -1,0 +1,2826 @@
+﻿{
+ "battles": 56,
+ "decisions": 40042,
+ "rng_touched": 0,
+ "exes": {
+  "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf": 56
+ },
+ "data": {
+  "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687": 56
+ },
+ "with_alternative": {
+  "attack_vs_walk": 7013,
+  "mode": 3098,
+  "throw": 1543,
+  "target_same_mode": 3147,
+  "target_other_mode": 2120,
+  "D0_shot_at_player": 4764,
+  "weapon": 171,
+  "attack_vs_none": 238,
+  "melee": 169,
+  "psi": 197,
+  "attack_vs_11": 1
+ },
+ "by_mission": {
+  "L2": {
+   "attack_vs_walk": 541,
+   "mode": 376,
+   "throw": 282,
+   "target_same_mode": 284,
+   "target_other_mode": 230,
+   "D0_shot_at_player": 433,
+   "weapon": 16,
+   "attack_vs_none": 30,
+   "melee": 22
+  },
+  "L4": {
+   "attack_vs_walk": 90,
+   "mode": 97,
+   "target_same_mode": 104,
+   "target_other_mode": 58,
+   "D0_shot_at_player": 175,
+   "attack_vs_none": 4,
+   "throw": 39,
+   "weapon": 6,
+   "melee": 5
+  },
+  "L8": {
+   "attack_vs_walk": 840,
+   "attack_vs_none": 59,
+   "mode": 210,
+   "psi": 142,
+   "target_same_mode": 147,
+   "target_other_mode": 132,
+   "D0_shot_at_player": 209,
+   "weapon": 1,
+   "throw": 17
+  },
+  "M1": {
+   "mode": 177,
+   "throw": 56,
+   "D0_shot_at_player": 196,
+   "target_same_mode": 89,
+   "target_other_mode": 85,
+   "melee": 12,
+   "weapon": 7,
+   "attack_vs_walk": 113,
+   "attack_vs_none": 1
+  },
+  "M6": {
+   "attack_vs_walk": 72,
+   "target_same_mode": 125,
+   "D0_shot_at_player": 189,
+   "mode": 86,
+   "throw": 32,
+   "target_other_mode": 63,
+   "weapon": 2,
+   "melee": 2
+  },
+  "M9": {
+   "attack_vs_walk": 178,
+   "target_same_mode": 15,
+   "D0_shot_at_player": 23,
+   "attack_vs_none": 4,
+   "mode": 8,
+   "target_other_mode": 7
+  },
+  "L10": {
+   "attack_vs_walk": 20,
+   "mode": 22,
+   "D0_shot_at_player": 28,
+   "melee": 4,
+   "target_same_mode": 5,
+   "target_other_mode": 5,
+   "weapon": 3
+  },
+  "L11": {
+   "mode": 89,
+   "throw": 63,
+   "target_same_mode": 5,
+   "target_other_mode": 3,
+   "D0_shot_at_player": 133,
+   "weapon": 15,
+   "attack_vs_walk": 82,
+   "melee": 15,
+   "attack_vs_none": 1
+  },
+  "L12": {
+   "attack_vs_walk": 32,
+   "target_same_mode": 27,
+   "D0_shot_at_player": 37,
+   "weapon": 6,
+   "melee": 3,
+   "mode": 5,
+   "target_other_mode": 1
+  },
+  "L1": {
+   "attack_vs_walk": 66,
+   "mode": 105,
+   "throw": 48,
+   "target_same_mode": 134,
+   "target_other_mode": 97,
+   "D0_shot_at_player": 148,
+   "melee": 1,
+   "weapon": 4
+  },
+  "L3": {
+   "attack_vs_walk": 8,
+   "weapon": 1,
+   "target_other_mode": 1,
+   "target_same_mode": 2,
+   "attack_vs_none": 1,
+   "D0_shot_at_player": 1
+  },
+  "L5": {
+   "attack_vs_walk": 372,
+   "mode": 236,
+   "target_same_mode": 254,
+   "target_other_mode": 208,
+   "D0_shot_at_player": 293,
+   "throw": 117,
+   "melee": 10,
+   "attack_vs_none": 16,
+   "weapon": 16
+  },
+  "L6": {
+   "target_same_mode": 182,
+   "D0_shot_at_player": 210,
+   "throw": 44,
+   "attack_vs_walk": 194,
+   "mode": 63,
+   "target_other_mode": 57,
+   "melee": 10,
+   "weapon": 7
+  },
+  "L7": {
+   "attack_vs_walk": 221,
+   "mode": 280,
+   "target_same_mode": 196,
+   "target_other_mode": 137,
+   "D0_shot_at_player": 489,
+   "throw": 138,
+   "melee": 12,
+   "attack_vs_none": 4,
+   "weapon": 2
+  },
+  "L9": {
+   "attack_vs_walk": 139,
+   "weapon": 8,
+   "target_other_mode": 15,
+   "target_same_mode": 20,
+   "throw": 44,
+   "D0_shot_at_player": 70,
+   "mode": 53,
+   "psi": 38,
+   "attack_vs_none": 18,
+   "melee": 4
+  },
+  "M10": {
+   "attack_vs_walk": 992,
+   "mode": 250,
+   "D0_shot_at_player": 578,
+   "target_same_mode": 250,
+   "target_other_mode": 109,
+   "melee": 43,
+   "weapon": 12,
+   "attack_vs_none": 6
+  },
+  "M11": {
+   "attack_vs_walk": 416,
+   "psi": 9,
+   "attack_vs_none": 2,
+   "D0_shot_at_player": 20,
+   "attack_vs_11": 1
+  },
+  "M12": {
+   "attack_vs_walk": 3,
+   "mode": 8,
+   "target_same_mode": 7,
+   "target_other_mode": 3,
+   "D0_shot_at_player": 11,
+   "weapon": 1
+  },
+  "M2": {
+   "attack_vs_walk": 769,
+   "throw": 331,
+   "target_same_mode": 531,
+   "target_other_mode": 418,
+   "mode": 377,
+   "D0_shot_at_player": 465,
+   "attack_vs_none": 47,
+   "melee": 13,
+   "weapon": 14
+  },
+  "M3": {
+   "target_same_mode": 399,
+   "attack_vs_walk": 1086,
+   "throw": 134,
+   "mode": 273,
+   "target_other_mode": 241,
+   "D0_shot_at_player": 476,
+   "weapon": 20,
+   "melee": 3,
+   "attack_vs_none": 11
+  },
+  "M4": {
+   "target_same_mode": 54,
+   "D0_shot_at_player": 139,
+   "attack_vs_walk": 170,
+   "mode": 55,
+   "throw": 30,
+   "target_other_mode": 17,
+   "weapon": 3,
+   "attack_vs_none": 8
+  },
+  "M5": {
+   "attack_vs_walk": 407,
+   "mode": 169,
+   "throw": 129,
+   "target_same_mode": 207,
+   "target_other_mode": 145,
+   "D0_shot_at_player": 243,
+   "weapon": 16,
+   "attack_vs_none": 20,
+   "melee": 4
+  },
+  "M7": {
+   "attack_vs_walk": 128,
+   "mode": 49,
+   "throw": 15,
+   "D0_shot_at_player": 58,
+   "target_same_mode": 45,
+   "target_other_mode": 37,
+   "weapon": 9,
+   "melee": 6,
+   "attack_vs_none": 5,
+   "psi": 8
+  },
+  "M8": {
+   "attack_vs_walk": 74,
+   "mode": 110,
+   "target_same_mode": 65,
+   "target_other_mode": 51,
+   "D0_shot_at_player": 140,
+   "throw": 24,
+   "attack_vs_none": 1,
+   "weapon": 2
+  }
+ },
+ "walks_with_a_legal_attack_by_source": {
+  "patrol.node": 3257,
+  "firepoint.fallback": 815,
+  "firepoint": 671,
+  "firepoint.random": 658,
+  "ambush": 641,
+  "escape": 547,
+  "melee": 332,
+  "escape.known": 86,
+  "grenade": 5,
+  "sniper": 1
+ },
+ "families": {
+  "M": {
+   "decisions": {
+    "L1": 1,
+    "L10": 4,
+    "L11": 8,
+    "L12": 2,
+    "L2": 14,
+    "L4": 5,
+    "L5": 6,
+    "L6": 7,
+    "L7": 12,
+    "L9": 4,
+    "M1": 11,
+    "M10": 40,
+    "M2": 9,
+    "M3": 3,
+    "M5": 1,
+    "M6": 1,
+    "M7": 4
+   },
+   "units": {
+    "L1": 1,
+    "L10": 3,
+    "L11": 5,
+    "L12": 2,
+    "L2": 11,
+    "L4": 3,
+    "L5": 3,
+    "L6": 4,
+    "L7": 5,
+    "L9": 2,
+    "M1": 6,
+    "M10": 16,
+    "M2": 5,
+    "M3": 1,
+    "M5": 1,
+    "M6": 1,
+    "M7": 3
+   }
+  },
+  "T": {
+   "decisions": {
+    "L1": 11,
+    "L2": 12,
+    "L5": 17,
+    "L6": 5,
+    "L7": 20,
+    "L8": 13,
+    "M1": 5,
+    "M2": 5,
+    "M3": 30,
+    "M5": 14,
+    "M6": 16,
+    "M8": 6
+   },
+   "units": {
+    "L1": 7,
+    "L2": 9,
+    "L5": 10,
+    "L6": 4,
+    "L7": 11,
+    "L8": 9,
+    "M1": 4,
+    "M2": 5,
+    "M3": 23,
+    "M5": 10,
+    "M6": 12,
+    "M8": 5
+   }
+  },
+  "P": {
+   "decisions": {
+    "L8": 85,
+    "L9": 20,
+    "M7": 2
+   },
+   "units": {
+    "L8": 37,
+    "L9": 11,
+    "M7": 2
+   }
+  }
+ },
+ "battle_list": [
+  {
+   "scen": "L2",
+   "seed": 1,
+   "cap": 8,
+   "decisions": 1239,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 951,
+    "snap": 175,
+    "aimed": 7,
+    "throw": 16,
+    "auto": 46,
+    "none": 43,
+    "melee": 1
+   },
+   "tally": {
+    "attack_vs_walk": 259,
+    "mode": 182,
+    "throw": 131,
+    "target_same_mode": 108,
+    "target_other_mode": 85,
+    "D0_shot_at_player": 212,
+    "weapon": 3,
+    "attack_vs_none": 13,
+    "melee": 7
+   },
+   "units": {
+    "attack_vs_walk": 49,
+    "mode": 41,
+    "throw": 36,
+    "target_same_mode": 29,
+    "target_other_mode": 22,
+    "weapon": 3,
+    "attack_vs_none": 9,
+    "melee": 5
+   },
+   "walks": {
+    "patrol.node": 173,
+    "firepoint.fallback": 3,
+    "escape": 39,
+    "melee": 25,
+    "escape.known": 1,
+    "firepoint": 9,
+    "firepoint.random": 9
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L2",
+   "seed": 2,
+   "cap": 8,
+   "decisions": 1586,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1210,
+    "none": 94,
+    "auto": 67,
+    "throw": 34,
+    "aimed": 9,
+    "snap": 167,
+    "melee": 5
+   },
+   "tally": {
+    "attack_vs_walk": 282,
+    "mode": 194,
+    "throw": 151,
+    "D0_shot_at_player": 221,
+    "target_same_mode": 176,
+    "target_other_mode": 145,
+    "melee": 15,
+    "attack_vs_none": 17,
+    "weapon": 13
+   },
+   "units": {
+    "attack_vs_walk": 49,
+    "mode": 42,
+    "throw": 36,
+    "target_same_mode": 40,
+    "target_other_mode": 32,
+    "melee": 9,
+    "attack_vs_none": 7,
+    "weapon": 12
+   },
+   "walks": {
+    "escape": 53,
+    "escape.known": 1,
+    "patrol.node": 164,
+    "firepoint.random": 21,
+    "firepoint.fallback": 6,
+    "melee": 20,
+    "firepoint": 16,
+    "grenade": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L4",
+   "seed": 1,
+   "cap": 8,
+   "decisions": 174,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 96,
+    "snap": 45,
+    "auto": 17,
+    "none": 15,
+    "throw": 1
+   },
+   "tally": {
+    "attack_vs_walk": 20,
+    "mode": 28,
+    "target_same_mode": 16,
+    "target_other_mode": 15,
+    "D0_shot_at_player": 34,
+    "attack_vs_none": 3,
+    "throw": 4,
+    "weapon": 1
+   },
+   "units": {
+    "attack_vs_walk": 12,
+    "mode": 14,
+    "target_same_mode": 8,
+    "target_other_mode": 8,
+    "attack_vs_none": 1,
+    "throw": 4,
+    "weapon": 1
+   },
+   "walks": {
+    "escape": 6,
+    "firepoint.random": 3,
+    "patrol.node": 5,
+    "firepoint": 5,
+    "ambush": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L4",
+   "seed": 2,
+   "cap": 8,
+   "decisions": 140,
+   "last_turn": 7,
+   "rng_touched": 0,
+   "base": {
+    "none": 6,
+    "rethink": 14,
+    "walk": 72,
+    "snap": 34,
+    "auto": 14
+   },
+   "tally": {
+    "mode": 22,
+    "throw": 12,
+    "target_same_mode": 37,
+    "target_other_mode": 19,
+    "D0_shot_at_player": 40,
+    "attack_vs_walk": 10,
+    "melee": 2
+   },
+   "units": {
+    "mode": 11,
+    "throw": 5,
+    "target_same_mode": 17,
+    "target_other_mode": 10,
+    "attack_vs_walk": 8,
+    "melee": 1
+   },
+   "walks": {
+    "escape.known": 1,
+    "melee": 7,
+    "escape": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L8",
+   "seed": 1,
+   "cap": 8,
+   "decisions": 427,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 338,
+    "none": 25,
+    "auto": 28,
+    "snap": 14,
+    "mind": 7,
+    "panic": 14,
+    "throw": 1
+   },
+   "tally": {
+    "attack_vs_walk": 289,
+    "attack_vs_none": 24,
+    "mode": 56,
+    "psi": 33,
+    "target_same_mode": 35,
+    "target_other_mode": 30,
+    "D0_shot_at_player": 40,
+    "weapon": 1,
+    "throw": 2
+   },
+   "units": {
+    "attack_vs_walk": 30,
+    "attack_vs_none": 9,
+    "mode": 15,
+    "psi": 10,
+    "target_same_mode": 11,
+    "target_other_mode": 10,
+    "weapon": 1,
+    "throw": 1
+   },
+   "walks": {
+    "patrol.node": 61,
+    "ambush": 215,
+    "escape": 13
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L8",
+   "seed": 2,
+   "cap": 8,
+   "decisions": 441,
+   "last_turn": 6,
+   "rng_touched": 0,
+   "base": {
+    "walk": 340,
+    "snap": 47,
+    "auto": 31,
+    "none": 17,
+    "panic": 3,
+    "launch": 2,
+    "throw": 1
+   },
+   "tally": {
+    "attack_vs_walk": 315,
+    "mode": 67,
+    "psi": 56,
+    "D0_shot_at_player": 78,
+    "throw": 7,
+    "target_same_mode": 52,
+    "target_other_mode": 44,
+    "attack_vs_none": 16
+   },
+   "units": {
+    "attack_vs_walk": 36,
+    "mode": 16,
+    "psi": 15,
+    "throw": 3,
+    "target_same_mode": 17,
+    "target_other_mode": 14,
+    "attack_vs_none": 11
+   },
+   "walks": {
+    "ambush": 154,
+    "patrol.node": 125,
+    "firepoint.random": 13,
+    "firepoint.fallback": 6,
+    "escape": 4,
+    "firepoint": 13
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M1",
+   "seed": 1,
+   "cap": 8,
+   "decisions": 795,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 596,
+    "auto": 68,
+    "snap": 98,
+    "throw": 2,
+    "aimed": 10,
+    "none": 18,
+    "melee": 3
+   },
+   "tally": {
+    "mode": 91,
+    "throw": 23,
+    "D0_shot_at_player": 99,
+    "target_same_mode": 42,
+    "target_other_mode": 41,
+    "melee": 2,
+    "weapon": 4,
+    "attack_vs_walk": 66
+   },
+   "units": {
+    "mode": 27,
+    "throw": 12,
+    "target_same_mode": 16,
+    "target_other_mode": 17,
+    "melee": 2,
+    "weapon": 3,
+    "attack_vs_walk": 27
+   },
+   "walks": {
+    "patrol.node": 20,
+    "melee": 22,
+    "firepoint": 10,
+    "firepoint.random": 2,
+    "firepoint.fallback": 1,
+    "escape": 9,
+    "escape.known": 1,
+    "grenade": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M1",
+   "seed": 2,
+   "cap": 8,
+   "decisions": 703,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "none": 22,
+    "walk": 492,
+    "launch": 1,
+    "snap": 106,
+    "auto": 72,
+    "aimed": 6,
+    "throw": 2,
+    "melee": 2
+   },
+   "tally": {
+    "attack_vs_walk": 47,
+    "target_other_mode": 44,
+    "mode": 86,
+    "target_same_mode": 47,
+    "D0_shot_at_player": 97,
+    "throw": 33,
+    "weapon": 3,
+    "attack_vs_none": 1,
+    "melee": 10
+   },
+   "units": {
+    "attack_vs_walk": 22,
+    "target_other_mode": 20,
+    "mode": 22,
+    "target_same_mode": 21,
+    "throw": 13,
+    "weapon": 2,
+    "attack_vs_none": 1,
+    "melee": 4
+   },
+   "walks": {
+    "firepoint.random": 2,
+    "melee": 13,
+    "escape": 12,
+    "patrol.node": 16,
+    "escape.known": 1,
+    "firepoint": 3
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M6",
+   "seed": 1,
+   "cap": 8,
+   "decisions": 548,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 391,
+    "snap": 78,
+    "throw": 6,
+    "none": 61,
+    "aimed": 11,
+    "auto": 1
+   },
+   "tally": {
+    "attack_vs_walk": 35,
+    "target_same_mode": 60,
+    "D0_shot_at_player": 82,
+    "mode": 46,
+    "throw": 17,
+    "target_other_mode": 36,
+    "weapon": 2
+   },
+   "units": {
+    "attack_vs_walk": 18,
+    "target_same_mode": 22,
+    "mode": 19,
+    "throw": 8,
+    "target_other_mode": 19,
+    "weapon": 2
+   },
+   "walks": {
+    "firepoint.random": 2,
+    "firepoint": 5,
+    "escape": 11,
+    "patrol.node": 15,
+    "firepoint.fallback": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M6",
+   "seed": 2,
+   "cap": 8,
+   "decisions": 680,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "aimed": 14,
+    "snap": 93,
+    "walk": 531,
+    "none": 38,
+    "auto": 3,
+    "throw": 1
+   },
+   "tally": {
+    "mode": 40,
+    "D0_shot_at_player": 107,
+    "target_same_mode": 65,
+    "target_other_mode": 27,
+    "attack_vs_walk": 37,
+    "throw": 15,
+    "melee": 2
+   },
+   "units": {
+    "mode": 17,
+    "target_same_mode": 19,
+    "target_other_mode": 15,
+    "attack_vs_walk": 18,
+    "throw": 8,
+    "melee": 1
+   },
+   "walks": {
+    "patrol.node": 18,
+    "firepoint": 4,
+    "firepoint.fallback": 3,
+    "melee": 2,
+    "escape": 8,
+    "firepoint.random": 1,
+    "escape.known": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M9",
+   "seed": 1,
+   "cap": 8,
+   "decisions": 435,
+   "last_turn": 2,
+   "rng_touched": 0,
+   "base": {
+    "walk": 407,
+    "aimed": 7,
+    "snap": 4,
+    "none": 17
+   },
+   "tally": {
+    "attack_vs_walk": 48,
+    "target_same_mode": 6,
+    "D0_shot_at_player": 10,
+    "attack_vs_none": 1,
+    "mode": 2,
+    "target_other_mode": 3
+   },
+   "units": {
+    "attack_vs_walk": 20,
+    "target_same_mode": 4,
+    "attack_vs_none": 1,
+    "mode": 2,
+    "target_other_mode": 2
+   },
+   "walks": {
+    "melee": 6,
+    "firepoint.random": 13,
+    "escape": 2,
+    "patrol.node": 10,
+    "firepoint": 12,
+    "firepoint.fallback": 1,
+    "escape.known": 1,
+    "ambush": 3
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M9",
+   "seed": 2,
+   "cap": 8,
+   "decisions": 515,
+   "last_turn": 2,
+   "rng_touched": 0,
+   "base": {
+    "walk": 490,
+    "none": 11,
+    "snap": 10,
+    "aimed": 4
+   },
+   "tally": {
+    "attack_vs_walk": 130,
+    "target_same_mode": 9,
+    "D0_shot_at_player": 13,
+    "attack_vs_none": 3,
+    "mode": 6,
+    "target_other_mode": 4
+   },
+   "units": {
+    "attack_vs_walk": 36,
+    "target_same_mode": 7,
+    "attack_vs_none": 3,
+    "mode": 4,
+    "target_other_mode": 2
+   },
+   "walks": {
+    "firepoint.random": 19,
+    "firepoint": 24,
+    "patrol.node": 47,
+    "melee": 7,
+    "escape": 7,
+    "firepoint.fallback": 21,
+    "ambush": 2,
+    "escape.known": 3
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L10",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 375,
+   "last_turn": 11,
+   "rng_touched": 0,
+   "base": {
+    "walk": 331,
+    "rethink": 2,
+    "none": 20,
+    "snap": 18,
+    "aimed": 3,
+    "melee": 1
+   },
+   "tally": {
+    "attack_vs_walk": 16,
+    "mode": 16,
+    "D0_shot_at_player": 21,
+    "melee": 4,
+    "target_same_mode": 4,
+    "target_other_mode": 4,
+    "weapon": 1
+   },
+   "units": {
+    "attack_vs_walk": 9,
+    "mode": 8,
+    "melee": 3,
+    "target_same_mode": 1,
+    "target_other_mode": 1,
+    "weapon": 1
+   },
+   "walks": {
+    "escape": 8,
+    "melee": 3,
+    "escape.known": 1,
+    "patrol.node": 3,
+    "firepoint": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L10",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 338,
+   "last_turn": 14,
+   "rng_touched": 0,
+   "base": {
+    "walk": 298,
+    "none": 30,
+    "aimed": 5,
+    "melee": 2,
+    "snap": 3
+   },
+   "tally": {
+    "mode": 6,
+    "D0_shot_at_player": 7,
+    "attack_vs_walk": 4,
+    "weapon": 2,
+    "target_same_mode": 1,
+    "target_other_mode": 1
+   },
+   "units": {
+    "mode": 5,
+    "attack_vs_walk": 4,
+    "weapon": 1,
+    "target_same_mode": 1,
+    "target_other_mode": 1
+   },
+   "walks": {
+    "patrol.node": 1,
+    "melee": 1,
+    "escape": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L11",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 2079,
+   "last_turn": 60,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1951,
+    "none": 31,
+    "snap": 44,
+    "auto": 25,
+    "throw": 2,
+    "aimed": 15,
+    "melee": 11
+   },
+   "tally": {
+    "mode": 54,
+    "throw": 38,
+    "target_same_mode": 5,
+    "target_other_mode": 3,
+    "D0_shot_at_player": 84,
+    "weapon": 13,
+    "attack_vs_walk": 67,
+    "melee": 6
+   },
+   "units": {
+    "mode": 16,
+    "throw": 11,
+    "target_same_mode": 2,
+    "target_other_mode": 2,
+    "weapon": 5,
+    "attack_vs_walk": 13,
+    "melee": 3
+   },
+   "walks": {
+    "escape": 4,
+    "melee": 4,
+    "patrol.node": 50,
+    "firepoint.random": 6,
+    "firepoint.fallback": 2,
+    "firepoint": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L11",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 2811,
+   "last_turn": 60,
+   "rng_touched": 0,
+   "base": {
+    "walk": 2731,
+    "aimed": 11,
+    "none": 28,
+    "snap": 25,
+    "melee": 1,
+    "auto": 14,
+    "throw": 1
+   },
+   "tally": {
+    "mode": 35,
+    "throw": 25,
+    "D0_shot_at_player": 49,
+    "attack_vs_walk": 15,
+    "melee": 9,
+    "attack_vs_none": 1,
+    "weapon": 2
+   },
+   "units": {
+    "mode": 11,
+    "throw": 7,
+    "attack_vs_walk": 7,
+    "melee": 4,
+    "attack_vs_none": 1,
+    "weapon": 2
+   },
+   "walks": {
+    "melee": 1,
+    "patrol.node": 5,
+    "escape": 5,
+    "firepoint.random": 2,
+    "firepoint": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L12",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 463,
+   "last_turn": 9,
+   "rng_touched": 0,
+   "base": {
+    "walk": 384,
+    "snap": 54,
+    "none": 16,
+    "melee": 8,
+    "auto": 1
+   },
+   "tally": {
+    "attack_vs_walk": 6,
+    "target_same_mode": 21,
+    "D0_shot_at_player": 25,
+    "weapon": 1
+   },
+   "units": {
+    "attack_vs_walk": 5,
+    "target_same_mode": 3,
+    "weapon": 1
+   },
+   "walks": {
+    "melee": 2,
+    "patrol.node": 4
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L12",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 946,
+   "last_turn": 16,
+   "rng_touched": 0,
+   "base": {
+    "walk": 895,
+    "none": 25,
+    "snap": 13,
+    "aimed": 5,
+    "melee": 8
+   },
+   "tally": {
+    "target_same_mode": 6,
+    "attack_vs_walk": 26,
+    "weapon": 5,
+    "melee": 3,
+    "D0_shot_at_player": 12,
+    "mode": 5,
+    "target_other_mode": 1
+   },
+   "units": {
+    "target_same_mode": 5,
+    "attack_vs_walk": 12,
+    "weapon": 5,
+    "melee": 2,
+    "mode": 4,
+    "target_other_mode": 1
+   },
+   "walks": {
+    "melee": 9,
+    "patrol.node": 14,
+    "escape": 2,
+    "firepoint": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L1",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 351,
+   "last_turn": 15,
+   "rng_touched": 0,
+   "base": {
+    "walk": 266,
+    "auto": 15,
+    "throw": 3,
+    "aimed": 26,
+    "snap": 35,
+    "none": 6
+   },
+   "tally": {
+    "attack_vs_walk": 40,
+    "mode": 53,
+    "throw": 23,
+    "target_same_mode": 65,
+    "target_other_mode": 45,
+    "D0_shot_at_player": 76,
+    "melee": 1,
+    "weapon": 1
+   },
+   "units": {
+    "attack_vs_walk": 16,
+    "mode": 15,
+    "throw": 11,
+    "target_same_mode": 17,
+    "target_other_mode": 13,
+    "melee": 1,
+    "weapon": 1
+   },
+   "walks": {
+    "patrol.node": 16,
+    "firepoint": 6,
+    "firepoint.fallback": 1,
+    "escape": 9,
+    "firepoint.random": 2,
+    "ambush": 4,
+    "melee": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L1",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 294,
+   "last_turn": 16,
+   "rng_touched": 0,
+   "base": {
+    "snap": 41,
+    "walk": 207,
+    "throw": 5,
+    "aimed": 8,
+    "auto": 24,
+    "none": 9
+   },
+   "tally": {
+    "mode": 52,
+    "target_same_mode": 69,
+    "target_other_mode": 52,
+    "D0_shot_at_player": 72,
+    "throw": 25,
+    "attack_vs_walk": 26,
+    "weapon": 3
+   },
+   "units": {
+    "mode": 14,
+    "target_same_mode": 14,
+    "target_other_mode": 14,
+    "throw": 6,
+    "attack_vs_walk": 8,
+    "weapon": 2
+   },
+   "walks": {
+    "firepoint.random": 2,
+    "patrol.node": 4,
+    "escape.known": 1,
+    "escape": 13,
+    "firepoint": 4,
+    "ambush": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L3",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 5,
+   "last_turn": 2,
+   "rng_touched": 0,
+   "base": {
+    "walk": 4,
+    "throw": 1
+   },
+   "tally": {
+    "attack_vs_walk": 1,
+    "weapon": 1,
+    "target_other_mode": 1,
+    "target_same_mode": 1
+   },
+   "units": {
+    "attack_vs_walk": 1,
+    "weapon": 1,
+    "target_other_mode": 1,
+    "target_same_mode": 1
+   },
+   "walks": {
+    "patrol.node": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L3",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 21,
+   "last_turn": 2,
+   "rng_touched": 0,
+   "base": {
+    "none": 2,
+    "walk": 18,
+    "snap": 1
+   },
+   "tally": {
+    "attack_vs_walk": 7,
+    "attack_vs_none": 1,
+    "target_same_mode": 1,
+    "D0_shot_at_player": 1
+   },
+   "units": {
+    "attack_vs_walk": 4,
+    "attack_vs_none": 1,
+    "target_same_mode": 1
+   },
+   "walks": {
+    "patrol.node": 5,
+    "firepoint.random": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L5",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 993,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 783,
+    "aimed": 55,
+    "auto": 32,
+    "snap": 82,
+    "none": 27,
+    "throw": 13,
+    "melee": 1
+   },
+   "tally": {
+    "attack_vs_walk": 220,
+    "mode": 136,
+    "target_same_mode": 145,
+    "target_other_mode": 119,
+    "D0_shot_at_player": 168,
+    "throw": 53,
+    "melee": 3,
+    "attack_vs_none": 10,
+    "weapon": 8
+   },
+   "units": {
+    "attack_vs_walk": 44,
+    "mode": 40,
+    "target_same_mode": 40,
+    "target_other_mode": 37,
+    "throw": 25,
+    "melee": 3,
+    "attack_vs_none": 7,
+    "weapon": 8
+   },
+   "walks": {
+    "patrol.node": 156,
+    "escape.known": 3,
+    "firepoint.random": 17,
+    "firepoint.fallback": 22,
+    "firepoint": 18,
+    "escape": 4
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L5",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 611,
+   "last_turn": 20,
+   "rng_touched": 0,
+   "base": {
+    "walk": 456,
+    "snap": 65,
+    "aimed": 24,
+    "none": 12,
+    "throw": 16,
+    "auto": 37,
+    "melee": 1
+   },
+   "tally": {
+    "attack_vs_walk": 152,
+    "mode": 100,
+    "throw": 64,
+    "target_same_mode": 109,
+    "target_other_mode": 89,
+    "D0_shot_at_player": 125,
+    "weapon": 8,
+    "attack_vs_none": 6,
+    "melee": 7
+   },
+   "units": {
+    "attack_vs_walk": 48,
+    "mode": 36,
+    "throw": 26,
+    "target_same_mode": 41,
+    "target_other_mode": 32,
+    "weapon": 8,
+    "attack_vs_none": 6,
+    "melee": 3
+   },
+   "walks": {
+    "patrol.node": 86,
+    "firepoint.random": 16,
+    "escape": 28,
+    "firepoint": 14,
+    "firepoint.fallback": 5,
+    "grenade": 1,
+    "melee": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L6",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 809,
+   "last_turn": 60,
+   "rng_touched": 0,
+   "base": {
+    "walk": 659,
+    "snap": 88,
+    "none": 34,
+    "throw": 12,
+    "auto": 3,
+    "aimed": 11,
+    "melee": 2
+   },
+   "tally": {
+    "target_same_mode": 101,
+    "D0_shot_at_player": 100,
+    "throw": 21,
+    "attack_vs_walk": 146,
+    "mode": 34,
+    "target_other_mode": 33,
+    "melee": 9,
+    "weapon": 3
+   },
+   "units": {
+    "target_same_mode": 21,
+    "throw": 13,
+    "attack_vs_walk": 14,
+    "mode": 10,
+    "target_other_mode": 10,
+    "melee": 3,
+    "weapon": 1
+   },
+   "walks": {
+    "escape": 10,
+    "patrol.node": 33,
+    "firepoint.random": 58,
+    "ambush": 2,
+    "escape.known": 1,
+    "melee": 3,
+    "sniper": 1,
+    "firepoint": 34,
+    "grenade": 2,
+    "firepoint.fallback": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L6",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 874,
+   "last_turn": 24,
+   "rng_touched": 0,
+   "base": {
+    "walk": 725,
+    "snap": 103,
+    "none": 23,
+    "throw": 10,
+    "aimed": 12,
+    "melee": 1
+   },
+   "tally": {
+    "mode": 29,
+    "target_same_mode": 81,
+    "target_other_mode": 24,
+    "D0_shot_at_player": 110,
+    "throw": 23,
+    "attack_vs_walk": 48,
+    "weapon": 4,
+    "melee": 1
+   },
+   "units": {
+    "mode": 15,
+    "target_same_mode": 19,
+    "target_other_mode": 14,
+    "throw": 9,
+    "attack_vs_walk": 17,
+    "weapon": 4,
+    "melee": 1
+   },
+   "walks": {
+    "patrol.node": 22,
+    "escape": 9,
+    "ambush": 10,
+    "firepoint.random": 1,
+    "firepoint": 4,
+    "firepoint.fallback": 1,
+    "melee": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L7",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 1068,
+   "last_turn": 22,
+   "rng_touched": 0,
+   "base": {
+    "walk": 714,
+    "aimed": 29,
+    "snap": 194,
+    "none": 45,
+    "auto": 78,
+    "throw": 8
+   },
+   "tally": {
+    "attack_vs_walk": 124,
+    "mode": 154,
+    "target_same_mode": 94,
+    "target_other_mode": 70,
+    "D0_shot_at_player": 298,
+    "throw": 70,
+    "melee": 5,
+    "attack_vs_none": 3
+   },
+   "units": {
+    "attack_vs_walk": 24,
+    "mode": 24,
+    "target_same_mode": 26,
+    "target_other_mode": 22,
+    "throw": 13,
+    "melee": 2,
+    "attack_vs_none": 1
+   },
+   "walks": {
+    "patrol.node": 58,
+    "escape": 23,
+    "firepoint": 11,
+    "firepoint.random": 8,
+    "escape.known": 4,
+    "melee": 1,
+    "ambush": 12,
+    "firepoint.fallback": 7
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L7",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 670,
+   "last_turn": 8,
+   "rng_touched": 0,
+   "base": {
+    "walk": 456,
+    "snap": 137,
+    "auto": 29,
+    "none": 20,
+    "aimed": 26,
+    "throw": 1,
+    "melee": 1
+   },
+   "tally": {
+    "attack_vs_walk": 97,
+    "mode": 126,
+    "D0_shot_at_player": 191,
+    "target_same_mode": 102,
+    "target_other_mode": 67,
+    "throw": 68,
+    "melee": 7,
+    "weapon": 2,
+    "attack_vs_none": 1
+   },
+   "units": {
+    "attack_vs_walk": 27,
+    "mode": 26,
+    "target_same_mode": 24,
+    "target_other_mode": 20,
+    "throw": 16,
+    "melee": 3,
+    "weapon": 2,
+    "attack_vs_none": 1
+   },
+   "walks": {
+    "escape": 9,
+    "firepoint.fallback": 10,
+    "patrol.node": 50,
+    "melee": 3,
+    "ambush": 6,
+    "firepoint": 8,
+    "escape.known": 2,
+    "firepoint.random": 9
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L9",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 113,
+   "last_turn": 11,
+   "rng_touched": 0,
+   "base": {
+    "walk": 93,
+    "throw": 6,
+    "snap": 7,
+    "aimed": 3,
+    "none": 4
+   },
+   "tally": {
+    "attack_vs_walk": 49,
+    "weapon": 6,
+    "target_other_mode": 12,
+    "target_same_mode": 14,
+    "throw": 6,
+    "D0_shot_at_player": 10,
+    "mode": 8,
+    "psi": 7,
+    "attack_vs_none": 1
+   },
+   "units": {
+    "attack_vs_walk": 14,
+    "weapon": 6,
+    "target_other_mode": 10,
+    "target_same_mode": 11,
+    "throw": 5,
+    "mode": 6,
+    "psi": 6,
+    "attack_vs_none": 1
+   },
+   "walks": {
+    "patrol.node": 20,
+    "ambush": 24,
+    "firepoint.random": 3,
+    "melee": 1,
+    "escape": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L9",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 293,
+   "last_turn": 11,
+   "rng_touched": 0,
+   "base": {
+    "none": 25,
+    "walk": 202,
+    "snap": 39,
+    "throw": 6,
+    "auto": 6,
+    "aimed": 15
+   },
+   "tally": {
+    "attack_vs_walk": 90,
+    "mode": 45,
+    "throw": 38,
+    "D0_shot_at_player": 60,
+    "weapon": 2,
+    "target_other_mode": 3,
+    "target_same_mode": 6,
+    "melee": 4,
+    "attack_vs_none": 17,
+    "psi": 31
+   },
+   "units": {
+    "attack_vs_walk": 19,
+    "mode": 15,
+    "throw": 12,
+    "weapon": 2,
+    "target_other_mode": 3,
+    "target_same_mode": 5,
+    "melee": 2,
+    "attack_vs_none": 6,
+    "psi": 7
+   },
+   "walks": {
+    "patrol.node": 38,
+    "firepoint.random": 10,
+    "escape": 11,
+    "melee": 3,
+    "firepoint": 7,
+    "ambush": 19,
+    "firepoint.fallback": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M10",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 1766,
+   "last_turn": 24,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1330,
+    "snap": 221,
+    "none": 41,
+    "aimed": 53,
+    "auto": 98,
+    "melee": 23
+   },
+   "tally": {
+    "attack_vs_walk": 627,
+    "mode": 138,
+    "D0_shot_at_player": 365,
+    "target_same_mode": 146,
+    "target_other_mode": 60,
+    "melee": 23,
+    "weapon": 10,
+    "attack_vs_none": 3
+   },
+   "units": {
+    "attack_vs_walk": 47,
+    "mode": 27,
+    "target_same_mode": 37,
+    "target_other_mode": 22,
+    "melee": 8,
+    "weapon": 5,
+    "attack_vs_none": 3
+   },
+   "walks": {
+    "patrol.node": 201,
+    "firepoint.random": 92,
+    "firepoint.fallback": 211,
+    "firepoint": 59,
+    "escape": 31,
+    "melee": 24,
+    "escape.known": 9
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M10",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 1279,
+   "last_turn": 11,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1031,
+    "snap": 155,
+    "aimed": 26,
+    "auto": 40,
+    "none": 22,
+    "melee": 5
+   },
+   "tally": {
+    "mode": 112,
+    "target_same_mode": 104,
+    "target_other_mode": 49,
+    "D0_shot_at_player": 213,
+    "attack_vs_walk": 365,
+    "melee": 20,
+    "attack_vs_none": 3,
+    "weapon": 2
+   },
+   "units": {
+    "mode": 35,
+    "target_same_mode": 31,
+    "target_other_mode": 22,
+    "attack_vs_walk": 51,
+    "melee": 10,
+    "attack_vs_none": 3,
+    "weapon": 2
+   },
+   "walks": {
+    "patrol.node": 125,
+    "escape.known": 2,
+    "escape": 39,
+    "firepoint.fallback": 86,
+    "firepoint": 52,
+    "melee": 15,
+    "firepoint.random": 46
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M11",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 815,
+   "last_turn": 60,
+   "rng_touched": 0,
+   "base": {
+    "walk": 536,
+    "none": 249,
+    "melee": 10,
+    "aimed": 20
+   },
+   "tally": {
+    "attack_vs_walk": 87,
+    "psi": 5,
+    "attack_vs_none": 1,
+    "D0_shot_at_player": 20
+   },
+   "units": {
+    "attack_vs_walk": 7,
+    "psi": 2,
+    "attack_vs_none": 1
+   },
+   "walks": {
+    "firepoint": 7,
+    "patrol.node": 51,
+    "melee": 25,
+    "ambush": 2,
+    "escape": 1,
+    "firepoint.random": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M11",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 1964,
+   "last_turn": 60,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1858,
+    "none": 31,
+    "11": 1,
+    "melee": 74
+   },
+   "tally": {
+    "attack_vs_walk": 329,
+    "attack_vs_11": 1,
+    "attack_vs_none": 1,
+    "psi": 4
+   },
+   "units": {
+    "attack_vs_walk": 5,
+    "attack_vs_11": 1,
+    "attack_vs_none": 1,
+    "psi": 3
+   },
+   "walks": {
+    "patrol.node": 322,
+    "firepoint": 1,
+    "melee": 4,
+    "firepoint.random": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M12",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 12,
+   "last_turn": 2,
+   "rng_touched": 0,
+   "base": {
+    "walk": 7,
+    "aimed": 3,
+    "none": 1,
+    "snap": 1
+   },
+   "tally": {
+    "attack_vs_walk": 2,
+    "mode": 3,
+    "target_same_mode": 3,
+    "target_other_mode": 2,
+    "D0_shot_at_player": 4
+   },
+   "units": {
+    "attack_vs_walk": 2,
+    "mode": 2,
+    "target_same_mode": 1,
+    "target_other_mode": 1
+   },
+   "walks": {
+    "patrol.node": 1,
+    "escape": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M12",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 25,
+   "last_turn": 4,
+   "rng_touched": 0,
+   "base": {
+    "walk": 15,
+    "snap": 6,
+    "throw": 1,
+    "none": 1,
+    "aimed": 2
+   },
+   "tally": {
+    "attack_vs_walk": 1,
+    "mode": 5,
+    "D0_shot_at_player": 7,
+    "weapon": 1,
+    "target_same_mode": 4,
+    "target_other_mode": 1
+   },
+   "units": {
+    "attack_vs_walk": 1,
+    "mode": 2,
+    "weapon": 1,
+    "target_same_mode": 2,
+    "target_other_mode": 1
+   },
+   "walks": {
+    "escape": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M2",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 1992,
+   "last_turn": 15,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1390,
+    "throw": 56,
+    "snap": 245,
+    "none": 106,
+    "auto": 83,
+    "aimed": 107,
+    "melee": 5
+   },
+   "tally": {
+    "attack_vs_walk": 362,
+    "throw": 158,
+    "target_same_mode": 271,
+    "target_other_mode": 216,
+    "mode": 177,
+    "D0_shot_at_player": 215,
+    "attack_vs_none": 17,
+    "melee": 10,
+    "weapon": 7
+   },
+   "units": {
+    "attack_vs_walk": 59,
+    "throw": 34,
+    "target_same_mode": 57,
+    "target_other_mode": 43,
+    "mode": 39,
+    "attack_vs_none": 8,
+    "melee": 5,
+    "weapon": 7
+   },
+   "walks": {
+    "escape.known": 13,
+    "patrol.node": 159,
+    "firepoint.fallback": 41,
+    "firepoint.random": 40,
+    "firepoint": 28,
+    "melee": 40,
+    "escape": 41
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M2",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 2389,
+   "last_turn": 38,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1742,
+    "snap": 221,
+    "aimed": 117,
+    "none": 123,
+    "auto": 126,
+    "throw": 54,
+    "melee": 6
+   },
+   "tally": {
+    "throw": 173,
+    "target_same_mode": 260,
+    "target_other_mode": 202,
+    "mode": 200,
+    "D0_shot_at_player": 250,
+    "attack_vs_walk": 407,
+    "weapon": 7,
+    "attack_vs_none": 30,
+    "melee": 3
+   },
+   "units": {
+    "throw": 41,
+    "target_same_mode": 57,
+    "target_other_mode": 42,
+    "mode": 38,
+    "attack_vs_walk": 56,
+    "weapon": 7,
+    "attack_vs_none": 14,
+    "melee": 2
+   },
+   "walks": {
+    "escape.known": 14,
+    "patrol.node": 210,
+    "melee": 36,
+    "firepoint.fallback": 42,
+    "firepoint.random": 31,
+    "firepoint": 45,
+    "escape": 29
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M3",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 902,
+   "last_turn": 21,
+   "rng_touched": 0,
+   "base": {
+    "walk": 680,
+    "snap": 140,
+    "throw": 15,
+    "none": 13,
+    "aimed": 49,
+    "auto": 3,
+    "melee": 2
+   },
+   "tally": {
+    "target_same_mode": 144,
+    "attack_vs_walk": 274,
+    "throw": 28,
+    "mode": 87,
+    "target_other_mode": 80,
+    "D0_shot_at_player": 154,
+    "weapon": 3,
+    "melee": 3,
+    "attack_vs_none": 4
+   },
+   "units": {
+    "target_same_mode": 34,
+    "attack_vs_walk": 43,
+    "throw": 14,
+    "mode": 29,
+    "target_other_mode": 29,
+    "weapon": 3,
+    "melee": 1,
+    "attack_vs_none": 3
+   },
+   "walks": {
+    "firepoint": 49,
+    "patrol.node": 102,
+    "escape.known": 2,
+    "firepoint.random": 63,
+    "escape": 16,
+    "firepoint.fallback": 35,
+    "melee": 7
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M3",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 755,
+   "last_turn": 6,
+   "rng_touched": 0,
+   "base": {
+    "walk": 612,
+    "snap": 73,
+    "throw": 19,
+    "aimed": 30,
+    "none": 9,
+    "auto": 4,
+    "melee": 8
+   },
+   "tally": {
+    "target_same_mode": 53,
+    "throw": 36,
+    "target_other_mode": 30,
+    "mode": 34,
+    "D0_shot_at_player": 65,
+    "attack_vs_walk": 198,
+    "weapon": 3
+   },
+   "units": {
+    "target_same_mode": 30,
+    "throw": 22,
+    "target_other_mode": 22,
+    "mode": 23,
+    "attack_vs_walk": 44,
+    "weapon": 3
+   },
+   "walks": {
+    "escape.known": 3,
+    "patrol.node": 85,
+    "firepoint.random": 34,
+    "firepoint.fallback": 44,
+    "melee": 1,
+    "escape": 9,
+    "firepoint": 22
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M4",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 393,
+   "last_turn": 3,
+   "rng_touched": 0,
+   "base": {
+    "snap": 45,
+    "walk": 311,
+    "none": 17,
+    "auto": 14,
+    "throw": 2,
+    "aimed": 4
+   },
+   "tally": {
+    "target_same_mode": 25,
+    "D0_shot_at_player": 63,
+    "attack_vs_walk": 93,
+    "mode": 31,
+    "throw": 14,
+    "target_other_mode": 12,
+    "weapon": 2,
+    "attack_vs_none": 5
+   },
+   "units": {
+    "target_same_mode": 10,
+    "attack_vs_walk": 30,
+    "mode": 11,
+    "throw": 5,
+    "target_other_mode": 5,
+    "weapon": 2,
+    "attack_vs_none": 1
+   },
+   "walks": {
+    "firepoint": 17,
+    "firepoint.fallback": 7,
+    "escape": 4,
+    "escape.known": 1,
+    "ambush": 13,
+    "patrol.node": 39,
+    "firepoint.random": 7,
+    "melee": 5
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M4",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 486,
+   "last_turn": 3,
+   "rng_touched": 0,
+   "base": {
+    "walk": 393,
+    "none": 15,
+    "snap": 60,
+    "throw": 2,
+    "auto": 9,
+    "aimed": 7
+   },
+   "tally": {
+    "attack_vs_walk": 77,
+    "target_same_mode": 29,
+    "D0_shot_at_player": 76,
+    "mode": 24,
+    "throw": 16,
+    "target_other_mode": 5,
+    "weapon": 1,
+    "attack_vs_none": 3
+   },
+   "units": {
+    "attack_vs_walk": 24,
+    "target_same_mode": 11,
+    "mode": 14,
+    "throw": 8,
+    "target_other_mode": 4,
+    "weapon": 1,
+    "attack_vs_none": 2
+   },
+   "walks": {
+    "patrol.node": 29,
+    "ambush": 23,
+    "escape": 3,
+    "melee": 2,
+    "firepoint": 12,
+    "firepoint.random": 5,
+    "firepoint.fallback": 3
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M5",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 1053,
+   "last_turn": 15,
+   "rng_touched": 0,
+   "base": {
+    "walk": 793,
+    "none": 77,
+    "aimed": 62,
+    "throw": 20,
+    "snap": 95,
+    "auto": 5,
+    "melee": 1
+   },
+   "tally": {
+    "attack_vs_walk": 227,
+    "mode": 108,
+    "throw": 78,
+    "target_same_mode": 130,
+    "target_other_mode": 92,
+    "D0_shot_at_player": 151,
+    "weapon": 10,
+    "attack_vs_none": 10,
+    "melee": 2
+   },
+   "units": {
+    "attack_vs_walk": 39,
+    "mode": 30,
+    "throw": 22,
+    "target_same_mode": 33,
+    "target_other_mode": 26,
+    "weapon": 9,
+    "attack_vs_none": 6,
+    "melee": 1
+   },
+   "walks": {
+    "firepoint.random": 18,
+    "firepoint": 38,
+    "patrol.node": 121,
+    "firepoint.fallback": 24,
+    "escape.known": 11,
+    "escape": 14,
+    "melee": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M5",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 818,
+   "last_turn": 10,
+   "rng_touched": 0,
+   "base": {
+    "walk": 622,
+    "none": 89,
+    "throw": 10,
+    "aimed": 29,
+    "snap": 66,
+    "auto": 1,
+    "melee": 1
+   },
+   "tally": {
+    "attack_vs_walk": 180,
+    "target_other_mode": 53,
+    "target_same_mode": 77,
+    "mode": 61,
+    "throw": 51,
+    "D0_shot_at_player": 92,
+    "weapon": 6,
+    "attack_vs_none": 10,
+    "melee": 2
+   },
+   "units": {
+    "attack_vs_walk": 39,
+    "target_other_mode": 19,
+    "target_same_mode": 29,
+    "mode": 25,
+    "throw": 18,
+    "weapon": 5,
+    "attack_vs_none": 9,
+    "melee": 1
+   },
+   "walks": {
+    "patrol.node": 137,
+    "escape": 4,
+    "firepoint": 25,
+    "melee": 3,
+    "firepoint.random": 4,
+    "firepoint.fallback": 7
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M7",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 165,
+   "last_turn": 2,
+   "rng_touched": 0,
+   "base": {
+    "walk": 139,
+    "aimed": 9,
+    "throw": 2,
+    "snap": 8,
+    "auto": 2,
+    "none": 5
+   },
+   "tally": {
+    "attack_vs_walk": 38,
+    "mode": 15,
+    "throw": 8,
+    "D0_shot_at_player": 19,
+    "target_same_mode": 11,
+    "target_other_mode": 9,
+    "weapon": 2,
+    "melee": 3,
+    "attack_vs_none": 3,
+    "psi": 4
+   },
+   "units": {
+    "attack_vs_walk": 16,
+    "mode": 11,
+    "throw": 6,
+    "target_same_mode": 7,
+    "target_other_mode": 7,
+    "weapon": 2,
+    "melee": 2,
+    "attack_vs_none": 2,
+    "psi": 2
+   },
+   "walks": {
+    "patrol.node": 21,
+    "firepoint.random": 5,
+    "firepoint.fallback": 6,
+    "escape": 2,
+    "melee": 3,
+    "firepoint": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M7",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 398,
+   "last_turn": 5,
+   "rng_touched": 0,
+   "base": {
+    "aimed": 16,
+    "snap": 18,
+    "walk": 345,
+    "throw": 8,
+    "none": 6,
+    "auto": 5
+   },
+   "tally": {
+    "mode": 34,
+    "D0_shot_at_player": 39,
+    "throw": 7,
+    "target_same_mode": 34,
+    "target_other_mode": 28,
+    "attack_vs_walk": 90,
+    "weapon": 7,
+    "melee": 3,
+    "attack_vs_none": 2,
+    "psi": 4
+   },
+   "units": {
+    "mode": 12,
+    "throw": 5,
+    "target_same_mode": 12,
+    "target_other_mode": 12,
+    "attack_vs_walk": 15,
+    "weapon": 6,
+    "melee": 2,
+    "attack_vs_none": 2,
+    "psi": 3
+   },
+   "walks": {
+    "patrol.node": 61,
+    "escape.known": 1,
+    "ambush": 7,
+    "firepoint.random": 5,
+    "escape": 7,
+    "firepoint.fallback": 6,
+    "firepoint": 3
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M8",
+   "seed": 1,
+   "cap": 60,
+   "decisions": 338,
+   "last_turn": 12,
+   "rng_touched": 0,
+   "base": {
+    "walk": 292,
+    "none": 14,
+    "auto": 14,
+    "aimed": 4,
+    "snap": 14
+   },
+   "tally": {
+    "attack_vs_walk": 24,
+    "mode": 21,
+    "target_same_mode": 22,
+    "target_other_mode": 14,
+    "D0_shot_at_player": 31,
+    "throw": 7
+   },
+   "units": {
+    "attack_vs_walk": 11,
+    "mode": 10,
+    "target_same_mode": 13,
+    "target_other_mode": 8,
+    "throw": 5
+   },
+   "walks": {
+    "patrol.node": 9,
+    "ambush": 4,
+    "firepoint.fallback": 2,
+    "firepoint.random": 2,
+    "escape.known": 1,
+    "firepoint": 5,
+    "melee": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M8",
+   "seed": 2,
+   "cap": 60,
+   "decisions": 132,
+   "last_turn": 5,
+   "rng_touched": 0,
+   "base": {
+    "none": 9,
+    "walk": 90,
+    "aimed": 16,
+    "snap": 11,
+    "auto": 5,
+    "throw": 1
+   },
+   "tally": {
+    "attack_vs_walk": 14,
+    "mode": 29,
+    "D0_shot_at_player": 32,
+    "target_same_mode": 22,
+    "target_other_mode": 19,
+    "throw": 3,
+    "attack_vs_none": 1
+   },
+   "units": {
+    "attack_vs_walk": 8,
+    "mode": 15,
+    "target_same_mode": 13,
+    "target_other_mode": 12,
+    "throw": 2,
+    "attack_vs_none": 1
+   },
+   "walks": {
+    "ambush": 6,
+    "escape": 3,
+    "melee": 1,
+    "patrol.node": 3,
+    "firepoint": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L4",
+   "seed": 3,
+   "cap": 60,
+   "decisions": 123,
+   "last_turn": 11,
+   "rng_touched": 0,
+   "base": {
+    "snap": 23,
+    "walk": 79,
+    "throw": 4,
+    "aimed": 3,
+    "none": 6,
+    "auto": 8
+   },
+   "tally": {
+    "target_same_mode": 21,
+    "D0_shot_at_player": 34,
+    "weapon": 4,
+    "target_other_mode": 11,
+    "mode": 13,
+    "attack_vs_walk": 19,
+    "throw": 5,
+    "melee": 1
+   },
+   "units": {
+    "target_same_mode": 13,
+    "weapon": 4,
+    "target_other_mode": 8,
+    "mode": 8,
+    "attack_vs_walk": 9,
+    "throw": 4,
+    "melee": 1
+   },
+   "walks": {
+    "firepoint.random": 1,
+    "patrol.node": 7,
+    "ambush": 1,
+    "firepoint": 2,
+    "melee": 4,
+    "escape": 4
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L4",
+   "seed": 4,
+   "cap": 60,
+   "decisions": 188,
+   "last_turn": 9,
+   "rng_touched": 0,
+   "base": {
+    "snap": 38,
+    "walk": 111,
+    "melee": 1,
+    "auto": 29,
+    "none": 8,
+    "throw": 1
+   },
+   "tally": {
+    "D0_shot_at_player": 67,
+    "attack_vs_walk": 41,
+    "target_same_mode": 30,
+    "mode": 34,
+    "throw": 18,
+    "target_other_mode": 13,
+    "attack_vs_none": 1,
+    "weapon": 1,
+    "melee": 2
+   },
+   "units": {
+    "attack_vs_walk": 18,
+    "target_same_mode": 13,
+    "mode": 13,
+    "throw": 8,
+    "target_other_mode": 8,
+    "attack_vs_none": 1,
+    "weapon": 1,
+    "melee": 1
+   },
+   "walks": {
+    "ambush": 2,
+    "patrol.node": 5,
+    "melee": 13,
+    "firepoint": 9,
+    "firepoint.random": 2,
+    "escape": 9,
+    "firepoint.fallback": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L8",
+   "seed": 3,
+   "cap": 60,
+   "decisions": 243,
+   "last_turn": 4,
+   "rng_touched": 0,
+   "base": {
+    "walk": 173,
+    "snap": 23,
+    "aimed": 5,
+    "auto": 32,
+    "none": 9,
+    "throw": 1
+   },
+   "tally": {
+    "attack_vs_walk": 140,
+    "mode": 57,
+    "psi": 37,
+    "target_same_mode": 44,
+    "target_other_mode": 41,
+    "D0_shot_at_player": 60,
+    "attack_vs_none": 6,
+    "throw": 8
+   },
+   "units": {
+    "attack_vs_walk": 30,
+    "mode": 13,
+    "psi": 10,
+    "target_same_mode": 11,
+    "target_other_mode": 11,
+    "attack_vs_none": 4,
+    "throw": 3
+   },
+   "walks": {
+    "ambush": 80,
+    "firepoint": 9,
+    "patrol.node": 42,
+    "firepoint.random": 4,
+    "escape": 4,
+    "firepoint.fallback": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "L8",
+   "seed": 4,
+   "cap": 60,
+   "decisions": 165,
+   "last_turn": 2,
+   "rng_touched": 0,
+   "base": {
+    "auto": 23,
+    "walk": 119,
+    "snap": 8,
+    "none": 13,
+    "launch": 1,
+    "panic": 1
+   },
+   "tally": {
+    "mode": 30,
+    "psi": 16,
+    "target_same_mode": 16,
+    "target_other_mode": 17,
+    "D0_shot_at_player": 31,
+    "attack_vs_walk": 96,
+    "attack_vs_none": 13
+   },
+   "units": {
+    "mode": 10,
+    "psi": 6,
+    "target_same_mode": 8,
+    "target_other_mode": 9,
+    "attack_vs_walk": 31,
+    "attack_vs_none": 12
+   },
+   "walks": {
+    "ambush": 45,
+    "patrol.node": 46,
+    "firepoint.random": 3,
+    "firepoint.fallback": 1,
+    "escape.known": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M3",
+   "seed": 3,
+   "cap": 60,
+   "decisions": 1749,
+   "last_turn": 38,
+   "rng_touched": 0,
+   "base": {
+    "walk": 1513,
+    "none": 18,
+    "throw": 13,
+    "aimed": 73,
+    "snap": 115,
+    "auto": 12,
+    "melee": 5
+   },
+   "tally": {
+    "weapon": 5,
+    "target_other_mode": 57,
+    "target_same_mode": 90,
+    "attack_vs_walk": 458,
+    "mode": 84,
+    "D0_shot_at_player": 151,
+    "throw": 33,
+    "attack_vs_none": 4
+   },
+   "units": {
+    "weapon": 5,
+    "target_other_mode": 23,
+    "target_same_mode": 27,
+    "attack_vs_walk": 30,
+    "mode": 17,
+    "throw": 14,
+    "attack_vs_none": 3
+   },
+   "walks": {
+    "patrol.node": 173,
+    "escape.known": 1,
+    "firepoint": 44,
+    "firepoint.fallback": 188,
+    "escape": 5,
+    "firepoint.random": 42,
+    "melee": 5
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M3",
+   "seed": 4,
+   "cap": 60,
+   "decisions": 723,
+   "last_turn": 22,
+   "rng_touched": 0,
+   "base": {
+    "walk": 553,
+    "snap": 94,
+    "throw": 22,
+    "aimed": 44,
+    "none": 8,
+    "melee": 2
+   },
+   "tally": {
+    "attack_vs_walk": 156,
+    "target_same_mode": 112,
+    "target_other_mode": 74,
+    "weapon": 9,
+    "D0_shot_at_player": 106,
+    "mode": 68,
+    "throw": 37,
+    "attack_vs_none": 3
+   },
+   "units": {
+    "attack_vs_walk": 33,
+    "target_same_mode": 35,
+    "target_other_mode": 31,
+    "weapon": 8,
+    "mode": 27,
+    "throw": 13,
+    "attack_vs_none": 3
+   },
+   "walks": {
+    "patrol.node": 72,
+    "firepoint.fallback": 15,
+    "firepoint.random": 24,
+    "firepoint": 26,
+    "escape": 14,
+    "melee": 4,
+    "escape.known": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M8",
+   "seed": 3,
+   "cap": 60,
+   "decisions": 161,
+   "last_turn": 5,
+   "rng_touched": 0,
+   "base": {
+    "walk": 123,
+    "auto": 13,
+    "snap": 17,
+    "aimed": 7,
+    "none": 1
+   },
+   "tally": {
+    "mode": 27,
+    "D0_shot_at_player": 37,
+    "attack_vs_walk": 14,
+    "target_same_mode": 9,
+    "target_other_mode": 6,
+    "throw": 4
+   },
+   "units": {
+    "mode": 13,
+    "attack_vs_walk": 10,
+    "target_same_mode": 7,
+    "target_other_mode": 5,
+    "throw": 4
+   },
+   "walks": {
+    "patrol.node": 6,
+    "escape.known": 2,
+    "ambush": 2,
+    "firepoint.random": 2,
+    "escape": 1,
+    "firepoint": 1
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  },
+  {
+   "scen": "M8",
+   "seed": 4,
+   "cap": 60,
+   "decisions": 211,
+   "last_turn": 6,
+   "rng_touched": 0,
+   "base": {
+    "walk": 164,
+    "aimed": 11,
+    "snap": 23,
+    "auto": 8,
+    "throw": 3,
+    "none": 2
+   },
+   "tally": {
+    "attack_vs_walk": 22,
+    "mode": 33,
+    "D0_shot_at_player": 40,
+    "throw": 10,
+    "target_same_mode": 12,
+    "target_other_mode": 12,
+    "weapon": 2
+   },
+   "units": {
+    "attack_vs_walk": 14,
+    "mode": 13,
+    "throw": 6,
+    "target_same_mode": 8,
+    "target_other_mode": 8,
+    "weapon": 2
+   },
+   "walks": {
+    "escape.known": 2,
+    "firepoint.random": 4,
+    "patrol.node": 10,
+    "escape": 1,
+    "firepoint": 3,
+    "ambush": 2
+   },
+   "exe": "0ff1e0f791906adb5a231f5137cc4cc8353ea9afd04af955699600949c5e79bf",
+   "data": "71801f29d59ba9112117ba5d0edff85365702af573fb202fa47582d583d6f687"
+  }
+ ]
+}

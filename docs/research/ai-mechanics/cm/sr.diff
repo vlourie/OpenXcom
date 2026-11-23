@@ -1,0 +1,292 @@
+--- base/AIModule.cpp	2026-10-29 22:54:26.942405700 +0200
++++ tree/src/Battlescape/AIModule.cpp	2026-10-29 23:10:07.754536500 +0200
+@@ -20,6 +20,7 @@
+ #include <chrono>
+ #include <algorithm>
+ #include <sstream>
++#include <map>
+ #include "AIModule.h"
+ #include "../Savegame/BattleItem.h"
+ #include "../Savegame/Node.h"
+@@ -1841,6 +1842,177 @@
+ 	_patrolSpentEnergy = _unit->getEnergy();
+ }
+ 
++namespace
++{
++
++/// STAGE_RALLY_V1 (OXCE_AI_STAGE_RALLY, bench only): the hostile side's plan of a turn - the contact (of the player units the
++/// side saw this or last turn, the one nearest the hostiles' centre) and the rally node, 6-12 tiles from it and seen by none of
++/// those units; a plan is kept while its contact unit stays known within 6 tiles of where the plan found it and its node unseen
++struct RallyPlan
++{
++	const SavedBattleGame *save = nullptr;
++	int turn = -1, id = 0, contactId = -1;
++	Position contact = Position(-1, -1, -1);
++	Node *node = nullptr;
++};
++RallyPlan rallyPlan;
++/// a hostile's part in the plan: its id; 0 going to the rally node, 1 waiting there since turn, 2 sent to the contact, 3 done
++struct RallyUnit { int plan = -1, phase = 0, since = -1; };
++std::map<int, RallyUnit> rallyUnits;
++
++/// does any of the side's fresh contacts see a unit standing at pos (the check of AIModule::getSpottingUnits)
++bool rallySeen(SavedBattleGame *save, BattleUnit *unit, const Position &pos, const std::vector<BattleUnit*> &known)
++{
++	Tile *tile = save->getTile(pos);
++	for (auto *bu : known)
++	{
++		if (Position::distance2d(pos, bu->getPosition()) > 20)
++		{
++			continue;
++		}
++		Position originVoxel = save->getTileEngine()->getSightOriginVoxel(bu);
++		originVoxel.z -= 2;
++		Position targetVoxel;
++		if (save->getTileEngine()->canTargetUnit(&originVoxel, tile, &targetVoxel, bu, false, unit))
++		{
++			return true;
++		}
++	}
++	return false;
++}
++
++/// a node this unit may walk to as getPatrolNode allows one (rank and flags aside)
++bool rallyNodeFits(SavedBattleGame *save, BattleUnit *unit, Node *n)
++{
++	Tile *tile = save->getTile(n->getPosition());
++	return !n->isDummy()
++		&& (!(n->getType() & Node::TYPE_SMALL) || unit->isSmallUnit())
++		&& (!(n->getType() & Node::TYPE_FLYING) || unit->getMovementType() == MT_FLY)
++		&& !(n->getType() & Node::TYPE_DANGEROUS)
++		&& tile && !tile->getFire() && !tile->getDangerous()
++		&& n->getPosition().x > 0 && n->getPosition().y > 0;
++}
++
++/// the plan of this turn: made at the first hostile patrol think of the turn
++const RallyPlan &rallyUpdate(SavedBattleGame *save, BattleUnit *unit)
++{
++	if (rallyPlan.save != save)
++	{
++		rallyPlan = RallyPlan();
++		rallyPlan.save = save;
++		rallyUnits.clear();
++	}
++	if (rallyPlan.turn == save->getTurn())
++	{
++		return rallyPlan;
++	}
++	rallyPlan.turn = save->getTurn();
++	std::vector<BattleUnit*> known;
++	int sx = 0, sy = 0, sz = 0, hostiles = 0;
++	for (auto *bu : *save->getUnits())
++	{
++		if (bu->isOut())
++		{
++			continue;
++		}
++		if (bu->getFaction() == FACTION_HOSTILE)
++		{
++			sx += bu->getPosition().x;
++			sy += bu->getPosition().y;
++			sz += bu->getPosition().z;
++			++hostiles;
++		}
++		else if (bu->getFaction() == FACTION_PLAYER && bu->getTurnsSinceSpottedByFaction(FACTION_HOSTILE) <= 1)
++		{
++			known.push_back(bu);
++		}
++	}
++	if (known.empty() || !hostiles)
++	{
++		if (rallyPlan.node)
++		{
++			Log(LOG_INFO) << "[AIPROBE] rally turn=" << rallyPlan.turn << " id=" << rallyPlan.id << " dropped known=" << known.size();
++			rallyPlan.node = nullptr;
++			++rallyPlan.id;
++		}
++		return rallyPlan;
++	}
++	const Position centre(sx / hostiles, sy / hostiles, sz / hostiles);
++	BattleUnit *contact = nullptr;
++	for (auto *bu : known)
++	{
++		if (rallyPlan.node && bu->getId() == rallyPlan.contactId)
++		{
++			// the plan's own contact is still known: the plan holds while it stays near and the node unseen
++			if (Position::distance2d(rallyPlan.contact, bu->getPosition()) <= 6
++				&& !rallySeen(save, unit, rallyPlan.node->getPosition(), known))
++			{
++				return rallyPlan;
++			}
++		}
++		if (!contact || Position::distanceSq(centre, bu->getPosition()) < Position::distanceSq(centre, contact->getPosition()))
++		{
++			contact = bu;
++		}
++	}
++	Node *best = nullptr;
++	for (auto *n : *save->getNodes())
++	{
++		const int d = Position::distance2d(contact->getPosition(), n->getPosition());
++		if (d < 6 || d > 12 || std::abs(n->getPosition().z - contact->getPosition().z) > 1 || !rallyNodeFits(save, unit, n))
++		{
++			continue;
++		}
++		if ((!best || Position::distanceSq(centre, n->getPosition()) < Position::distanceSq(centre, best->getPosition()))
++			&& !rallySeen(save, unit, n->getPosition(), known))
++		{
++			best = n;
++		}
++	}
++	rallyPlan.contact = contact->getPosition();
++	rallyPlan.contactId = contact->getId();
++	rallyPlan.node = best;
++	++rallyPlan.id;
++	const Position np = best ? best->getPosition() : Position(-1, -1, -1);
++	Log(LOG_INFO) << "[AIPROBE] rally turn=" << rallyPlan.turn << " id=" << rallyPlan.id << " contact=" << contact->getId()
++		<< "@(" << rallyPlan.contact.x << "," << rallyPlan.contact.y << "," << rallyPlan.contact.z << ") node=("
++		<< np.x << "," << np.y << "," << np.z << ") known=" << known.size() << " hostiles=" << hostiles;
++	return rallyPlan;
++}
++
++/// the free node this unit may walk to nearest centre, at most radius tiles from it (one level up or down)
++Node *rallySlot(SavedBattleGame *save, BattleUnit *unit, const Position &centre, int radius)
++{
++	Node *best = nullptr;
++	for (auto *n : *save->getNodes())
++	{
++		if (Position::distance2d(centre, n->getPosition()) > radius || std::abs(n->getPosition().z - centre.z) > 1
++			|| n->isAllocated() || !rallyNodeFits(save, unit, n) || !save->setUnitPosition(unit, n->getPosition(), true))
++		{
++			continue;
++		}
++		if (!best || Position::distanceSq(centre, n->getPosition()) < Position::distanceSq(centre, best->getPosition()))
++		{
++			best = n;
++		}
++	}
++	return best;
++}
++
++/// hostiles standing within 5 tiles of pos (one level up or down)
++int rallyGathered(SavedBattleGame *save, const Position &pos)
++{
++	int n = 0;
++	for (auto *bu : *save->getUnits())
++	{
++		n += !bu->isOut() && bu->getFaction() == FACTION_HOSTILE && Position::distance2d(pos, bu->getPosition()) <= 5
++			&& std::abs(pos.z - bu->getPosition().z) <= 1;
++	}
++	return n;
++}
++
++}
++
+ /**
+  * The patrol's walk chosen by think or dont_think (isLeeroyJenkins): marks it for spendPatrol and, if no step is left by
+  * energy this unit-turn, drops it (ENERGY_PATROL_END_V2). The empty walk it replaces was followed by another think in the
+@@ -1945,6 +2117,77 @@
+ 			}
+ 		}
+ 	}
++	// STAGE_RALLY_V1 (bench, OXCE_AI_STAGE_RALLY): with a contact the side knows, a hostile's patrol walks to the side's rally
++	// node (1: scouts only, 2: every patrol), waits there until three stand within 5 tiles of it or the next turn, then walks
++	// to the contact; without the flag nothing here runs
++	static const int stageRally = AiProbe::active() ? (int)AiProbe::param("OXCE_AI_STAGE_RALLY", 0) : 0;
++	bool rallyTo = false, rallyPicked = false;
++	Position rallyCentre;
++	int rallyRadius = 0;
++	if (stageRally && _unit->getFaction() == FACTION_HOSTILE)
++	{
++		const RallyPlan &plan = rallyUpdate(_save, _unit);
++		RallyUnit &ru = rallyUnits[_unit->getId()];
++		if (plan.node)
++		{
++			const Position rp = plan.node->getPosition();
++			if (ru.plan != plan.id)
++			{
++				// a new plan: the walk chosen before it is dropped; who goes to a contact goes to the new one, who reached one
++				// stays done
++				ru.plan = plan.id;
++				ru.phase = ru.phase >= 2 ? ru.phase : 0;
++				ru.since = -1;
++				if (_toNode && ru.phase != 3)
++				{
++					freePatrolTarget();
++					_toNode = 0;
++				}
++			}
++			if (ru.phase == 0 && Position::distance2d(_unit->getPosition(), rp) <= 4 && std::abs(_unit->getPosition().z - rp.z) <= 1)
++			{
++				ru.phase = 1;
++				ru.since = _save->getTurn();
++				AiProbe::tally(_unit, "rally.arrived");
++			}
++			if (ru.phase == 1)
++			{
++				if (_toNode)
++				{
++					freePatrolTarget();
++					_toNode = 0;
++				}
++				const int gathered = rallyGathered(_save, rp);
++				if (gathered < 3 && _save->getTurn() <= ru.since)
++				{
++					// it waits with its time units kept for reaction; the node it stands at (or next to) stays its target, so
++					// evaluateAIMode keeps the patrol
++					_toNode = rallySlot(_save, _unit, _unit->getPosition(), 1);
++					if (_toNode)
++					{
++						_toNode->allocateNode();
++					}
++					AiProbe::tally(_unit, "rally.wait");
++					_patrolAction.type = BA_NONE;
++					return;
++				}
++				ru.phase = 2;
++				AiProbe::tally(_unit, gathered >= 3 ? "rally.release.three" : "rally.release.turn");
++			}
++			if (ru.phase == 2 && Position::distance2d(_unit->getPosition(), plan.contact) <= 5)
++			{
++				ru.phase = 3;
++				AiProbe::tally(_unit, "rally.contact_reached");
++			}
++			rallyTo = ru.phase == 0 || ru.phase == 2;
++			rallyCentre = ru.phase == 0 ? rp : plan.contact;
++			rallyRadius = ru.phase == 0 ? 4 : 5;
++		}
++		else
++		{
++			ru.plan = -1;
++		}
++	}
+ 	int triesLeft = 5;
+ 	// PATROL_REUSE_PROBE (bench, passive): the node stored in an earlier think is kept without a new search
+ 	const bool keptNode = _toNode != 0;
+@@ -2107,6 +2350,14 @@
+ 			}
+ 		}
+ 
++		// STAGE_RALLY_V1: the rally's node in the first three tries (a node with no path is held allocated, so the next try
++		// takes the next one), then the patrol's own choice
++		rallyPicked = false;
++		if (_toNode == 0 && rallyTo && triesLeft >= 2 && (stageRally >= 2 || scout))
++		{
++			_toNode = rallySlot(_save, _unit, rallyCentre, rallyRadius);
++			rallyPicked = _toNode != 0;
++		}
+ 		if (_toNode == 0)
+ 		{
+ 			_toNode = _save->getPatrolNode(scout, _unit, _fromNode);
+@@ -2145,6 +2396,10 @@
+ 	{
+ 		AiProbe::stalePatrolChecked(_unit, staleCleared, staleOld, staleAge, _toNode ? _toNode->getPosition() : Position(-1, -1, -1));
+ 	}
++	if (rallyPicked && _toNode != 0)
++	{
++		AiProbe::tally(_unit, rallyCentre == rallyPlan.contact ? "rally.to_contact" : "rally.to_node");
++	}
+ 	if (_toNode != 0)
+ 	{
+ 		_toNode->allocateNode();

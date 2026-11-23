@@ -1,0 +1,92 @@
+== timeline turn 7
+3309 T [AISTATE] pstart turn=7 unit=91 type=SOLDIER faction=0 status=0 pos=(45,40,2) dir=5 tu=285 hp=25/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=10 sees=- seenby=2 known=0 near=-1 shade=1 tumax=285 wounds=0 threat=-1 reach=-1 r
+3328 A [AISTATE] pstart turn=7 unit=1000027 type=STR_ETHEREAL_LEADER faction=1 status=0 pos=(50,55,1) dir=5 tu=26 hp=60/60 stun=0 morale=82 kneel=0 weapon=ETHEREAL_WEAPON spotted=255 sniped=0 sees=- seenby=0 known=1 near=16 shade=15 tumax=104
+3330 B [AISTATE] pstart turn=7 unit=1000029 type=STR_SECTOPOD_TERRORIST faction=1 status=0 pos=(44,55,1) dir=6 tu=92 hp=116/116 stun=0 morale=100 kneel=0 weapon=AUX_SECTOPOD_WEAPON spotted=255 sniped=0 sees=- seenby=0 known=1 near=15 shade=15
+3335 T [AIDECIDE] turn=7 side=0 unit=91 n=1 from=(45,40,2) tu=285 mode=0 act=2 to=(15,8,0) run=0 kneel=0 aim=-1 weapon=- seen=- hu=31baad833b8d8b88 hi=52314d4ec3cd659b ho=47b9713689fea874 hou=7d9b6d30b98fdd18 hm=946d46a090cead03 hr=17995db322
+3340 T [AIDECIDE] turn=7 side=0 unit=91 n=2 from=(44,42,2) tu=271 mode=0 act=2 to=(15,8,0) run=0 kneel=0 aim=1000005 weapon=- seen=1000000,1000005 hu=79484c2ca7a39bc2 hi=52314d4ec3cd659b ho=47b9713689fea874 hou=7d9b6d30b98fdd18 hm=e01160cfabd
+3346 T [AIDECIDE] turn=7 side=0 unit=91 n=1 from=(45,43,1) tu=257 mode=2 act=2 to=(44,42,2) run=0 kneel=0 aim=1000005 weapon=- seen=1000000,1000005,1000022,1000024,1000029 hu=f79a7bf9d9a95724 hi=52314d4ec3cd659b ho=47b9713689fea874 hou=7d9b6d
+3353 T [AIDECIDE] turn=7 side=0 unit=91 n=2 from=(44,42,2) tu=234 mode=2 act=10 to=(43,43,2) run=0 kneel=0 aim=1000005 weapon=STR_GAUNTLET_CLAW seen=1000000,1000005,1000022,1000024,1000029 hu=98e73e1c0b210bea hi=52314d4ec3cd659b ho=47b9713689
+3384 T [AISTATE] aistart turn=7 unit=91 type=SOLDIER faction=0 status=0 pos=(44,42,2) dir=5 tu=225 hp=25/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=10 sees=1000000,1000005 seenby=2 known=5 near=1 shade=10 tumax=285 wounds=0 threa
+3403 A [AISTATE] aistart turn=7 unit=1000027 type=STR_ETHEREAL_LEADER faction=1 status=0 pos=(50,55,1) dir=5 tu=104 hp=60/60 stun=0 morale=86 kneel=0 weapon=ETHEREAL_WEAPON spotted=255 sniped=0 sees=- seenby=0 known=2 near=11 shade=15 tumax=1
+3405 B [AISTATE] aistart turn=7 unit=1000029 type=STR_SECTOPOD_TERRORIST faction=1 status=0 pos=(44,55,1) dir=6 tu=92 hp=116/116 stun=0 morale=100 kneel=0 weapon=AUX_SECTOPOD_WEAPON spotted=255 sniped=0 sees=- seenby=0 known=2 near=9 shade=15
+3451 ? [AICASUALTY] turn=7 side=1 victim=1000005 vfaction=1 type=STR_ETHEREAL_SOLDIER how=dead pos=(43,43,2) tu=67 kneel=0 seenby=1 killer=91 kfaction=0 ktype=SOLDIER dist=1 weapon=STR_GAUNTLET_CLAW hit=left terrain=0
+3598 A [AIDECIDE] turn=7 side=1 unit=1000027 n=1 from=(50,55,1) tu=104 mode=1 act=2 to=(44,52,1) run=0 kneel=0 aim=-1 weapon=ETHEREAL_WEAPON seen=91,229 hu=ae639e29eddd6558 hi=d9140821d88d35e5 ho=12edeb6bd2f573b3 hou=874db9f50ae02a41 hm=97b49
+      exec {'pos': [46, 55, 1], 'tu': 88, 'spent': 16, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+3603 A [AIDECIDE] turn=7 side=1 unit=1000027 n=2 from=(46,55,1) tu=88 mode=1 act=2 to=(44,52,1) run=0 kneel=0 aim=229 weapon=ETHEREAL_WEAPON seen=91,229 hu=d2ba5ba12bb22e48 hi=d9140821d88d35e5 ho=12edeb6bd2f573b3 hou=874db9f50ae02a41 hm=97b49
+      exec {'pos': [44, 52, 1], 'tu': 72, 'spent': 16, 'seen': 2, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+3621 B [AIDECIDE] turn=7 side=1 unit=1000029 n=1 from=(44,55,1) tu=92 mode=3 act=0 to=(44,55,1) run=0 kneel=0 aim=-1 weapon=AUX_SECTOPOD_WEAPON seen=91 hu=c20b251bf6cbcb74 hi=d9140821d88d35e5 ho=12edeb6bd2f573b3 hou=62e3005f04d10600 hm=97b493
+      exec {'pos': [44, 55, 1], 'tu': 92, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 116}
+3676 A [AIDECIDE] turn=7 side=1 unit=1000027 n=1 from=(44,52,1) tu=72 mode=1 act=2 to=(41,51,1) run=0 kneel=0 aim=91 weapon=ETHEREAL_WEAPON seen=91 hu=93f1881a35ef1c43 hi=d9140821d88d35e5 ho=12edeb6bd2f573b3 hou=874db9f50ae02a41 hm=97b493463a
+      exec {'pos': [41, 51, 1], 'tu': 54, 'spent': 18, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 60}
+3682 B [AIDECIDE] turn=7 side=1 unit=1000029 n=1 from=(44,55,1) tu=92 mode=0 act=2 to=(43,44,1) run=0 kneel=0 aim=91 weapon=AUX_SECTOPOD_WEAPON seen=91 hu=3cef2bef81c117d hi=d9140821d88d35e5 ho=12edeb6bd2f573b3 hou=62e3005f04d10600 hm=6a62763
+      exec {'pos': [44, 55, 1], 'tu': 92, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 116}
+3686 B [AIDECIDE] turn=7 side=1 unit=1000029 n=2 from=(44,55,1) tu=92 mode=0 act=2 to=(43,44,1) run=0 kneel=0 aim=-1 weapon=AUX_SECTOPOD_WEAPON seen=91 hu=b2d3a6051b7cc5fe hi=d9140821d88d35e5 ho=12edeb6bd2f573b3 hou=62e3005f04d10600 hm=6a6276
+      exec {'pos': [44, 55, 1], 'tu': 92, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 116}
+
+== first list of B in the turn with T
+rec 470 n 1 pos (44, 55, 1) tu 92 kneel 0 src escape.known t 0 to (44, 55, 1)
+    {'id': '7bad1793e6507ad8', 'k': 'a', 't': 8, 'to': [44, 42, 2], 'tu': 27, 'u': 91, 'w': 'AUX_SECTOPOD_WEAPON', 'p': 57, 'lof': 0, 'd': 13}
+    {'id': '44dc7f337557ec9d', 'k': 'a', 't': 7, 'to': [44, 42, 2], 'tu': 32, 'u': 91, 'w': 'AUX_SECTOPOD_WEAPON', 'p': 38, 'lof': 0, 'd': 13}
+    {'id': 'e5a17e156544f52f', 'k': 'a', 't': 9, 'to': [44, 42, 2], 'tu': 55, 'u': 91, 'w': 'AUX_SECTOPOD_WEAPON', 'p': 83, 'lof': 0, 'd': 13}
+   lof 1 targets: []
+   near cells: [((44, 54, 1), 4), ((45, 55, 1), 4), ((43, 55, 1), 4), ((43, 54, 1), 6), ((45, 54, 1), 6), ((44, 53, 1), 8), ((42, 55, 1), 8), ((43, 53, 1), 10), ((42, 54, 1), 10)]
+   who stands near the lane: [(229, (43, 46, 0), 109, 1.0), (1000000, (43, 44, 1), 14, 1.0), (1000010, (44, 53, 2), 90, 0.0), (1000027, (44, 52, 1), 72, 0.0)]
+
+== all lists of A on its cell in the turn
+rec 466 n 1 pos (50, 55, 1) tu 104 t 2 to (44, 52, 1) src ambush T: {'to': (44, 42, 2), 'lof': 0, 'tu': 25, 'p': 192, 'w': 'ETHEREAL_WEAPON', 'd': 15, 'mode': 8} with a line: []
+rec 467 n 2 pos (46, 55, 1) tu 88 t 2 to (44, 52, 1) src ambush T: {'to': (44, 42, 2), 'lof': 0, 'tu': 25, 'p': 192, 'w': 'ETHEREAL_WEAPON', 'd': 14, 'mode': 8} with a line: []
+rec 480 n 1 pos (44, 52, 1) tu 72 t 2 to (41, 51, 1) src ambush T: {'to': (44, 42, 2), 'lof': 1, 'tu': 25, 'p': 192, 'w': 'ETHEREAL_WEAPON', 'd': 10, 'mode': 8} with a line: [(91, 25, 192, 10)]
+
+== B's own list through the battle around the turn: did the line to T ever exist from this cell
+ turn 5 n 1 pos (45, 55, 1) tu 92 T at (46, 40, 2) lof 0 d 16 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (44, 55, 1) dmg 0
+ turn 6 n 1 pos (44, 55, 1) tu 92 T at (45, 40, 2) lof 0 d 16 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 6 n 2 pos (44, 55, 1) tu 92 T at (45, 40, 2) lof 0 d 16 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 6 n 1 pos (44, 55, 1) tu 92 T at (45, 40, 2) lof 0 d 16 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 6 n 2 pos (44, 55, 1) tu 92 T at (45, 40, 2) lof 0 d 16 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 7 n 1 pos (44, 55, 1) tu 92 T at (44, 42, 2) lof 0 d 13 w AUX_SECTOPOD_WEAPON tu 27 did t 0 to (44, 55, 1) dmg 0
+ turn 7 n 1 pos (44, 55, 1) tu 92 T at (44, 42, 2) lof 0 d 13 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 7 n 2 pos (44, 55, 1) tu 92 T at (44, 42, 2) lof 0 d 13 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 8 n 1 pos (44, 55, 1) tu 92 T at (44, 43, 1) lof 1 d 12 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 54, 1) dmg 0
+ turn 9 n 1 pos (43, 54, 1) tu 92 T at (40, 46, 2) lof 0 d 9 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 9 n 2 pos (43, 54, 1) tu 89 T at (40, 46, 2) lof 0 d 9 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (43, 44, 1) dmg 0
+ turn 9 n 1 pos (43, 44, 1) tu 49 T at (40, 46, 2) lof 0 d 4 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (39, 44, 1) dmg 0
+ turn 9 n 2 pos (40, 44, 1) tu 37 T at (40, 46, 2) lof 0 d 2 w AUX_SECTOPOD_WEAPON tu 27 did t 2 to (39, 44, 1) dmg 0
+
+== shots at T in the battle by this side
+ turn 3 unit 1000024 from (55, 44, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000029 from (44, 50, 1) mode 7 AUX_SECTOPOD_WEAPON dmg 100 stun 10 fdmg 0 downed 1
+ turn 4 unit 1000001 from (44, 33, 1) mode 8 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000001 from (44, 33, 1) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000022 from (48, 43, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000024 from (55, 44, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000024 from (55, 44, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000001 from (44, 33, 1) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000022 from (48, 43, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000022 from (48, 43, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000024 from (55, 44, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000024 from (55, 44, 1) mode 8 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000001 from (44, 42, 2) mode 7 STR_PIR_PLASMA_RIFLE dmg 1 stun 1 fdmg 0 downed 0
+ turn 5 unit 1000003 from (47, 40, 2) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000005 from (43, 43, 2) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000005 from (43, 43, 2) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000005 from (43, 43, 2) mode 7 STR_PIR_PLASMA_RIFLE dmg 6 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000000 from (43, 44, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000000 from (43, 44, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000005 from (43, 43, 2) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000000 from (43, 44, 1) mode 7 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000000 from (43, 44, 1) mode 8 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000022 from (43, 43, 1) mode 8 STR_PIR_PLASMA_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000025 from (40, 47, 2) mode 8 ETHEREAL_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 10 unit 1000021 from (36, 44, 1) mode 7 STR_PIR_PLASMA_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 10 unit 1000021 from (36, 44, 1) mode 7 STR_PIR_PLASMA_RIFLE dmg 9 stun 2 fdmg 0 downed 0
+ turn 10 unit 1000029 from (40, 44, 1) mode 7 AUX_SECTOPOD_WEAPON dmg 87 stun 9 fdmg 0 downed 1
+
+== T state
+[AISTATE] pstart turn=6 unit=91 type=SOLDIER faction=0 status=0 pos=(46,40,2) dir=2 tu=285 hp=24/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=9 sees=- seenby=5 known=0 near=-1 shade=10 tumax=285 woun
+[AISTATE] aistart turn=6 unit=91 type=SOLDIER faction=0 status=0 pos=(45,40,2) dir=6 tu=269 hp=24/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=9 sees=- seenby=3 known=0 near=-1 shade=10 tumax=285 wou
+[AISTATE] pstart turn=7 unit=91 type=SOLDIER faction=0 status=0 pos=(45,40,2) dir=5 tu=285 hp=25/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=10 sees=- seenby=2 known=0 near=-1 shade=1 tumax=285 woun
+[AISTATE] aistart turn=7 unit=91 type=SOLDIER faction=0 status=0 pos=(44,42,2) dir=5 tu=225 hp=25/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=10 sees=1000000,1000005 seenby=2 known=5 near=1 shade=10
+[AISTATE] pstart turn=8 unit=91 type=SOLDIER faction=0 status=0 pos=(44,42,2) dir=5 tu=285 hp=31/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=9 sees=1000000,1000022 seenby=2 known=2 near=1 shade=0 tu
+[AISTATE] aistart turn=8 unit=91 type=SOLDIER faction=0 status=0 pos=(44,43,1) dir=6 tu=246 hp=31/113 stun=0 morale=100 kneel=0 weapon=- spotted=0 sniped=9 sees=1000000,1000022 seenby=2 known=3 near=1 shade=3 t
+[AICASUALTY] turn=3 side=1 victim=91 vfaction=0 type=SOLDIER how=stun pos=(45,43,1) tu=279 kneel=0 seenby=8 killer=1000029 kfaction=1 ktype=STR_SECTOPOD_TERRORIST dist=7 weapon=AUX_SECTOPOD_WEAPON hit
+[AICASUALTY] turn=10 side=1 victim=91 vfaction=0 type=SOLDIER how=dead pos=(40,43,1) tu=216 kneel=0 seenby=5 killer=1000029 kfaction=1 ktype=STR_SECTOPOD_TERRORIST dist=1 weapon=AUX_SECTOPOD_WEAPON hi

@@ -1,0 +1,20 @@
+debt_real_attack	265
+kept	264
+kept_tu_below_keep	1
+kept_walk_eq_cost	262
+kept_walk_gt_cost	1
+kept_walk_lt_cost	1
+pre_spend	4
+steps	269
+
+M3 rec 468 DEBT WITHOUT SPENT ATTACK: prev=[('a', 0), ('a', 0)]
+M5 rec 991 REPLACED: k=M to=[38, 32, 2] dist_to=4 noted dist=1 exec walk=1 spent=14 prev=['m', 'a'] trail=['cover.step', 'cover.step seen=1 tried=1 dist=1 cost=4 keep=0 tu=16']
+M5 rec 1090 REPLACED: k=a to=[46, 33, 1] dist_to=8 noted dist=1 exec walk=None spent=49 prev=['m', 'm'] trail=['cover.step', 'cover.step seen=4 tried=2 dist=1 cost=4 keep=0 tu=81']
+M5 rec 1090 DEBT WITHOUT SPENT ATTACK: prev=[('m', 4), ('m', 41)]
+L2 rec 1106 kept: walk_tu 44 cost 4 walk 1 trail []
+L6 rec 53 REPLACED: k=m to=[28, 16, 0] dist_to=3 noted dist=1 exec walk=1 spent=10 prev=['m', 'a'] trail=['cover.step', 'cover.step seen=2 tried=1 dist=1 cost=4 keep=0 tu=14']
+L6 rec 400 REPLACED: k=m to=[29, 9, 0] dist_to=2 noted dist=1 exec walk=1 spent=24 prev=['m', 'a'] trail=['cover.step', 'cover.step seen=1 tried=1 dist=1 cost=4 keep=0 tu=24']
+L6 rec 829 REPLACED: k=m to=[23, 15, 1] dist_to=1 noted dist=0 exec walk=0 spent=0 prev=['a', 'a'] trail=['cover.step', 'cover.step seen=5 tried=1 dist=0 cost=32 keep=0 tu=167']
+L6 rec 1280 kept: walk_tu 8 cost 16 walk 1 trail ['walk.stop.reaction 27,16,1>27,16,1 d0 bam0 mt1 sz2 tu70/-1 e']
+L6 rec 1323 DEBT WITHOUT SPENT ATTACK: prev=[('m', 3), ('m', 4), ('m', 101)]
+L11 rec 63 DEBT WITHOUT SPENT ATTACK: prev=[('m', 2), ('a', 0)]

@@ -97,6 +97,8 @@ void PsiAttackBState::init()
 
 	int height = _target->getFloatHeight() + (_target->getHeight() / 2) - _parent->getSave()->getTile(_action.target)->getTerrainLevel();
 	Position voxel = _action.target.toVoxel() + Position(8, 8, height);
+	// a target on a raised tile of the top level (rock, crate) sticks out above the map: aim at the topmost voxel instead
+	voxel.z = std::min<int>(voxel.z, _parent->getSave()->getMapSizeZ() * Position::TileZ - 1);
 	_parent->statePushFront(new ExplosionBState(_parent, voxel, BattleActionAttack::GetAferShoot(_action, _action.weapon)));
 }
 

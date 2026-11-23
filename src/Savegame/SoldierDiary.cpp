@@ -18,14 +18,85 @@
  */
 #include "SoldierDiary.h"
 #include <algorithm>
+#include <array>
+#include <charconv>
+#include <string_view>
+#include <unordered_map>
+#include "../Engine/Exception.h"
+#include "../Engine/Logger.h"
 #include "../Mod/RuleCommendations.h"
 #include "../Mod/Mod.h"
 #include "BattleUnitStatistics.h"
 #include "MissionStatistics.h"
-#include <algorithm>
 
 namespace OpenXcom
 {
+
+/// How save() writes the kill lists, see SoldierDiary::setCompactWrite.
+static bool compactKillWrite = false;
+
+void SoldierDiary::setCompactWrite(bool compact)
+{
+	compactKillWrite = compact;
+}
+
+/// Fields of a compact kill record, in order; the optional last one is the name (only a friendly-fire victim has one).
+/// Strings are indexes into the diary's killStrings, the rest are the numbers of BattleUnitKills. In the save the record
+/// is one scalar: its numbers divided by spaces.
+enum CompactKillField { CK_TYPE, CK_RANK, CK_RACE, CK_WEAPON, CK_AMMO, CK_STATUS, CK_FACTION, CK_MISSION, CK_TURN, CK_SIDE, CK_BODYPART, CK_ID, CK_NAME, CK_COUNT };
+
+/**
+ * Reads one kill from its compact form: one line of whole numbers divided by spaces (see CompactKillField), the strings
+ * as indexes into the diary's table. One YAML node per kill instead of a node per field keeps the parsing quick.
+ * Gives the same BattleUnitKills the old map form of the same kill gives.
+ */
+static BattleUnitKills* loadCompactKill(const YAML::YamlNodeReader& record, const std::vector<std::string>& strings)
+{
+	const std::string_view line = record.val();
+	int fields[CK_COUNT];
+	size_t count = 0;
+	const char* p = line.data();
+	const char* const end = p + line.size();
+	while (true)
+	{
+		while (p < end && *p == ' ')
+			++p;
+		if (p == end)
+			break;
+		int value = 0;
+		const auto parsed = std::from_chars(p, end, value);
+		if (parsed.ec != std::errc() || count == CK_COUNT || (parsed.ptr != end && *parsed.ptr != ' '))
+			throw Exception("Soldier diary: a kill record is not a list of up to " + std::to_string(CK_COUNT) + " numbers: '" + std::string(line.substr(0, 80)) + "'");
+		fields[count++] = value;
+		p = parsed.ptr;
+	}
+	if (count < CK_NAME)
+		throw Exception("Soldier diary: a kill record has " + std::to_string(count) + " numbers instead of " + std::to_string(CK_NAME) + "-" + std::to_string(CK_COUNT));
+	auto text = [&](int field) -> const std::string&
+	{
+		const int index = fields[field];
+		if (index < 0 || (size_t)index >= strings.size())
+			throw Exception("Soldier diary: a kill record names string " + std::to_string(index) + " of " + std::to_string(strings.size()));
+		return strings[index];
+	};
+	std::unique_ptr<BattleUnitKills> kill(new BattleUnitKills());
+	kill->type = text(CK_TYPE);
+	// the old form reads the name only when there is no type
+	if (kill->type.empty() && count > CK_NAME)
+		kill->name = text(CK_NAME);
+	kill->rank = text(CK_RANK);
+	kill->race = text(CK_RACE);
+	kill->weapon = text(CK_WEAPON);
+	kill->weaponAmmo = text(CK_AMMO);
+	kill->status = (UnitStatus)fields[CK_STATUS];
+	kill->faction = (UnitFaction)fields[CK_FACTION];
+	kill->mission = fields[CK_MISSION];
+	kill->turn = fields[CK_TURN];
+	kill->side = (UnitSide)fields[CK_SIDE];
+	kill->bodypart = (UnitBodyPart)fields[CK_BODYPART];
+	kill->id = fields[CK_ID];
+	return kill.release();
+}
 
 /**
  * Initializes a new blank diary.
@@ -76,8 +147,18 @@ void SoldierDiary::load(const YAML::YamlNodeReader& node, const Mod *mod)
 			delete sc;
 		}
 	}
+	// kills: either a map each (the form of every game so far) or, in a save written with oxceCompactSave, a list of
+	// numbers each, naming its strings by index in killStrings
+	std::vector<std::string> killStrings;
+	for (const auto& stringReader : reader["killStrings"].children())
+		killStrings.push_back(stringReader.readVal<std::string>());
 	for (const auto& battleUnitKillReader : reader["killList"].children())
-		_killList.push_back(new BattleUnitKills(battleUnitKillReader));
+	{
+		if (battleUnitKillReader.hasVal())
+			_killList.push_back(loadCompactKill(battleUnitKillReader, killStrings));
+		else
+			_killList.push_back(new BattleUnitKills(battleUnitKillReader));
+	}
 	reader.tryRead("missionIdList", _missionIdList);
 	reader.tryRead("daysWoundedTotal", _daysWoundedTotal);
 	reader.tryRead("totalShotByFriendlyCounter", _totalShotByFriendlyCounter);
@@ -129,9 +210,64 @@ void SoldierDiary::save(YAML::YamlNodeWriter writer) const
 	writer.write("commendations", _commendations,
 		[](YAML::YamlNodeWriter& w, SoldierCommendations* c)
 		{ c->save(w.write()); });
-	writer.write("killList", _killList,
-		[](YAML::YamlNodeWriter& w, BattleUnitKills* b)
-		{ b->save(w.write()); });
+	if (compactKillWrite && !_killList.empty())
+	{
+		// every distinct name once in killStrings; a kill is a list of numbers (see CompactKillField)
+		std::unordered_map<std::string, int> indexOf;
+		std::vector<const std::string*> strings;
+		auto intern = [&](const std::string& s) -> int
+		{
+			const auto found = indexOf.emplace(s, (int)strings.size());
+			if (found.second)
+				strings.push_back(&found.first->first);
+			return found.first->second;
+		};
+		std::vector<std::array<int, CK_COUNT> > rows(_killList.size());
+		for (size_t i = 0; i < _killList.size(); ++i)
+		{
+			const BattleUnitKills& k = *_killList[i];
+			auto& row = rows[i];
+			row[CK_TYPE] = intern(k.type);
+			row[CK_RANK] = intern(k.rank);
+			row[CK_RACE] = intern(k.race);
+			row[CK_WEAPON] = intern(k.weapon);
+			row[CK_AMMO] = intern(k.weaponAmmo);
+			row[CK_STATUS] = (int)k.status;
+			row[CK_FACTION] = (int)k.faction;
+			row[CK_MISSION] = k.mission;
+			row[CK_TURN] = k.turn;
+			row[CK_SIDE] = (int)k.side;
+			row[CK_BODYPART] = (int)k.bodypart;
+			row[CK_ID] = k.id;
+			row[CK_NAME] = k.name.empty() ? -1 : intern(k.name);
+		}
+		auto stringsWriter = writer["killStrings"];
+		stringsWriter.setAsSeq();
+		stringsWriter.setFlowStyle();
+		for (const std::string* s : strings)
+			stringsWriter.write(*s).setAsQuotedAndEscaped();
+		auto killsWriter = writer["killList"];
+		killsWriter.setAsSeq();
+		std::string line;
+		for (const auto& row : rows)
+		{
+			line.clear();
+			const int count = row[CK_NAME] < 0 ? CK_NAME : CK_COUNT;
+			for (int f = 0; f < count; ++f)
+			{
+				if (f)
+					line += ' ';
+				line += std::to_string(row[f]);
+			}
+			killsWriter.write(line);
+		}
+	}
+	else
+	{
+		writer.write("killList", _killList,
+			[](YAML::YamlNodeWriter& w, BattleUnitKills* b)
+			{ b->save(w.write()); });
+	}
 	if (!_missionIdList.empty())
 		writer.write("missionIdList", _missionIdList).setFlowStyle();
 	if (_daysWoundedTotal) writer.write("daysWoundedTotal", _daysWoundedTotal);
@@ -280,6 +416,46 @@ bool SoldierDiary::containsCommendation(const RuleCommendations* rule) const
 }
 
 /**
+ * Calls the function for every mission of the campaign the soldier took part in: once per pair of an entry of the
+ * campaign's list and an entry of the soldier's own list with the same id (what the nested loops over both lists did).
+ * A campaign numbers its missions by their place in the list, so the soldier's own list is normally the index;
+ * the pairs come in another order then, which no caller depends on (they all count or sum).
+ * @param missionStatistics The missions of the campaign.
+ * @param func What to do with the mission.
+ */
+template <typename Func>
+void SoldierDiary::eachOwnMission(const std::vector<MissionStatistics*> *missionStatistics, Func &&func) const
+{
+	bool indexed = true;
+	for (size_t i = 0; indexed && i < missionStatistics->size(); ++i)
+	{
+		indexed = ((*missionStatistics)[i]->id == (int)i);
+	}
+	if (indexed)
+	{
+		for (int missionId : _missionIdList)
+		{
+			if (missionId >= 0 && (size_t)missionId < missionStatistics->size())
+			{
+				func((*missionStatistics)[missionId]);
+			}
+		}
+		return;
+	}
+	// a list numbered some other way (an edited or merged save): every pair is looked at
+	for (const auto* ms : *missionStatistics)
+	{
+		for (int missionId : _missionIdList)
+		{
+			if (missionId == ms->id)
+			{
+				func(ms);
+			}
+		}
+	}
+}
+
+/**
  * Manage the soldier's commendations.
  * Award new ones, if deserved.
  * @return bool Has a commendation been awarded?
@@ -295,6 +471,112 @@ bool SoldierDiary::manageCommendations(const Mod* mod, SavedGame* save, const So
 	const std::string damageTypeArray[DAMAGE_TYPES] = { "DT_NONE", "DT_AP", "DT_IN", "DT_HE", "DT_LASER", "DT_PLASMA",
 		"DT_STUN", "DT_MELEE", "DT_ACID", "DT_SMOKE",
 		"DT_10", "DT_11", "DT_12", "DT_13", "DT_14", "DT_15", "DT_16", "DT_17", "DT_18", "DT_19", "DT_END" };
+
+	// Nothing below changes the soldier's kills or missions, only the list of commendations. So every total is
+	// counted at most once per call (not once per commendation that asks for it, each time over the whole career),
+	// and the strings a kill is matched by are resolved once per kill.
+	enum { T_KILLS, T_WINS, T_SCORE, T_STUNS, T_BASE_DEFENSE, T_TERROR, T_NIGHT, T_NIGHT_TERROR, T_IMPORTANT, T_REACTION,
+		T_VALIANT, T_TRAP, T_ALIEN_BASE, T_COUNT };
+	int totals[T_COUNT];
+	bool totalKnown[T_COUNT] = {};
+	auto total = [&](int which)
+	{
+		if (!totalKnown[which])
+		{
+			totalKnown[which] = true;
+			switch (which)
+			{
+			case T_KILLS:        totals[which] = getKillTotal(); break;
+			case T_WINS:         totals[which] = getWinTotal(missionStatistics); break;
+			case T_SCORE:        totals[which] = getScoreTotal(missionStatistics); break;
+			case T_STUNS:        totals[which] = getStunTotal(); break;
+			case T_BASE_DEFENSE: totals[which] = getBaseDefenseMissionTotal(missionStatistics); break;
+			case T_TERROR:       totals[which] = getTerrorMissionTotal(missionStatistics); break;
+			case T_NIGHT:        totals[which] = getNightMissionTotal(missionStatistics, mod); break;
+			case T_NIGHT_TERROR: totals[which] = getNightTerrorMissionTotal(missionStatistics, mod); break;
+			case T_IMPORTANT:    totals[which] = getImportantMissionTotal(missionStatistics); break;
+			case T_REACTION:     totals[which] = getReactionFireKillTotal(mod); break;
+			case T_VALIANT:      totals[which] = getValiantCruxTotal(missionStatistics); break;
+			case T_TRAP:         totals[which] = getTrapKillTotal(mod); break;
+			default:             totals[which] = getAlienBaseAssaultTotal(missionStatistics); break;
+			}
+		}
+		return totals[which];
+	};
+	std::map<const RuleCommendations*, int> missionTotals;
+	auto missionTotal = [&](const RuleCommendations *rule)
+	{
+		auto found = missionTotals.find(rule);
+		if (found == missionTotals.end())
+		{
+			found = missionTotals.emplace(rule, getMissionTotalFiltered(missionStatistics, rule)).first;
+		}
+		return found->second;
+	};
+	enum { N_WEAPON, N_REGION, N_RACE, N_RANK, N_COUNT };
+	std::map<std::string, int> nounTotals[N_COUNT];
+	bool nounKnown[N_COUNT] = {};
+	auto nounTotal = [&](int which) -> const std::map<std::string, int>&
+	{
+		if (!nounKnown[which])
+		{
+			nounKnown[which] = true;
+			switch (which)
+			{
+			case N_WEAPON: nounTotals[which] = getWeaponTotal(); break;
+			case N_REGION: nounTotals[which] = getRegionTotal(missionStatistics); break;
+			case N_RACE:   nounTotals[which] = getAlienRaceTotal(); break;
+			default:       nounTotals[which] = getAlienRankTotal(); break;
+			}
+		}
+		return nounTotals[which];
+	};
+	// what a kill criteria detail can name besides the kill's own rank, race, weapon and ammo
+	struct KillTerms
+	{
+		std::string status, faction, side, bodyPart;
+		const std::string *battleType = nullptr, *damageType = nullptr;
+	};
+	std::vector<KillTerms> killTerms;
+	auto resolveKills = [&]()
+	{
+		killTerms.resize(_killList.size());
+		for (size_t i = 0; i < _killList.size(); ++i)
+		{
+			const BattleUnitKills *kill = _killList[i];
+			KillTerms &terms = killTerms[i];
+			terms.status = kill->getUnitStatusString();
+			terms.faction = kill->getUnitFactionString();
+			terms.side = kill->getUnitSideString();
+			terms.bodyPart = kill->getUnitBodyPartString();
+			// the weapon's battle type and damage type
+			RuleItem *weapon = mod->getItem(kill->weapon);
+			if (weapon != 0)
+			{
+				int battleType = weapon->getBattleType();
+				if (battleType >= 0 && battleType < BATTLE_TYPES)
+				{
+					terms.battleType = &battleTypeArray[battleType];
+				}
+				RuleItem *weaponAmmo = mod->getItem(kill->weaponAmmo);
+				int damageType = -1;
+				if (weaponAmmo != 0)
+				{
+					damageType = weaponAmmo->getDamageType()->ResistType;
+				}
+				else if (kill->weaponAmmo == "__GUNBUTT")
+				{
+					// If weaponAmmo == "__GUNBUTT", that means the gun's secondary melee attack was used.
+					damageType = weapon->getMeleeType()->ResistType;
+				}
+				// If we were unable to determine the damage type, leave it as -1.
+				if (damageType >= 0 && damageType < DAMAGE_TYPES)
+				{
+					terms.damageType = &damageTypeArray[damageType];
+				}
+			}
+		}
+	};
 
 	const auto& commendationsList = mod->getCommendationsList();
 	bool ret = false;                                   // This value is returned if at least one commendation was given.
@@ -353,16 +635,16 @@ bool SoldierDiary::manageCommendations(const Mod* mod, SavedGame* save, const So
 			(
 				nextCommendationLevel.count("noNoun") == 1 &&
 				(
-					(critName == "totalKills" && getKillTotal() < nextLevelThreshold) ||
-					(critName == "totalMissions" && getMissionTotalFiltered(missionStatistics, commRule) < nextLevelThreshold) ||
-					(critName == "totalWins" && getWinTotal(missionStatistics) < nextLevelThreshold) ||
-					(critName == "totalScore" && getScoreTotal(missionStatistics) < nextLevelThreshold) ||
-					(critName == "totalStuns" && getStunTotal() < nextLevelThreshold) ||
+					(critName == "totalKills" && total(T_KILLS) < nextLevelThreshold) ||
+					(critName == "totalMissions" && missionTotal(commRule) < nextLevelThreshold) ||
+					(critName == "totalWins" && total(T_WINS) < nextLevelThreshold) ||
+					(critName == "totalScore" && total(T_SCORE) < nextLevelThreshold) ||
+					(critName == "totalStuns" && total(T_STUNS) < nextLevelThreshold) ||
 					(critName == "totalDaysWounded" && _daysWoundedTotal < nextLevelThreshold) ||
-					(critName == "totalBaseDefenseMissions" && getBaseDefenseMissionTotal(missionStatistics) < nextLevelThreshold) ||
-					(critName == "totalTerrorMissions" && getTerrorMissionTotal(missionStatistics) < nextLevelThreshold) ||
-					(critName == "totalNightMissions" && getNightMissionTotal(missionStatistics, mod) < nextLevelThreshold) ||
-					(critName == "totalNightTerrorMissions" && getNightTerrorMissionTotal(missionStatistics, mod) < nextLevelThreshold) ||
+					(critName == "totalBaseDefenseMissions" && total(T_BASE_DEFENSE) < nextLevelThreshold) ||
+					(critName == "totalTerrorMissions" && total(T_TERROR) < nextLevelThreshold) ||
+					(critName == "totalNightMissions" && total(T_NIGHT) < nextLevelThreshold) ||
+					(critName == "totalNightTerrorMissions" && total(T_NIGHT_TERROR) < nextLevelThreshold) ||
 					(critName == "totalMonthlyService" && _monthsService < nextLevelThreshold) ||
 					(critName == "totalFellUnconcious" && _unconciousTotal < nextLevelThreshold) ||
 					(critName == "totalShotAt10Times" && _shotAtCounter10in1Mission < nextLevelThreshold) ||
@@ -370,16 +652,16 @@ bool SoldierDiary::manageCommendations(const Mod* mod, SavedGame* save, const So
 					(critName == "totalFriendlyFired" && (_totalShotByFriendlyCounter < nextLevelThreshold || _KIA || _MIA)) ||
 					(critName == "total_lone_survivor" && _loneSurvivorTotal < nextLevelThreshold) ||
 					(critName == "totalIronMan" && _ironManTotal < nextLevelThreshold) ||
-					(critName == "totalImportantMissions" && getImportantMissionTotal(missionStatistics) < nextLevelThreshold) ||
+					(critName == "totalImportantMissions" && total(T_IMPORTANT) < nextLevelThreshold) ||
 					(critName == "totalLongDistanceHits" && _longDistanceHitCounterTotal < nextLevelThreshold) ||
 					(critName == "totalLowAccuracyHits" && _lowAccuracyHitCounterTotal < nextLevelThreshold) ||
-					(critName == "totalReactionFire" && getReactionFireKillTotal(mod) < nextLevelThreshold) ||
+					(critName == "totalReactionFire" && total(T_REACTION) < nextLevelThreshold) ||
 					(critName == "totalTimesWounded" && _timesWoundedTotal < nextLevelThreshold) ||
 					(critName == "totalDaysWounded" && _daysWoundedTotal < nextLevelThreshold) ||
-					(critName == "totalValientCrux" && getValiantCruxTotal(missionStatistics) < nextLevelThreshold) ||
+					(critName == "totalValientCrux" && total(T_VALIANT) < nextLevelThreshold) ||
 					(critName == "isDead" && _KIA < nextLevelThreshold) ||
-					(critName == "totalTrapKills" && getTrapKillTotal(mod) < nextLevelThreshold) ||
-					(critName == "totalAlienBaseAssaults" && getAlienBaseAssaultTotal(missionStatistics) < nextLevelThreshold) ||
+					(critName == "totalTrapKills" && total(T_TRAP) < nextLevelThreshold) ||
+					(critName == "totalAlienBaseAssaults" && total(T_ALIEN_BASE) < nextLevelThreshold) ||
 					(critName == "totalAllAliensKilled" && _allAliensKilledTotal < nextLevelThreshold) ||
 					(critName == "totalAllAliensStunned" && _allAliensStunnedTotal < nextLevelThreshold) ||
 					(critName == "totalUfosShotDown" && _ufosShotDownTotal < nextLevelThreshold) ||
@@ -411,15 +693,10 @@ bool SoldierDiary::manageCommendations(const Mod* mod, SavedGame* save, const So
 			// And because they loop over a map<> (this allows for maximum moddability).
 			else if (critName == "totalKillsWithAWeapon" || critName == "totalMissionsInARegion" || critName == "totalKillsByRace" || critName == "totalKillsByRank")
 			{
-				std::map<std::string, int> tempTotal;
-				if (critName == "totalKillsWithAWeapon")
-					tempTotal = getWeaponTotal();
-				else if (critName == "totalMissionsInARegion")
-					tempTotal = getRegionTotal(missionStatistics);
-				else if (critName == "totalKillsByRace")
-					tempTotal = getAlienRaceTotal();
-				else if (critName == "totalKillsByRank")
-					tempTotal = getAlienRankTotal();
+				const std::map<std::string, int> &tempTotal = nounTotal(
+					critName == "totalKillsWithAWeapon" ? N_WEAPON :
+					critName == "totalMissionsInARegion" ? N_REGION :
+					critName == "totalKillsByRace" ? N_RACE : N_RANK);
 				// Loop over the temporary map.
 				// Match nouns and decoration levels.
 				for (const auto& pair : tempTotal)
@@ -453,6 +730,10 @@ bool SoldierDiary::manageCommendations(const Mod* mod, SavedGame* save, const So
 				if (!commRule->getKillCriteria())
 					break;
 				const auto* _killCriteriaList = commRule->getKillCriteria();
+				if (killTerms.size() != _killList.size())
+				{
+					resolveKills();
+				}
 
 				int totalKillGroups = 0; // holds the total number of kill groups which satisfy one of the OR criteria blocks
 				bool enoughForNextCommendation = false;
@@ -479,8 +760,10 @@ bool SoldierDiary::manageCommendations(const Mod* mod, SavedGame* save, const So
 					int lastTimeSpan = -1;
 					bool skipThisTimeSpan = false;
 					// Loop over the KILLS, seeking to fulfill all criteria from entire AND block within the specified time span (career/mission/turn)
-					for (const auto* singleKill : _killList)
+					for (size_t killNo = 0; killNo < _killList.size(); ++killNo)
 					{
+						const BattleUnitKills *singleKill = _killList[killNo];
+						const KillTerms &terms = killTerms[killNo];
 						int thisTimeSpan = -1;
 						if (critName == "killsWithCriteriaMission")
 						{
@@ -523,47 +806,16 @@ bool SoldierDiary::manageCommendations(const Mod* mod, SavedGame* save, const So
 									singleKill->race == detail ||
 									singleKill->weapon == detail ||
 									singleKill->weaponAmmo == detail ||
-									singleKill->getUnitStatusString() == detail ||
-									singleKill->getUnitFactionString() == detail ||
-									singleKill->getUnitSideString() == detail ||
-									singleKill->getUnitBodyPartString() == detail)
+									terms.status == detail ||
+									terms.faction == detail ||
+									terms.side == detail ||
+									terms.bodyPart == detail ||
+									// the weapon's battle type and damage type
+									(terms.battleType && *terms.battleType == detail) ||
+									(terms.damageType && *terms.damageType == detail))
 								{
 									// Found match
 									continue;
-								}
-
-								// check the weapon's battle type and damage type
-								RuleItem *weapon = mod->getItem(singleKill->weapon);
-								if (weapon != 0)
-								{
-									int battleType = weapon->getBattleType();
-
-									if (battleType >=0 && battleType < BATTLE_TYPES && battleTypeArray[battleType] == detail)
-									{
-										// the detail matched the weapon's battle type
-										continue;
-									}
-
-
-									RuleItem *weaponAmmo = mod->getItem(singleKill->weaponAmmo);
-									int damageType = -1;
-
-									if (weaponAmmo != 0)
-									{
-										damageType = weaponAmmo->getDamageType()->ResistType;
-									}
-									else if (singleKill->weaponAmmo == "__GUNBUTT")
-									{
-										// If weaponAmmo == "__GUNBUTT", that means the gun's secondary melee attack was used.
-										damageType = weapon->getMeleeType()->ResistType;
-									}
-									// If we were unable to determine the damage type, leave it as -1.
-
-									if (damageType >= 0 && damageType < DAMAGE_TYPES && damageTypeArray[damageType] == detail)
-									{
-										// the detail matched the damage type
-										continue;
-									}
 								}
 
 								// That's all we can check. We didn't find a match
@@ -747,16 +999,10 @@ std::map<std::string, int> SoldierDiary::getRegionTotal(std::vector<MissionStati
 {
 	std::map<std::string, int> regionTotal;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int missionId : _missionIdList)
-		{
-			if (missionId == ms->id)
-			{
-				regionTotal[ms->region]++;
-			}
-		}
-	}
+		regionTotal[ms->region]++;
+	});
 
 	return regionTotal;
 }
@@ -769,16 +1015,10 @@ std::map<std::string, int> SoldierDiary::getCountryTotal(std::vector<MissionStat
 {
 	std::map<std::string, int> countryTotal;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int missionId : _missionIdList)
-		{
-			if (missionId == ms->id)
-			{
-				countryTotal[ms->country]++;
-			}
-		}
-	}
+		countryTotal[ms->country]++;
+	});
 
 	return countryTotal;
 }
@@ -791,16 +1031,10 @@ std::map<std::string, int> SoldierDiary::getTypeTotal(std::vector<MissionStatist
 {
 	std::map<std::string, int> typeTotal;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int missionId : _missionIdList)
-		{
-			if (missionId == ms->id)
-			{
-				typeTotal[ms->type]++;
-			}
-		}
-	}
+		typeTotal[ms->type]++;
+	});
 
 	return typeTotal;
 }
@@ -813,16 +1047,10 @@ std::map<std::string, int> SoldierDiary::getUFOTotal(std::vector<MissionStatisti
 {
 	std::map<std::string, int> ufoTotal;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int missionId : _missionIdList)
-		{
-			if (missionId == ms->id)
-			{
-				ufoTotal[ms->ufo]++;
-			}
-		}
-	}
+		ufoTotal[ms->ufo]++;
+	});
 
 	return ufoTotal;
 }
@@ -858,44 +1086,33 @@ int SoldierDiary::getMissionTotal() const
  */
 int SoldierDiary::getMissionTotalFiltered(std::vector<MissionStatistics*>* missionStatistics, const RuleCommendations* rule) const
 {
-	if (!rule->getMissionTypeNames().empty())
+	const bool byType = !rule->getMissionTypeNames().empty();
+	if (!byType && rule->getMissionMarkerNames().empty())
 	{
-		int total = 0;
-		for (const auto* ms : *missionStatistics)
-		{
-			if (ms->success)
-			{
-				if (std::find(_missionIdList.begin(), _missionIdList.end(), ms->id) != _missionIdList.end())
-				{
-					if (std::find(rule->getMissionTypeNames().begin(), rule->getMissionTypeNames().end(), ms->type) != rule->getMissionTypeNames().end())
-					{
-						++total;
-					}
-				}
-			}
-		}
-		return total;
+		return (int)_missionIdList.size();
 	}
-	else if (!rule->getMissionMarkerNames().empty())
+	// a mission counts once, however many times the soldier's own list names it
+	std::vector<const MissionStatistics*> won;
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		int total = 0;
-		for (const auto* ms : *missionStatistics)
+		if (ms->success)
 		{
-			if (ms->success)
-			{
-				if (std::find(_missionIdList.begin(), _missionIdList.end(), ms->id) != _missionIdList.end())
-				{
-					if (std::find(rule->getMissionMarkerNames().begin(), rule->getMissionMarkerNames().end(), ms->markerName) != rule->getMissionMarkerNames().end())
-					{
-						++total;
-					}
-				}
-			}
+			won.push_back(ms);
 		}
-		return total;
-	}
+	});
+	std::sort(won.begin(), won.end(), std::less<const MissionStatistics*>());
+	won.erase(std::unique(won.begin(), won.end()), won.end());
 
-	return (int)_missionIdList.size();
+	const std::vector<std::string> &names = byType ? rule->getMissionTypeNames() : rule->getMissionMarkerNames();
+	int total = 0;
+	for (const auto* ms : won)
+	{
+		if (std::find(names.begin(), names.end(), byType ? ms->type : ms->markerName) != names.end())
+		{
+			++total;
+		}
+	}
+	return total;
 }
 
 /**
@@ -906,19 +1123,13 @@ int SoldierDiary::getWinTotal(std::vector<MissionStatistics*> *missionStatistics
 {
 	int winTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int missionId : _missionIdList)
+		if (ms->success)
 		{
-			if (missionId == ms->id)
-			{
-				if (ms->success)
-				{
-					winTotal++;
-				}
-			}
+			winTotal++;
 		}
-	}
+	});
 
 	return winTotal;
 }
@@ -1116,19 +1327,13 @@ int SoldierDiary::getTerrorMissionTotal(std::vector<MissionStatistics*> *mission
 	/// Not a UFO, not the base, not the alien base or colony
 	int terrorMissionTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
+		if (ms->success && !ms->isBaseDefense() && !ms->isUfoMission() && !ms->isAlienBase())
 		{
-			if (misionId == ms->id)
-			{
-				if (ms->success && !ms->isBaseDefense() && !ms->isUfoMission() && !ms->isAlienBase())
-				{
-					terrorMissionTotal++;
-				}
-			}
+			terrorMissionTotal++;
 		}
-	}
+	});
 
 	return terrorMissionTotal;
 }
@@ -1141,19 +1346,13 @@ int SoldierDiary::getNightMissionTotal(std::vector<MissionStatistics*> *missionS
 {
 	int nightMissionTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
+		if (ms->success && ms->isDarkness(mod) && !ms->isBaseDefense() && !ms->isAlienBase())
 		{
-			if (misionId == ms->id)
-			{
-				if (ms->success && ms->isDarkness(mod) && !ms->isBaseDefense() && !ms->isAlienBase())
-				{
-					nightMissionTotal++;
-				}
-			}
+			nightMissionTotal++;
 		}
-	}
+	});
 
 	return nightMissionTotal;
 }
@@ -1166,19 +1365,13 @@ int SoldierDiary::getNightTerrorMissionTotal(std::vector<MissionStatistics*> *mi
 {
 	int nightTerrorMissionTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
+		if (ms->success && ms->isDarkness(mod) && !ms->isBaseDefense() && !ms->isUfoMission() && !ms->isAlienBase())
 		{
-			if (misionId == ms->id)
-			{
-				if (ms->success && ms->isDarkness(mod) && !ms->isBaseDefense() && !ms->isUfoMission() && !ms->isAlienBase())
-				{
-					nightTerrorMissionTotal++;
-				}
-			}
+			nightTerrorMissionTotal++;
 		}
-	}
+	});
 
 	return nightTerrorMissionTotal;
 }
@@ -1191,19 +1384,13 @@ int SoldierDiary::getBaseDefenseMissionTotal(std::vector<MissionStatistics*> *mi
 {
 	int baseDefenseMissionTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
+		if (ms->success && ms->isBaseDefense())
 		{
-			if (misionId == ms->id)
-			{
-				if (ms->success && ms->isBaseDefense())
-				{
-					baseDefenseMissionTotal++;
-				}
-			}
+			baseDefenseMissionTotal++;
 		}
-	}
+	});
 
 	return baseDefenseMissionTotal;
 }
@@ -1216,19 +1403,13 @@ int SoldierDiary::getAlienBaseAssaultTotal(std::vector<MissionStatistics*> *miss
 {
 	int alienBaseAssaultTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
+		if (ms->success && ms->isAlienBase())
 		{
-			if (misionId == ms->id)
-			{
-				if (ms->success && ms->isAlienBase())
-				{
-					alienBaseAssaultTotal++;
-				}
-			}
+			alienBaseAssaultTotal++;
 		}
-	}
+	});
 
 	return alienBaseAssaultTotal;
 }
@@ -1241,19 +1422,13 @@ int SoldierDiary::getImportantMissionTotal(std::vector<MissionStatistics*> *miss
 {
 	int importantMissionTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
+		if (ms->success && ms->type != "STR_UFO_CRASH_RECOVERY")
 		{
-			if (misionId == ms->id)
-			{
-				if (ms->success && ms->type != "STR_UFO_CRASH_RECOVERY")
-				{
-					importantMissionTotal++;
-				}
-			}
+			importantMissionTotal++;
 		}
-	}
+	});
 
 	return importantMissionTotal;
 }
@@ -1266,16 +1441,10 @@ int SoldierDiary::getScoreTotal(std::vector<MissionStatistics*> *missionStatisti
 {
 	int scoreTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
-		{
-			if (misionId == ms->id)
-			{
-				scoreTotal += ms->score;
-			}
-		}
-	}
+		scoreTotal += ms->score;
+	});
 
 	return scoreTotal;
 }
@@ -1288,16 +1457,13 @@ int SoldierDiary::getValiantCruxTotal(std::vector<MissionStatistics*> *missionSt
 {
 	int valiantCruxTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
+		if (ms->valiantCrux)
 		{
-			if (misionId == ms->id && ms->valiantCrux)
-			{
-				valiantCruxTotal++;
-			}
+			valiantCruxTotal++;
 		}
-	}
+	});
 
 	return valiantCruxTotal;
 }
@@ -1310,16 +1476,10 @@ int SoldierDiary::getLootValueTotal(std::vector<MissionStatistics*> *missionStat
 {
 	int lootValueTotal = 0;
 
-	for (const auto* ms : *missionStatistics)
+	eachOwnMission(missionStatistics, [&](const MissionStatistics *ms)
 	{
-		for (int misionId : _missionIdList)
-		{
-			if (misionId == ms->id)
-			{
-				lootValueTotal += ms->lootValue;
-			}
-		}
-	}
+		lootValueTotal += ms->lootValue;
+	});
 
 	return lootValueTotal;
 }

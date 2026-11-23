@@ -22,6 +22,8 @@
 #include "../Menu/OptionsBaseState.h"
 #include <vector>
 #include <string>
+#include "ItemCountTooltipMixin.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -36,12 +38,13 @@ class Timer;
 class Base;
 class DebriefingState;
 class RuleItem;
+class ItemCountTooltip;
 
 /**
  * Sell/Sack screen that lets the player sell
  * any items in a particular base.
  */
-class SellState : public TouchState
+class SellState : public BaseSwitchMixin<ItemCountTooltipMixin<TouchState>>
 {
 private:
 	Base *_base;
@@ -66,6 +69,11 @@ private:
 	bool _sellAllButOne;
 	bool _delayedInitDone;
 	TransferSortDirection _previousSort, _currentSort;
+	std::string _keepCat;
+	size_t _keepScroll = 0;
+
+	/// Sells the chosen items, then closes the screen or opens it anew.
+	void sell();
 
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
@@ -83,6 +91,8 @@ public:
 	~SellState();
 	/// Resets state.
 	void init() override;
+	/// Shows the given category and scroll when the screen opens.
+	void keepView(const std::string &category, size_t scroll) { _keepCat = category; _keepScroll = scroll; }
 	/// Runs the timers.
 	void think() override;
 	/// Updates the item list.
@@ -124,6 +134,10 @@ public:
 	void updateItemStrings();
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

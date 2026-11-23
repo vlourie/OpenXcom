@@ -1,0 +1,553 @@
+diff -ru c1/base/src/Battlescape/AIModule.cpp c2/tree/src/Battlescape/AIModule.cpp
+--- c1/base/src/Battlescape/AIModule.cpp	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/AIModule.cpp	2026-10-27 12:39:36.391248600 +0200
+@@ -20,6 +20,7 @@
+ #include <chrono>
+ #include <algorithm>
+ #include <sstream>
++#include <map>
+ #include "AIModule.h"
+ #include "../Savegame/BattleItem.h"
+ #include "../Savegame/Node.h"
+@@ -967,7 +968,45 @@
+ 	_ko2FpHits = _ko2AmbHits = 0;
+ 	_ko2WalkTarget = 0;
+ 	_ko2WalkBranch = 0;
+-	_attackAction.diff = _save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
++	// PREATTACK_COVER (bench, C2): where the plan stands at this think - the walk to the fire cell done or cut short, the
++	// planned shot not fired, or the exit after the planned shot
++	const bool c2On = AiProbe::preattackCover() && _unit->getFaction() == FACTION_HOSTILE && _save->getSide() == FACTION_HOSTILE;
++	_c2Now = 0;
++	_c2Arrived = false;
++	_c2Owns = false;
++	if (c2On)
++	{
++		if (_c2Turn != _save->getTurn())
++		{
++			_c2Phase = 0;
++		}
++		if (_c2Phase == 1)
++		{
++			const bool there = _unit->getPosition() == _c2Fire;
++			_c2Arrived = there && _c2Kind == 3; // at a fire cell of C2's own: a shot must follow
++			AiProbe::tally(_unit, there ? "c2.arrived" : "c2.drop.walk");
++			_c2Phase = 0;
++		}
++		else if (_c2Phase == 2)
++		{
++			AiProbe::tally(_unit, "c2.drop.noshot");
++			_c2Phase = 0;
++		}
++		else if (_c2Phase == 3)
++		{
++			if (_unit->getPosition() != _c2Fire || _unit->getTimeUnits() != _c2ShotTu)
++			{
++				AiProbe::tally(_unit, "c2.drop.changed");
++				_c2Phase = 0;
++			}
++			else if (c2Exit(action))
++			{
++				_c2Owns = true;
++				return;
++			}
++		}
++	}
++	_attackAction.diff =_save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
+ 	_attackAction.actor = _unit;
+ 	_attackAction.run = false;
+ 	_attackAction.weapon = action->weapon;
+@@ -1115,6 +1154,10 @@
+ 	}
+ 
+ 	setupAttack();
++	if (c2On)
++	{
++		c2Plan();
++	}
+ 	{
+ 		const ProbeMark mark = probeMark('p');
+ 		setupPatrol();
+@@ -1422,6 +1465,367 @@
+ 	{
+ 		AiProbe::tally(_unit, "fpblocked.other_branch");
+ 	}
++	// PREATTACK_COVER (bench, C2): the plan holds only if the think hands on what it planned; a walk to C2's own fire cell
++	// not followed by a shot there is an attack lost
++	if (c2On)
++	{
++		const bool shot = action->type == BA_SNAPSHOT || action->type == BA_AUTOSHOT || action->type == BA_AIMEDSHOT;
++		if (_c2Arrived && !shot)
++		{
++			AiProbe::tally(_unit, "c2.lost.attack");
++			AiProbe::note(_unit, ("c2.lost.attack k" + std::to_string((int)action->type) + " mode" + std::to_string((int)_AIMode)).c_str());
++		}
++		if ((_c2Now == 1 && !(action->type == BA_WALK && action->target == _c2Fire)) || (_c2Now == 2 && !shot))
++		{
++			AiProbe::tally(_unit, "c2.drop.mode");
++			_c2Phase = 0;
++		}
++		else if (_c2Now == 1 && _c2Kind == 3)
++		{
++			_c2MovedTurn = _save->getTurn();
++			AiProbe::tally(_unit, "c2.move");
++		}
++	}
++}
++
++std::vector<BattleUnit*> AIModule::c2Threats() const
++{
++	std::vector<BattleUnit*> threats;
++	for (auto *bu : *_save->getUnits())
++	{
++		if (!validTarget(bu, false, false))
++			continue;
++		for (auto *mate : *_save->getUnits())
++		{
++			if (mate->getFaction() == _unit->getFaction() && !mate->isOut()
++				&& std::find(mate->getVisibleUnits()->begin(), mate->getVisibleUnits()->end(), bu) != mate->getVisibleUnits()->end())
++			{
++				threats.push_back(bu);
++				break;
++			}
++		}
++	}
++	return threats;
++}
++
++int AIModule::c2Lof(const std::vector<BattleUnit*> &threats, const Position &pos) const
++{
++	int n = 0;
++	for (auto *bu : threats)
++	{
++		if (Position::distance2d(pos, bu->getPosition()) > 20)
++			continue;
++		Position originVoxel = _save->getTileEngine()->getSightOriginVoxel(bu);
++		originVoxel.z -= 2;
++		Position targetVoxel;
++		n += _save->getTileEngine()->canTargetUnit(&originVoxel, _save->getTile(pos), &targetVoxel, bu, false,
++			pos != _unit->getPosition() ? _unit : 0) ? 1 : 0;
++	}
++	return n;
++}
++
++namespace
++{
++/// The time units and energy the walk calculate() just found takes, step by step as the walk spends them.
++PathfindingCost c2WalkCost(Pathfinding *pf, const BattleUnit *unit)
++{
++	PathfindingCost total;
++	Position p = unit->getPosition();
++	const std::vector<int> &path = pf->getPath();
++	for (auto it = path.rbegin(); it != path.rend(); ++it) // paths are stored in reverse order
++	{
++		PathfindingStep r = pf->getTUCost(p, *it, unit, nullptr, BAM_NORMAL);
++		total = total + r.cost;
++		p = r.pos;
++	}
++	return total;
++}
++}
++
++void AIModule::c2Plan()
++{
++	const bool shotHere = _attackAction.type == BA_SNAPSHOT || _attackAction.type == BA_AUTOSHOT || _attackAction.type == BA_AIMEDSHOT;
++	const bool fpWalk = _attackAction.type == BA_WALK && _firepointChosen && _attackAction.target == _firepointChosenAt;
++	if (!(shotHere || fpWalk) || !_rifle || !_aggroTarget || !_attackAction.weapon || !_unit->getArmor()->allowsMoving())
++		return;
++	BattleUnit *target = _aggroTarget;
++	if (shotHere)
++	{
++		const Tile *tt = _save->getTile(_attackAction.target);
++		if (tt && tt->getUnit())
++			target = tt->getUnit();
++	}
++	// the target and the threats: only enemies its side sees now
++	const std::vector<BattleUnit*> threats = c2Threats();
++	if (std::find(threats.begin(), threats.end(), target) == threats.end())
++	{
++		AiProbe::tally(_unit, "c2.skip.unseen");
++		return;
++	}
++	const BattleActionType mode = shotHere ? _attackAction.type : BA_SNAPSHOT; // findFirePoint walks for a snap shot
++	const BattleActionCost shot(mode, _unit, _attackAction.weapon);
++	if (shot.Time <= 0)
++		return;
++	const Position here = _unit->getPosition();
++	const Position fire = shotHere ? here : _attackAction.target;
++	std::map<int, int> lofMemo;
++	auto lof = [&](const Position &pos)
++	{
++		const int index = _save->getTileIndex(pos);
++		auto it = lofMemo.find(index);
++		if (it == lofMemo.end())
++			it = lofMemo.emplace(index, c2Lof(threats, pos)).first;
++		return it->second;
++	};
++	const int seenFire = lof(fire);
++	if (seenFire == 0)
++	{
++		AiProbe::tally(_unit, "c2.skip.safe");
++		return;
++	}
++	auto exitCell = [&](const Position &pos)
++	{
++		const Tile *tile = _save->getTile(pos);
++		return tile && !tile->getFire() && !tile->getDangerous() && (!tile->getUnit() || tile->getUnit() == _unit) && lof(pos) == 0;
++	};
++	// kneeling for an aimed or auto shot costs its time units, the walk out stands up first
++	const bool kneels = (mode == BA_AIMEDSHOT || mode == BA_AUTOSHOT) && _unit->getArmor()->allowsKneeling(false) && !_unit->isFloating();
++	const int kneelDown = kneels && !_unit->isKneeled() ? _unit->getKneelDownCost() : 0;
++	const int stand = kneels || _unit->isKneeled() ? _unit->getKneelUpCost() : 0;
++	const int tu = _unit->getTimeUnits();
++	Pathfinding *pf = _save->getPathfinding();
++	// the cells reachable with a shot's time units kept, and the walk's cost to each
++	std::map<int, int> reachTu;
++	for (int index : pf->findReachable(_unit, shot))
++	{
++		reachTu[index] = pf->reachedTU(_save->getTileCoords(index));
++	}
++	auto shotsAfter = [&](int walk)
++	{
++		const int left = tu - walk - kneelDown;
++		return left >= shot.Time ? left / shot.Time : 0;
++	};
++	const int walkFire = shotHere ? 0 : (reachTu.count(_save->getTileIndex(fire)) ? reachTu[_save->getTileIndex(fire)] : -1);
++	if (walkFire < 0)
++		return;
++	const int shots = shotsAfter(walkFire);
++	if (shots == 0)
++		return;
++	// the exit from a cell the unit does not stand on: one or two steps by the engine's own step cost
++	auto exitFrom = [&](const Position &from, int budget)
++	{
++		int best = INT_MAX;
++		std::vector<std::pair<Position, int>> ring;
++		for (int dir = 0; dir < 8; ++dir)
++		{
++			PathfindingStep r = pf->getTUCost(from, dir, _unit, nullptr, BAM_NORMAL);
++			if (r.cost.time <= 0 || r.cost.time >= Pathfinding::INVALID_MOVE_COST || r.cost.time > budget)
++				continue;
++			ring.emplace_back(r.pos, r.cost.time);
++			if (r.cost.time < best && exitCell(r.pos))
++				best = r.cost.time;
++		}
++		for (const auto &one : ring)
++		{
++			for (int dir = 0; dir < 8; ++dir)
++			{
++				PathfindingStep r = pf->getTUCost(one.first, dir, _unit, nullptr, BAM_NORMAL);
++				const int t = one.second + r.cost.time;
++				if (r.cost.time <= 0 || r.cost.time >= Pathfinding::INVALID_MOVE_COST || t > budget || t >= best || r.pos == from)
++					continue;
++				if (exitCell(r.pos))
++					best = t;
++			}
++		}
++		return best;
++	};
++	// the exit from where it stands: the engine's reachable cells, cheapest first
++	auto exitHere = [&](int budget)
++	{
++		BattleActionCost keep;
++		keep.Time = tu - budget;
++		int tried = 0;
++		for (int index : pf->findReachable(_unit, keep))
++		{
++			const Position pos = _save->getTileCoords(index);
++			if (pos == here)
++				continue;
++			if (++tried > 40)
++				break;
++			if (exitCell(pos))
++				return pf->reachedTU(pos);
++		}
++		return INT_MAX;
++	};
++	const int leftFire = tu - walkFire - kneelDown - shots * shot.Time - stand;
++	const int exitFire = leftFire <= 0 ? INT_MAX : fire == here ? exitHere(leftFire) : exitFrom(fire, leftFire);
++	const int turn = _save->getTurn();
++	if (exitFire != INT_MAX)
++	{
++		// the fire cell setupAttack chose keeps the way out after its shots: the plan is that cell
++		_c2Fire = fire;
++		_c2Turn = turn;
++		_c2Kind = shotHere ? 1 : 2;
++		_c2Phase = _c2Now = shotHere ? 2 : 1;
++		AiProbe::tally(_unit, shotHere ? "c2.plan.here" : "c2.plan.fp");
++		AiProbe::note(_unit, (std::string(shotHere ? "c2.plan.here" : "c2.plan.fp") + " seen=" + std::to_string(seenFire)
++			+ " shots=" + std::to_string(shots) + " shot=" + std::to_string(shot.Time) + " walk=" + std::to_string(walkFire)
++			+ " exit=" + std::to_string(exitFire) + " left=" + std::to_string(leftFire) + " tu=" + std::to_string(tu)).c_str());
++		return;
++	}
++	if (_c2MovedTurn == turn)
++	{
++		AiProbe::tally(_unit, "c2.skip.moved"); // one walk to a fire cell of its own a turn
++		return;
++	}
++	// another fire cell near it: the same target in sight, not farther from it, no shot fewer, no more lines of fire on it,
++	// the way out after the shots; the cheapest walk
++	const int distFire = Position::distance2d(fire, target->getPosition());
++	Position best;
++	int bestWalk = INT_MAX, bestExit = INT_MAX, tried = 0;
++	for (const auto &cell : reachTu)
++	{
++		const Position pos = _save->getTileCoords(cell.first);
++		const int walk = cell.second;
++		if (pos == fire || walk >= bestWalk || Position::distance2d(pos, fire) > 3 || std::abs(pos.z - fire.z) > 1)
++			continue;
++		if (shotsAfter(walk) < shots || Position::distance2d(pos, target->getPosition()) > distFire + 1)
++			continue;
++		const Tile *tile = _save->getTile(pos);
++		if (!tile || tile->getFire() || tile->getDangerous() || (tile->getUnit() && tile->getUnit() != _unit))
++			continue;
++		const int left = tu - walk - kneelDown - shots * shot.Time - stand;
++		if (left <= 0)
++			continue;
++		++tried;
++		Position origin = pos.toVoxel() + Position(8, 8, _unit->getHeight() + _unit->getFloatHeight() - tile->getTerrainLevel() - 4);
++		Position aim;
++		if (!_save->getTileEngine()->canTargetUnit(&origin, target->getTile(), &aim, _unit, false))
++			continue;
++		if (lof(pos) > seenFire)
++			continue;
++		const int exit = pos == here ? exitHere(left) : exitFrom(pos, left);
++		if (exit == INT_MAX)
++			continue;
++		best = pos;
++		bestWalk = walk;
++		bestExit = exit;
++	}
++	if (bestWalk == INT_MAX)
++	{
++		AiProbe::tally(_unit, "c2.none");
++		return;
++	}
++	if (best != here)
++	{
++		// the walk itself, as the engine will take it: it fits the time units and the energy the plan counted
++		pf->calculate(_unit, best, BAM_NORMAL);
++		const bool path = pf->getStartDirection() != -1;
++		const PathfindingCost cost = c2WalkCost(pf, _unit);
++		pf->abortPath();
++		if (!path || cost.time + kneelDown + shots * shot.Time + stand + bestExit > tu
++			|| cost.energy + shots * shot.Energy > _unit->getEnergy())
++		{
++			AiProbe::tally(_unit, "c2.none.path");
++			return;
++		}
++		_attackAction.type = BA_WALK;
++		_attackAction.target = best;
++		_attackAction.run = false;
++		_attackAction.finalFacing = _save->getTileEngine()->getDirectionTo(best, target->getPosition());
++	}
++	_c2Fire = best;
++	_c2Turn = turn;
++	_c2Kind = best == here ? 1 : 3;
++	_c2Phase = _c2Now = best == here ? 2 : 1;
++	AiProbe::tally(_unit, best == here ? "c2.plan.here" : "c2.plan.move");
++	AiProbe::note(_unit, (std::string(best == here ? "c2.plan.here" : "c2.plan.move") + " seen=" + std::to_string(seenFire)
++		+ ">" + std::to_string(lof(best)) + " shots=" + std::to_string(shots) + " shot=" + std::to_string(shot.Time)
++		+ " walk=" + std::to_string(bestWalk) + " exit=" + std::to_string(bestExit) + " dist=" + std::to_string(Position::distance2d(fire, best))
++		+ " tried=" + std::to_string(tried) + " tu=" + std::to_string(tu)).c_str());
++}
++
++void AIModule::c2ShotDone()
++{
++	if (_unit->getFaction() != FACTION_HOSTILE || _save->getSide() != FACTION_HOSTILE)
++		return;
++	if ((_c2Phase == 2 || _c2Phase == 3) && _c2Turn == _save->getTurn() && _unit->getPosition() == _c2Fire)
++	{
++		_c2Phase = 3;
++		_c2ShotTu = _unit->getTimeUnits();
++		AiProbe::tally(_unit, "c2.confirm");
++	}
++}
++
++bool AIModule::c2Exit(BattleAction *action)
++{
++	// another shot it can still buy: the unit decides as before, the exit waits for after that shot
++	BattleItem *weapon = _unit->getMainHandWeapon(false);
++	if (weapon && weapon->haveAnyAmmo() && _save->canUseWeapon(weapon, _unit, false, BA_NONE))
++	{
++		for (BattleActionType t : { BA_SNAPSHOT, BA_AUTOSHOT, BA_AIMEDSHOT })
++		{
++			BattleActionCost cost(t, _unit, weapon);
++			if (cost.Time > 0 && cost.haveTU())
++			{
++				AiProbe::tally(_unit, "c2.exit.wait");
++				return false;
++			}
++		}
++	}
++	_c2Phase = 0;
++	const std::vector<BattleUnit*> threats = c2Threats();
++	const Position from = _unit->getPosition();
++	const int seenBy = c2Lof(threats, from);
++	if (seenBy == 0)
++	{
++		AiProbe::tally(_unit, "c2.exit.safe");
++		return false;
++	}
++	// the cheapest reachable cell out of every seen enemy's line of fire (standing up first if it kneels)
++	BattleActionCost keep;
++	keep.Time = _unit->isKneeled() ? _unit->getKneelUpCost() : 0;
++	Pathfinding *pf = _save->getPathfinding();
++	int tried = 0;
++	for (int index : pf->findReachable(_unit, keep))
++	{
++		const Position pos = _save->getTileCoords(index);
++		const Tile *tile = _save->getTile(pos);
++		if (pos == from || !tile || tile->getFire() || tile->getDangerous())
++			continue;
++		if (++tried > 40)
++			break;
++		if (c2Lof(threats, pos) != 0)
++			continue;
++		pf->calculate(_unit, pos, BAM_NORMAL);
++		const bool path = pf->getStartDirection() != -1;
++		const PathfindingCost cost = c2WalkCost(pf, _unit);
++		pf->abortPath();
++		if (!path || cost.time + keep.Time > _unit->getTimeUnits() || cost.energy > _unit->getEnergy())
++			continue;
++		action->type = BA_WALK;
++		action->target = pos;
++		action->run = false;
++		action->kneel = false;
++		action->desperate = true; // to the cell, not stopping at the next enemy spotted on the way
++		action->finalAction = true; // the unit's turn ends there
++		action->finalFacing = -1; // no turn at the walk's end: the time units go on the path only
++		_unit->setHiding(false);
++		_unit->setCharging(0);
++		_escapeTUs = 0;
++		_ambushTUs = 0;
++		if (AiProbe::staleEscapeFix())
++			_escapePlan.valid = false;
++		AiProbe::tally(_unit, "c2.exit");
++		AiProbe::note(_unit, ("c2.exit seen=" + std::to_string(seenBy) + " tried=" + std::to_string(tried)
++			+ " dist=" + std::to_string(Position::distance2d(from, pos)) + " cost=" + std::to_string(cost.time)
++			+ " stand=" + std::to_string(keep.Time) + " tu=" + std::to_string(_unit->getTimeUnits())).c_str());
++		return true;
++	}
++	AiProbe::tally(_unit, "c2.noexit");
++	AiProbe::note(_unit, ("c2.noexit seen=" + std::to_string(seenBy) + " tried=" + std::to_string(tried)
++		+ " tu=" + std::to_string(_unit->getTimeUnits())).c_str());
++	return false;
+ }
+ 
+ 
+diff -ru c1/base/src/Battlescape/AIModule.h c2/tree/src/Battlescape/AIModule.h
+--- c1/base/src/Battlescape/AIModule.h	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/AIModule.h	2026-10-27 12:33:59.710007200 +0200
+@@ -122,6 +122,25 @@
+ 	int escapePlanBroken() const;
+ 	/// The shot chosen by evalFireAction (OXCE_AI_EVAL): kneel for it, and whether it chose one this think.
+ 	bool _evalKneel = false, _evalChosen = false;
++	/// PREATTACK_COVER (bench, OXCE_AI_PREATTACK_COVER, candidate C2, docs/research/ai-mechanics/C2_PLAN.md): the plan's phase
++	/// (0 none, 1 the walk to the fire cell is handed on, 2 the shot from the fire cell is due, 3 a planned shot was carried out
++	/// and the exit may follow), the turn it is of, the fire cell, the time units after the shot, the turn of the last walk to
++	/// a fire cell (one a turn); this think planned (the phase it set), arrived at the fire cell, its action is the exit
++	/// and of the plan: 1 the shot from here, 2 findFirePoint's own cell, 3 another fire cell C2 walks to
++	int _c2Phase = 0, _c2Turn = -1, _c2ShotTu = -1, _c2MovedTurn = -1, _c2Now = 0, _c2Kind = 0;
++	Position _c2Fire;
++	bool _c2Arrived = false, _c2Owns = false;
++	/// C2: the enemies its side sees now (their places are known to it), and how many of them have a line of fire to the unit
++	/// standing at pos - the trace of getSpottingUnits.
++	std::vector<BattleUnit*> c2Threats() const;
++	int c2Lof(const std::vector<BattleUnit*> &threats, const Position &pos) const;
++	/// C2: after the attack setupAttack chose - a shot from here or the walk to findFirePoint's cell - a plan whose fire cell
++	/// leaves, after as many shots as the time units buy, the way to a cell out of every seen enemy's line of fire; the walk to
++	/// another fire cell near it when that is what keeps the way. Nothing changes when no plan is found.
++	void c2Plan();
++	/// C2: the exit after the planned shot when no other shot can be bought - the walk to the cheapest reachable cell out of
++	/// every seen enemy's line of fire, the unit's last action, no turn at its end. False (action untouched) when none.
++	bool c2Exit(BattleAction *action);
+ 	/// The bench's decision record (AiProbe::propose, docs/AI_DECISION_RECORD.md): the score the rule that ran last gave its
+ 	/// action and, if it names itself more exactly than its caller, its name. Written, never read by play.
+ 	int _probeScore = INT_MIN;
+@@ -258,6 +277,11 @@
+ 	void save(YAML::YamlNodeWriter writer) const;
+ 	/// Runs Module functionality every AI cycle.
+ 	void think(BattleAction *action);
++	/// PREATTACK_COVER (bench): a shot of the unit has left the weapon in its side's turn (ProjectileFlyBState) - from the
++	/// planned fire cell it makes the exit possible.
++	void c2ShotDone();
++	/// PREATTACK_COVER: the action of the unit's last think is C2's exit - no item pick-up takes its place.
++	bool c2OwnsAction() const { return _c2Owns; }
+ 	/// Sets the "unit was hit" flag true.
+ 	void setWasHitBy(BattleUnit *attacker);
+ 	/// Increases the walk abort counter.
+diff -ru c1/base/src/Battlescape/AiProbe.cpp c2/tree/src/Battlescape/AiProbe.cpp
+--- c1/base/src/Battlescape/AiProbe.cpp	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/AiProbe.cpp	2026-10-27 12:32:28.636886300 +0200
+@@ -170,6 +170,7 @@
+ void escapeProbe(const BattleUnit *, int) {}
+ bool escapeReachFirst() { return false; }
+ void escapeSkipped() {}
++bool preattackCover() { return false; }
+ bool escapeAlt(const BattleUnit *) { return false; }
+ void escapeAltWrite(SavedBattleGame *, BattleUnit *, const std::vector<int> &, const Position &, int, int, bool,
+ 	const std::function<int(const Position &)> &) {}
+@@ -2605,6 +2606,12 @@
+ 	return on;
+ }
+ 
++bool preattackCover()
++{
++	static const bool on = active() && envOn("OXCE_AI_PREATTACK_COVER");
++	return on;
++}
++
+ void escapeSkipped()
+ {
+ 	++escSkipN;
+diff -ru c1/base/src/Battlescape/AiProbe.h c2/tree/src/Battlescape/AiProbe.h
+--- c1/base/src/Battlescape/AiProbe.h	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/AiProbe.h	2026-10-27 12:32:31.629164000 +0200
+@@ -189,6 +189,10 @@
+ bool escapeReachFirst();
+ /// A candidate dropped before its traces by the flag (counted always, [AIESCRF] in the battle's result).
+ void escapeSkipped();
++/// PREATTACK_COVER (OXCE_AI_PREATTACK_COVER, stand only, the enemy only - candidate C2, docs/research/ai-mechanics/C2_PLAN.md):
++/// a hostile shooting at a seen target picks its fire cell so that, after the shots its time units buy, the rest takes it out
++/// of every seen enemy's line of fire, and walks there after its last shot. Off: as before.
++bool preattackCover();
+ /// ESCAPE_ALT_PROBE (OXCE_AI_ESCAPE_ALT_PROBE with the record, the careful bot only, docs/research/ai-path-audit-2026-10-01.md
+ /// п. 17.29): was there a reachable tile that dominated the escape tile setupEscape chose? Reads only, no random numbers,
+ /// no pathfinding, the side's memory of the enemies is copied, never updated. Off (the default): false.
+diff -ru c1/base/src/Battlescape/BattlescapeGame.cpp c2/tree/src/Battlescape/BattlescapeGame.cpp
+--- c1/base/src/Battlescape/BattlescapeGame.cpp	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/BattlescapeGame.cpp	2026-10-27 12:32:49.178588300 +0200
+@@ -489,7 +489,8 @@
+ 	bool pickUpWeaponsMoreActively = unit->getPickUpWeaponsMoreActively() || botArms;
+ 	bool weaponPickedUp = false;
+ 	bool walkToItem = false;
+-	if (!weapon || !weapon->haveAnyAmmo())
++	// PREATTACK_COVER (bench): C2's exit is the unit's last action - no item pick-up takes its place
++	if ((!weapon || !weapon->haveAnyAmmo()) && !(AiProbe::preattackCover() && ai->c2OwnsAction()))
+ 	{
+ 		if (unit->getOriginalFaction() != FACTION_PLAYER)
+ 		{
+@@ -525,7 +526,7 @@
+ 	// (BA_NONE), as when the counter runs out. No time units, no turn, no view change.
+ 	if (retryRule)
+ 	{
+-		char why = ai->retryBanned(action);
++		char why = AiProbe::preattackCover() && ai->c2OwnsAction() ? 0 : ai->retryBanned(action);
+ 		if (why != 0 && _AIActionCounter < AiProbe::maxActions(unit))
+ 		{
+ 			AiProbe::note(unit, (std::string("retry.rethink ") + why + std::to_string((int)action.type)).c_str());
+diff -ru c1/base/src/Battlescape/ProjectileFlyBState.cpp c2/tree/src/Battlescape/ProjectileFlyBState.cpp
+--- c1/base/src/Battlescape/ProjectileFlyBState.cpp	2026-10-27 09:57:47.000000000 +0200
++++ c2/tree/src/Battlescape/ProjectileFlyBState.cpp	2026-10-27 12:32:38.033428500 +0200
+@@ -410,6 +410,11 @@
+ 		}
+ 
+ 		if (_range == 0) _action.spendTU();
++		// PREATTACK_COVER (bench): the shot has left the weapon - from the planned fire cell the exit may follow
++		if (_range == 0 && AiProbe::preattackCover() && _unit->getAIModule())
++		{
++			_unit->getAIModule()->c2ShotDone();
++		}
+ 		_parent->getMap()->setCursorType(CT_NONE);
+ 		_parent->getMap()->getCamera()->stopMouseScrolling();
+ 		_parent->getMap()->disableObstacles();

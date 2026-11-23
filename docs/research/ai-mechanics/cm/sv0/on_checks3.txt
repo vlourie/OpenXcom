@@ -1,0 +1,32 @@
+end-of-action decisions (act 0), shadow, all 48 battles
+  by class: escape=1672
+  by mode: 3=1672
+  class allowed, by shot: 
+order shots that hurt their own side
+  svn_SN_L2_s1 t1 u1000036 target91 weapon STR_CD_CANNON type7 dmg 0 fdmg 30 fdowned 0
+  svn_SN_L7_s1 t4 u1000010 target2 weapon STR_HEAVY_LASER_PIR type8 dmg 0 fdmg 16 fdowned 1
+  svn_SN_M2_s1 t9 u1000035 target257 weapon STR_CD_RIFLE type7 dmg 0 fdmg 71 fdowned 1
+  svn_SN_M2_s2 t5 u1000058 target255 weapon STR_CD_CANNON type9 dmg 0 fdmg 58 fdowned 0
+the unit-turn with the most decisions: acts with TU spent
+  L1_s1    on t5 u1000004 8 decisions, had an order shot: 1, zero-TU 7: 9/46 2/0 2/0 2/0 2/0 2/0 2/0 2/0
+           D0 t3 u1000002 8 decisions; unit-turns with 11+ decisions on 0 / D0 0
+  L2_s1    on t1 u1000010 15 decisions, had an order shot: 0, zero-TU 12: 2/56 2/34 8/27 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0
+           D0 t1 u1000010 15 decisions; unit-turns with 11+ decisions on 7 / D0 5
+  L2_s2    on t4 u1000010 12 decisions, had an order shot: 0, zero-TU 10: 2/46 2/28 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0 2/0
+           D0 t2 u1000004 14 decisions; unit-turns with 11+ decisions on 1 / D0 25
+  L6_s2    on t1 u1000002 8 decisions, had an order shot: 0, zero-TU 7: 2/64 2/0 2/0 0/0 2/0 2/0 2/0 2/0
+           D0 t1 u1000002 8 decisions; unit-turns with 11+ decisions on 0 / D0 0
+  L7_s1    on t2 u1000006 8 decisions, had an order shot: 0, zero-TU 6: 2/48 2/0 2/4 2/0 2/0 2/0 2/0 2/0
+           D0 t2 u1000006 8 decisions; unit-turns with 11+ decisions on 0 / D0 0
+  L7_s2    on t1 u1000024 6 decisions, had an order shot: 0, zero-TU 1: 2/64 2/4 7/33 2/4 2/0 2/14
+           D0 t5 u1000023 6 decisions; unit-turns with 11+ decisions on 0 / D0 0
+  M2_s1    on t21 u1000026 13 decisions, had an order shot: 0, zero-TU 5: 2/20 2/8 2/14 2/14 2/14 2/14 2/14 8/29 2/0 2/0 2/0 2/0 2/0
+           D0 t4 u1000001 13 decisions; unit-turns with 11+ decisions on 8 / D0 12
+  M2_s2    on t2 u1000027 12 decisions, had an order shot: 0, zero-TU 7: 2/0 2/8 9/58 2/10 7/1 8/29 2/0 2/0 2/0 2/0 2/0 0/0
+           D0 t32 u1000027 11 decisions; unit-turns with 11+ decisions on 6 / D0 1
+  M3_s2    on t3 u1000007 12 decisions, had an order shot: 0, zero-TU 4: 2/12 2/4 2/6 2/8 2/4 2/4 2/0 2/4 2/0 2/0 2/0 2/16
+           D0 t1 u1000008 10 decisions; unit-turns with 11+ decisions on 1 / D0 0
+  M7_s2    on t3 u1000001 17 decisions, had an order shot: 1, zero-TU 0: 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 2/4 8/22
+           D0 t3 u1000002 10 decisions; unit-turns with 11+ decisions on 1 / D0 0
+  M9_s2    on t1 u1000000 10 decisions, had an order shot: 0, zero-TU 3: 2/1 2/20 2/26 2/24 2/4 2/4 2/0 2/0 2/0 2/16
+           D0 t1 u1000000 10 decisions; unit-turns with 11+ decisions on 0 / D0 0

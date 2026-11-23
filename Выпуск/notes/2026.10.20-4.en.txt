@@ -1,0 +1,1 @@
+﻿- The last walls in HD: a portal opening, broken government windows, wooden wall rubble, ship panels and a few jungle and base walls - 85 frames - now have a clean edge exactly along the original silhouette, with no stair-steps or halo. Almost every wall, door and their states now has the exact edge. Graphics only: tiles, walkability and cover are unchanged.

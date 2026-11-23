@@ -1,0 +1,88 @@
+=== p4_PN_L4_s2
+  t3 1000033 1,7,2 > 4,2,1 lof0 l2 impact 2,6,2 alt - armor None
+  t3 1000033 3,4,2 > 4,2,1 lof0 l0 impact 4,3,2 alt - armor None
+  t3 1000033 3,4,2 > 4,2,1 lof0 l0 impact 4,3,2 alt - armor None
+  t3 1000033 3,4,2 > 4,2,1 lof0 l0 impact 4,3,2 alt - armor None
+  t3 1000033 3,4,2 > 4,2,1 lof0 l0 impact 4,3,2 alt - armor None
+  t1 1000016 24,4,3 alt - armor None
+  t2 1000007 2,25,3 alt - armor None
+  t3 1000024 4,15,3 alt 3,15,3 armor 20
+  t3 1000025 5,11,3 alt 5,12,3 armor 20
+  t1 1000006 walk 22,38,2 (20,44,4) > m2 a8 (40,43,2) sp21 | 39,42,2:p1:51/50:m0
+  t1 1000006 walk 22,38,2 (20,44,4) > m2 a8 (40,43,2) sp19 | 40,43,2:p4:35/-1:m0
+  t1 1000008 walk 25,40,2 (24,40,4) > m0 a2 (25,40,2) sp2 | 
+  t1 1000008 walk 25,40,2 (24,40,4) > m2 a7 (40,43,2) sp25 | 35,41,3:p0:50/20:m0 40,44,2:p4:23/-1:m0 39,44,3:p1:57/50:m0
+  t1 1000006 walk 22,38,2 (20,44,4) > m2 a7 (40,43,2) sp25 | 40,43,2:p4:45/-1:m0 34,42,2:p4:39/-1:m0 40,43,2:p4:40/-1:m0
+  t1 1000006 walk 22,38,2 (20,44,4) > m0 a2 (22,38,2) sp10 | 
+  t1 1000006 walk 22,38,2 (22,43,2) > m0 a2 (22,38,2) sp6 | 
+  t1 1000014 walk 23,38,2 (20,40,4) > m2 a8 (40,43,2) sp23 | 40,43,2:p4:26/-1:m0
+  t1 1000014 walk 23,38,2 (20,40,4) > m2 a8 (40,43,2) sp21 | 40,43,2:p4:46/-1:m0
+  t1 1000022 walk 24,38,2 (31,44,2) > m2 a7 (34,41,2) sp36 | 34,42,2:p4:34/-1:m0 34,42,2:p4:36/-1:m0 34,42,2:p4:83/-1:m0
+  t1 1000022 walk 24,38,2 (31,44,2) > m2 a7 (34,41,2) sp35 | 34,42,2:p4:48/-1:m0 34,42,2:p4:47/-1:m0 34,42,2:p4:47/-1:m0
+  t1 1000022 walk 24,38,2 (31,44,2) > m0 a2 (24,38,2) sp2 | 
+  t1 1000022 walk 24,38,2 (31,44,2) > m0 a2 (24,38,2) sp14 | 
+  t2 1000014 walk 25,40,2 (31,40,4) > m2 a7 (29,45,2) sp28 | 27,45,2:p0:24/50:m0 29,45,2:p4:52/-1:m0 29,45,2:p4:55/-1:m0
+  t2 1000015 walk 21,37,2 (13,33,4) > m0 a2 (21,37,2) sp40 | 
+  t2 1000015 shoot 27,31,2 (20,34,4) > m3 a2 (20,30,4) sp16 | 
+  t2 1000021 walk 24,39,2 (20,55,2) > m2 a7 (7,42,2) sp38 | 8,43,2:p4:68/-1:m0 9,47,2:p0:40/50:m0 8,40,2:p2:64/50:m0
+  t2 1000035 walk 25,39,2 (21,53,2) > m2 a2 (17,48,2) sp12 | 
+  t2 1000035 walk 25,39,2 (18,53,2) > m2 a8 (7,42,2) sp47 | 5,42,2:p0:81/50:m0
+  t2 1000021 walk 24,39,2 (15,52,2) > m0 a2 (24,39,2) sp22 | 
+  t2 1000035 walk 25,39,2 (18,53,2) > m0 a2 (25,39,2) sp24 | 
+  t3 1000021 walk 24,39,2 (16,47,2) > m2 a7 (25,37,2) sp36 | 25,37,2:p4:75/-1:m0 19,43,2:p2:56/50:m0 25,37,2:p4:70/-1:m0
+  t3 1000021 walk 24,39,2 (16,47,2) > m2 a7 (25,37,2) sp35 | 21,41,2:p3:48/12:m0 25,37,2:p4:47/-1:m0 25,37,2:p4:64/-1:m0
+  t3 1000035 walk 25,39,2 (18,47,2) > m0 a2 (25,39,2) sp4 | 
+  t3 1000035 walk 25,39,2 (18,46,2) > m2 a8 (25,37,2) sp47 | 19,46,2:p1:45/50:m0
+  t3 1000021 walk 24,39,2 (16,47,2) > m0 a2 (24,39,2) sp18 | 
+  t3 1000035 walk 25,39,2 (18,46,2) > m0 a2 (25,39,2) sp8 | 
+--- how tasks went: [(('shoot', 'other mode3 act2'), 1), (('shot landed', 'nothing logged'), 0), (('walk', 'obeyed'), 11), (('walk', 'other mode2 act2'), 1), (('walk', 'other 
+--- by fighter: {'1000006': {'other': 3, 'walk': 2}, '1000008': {'walk': 1, 'other': 1}, '1000014': {'other': 3}, '1000022': {'other': 2, 'walk': 2}, '1000015': {'walk': 1, 'o
+--- hostile hits on module objects 0, breaking 0; blasts 0
+--- OBJECTIVE RESULT at what=grid when=end turn=5 le: module tiles 527 > 527 (lost 0); facilities demolished: 0 []
+=== p5_PN_L4_s3
+  t2 1000008 2,25,3 alt - armor None
+  t1 1000013 walk 21,38,2 (20,40,4) > m0 a2 (21,38,2) sp16 | 
+  t1 1000021 walk 21,36,2 (11,47,2) > m0 a2 (21,36,2) sp12 | 
+  t1 1000021 walk 21,36,2 (11,44,2) > m0 a2 (21,36,2) sp64 | 
+  t1 1000021 shoot 21,30,2 (20,35,2) > m0 a15 (21,30,2) sp0 | 
+  t1 1000024 walk 21,34,2 (7,34,2) > m0 a2 (21,34,2) sp58 | 
+  t1 1000024 shoot 27,31,2 (18,33,2) > m3 a2 (16,31,2) sp14 | 
+  t1 1000021 shoot 21,30,2 (20,35,2) > m0 a15 (21,30,2) sp0 | 
+  t1 1000021 shoot 21,30,2 (20,35,2) > m0 a15 (21,30,2) sp0 | 
+  t2 1000007 walk 21,34,2 (7,37,2) > m0 a2 (21,34,2) sp18 | 
+  t2 1000007 walk 21,34,2 (10,35,2) > m2 a2 (15,40,2) sp20 | 
+  t2 1000007 walk 21,34,2 (13,38,2) > m2 a7 (14,41,2) sp26 | 14,41,2:p4:27/-1:m0 14,41,2:p4:46/-1:m0 14,41,2:p4:27/-1:m0
+  t2 1000020 walk 22,36,2 (14,51,2) > m2 a7 (17,57,2) sp31 | 17,57,2:p4:56/-1:m0 17,57,2:p4:48/-1:m0 17,57,2:p4:48/-1:m0
+  t2 1000020 walk 22,36,2 (14,51,2) > m2 a7 (17,57,2) sp28 | 19,57,2:p1:34/50:m0 17,57,2:p4:55/-1:m0 17,57,2:p4:22/-1:m0
+  t2 1000007 walk 21,34,2 (13,38,2) > m0 a2 (21,34,2) sp12 | 
+  t2 1000024 walk 21,32,2 (16,31,2) > m3 a2 (13,29,2) sp16 | 
+  t2 1000033 walk 23,32,2 (10,22,2) > m2 a2 (14,20,2) sp20 | 
+  t2 1000033 walk 23,32,2 (14,20,2) > m2 a7 (14,17,2) sp35 | 14,18,2:p4:33/-1:m0 14,18,2:p4:75/-1:m0 14,18,2:p4:80/-1:m0
+  t2 1000033 walk 23,32,2 (14,20,2) > m2 a8 (14,17,2) sp26 | 14,18,2:p4:55/-1:m0
+  t2 1000033 walk 23,32,2 (14,20,2) > m0 a2 (23,32,2) sp4 | 
+  t3 1000007 walk 21,34,2 (16,38,2) > m2 a2 (19,43,2) sp24 | 
+  t3 1000024 walk 21,32,2 (13,29,2) > m3 a2 (13,28,2) sp4 | 
+--- how tasks went: [(('shoot', 'other mode0 act15 notpaid'), 3), (('shoot', 'other mode3 act2'), 1), (('shot landed', 'nothing logged'), 0), (('walk', 'obeyed'), 7), (('walk'
+--- by fighter: {'1000013': {'walk': 1}, '1000021': {'walk': 2, 'other': 3, 'module_hits': 0, 'broke': 0}, '1000024': {'walk': 1, 'other': 3, 'module_hits': 0, 'broke': 0}, '1
+--- hostile hits on module objects 0, breaking 0; blasts 6
+--- OBJECTIVE RESULT at what=grid when=end turn=11 l: module tiles 527 > 521 (lost 6); facilities demolished: 0 []
+=== split
+mln_MN_M1_s1 mlp_ML_M1_s1 mlq_ML_M1_s1 mls_ML_M1_s1 mly_ML_M1_s2 mly_MN_M1_s2 mlz_MN_M1_s1 mlz_MO_M1_s1 
+mln_MN_M1_s1: broke by shots: plan fighters 23, the rest 2, total 25; module tiles 206 > 176 (lost 30) turn 12 ms 75902 vms 1292570
+    {'proto 0,0 PERSONAL_LABS': 1, 'proto 2,2 MED_BAY': 1, 'order 0,0 PERSONAL_LABS': 15, 'order 1,0 LABORATORY': 8}
+mly_MN_M1_s2: broke by shots: plan fighters 26, the rest 0, total 26; module tiles 206 > 169 (lost 37) turn 12 ms 63532 vms 1231020
+    {'order 0,0 PERSONAL_LABS': 15, 'order 1,0 LABORATORY': 11}
+mlz_MN_M1_s1: broke by shots: plan fighters 23, the rest 2, total 25; module tiles 206 > 176 (lost 30) turn 12 ms 75390 vms 1292570
+    {'proto 0,0 PERSONAL_LABS': 1, 'proto 2,2 MED_BAY': 1, 'order 0,0 PERSONAL_LABS': 15, 'order 1,0 LABORATORY': 8}
+p1_PL_L4_s1: broke by shots: plan fighters 2, the rest 0, total 2; module tiles 527 > 517 (lost 10) turn 10 ms 69512 vms 1056820
+    {'order 0,0 LABORATORY': 2}
+p2_PN_L4_s1: broke by shots: plan fighters 1, the rest 0, total 1; module tiles 527 > 513 (lost 14) turn 5 ms 44439 vms 632870
+    {'order 2,3 POWER_PLANT': 1}
+p4_PL_L4_s2: broke by shots: plan fighters 2, the rest 0, total 2; module tiles 527 > 525 (lost 2) turn 7 ms 43281 vms 722170
+    {'order 0,0 LABORATORY': 2}
+p4_PN_L4_s2: broke by shots: plan fighters 0, the rest 0, total 0; module tiles 527 > 527 (lost 0) turn 5 ms 33069 vms 583080
+    {}
+p5_PL_L4_s3: broke by shots: plan fighters 0, the rest 0, total 0; module tiles 527 > 522 (lost 5) turn 11 ms 60311 vms 936540
+    {}
+p5_PN_L4_s3: broke by shots: plan fighters 0, the rest 0, total 0; module tiles 527 > 521 (lost 6) turn 11 ms 67733 vms 1055160
+    {}

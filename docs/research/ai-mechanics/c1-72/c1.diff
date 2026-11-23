@@ -1,0 +1,263 @@
+diff -ru base/src/Battlescape/AIModule.cpp tree/src/Battlescape/AIModule.cpp
+--- base/src/Battlescape/AIModule.cpp	2026-10-27 09:57:47.000000000 +0200
++++ tree/src/Battlescape/AIModule.cpp	2026-10-27 10:46:31.509346700 +0200
+@@ -954,6 +954,27 @@
+ 		_unit->clearTimeUnits();
+ 	}
+ 
++	// COVER_STEP_V1 (bench, OXCE_AI_COVER_STEP, the enemy only): a selection starts with the first counted action; the extra
++	// action maxActions gave after the selection's last attack is the step into cover and nothing else - no other think runs
++	const bool coverOn = AiProbe::coverStep() && _unit->getFaction() == FACTION_HOSTILE;
++	if (coverOn)
++	{
++		if (action->number == 1 || _coverTurn != _save->getTurn())
++		{
++			_coverTurn = _save->getTurn();
++			_coverAttacked = false;
++			_coverDone = false;
++		}
++		if (action->number > 2 && coverStepPending())
++		{
++			action->type = BA_NONE;
++			action->actor = _unit;
++			_visibleEnemies = selectNearestTarget();
++			coverStepTake(action);
++			return;
++		}
++	}
++
+ 	action->type = BA_RETHINK;
+ 	action->actor = _unit;
+ 	action->weapon = _unit->getMainHandWeapon(false);
+@@ -1422,6 +1443,144 @@
+ 	{
+ 		AiProbe::tally(_unit, "fpblocked.other_branch");
+ 	}
++	// COVER_STEP_V1: a shot or a throw makes the step due, a walk elsewhere (a fire point, escape, ambush) cancels it; a
++	// selection that would end here, standing, takes the step in place of the end
++	if (coverOn)
++	{
++		switch (action->type)
++		{
++		case BA_SNAPSHOT:
++		case BA_AUTOSHOT:
++		case BA_AIMEDSHOT:
++		case BA_THROW:
++		case BA_LAUNCH:
++			_coverAttacked = true;
++			break;
++		case BA_WALK:
++			_coverAttacked = false;
++			break;
++		case BA_NONE:
++			if (coverStepPending())
++			{
++				coverStepTake(action);
++			}
++			break;
++		default:
++			break;
++		}
++	}
++}
++
++bool AIModule::coverStepPending() const
++{
++	return _coverAttacked && !_coverDone && _coverTurn == _save->getTurn();
++}
++
++bool AIModule::coverStepTake(BattleAction *action)
++{
++	_coverDone = true;
++	const Position from = _unit->getPosition();
++	// the threats are the enemies its side sees now: their places are known to it. getSpottingUnits is not used - it takes
++	// every unit known by the intelligence rule where it really stands, also one that walked off out of sight
++	std::vector<BattleUnit*> threats;
++	for (auto *bu : *_save->getUnits())
++	{
++		if (!validTarget(bu, false, false))
++			continue;
++		for (auto *mate : *_save->getUnits())
++		{
++			if (mate->getFaction() == _unit->getFaction() && !mate->isOut()
++				&& std::find(mate->getVisibleUnits()->begin(), mate->getVisibleUnits()->end(), bu) != mate->getVisibleUnits()->end())
++			{
++				threats.push_back(bu);
++				break;
++			}
++		}
++	}
++	// how many of them have a line of fire to the unit standing at pos - the trace of getSpottingUnits
++	auto linesOfFire = [&](const Position &pos)
++	{
++		int n = 0;
++		for (auto *bu : threats)
++		{
++			if (Position::distance2d(pos, bu->getPosition()) > 20)
++				continue;
++			Position originVoxel = _save->getTileEngine()->getSightOriginVoxel(bu);
++			originVoxel.z -= 2;
++			Position targetVoxel;
++			n += _save->getTileEngine()->canTargetUnit(&originVoxel, _save->getTile(pos), &targetVoxel, bu, false,
++				pos != from ? _unit : 0) ? 1 : 0;
++		}
++		return n;
++	};
++	const int seenBy = linesOfFire(from);
++	if (seenBy == 0 || !_unit->getArmor()->allowsMoving())
++	{
++		AiProbe::tally(_unit, seenBy == 0 ? "cover.unseen" : "cover.immobile");
++		return false;
++	}
++	// a snap shot's time units stay for reaction fire on the enemy's turn
++	BattleActionCost keep;
++	BattleItem *weapon = _unit->getMainHandWeapon(false);
++	if (weapon && weapon->getRules()->getBattleType() == BT_FIREARM)
++	{
++		keep = BattleActionCost(BA_SNAPSHOT, _unit, weapon);
++	}
++	// the tiles come cheapest first; the lines of fire are traced to the first COVER_TRIES of them at most
++	const int COVER_TRIES = 40;
++	int tried = 0;
++	const std::vector<int> reach = _save->getPathfinding()->findReachable(_unit, keep);
++	for (int index : reach)
++	{
++		const Position pos = _save->getTileCoords(index);
++		const Tile *tile = _save->getTile(pos);
++		if (pos == from || !tile || tile->getFire() || tile->getDangerous())
++			continue;
++		if (++tried > COVER_TRIES)
++			break;
++		if (linesOfFire(pos) != 0)
++			continue;
++		_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
++		const bool path = _save->getPathfinding()->getStartDirection() != -1;
++		const int cost = _save->getPathfinding()->getTotalTUCost();
++		_save->getPathfinding()->abortPath();
++		if (!path)
++			continue;
++		action->type = BA_WALK;
++		action->target = pos;
++		action->run = false;
++		action->kneel = false;
++		action->desperate = true; // to the tile, not stopping at the next enemy spotted on the way
++		action->finalAction = true; // the unit's turn ends there
++		// facing the nearest threat it sees now (the turn at the walk's end is the one every AI walk makes, as before)
++		action->finalFacing = -1;
++		int nearest = INT_MAX;
++		for (auto *bu : threats)
++		{
++			const int d = Position::distanceSq(pos, bu->getPosition());
++			if (d < nearest && bu->getPosition() != pos)
++			{
++				nearest = d;
++				action->finalFacing = _save->getTileEngine()->getDirectionTo(pos, bu->getPosition());
++			}
++		}
++		_unit->setHiding(false); // facing the enemy, not the 180 spin of an escape
++		_escapeTUs = 0;
++		_ambushTUs = 0;
++		if (AiProbe::staleEscapeFix())
++			_escapePlan.valid = false;
++		AiProbe::tally(_unit, "cover.step");
++		AiProbe::note(_unit, ("cover.step seen=" + std::to_string(seenBy) + " tried=" + std::to_string(tried)
++			+ " dist=" + std::to_string(Position::distance2d(from, pos)) + " cost=" + std::to_string(cost)
++			+ " keep=" + std::to_string(keep.Time) + " tu=" + std::to_string(_unit->getTimeUnits())).c_str());
++		return true;
++	}
++	// no step at all with the reserve kept (time units or energy), or steps but none out of the lines of fire
++	const bool noStep = reach.size() <= 1;
++	AiProbe::tally(_unit, noStep ? "cover.none.tu" : "cover.none.cell");
++	AiProbe::note(_unit, ((noStep ? "cover.none.tu" : "cover.none.cell") + std::string(" seen=") + std::to_string(seenBy)
++		+ " tried=" + std::to_string(tried) + " keep=" + std::to_string(keep.Time) + " tu=" + std::to_string(_unit->getTimeUnits())).c_str());
++	return false;
+ }
+ 
+ 
+diff -ru base/src/Battlescape/AIModule.h tree/src/Battlescape/AIModule.h
+--- base/src/Battlescape/AIModule.h	2026-10-27 09:57:47.000000000 +0200
++++ tree/src/Battlescape/AIModule.h	2026-10-27 10:30:31.593743300 +0200
+@@ -122,6 +122,13 @@
+ 	int escapePlanBroken() const;
+ 	/// The shot chosen by evalFireAction (OXCE_AI_EVAL): kneel for it, and whether it chose one this think.
+ 	bool _evalKneel = false, _evalChosen = false;
++	/// COVER_STEP_V1 (bench, OXCE_AI_COVER_STEP): the turn of the selection, it shot or threw in it and has not walked since,
++	/// the step was tried (taken or not - once a selection)
++	int _coverTurn = -1;
++	bool _coverAttacked = false, _coverDone = false;
++	/// COVER_STEP_V1: the walk to the cheapest reachable tile no enemy it knows of has a line of fire to, a snap shot's time
++	/// units kept, facing the nearest; false (action left as it was) when it is not seen, cannot move or no tile is found.
++	bool coverStepTake(BattleAction *action);
+ 	/// The bench's decision record (AiProbe::propose, docs/AI_DECISION_RECORD.md): the score the rule that ran last gave its
+ 	/// action and, if it names itself more exactly than its caller, its name. Written, never read by play.
+ 	int _probeScore = INT_MIN;
+@@ -258,6 +265,8 @@
+ 	void save(YAML::YamlNodeWriter writer) const;
+ 	/// Runs Module functionality every AI cycle.
+ 	void think(BattleAction *action);
++	/// COVER_STEP_V1 (bench): the unit attacked in this selection, has not walked since and has not tried the step into cover.
++	bool coverStepPending() const;
+ 	/// Sets the "unit was hit" flag true.
+ 	void setWasHitBy(BattleUnit *attacker);
+ 	/// Increases the walk abort counter.
+diff -ru base/src/Battlescape/AiProbe.cpp tree/src/Battlescape/AiProbe.cpp
+--- base/src/Battlescape/AiProbe.cpp	2026-10-27 09:57:47.000000000 +0200
++++ tree/src/Battlescape/AiProbe.cpp	2026-10-27 10:30:06.196302700 +0200
+@@ -170,6 +170,7 @@
+ void escapeProbe(const BattleUnit *, int) {}
+ bool escapeReachFirst() { return false; }
+ void escapeSkipped() {}
++bool coverStep() { return false; }
+ bool escapeAlt(const BattleUnit *) { return false; }
+ void escapeAltWrite(SavedBattleGame *, BattleUnit *, const std::vector<int> &, const Position &, int, int, bool,
+ 	const std::function<int(const Position &)> &) {}
+@@ -2605,6 +2606,12 @@
+ 	return on;
+ }
+ 
++bool coverStep()
++{
++	static const bool on = active() && envOn("OXCE_AI_COVER_STEP");
++	return on;
++}
++
+ void escapeSkipped()
+ {
+ 	++escSkipN;
+@@ -4574,7 +4581,11 @@
+ 	// the engine moves to the next unit after 2 actions: a clawed soldier next to the enemy hits twice for 9 TU each and stands
+ 	// with 260 of 282 left (d9probe, 127 such hits on 22 battles) - a player hits on until the enemy falls
+ 	static const int n = getenv("OXCE_AI_ACTIONS") ? atoi(getenv("OXCE_AI_ACTIONS")) : 0;
+-	return n > 2 && careful(unit) ? n : 2;
++	if (n > 2 && careful(unit))
++		return n;
++	// COVER_STEP_V1: the hostile that attacked in its last action gets one more for the step into cover, and only for it
++	const AIModule *ai = coverStep() ? unit->getAIModule() : 0;
++	return ai && ai->coverStepPending() ? 3 : 2;
+ }
+ 
+ bool patrolOutOfEnergy(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool pushed)
+diff -ru base/src/Battlescape/AiProbe.h tree/src/Battlescape/AiProbe.h
+--- base/src/Battlescape/AiProbe.h	2026-10-27 09:57:47.000000000 +0200
++++ tree/src/Battlescape/AiProbe.h	2026-10-27 10:29:50.925857500 +0200
+@@ -189,6 +189,10 @@
+ bool escapeReachFirst();
+ /// A candidate dropped before its traces by the flag (counted always, [AIESCRF] in the battle's result).
+ void escapeSkipped();
++/// COVER_STEP_V1 (OXCE_AI_COVER_STEP, stand only, the enemy only - candidate C1, docs/research/ai-mechanics/AI-STATE-2026-10-27.md):
++/// a hostile that shot or threw in its selection and stands in the sight of an enemy it knows of steps to the cheapest reachable
++/// tile none of them has a line of fire to, keeping a snap shot's time units, and faces the nearest. Off: as before.
++bool coverStep();
+ /// ESCAPE_ALT_PROBE (OXCE_AI_ESCAPE_ALT_PROBE with the record, the careful bot only, docs/research/ai-path-audit-2026-10-01.md
+ /// п. 17.29): was there a reachable tile that dominated the escape tile setupEscape chose? Reads only, no random numbers,
+ /// no pathfinding, the side's memory of the enemies is copied, never updated. Off (the default): false.
+@@ -335,7 +339,8 @@
+ /// its side sees (OXCE_AI_FLEE): a walk to the reachable tile fewest of them have a line of fire to, then farthest from them.
+ /// True when it set a walk.
+ bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable);
+-/// How many AI actions a unit takes in a row before the next unit: the engine's 2, or OXCE_AI_ACTIONS for the careful bot.
++/// How many AI actions a unit takes in a row before the next unit: the engine's 2, or OXCE_AI_ACTIONS for the careful bot;
++/// 3 for a hostile whose step into cover is due (COVER_STEP_V1).
+ int maxActions(const BattleUnit *unit);
+ /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
+ double param(const char *name, double def);

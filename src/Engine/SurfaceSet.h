@@ -19,6 +19,7 @@
  */
 
 #include <vector>
+#include <memory>
 #include <string>
 #include <SDL.h>
 
@@ -39,6 +40,11 @@ private:
 	std::vector<Surface> _frames;
 	int _width, _height;
 	int _sharedFrames;
+	/// HD render: the state of a lazy scaled copy (hdScaledCopy), null in every other set.
+	struct HdLazy;
+	std::shared_ptr<HdLazy> _hdLazy;
+	/// HD render: gives a frame of a lazy scaled copy its memory and pixels, once.
+	void hdFill(size_t i) const;
 
 public:
 	/// Crates a surface set with frames of the specified size.
@@ -62,6 +68,8 @@ public:
 	Surface *getFrame(int i);
 	/// Gets a particular frame from the set.
 	const Surface *getFrame(int i) const;
+	/// HD render: the frame as a key and a size only - its pixels may not exist yet and must not be touched.
+	const Surface *frameKey(int i) const;
 	/// Creates a new surface and returns a pointer to it.
 	Surface *addFrame(int i);
 	/// Gets the width of all frames.
@@ -76,6 +84,10 @@ public:
 
 	/// Gets the total frames in the set.
 	size_t getTotalFrames() const;
+	/// HD render: replaces every frame with a nearest-neighbour copy scale times bigger (no-op for scale 1).
+	void hdScaleInPlace(int scale);
+	/// HD render: returns a new set whose frames are nearest-neighbour copies scale times bigger.
+	SurfaceSet *hdScaledCopy(int scale) const;
 	/// Sets the surface set's palette.
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256);
 };

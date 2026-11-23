@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2030001	STR_VESSEL_HEAVY_GUNSHIP	timeout	STR_VESSEL_HEAVY_GUNSHIP	STR_UFO_CRASH_RECOVERY	108	8	WESTOWN_ROCKY	STR_MUTON	STR_DROPSHIP#3	7	61	8	2	0	6	279	31	30	0	1	6	1	0	205	88	h.rec.in:686,h.rec.out.M2:22,h.rec.out.a6:1,p.rec.in:922,p.rec.out.a8:4	926	0	0	5	0	81	709	0	0	11	0	1	95		draw

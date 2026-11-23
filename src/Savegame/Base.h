@@ -33,6 +33,7 @@ namespace OpenXcom
 {
 
 class RuleCraft;
+class RuleItem;
 class Soldier;
 class Craft;
 class ItemContainer;
@@ -158,6 +159,8 @@ public:
 	std::vector<BaseFacility*> *getFacilities();
 	/// Gets the base's soldiers.
 	std::vector<Soldier*> *getSoldiers();
+	/// Gets the base's soldiers.
+	const std::vector<Soldier*>& getSoldiers() const;
 	/// Pre-calculates soldier stats with various bonuses.
 	void prepareSoldierStatsWithBonuses();
 	/// Gets the base's crafts.
@@ -172,6 +175,8 @@ public:
 	ItemContainer *getStorageItems() { return _items; }
 	/// Gets the base's items.
 	const ItemContainer *getStorageItems() const { return _items; }
+	/// How many more of an item the stores can count, with what is already on its way here.
+	int getStoreRoom(const RuleItem *item) const;
 	/// Gets the base's scientists.
 	int getScientists() const;
 	/// Sets the base's scientists.
@@ -262,6 +267,8 @@ public:
 	void removeProduction (Production * p);
 	/// Get the list of Base Production's
 	const std::vector<Production *> & getProductions() const;
+	/// Gets the base's production list (mutable, for reordering).
+	std::vector<Production *> & getProductions() { return _productions; }
 	/// Gets the base's used psi lab space.
 	int getUsedPsiLabs() const;
 	/// Gets the base's total available psi lab space.

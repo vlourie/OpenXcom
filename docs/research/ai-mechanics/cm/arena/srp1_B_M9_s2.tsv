@@ -1,0 +1,2 @@
+﻿seed	want	how	mission	kind	month	units	terrain	race	craft	shade	turn	player	pdead	pout	pwounded	phplost	hostile	hdead	hout	hleft	livesoldiers	livealiens	aborted	pattacks	hattacks	tac	pdecisions	prun	pkneel	pthrow	ppsi	pmelee	hdecisions	hrun	hkneel	hthrow	hpsi	hmelee	seconds	note	outcome
+2021002	STR_SEA_DEVILS_REEF	over	STR_SEA_DEVILS_REEF	STR_SEA_DEVILS_REEF	46	8	SEACORAL	STR_DEEP_ONE	STR_DROPSHIP#2	0	2	8	6	2	8	516	71	0	0	71	0	71	0	0	7	h.rally.arrived:2,h.rally.to_node:2,h.rally.wait:8,h.rec.in:502,p.rec.in:36	36	0	0	0	0	0	502	0	0	0	0	0	21		loss

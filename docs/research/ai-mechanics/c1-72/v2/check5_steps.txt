@@ -1,0 +1,24 @@
+battles	5
+confirm	706
+debt_confirmed	80
+debt_real_attack	80
+kept	80
+kept_tu_below_keep	0
+kept_turn_paid_0	20
+kept_turn_paid_1	13
+kept_turn_paid_2	20
+kept_turn_paid_3	25
+kept_turn_paid_4	1
+kept_turn_paid_odd	1
+kept_walk_lt_cost	1
+n3	250
+n3_k_e	170
+n3_k_m	80
+next_turn_alive	58
+next_turn_attacks	77
+next_turn_first_n1	48
+next_turn_with_attack	47
+pre_spend	0
+steps	80
+
+L6 rec 687 kept: walk_tu 4 cost 28 keep 65 tu_after 162 walk 1 trail ['walk.stop.reaction 13,14,2>13,14,2 d6 bam0 mt1 sz2 tu162/-1 ']

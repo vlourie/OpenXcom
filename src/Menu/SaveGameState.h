@@ -35,6 +35,9 @@ class SaveGameState : public State
 {
 private:
 	int _firstRun;
+	/// The frame count and the clock when the screen first ran: its work waits for a frame to be shown.
+	unsigned _shownFrame = 0;
+	Uint32 _shownSince = 0;
 	OptionsOrigin _origin;
 	Text *_txtStatus;
 	std::string _filename;

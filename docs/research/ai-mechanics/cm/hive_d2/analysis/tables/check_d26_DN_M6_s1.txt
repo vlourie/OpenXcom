@@ -1,0 +1,29 @@
+===== d26_DN_M6_s1
+thinks with an intent 214 tries {1: 198, 5: 16}
+invariant tries = free_checked + free_none + taken, broken: 0
+no node at the end: 16 with fewer than 5 tries: 0 with a refused offer: 0 units {'1000021': 6, '1000038': 5, '1000039': 5}
+offers in thinks 71 refused 0 taken 71 thinks with a refusal 0
+refused: expanded=0 (before any search) 0 seed moved 0 units {}
+after a refusal the free node was taken at once / the free failed too: 0 0
+CHOICE 278 by scout {'1': 28, '0': 250} chosen 145 changed 71
+S1 scout=0, a chosen node not linked: 0 | scout=0 chosen linked: 117 | scout=0 chosen, not the best by flags (chosen != free): 43
+KEPT_DROP (only written now): 29 KEPT_BACK: 0
+   of those, the soldier stood on that node later: 11
+-- 1000050
+-- 1000027
+   t 1 CHOICE try 1 at (48,32,2) scout 1 free (43,3,0) chosen (34,44,0) rung 1
+    event=PATROLEND turn=1 unit=1000027 at=(48,32,2) tries=1 free_checked=0 free_none=0 offers=1 refused=0 taken=1 end=(34,44,0) tu=111
+   t 1 DECIDE from (48,32,2) tu 111 mode 2 act 2 to (41,25,0)
+   t 1 DECIDE from (42,26,2) tu 75 mode 2 act 8 to (31,25,2)
+   t 1 DECIDE from (42,26,2) tu 41 mode 2 act 8 to (39,24,0)
+-- perf by turn
+  t 1 floods=64 floodUs=343440 intentFloods=47 intentFloodUs=257700 offers=32 offersRefused=0 offersTaken=32 refusedUs=0 maxRefusedUs=0 takenUs=30692 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=23 unusedUs=39967 sigUs=9715 freeUs=689 stepsUs=126 pathUs=36275 paths=91 pathFails=30 thinkUs=96705 planUs 96401 planFloods 17
+  t 2 floods=33 floodUs=61915 intentFloods=33 intentFloodUs=67100 offers=10 offersRefused=0 offersTaken=10 refusedUs=0 maxRefusedUs=0 takenUs=104 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=23 unusedUs=33163 sigUs=4850 freeUs=177 stepsUs=32 pathUs=5121 paths=60 pathFails=30 thinkUs=229 planUs 100 planFloods 0
+  t 3 floods=31 floodUs=61312 intentFloods=31 intentFloodUs=67269 offers=7 offersRefused=0 offersTaken=7 refusedUs=0 maxRefusedUs=0 takenUs=2453 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=24 unusedUs=40081 sigUs=5574 freeUs=178 stepsUs=28 pathUs=8038 paths=50 pathFails=20 thinkUs=238 planUs 95 planFloods 0
+  t 4 floods=25 floodUs=127832 intentFloods=25 intentFloodUs=132345 offers=10 offersRefused=0 offersTaken=10 refusedUs=0 maxRefusedUs=0 takenUs=5085 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=15 unusedUs=58117 sigUs=4126 freeUs=57 stepsUs=23 pathUs=8347 paths=25 pathFails=0 thinkUs=172 planUs 60 planFloods 0
+  t 5 floods=20 floodUs=36265 intentFloods=15 intentFloodUs=22445 offers=3 offersRefused=0 offersTaken=3 refusedUs=0 maxRefusedUs=0 takenUs=499 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=12 unusedUs=18430 sigUs=2912 freeUs=25 stepsUs=9 pathUs=846 paths=16 pathFails=0 thinkUs=17132 planUs 17048 planFloods 5
+  t 6 floods=13 floodUs=27364 intentFloods=13 intentFloodUs=29587 offers=3 offersRefused=0 offersTaken=3 refusedUs=0 maxRefusedUs=0 takenUs=2535 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=10 unusedUs=25334 sigUs=1960 freeUs=25 stepsUs=16 pathUs=3302 paths=13 pathFails=0 thinkUs=181 planUs 45 planFloods 0
+  t 7 floods=12 floodUs=20804 intentFloods=12 intentFloodUs=22709 offers=3 offersRefused=0 offersTaken=3 refusedUs=0 maxRefusedUs=0 takenUs=420 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=9 unusedUs=13773 sigUs=1764 freeUs=74 stepsUs=14 pathUs=615 paths=12 pathFails=0 thinkUs=150 planUs 51 planFloods 0
+  t 8 floods=11 floodUs=19454 intentFloods=11 intentFloodUs=21087 offers=3 offersRefused=0 offersTaken=3 refusedUs=0 maxRefusedUs=0 takenUs=115 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=8 unusedUs=16925 sigUs=1523 freeUs=18 stepsUs=12 pathUs=335 paths=11 pathFails=0 thinkUs=121 planUs 52 planFloods 0
+  sum floods=209 floodUs=698386 intentFloods=187 intentFloodUs=620242 offers=71 offersRefused=0 offersTaken=71 refusedUs=0 maxRefusedUs=0 takenUs=41903 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=124 unusedUs=245790 sigUs=32424 freeUs=1243 stepsUs=260 pathUs=62879 paths=278 pathFails=80 thinkUs=114928
+[AIRESULT] how=timeout tac=h.rec.in:554,h.rec.out.M2:3,p.rec.in:101 seed=2018001 livesoldiers=2 livealiens=9 aborted=0 mission=STR_UFO_GROUND_ASSAULT turn=9 player=8 pdea

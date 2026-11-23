@@ -1,0 +1,83 @@
+Hi Dioxine! I ran the whole Piratez ruleset through a checker that loads it the same way OXCE does (same file order, same merge rules). It found a few spots where the engine silently drops or ignores what you wrote. No crashes, just stuff that doesn't do what it looks like it does. Line numbers are from the current release.
+
+1) Piratez_Factions.rul:9633, AUX_XARQUID_GRAPPLE: `damageAlter:` appears twice. OXCE takes the FIRST key, which is empty, so the whole block is ignored (RandomType, ToHealth 0.4, ToTime 1.5, etc.).
+Wrong:
+    damageAlter:
+    damageAlter:
+      RandomType: 2
+      ...
+Fix: delete the empty line:
+    damageAlter:
+      RandomType: 2
+      ...
+
+2) Other duplicate keys (the engine uses the first one, the second is dead):
+- Piratez.rul, STR_STAFF_OF_BURNING_SOULS (items, ~58480 and ~58493): `power: 16` and then `power: 18`. The game uses 16. Which one did you mean? Delete the other.
+- Piratez.rul:1281/1288, STR_EYE_OF_HORUS (facilities): `placeSound: 309` and then `placeSound: 305`. The game uses 309.
+- Piratez_Resources.rul:13277, BIG_CAPTAIN_YESGRAY_NOGOLD:
+    fileSingle: Resources/Pedia/Captain_GrayNoGold.png
+    fileSingle: Resources/Pedia/UPed_Unavailable.gif   <- dead line, delete
+
+3) `despawnEvenIfTargeted: true` is placed in alienDeployments, but only alienMissions read it, so there it does nothing. In 11 cases the matching mission doesn't have it, so the flag isn't active at all:
+STR_LOC_THULE_BOSSBATTLE, NECROPOLIS, CITY_OF_THE_DEAD, CITY_OF_THE_DEAD_SCOUTING, EMANSION_MAG, FOUNTAIN_OF_YOUTH, FOUNTAIN_OF_YOUTH_G, GATE_OF_FEAR, DOOMED_CRYPT, EUROSYNDICATE_ELIMINATION, STYX_BLACK_TOWER_OUTSIDE
+Wrong (Piratez_Factions.rul:61496):
+  alienDeployments:
+    - type: STR_LOC_THULE_BOSSBATTLE
+      duration: [24, 24]
+      despawnEvenIfTargeted: true
+Fix: move it to the mission with the same name (Factions:34416):
+  alienMissions:
+    - type: STR_LOC_THULE_BOSSBATTLE
+      objective: 3
+      despawnEvenIfTargeted: true
+The other 5 (CATACOMBS_BUTCHER, CATACOMBS_BUTCHER_ENTRY, HALLS_OF_FEAR, NIGHTOSHPHERE_DELOREAN, NIGHTOSHPHERE_HARVEST) already have it on the mission, so the copy in the deployment is just dead weight.
+
+4) Piratez_Events.rul:11482 and 11492: `interruptResearch` is in eventScripts (STR_NINJAS_ESCALATION, STR_NINJAS_AT_BAY), but eventScripts don't read it. Only events and alienMissions do.
+Wrong:
+  eventScripts:
+    - type: STR_NINJAS_AT_BAY
+      ...
+      interruptResearch: STR_NINJA_ESCALATION_6
+Fix: move it into the event itself:
+  events:
+    - name: STR_NINJAS_AT_BAY
+      interruptResearch: STR_NINJA_ESCALATION_6
+(same for STR_NINJAS_ESCALATION / STR_NINJA_ESCALATION_4)
+
+5) Piratez.rul:79547, craft STR_CAVES_DROP_ENTRY: `revealedFloors: [3]` sits on the craft, and crafts don't read it. It belongs on the map blocks:
+Wrong:
+    refuelRate: 9999
+    revealedFloors: [3]
+    battlescapeTerrainData:
+Fix:
+    battlescapeTerrainData:
+      mapBlocks:
+        - name: ...
+          revealedFloors: [3]
+
+6) Broken names in startingConditions (Piratez_Globals.rul), allowedArmors. These are item names, not armor names, so the entry matches nothing:
+- STR_NEKO_WITCH_OUTFIT -> STR_NEKO_WITCH_OUTFIT_UC
+  (in STR_STARCON_CITY, CITY_STEALTH, EMANSION, NOHELMET, NOHELMET_INFILTRATION_MAX6)
+- STR_GNOME_TAC_GRAV_ARMOR -> STR_GNOME_TAC_GRAV_ARMOR_UC (STR_STARCON_CITY_STEALTH, line 6052)
+- STR_STARCON_UNDERGROUND_TIGHT (line ~4620): allowedArmors has `- STR_SOLDIER_DOLL`, which is a soldier type, not an armor. Which armor did you mean?
+- STR_STARCON_GAL_PARTY, allowedCraft (line 4975): `- STR_DELIVERATOR`. No craft has that name. Leftover or renamed?
+
+7) Other references to things that don't exist:
+- Piratez.rul:77637, crafts STR_RED_BARON:
+    requires:
+      - STR_RED_BARON          <- no such research
+  probably STR_RED_BARON_INTERCEPTOR?
+- Piratez.rul:222905, ufopaedia STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED requires itself (no such research):
+    requires:
+      - STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED
+  ->  - STR_LIVING_QUARTERS_ADVANCED_LARGE
+- Piratez.rul:236618, ufopaedia STR_OFFERING_TO_PURPLE_BLOOM:
+    requires:
+      - STR_OFFERING_TO_PURPLE_BLOOM_CPAL
+  ->  - STR_OFFERING_TO_PURPLE_BLOOM
+- Piratez.rul:213342/213351, ufopaedia STR_TAMED_REAPER and STR_MUTANT_REAPER: `weapon: STR_JAWS`. There's no such item. Mutant reaper actually has AUX_PURPLE_ACID_SPIT; for the tamed one maybe AUX_REAPER_WEAPON? Or just delete the line.
+- Piratez.rul:213285, ufopaedia STR_WHITERABBIT: `weapon: STR_WHITERABBIT_CLOCK`. There's no such item.
+
+8) Piratez_Globals.rul:8878: top-level `minReactionAccuracy: 5`. OXCE doesn't read it at that level. It works only under `ai:`, and you already have it there (line 9152). The top-level line can go.
+
+I can send the full list with every line number if that helps.

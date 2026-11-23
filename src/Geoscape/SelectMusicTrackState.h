@@ -29,35 +29,28 @@ enum SelectMusicTrackOrigin
 	SMT_BATTLESCAPE
 };
 
-class Window;
-class Text;
-class TextButton;
-class TextList;
-class Music;
+class MusicPlayerView;
 
 /**
- * Select Music Track window that allows changing
- * of the currently played music track.
+ * The music player (XP-000575, XP-AMP): the window that was the list of tracks to choose from is now two windows in a
+ * column - the player (pause, stop, play, the time and the move in the track, the next and the previous, the volume,
+ * shuffle and repeat) and the playlist of the geoscape or of the battle (add, remove, all, clear). All of it is
+ * drawn by MusicPlayerView; this state only holds it, closes it and passes the keys.
  */
 class SelectMusicTrackState : public State
 {
 private:
 	SelectMusicTrackOrigin _origin;
-	Window *_window;
-	Text *_txtTitle;
-	TextButton *_btnCancel;
-	TextList *_lstTracks;
-	std::vector<Music*> _tracks;
-	std::vector<std::string> _trackNames;
+	MusicPlayerView *_view;
 public:
-	/// Creates the Select Music Track state.
+	/// Creates the player.
 	SelectMusicTrackState(SelectMusicTrackOrigin origin);
-	/// Cleans up the Select Music Track state.
+	/// Cleans up the player.
 	~SelectMusicTrackState();
-	/// Handler for clicking the Cancel button.
-	void btnCancelClick(Action *action);
-	/// Handler for clicking the Weapons list.
-	void lstTrackClick(Action *action);
+	/// Keeps the picture up to date (once a second, not every frame).
+	void think() override;
+	/// Closes on Esc, on the key that opened it and on a right click outside; passes the rest on.
+	void handle(Action *action) override;
 };
 
 }

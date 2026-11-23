@@ -1,0 +1,5 @@
+build_label=cmrun-M2
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + MISSION-LEVEL TACTICS STAGE 2 (OXCE_AI_MDIR=0 off, 1 log only, 2 the order on)
+patch_sha256=596f313eee9bfc285f38cbc49248569983e2f90a4659c22f0cd199c1eb92fbaf
+exe_sha256=3b0845182d0a1c065577acf63d8053cd9fee029858e887579020ffd2abbaa98d

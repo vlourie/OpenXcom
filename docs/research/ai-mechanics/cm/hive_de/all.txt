@@ -1,0 +1,53 @@
+battle unit_turns dmg fdmg fdowned lost_ut lost_tu all_tu hdead pdead
+L10_s1 105 0 0 0 1 74 7742 14 1
+L10_s2 106 114 0 0 16 1184 7816 10 2
+L11_s1 673 49 36 1 17 1895 67537 23 1
+L11_s2 879 118 113 0 5 535 85604 15 1
+L12_s1 140 1389 0 0 3 294 13298 35 0
+L12_s2 295 1102 0 0 26 2452 27696 42 0
+L1_s1 116 33 0 0 1 67 9204 24 0
+L1_s2 99 102 30 0 7 498 8207 23 1
+L2_s1 320 516 329 0 62 4478 40579 55 7
+L2_s2 593 772 241 3 162 11506 69583 60 5
+L3_s1 3 0 0 0 0 0 215 15 0
+L3_s2 5 0 0 0 0 0 405 18 0
+L4_s1 69 331 146 1 5 422 5970 37 3
+L4_s2 47 167 75 1 0 0 4169 34 0
+L5_s1 224 15 880 14 5 458 20690 57 0
+L5_s2 178 24 1116 22 1 96 17557 80 0
+L6_s1 217 215 0 0 9 1373 33994 30 1
+L6_s2 240 579 0 0 25 2806 39577 27 8
+L7_s1 331 486 264 3 12 1696 33942 21 5
+L7_s2 195 468 105 2 5 421 17888 16 4
+L8_s1 252 880 0 0 13 1295 24623 16 7
+L8_s2 209 1020 0 0 2 171 20034 4 8
+L9_s1 44 0 0 0 0 0 3418 34 0
+L9_s2 97 117 14 0 6 492 7736 31 1
+M10_s1 585 399 1622 26 8 724 51184 36 3
+M10_s2 460 399 1224 20 13 1165 40031 23 3
+M11_s1 318 589 13 0 107 14592 37494 21 5
+M11_s2 557 665 0 0 2 270 70003 16 5
+M12_s1 4 0 0 0 0 0 512 10 0
+M12_s2 8 0 0 0 0 0 956 10 0
+M1_s1 273 5525 964 9 0 0 33218 14 55
+M1_s2 348 7775 486 4 0 0 44372 18 57
+M2_s1 514 3915 1055 6 30 3227 69914 46 8
+M2_s2 605 3496 398 2 50 4620 82099 67 8
+M3_s1 325 1635 1695 11 1 65 23298 61 6
+M3_s2 258 2700 2099 13 0 0 20302 39 8
+M4_s1 140 329 57 2 3 312 13005 5 4
+M4_s2 160 390 78 2 3 297 14759 3 5
+M5_s1 257 132 265 2 14 1400 29048 56 2
+M5_s2 195 105 297 3 16 1503 21604 59 0
+M6_s1 294 488 401 2 42 5360 31548 38 6
+M6_s2 305 759 91 2 16 1611 31915 36 5
+M7_s1 50 233 0 0 4 341 5405 1 5
+M7_s2 127 266 88 1 0 0 13084 2 3
+M8_s1 85 27 120 2 4 1192 11143 38 0
+M8_s2 43 42 159 1 2 596 5250 37 0
+M9_s1 132 621 0 0 2 172 12072 0 5
+M9_s2 142 373 0 0 0 0 13004 0 7
+{'dmg': 39360, 'fdmg': 14461, 'fdowned': 155, 'ut': 11622, 'lost': 700, 'ltu': 69660, 'ttu': 1242704}
+sources: [('patrol.node', 24812), ('shot', 3250), ('sniper', 2149), ('escape.known', 1819), ('firepoint.random', 1437), ('ambush', 1292), ('firepoint', 1171), ('firepoint.fallback', 1043), ('escape', 956), ('melee', 871), ('leeroy', 323), ('patrol.module', 231), ('grenade', 102), ('psi', 28), ('rethink', 16), ('grenade.node', 4), ('waypoint', 3), (None, 1)]
+fdmg by walk/attack and weapon: [(('attack', 'STR_CANISTER_GUN'), 1657), (('attack', 'STR_LUGER'), 1178), (('attack', 'STR_CD_RIFLE'), 758), (('attack', 'STR_PIR_PLASMA_RIFLE'), 716), (('attack', 'STR_PIR_HEAVY_PLASMA'), 665), (('attack', 'STR_CHAINGUN'), 637), (('attack', 'STR_MACHINEGUN_LIGHT'), 606), (('attack', 'STR_UAC_ROCKET_LAUNCHER'), 451), (('attack', 'AUX_CHRYSSALID_WEAPON'), 432), (('walk', 'STR_CANISTER_GUN'), 381), (('attack', 'STR_CD_PISTOL'), 377), (('attack', 'STR_UAC_HEAVY_NAILGUN'), 372), (('attack', 'STR_FLECHETTE_GUN'), 366), (('attack', 'STR_UAC_RIFLE'), 338), (('attack', 'AUX_SILACOID_WEAPON'), 324), (('attack', 'STR_PIR_PLASMA_PISTOL'), 292), (('attack', 'STR_NINJA_SMG'), 288), (('attack', 'AUX_DOOM_IMP_WEAPON'), 257), (('attack', 'STR_UAC_PLASMAGUN'), 252), (('attack', 'STR_ABC_GUN'), 229), (('walk', 'STR_PIR_PLASMA_RIFLE'), 227), (('attack', 'STR_PLASMA_SCORCHER'), 224), (('attack', 'STR_HEAVY_LASER_PIR'), 200), (('attack', 'STR_CD_CANNON'), 175), (('attack', 'STR_TOXIGUN'), 174)]
+fdmg during walks 1379 during attacks 13082

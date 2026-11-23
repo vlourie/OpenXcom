@@ -21,10 +21,12 @@
 #include "../fmath.h"
 #include "../Engine/Language.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdCraftRoute.h"
 #include "../Engine/ScriptBind.h"
 #include "../Mod/RuleCraft.h"
 #include "CraftWeapon.h"
 #include "../Mod/RuleCraftWeapon.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "SavedGame.h"
 #include "ItemContainer.h"
@@ -96,6 +98,7 @@ void Craft::recalcSpeedMaxRadian()
  */
 Craft::~Craft()
 {
+	HdCraftRoute::forget(this); // OXCE-HD (oxceHdCraftRoute)
 	for (auto* cw : _weapons)
 	{
 		delete cw;
@@ -521,6 +524,7 @@ std::string Craft::getAltitude() const
  */
 void Craft::setDestination(Target *dest)
 {
+	HdCraftRoute::forget(this); // OXCE-HD (oxceHdCraftRoute): any order throws the route queue away; empty and free with the option off
 	if (_status != "STR_OUT")
 	{
 		_takeoff = 60;
@@ -829,7 +833,8 @@ void Craft::setFuel(int fuel)
  */
 int Craft::getFuelPercentage() const
 {
-	return (int)floor((double)_fuel / _stats.fuelMax * 100.0);
+	// a craft that carries no fuel at all (fuelMax 0 is a rule of the mods): 0 %, not the cast of a NaN to int
+	return _stats.fuelMax > 0 ? (int)floor((double)_fuel / _stats.fuelMax * 100.0) : 0;
 }
 
 /**
@@ -871,7 +876,7 @@ void Craft::setDamage(int damage)
  */
 int Craft::getDamagePercentage() const
 {
-	return (int)floor((double)_damage / _stats.damageMax * 100);
+	return _stats.damageMax > 0 ? (int)floor((double)_damage / _stats.damageMax * 100) : 0;
 }
 
 /**
@@ -1172,7 +1177,7 @@ void Craft::checkup()
  * @param target Pointer to target to compare.
  * @return True if it's detected, False otherwise.
  */
-UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const
+UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked, LuaHost *lua) const
 {
 	int distance = XcomDistance(getDistance(target));
 
@@ -1205,6 +1210,10 @@ UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alread
 	ModScript::DetectUfoFromCraft::Worker work { target, save, this, distance, alreadyTracked, _stats.radarChance, _stats.radarRange, };
 
 	work.execute(target->getRules()->getScript<ModScript::DetectUfoFromCraft>(), args);
+	if (lua)
+	{
+		lua->fire(LuaHost::DETECT_UFO_FROM_CRAFT, args.data, { target, save, this, distance, alreadyTracked, _stats.radarChance, _stats.radarRange });
+	}
 
 	return RNG::percent(args.getSecond()) ? (UfoDetection)args.getFirst() : DETECTION_NONE;
 }
@@ -1268,7 +1277,8 @@ unsigned int Craft::calcRearmTime()
 		if (w1 != 0 && !w1->isDisabled())
 		{
 			int needed = w1->getRules()->getAmmoMax() - w1->getAmmo();
-			if (needed > 0)
+			// a weapon that is not rearmed at all (rearmRate 0) adds no hours
+			if (needed > 0 && w1->getRules()->getRearmRate() > 0)
 			{
 				rearmTime += (int)ceil((double)(needed) / w1->getRules()->getRearmRate());
 			}
@@ -2277,6 +2287,8 @@ CraftPlacementErrors Craft::validateAddingSoldier(int space, const Soldier* s) c
 	{
 		for (auto& limit : limitArmorGroups)
 		{
+			if (s->getArmor()->getGroup() != limit.first) continue;
+
 			int subTotal = 0;
 			for (const auto* tmpSoldier : *_base->getSoldiers())
 			{

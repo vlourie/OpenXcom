@@ -1,0 +1,5 @@
+build_label=cmrun-MD
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + MISSION-LEVEL TACTICS (OXCE_AI_MDIR=0 off, 1 log only, 2 the order on)
+patch_sha256=3b7486bebc655b8ed5bf8ad251835cac1f2c6b885095bde20657b1d3425bbaae
+exe_sha256=d90d643871c3c2ab44b16aea1abe1ac17c353c719952c6f2fa3a6166beaf60b8

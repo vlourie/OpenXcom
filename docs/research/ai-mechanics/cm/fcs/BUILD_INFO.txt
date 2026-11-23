@@ -1,0 +1,5 @@
+build_label=cmrun-FC
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=DEV HEAD + al.diff + al3.diff + FIRST CONTACT SURVIVAL V0 (OXCE_AI_FCS=0 off, 1 shadow, 2 the rule)
+patch_sha256=2d5279800deca6c349521eab888408469ea4fae7d52c887753114d9acd54c489
+exe_sha256=6215b66e60f4635f73b72f32514e054bb7e587638b4a666921b1f924e68b883d

@@ -1,0 +1,15 @@
+===== M6 s1 turns up to 5
+  cc3_CO_M6_s1   attacks   85 with damage   9 dmg   437 | joint targets  12 fighters  49 with damage   5 dmg   437 | losses AI  20 players  4
+  cc8_CC_M6_s1   attacks  109 with damage  13 dmg   447 | joint targets  13 fighters  61 with damage   8 dmg   372 | losses AI  18 players  5
+  ra1_AN_M6_s1   attacks  117 with damage  20 dmg   711 | joint targets  15 fighters  72 with damage  10 dmg   636 | losses AI  24 players  6
+  ci5_IA_M6_s1   attacks  116 with damage  18 dmg   621 | joint targets  14 fighters  70 with damage   9 dmg   621 | losses AI  17 players  8
+===== M6 s2 turns up to 8
+  scpa_D_M6_s2   attacks  111 with damage  17 dmg   576 | joint targets  16 fighters  65 with damage   7 dmg   422 | losses AI  21 players  5
+  cc5_CC_M6_s2   attacks   84 with damage  17 dmg   636 | joint targets  19 fighters  55 with damage  10 dmg   504 | losses AI  27 players  5
+  ra2_AN_M6_s2   attacks  110 with damage  15 dmg   581 | joint targets  17 fighters  64 with damage   8 dmg   422 | losses AI  24 players  5
+  ci6_IA_M6_s2   attacks   78 with damage  12 dmg   358 | joint targets  15 fighters  43 with damage   7 dmg   253 | losses AI  22 players  3
+===== M3 s1 turns up to 6
+  scpa_D_M3_s1   attacks  137 with damage  32 dmg  1247 | joint targets  21 fighters  79 with damage   7 dmg   334 | losses AI  37 players  4
+  cc6_CV_M3_s1   attacks  122 with damage  23 dmg   621 | joint targets  15 fighters  58 with damage   5 dmg   184 | losses AI  37 players  5
+  ra3_AV_M3_s1   attacks  152 with damage  50 dmg  1282 | joint targets  17 fighters  63 with damage  13 dmg   630 | losses AI  34 players  5
+  ci7_IV_M3_s1   attacks  128 with damage  27 dmg   641 | joint targets  11 fighters  56 with damage   6 dmg    80 | losses AI  24 players  7

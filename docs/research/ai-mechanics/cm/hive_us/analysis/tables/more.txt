@@ -1,0 +1,124 @@
+﻿===== the guards: OFF us4, V0 ON ua1, ON us1
+us4_QO_M6_s1 1000021 decisions 16 turns 1 .. 8 places 1 modes {'3': 16} attacks 0 dmg 0 spent 0 fell False
+us4_QO_M6_s1 1000038 decisions 16 turns 1 .. 8 places 1 modes {'3': 16} attacks 0 dmg 0 spent 0 fell False
+us4_QO_M6_s1 1000039 decisions 16 turns 1 .. 8 places 1 modes {'3': 16} attacks 0 dmg 0 spent 0 fell False
+ua1_UN_M6_s1 1000021 decisions 30 turns 1 .. 8 places 13 modes {'0': 22, '3': 4, '2': 4} attacks 4 dmg 0 spent 624 fell False
+ua1_UN_M6_s1 1000038 decisions 9 turns 1 .. 4 places 9 modes {'0': 9} attacks 0 dmg 0 spent 532 fell True
+ua1_UN_M6_s1 1000039 decisions 15 turns 1 .. 5 places 7 modes {'0': 11, '2': 4} attacks 2 dmg 0 spent 483 fell True
+us1_QN_M6_s1 1000021 decisions 25 turns 1 .. 8 places 6 modes {'3': 10, '0': 15} attacks 0 dmg 0 spent 224 fell False
+us1_QN_M6_s1 1000038 decisions 23 turns 1 .. 7 places 9 modes {'3': 4, '0': 3, '2': 16} attacks 8 dmg 66 spent 631 fell True
+us1_QN_M6_s1 1000039 decisions 22 turns 1 .. 8 places 7 modes {'3': 4, '0': 18} attacks 0 dmg 0 spent 566 fell False
+===== ON us1: each patrol walk of the guards against the choice just before it
+1000038 t 3 mode 0 (8,21,2) -> (8,23,1) node of: chosen scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (8,23,1) cl 1 try 1
+1000039 t 3 mode 0 (10,19,2) -> (8,21,2) node of: chosen scout 0 from (10,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000039 t 3 mode 0 (8,21,2) -> (10,19,2) node of: chosen scout 0 from (8,21,2) free (10,19,2) fl 1 chosen (10,19,2) cl 1 try 1
+1000021 t 3 mode 0 (7,17,2) -> (6,19,2) node of: free scout 0 from (7,17,2) free (6,19,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000021 t 3 mode 0 (6,19,2) -> (7,17,2) node of: chosen scout 0 from (6,19,2) free (7,17,2) fl 1 chosen (7,17,2) cl 1 try 1
+1000039 t 3 mode 0 (10,19,2) -> (8,21,2) node of: chosen scout 0 from (10,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000039 t 3 mode 0 (8,21,2) -> (10,19,2) node of: chosen scout 0 from (8,21,2) free (10,19,2) fl 1 chosen (10,19,2) cl 1 try 1
+1000038 t 4 mode 0 (22,15,0) -> (8,23,1) node of: free scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 5
+1000038 t 4 mode 0 (22,15,0) -> (8,23,1) node of: free scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 5
+1000039 t 4 mode 0 (10,19,2) -> (8,21,2) node of: chosen scout 0 from (10,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000039 t 4 mode 0 (8,21,2) -> (10,19,2) node of: chosen scout 0 from (8,21,2) free (10,19,2) fl 1 chosen (10,19,2) cl 1 try 1
+1000038 t 4 mode 2 (22,15,0) -> (26,20,0) node of: other scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 5
+1000038 t 4 mode 2 (20,24,0) -> (23,26,0) node of: other scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 5
+1000039 t 4 mode 0 (10,19,2) -> (8,21,2) node of: chosen scout 0 from (10,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000039 t 4 mode 0 (8,21,2) -> (10,19,2) node of: chosen scout 0 from (8,21,2) free (10,19,2) fl 1 chosen (10,19,2) cl 1 try 1
+1000038 t 5 mode 2 (20,25,0) -> (25,37,0) node of: other scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000039 t 5 mode 0 (10,19,2) -> (8,21,2) node of: chosen scout 0 from (10,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000039 t 5 mode 0 (8,21,2) -> (10,19,2) node of: free scout 0 from (8,21,2) free (10,19,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000038 t 5 mode 2 (25,37,0) -> (24,36,0) node of: other scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000039 t 5 mode 0 (10,19,2) -> (8,21,2) node of: chosen scout 0 from (10,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000039 t 5 mode 0 (8,21,2) -> (10,19,2) node of: free scout 0 from (8,21,2) free (10,19,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000021 t 6 mode 0 (7,17,2) -> (8,15,1) node of: chosen scout 0 from (7,17,2) free (6,19,2) fl 1 chosen (8,15,1) cl 1 try 1
+1000021 t 6 mode 0 (15,17,2) -> (6,19,2) node of: free scout 0 from (7,17,2) free (6,19,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000039 t 6 mode 0 (10,19,2) -> (7,17,2) node of: free scout 0 from (10,19,2) free (7,17,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000039 t 6 mode 0 (7,17,2) -> (8,18,1) node of: chosen scout 0 from (7,17,2) free (10,19,2) fl 1 chosen (8,18,1) cl 1 try 1
+1000021 t 6 mode 0 (15,17,2) -> (6,19,2) node of: free scout 0 from (7,17,2) free (6,19,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000021 t 6 mode 0 (15,17,2) -> (6,19,2) node of: free scout 0 from (7,17,2) free (6,19,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000021 t 7 mode 0 (15,17,2) -> (6,19,2) node of: free scout 0 from (7,17,2) free (6,19,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000038 t 7 mode 2 (24,36,0) -> (28,35,0) node of: kept scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000038 t 7 mode 2 (25,36,0) -> (28,35,0) node of: kept scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000039 t 7 mode 0 (20,15,1) -> (8,18,1) node of: kept scout 0 from (7,17,2) free (10,19,2) fl 1 chosen (8,18,1) cl 1 try 1
+1000021 t 7 mode 0 (6,19,2) -> (8,21,2) node of: chosen scout 0 from (6,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000021 t 7 mode 0 (6,20,2) -> (8,21,2) node of: chosen scout 0 from (6,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000038 t 7 mode 2 (28,35,0) -> (29,36,0) node of: kept scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000038 t 7 mode 2 (29,36,0) -> (37,41,0) node of: kept scout 0 from (8,21,2) free (8,23,1) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000021 t 7 mode 0 (6,20,2) -> (8,21,2) node of: chosen scout 0 from (6,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000021 t 7 mode 0 (6,20,2) -> (8,21,2) node of: chosen scout 0 from (6,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000021 t 8 mode 0 (6,20,2) -> (8,21,2) node of: kept scout 0 from (6,19,2) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+1000021 t 8 mode 0 (8,21,2) -> (10,19,2) node of: chosen scout 0 from (8,21,2) free (10,19,2) fl 1 chosen (10,19,2) cl 1 try 1
+1000039 t 8 mode 0 (5,18,0) -> (8,18,1) node of: kept scout 0 from (7,17,2) free (10,19,2) fl 1 chosen (8,18,1) cl 1 try 1
+1000039 t 8 mode 0 (8,18,1) -> (8,20,1) node of: chosen scout 0 from (8,18,1) free (6,19,2) fl 1 chosen (8,20,1) cl 1 try 1
+1000021 t 8 mode 0 (10,19,2) -> (7,17,2) node of: free scout 0 from (10,19,2) free (7,17,2) fl 1 chosen (-1,-1,-1) cl 0 try 1
+1000021 t 8 mode 0 (7,17,2) -> (10,19,2) node of: chosen scout 0 from (7,17,2) free (6,19,2) fl 1 chosen (10,19,2) cl 1 try 1
+1000039 t 8 mode 0 (8,20,1) -> (8,21,2) node of: chosen scout 0 from (8,20,1) free (8,21,2) fl 1 chosen (8,21,2) cl 1 try 1
+===== who stands on what the guards were after, by turn (first decision of each unit at that place)
+us4_QO_M6_s1 {'t1 (10,19,2)': ['1000039'], 't1 (6,19,2)': ['1000015'], 't1 (7,17,2)': ['1000021'], 't1 (8,15,1)': ['1000007'], 't1 (8,18,1)': ['1000007'], 't1 (8,21,2)': ['1000038'], 't1 (8,23,1)': ['1000031'], 't2 (10,19,2)': ['1000039'], 't2 (6,19,2)': ['1000015'], 't2 (7,17,2)': ['1000021'], 't2 (8,15,1)': ['1000007', '1000012'], 't2 (8,18,1)': ['1000031'], 't2 (8,21,2)': ['1000038'], 't2 (8,23,1)': ['1000031'], 't3 (10,19,2)': ['1000039'], 't3 (6,19,2)': ['1000015'], 't3 (7,17,2)': ['1000021'], 't3 (8,15,1)': ['1000012', '1000031'], 't3 (8,18,1)': ['1000012'], 't3 (8,21,2)': ['1000038'], 't4 (10,19,2)': ['1000039'], 't4 (6,19,2)': ['1000015'], 't4 (7,17,2)': ['1000021'], 't4 (8,18,1)': ['1000012'], 't4 (8,21,2)': ['1000038']}
+us1_QN_M6_s1 {'t1 (10,19,2)': ['1000039'], 't1 (6,19,2)': ['1000015'], 't1 (7,17,2)': ['1000021'], 't1 (8,15,1)': ['1000009'], 't1 (8,18,1)': ['1000009'], 't1 (8,21,2)': ['1000038'], 't1 (8,23,1)': ['1000031'], 't2 (10,19,2)': ['1000039'], 't2 (6,19,2)': ['1000015'], 't2 (7,17,2)': ['1000021'], 't2 (8,15,1)': ['1000009'], 't2 (8,21,2)': ['1000038'], 't3 (10,19,2)': ['1000039'], 't3 (6,19,2)': ['1000015', '1000021'], 't3 (7,17,2)': ['1000021'], 't3 (8,21,2)': ['1000015', '1000038', '1000039'], 't4 (10,19,2)': ['1000039'], 't4 (7,17,2)': ['1000021'], 't4 (8,21,2)': ['1000039']}
+===== the choices of one think: all tries failed, and what the condition had; fall-back to the mode's own course
+us5_QS_M6_s1 thinks with a choice 305 all five tried 53 of them with a node from the condition 1 by scout {'0': 1} first tries with no path by length {1: 248, 2: 4, 5: 53}
+   five tried and all three first on the condition's node: 1
+   length of the sequences where try 1 is the condition's: {1: 193, 2: 4, 5: 1} free's: {1: 55, 5: 52}
+us1_QN_M6_s1 thinks with a choice 256 all five tried 19 of them with a node from the condition 0 by scout {} first tries with no path by length {1: 237, 5: 19}
+   five tried and all three first on the condition's node: 0
+   length of the sequences where try 1 is the condition's: {1: 158} free's: {1: 79, 5: 19}
+us2_QN_M3_s1 thinks with a choice 221 all five tried 8 of them with a node from the condition 5 by scout {'1': 5} first tries with no path by length {1: 210, 5: 8, 2: 3}
+   five tried and all three first on the condition's node: 5
+   length of the sequences where try 1 is the condition's: {1: 183, 5: 5} free's: {1: 27, 5: 3, 2: 3}
+us3_QN_M8_s1 thinks with a choice 181 all five tried 27 of them with a node from the condition 0 by scout {} first tries with no path by length {1: 151, 5: 27, 2: 3}
+   five tried and all three first on the condition's node: 0
+   length of the sequences where try 1 is the condition's: {1: 106} free's: {1: 45, 5: 27, 2: 3}
+===== time: one measure on all the builds; per side's turn; ms
+ra1_AN_M6_s1 plan [98.0, 28.6, 91.8, 23.0, 152.4, 19.2] floods [] floodMs [] battle ms 21834 planflood ['87549', '23469']
+ra2_AN_M6_s2 plan [135.6, 127.3, 279.8, 59.6, 87.0, 188.6, 132.6, 81.0] floods [] floodMs [] battle ms 34772 planflood ['130486', '121137']
+ua1_UN_M6_s1 plan [98.7, 0.1, 0.1, 0.1, 3.6, 0.1, 0.1, 0.1] floods [55, 14, 12, 1, 10, 5, 0, 0] floodMs [376, 120, 140, 20, 71, 34, 0, 0] battle ms 26472 planflood ['98352', '0']
+ua10_UN_M6_s1 plan [106.7, 0.1, 0.1, 0.1, 3.7, 0.1, 0.1, 0.1] floods [55, 14, 12, 1, 10, 5, 0, 0] floodMs [374, 105, 141, 20, 71, 38, 0, 0] battle ms 26470 planflood ['105881', '0']
+us1_QN_M6_s1 plan [104.2, 0.1, 0.1, 0.1, 14.0, 0.1, 0.1, 0.1] floods [64, 33, 36, 30, 24, 24, 24, 14] floodMs [371, 102, 164, 154, 137, 137, 84, 76] battle ms 36219 planflood ['103850', '0']
+us6_QN_M6_s1 plan [106.4, 0.1, 0.1, 0.1, 13.2, 0.1, 0.1, 0.1] floods [64, 33, 36, 30, 24, 24, 24, 14] floodMs [366, 103, 168, 141, 138, 142, 79, 78] battle ms 34852 planflood ['105817', '0']
+us5_QS_M6_s1 plan [99.7, 0.1, 0.1, 7.6, 0.1, 0.1, 0.1, 7.4] floods [67, 34, 35, 30, 35, 28, 30, 24] floodMs [340, 48, 53, 44, 65, 37, 53, 30] battle ms 35087 planflood ['99312', '0']
+ua2_UN_M3_s1 plan [79.8, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1] floods [61, 28, 19, 21, 22, 21, 14, 16] floodMs [189, 84, 52, 60, 77, 76, 59, 49] battle ms 62803 planflood ['79212', '0']
+us2_QN_M3_s1 plan [82.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.3, 0.1] floods [73, 32, 28, 18, 16, 12, 21, 27] floodMs [206, 99, 110, 51, 53, 39, 73, 100] battle ms 59129 planflood ['81727', '0']
+ua3_UN_M8_s1 plan [36.5, 0.1, 0.1, 0.1, 0.1] floods [63, 31, 17, 8, 3] floodMs [156, 77, 52, 29, 18] battle ms 36865 planflood ['36137', '0']
+us3_QN_M8_s1 plan [36.7, 0.2, 0.1, 2.0, 0.1, 0.1, 0.1, 0.1] floods [74, 44, 21, 8, 6, 6, 3, 4] floodMs [184, 111, 53, 26, 20, 30, 12, 19] battle ms 45059 planflood ['36268', '0']
+===== time by parts, us1 and us2, us3
+us1_QN_M6_s1
+  t1 total_hq 372.8 | plan 104.2: fields 17 102.6, areas 1.68 | update without plan 0.39 | fields on the choice 47 268.0 | max field 22.1 | free search 91 0.64 | steps 0.15 | max choice 0.04 | the engine's paths 91 fails 30 37.9
+  t2 total_hq 102.5 | plan 0.1: fields 0 0.0, areas 0.13 | update without plan 0.24 | fields on the choice 33 102.1 | max field 20.3 | free search 60 0.25 | steps 0.05 | max choice 0.03 | the engine's paths 60 fails 30 6.0
+  t3 total_hq 164.5 | plan 0.1: fields 0 0.0, areas 0.07 | update without plan 0.16 | fields on the choice 36 164.2 | max field 20.6 | free search 41 0.08 | steps 0.03 | max choice 0.01 | the engine's paths 41 fails 5 15.1
+  t4 total_hq 154.5 | plan 0.1: fields 0 0.0, areas 0.06 | update without plan 0.19 | fields on the choice 30 154.2 | max field 23.0 | free search 43 0.13 | steps 0.03 | max choice 0.03 | the engine's paths 43 fails 15 29.0
+  t5 total_hq 138.2 | plan 14.0: fields 5 13.4, areas 0.67 | update without plan 0.17 | fields on the choice 19 124.0 | max field 26.2 | free search 31 0.06 | steps 0.02 | max choice 0.02 | the engine's paths 31 fails 10 5.1
+  t6 total_hq 137.5 | plan 0.1: fields 0 0.0, areas 0.06 | update without plan 0.15 | fields on the choice 24 137.3 | max field 20.9 | free search 24 0.07 | steps 0.02 | max choice 0.02 | the engine's paths 24 fails 0 9.0
+  t7 total_hq 85.1 | plan 0.1: fields 0 0.0, areas 0.05 | update without plan 0.38 | fields on the choice 24 84.7 | max field 16.1 | free search 28 0.05 | steps 0.02 | max choice 0.01 | the engine's paths 28 fails 5 16.1
+  t8 total_hq 76.3 | plan 0.1: fields 0 0.0, areas 0.06 | update without plan 0.07 | fields on the choice 14 76.2 | max field 12.3 | free search 14 0.03 | steps 0.01 | max choice 0.00 | the engine's paths 14 fails 0 7.2
+  fields per turn, distinct units: {'1': (64, 38, 4), '2': (33, 14, 4), '3': (36, 14, 4), '4': (30, 12, 4), '5': (24, 12, 4), '6': (24, 14, 4), '7': (24, 9, 5), '8': (14, 7, 3)} tiles max 16584
+us6_QN_M6_s1
+  t1 total_hq 368.0 | plan 106.4: fields 17 104.6, areas 1.81 | update without plan 0.48 | fields on the choice 47 261.0 | max field 22.3 | free search 91 0.75 | steps 0.13 | max choice 0.06 | the engine's paths 91 fails 30 34.1
+  t2 total_hq 104.2 | plan 0.1: fields 0 0.0, areas 0.12 | update without plan 0.19 | fields on the choice 33 103.8 | max field 21.5 | free search 60 0.32 | steps 0.05 | max choice 0.06 | the engine's paths 60 fails 30 6.3
+  t3 total_hq 168.9 | plan 0.1: fields 0 0.0, areas 0.07 | update without plan 0.20 | fields on the choice 36 168.6 | max field 22.9 | free search 41 0.10 | steps 0.04 | max choice 0.01 | the engine's paths 41 fails 5 13.6
+  t4 total_hq 141.7 | plan 0.1: fields 0 0.0, areas 0.06 | update without plan 0.16 | fields on the choice 30 141.5 | max field 20.5 | free search 43 0.07 | steps 0.03 | max choice 0.01 | the engine's paths 43 fails 15 18.4
+  t5 total_hq 138.5 | plan 13.2: fields 5 12.5, areas 0.63 | update without plan 0.15 | fields on the choice 19 125.2 | max field 23.5 | free search 31 0.07 | steps 0.02 | max choice 0.02 | the engine's paths 31 fails 10 6.0
+  t6 total_hq 142.4 | plan 0.1: fields 0 0.0, areas 0.08 | update without plan 0.16 | fields on the choice 24 142.1 | max field 22.1 | free search 24 0.07 | steps 0.07 | max choice 0.07 | the engine's paths 24 fails 0 8.8
+  t7 total_hq 80.1 | plan 0.1: fields 0 0.0, areas 0.05 | update without plan 0.16 | fields on the choice 24 79.9 | max field 15.4 | free search 28 0.06 | steps 0.02 | max choice 0.00 | the engine's paths 28 fails 5 16.4
+  t8 total_hq 78.4 | plan 0.1: fields 0 0.0, areas 0.06 | update without plan 0.13 | fields on the choice 14 78.2 | max field 12.1 | free search 14 0.04 | steps 0.01 | max choice 0.01 | the engine's paths 14 fails 0 7.8
+  fields per turn, distinct units: {'1': (64, 38, 4), '2': (33, 14, 4), '3': (36, 14, 4), '4': (30, 12, 4), '5': (24, 12, 4), '6': (24, 14, 4), '7': (24, 9, 5), '8': (14, 7, 3)} tiles max 16584
+us2_QN_M3_s1
+  t1 total_hq 208.9 | plan 82.2: fields 30 101.6, areas 0.00 | update without plan 21.64 | fields on the choice 43 104.4 | max field 8.3 | free search 102 3.50 | steps 0.60 | max choice 0.25 | the engine's paths 102 fails 34 55.4
+  t2 total_hq 100.0 | plan 0.1: fields 1 2.1, areas 0.00 | update without plan 3.03 | fields on the choice 31 96.7 | max field 8.1 | free search 35 1.07 | steps 0.16 | max choice 0.07 | the engine's paths 36 fails 5 24.7
+  t3 total_hq 111.6 | plan 0.1: fields 7 26.7, areas 0.00 | update without plan 28.21 | fields on the choice 21 83.2 | max field 8.2 | free search 24 0.97 | steps 0.13 | max choice 0.08 | the engine's paths 25 fails 1 35.5
+  t4 total_hq 51.9 | plan 0.1: fields 1 3.6, areas 0.00 | update without plan 4.28 | fields on the choice 17 47.4 | max field 7.5 | free search 18 0.55 | steps 0.07 | max choice 0.05 | the engine's paths 18 fails 1 17.7
+  t5 total_hq 54.0 | plan 0.1: fields 0 0.0, areas 0.09 | update without plan 0.17 | fields on the choice 16 53.6 | max field 7.7 | free search 16 0.52 | steps 0.10 | max choice 0.06 | the engine's paths 16 fails 0 14.7
+  t6 total_hq 39.5 | plan 0.1: fields 0 0.0, areas 0.06 | update without plan 0.14 | fields on the choice 12 39.2 | max field 7.5 | free search 12 0.34 | steps 0.07 | max choice 0.05 | the engine's paths 12 fails 0 5.7
+  t7 total_hq 74.0 | plan 0.3: fields 0 0.0, areas 0.34 | update without plan 0.10 | fields on the choice 21 73.4 | max field 8.6 | free search 21 0.65 | steps 0.20 | max choice 0.11 | the engine's paths 22 fails 0 23.6
+  t8 total_hq 100.4 | plan 0.1: fields 0 0.0, areas 0.06 | update without plan 0.18 | fields on the choice 27 100.0 | max field 8.0 | free search 28 0.83 | steps 0.17 | max choice 0.09 | the engine's paths 28 fails 1 29.7
+  fields per turn, distinct units: {'1': (73, 54, 4), '2': (32, 25, 3), '3': (28, 21, 3), '4': (18, 17, 2), '5': (16, 14, 3), '6': (12, 9, 2), '7': (21, 14, 2), '8': (27, 18, 3)} tiles max 6397
+us3_QN_M8_s1
+  t1 total_hq 186.5 | plan 36.7: fields 20 38.1, areas 0.00 | update without plan 3.63 | fields on the choice 54 146.1 | max field 6.0 | free search 97 0.80 | steps 0.07 | max choice 0.05 | the engine's paths 97 fails 25 44.0
+  t2 total_hq 112.9 | plan 0.2: fields 0 0.0, areas 0.19 | update without plan 0.37 | fields on the choice 44 112.3 | max field 6.0 | free search 78 0.78 | steps 0.07 | max choice 0.05 | the engine's paths 78 fails 36 77.5
+  t3 total_hq 54.4 | plan 0.1: fields 0 0.0, areas 0.10 | update without plan 0.20 | fields on the choice 21 54.0 | max field 6.2 | free search 36 0.44 | steps 0.06 | max choice 0.04 | the engine's paths 36 fails 16 22.5
+  t4 total_hq 26.5 | plan 2.0: fields 2 1.7, areas 0.26 | update without plan 0.05 | fields on the choice 6 24.4 | max field 6.2 | free search 21 0.80 | steps 0.01 | max choice 0.32 | the engine's paths 21 fails 16 13.4
+  t5 total_hq 19.8 | plan 0.1: fields 0 0.0, areas 0.11 | update without plan 0.03 | fields on the choice 6 19.7 | max field 6.1 | free search 15 0.22 | steps 0.01 | max choice 0.03 | the engine's paths 15 fails 10 3.1
+  t6 total_hq 30.0 | plan 0.1: fields 0 0.0, areas 0.10 | update without plan 0.01 | fields on the choice 6 29.9 | max field 6.6 | free search 15 0.20 | steps 0.00 | max choice 0.03 | the engine's paths 15 fails 10 1.2
+  t7 total_hq 12.2 | plan 0.1: fields 0 0.0, areas 0.10 | update without plan 0.01 | fields on the choice 3 12.1 | max field 6.0 | free search 12 0.20 | steps 0.00 | max choice 0.03 | the engine's paths 12 fails 10 0.8
+  t8 total_hq 19.5 | plan 0.1: fields 0 0.0, areas 0.09 | update without plan 0.02 | fields on the choice 4 19.4 | max field 6.6 | free search 18 0.33 | steps 0.01 | max choice 0.06 | the engine's paths 18 fails 15 1.8
+  fields per turn, distinct units: {'1': (74, 36, 7), '2': (44, 23, 7), '3': (21, 14, 4), '4': (8, 7, 2), '5': (6, 4, 3), '6': (6, 3, 4), '7': (3, 2, 2), '8': (4, 2, 3)} tiles max 5042

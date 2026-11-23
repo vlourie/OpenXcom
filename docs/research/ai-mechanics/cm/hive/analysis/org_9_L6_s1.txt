@@ -1,0 +1,42 @@
+[HIVEINIT] turn=1 mission=STR_UFO_CRASH_RECOVERY manages=1 hostile=31 managed=25 apart=6 nodes=154 rank0=133 sectors=5 squads=5 us=215
+units 31 managed 25 apart {'out': 4, 'charger': 2}
+in squads 25 twice 0 managed but not in a squad 0 in a squad but not managed 0
+squad sizes [3, 4, 6, 6, 6] tasks Counter({'SEARCH': 3, 'HOLD': 2})
+first commanders by rank: Counter({'STR_LIVE_LEADER int=6': 2, 'STR_LIVE_NAVIGATOR int=5': 2, 'STR_LIVE_ENGINEER int=6': 1})
+not their own squad's member: 0
+ranks and Intelligence of all: [(('STR_LIVE_ENGINEER', '6', '1'), 2), (('STR_LIVE_LEADER', '6', '3'), 3), (('STR_LIVE_NAVIGATOR', '4', '2'), 6), (('STR_LIVE_NAVIGATOR', '5', '2'), 17), (('STR_LIVE_NAVIGATOR', '5', '5'), 2), (('STR_LIVE_TERRORIST', '5', '2'), 1)]
+orders 222 a unit given a new order with another still open: 0
+state chain errors: {}
+patrol walks of units with a walking order: to the order's target 45 elsewhere 0
+turn: squads with a completed order, by task and kind
+  1 {'HOLD_STAY': 2, 'SEARCH_GO': 1}
+  2 {'HOLD_STAY': 2}
+  3 {'HOLD_STAY': 2}
+  4 {'HOLD_STAY': 2}
+  5 {'HOLD_STAY': 2, 'SEARCH_GO': 1}
+  6 {'HOLD_STAY': 1}
+  7 {'HOLD_STAY': 1}
+  8 {'HOLD_STAY': 1, 'SEARCH_STAY': 1}
+  9 {'HOLD_STAY': 1, 'SEARCH_STAY': 1}
+  10 {'HOLD_STAY': 1}
+  11 {'HOLD_STAY': 1}
+  12 {'HOLD_STAY': 1}
+ T 1 alive 25 squads 5 hold 2 12 83% search 3 13 38% thinks 77 thinkUs 795
+ T 2 alive 22 squads 5 hold 2 11 85% search 3 11 46% thinks 71 thinkUs 293
+ T 3 alive 17 squads 4 hold 2 10 98% search 2 7 55% thinks 49 thinkUs 298
+ T 4 alive 16 squads 4 hold 2 9 79% search 2 7 37% thinks 44 thinkUs 235
+ T 5 alive 12 squads 3 hold 2 8 87% search 1 4 68% thinks 28 thinkUs 142
+ T 6 alive 10 squads 2 hold 1 5 97% search 1 5 71% thinks 21 thinkUs 202
+ T 7 alive 7 squads 2 hold 1 4 100% search 1 3 90% thinks 25 thinkUs 185
+ T 8 alive 7 squads 2 hold 1 4 75% search 1 3 97% thinks 12 thinkUs 113
+ T 9 alive 7 squads 2 hold 1 4 100% search 1 3 70% thinks 16 thinkUs 129
+ T 10 alive 7 squads 2 hold 1 4 100% search 1 3 78% thinks 16 thinkUs 177
+ T 11 alive 7 squads 2 hold 1 4 100% search 1 3 95% thinks 14 thinkUs 110
+ T 12 alive 7 squads 2 hold 1 4 100% search 1 3 97% thinks 13 thinkUs 103
+commander changes: [('3', 'dead', 'SEARCH', '1'), ('5', 'dead', 'SEARCH', '1'), ('6', 'dead', 'HOLD', '1'), ('6', 'dead', 'SEARCH', '1'), ('7', 'dead', 'HOLD', '1')]
+merges: 2 squad lines after start: []
+objective kinds: Counter({'contact': 11, 'sector_node': 4}) contacts aimed at: Counter({'581': 7, '-1': 4, '293': 4})
+contact classes: Counter({'LAST_KNOWN': 55, 'KNOWN': 32}) expired: 2
+refusals: Counter({'no_path': 99})
+plan us max: 226 init us: ['215']
+errors in the journal: 0

@@ -1,0 +1,51 @@
+differs: ./Battlescape/AiProbe.cpp
+differs: ./Battlescape/TileEngine.cpp
+differs: ./Battlescape/TileEngine.h
+exe_sha256=71c938a30ad39034912fdd5a9b0f9beda08ae2ed5c6ffed3151c003bbc96fd1f
+sums mismatches: 0
+1/1 fy5_FL_L4_s2 code=0 85s total=85s
+ALL DONE
+IDENTICAL over 1744 lines (a 1744, b 1744); decisions 442
+== fy5_FL_L4_s2: decisions 93, with the probe 93; reachable cells over them 36572: safe by the line 9536 (26%), by the AI's own answer 35228 (96%)
+   32 m2 attack now_exposed safe
+   14 m0 other now_clear dest_clear safe
+   12 m0 walk now_clear dest_clear safe
+   7 m0 walk now_exposed dest_clear safe
+   6 m3 other now_clear dest_clear safe
+   5 m2 walk now_exposed dest_exposed safe
+   5 m3 walk now_exposed dest_exposed safe
+   4 m2 walk now_clear dest_exposed safe
+   2 m3 walk now_exposed dest_clear safe
+   2 m0 walk now_exposed dest_clear no_safe
+   1 m3 walk now_clear dest_clear safe
+   1 m0 walk now_exposed dest_exposed safe
+   1 m3 walk now_exposed dest_exposed no_safe
+   1 m0 walk now_clear dest_exposed safe
+   alive at the next player turn, by the last decision:
+     7 m0 a2 dest_clear unseen_at_pstart
+     3 m0 a2 dest_clear seen_at_pstart
+     3 m3 a2 dest_exposed seen_at_pstart
+     2 m2 a8 dest_exposed seen_at_pstart
+     2 m3 a2 dest_clear seen_at_pstart
+     1 m3 a2 dest_exposed unseen_at_pstart
+     1 m2 a7 dest_exposed seen_at_pstart
+
+L4_s2 t1 s1 1000008 _SOLDIER a2 m3 (24,40,4) > (21,35,4) tu81 lost (24,41,2) by 340 d14 kNow0 kDest0 nNow0 nDest0 k11 cells1086 safe296 old1086 25.40.4:4
+L4_s2 t1 s1 1000004 _DEMON_TER a2 m0 (25,41,2) > (33,38,2) tu110 lost (24,40,2) by 340 d13 kNow1 kDest0 nNow3 nDest2 k11 cells646 safe92 old537 22.40.2:15
+L4_s2 t1 s1 1000005 _SOLDIER a2 m2 (1,44,2) > (13,42,2) tu76 lost (10,43,2) by 393 d4 kNow1 kDest1 nNow2 nDest2 k11 cells514 safe164 old513 0.41.2:14
+L4_s2 t1 s1 1000010 _SOLDIER a2 m2 (14,51,2) > (13,43,2) tu81 lost (14,50,2) by 393 d9 kNow1 kDest1 nNow1 nDest2 k11 cells703 safe98 old697 14.52.2:4
+L4_s2 t1 s1 1000013 _SOLDIER a7 m2 (22,49,2) > (40,43,2) tu73 lost (22,49,2) by 340 d22 kNow1 kDest0 nNow5 nDest2 k11 cells626 safe46 old578 20.52.2:20
+L4_s2 t1 s1 1000017 _SARGE a2 m3 (31,47,2) > (35,52,2) tu25 lost (33,49,2) by 96 d9 kNow0 kDest1 nNow3 nDest6 k11 cells92 safe0 old77 -
+L4_s2 t1 s1 1000031 _IMP_TERRO a8 m2 (21,57,3) > (41,54,2) tu73 lost (21,57,3) by 340 d30 kNow1 kDest0 nNow5 nDest5 k11 cells614 safe66 old609 21.57.2:8
+L4_s2 t1 s1 1000014 _SARGE a2 m0 (20,41,4) > (57,9,1) tu20 lost (23,40,2) by 340 d13 kNow0 kDest0 nNow2 nDest0 k11 cells44 safe1 old44 22.41.1:20
+L4_s2 t1 s1 1000023 _SARGE a2 m0 (19,45,2) > (41,54,4) tu21 lost (22,45,2) by 340 d18 kNow0 kDest0 nNow5 nDest0 k11 cells52 safe1 old39 18.41.2:18
+L4_s2 t1 s1 1000030 _IMP_TERRO a8 m2 (34,48,2) > (34,41,2) tu48 lost (34,48,2) by 96 d8 kNow1 kDest1 nNow4 nDest3 k11 cells260 safe11 old220 31.41.2:34
+L4_s2 t2 s0 1000006 _SOLDIER a8 m2 (20,44,4) > (40,43,2) tu22 lost (20,44,4) by 38 d6 kNow0 kDest0 nNow3 nDest2 k11 cells85 safe1 old80 19.44.4:8
+L4_s2 t2 s0 1000016 _SARGE a2 m3 (24,4,2) > (26,4,3) tu17 lost (23,7,2) by 61 d3 kNow1 kDest1 nNow1 nDest1 k11 cells36 safe30 old35 23.4.2:4
+L4_s2 t2 s0 1000018 _SARGE a2 m0 (31,54,2) > (51,57,2) tu16 lost (32,51,2) by 184 d11 kNow0 kDest0 nNow4 nDest0 k11 cells48 safe0 old37 -
+L4_s2 t2 s0 1000022 _SARGE a2 m3 (31,44,2) > (28,45,2) tu18 lost (28,45,2) by 184 d12 kNow1 kDest1 nNow2 nDest3 k11 cells44 safe3 old36 31.41.2:12
+L4_s2 t2 s0 1000035 _HELL_BARO a2 m3 (26,52,2) > (27,51,2) tu34 lost (27,51,2) by 363 d14 kNow1 kDest1 nNow5 nDest5 k11 cells168 safe8 old139 21.53.2:26
+L4_s2 t2 s0 1000033 _SARGE a2 m0 (5,45,2) > (3,5,3) tu6 lost (5,44,2) by 393 d9 kNow1 kDest0 nNow4 nDest0 k11 cells8 safe0 old6 -
+L4_s2 t2 s0 1000026 _GUNNER a2 m3 (2,49,2) > (2,45,2) tu18 lost (2,45,2) by 393 d13 kNow1 kDest1 nNow3 nDest4 k11 cells157 safe11 old154 1.48.2:8
+L4_s2 t2 s0 1000020 _SARGE a7 m2 (4,51,2) > (12,40,2) tu31 lost (4,51,2) by 393 d14 kNow1 kDest0 nNow1 nDest3 k11 cells117 safe17 old112 1.53.2:20
+L4_s2 t2 s0 1000027 _IMP_TERRO a2 m3 (14,54,2) > (9,55,2) tu114 lost (9,55,2) by 393 d15 kNow1 kDest0 nNow1 nDest0 k11 cells1204 safe244 old1200 14.55.2:4

@@ -19,6 +19,7 @@
  */
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include "../Engine/Surface.h"
 #include "../Battlescape/Position.h"
 #include "../Mod/MapData.h"
@@ -131,6 +132,9 @@ protected:
 	Sint16 _TUMarker = -1;
 	Sint16 _EnergyMarker = -1;
 	Sint8 _preview = -1;
+	/// HD interface (oxceHdPathStretch), picture only: the TU of the step into this tile on the previewed path, in
+	/// twelfths of the usual step (12 = 4 TU straight or 6 TU diagonal); 0 = unknown
+	Uint8 _previewStep = 0;
 	Uint8 _overlaps = 0;
 
 
@@ -318,6 +322,10 @@ public:
 	int getExplosiveType() const;
 	/// Animated the tile parts.
 	void animate();
+	/// Animates the tile parts for the picture only (XP-000097): the UFO doors are left as they are (their frames are mechanics).
+	void animateDrawOnly();
+	/// HD render test: resets animation phase (tile object frames and smoke/fire offset) to a deterministic state.
+	void hdTestResetAnimation();
 	/// Update cached value of sprite.
 	void updateSprite(TilePart part);
 	/// Get object sprites.
@@ -389,6 +397,9 @@ public:
 	void setPreview(int dir);
 	/// retrieve the direction stored by the pathfinding.
 	int getPreview() const;
+	/// HD interface: the step into this tile as a share of the usual one, in twelfths (the path preview's arrow length).
+	void setPreviewStep(int twelfths) { _previewStep = (Uint8)std::max(0, std::min(255, twelfths)); }
+	int getPreviewStep() const { return _previewStep; }
 	/// set the number to be displayed for pathfinding preview.
 	void setTUMarker(int tu);
 	/// get the number to be displayed for pathfinding preview.

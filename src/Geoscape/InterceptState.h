@@ -31,6 +31,7 @@ class Base;
 class Globe;
 class Craft;
 class Target;
+class CraftWeaponIcons;
 
 /**
  * Intercept window that lets the player launch
@@ -48,6 +49,7 @@ private:
 	Target *_target;
 	std::vector<Craft*> _crafts;
 	std::vector<Craft*> _selCrafts;
+	CraftWeaponIcons *_weaponIcons = nullptr; ///< OXCE-HD: the weapon pictures before the names (nullptr: none)
 public:
 	/// Creates the Intercept state.
 	InterceptState(Globe *globe, bool useCustomSound, Base *base = 0, Target *target = 0);

@@ -1,0 +1,32 @@
+line 764 FIELD t1 1000028 at (3,4,0) tiles 1737
+line 765 FIELD t1 1000050 at (6,16,3) tiles 1526
+line 790 FIELD t1 1000016 at (2,11,0) tiles 1639
+line 791 FIELD t1 1000027 at (6,14,0) tiles 1900
+line 999 END t1 1000016 at (2,11,0) tries 1 refused 0 taken 1 end (8,19,0)
+line 1005 WALK 1000016 rec 49 pos [4, 18, 0] spent 40 trail ['walk.stop.spotted 4,18,0>4,18,0 d4 bam0 mt2 sz1 tu25/-1 en60/-1 rs0 bu-1']
+line 1187 END t1 1000027 at (6,14,0) tries 5 refused 3 taken 0 end none
+line 1195 END t1 1000028 at (3,4,0) tries 1 refused 0 taken 1 end (5,10,3)
+line 1201 WALK 1000028 rec 70 pos [2, 7, 0] spent 22 trail ['walk.stop.turnspot 2,7,0>2,7,0 d3 bam0 mt2 sz1 tu43/-1 en69/-1 rs0 bu-1']
+line 1207 WALK 1000028 rec 71 pos [2, 7, 0] spent 1 trail ['walk.stop.turnspot 2,7,0>2,7,0 d2 bam0 mt2 sz1 tu42/-1 en69/-1 rs0 bu-1']
+line 1696 END t1 1000027 at (6,14,0) tries 5 refused 3 taken 0 end none
+line 1808 END t1 1000050 at (6,16,3) tries 5 refused 3 taken 0 end none
+line 2074 END t1 1000027 at (6,14,0) tries 5 refused 3 taken 0 end (3,17,0)
+line 2080 WALK 1000027 rec 177 pos [3, 17, 0] spent 20 trail []
+line 2081 FIELD t1 1000027 at (3,17,0) tiles 68
+line 2083 END t1 1000027 at (3,17,0) tries 1 refused 0 taken 1 end (2,11,0)
+line 2090 WALK 1000027 rec 178 pos [2, 11, 0] spent 26 trail []
+line 2134 END t1 1000050 at (6,16,3) tries 5 refused 3 taken 0 end none
+line 2450 [AIPANIC] turn=2 side=0 handled=0 fix=1
+line 2453 [AIPANIC] turn=2 side=0 handled=1 fix=1
+line 2937 WALK 1000016 rec 252 pos [3, 19, 0] spent 8 trail ['walk.stop.spotted 3,19,0>3,19,0 d6 bam0 mt2 sz1 tu57/-1 en76/-1 rs0 bu-1']
+line 3247 WALK 1000016 rec 277 pos [5, 19, 0] spent 8 trail ['walk.stop.spotted 5,19,0>5,19,0 d2 bam0 mt2 sz1 tu7/-1 en72/-1 rs0 bu-1']
+line 3256 WALK 1000016 rec 278 pos [6, 19, 0] spent 4 trail ['walk.stop.reaction 6,19,0>6,19,0 d2 bam0 mt2 sz1 tu3/-1 en70/-1 rs0 bu-1']
+line 3404 FIELD t2 1000027 at (2,11,0) tiles 1735
+line 3406 END t2 1000027 at (2,11,0) tries 1 refused 0 taken 1 end (41,18,0)
+line 3412 WALK 1000027 rec 300 pos [4, 18, 0] spent 32 trail ['walk.stop.turnspot 4,18,0>4,18,0 d3 bam0 mt2 sz1 tu33/-1 en64/-1 rs0 bu-1']
+line 3719 FIELD t2 1000050 at (6,16,3) tiles 1403
+line 3721 END t2 1000050 at (6,16,3) tries 1 refused 0 taken 1 end (25,15,0)
+line 3728 WALK 1000050 rec 345 pos [5, 20, 3] spent 26 trail []
+line 3735 WALK 1000050 rec 346 pos [4, 17, 3] spent 16 trail []
+line 3742 WALK 1000050 rec 347 pos [5, 21, 3] spent 20 trail ['walk.stop.tu 5,21,3>5,22,3 d4 bam0 mt2 sz1 tu3/4 en49/2 rs0 bu-1']
+line 3941 WALK 1000027 rec 376 pos [6, 18, 0] spent 8 trail ['walk.stop.tu 6,18,0>7,18,0 d2 bam0 mt2 sz1 tu2/4 en60/2 rs0 bu-1']

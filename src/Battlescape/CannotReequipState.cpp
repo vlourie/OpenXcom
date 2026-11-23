@@ -29,6 +29,7 @@
 #include "../Savegame/Base.h"
 #include "../Basescape/ManufactureState.h"
 #include "../Basescape/PurchaseState.h"
+#include "ReequipManufactureState.h"
 
 namespace OpenXcom
 {
@@ -49,7 +50,9 @@ CannotReequipState::CannotReequipState(std::vector<ReequipStat> &missingItems, B
 	_txtItem = new Text(142, 9, 10, 50);
 	_txtQuantity = new Text(88, 9, 152, 50);
 	_txtCraft = new Text(74, 9, 218, 50);
-	_lstItems = new TextList(288, 112, 8, 58);
+	// OXCE-HD (XP-000573): the list is a line shorter, below it the hint that a click on an item opens where to manufacture it
+	_lstItems = new TextList(288, 104, 8, 58);
+	_txtHint = new Text(300, 9, 10, 165);
 
 	// Set palette
 	setInterface("cannotReequip");
@@ -63,6 +66,7 @@ CannotReequipState::CannotReequipState(std::vector<ReequipStat> &missingItems, B
 	add(_txtQuantity, "text", "cannotReequip");
 	add(_txtCraft, "text", "cannotReequip");
 	add(_lstItems, "list", "cannotReequip");
+	add(_txtHint, "text", "cannotReequip");
 
 	centerAllSurfaces();
 
@@ -95,6 +99,10 @@ CannotReequipState::CannotReequipState(std::vector<ReequipStat> &missingItems, B
 	_lstItems->setSelectable(true);
 	_lstItems->setBackground(_window);
 	_lstItems->setMargin(2);
+	_lstItems->onMouseClick((ActionHandler)&CannotReequipState::lstItemsClick);
+
+	_txtHint->setText(tr("STR_REEQUIP_CLICK_HINT"));
+	_txtHint->setAlign(ALIGN_CENTER);
 }
 
 /**
@@ -112,6 +120,7 @@ void CannotReequipState::init()
 	State::init();
 
 	_lstItems->clearList();
+	_rowItems.clear();
 
 	for (const auto& reequipStat : _missingItems)
 	{
@@ -120,7 +129,21 @@ void CannotReequipState::init()
 			std::ostringstream ss;
 			ss << reequipStat.qty;
 			_lstItems->addRow(3, tr(reequipStat.item).c_str(), ss.str().c_str(), reequipStat.craft.c_str());
+			_rowItems.push_back(reequipStat.item);
 		}
+	}
+}
+
+/**
+ * OXCE-HD (XP-000573): opens where the clicked item can be manufactured - the bases and why some can't.
+ * @param action Pointer to an action.
+ */
+void CannotReequipState::lstItemsClick(Action *)
+{
+	const size_t row = _lstItems->getSelectedRow();
+	if (row < _rowItems.size())
+	{
+		_game->pushState(new ReequipManufactureState(_rowItems[row], _base));
 	}
 }
 

@@ -1,0 +1,6 @@
+# Не в гит: сжатые логи прогонов, jsonl-журналы, файлы >1 МБ и конфиги с полем password (аудит 09.11)
+*.gz
+*.jsonl
+pv/results/*.cfg
+AI-CODE-REFERENCE.md
+forensic/data/debate1_causal_d0p.json

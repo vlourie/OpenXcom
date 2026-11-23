@@ -1,0 +1,50 @@
+ci5_IA_M6_s1 {'ISSUE': 41, 'CHOICE': 335, 'RESULT': 509, 'CLOSE': 41, 'SKIP': 1, 'BACK': 1, 'PRIORITY': 14} {'BACK': 1, 'SKIP': 1}
+ci6_IA_M6_s2 {'ISSUE': 31, 'CHOICE': 237, 'RESULT': 513, 'CLOSE': 31, 'SKIP': 3, 'BACK': 5, 'PRIORITY': 10} {'BACK': 5, 'SKIP': 3}
+ci7_IV_M3_s1 {'ISSUE': 66, 'CHOICE': 301, 'RESULT': 730, 'CLOSE': 66, 'SKIP': 0, 'BACK': 2, 'PRIORITY': 17} {'BACK': 2}
+  BACK                             8
+  SKIP                             4
+  atk_checked                      322
+  changed                          74
+  changed_ATTACKED_CONTACT         14
+  changed_NOT_EXECUTED             8
+  changed_NO_ACTION                4
+  changed_WALK_OTHER               26
+  changed_WALK_TOWARD              22
+  choice                           873
+  close_contact_down               22
+  close_done                       29
+  close_expired                    87
+  exec_more                        6
+  issue_ENGAGE_CONTACT             60
+  issue_MAINTAIN_OBJECTIVE         55
+  issue_SUPPORT_CONTACT            23
+  no_closer_threat                 9
+  no_firepoint_no_shot             13
+  no_maintain_keeps_post           10
+  no_mode_choice_rejected          15
+  no_no_effect                     143
+  no_no_line                       4
+  no_no_tu                         4
+  no_not_valid_target              97
+  no_not_visible                   48
+  no_same                          429
+  no_takes                         87
+  no_weak_effect                   14
+  own_-                            1589
+  own_dice_mode                    60
+  own_own_grenade                  11
+  own_own_melee                    2
+  own_own_other                    90
+  res_ATTACKED_CONTACT             99
+  res_NOT_EXECUTED                 307
+  res_NO_ACTION                    288
+  res_OTHER_ATTACK                 218
+  res_WALK_OTHER                   593
+  res_WALK_TOWARD                  247
+  tu_differ_act6                   22
+  tu_differ_act8                   2
+  tu_differ_act9                   2
+  tu_same                          296
+  refusals 357
+-- attacks of ra1 by damage, and on 470
+  ra1 attacks 131 with damage 24 on 470 29 with damage 3

@@ -20,9 +20,12 @@
 #include "ModScript.h"
 #include <algorithm>
 #include <functional>
+#include <future>
 #include <sstream>
 #include <climits>
 #include <cassert>
+#include <unordered_set>
+#include <set>
 #include "../version.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/FileMap.h"
@@ -30,7 +33,20 @@
 #include "../Engine/Font.h"
 #include "../Engine/Surface.h"
 #include "../Engine/SurfaceSet.h"
+#include "../Engine/HdSprites.h"
+#include "../Engine/HdWorkers.h"
+#include "../Engine/HdBlit.h"
+#include "../Engine/HdUiArt.h"
+#include "../Engine/HdBase.h"
+#include "../Engine/HdItems.h"
+#include "../Engine/HdCraftLights.h"
+#include "../Engine/HdFx.h"
+#include "../Engine/HdOutline.h"
+#include "../Engine/HdScreens.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/SDL2Helpers.h"
 #include "../Engine/Music.h"
+#include "../Engine/Language.h"
 #include "../Engine/GMCat.h"
 #include "../Engine/SoundSet.h"
 #include "../Engine/Sound.h"
@@ -61,9 +77,11 @@
 #include "RuleCraftWeapon.h"
 #include "RuleItemCategory.h"
 #include "RuleItem.h"
+#include "RuleVoiceSet.h"
 #include "RuleWeaponSet.h"
 #include "RuleUfo.h"
 #include "RuleTerrain.h"
+#include "LuaHost.h"
 #include "MapScript.h"
 #include "RuleSoldier.h"
 #include "RuleSkill.h"
@@ -105,6 +123,7 @@
 #include "MCDPatch.h"
 #include "StatString.h"
 #include "RuleGlobe.h"
+#include "Texture.h"
 #include "RuleVideo.h"
 #include "RuleConverter.h"
 #include "RuleSoldierTransformation.h"
@@ -190,6 +209,7 @@ int Mod::DIFFICULTY_BASED_RETAL_DELAY[5];
 int Mod::UNIT_RESPONSE_SOUNDS_FREQUENCY[4];
 int Mod::PEDIA_FACILITY_RENDER_PARAMETERS[4];
 bool Mod::EXTENDED_ITEM_RELOAD_COST;
+bool Mod::EXTENDED_IGNORE_OVERWEIGHT_RULE;
 bool Mod::EXTENDED_INVENTORY_SLOT_SORTING;
 bool Mod::EXTENDED_RUNNING_COST;
 int Mod::EXTENDED_MOVEMENT_COST_ROUNDING;
@@ -307,6 +327,7 @@ void Mod::resetGlobalStatics()
 	PEDIA_FACILITY_RENDER_PARAMETERS[3] = 0; // pedia facility Y offset
 
 	EXTENDED_ITEM_RELOAD_COST = false;
+	EXTENDED_IGNORE_OVERWEIGHT_RULE = false;
 	EXTENDED_INVENTORY_SLOT_SORTING = false;
 	EXTENDED_RUNNING_COST = false;
 	EXTENDED_MOVEMENT_COST_ROUNDING = 0;
@@ -454,7 +475,7 @@ Mod::Mod() :
 	_defeatScore(0), _defeatFunds(0), _difficultyDemigod(false), _startingTime(6, 1, 1, 1999, 12, 0, 0), _startingDifficulty(0),
 	_baseDefenseMapFromLocation(0), _disableUnderwaterSounds(false), _enableUnitResponseSounds(false), _pediaReplaceCraftFuelWithRangeType(-1),
 	_facilityListOrder(0), _craftListOrder(0), _itemCategoryListOrder(0), _itemListOrder(0), _armorListOrder(0), _alienRaceListOrder(0),
-	_researchListOrder(0),  _manufactureListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0),
+	_researchListOrder(0),  _manufactureListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0), _voiceSetsListOrder(0),
 	_modCurrent(0), _statePalette(0)
 {
 	_muteMusic = new Music();
@@ -600,12 +621,15 @@ Mod::Mod() :
 /**
  * Deletes all the mod data from memory.
  */
+namespace { void userTrialEnd(); } // XP-000547, below with the other own music helpers
+
 Mod::~Mod()
 {
 	delete _muteMusic;
 	delete _muteSound;
 	delete _globe;
 	delete _converter;
+	delete _luaHost;
 	delete _scriptGlobal;
 	for (auto& pair : _fonts)
 	{
@@ -619,6 +643,22 @@ Mod::~Mod()
 	{
 		delete pair.second;
 	}
+	HdSprites::clear();
+	for (auto& pair : _hdSets)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : _hdSurfaces)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : _hdSurfaceFrames)
+	{
+		for (Surface *frame : pair.second)
+		{
+			delete frame;
+		}
+	}
 	for (auto& pair : _palettes)
 	{
 		delete pair.second;
@@ -627,6 +667,16 @@ Mod::~Mod()
 	{
 		delete pair.second;
 	}
+	for (auto& track : _userMusic)
+	{
+		delete track.music;
+	}
+	for (auto* music : _userMusicRetired)
+	{
+		delete music;
+	}
+	// XP-000547: the game is closed the normal way (or the mod is loaded again): the own track under trial is cleared
+	userTrialEnd();
 	for (auto& pair : _sounds)
 	{
 		delete pair.second;
@@ -664,6 +714,10 @@ Mod::~Mod()
 		delete pair.second;
 	}
 	for (auto& pair : _items)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : _voiceSets)
 	{
 		delete pair.second;
 	}
@@ -724,6 +778,10 @@ Mod::~Mod()
 		delete pair.second;
 	}
 	for (auto& pair : _research)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : _missingResearch)   // HD: пустышки для тем, которых мод не объявил
 	{
 		delete pair.second;
 	}
@@ -879,9 +937,20 @@ void Mod::lazyLoadSurface(const std::string &name)
 		auto i = _extraSprites.find(name);
 		if (i != _extraSprites.end())
 		{
+			bool fresh = false;
 			for (auto* extraSprites : i->second)
 			{
+				fresh = fresh || !extraSprites->isLoaded();
 				loadExtraSprite(extraSprites);
+			}
+			if (fresh)
+			{
+				// the HD picture of the image, if it has one (HdUiArt::addDeferred)
+				auto surface = _surfaces.find(name);
+				if (surface != _surfaces.end())
+				{
+					HdUiArt::loaded(name, surface->second);
+				}
 			}
 		}
 	}
@@ -907,6 +976,488 @@ SurfaceSet *Mod::getSurfaceSet(const std::string &name, bool error)
 {
 	lazyLoadSurface(name);
 	return getRule(name, "Sprite Set", _sets, error);
+}
+
+/**
+ * HD render: the scale factor of the battlescape sprites: the "HD scale"
+ * option (1 = the original 32x40 tiles), or, when that is off, what a mod
+ * asks for by shipping a bigger BLANKS.PCK frame 0 (a 128x160 frame means 4).
+ * Fixed for the duration of a battle: see refreshHdScale().
+ * @return k >= 1.
+ */
+int Mod::getHdScale()
+{
+	if (_hdScale <= 0)
+	{
+		refreshHdScale();
+	}
+	return _hdScale;
+}
+
+/**
+ * HD render: reads the HD scale option again. A change throws away the
+ * k-scaled sets and the HD frames of the old scale, so it must only happen
+ * between battles (BattlescapeGenerator::run and the battle save loader call
+ * it before any terrain is loaded).
+ */
+int Mod::wantedHdScale()
+{
+	int k = std::max(1, std::min(6, Options::oxceHdScale));
+	if (k == 1)
+	{
+		SurfaceSet *blanks = getSurfaceSet("BLANKS.PCK", false);
+		if (blanks && blanks->getFrame(0))
+		{
+			k = std::max(1, blanks->getFrame(0)->getWidth() / 32);
+		}
+	}
+	return k;
+}
+
+bool Mod::hdScaleStale()
+{
+	return _hdScale > 0 && wantedHdScale() != _hdScale;
+}
+
+void Mod::refreshHdScale()
+{
+	int k = wantedHdScale();
+	if (k == _hdScale)
+	{
+		return;
+	}
+	if (_hdScale > 0)
+	{
+		Log(LOG_INFO) << "HD render: battlescape sprite scale changes from " << _hdScale << "x to " << k << "x";
+		HdSprites::clear();
+		freeHdScaled();
+	}
+	else if (k > 1)
+	{
+		Log(LOG_INFO) << "HD render: battlescape sprite scale is " << k << "x";
+	}
+	_hdScale = k;
+}
+
+void Mod::freeHdScaled()
+{
+	for (auto& pair : _hdSets)
+	{
+		delete pair.second;
+	}
+	_hdSets.clear();
+	_hdPacksLoaded.clear();
+	for (auto& pair : _hdSurfaces)
+	{
+		delete pair.second;
+	}
+	_hdSurfaces.clear();
+	for (auto& pair : _hdSurfaceFrames)
+	{
+		for (Surface *frame : pair.second)
+		{
+			delete frame;
+		}
+	}
+	_hdSurfaceFrames.clear();
+}
+
+/**
+ * Everything the mod holds for one HD scale: the scale, the scaled copies of the sprite sets and pictures,
+ * the registry of HD frames (they are found by the pixels of those copies), the reticle put into CURSOR.PCK,
+ * and the contents of every loaded terrain (its frames are scaled in place, its tiles are what a battle stands on).
+ */
+struct Mod::HdScalePark
+{
+	int scale = 0;
+	int reticle = -1;
+	std::map<const SurfaceSet*, SurfaceSet*> sets;
+	std::set<const SurfaceSet*> packs;
+	std::map<const Surface*, Surface*> surfaces;
+	std::map<const Surface*, std::vector<Surface*> > frames;
+	HdSprites::Parked *sprites = nullptr;
+	std::vector<MapDataSet::Parked> terrain;
+	MapData *blank = nullptr, *scorched = nullptr;
+};
+
+Mod::HdScalePark *Mod::parkHdScale()
+{
+	// all the memory parking needs is taken first: from the first change on nothing can fail
+	std::unique_ptr<HdScalePark> park(new HdScalePark);
+	size_t loaded = 0;
+	for (auto& pair : _mapDataSets)
+	{
+		if (pair.second->isLoaded())
+		{
+			++loaded;
+		}
+	}
+	park->terrain.resize(loaded);
+	park->sprites = HdSprites::park();
+
+	park->scale = _hdScale;
+	park->reticle = _hdReticleApplied;
+	park->sets.swap(_hdSets);
+	park->packs.swap(_hdPacksLoaded);
+	park->surfaces.swap(_hdSurfaces);
+	park->frames.swap(_hdSurfaceFrames);
+	park->blank = MapDataSet::getBlankFloorTile();
+	park->scorched = MapDataSet::getScorchedEarthTile();
+	size_t n = 0;
+	for (auto& pair : _mapDataSets)
+	{
+		if (pair.second->isLoaded())
+		{
+			pair.second->park(park->terrain[n++]);
+		}
+	}
+	_hdScale = 0;
+	_hdReticleApplied = -1;
+	return park.release();
+}
+
+void Mod::unparkHdScale(HdScalePark *park)
+{
+	if (!park)
+	{
+		return;
+	}
+	// what was loaded at the other scale goes first, then the registry that knows its frames
+	for (auto& pair : _mapDataSets)
+	{
+		pair.second->unloadData();
+	}
+	HdSprites::unpark(park->sprites);
+	freeHdScaled();
+	_hdSets.swap(park->sets);
+	_hdPacksLoaded.swap(park->packs);
+	_hdSurfaces.swap(park->surfaces);
+	_hdSurfaceFrames.swap(park->frames);
+	_hdScale = park->scale;
+	_hdReticleApplied = park->reticle;
+	for (auto& terrain : park->terrain)
+	{
+		terrain.set->unpark(terrain);
+	}
+	MapDataSet::setBlankTiles(park->blank, park->scorched);
+	delete park;
+}
+
+void Mod::dropHdScale(HdScalePark *park)
+{
+	if (!park)
+	{
+		return;
+	}
+	HdSprites::drop(park->sprites);
+	for (auto& pair : park->sets)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : park->surfaces)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : park->frames)
+	{
+		for (Surface *frame : pair.second)
+		{
+			delete frame;
+		}
+	}
+	for (auto& terrain : park->terrain)
+	{
+		MapDataSet::drop(terrain);
+	}
+	delete park;
+}
+
+/**
+ * HD render: returns a surface set scaled k times for drawing on the
+ * battlescape. Sets that ship at the original size are upscaled
+ * nearest-neighbour on first use and cached; UI code keeps using the
+ * original set through getSurfaceSet().
+ * @param name Name of the surface set.
+ * @param error Report an error if not found.
+ * @return Pointer to the scaled set (the original set when k = 1).
+ */
+SurfaceSet *Mod::getHdSurfaceSet(const std::string &name, bool error)
+{
+	SurfaceSet *scaled = getHdSurfaceSet(getSurfaceSet(name, error));
+	if (scaled && _hdPacksLoaded.insert(scaled).second)
+	{
+		// first use of this set on the battlescape: pick up its HD pack (hd/<name>/<index>.png), if any mod ships one
+		const int loaded = HdSprites::loadPack(name, scaled, getHdScale());
+		if (loaded > 0)
+		{
+			Log(LOG_INFO) << "HD render: " << loaded << " HD frame(s) for " << name;
+		}
+		// a set of 3x3 sprites is a set of dots, not of pictures: the bullet tracer is 35 stamps of
+		// one along the shot, and nearest scaling turns it into a staircase of squares. What no pack
+		// covers the engine draws as a round dot in the frame's own colours
+		// hd/FX/weapons.txt may change how a weapon's tracer is drawn (a plasma bolt reads as a dark rocket in its own colours)
+		std::vector<DotStyle> tracerStyles;
+		if (name == "Projectiles" || name == "UnderwaterProjectiles")
+		{
+			for (const std::string &type : _itemsIndex)
+			{
+				const RuleItem *item = getItem(type);
+				DotStyle style;
+				if (item && item->getBulletSprite() >= 0 && item->isWaterOnly() == (name == "UnderwaterProjectiles") && HdFx::tracerStyle(item, style))
+				{
+					style.first = item->getBulletSprite();
+					tracerStyles.push_back(style);
+				}
+			}
+		}
+		std::vector<const DotStyle*> byFrame;
+		for (const DotStyle &style : tracerStyles)
+		{
+			for (int f = style.first; f < style.first + 35; ++f)
+			{
+				if ((size_t)f >= byFrame.size()) byFrame.resize(f + 1, nullptr);
+				if (!byFrame[f]) byFrame[f] = &style;      // two weapons on one tracer: the first one's style
+			}
+		}
+		// the battlescape palette, not the set's own: a lazily loaded extra-sprites set has no palette at this point (XP-000122)
+		const Palette *battlePalette = getPalette("PAL_BATTLESCAPE", false);
+		HdSprites::makeDots(name, getSurfaceSet(name, false), scaled, getHdScale(), byFrame.empty() ? nullptr : &byFrame, battlePalette ? battlePalette->getColors() : nullptr);
+		if (name == "CURSOR.PCK")
+		{
+			applyHdReticle();
+		}
+	}
+	return scaled;
+}
+
+// the number in options.cfg is the position here: new styles go to the end (tools/hdart/gen_reticle_v2.py)
+const std::vector<std::string> Mod::HD_RETICLES = { "ring45", "plasma", "techno", "predator",
+	"thin_ring45", "thin_plasma", "thin_techno", "thin_predator",
+	"lasers", "lasercross", "brackets", "ripple", "sniper", "chevrons", "dashed", "trilock", "dot", "ghost" };
+
+/**
+ * HD render: the reticle is frames 6..10 of CURSOR.PCK (6 red, 7..10 the yellow loop). The player
+ * picks it in the HD options: the pack's own frames, the stock picture (no HD frame, so it is
+ * scaled like any classic sprite), or a style shipped in hd/CURSOR.PCK/reticle_<style>/6..10.png.
+ * A style that is not shipped falls back to the pack's own frames. The battle swaps in the style of the kind of
+ * shot aimed (artillery, explosives) the same way, unforced: a swap only when the kind changes.
+ */
+void Mod::applyHdReticle(int pick, bool force)
+{
+	SurfaceSet *classic = getSurfaceSet("CURSOR.PCK", false);
+	if (!classic || getHdScale() <= 1)
+	{
+		return;
+	}
+	SurfaceSet *scaled = getHdSurfaceSet(classic);
+	if (!_hdPacksLoaded.count(scaled))
+	{
+		return;                                       // not loaded yet: getHdSurfaceSet applies it on first use
+	}
+	if (pick < 0)
+	{
+		pick = Options::oxceHdReticle;
+	}
+	if (!force && pick == _hdReticleApplied)
+	{
+		return;
+	}
+	_hdReticleApplied = pick;
+	std::string folder;
+	if (pick >= 2 && pick - 2 < (int)HD_RETICLES.size())
+	{
+		folder = "CURSOR.PCK/reticle_" + HD_RETICLES[pick - 2] + "/";
+		if (!FileMap::fileExists(HdSprites::artPath(folder + "6.png")))
+		{
+			Log(LOG_WARNING) << "HD reticle " << HD_RETICLES[pick - 2] << " is not shipped - the pack's own is used";
+			folder.clear();
+		}
+	}
+	for (int i = 6; i <= 10; ++i)
+	{
+		Surface *frame = scaled->getFrame(i);
+		if (!frame)
+		{
+			continue;
+		}
+		const std::string own = HdSprites::artPath("CURSOR.PCK/" + std::to_string(i) + ".png");
+		const std::string styled = folder.empty() ? "" : HdSprites::artPath(folder + std::to_string(i) + ".png");
+		if (pick == 1)
+		{
+			HdSprites::remove(frame->getBuffer());
+		}
+		else if (!styled.empty() && FileMap::fileExists(styled))
+		{
+			HdSprites::setLazy(frame->getBuffer(), styled, 0, 0, frame->getWidth(), frame->getHeight());
+		}
+		else if (FileMap::fileExists(own))
+		{
+			HdSprites::setLazy(frame->getBuffer(), own, 0, 0, frame->getWidth(), frame->getHeight());
+		}
+		else
+		{
+			HdSprites::remove(frame->getBuffer());
+		}
+	}
+	Log(LOG_INFO) << "HD reticle: " << (pick == 1 ? std::string("stock") : folder.empty() ? std::string("the pack's own") : folder);
+}
+
+/**
+ * HD render: returns the k-times-scaled copy of a set.
+ * @param set Source set (may be null).
+ * @return Scaled copy, or the set itself when k = 1.
+ */
+SurfaceSet *Mod::getHdSurfaceSet(SurfaceSet *set)
+{
+	const int k = getHdScale();
+	if (!set || k <= 1)
+	{
+		return set;
+	}
+	auto it = _hdSets.find(set);
+	if (it != _hdSets.end())
+	{
+		return it->second;
+	}
+	SurfaceSet *scaled = set->hdScaledCopy(k);
+	_hdSets[set] = scaled;
+	return scaled;
+}
+
+/**
+ * HD render: is there HD art for this game in the active mods - a pack for
+ * one of its sprite sets (hd/<set>/) or terrains (hd/TERRAIN/<name>.PCK/)?
+ * A mod of fonts only (hd/UI) has none. The file map is asked, not the
+ * registry of loaded frames, which lazy loading leaves empty until a battle.
+ * @return True if a pack of this game's sets is found.
+ */
+bool Mod::hasHdArt() const
+{
+	for (const auto &set : _sets)
+	{
+		if (!HdSprites::artFolder(set.first).empty())
+		{
+			return true;
+		}
+	}
+	for (const auto &set : _extraSprites)
+	{
+		if (!HdSprites::artFolder(set.first).empty())
+		{
+			return true;
+		}
+	}
+	for (const auto &terrain : _mapDataSets)
+	{
+		if (!HdSprites::artFolder("TERRAIN/" + terrain.first + ".PCK").empty())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * HD render: returns a single picture scaled k times for drawing on the
+ * battlescape (the indicators over a body on the floor, the arrow over the
+ * selected unit). The copy is upscaled nearest-neighbour on first use and
+ * cached; a mod can replace it with hd/UI/<name>.png, the same picture the
+ * HD interface uses - the drawing call finds it by the pixel buffer of the
+ * scaled copy, exactly as it finds the frames of an HD pack.
+ * @param name Name of the picture.
+ * @param error Report an error if not found.
+ * @return Pointer to the scaled picture (the picture itself when k = 1).
+ */
+Surface *Mod::getHdSurface(const std::string &name, bool error)
+{
+	Surface *base = getSurface(name, error);
+	const int k = getHdScale();
+	if (!base || k <= 1)
+	{
+		return base;
+	}
+	auto it = _hdSurfaces.find(base);
+	if (it != _hdSurfaces.end())
+	{
+		return it->second;
+	}
+	Surface *scaled = new Surface(HdBlit::upscaledCopy(*base, k));
+	_hdSurfaces[base] = scaled;
+	std::string lower = name;
+	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	const std::string picture = HdSprites::artPath("UI/" + lower + ".png");
+	int width = 0, height = 0;
+	if (HdSprites::pngSize(picture, width, height))
+	{
+		// the picture replaces the scaled frame pixel for pixel, so a pack drawn for another k is useless here
+		if (width == scaled->getWidth() && height == scaled->getHeight())
+		{
+			HdSprites::setLazy(scaled->getBuffer(), picture, 0, 0, scaled->getWidth(), scaled->getHeight());
+			Log(LOG_INFO) << "HD render: HD picture for " << name;
+		}
+		else
+		{
+			Log(LOG_WARNING) << "HD render: " << picture << " is " << width << "x" << height
+				<< ", expected " << scaled->getWidth() << "x" << scaled->getHeight() << " - skipped";
+		}
+	}
+	return scaled;
+}
+
+/**
+ * HD render: the animation phases of a single picture for the battlescape (the indicators over
+ * a body on the floor). A mod ships them as hd/UI/anim/<name>/0.png, 1.png, ... in the size of
+ * getHdSurface; each phase gets its own copy of the scaled picture, so the classic pixels - and
+ * so mode 0 - are those of the picture itself, and only the HD frame found by the buffer differs.
+ * The still picture hd/UI/<name>.png is not a phase and is not used here.
+ * @param name Name of the picture.
+ * @param error Report an error if not found.
+ * @return The phases in order; just getHdSurface(name) when none are shipped (empty when there is no picture).
+ */
+std::vector<Surface*> Mod::getHdSurfaceFrames(const std::string &name, bool error)
+{
+	Surface *still = getHdSurface(name, error);
+	Surface *base = getSurface(name, false);
+	if (!still || !base || getHdScale() <= 1)
+	{
+		return still ? std::vector<Surface*>{ still } : std::vector<Surface*>();
+	}
+	auto it = _hdSurfaceFrames.find(base);
+	if (it == _hdSurfaceFrames.end())
+	{
+		std::vector<Surface*> frames;
+		std::string lower = name;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		for (int i = 0; ; ++i)
+		{
+			const std::string picture = HdSprites::artPath("UI/anim/" + lower + "/" + std::to_string(i) + ".png");
+			int width = 0, height = 0;
+			if (!HdSprites::pngSize(picture, width, height))
+			{
+				break;
+			}
+			if (width != still->getWidth() || height != still->getHeight())
+			{
+				Log(LOG_WARNING) << "HD render: " << picture << " is " << width << "x" << height
+					<< ", expected " << still->getWidth() << "x" << still->getHeight() << " - the animation is skipped";
+				for (Surface *frame : frames)
+				{
+					delete frame;
+				}
+				frames.clear();
+				break;
+			}
+			Surface *frame = new Surface(HdBlit::upscaledCopy(*base, getHdScale()));
+			HdSprites::setLazy(frame->getBuffer(), picture, 0, 0, frame->getWidth(), frame->getHeight());
+			frames.push_back(frame);
+		}
+		if (!frames.empty())
+		{
+			Log(LOG_INFO) << "HD render: " << frames.size() << " animation phase(s) for " << name;
+		}
+		it = _hdSurfaceFrames.emplace(base, frames).first;
+	}
+	return it->second.empty() ? std::vector<Surface*>{ still } : it->second;
 }
 
 /**
@@ -936,8 +1487,181 @@ const std::map<std::string, Music*> &Mod::getMusicTrackList() const
 	return _musics;
 }
 
+namespace
+{
+// XP-000547: a player's own track the game died on. Before an own track is played its name goes to <user folder>/music_trial.txt;
+// the mark goes when the track has played for a minute, when another track replaces it and when the game is closed the normal way.
+// A mark found at the start means the game stopped while the track played: the name goes to music_skip.txt, and the track is not
+// loaded or played any more (until the player deletes its line).
+std::string s_trialRel;
+Uint32 s_trialStart = 0;
+bool s_staleChecked = false;
+std::vector<std::string> s_skipMem;
+
+std::string userTrialPath() { return Options::getUserFolder() + "music_trial.txt"; }
+std::string userSkipPath() { return Options::getUserFolder() + "music_skip.txt"; }
+
+std::string lowerAscii(std::string s)
+{
+	std::transform(s.begin(), s.end(), s.begin(), [](char c) { return (char)::tolower((unsigned char)c); });
+	return s;
+}
+
+/// The lines of a small text file, without the line ends and the UTF-8 mark; none when it cannot be read.
+std::vector<std::string> userTextLines(const std::string &path)
+{
+	std::vector<std::string> lines;
+	try
+	{
+		if (CrossPlatform::fileExists(path))
+		{
+			auto in = CrossPlatform::readFile(path);
+			std::string line;
+			while (std::getline(*in, line))
+			{
+				while (!line.empty() && (line.back() == '\r' || line.back() == '\n'))
+				{
+					line.pop_back();
+				}
+				if (lines.empty() && line.compare(0, 3, "\xEF\xBB\xBF") == 0)
+				{
+					line.erase(0, 3);
+				}
+				lines.push_back(line);
+			}
+		}
+	}
+	catch (Exception &e)
+	{
+		Log(LOG_WARNING) << "Own music: cannot read '" << path << "': " << e.what();
+	}
+	return lines;
+}
+
+void userTrialEnd()
+{
+	if (!s_trialRel.empty())
+	{
+		CrossPlatform::deleteFile(userTrialPath());
+		s_trialRel.clear();
+	}
+}
+
+void userTrialBegin(const std::string &rel)
+{
+	if (s_trialRel == rel)
+	{
+		return;
+	}
+	if (CrossPlatform::writeFile(userTrialPath(), rel + "\n"))
+	{
+		s_trialRel = rel;
+		s_trialStart = SDL_GetTicks();
+	}
+	else
+	{
+		s_trialRel.clear();
+	}
+}
+
+/// The skip list (the lowercase names): the file, and what could not be written to it in this run.
+std::set<std::string> userSkipList()
+{
+	std::set<std::string> skip;
+	for (const std::string &line : userTextLines(userSkipPath()))
+	{
+		if (!line.empty() && line[0] != '#')
+		{
+			skip.insert(lowerAscii(line));
+		}
+	}
+	for (const std::string &name : s_skipMem)
+	{
+		skip.insert(lowerAscii(name));
+	}
+	return skip;
+}
+
+/// At the first scan of a run: a trial mark left by the previous run goes to the skip list.
+void userTrialCheckStale()
+{
+	if (s_staleChecked)
+	{
+		return;
+	}
+	s_staleChecked = true;
+	const std::string path = userTrialPath();
+	if (!CrossPlatform::fileExists(path))
+	{
+		return;
+	}
+	std::string name;
+	for (const std::string &line : userTextLines(path))
+	{
+		if (name.empty() && !line.empty())
+		{
+			name = line;
+		}
+	}
+	if (!name.empty())
+	{
+		std::vector<std::string> lines = userTextLines(userSkipPath());
+		bool listed = false;
+		for (const std::string &line : lines)
+		{
+			listed = listed || lowerAscii(line) == lowerAscii(name);
+		}
+		if (!listed)
+		{
+			std::string data;
+			for (const std::string &line : lines)
+			{
+				data += line + "\n";
+			}
+			data += name + "\n";
+			if (!CrossPlatform::writeFile(userSkipPath(), data))
+			{
+				s_skipMem.push_back(name);
+			}
+		}
+		Log(LOG_WARNING) << "Own music: '" << name << "' skipped - the game stopped while it played (delete it from music_skip.txt to try again)";
+	}
+	CrossPlatform::deleteFile(path);
+}
+}
+
+/**
+ * XP-000547: called once per frame; an own track that has played for a minute is trusted, its trial mark goes.
+ */
+void Mod::userMusicTick()
+{
+	if (!s_trialRel.empty() && SDL_GetTicks() - s_trialStart >= 60000)
+	{
+		userTrialEnd();
+	}
+	// XP-000575: a track of a playlist (played once) has ended - the next one; none left = silence until the screen changes;
+	// XP-000577: REP on - the same track once more
+	if (Music::takeFinished() && _playlistMode && !Options::mute)
+	{
+		Music *again = Options::oxceMusicRepeat && !_currentMusicTrack.empty() ? getMusicByKey(_currentMusicTrack) : 0;
+		if (again)
+		{
+			again->play(0);
+			++_musicSerial;
+		}
+		else if (!musicStep(1, false))
+		{
+			Music::stop();
+			_playlistMode = false;
+		}
+	}
+}
+
 /**
  * Returns a random music from the mod.
+ * The player's own music (XP-000373) takes part when the option is on: its tracks have the category in their keys
+ * (GMGEO_USER_..., GMTACTIC_USER_...), so they are found by the same substring; "only own" leaves the game's
+ * tracks out while there are own ones. The pick is RNG::seedless, the music's own generator: the game's is not touched.
  * @param name Name of the music to pick from.
  * @return Pointer to the music.
  */
@@ -949,6 +1673,24 @@ Music *Mod::getRandomMusic(const std::string &name) const
 	}
 	else
 	{
+		const bool own = !name.empty() && ensureUserMusic();
+		// the name of an own track that is gone now (a saved one): any track of its category, not silence
+		const size_t userAt = name.find("_USER_");
+		if (userAt != std::string::npos && userAt > 0)
+		{
+			bool known = false;
+			if (own)
+			{
+				for (const auto& track : _userMusic)
+				{
+					known = known || (track.key == name && !track.failed && !track.skipped);
+				}
+			}
+			if (!known)
+			{
+				return getRandomMusic(name.substr(0, userAt));
+			}
+		}
 		std::vector<Music*> music;
 		for (auto& pair : _musics)
 		{
@@ -957,15 +1699,303 @@ Music *Mod::getRandomMusic(const std::string &name) const
 				music.push_back(pair.second);
 			}
 		}
-		if (music.empty())
+		std::vector<UserTrack*> mine;
+		if (own)
 		{
-			return _muteMusic;
+			for (auto& track : _userMusic)
+			{
+				if (!track.failed && track.key.find(name) != std::string::npos)
+				{
+					mine.push_back(&track);
+				}
+			}
 		}
-		else
+		for (;;)
 		{
-			return music[RNG::seedless(0, music.size() - 1)];
+			// XP-000547: the skipped tracks (music_skip.txt) stay in the list, so the pick is the same single RNG::seedless call
+			// whatever the skip list is; one that lands on a skipped track moves to the next one that is not, round the list
+			size_t usable = 0;
+			for (const UserTrack* track : mine)
+			{
+				usable += track->skipped ? 0 : 1;
+			}
+			const size_t standard = (Options::oxceUserMusic == 2 && usable > 0) ? 0 : music.size();
+			const size_t total = standard + mine.size();
+			if (total == 0)
+			{
+				return _muteMusic;
+			}
+			size_t pick = RNG::seedless(0, total - 1);
+			for (size_t step = 0; step < total && pick >= standard && mine[pick - standard]->skipped; ++step)
+			{
+				pick = (pick + 1) % total;
+			}
+			if (pick >= standard && mine[pick - standard]->skipped)
+			{
+				return _muteMusic;
+			}
+			if (pick < standard)
+			{
+				return music[pick];
+			}
+			if (Music *chosen = loadUserTrack(*mine[pick - standard]))
+			{
+				return chosen;
+			}
+			mine.erase(mine.begin() + (pick - standard));
 		}
 	}
+}
+
+/**
+ * Scans the player's own music once, when the option is on (XP-000373).
+ * @return True if the own music is in use.
+ */
+bool Mod::ensureUserMusic() const
+{
+	if (Options::oxceUserMusic <= 0 || Options::mute)
+	{
+		return false;
+	}
+	if (!_userMusicScanned)
+	{
+		scanUserMusic();
+	}
+	return true;
+}
+
+/**
+ * Scans <user folder>/music: the files of the folder go to both categories, the files of geoscape/ to the geoscape
+ * and of battle/ to the battle. The tracks that were found before keep their loaded music; the ones whose file is gone
+ * are put away (the music may be playing). With no files it does nothing but a log line and the empty folders.
+ */
+void Mod::scanUserMusic() const
+{
+	_userMusicScanned = true;
+	userTrialCheckStale();
+	const std::set<std::string> skipList = userSkipList();
+	const std::string root = Options::getUserFolder() + "music";
+	for (const std::string& dir : { root, root + "/geoscape", root + "/battle" })
+	{
+		if (!CrossPlatform::folderExists(dir))
+		{
+			CrossPlatform::createFolder(dir);
+		}
+	}
+	// what SDL_mixer opens (which of them depends on how it was built; a file it cannot open is skipped at its first play)
+	static const char *const exts[] = { ".ogg", ".mp3", ".flac", ".wav", ".mid", ".midi", ".mod", ".xm", ".it", ".s3m", ".opus" };
+	struct Found { std::string name, rel; bool geo, battle; };
+	std::vector<Found> found;
+	const auto scan = [&](const std::string& sub, bool geo, bool battle)
+	{
+		const std::string dir = sub.empty() ? root : root + "/" + sub;
+		try
+		{
+			for (const auto& entry : CrossPlatform::getFolderContents(dir))
+			{
+				std::string lower = std::get<0>(entry);
+				std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+				bool music = false;
+				for (const char *ext : exts)
+				{
+					const size_t n = strlen(ext);
+					music = music || (lower.size() > n && lower.compare(lower.size() - n, n, ext) == 0);
+				}
+				if (!std::get<1>(entry) && music)
+				{
+					found.push_back({ std::get<0>(entry), sub.empty() ? std::get<0>(entry) : sub + "/" + std::get<0>(entry), geo, battle });
+				}
+			}
+		}
+		catch (Exception &e)
+		{
+			Log(LOG_WARNING) << "Own music: cannot read '" << dir << "': " << e.what();
+		}
+	};
+	scan("", true, true);
+	scan("geoscape", true, false);
+	scan("battle", false, true);
+
+	std::vector<UserTrack> fresh;
+	const auto add = [&](const char *category, const Found& f)
+	{
+		uint32_t hash = 2166136261u;
+		for (char c : f.rel)
+		{
+			hash = (hash ^ (uint8_t)::tolower((unsigned char)c)) * 16777619u;
+		}
+		char hex[16];
+		snprintf(hex, sizeof(hex), "%08x", (unsigned)hash);
+		UserTrack track;
+		track.key = std::string(category) + "_USER_" + hex;
+		track.label = f.name;
+		track.path = root + "/" + f.rel;
+		track.rel = f.rel;
+		track.skipped = skipList.count(lowerAscii(f.rel)) > 0;
+		for (auto& old : _userMusic)
+		{
+			// a skipped track does not take the music of the earlier scan: it is put away below
+			if (old.key == track.key && !track.skipped)
+			{
+				track.music = old.music;
+				old.music = 0;
+				break;
+			}
+		}
+		fresh.push_back(track);
+	};
+	for (const auto& f : found)
+	{
+		if (f.geo) add("GMGEO", f);
+		if (f.battle) add("GMTACTIC", f);
+	}
+	std::stable_sort(fresh.begin(), fresh.end(), [](const UserTrack& a, const UserTrack& b)
+	{
+		std::string x = a.label, y = b.label;
+		std::transform(x.begin(), x.end(), x.begin(), ::tolower);
+		std::transform(y.begin(), y.end(), y.begin(), ::tolower);
+		return x < y;
+	});
+	for (auto& old : _userMusic)
+	{
+		if (old.music)
+		{
+			_userMusicRetired.push_back(old.music);
+		}
+	}
+	_userMusic = fresh;
+	Log(LOG_INFO) << "Own music: " << found.size() << " file(s) in '" << root << "'";
+	size_t skippedFiles = 0;
+	for (const auto& f : found)
+	{
+		skippedFiles += skipList.count(lowerAscii(f.rel)) > 0 ? 1 : 0;
+	}
+	if (skippedFiles > 0)
+	{
+		Log(LOG_INFO) << "Own music: " << skippedFiles << " file(s) of them are in music_skip.txt and are not played";
+	}
+}
+
+/**
+ * Loads a track of the player's own music at its first play and keeps it.
+ * @param track The track.
+ * @return The music, or null when the file cannot be opened (the track is not offered any more until the next scan).
+ */
+Music *Mod::loadUserTrack(UserTrack &track) const
+{
+	if (track.skipped)
+	{
+		return 0;
+	}
+	if (track.music || track.failed)
+	{
+		if (track.music)
+		{
+			userTrialBegin(track.rel);
+		}
+		return track.music;
+	}
+	Music *music = new Music();
+	try
+	{
+		// XP-000547: marked before the file is opened, the death may be in the load too
+		userTrialBegin(track.rel);
+		SDL_RWops *rwops = SDL_RWFromFile(track.path.c_str(), "rb");
+		if (!rwops)
+		{
+			throw Exception(SDL_GetError());
+		}
+		music->load(rwops);
+		music->setSourcePath(track.path);
+		track.music = music;
+		Log(LOG_INFO) << "Own music: loaded '" << track.path << "'";
+	}
+	catch (Exception &e)
+	{
+		Log(LOG_WARNING) << "Own music: cannot load '" << track.path << "': " << e.what();
+		track.failed = true;
+		if (s_trialRel == track.rel)
+		{
+			userTrialEnd();
+		}
+		// not deleted now: a Music stops whatever is playing when it goes
+		_userMusicRetired.push_back(music);
+	}
+	return track.music;
+}
+
+/**
+ * Gets the own tracks of a category for the jukebox.
+ * @param category GMGEO or GMTACTIC.
+ * @return Pairs of the track's key and the file's name.
+ */
+std::vector<std::pair<std::string, std::string> > Mod::getUserMusicList(const std::string &category) const
+{
+	std::vector<std::pair<std::string, std::string> > list;
+	if (ensureUserMusic())
+	{
+		const std::string prefix = category + "_USER_";
+		for (const auto& track : _userMusic)
+		{
+			if (!track.failed && track.key.compare(0, prefix.size(), prefix) == 0)
+			{
+				list.push_back(std::make_pair(track.key, track.label));
+			}
+		}
+	}
+	return list;
+}
+
+/**
+ * Gets an own track by its key, loading it if needed.
+ * @param key The key from getUserMusicList.
+ * @return The music, or null.
+ */
+Music *Mod::getUserMusic(const std::string &key) const
+{
+	if (ensureUserMusic())
+	{
+		for (auto& track : _userMusic)
+		{
+			if (track.key == key)
+			{
+				return loadUserTrack(track);
+			}
+		}
+	}
+	return 0;
+}
+
+/**
+ * Scans the own music folder again (the jukebox's button).
+ */
+void Mod::refreshUserMusic()
+{
+	if (Options::oxceUserMusic > 0 && !Options::mute)
+	{
+		scanUserMusic();
+	}
+}
+
+/**
+ * Is only the own music wanted for the category, and are there own tracks of it?
+ * @param category GMGEO or GMTACTIC.
+ * @return True if the game's tracks of the category are left out.
+ */
+bool Mod::userMusicOnly(const std::string &category) const
+{
+	return Options::oxceUserMusic == 2 && !getUserMusicList(category).empty();
+}
+
+/**
+ * The name a battle starts its music by: the saved one, or GMTACTIC (a random pick of the own tracks)
+ * when only the own music is wanted. The saved name itself is never changed.
+ * @param saved The name saved with the battle.
+ * @return The name to play.
+ */
+std::string Mod::getBattleMusicName(const std::string &saved) const
+{
+	return userMusicOnly("GMTACTIC") ? std::string("GMTACTIC") : saved;
 }
 
 /**
@@ -985,9 +2015,37 @@ void Mod::playMusic(const std::string &name, int id)
 		}
 
 		Music *music = 0;
+		bool fromPlaylist = false;
+		if (id != 0 && userMusicOnly(name))
+		{
+			id = 0;
+		}
 		if (id == 0)
 		{
-			music = getRandomMusic(name);
+			// XP-000575: the geoscape's and the battle's own playlist, when the player made one (empty = a random track as ever)
+			if (name == "GMGEO" || name == "GMTACTIC")
+			{
+				const int side = name == "GMTACTIC" ? 1 : 0;
+				resetPlaylistOrder();
+				_plPos[side] = -1;
+				std::string listed;
+				music = pickFromPlaylist(side, true, listed);
+				fromPlaylist = music != 0;
+			}
+			if (!fromPlaylist)
+			{
+				music = getRandomMusic(name);
+				// XP-000577: REP off - the side's track plays once and the next one follows (userMusicTick), as in the player
+				if ((name == "GMGEO" || name == "GMTACTIC") && !Options::oxceMusicRepeat && music != _muteMusic)
+				{
+					loop = 0;
+					fromPlaylist = true;
+				}
+			}
+			else
+			{
+				loop = 0;
+			}
 		}
 		else
 		{
@@ -995,7 +2053,18 @@ void Mod::playMusic(const std::string &name, int id)
 			ss << name << id;
 			music = getMusic(ss.str());
 		}
+		// XP-000547: a track that is not an own one takes the place of the own one under trial
+		bool ownTrack = false;
+		for (const auto& track : _userMusic)
+		{
+			ownTrack = ownTrack || (track.music && track.music == music);
+		}
+		if (!ownTrack)
+		{
+			userTrialEnd();
+		}
 		music->play(loop);
+		_playlistMode = fromPlaylist && music != _muteMusic;
 		if (music != _muteMusic)
 		{
 			_playingMusic = name;
@@ -1007,9 +2076,427 @@ void Mod::playMusic(const std::string &name, int id)
 					break;
 				}
 			}
+			for (const auto& track : _userMusic)
+			{
+				if (track.music == music)
+				{
+					setCurrentMusicTrack(track.key);
+					break;
+				}
+			}
+			_musicHistory.push_back(_currentMusicTrack);
+			if (_musicHistory.size() > 12)
+			{
+				_musicHistory.erase(_musicHistory.begin());
+			}
+			++_musicSerial;
 		}
 		Log(LOG_VERBOSE)<<"Mod::playMusic('" << name << "'): playing " << _playingMusic;
 	}
+}
+
+// ---- XP-000575: the music player (the playlists, the next and the previous track, the pause, the stop) ----
+// The geoscape's and the battle's playlists are strings of keys in options.cfg; the pick is RNG::seedless, the game's
+// own generator is never touched, nothing goes to the save.
+
+std::vector<std::string> Mod::getMusicPlaylist(int side) const
+{
+	std::vector<std::string> keys;
+	const std::string &raw = side == 1 ? Options::oxceMusicPlaylistBattle : Options::oxceMusicPlaylistGeo;
+	size_t from = 0;
+	while (from <= raw.size())
+	{
+		size_t bar = raw.find('|', from);
+		if (bar == std::string::npos)
+		{
+			bar = raw.size();
+		}
+		if (bar > from)
+		{
+			keys.push_back(raw.substr(from, bar - from));
+		}
+		from = bar + 1;
+	}
+	return keys;
+}
+
+void Mod::setMusicPlaylist(int side, const std::vector<std::string> &keys)
+{
+	std::string joined;
+	for (const auto &key : keys)
+	{
+		joined += (joined.empty() ? "" : "|") + key;
+	}
+	(side == 1 ? Options::oxceMusicPlaylistBattle : Options::oxceMusicPlaylistGeo) = joined;
+	resetPlaylistOrder();
+}
+
+void Mod::resetPlaylistOrder()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		_plBag[i].clear();
+		_plBagReady[i] = false;
+	}
+}
+
+bool Mod::musicKeyKnown(const std::string &key) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		if (ensureUserMusic())
+		{
+			for (const auto &track : _userMusic)
+			{
+				if (track.key == key)
+				{
+					return !track.failed && !track.skipped;
+				}
+			}
+		}
+		return false;
+	}
+	return _musics.find(key) != _musics.end();
+}
+
+Music *Mod::getMusicByKey(const std::string &key) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		return getUserMusic(key);
+	}
+	const auto it = _musics.find(key);
+	return it != _musics.end() ? it->second : 0;
+}
+
+double Mod::getMusicLength(const std::string &key) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		static std::map<std::string, double> cache;
+		const auto found = cache.find(key);
+		if (found != cache.end())
+		{
+			return found->second;
+		}
+		for (const auto &track : _userMusic)
+		{
+			if (track.key == key)
+			{
+				return cache[key] = track.music ? track.music->length() : Music::fileLength("", track.path);
+			}
+		}
+		return -1;
+	}
+	const auto it = _musics.find(key);
+	return it != _musics.end() && it->second ? it->second->length() : -1;
+}
+
+std::string Mod::getMusicTitle(const std::string &key, const Language *lang) const
+{
+	if (key.find("_USER_") != std::string::npos)
+	{
+		for (const auto &track : _userMusic)
+		{
+			if (track.key == key)
+			{
+				const size_t dot = track.label.rfind('.');
+				return dot != std::string::npos && dot > 0 ? track.label.substr(0, dot) : track.label;
+			}
+		}
+		return std::string();
+	}
+	return lang ? std::string(lang->getString(key)) : key;
+}
+
+int Mod::getMusicSide() const
+{
+	return _playingMusic == "GMGEO" ? 0 : _playingMusic == "GMTACTIC" ? 1 : -1;
+}
+
+Music *Mod::pickFromPlaylist(int side, bool wrap, std::string &key)
+{
+	const std::vector<std::string> list = getMusicPlaylist(side);
+	const int n = (int)list.size();
+	for (int guard = 0; guard < n + 1; ++guard)
+	{
+		std::vector<int> ok;
+		for (int i = 0; i < n; ++i)
+		{
+			if (musicKeyKnown(list[i]))
+			{
+				ok.push_back(i);
+			}
+		}
+		if (ok.empty())
+		{
+			return 0;
+		}
+		int idx = -1;
+		if (Options::oxceMusicShuffle)
+		{
+			std::vector<int> &bag = _plBag[side];
+			if (bag.empty() && (!_plBagReady[side] || wrap))
+			{
+				bag = ok;
+				for (int i = (int)bag.size() - 1; i > 0; --i)
+				{
+					std::swap(bag[i], bag[RNG::seedless(0, i)]);
+				}
+				// no repeat of the track that has just played when the new round begins with it
+				if (bag.size() > 1 && bag.back() == _plPos[side])
+				{
+					std::swap(bag.front(), bag.back());
+				}
+				_plBagReady[side] = true;
+			}
+			if (bag.empty())
+			{
+				return 0;
+			}
+			idx = bag.back();
+			bag.pop_back();
+		}
+		else
+		{
+			const int pos = _plPos[side];
+			for (int c : ok)
+			{
+				if (c > pos)
+				{
+					idx = c;
+					break;
+				}
+			}
+			if (idx < 0 && wrap)
+			{
+				idx = ok.front();
+			}
+			if (idx < 0)
+			{
+				return 0;
+			}
+		}
+		_plPos[side] = idx;
+		if (Music *music = getMusicByKey(list[idx]))
+		{
+			key = list[idx];
+			return music;
+		}
+	}
+	return 0;
+}
+
+void Mod::startMusicKey(Music *music, const std::string &key, int loop)
+{
+	// the same care as playMusic: a track that is not an own one takes the place of the own one under trial
+	bool ownTrack = false;
+	for (const auto &track : _userMusic)
+	{
+		ownTrack = ownTrack || (track.music && track.music == music);
+	}
+	if (!ownTrack)
+	{
+		userTrialEnd();
+	}
+	// XP-000577: the player's tracks play once, the end of each is seen (userMusicTick): REP on - the same once more, off - the next
+	(void)loop;
+	music->play(0);
+	setCurrentMusicTrack(key);
+	_playlistMode = true;
+	if (_musicHistory.empty() || _musicHistory.back() != key)
+	{
+		_musicHistory.push_back(key);
+	}
+	if (_musicHistory.size() > 12)
+	{
+		_musicHistory.erase(_musicHistory.begin());
+	}
+	++_musicSerial;
+}
+
+bool Mod::musicStep(int dir, bool manual)
+{
+	(void)manual; // XP-000577: the playlist goes round both ways now
+	const int side = getMusicSide();
+	if (Options::mute || side < 0)
+	{
+		return false;
+	}
+	std::string key;
+	Music *music = 0;
+	const std::vector<std::string> list = getMusicPlaylist(side);
+	if (dir < 0)
+	{
+		// the track played before: out of the short history; none = the track on from its start
+		while (!music && _musicHistory.size() >= 2)
+		{
+			_musicHistory.pop_back();
+			const std::string back = _musicHistory.back();
+			if (back.find(side == 1 ? "GMTAC" : "GMGEO") != std::string::npos && musicKeyKnown(back))
+			{
+				_musicHistory.pop_back();
+				music = getMusicByKey(back);
+				key = back;
+			}
+		}
+		if (!music)
+		{
+			key = _currentMusicTrack;
+			music = key.empty() ? 0 : getMusicByKey(key);
+		}
+		if (!music)
+		{
+			return false;
+		}
+		int idx = -1;
+		for (size_t i = 0; i < list.size(); ++i)
+		{
+			if (list[i] == key)
+			{
+				idx = (int)i;
+			}
+		}
+		if (idx >= 0)
+		{
+			_plPos[side] = idx;
+		}
+		startMusicKey(music, key, idx >= 0 ? 0 : -1);
+		return true;
+	}
+	bool anyListed = false;
+	for (const auto &k : list)
+	{
+		anyListed = anyListed || musicKeyKnown(k);
+	}
+	if (anyListed)
+	{
+		music = pickFromPlaylist(side, true, key); // XP-000577: the playlist goes round (REP repeats the track itself)
+		if (!music)
+		{
+			return false;
+		}
+		startMusicKey(music, key, 0);
+		return true;
+	}
+	// no playlist: another random track of the side (a few tries to get a different one), looped as the game does
+	Music *own = getMusicByKey(_currentMusicTrack);
+	for (int tries = 0; tries < 8; ++tries)
+	{
+		music = getRandomMusic(side == 1 ? "GMTACTIC" : "GMGEO");
+		if (music == _muteMusic || !music)
+		{
+			return false;
+		}
+		if (music != own || tries == 7)
+		{
+			break;
+		}
+	}
+	for (const auto &item : _musics)
+	{
+		if (item.second == music)
+		{
+			key = item.first;
+		}
+	}
+	for (const auto &track : _userMusic)
+	{
+		if (track.music == music)
+		{
+			key = track.key;
+		}
+	}
+	if (key.empty())
+	{
+		return false;
+	}
+	startMusicKey(music, key, -1);
+	return true;
+}
+
+bool Mod::musicPlayKey(const std::string &key, int side)
+{
+	if (Options::mute)
+	{
+		return false;
+	}
+	Music *music = getMusicByKey(key);
+	if (!music)
+	{
+		return false;
+	}
+	const std::vector<std::string> list = getMusicPlaylist(side);
+	int idx = -1;
+	for (size_t i = 0; i < list.size(); ++i)
+	{
+		if (list[i] == key)
+		{
+			idx = (int)i;
+		}
+	}
+	if (idx >= 0)
+	{
+		_plPos[side] = idx;
+		_plBag[side].clear();
+	}
+	if (getMusicSide() != side)
+	{
+		_playingMusic = side == 1 ? "GMTACTIC" : "GMGEO";
+	}
+	startMusicKey(music, key, idx >= 0 ? 0 : -1);
+	return true;
+}
+
+void Mod::musicPlay()
+{
+	if (Options::mute)
+	{
+		return;
+	}
+	if (Music::isOn() && Music::isPaused())
+	{
+		Music::resume();
+		return;
+	}
+	if (!_currentMusicTrack.empty())
+	{
+		if (Music *music = getMusicByKey(_currentMusicTrack))
+		{
+			const int side = getMusicSide();
+			const std::vector<std::string> list = getMusicPlaylist(side < 0 ? 0 : side);
+			const bool listed = side >= 0 && std::find(list.begin(), list.end(), _currentMusicTrack) != list.end();
+			startMusicKey(music, _currentMusicTrack, listed ? 0 : -1);
+			return;
+		}
+	}
+	musicStep(1, true);
+}
+
+void Mod::musicTogglePause()
+{
+	if (Options::mute)
+	{
+		return;
+	}
+	if (!Music::isOn())
+	{
+		musicPlay();
+	}
+	else if (Music::isPaused())
+	{
+		Music::resume();
+	}
+	else
+	{
+		Music::pause();
+	}
+}
+
+void Mod::musicStopNow()
+{
+	Music::stop();
+	_playlistMode = false;
 }
 
 /**
@@ -2322,6 +3809,163 @@ void Mod::loadAll()
 	afterLoadHelper("countries", this, _countries, &RuleCountry::afterLoad);
 	afterLoadHelper("crafts", this, _crafts, &RuleCraft::afterLoad);
 	afterLoadHelper("events", this, _events, &RuleEvent::afterLoad);
+	afterLoadHelper("voiceSets", this, _voiceSets, &RuleVoiceSet::afterLoad);
+	afterLoadHelper("missionScripts", this, _missionScripts, &RuleMissionScript::afterLoad);
+	afterLoadHelper("eventScripts", this, _eventScripts, &RuleEventScript::afterLoad);
+	afterLoadHelper("arcScripts", this, _arcScripts, &RuleArcScript::afterLoad);
+	afterLoadHelper("soldierTransformation", this, _soldierTransformation, &RuleSoldierTransformation::afterLoad);
+	afterLoadHelper("ufopaediaArticles", this, _ufopaediaArticles, &ArticleDefinition::afterLoad);
+	afterLoadHelper("alienDeployments", this, _alienDeployments, &AlienDeployment::afterLoad);
+
+	// the chain a mission is generated from (mission -> wave -> UFO -> deployment) is checked here, by the role each
+	// rule plays in it, and only written to the log: before, a broken link was met hours later, when the battle started
+	for (const auto& pair : _ufos)
+	{
+		const RuleUfo *ufo = pair.second;
+		// a landed or crashed UFO is a battle generated from the deployment of the same name: that one needs a map
+		const AlienDeployment *battle = getDeployment(pair.first);
+		// a note only, never a refusal: the terrain may come from the globe texture or a custom mission deployment at the
+		// battle, with a map script that resizes the map (BattlescapeGenerator::run)
+		if (battle && !battle->hasMapSize(this))
+		{
+			Log(LOG_INFO) << "Note: UFO " << pair.first << ": its deployment has no map size of its own: no width/length and no map script, its own or of its terrains, that resizes the map; a landing or crash site gets one only from the map script of the terrain drawn at the battle.";
+		}
+		auto overlays = [&](const RuleUfoStats &stats)
+		{
+			// overlays give units and items only: they have to exist, a map they do not need
+			checkForSoftError(!stats.craftCustomDeploy.empty() && !getDeployment(stats.craftCustomDeploy), pair.first, "craftCustomDeploy '" + stats.craftCustomDeploy + "' is not defined", LOG_INFO);
+			checkForSoftError(!stats.missionCustomDeploy.empty() && !getDeployment(stats.missionCustomDeploy), pair.first, "missionCustomDeploy '" + stats.missionCustomDeploy + "' is not defined", LOG_INFO);
+		};
+		overlays(ufo->getStats());
+		for (const auto& bonus : ufo->getRaceBonusRaw())
+		{
+			overlays(bonus.second);
+		}
+	}
+	for (const auto& pair : _alienMissions)
+	{
+		const RuleAlienMission *mission = pair.second;
+		checkForSoftError(!mission->getSpawnUfo().empty() && !getUfo(mission->getSpawnUfo()), pair.first, "spawnUfo '" + mission->getSpawnUfo() + "' is not defined", LOG_INFO);
+		for (size_t i = 0; i < mission->getWaveCount(); ++i)
+		{
+			const MissionWave &wave = mission->getWave(i);
+			checkForSoftError(!getUfoTrajectory(wave.trajectory), pair.first, "trajectory '" + wave.trajectory + "' of wave " + std::to_string(i) + " is not defined", LOG_INFO);
+			checkForSoftError(wave.ufoType != "dummy" && !getUfo(wave.ufoType) && !getDeployment(wave.ufoType), pair.first, "ufo '" + wave.ufoType + "' of wave " + std::to_string(i) + " is neither a UFO nor a deployment", LOG_INFO);
+		}
+	}
+	{
+		// deployments that are battles by what they are on the globe: a mission site, an alien base, the final mission.
+		// Each needs a map; the same deployment as an overlay (units and items only) does not, so the role is told here
+		std::map<const AlienDeployment*, std::string> battles;
+		auto battle = [&](const std::string &name, const std::string &owner, const std::string &role)
+		{
+			if (name.empty())
+			{
+				return;
+			}
+			const AlienDeployment *deployment = getDeployment(name);
+			checkForSoftError(!deployment, owner, role + " '" + name + "' is not a defined deployment", LOG_INFO);
+			if (deployment)
+			{
+				battles.emplace(deployment, role);
+			}
+		};
+		std::string finalMission;
+		for (const auto& pair : _alienDeployments)
+		{
+			const AlienDeployment *deployment = pair.second;
+			// (a marker says nothing: every deployment has one by default, overlays too)
+			if (deployment->isAlienBase())
+			{
+				battle(pair.first, pair.first, "alien base");
+			}
+			if (deployment->isFinalDestination())
+			{
+				battle(pair.first, pair.first, "final mission");
+			}
+		}
+		for (const auto& name : _deploymentsIndex)
+		{
+			// the craft sent to the final mission lands in the first such deployment of the list (ConfirmCydoniaState)
+			const AlienDeployment *deployment = getDeployment(name);
+			if (deployment && deployment->isFinalDestination())
+			{
+				checkForSoftError(!finalMission.empty(), name, "is a final destination, but the final mission starts in '" + finalMission + "' (the first one of the list): this one is never reached that way", LOG_INFO);
+				if (finalMission.empty())
+				{
+					finalMission = name;
+				}
+			}
+		}
+		for (const auto& pair : _alienMissions)
+		{
+			battle(pair.second->getSiteType(), pair.first, "siteType");
+			for (size_t i = 0; i < pair.second->getWaveCount(); ++i)
+			{
+				// a wave whose "ufo" is a deployment and no UFO puts a mission site of that deployment on the globe
+				const std::string &site = pair.second->getWave(i).ufoType;
+				if (!getUfo(site) && getDeployment(site))
+				{
+					battle(site, pair.first, "mission site of wave " + std::to_string(i));
+				}
+			}
+		}
+		if (_globe)
+		{
+			for (const auto& texture : _globe->getTexturesRaw())
+			{
+				for (const auto& site : texture.second->getDeployments())
+				{
+					battle(site.first, "globe texture " + std::to_string(texture.first), "deployment");
+				}
+			}
+		}
+		for (const auto& pair : _alienRaces)
+		{
+			battle(pair.second->getBaseCustomMission(), pair.first, "baseCustomMission");
+			const std::string &overlay = pair.second->getBaseCustomDeploy();
+			checkForSoftError(!overlay.empty() && !getDeployment(overlay), pair.first, "baseCustomDeploy '" + overlay + "' is not defined", LOG_INFO);
+		}
+		for (const auto& pair : battles)
+		{
+			// a note only, never a refusal (see the UFOs above): the terrain may be drawn from the globe texture at the battle
+			if (!pair.first->hasMapSize(this))
+			{
+				Log(LOG_INFO) << "Note: deployment " << pair.first->getType() << " is a battle (" << pair.second << ") and has no map size of its own: no width/length and no map script, its own or of its terrains, that resizes the map; the battle gets one only from the map script of the terrain drawn at the battle.";
+			}
+		}
+		// Stages that come back to an earlier one. The next stage is taken whenever the stage is won with somebody left
+		// (BattlescapeState::finishBattle), so such a mission has no last stage: it ends only by abort or by defeat.
+		// That may be what the author wants; it is told once per ring, as a note
+		for (const auto& pair : _alienDeployments)
+		{
+			std::vector<std::string> ring{ pair.first };
+			const AlienDeployment *stage = pair.second;
+			while (stage && !stage->getNextStage().empty())
+			{
+				const std::string next = stage->getNextStage();
+				if (next == pair.first)
+				{
+					if (*std::min_element(ring.begin(), ring.end()) == pair.first)
+					{
+						std::string stages;
+						for (const auto& name : ring)
+						{
+							stages += name + " -> ";
+						}
+						Log(LOG_INFO) << "Note: the stages " << stages << next << " form a ring: the mission has no last stage and ends only by abort or by defeat.";
+					}
+					break;
+				}
+				if (std::find(ring.begin(), ring.end(), next) != ring.end())
+				{
+					break; // runs into a ring it is not part of: told at that ring
+				}
+				ring.push_back(next);
+				stage = getDeployment(next);
+			}
+		}
+	}
 
 	for (auto& a : _armors)
 	{
@@ -2378,6 +4022,43 @@ void Mod::loadAll()
 		}
 	}
 
+	// afterLoad() for Mod.h members
+	// the numbers of the mod the engine divides by
+	if (_globalTransferCostDiv == 0)
+	{
+		throw Exception("transferCosts: globalCostDiv cannot be 0");
+	}
+	if (_ufoBeamWidthParameter == 0)
+	{
+		throw Exception("ufoBeamWidthParameter cannot be 0");
+	}
+	if (_soldiersPerRank[RANK_SERGEANT] == 0 || _soldiersPerRank[RANK_CAPTAIN] == 0 || _soldiersPerRank[RANK_COLONEL] == 0)
+	{
+		throw Exception("soldiersPerSergeant, soldiersPerCaptain and soldiersPerColonel cannot be 0");
+	}
+	linkRule(_psiUnlockResearch, _psiUnlockResearchName);
+	linkRule(_fakeUnderwaterBaseUnlockResearch, _fakeUnderwaterBaseUnlockResearchName);
+	linkRule(_newBaseUnlockResearch, _newBaseUnlockResearchName);
+	linkRule(_hireScientistsUnlockResearch, _hireScientistsUnlockResearchName);
+	linkRule(_hireEngineersUnlockResearch, _hireEngineersUnlockResearchName);
+	linkRule(_manaUnlockResearch, _manaUnlockResearchName);
+
+	// refresh _psiRequirements for psiStrengthEval
+	for (const auto& facType : _facilitiesIndex)
+	{
+		RuleBaseFacility *rule = getBaseFacility(facType);
+		if (rule->getPsiLaboratories() > 0)
+		{
+			_psiRequirements = rule->getRequirements();
+			break;
+		}
+	}
+	// override the default (used when you want to separate screening and training)
+	if (_psiUnlockResearch)
+	{
+		_psiRequirements.clear();
+		_psiRequirements.push_back(_psiUnlockResearch);
+	}
 
 	// check unique listOrder
 	{
@@ -2468,10 +4149,462 @@ void Mod::loadAll()
 		}
 	}
 
-	Log(LOG_INFO) << "Loading ended.";
+	auto size = _voxelData.size();
+	Log(LOG_INFO) << "Loading ended. s: " << size << ", e: " << size / 16 << ", m: " << size / 16 - 1; // size, entries, max ID
 
 	sortLists();
 	modResources();
+	loadHdUiArt();
+	_luaHost = LuaHost::create(this);
+}
+
+/**
+ * HD art tools: writes the frames of surface sets as 8-bit PNG sheets (the
+ * battlescape palette, 16 frames per row) with a .txt of the layout each,
+ * exactly as the game assembled them from the mods, so a tool can make the
+ * HD pack of a set frame by frame (tools/hdart/upscale_units.py).
+ * @param folder Where to write <set name>.png and <set name>.png.txt.
+ * @param which "units" (every armor's sprite sheet and HANDOB.PCK), "all"
+ * (every set), or a comma-separated list of set names.
+ * @return the number of sets written.
+ */
+int Mod::exportHdSets(const std::string &folder, const std::string &which) const
+{
+	std::vector<std::string> names;
+	if (which.empty() || which == "units")
+	{
+		std::set<std::string> unique;
+		for (const std::string &armorName : _armorsIndex)
+		{
+			const Armor *armor = getArmor(armorName, false);
+			if (armor && !armor->getSpriteSheet().empty())
+			{
+				unique.insert(armor->getSpriteSheet());
+			}
+		}
+		unique.insert("HANDOB.PCK");
+		names.assign(unique.begin(), unique.end());
+	}
+	else if (which == "all")
+	{
+		for (const auto &pair : _sets)
+		{
+			names.push_back(pair.first);
+		}
+	}
+	else
+	{
+		std::string::size_type from = 0;
+		while (from <= which.size())
+		{
+			const std::string::size_type comma = which.find(',', from);
+			const std::string name = which.substr(from, comma == std::string::npos ? std::string::npos : comma - from);
+			if (!name.empty())
+			{
+				names.push_back(name);
+			}
+			if (comma == std::string::npos) break;
+			from = comma + 1;
+		}
+	}
+	const Palette *palette = getPalette("PAL_BATTLESCAPE", false);
+	if (!palette)
+	{
+		Log(LOG_ERROR) << "HD export: no battlescape palette";
+		return 0;
+	}
+	if (!CrossPlatform::folderExists(folder) && !CrossPlatform::createFolder(folder))
+	{
+		Log(LOG_ERROR) << "HD export: cannot create " << folder;
+		return 0;
+	}
+	int written = 0;
+	size_t frames = 0;
+	for (const std::string &name : names)
+	{
+		auto it = _sets.find(name);
+		if (it == _sets.end() || !it->second)
+		{
+			Log(LOG_WARNING) << "HD export: no set " << name;
+			continue;
+		}
+		const std::string path = folder + "/" + name + ".png";
+		const int n = HdSprites::exportSet(it->second, palette->getColors(), path, 16);
+		if (n > 0)
+		{
+			++written;
+			frames += n;
+		}
+	}
+	Log(LOG_INFO) << "HD export: " << written << " set(s), " << frames << " frame(s) -> " << folder;
+	return written;
+}
+
+/**
+ * HD pictures of the interface's images: every hd/UI/<image name>.png in the
+ * mods is the HD picture of the image of that name (case-insensitive; an
+ * extraSprites type, or the file name of a single-image sprite), with an
+ * optional <image name>.pal.txt (the palette the picture was made with, for
+ * re-tinting). Only their sizes are read now; a picture is decoded when first
+ * drawn.
+ */
+/**
+ * True for an image that modResources() changes after the mods are loaded: an HD picture of it,
+ * made from the file, would draw the image as it was before that change.
+ */
+bool Mod::isPatchedSurface(const std::string &name)
+{
+	return name == "UNIBORD.PCK" || name == "BACK06.SCR" || name == "ALTBACK07.SCR" || name == "ALTGEOBORD.SCR";
+}
+
+void Mod::loadHdUiArt()
+{
+	HdUiArt::clear();
+	// the base pictures are named in the master's own frame numbers, the game shifts them by its offset
+	int masterOffset = 0;
+	for (const ModData &m : _modData)
+	{
+		if (m.name == Options::getActiveMaster())
+		{
+			masterOffset = (int)m.offset;
+		}
+	}
+	HdBase::clear(masterOffset);
+	HdCraftLights::clear(masterOffset);
+	// with HD on the base pictures' folder is read now, with the rest of the loading: on the first look at a
+	// base its 456 descriptions and scenes held the frame ~30 ms (16.11); the crafts' lights likewise.
+	// Otherwise it is read when a base is first shown, as before
+	if (Options::oxceHdMode != 0)
+	{
+		HdBase::scenes();
+		HdCraftLights::has(0);
+	}
+	HdFx::clear();
+	for (const auto &armor : _armors)
+	{
+		HdFx::noteMachine(armor.second); // XP-000526: the log names the armours of hd/mech.txt
+	}
+	HdItems::clear();
+	HdOutline::clear();
+	// the screens' theme pictures (hd/UI/screens/screens.txt), the windows' metal frames with them
+	HdScreens::load();
+	// both trees at once: the adult one only holds the pictures that differ
+	const std::vector<std::string> files = HdSprites::artFolder("UI");
+	if (files.empty())
+	{
+		return;
+	}
+	// the images by lower-case name (the virtual file system is lower-case)
+	std::map<std::string, std::string> names;
+	for (const auto &pair : _surfaces)
+	{
+		std::string lower = pair.first;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		names[lower] = pair.first;
+	}
+	for (const auto &pair : _extraSprites)
+	{
+		std::string lower = pair.first;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		names[lower] = pair.first;
+	}
+	// ... and by the file name of a single-image sprite (a mod's picture kept under its own file name)
+	for (const auto &pair : _extraSprites)
+	{
+		for (ExtraSprites *sprites : pair.second)
+		{
+			if (!sprites->getSingleImage() || !sprites->getSprites() || sprites->getSprites()->empty())
+			{
+				continue;
+			}
+			std::string file = sprites->getSprites()->begin()->second;
+			const size_t slash = file.find_last_of("/\\");
+			if (slash != std::string::npos) file = file.substr(slash + 1);
+			const size_t dot = file.find_last_of('.');
+			if (dot != std::string::npos) file = file.substr(0, dot);
+			std::transform(file.begin(), file.end(), file.begin(), ::tolower);
+			if (!file.empty() && names.find(file) == names.end())
+			{
+				names[file] = pair.first;
+			}
+		}
+	}
+	// the paper dolls' layers (afterLoad made the armors' layer names whole): only noted, their images are
+	// loaded when a doll wearing them is shown - X-Piratez has thousands of 320x200 layers
+	std::unordered_set<std::string> layerNames;
+	for (const auto &armor : _armors)
+	{
+		for (const auto &version : armor.second->getLayersDefinition())
+		{
+			layerNames.insert(version.second.begin(), version.second.end());
+		}
+	}
+	// the whole paper dolls (an armor without layers): its spriteInv as it is, with .SPK, or with the gender
+	// and the look (InventoryState::init), in lower case - the player may keep them classic (oxceHdClassicDolls)
+	std::unordered_set<std::string> dollLooks;
+	for (const auto &armor : _armors)
+	{
+		std::string look = armor.second->getSpriteInventory();
+		std::transform(look.begin(), look.end(), look.begin(), ::tolower);
+		if (!look.empty()) dollLooks.insert(look);
+	}
+	const auto wholeDoll = [&dollLooks](const std::string &image)
+	{
+		std::string s = image;
+		std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+		if (dollLooks.count(s)) return true;
+		if (s.size() < 5 || s.compare(s.size() - 4, 4, ".spk") != 0) return false;
+		s.resize(s.size() - 4);
+		if (dollLooks.count(s)) return true;
+		size_t digits = s.size();
+		while (digits > 0 && isdigit((unsigned char)s[digits - 1])) --digits;
+		return digits < s.size() && digits >= 2 && (s[digits - 1] == 'm' || s[digits - 1] == 'f')
+			&& dollLooks.count(s.substr(0, digits - 1)) > 0;
+	};
+	std::vector<std::string> dollImages;
+	// the files of the cutscenes' slides, in lower case: SlideshowState loads them by path, not by image name
+	std::unordered_set<std::string> slideFiles;
+	for (const auto &video : _videos)
+	{
+		if (const std::vector<SlideshowSlide> *slides = video.second->getSlides())
+		{
+			for (const SlideshowSlide &slide : *slides)
+			{
+				std::string path = slide.imagePath;
+				std::transform(path.begin(), path.end(), path.begin(), ::tolower);
+				slideFiles.insert(path);
+			}
+		}
+	}
+	const auto slideFile = [&slideFiles](ExtraSprites *s)
+	{
+		if (!s->getSingleImage() || !s->getSprites() || s->getSprites()->empty())
+		{
+			return false;
+		}
+		std::string path = s->getSprites()->begin()->second;
+		std::transform(path.begin(), path.end(), path.begin(), ::tolower);
+		return slideFiles.count(path) > 0;
+	};
+	int loaded = 0, layers = 0;
+	// one pack serves both games: on vanilla nearly every picture of it is unmatched, so one summary line, the names at debug
+	int unmatched = 0;
+	std::string unmatchedNames;
+	// what the files say first, on all the threads: the size of each picture (a file opened for its first 24 bytes)
+	// and its palette, if it has one (a text of 256 lines) - a mod has thousands (X-Piratez: 6000 pictures; one after
+	// another this was the longest single step of the game's start)
+	struct PictureFile
+	{
+		int width = 0, height = 0;
+		bool png = false, hasPalette = false, read = false;
+		std::vector<SDL_Color> palette;
+	};
+	std::vector<PictureFile> pictureFiles(files.size());
+	const auto readPictureFile = [&files, &pictureFiles](size_t i)
+	{
+		const std::string &file = files[i];
+		PictureFile &f = pictureFiles[i];
+		f = PictureFile();
+		f.png = HdSprites::pngSize(HdSprites::artPath("UI/" + file), f.width, f.height);
+		const std::string palPath = HdSprites::artPath("UI/" + file.substr(0, file.size() - 4) + ".pal.txt");
+		if (f.png && FileMap::fileExists(palPath))
+		{
+			f.hasPalette = true;
+			if (SDL_RWops *rw = FileMap::getRWops(palPath))
+			{
+				size_t size = 0;
+				void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+				if (data)
+				{
+					try
+					{
+						std::istringstream in(std::string((const char*)data, size));
+						int r, g, b;
+						while (in >> r >> g >> b && f.palette.size() < 256)
+						{
+							SDL_Color c;
+							c.r = (Uint8)r; c.g = (Uint8)g; c.b = (Uint8)b; c.unused = 255;
+							f.palette.push_back(c);
+						}
+					}
+					catch (...)
+					{
+						SDL_free(data);
+						throw;
+					}
+					SDL_free(data);
+				}
+			}
+		}
+		f.read = true;
+	};
+	// the files of a .zip are all read through the one reader of the archive (FileMap: a seek, then a read, no lock):
+	// a picture or palette of a .zip is left to this thread, below (as Surface::readPngAhead leaves them)
+	const auto onDisk = [](const std::string &path)
+	{
+		return !FileMap::fileExists(path) || FileMap::at(path)->zip == NULL;
+	};
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int chunks = std::max(1, std::min((int)(files.size() / 64), pool.threads() * 4));
+		pool.runCounted(chunks, [&files, &pictureFiles, &readPictureFile, &onDisk, chunks](int chunk)
+		{
+			const size_t to = files.size() * (chunk + 1) / chunks;
+			for (size_t i = files.size() * chunk / chunks; i < to; ++i)
+			{
+				const std::string &file = files[i];
+				if (!pictureFiles[i].read && file.size() >= 5 && file.compare(file.size() - 4, 4, ".png") == 0
+					&& !(file.size() > 10 && file.compare(file.size() - 10, 10, ".erase.png") == 0)
+					&& onDisk(HdSprites::artPath("UI/" + file))
+					&& onDisk(HdSprites::artPath("UI/" + file.substr(0, file.size() - 4) + ".pal.txt")))
+				{
+					readPictureFile(i);
+				}
+			}
+		});
+	}
+	for (size_t fileIndex = 0; fileIndex < files.size(); ++fileIndex)
+	{
+		const std::string &file = files[fileIndex];
+		if (file.size() < 5 || file.substr(file.size() - 4) != ".png")
+		{
+			continue;
+		}
+		if (file.size() > 10 && file.substr(file.size() - 10) == ".erase.png")
+		{
+			continue; // a doll layer's erase mask, read with the layer (HdUiArt::composeFrame)
+		}
+		const std::string lower = file.substr(0, file.size() - 4);
+		auto it = names.find(lower);
+		if (it == names.end())
+		{
+			if (++unmatched <= 5)
+			{
+				unmatchedNames += (unmatchedNames.empty() ? "" : ", ") + file;
+			}
+			Log(LOG_DEBUG) << "HD interface: " << HdSprites::artPath("UI/" + file) << " matches no image of the mods";
+			continue;
+		}
+		if (isPatchedSurface(it->second))
+		{
+			// modResources() redraws parts of these images after the mods are loaded (the rows of
+			// the battlescape info screen, the graph screen's grid), so a picture made from the
+			// file cannot match what the game draws - it would show the old lines over the new
+			Log(LOG_INFO) << "HD interface: " << HdSprites::artPath("UI/" + file) << " is of an image the engine redraws itself - not used";
+			continue;
+		}
+		const bool layer = layerNames.count(it->second) > 0;
+		if (!layer && wholeDoll(it->second))
+		{
+			dollImages.push_back(it->second);
+		}
+		// an image loaded lazily is not loaded for its picture: the picture is registered when the image is
+		// (lazyLoadSurface) - loading all of them here held 2187 images of X-Piratez from the start (143 MB)
+		bool later = false;
+		if (!layer && Options::lazyLoadResources)
+		{
+			auto sprites = _extraSprites.find(it->second);
+			if (sprites != _extraSprites.end() && !sprites->second.empty())
+			{
+				bool single = true;
+				bool onSlide = false;
+				for (ExtraSprites *s : sprites->second)
+				{
+					single = single && s->getSingleImage();
+					later = later || !s->isLoaded();
+					onSlide = onSlide || slideFile(s);
+				}
+				// a cutscene slide is read from its file (SlideshowState), the image is never asked for by name:
+				// deferred, its picture would never be registered and the slide would stay classic (XP-000604)
+				later = later && single && !onSlide;
+			}
+		}
+		Surface *base = layer || later ? nullptr : getSurface(it->second, false);
+		if (!layer && !later && !base)
+		{
+			continue;
+		}
+		// only the size now: the picture itself is read when first drawn (a mod can have thousands)
+		PictureFile &pictureFile = pictureFiles[fileIndex];
+		if (!pictureFile.read)
+		{
+			readPictureFile(fileIndex); // a file of a .zip, or its job failed twice (memory short for a moment)
+		}
+		const int width = pictureFile.width, height = pictureFile.height;
+		const std::string picture = HdSprites::artPath("UI/" + file);
+		if (!pictureFile.png)
+		{
+			Log(LOG_WARNING) << "HD interface: " << picture << " is not a PNG";
+			continue;
+		}
+		std::vector<SDL_Color> palette = std::move(pictureFile.palette);
+		if (pictureFile.hasPalette && palette.size() != 256)
+		{
+			Log(LOG_WARNING) << "HD interface: " << HdSprites::artPath("UI/" + lower + ".pal.txt")
+				<< " should hold 256 lines 'r g b' - no re-tinting for " << it->second;
+			palette.clear();
+		}
+		if (layer)
+		{
+			HdUiArt::addPending(it->second, picture, width, height, std::move(palette));
+			++layers;
+		}
+		else if (later)
+		{
+			HdUiArt::addDeferred(it->second, picture, width, height, std::move(palette));
+			++loaded;
+		}
+		else if (HdUiArt::addLazy(it->second, base, picture, width, height, std::move(palette)))
+		{
+			++loaded;
+		}
+	}
+	if (layers)
+	{
+		Log(LOG_INFO) << "HD interface: " << layers << " paper doll layer picture(s), read when a doll is shown";
+	}
+	Log(LOG_INFO) << "HD interface: " << dollImages.size() << " whole paper doll picture(s)";
+	HdUiArt::setPaperdolls(std::move(dollImages));
+	if (unmatched)
+	{
+		Log(LOG_WARNING) << "HD interface: " << unmatched << " picture(s) in hd/UI match no image of the mods (" << unmatchedNames
+			<< (unmatched > 5 ? ", ..." : "") << ") - every name is in the log at debug level";
+	}
+	// the geoscape's big background is made here by mirroring GEOBORD.SCR (modResources): its
+	// picture is made the same way from GEOBORD's, unless a mod ships its own ALTGEOBORD.SCR (and picture)
+	const HdUiArt::Art *geo = HdUiArt::find(getSurface("GEOBORD.SCR", false));
+	Surface *alt = getSurface("ALTGEOBORD.SCR", false);
+	if (geo && alt && !HdUiArt::find(alt) && alt->getWidth() == (320 - 64) * 3 && alt->getHeight() == 200 * 3
+		&& geo->baseWidth == 320 && geo->baseHeight == 200 && !HdUiArt::frame(geo).pixels.empty())
+	{
+		const int s = geo->scale, nw = (320 - 64) * s, nh = 200 * s;
+		const HdFrame &src = HdUiArt::frame(geo);
+		HdFrame frame;
+		frame.width = nw * 3;
+		frame.height = nh * 3;
+		frame.pixels.assign((size_t)frame.width * frame.height, 0u);
+		for (int y = 0; y < nh; ++y)
+		{
+			for (int x = 0; x < nw; ++x)
+			{
+				const Uint32 p = src.pixels[(size_t)y * src.width + x];
+				const int xs[3] = { nw + x, nw - x - 1, nw * 3 - x - 1 };
+				const int ys[3] = { nh + y, nh - y - 1, nh * 3 - y - 1 };
+				for (int i = 0; i < 3; ++i)
+					for (int j = 0; j < 3; ++j)
+						frame.pixels[(size_t)ys[j] * frame.width + xs[i]] = p;
+			}
+		}
+		if (HdUiArt::add("ALTGEOBORD.SCR", alt, std::move(frame), geo->palette))
+		{
+			++loaded;
+		}
+	}
+	if (loaded > 0)
+	{
+		Log(LOG_INFO) << "HD interface: " << loaded << " HD picture(s) of interface images";	}
+	// hd/UI/FontBig.ttf and FontSmall.ttf, when the mod ships them (the skin's TrueType text)
+	HdUi::instance().loadFonts();
 }
 
 /**
@@ -2486,13 +4619,47 @@ void Mod::loadMod(const std::vector<FileMap::FileRecord> &rulesetFiles, ModScrip
 	std::sort(sortedRulesetFiles.begin(), sortedRulesetFiles.end(),
 		[](const FileMap::FileRecord& a, const FileMap::FileRecord& b)
 		{ return a.fullpath > b.fullpath; });
+	// A third of the time of the rulesets of a large mod is the parse of the text into a YAML tree, and the trees do
+	// not depend on each other: while the rules of one file are taken from its tree here, the next file is read and
+	// parsed on another thread. Only a window of files is ahead at any moment - the trees of a whole mod at once took
+	// 320 MiB to save the same time - and a tree is dropped as soon as its file is done. The rules are taken one file
+	// at a time, in the same order, on this thread. A file that did not parse ahead (or lies in an archive) is left
+	// to loadFile, which reads it as before - with the same error, at the same place in the order.
+	const size_t window = 4;
+	std::vector<std::future<std::unique_ptr<YAML::YamlRootNodeReader>>> parsedAhead(sortedRulesetFiles.size());
+	size_t startedAhead = 0, fileIndexAhead = 0;
 	for (const auto& filerec : sortedRulesetFiles)
 	{
 		Log(LOG_VERBOSE) << "- " << filerec.fullpath;
+		for (; window > 0 && startedAhead < sortedRulesetFiles.size() && startedAhead <= fileIndexAhead + window; ++startedAhead)
+		{
+			const FileMap::FileRecord *rec = &sortedRulesetFiles[startedAhead];
+			if (rec->zip == NULL)
+			{
+				parsedAhead[startedAhead] = std::async(std::launch::async, [rec]() -> std::unique_ptr<YAML::YamlRootNodeReader>
+				{
+					try
+					{
+						RawData data = CrossPlatform::readFileRaw(rec->fullpath);
+						return std::make_unique<YAML::YamlRootNodeReader>(data, rec->fullpath);
+					}
+					catch (...)
+					{
+						return nullptr;
+					}
+				});
+			}
+		}
+		std::unique_ptr<YAML::YamlRootNodeReader> parsedFile;
+		if (parsedAhead[fileIndexAhead].valid())
+		{
+			parsedFile = parsedAhead[fileIndexAhead].get();
+		}
+		++fileIndexAhead;
 		try
 		{
 			_scriptGlobal->fileLoad(filerec.fullpath);
-			loadFile(filerec, parsers);
+			loadFile(filerec, parsers, parsedFile.get());
 		}
 		catch (Exception &e)
 		{
@@ -2705,6 +4872,7 @@ void Mod::loadConstants(const YAML::YamlNodeReader &reader)
 		for (size_t j = 0; j < std::size(PEDIA_FACILITY_RENDER_PARAMETERS); j++)
 			arrayReader[j].tryReadVal(PEDIA_FACILITY_RENDER_PARAMETERS[j]);
 	reader.tryRead("extendedItemReloadCost", EXTENDED_ITEM_RELOAD_COST);
+	reader.tryRead("extendedIgnoreOverweightRule", EXTENDED_IGNORE_OVERWEIGHT_RULE);
 	reader.tryRead("extendedInventorySlotSorting", EXTENDED_INVENTORY_SLOT_SORTING);
 	reader.tryRead("extendedRunningCost", EXTENDED_RUNNING_COST);
 	reader.tryRead("extendedMovementCostRounding", EXTENDED_MOVEMENT_COST_ROUNDING);
@@ -2727,9 +4895,15 @@ void Mod::loadConstants(const YAML::YamlNodeReader &reader)
  * @param filename YAML filename.
  * @param parsers Object with all available parsers.
  */
-void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
+void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers, YAML::YamlRootNodeReader *parsed)
 {
-	YAML::YamlRootNodeReader r = filerec.getYAML();
+	std::unique_ptr<YAML::YamlRootNodeReader> parsedHere;
+	if (!parsed)
+	{
+		parsedHere.reset(new YAML::YamlRootNodeReader(filerec.getYAML()));
+		parsed = parsedHere.get();
+	}
+	YAML::YamlRootNodeReader &r = *parsed;
 	YAML::YamlNodeReader reader = r.useIndex();
 
 	auto loadDocInfoHelper = [&](const char* nodeName)
@@ -2846,6 +5020,14 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		if (rule != 0)
 		{
 			rule->load(ruleReader, this, parsers);
+		}
+	}
+	for (const auto& ruleReader : iterateRules("voiceSets", "type"))
+	{
+		RuleVoiceSet* rule = loadRule(ruleReader, &_voiceSets, &_voiceSetsIndex, "type", RuleListOrderedFactory<RuleVoiceSet>{ _voiceSetsListOrder, 100 });
+		if (rule != 0)
+		{
+			rule->load(ruleReader, this);
 		}
 	}
 	for (const auto& ruleReader : iterateRules("weaponSets", "type"))
@@ -3187,11 +5369,11 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	}
 	reader.tryRead("alienFuel", _alienFuel);
 	reader.tryRead("fontName", _fontName);
-	reader.tryRead("psiUnlockResearch", _psiUnlockResearch);
-	reader.tryRead("fakeUnderwaterBaseUnlockResearch", _fakeUnderwaterBaseUnlockResearch);
-	reader.tryRead("newBaseUnlockResearch", _newBaseUnlockResearch);
-	reader.tryRead("hireScientistsUnlockResearch", _hireScientistsUnlockResearch);
-	reader.tryRead("hireEngineersUnlockResearch", _hireEngineersUnlockResearch);
+	reader.tryRead("psiUnlockResearch", _psiUnlockResearchName);
+	reader.tryRead("fakeUnderwaterBaseUnlockResearch", _fakeUnderwaterBaseUnlockResearchName);
+	reader.tryRead("newBaseUnlockResearch", _newBaseUnlockResearchName);
+	reader.tryRead("hireScientistsUnlockResearch", _hireScientistsUnlockResearchName);
+	reader.tryRead("hireEngineersUnlockResearch", _hireEngineersUnlockResearchName);
 	loadBaseFunction("mod", _hireScientistsRequiresBaseFunc, reader["hireScientistsRequiresBaseFunc"]);
 	loadBaseFunction("mod", _hireEngineersRequiresBaseFunc, reader["hireEngineersRequiresBaseFunc"]);
 	reader.tryRead("destroyedFacility", _destroyedFacility);
@@ -3224,6 +5406,15 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		nodeAI.tryRead("targetWeightAsFriendly", _aiTargetWeightAsFriendly);
 		nodeAI.tryRead("targetWeightAsNeutral", _aiTargetWeightAsNeutral);
 	}
+	// the knowledge armor rule (Battlescape/KnowledgeArmor.h): only the numbers, the option oxceKnowledgeArmor turns it on
+	if (const auto& nodeKnowledge = loadDocInfoHelper("knowledgeArmor"))
+	{
+		nodeKnowledge.tryRead("knownEnemy", _knowledgeArmor.knownEnemy);
+		nodeKnowledge.tryRead("unknownWeapon", _knowledgeArmor.unknownWeapon);
+		nodeKnowledge.tryRead("intelligenceStep", _knowledgeArmor.intelligenceStep);
+		nodeKnowledge.tryRead("intelligencePivot", _knowledgeArmor.intelligencePivot);
+		nodeKnowledge.tryRead("difficultyIntelligence", _knowledgeArmor.difficultyIntelligence);
+	}
 	reader.tryRead("maxLookVariant", _maxLookVariant);
 	reader.tryRead("tooMuchSmokeThreshold", _tooMuchSmokeThreshold);
 	reader.tryRead("customTrainingFactor", _customTrainingFactor);
@@ -3255,7 +5446,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	{
 		nodeMana.tryRead("enabled", _manaEnabled);
 		nodeMana.tryRead("battleUI", _manaBattleUI);
-		nodeMana.tryRead("unlockResearch", _manaUnlockResearch);
+		nodeMana.tryRead("unlockResearch", _manaUnlockResearchName);
 		nodeMana.tryRead("trainingPrimary", _manaTrainingPrimary);
 		nodeMana.tryRead("trainingSecondary", _manaTrainingSecondary);
 
@@ -3519,23 +5710,6 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		{
 			loadConstants(constants.useIndex());
 		}
-	}
-
-	// refresh _psiRequirements for psiStrengthEval
-	for (const auto& facType : _facilitiesIndex)
-	{
-		RuleBaseFacility *rule = getBaseFacility(facType);
-		if (rule->getPsiLaboratories() > 0)
-		{
-			_psiRequirements = rule->getRequirements();
-			break;
-		}
-	}
-	// override the default (used when you want to separate screening and training)
-	if (!_psiUnlockResearch.empty())
-	{
-		_psiRequirements.clear();
-		_psiRequirements.push_back(_psiUnlockResearch);
 	}
 
 	if (const auto& arrayReader = reader["aimAndArmorMultipliers"])
@@ -4162,6 +6336,26 @@ const std::vector<std::string> &Mod::getItemsList() const
 }
 
 /**
+ * Returns the rules for the specified voice set.
+ * @param type Voice set type.
+ * @return Rules for the voice set.
+ */
+RuleVoiceSet* Mod::getVoiceSet(const std::string& type, bool error) const
+{
+	return getRule(type, "VoiceSet", _voiceSets, error);
+}
+
+/**
+ * Returns the list of all voice sets
+ * provided by the mod.
+ * @return List of voice sets.
+ */
+const std::vector<std::string> &Mod::getVoiceSetsList() const
+{
+	return _voiceSetsIndex;
+}
+
+/**
  * Returns the rules for the specified weapon set.
  * @param type Weapon set type.
  * @return Rules for the weapon set.
@@ -4571,6 +6765,38 @@ const std::vector<std::string> &Mod::getInvsList() const
 RuleResearch *Mod::getResearch(const std::string &id, bool error) const
 {
 	return getRule(id, "Research", _research, error);
+}
+
+/**
+ * Gets the research, or a placeholder that can never be discovered.
+ *
+ * HD: с OXCE 8.7.1 ссылка на несуществующую тему исследования - это исключение при
+ * загрузке рулсетов, и X-Piratez с тремя такими опечатками просто не запускается.
+ * Выбросить ссылку нельзя: условие исчезнет и запертое станет доступным, то есть
+ * поменяется механика. Поэтому заводим тему с тем же именем, которой нет в _research:
+ * в списки исследований она не попадает, открыть её невозможно, и условие остаётся
+ * невыполнимым - ровно как в 8.7.0. Каждая дыра один раз называется в логе.
+ */
+const RuleResearch *Mod::getResearchOrPlaceholder(const std::string &id) const
+{
+	if (isEmptyRuleName(id))
+	{
+		return nullptr;
+	}
+	if (auto *rule = getResearch(id, false))
+	{
+		return rule;
+	}
+	auto it = _missingResearch.find(id);
+	if (it != _missingResearch.end())
+	{
+		return it->second;
+	}
+	Log(LOG_WARNING) << "Mod refers to research '" << id << "', which no mod declares."
+		<< " Treating it as never discovered (OXCE 8.7.0 behaviour).";
+	auto *placeholder = new RuleResearch(id, 0);
+	_missingResearch[id] = placeholder;
+	return placeholder;
 }
 
 /**
@@ -5019,6 +7245,10 @@ void Mod::sortLists()
 	sortIndex(_manufactureIndex, _manufacture, compareRule<RuleManufacture>(this));
 	sortIndex(_soldierTransformationIndex, _soldierTransformation, compareRule<RuleSoldierTransformation>(this));
 	sortIndex(_invsIndex, _invs, compareRule<RuleInventory>(this));
+	sortIndex(_soldiersIndex, _soldiers, compareRule<RuleSoldier>(this));
+	sortIndex(_aliensIndex, _alienRaces, compareRule<AlienRace>(this));
+	sortIndex(_voiceSetsIndex, _voiceSets, compareRule<RuleVoiceSet>(this));
+
 	// special cases
 	sortIndex(_craftWeaponsIndex, _craftWeapons, compareRule<RuleCraftWeapon>(this));
 	sortIndex(_armorsIndex, _armors, compareRule<Armor>(this));
@@ -5026,14 +7256,12 @@ void Mod::sortLists()
 	_ufopaediaSections[UFOPAEDIA_NOT_AVAILABLE] = 0;
 	sortIndex(_ufopaediaIndex, _ufopaediaArticles, compareRule<ArticleDefinition>(this));
 	std::sort(_ufopaediaCatIndex.begin(), _ufopaediaCatIndex.end(), compareSection(this));
-	sortIndex(_soldiersIndex, _soldiers, compareRule<RuleSoldier>(this));
-	sortIndex(_aliensIndex, _alienRaces, compareRule<AlienRace>(this));
 }
 
 /**
  * Gets the research-requirements for Psi-Lab (it's a cache for psiStrengthEval)
  */
-const std::vector<std::string> &Mod::getPsiRequirements() const
+const std::vector<const RuleResearch*> &Mod::getPsiRequirements() const
 {
 	return _psiRequirements;
 }
@@ -6058,6 +8286,9 @@ void Mod::loadExtraResources()
 		delete gmcat;
 		delete adlibcat;
 		delete aintrocat;
+
+		// the player's own music (XP-000373): scanned here when the option is on, the files are opened at their first play
+		ensureUserMusic();
 	}
 #endif
 

@@ -1,0 +1,12 @@
+executed shots by verdict and expected damage: n, with any change, with damage-like change (hp/stun/wounds/armour/fire/status)
+  -            ev0.5-3  n=    2 any=   0 dmg=   0 (0%) hp_lost=0 armour_lost=0 {}
+  -            ev<0.5  n=  248 any=  21 dmg=   0 (0%) hp_lost=0 armour_lost=0 {'energy': 21}
+  -            ev>=3  n=   14 any=   6 dmg=   6 (43%) hp_lost=437 armour_lost=30 {'hp': 6, 'stun': 6, 'morale': 6, 'wounds': 3, 'armour': 5, 'status': 4}
+  area         ev<0.5  n=   95 any=  26 dmg=  26 (27%) hp_lost=96 armour_lost=16 {'hp': 26, 'stun': 3, 'morale': 23, 'wounds': 1, 'fire': 2, 'armour': 2, 'status': 1}
+  armor_wear   ev0.5-3  n=   18 any=  10 dmg=  10 (56%) hp_lost=105 armour_lost=84 {'hp': 5, 'stun': 4, 'morale': 5, 'wounds': 4, 'fire': 1, 'armour': 10}
+  armor_wear   ev<0.5  n=   55 any=  20 dmg=  20 (36%) hp_lost=10 armour_lost=41 {'hp': 1, 'stun': 1, 'morale': 1, 'wounds': 1, 'armour': 20}
+  armor_wear   ev>=3  n=  136 any=  80 dmg=  78 (57%) hp_lost=3199 armour_lost=759 {'hp': 63, 'stun': 54, 'morale': 54, 'energy': 2, 'wounds': 55, 'fire': 28, 'armour': 78, 'status': 27}
+  shield_armor ev0.5-3  n=    2 any=   0 dmg=   0 (0%) hp_lost=0 armour_lost=0 {}
+  shield_armor ev<0.5  n=   15 any=   0 dmg=   0 (0%) hp_lost=0 armour_lost=0 {}
+useless shots with other lawful targets: best alternative expected HP {'0': 164, '1-2.9': 2, '0.1-0.9': 2, '>=3': 2}
+  alternatives' verdict: {'-': 244, 'shield_armor': 8} faction: {'0': 252}

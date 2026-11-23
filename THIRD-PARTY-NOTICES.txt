@@ -1,0 +1,158 @@
+THIRD-PARTY NOTICES for the OXCE-HD engine (openxcom_hd.exe)
+
+The engine itself is free software under the GNU General Public License version 3 (LICENSE.txt). It contains or
+is linked with the components below. Their sources are in the engine repository (folders libs/ and src/) or, for
+the libraries taken unchanged from MSYS2, in the MSYS2 package sources (https://packages.msys2.org).
+This file does not cover the launcher (XPiratezLauncher.exe, xp-bootstrap.exe and their libraries) nor the game
+data and mods.
+
+==============================================================================
+1. Bundled in the source tree (libs/)
+==============================================================================
+
+--- Lua 5.4.9 (libs/lua), MIT licence; changed by OXCE-HD, the changes are listed in libs/lua/README.txt ---
+
+Copyright (C) 1994-2026 Lua.org, PUC-Rio.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--- pl_mpeg (libs/pl_mpeg), MIT licence, unchanged; https://github.com/phoboslab/pl_mpeg ---
+
+Copyright (c) Dominic Szablewski - https://phoboslab.org
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+
+--- miniz (libs/miniz), MIT licence; changed by OXCE and OXCE-HD ---
+
+Copyright 2013-2014 RAD Game Tools and Valve Software
+Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
+
+All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+--- rapidyaml (libs/rapidyaml), MIT licence ---
+
+Copyright (c) 2018, Joao Paulo Magalhaes <dev@jpmag.me>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+--- SDL_image, branch SDL-1.2 (libs/SDL_image), zlib licence; ALTERED by OXCE-HD - this is not the original
+    software, the changes are in libs/SDL_image/OXCE.diff and README_OXCE.md ---
+
+SDL_image:  An example image loading library for use with SDL
+Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+
+This software is provided 'as-is', without any express or implied
+warranty.  In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+==============================================================================
+2. Inside the engine sources (src/), inherited from OpenXcom / OpenXcom Extended
+==============================================================================
+
+Each file carries its own notice. In short:
+  lodepng (src/lodepng.*)                  zlib licence, Copyright (c) Lode Vandevenne
+  md5 (src/md5.*)                          see the notice in the files
+  hqx (src/Engine/Scalers/hq*.cpp, hqx.h)  GNU LGPL 2.1 or later
+  Scale2x / Scale3x (src/Engine/Scalers)   GNU GPL 2 or later
+  xBRZ (src/Engine/Scalers/xbrz.*)         GNU GPL 3
+  fmopl, adlplayer (src/Engine/Adlib)      see the notices in the files
+
+==============================================================================
+3. Libraries linked into the executable, unchanged, from MSYS2 (mingw-w64-x86_64)
+==============================================================================
+
+  SDL 1.2, SDL_mixer 1.2, libmikmod        GNU LGPL 2.1 or later
+  SDL_gfx                                  zlib licence
+  libmad                                   GNU GPL 2 or later
+  libogg, libvorbis, libvorbisfile, FLAC   BSD 3-clause (Xiph.Org Foundation)
+  libpng                                   PNG Reference Library License
+  zlib                                     zlib licence
+  libjpeg-turbo                            IJG licence and BSD 3-clause; this software is based in part on the
+                                           work of the Independent JPEG Group
+  libtiff                                  libtiff licence (BSD-like)
+  JBIG-KIT (libjbig)                       GNU GPL 2 or later
+  libwebp, libsharpyuv                     BSD 3-clause (Google)
+  libdeflate                               MIT licence
+  LERC                                     Apache License 2.0
+  XZ Utils (liblzma)                       0BSD / public domain
+  Zstandard                                BSD 3-clause (Meta)
+  mingw-w64 runtime, winpthreads           Zope Public License 2.1 and MIT/BSD-like notices; GCC runtime with the
+                                           GCC Runtime Library Exception
+
+The full texts of these licences are in the corresponding MSYS2 packages (folder /mingw64/share/licenses) and on
+the sites of the projects. The GNU GPL 3 text is LICENSE.txt next to this file.

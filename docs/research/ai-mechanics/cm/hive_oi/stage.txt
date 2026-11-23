@@ -1,0 +1,48 @@
+470 at t5 (46, 27, 0) dir 4 hp 132/168 tu 156 spotted 0 seenby 3
+cells next to 470: side of armour, way from (44,32,3) by 1000000's list t5, way from (40,54,3) by 1000005's list t5
+   (45, 26, 0) rear/right 34 150
+   (45, 27, 0) right 38 154
+   (45, 28, 0) front/right 42 158
+   (45, 29, 0) front/right None None
+   (46, 26, 0) rear 36 152
+   (46, 29, 0) front 72 160
+   (47, 26, 0) rear/left 40 156
+   (47, 29, 0) front/left 76 158
+   (48, 26, 0) rear/left 44 160
+   (48, 27, 0) left 46 162
+   (48, 28, 0) front/left None None
+   (48, 29, 0) front/left 76 156
+staging cells for 1000005 at t4 near (44,32,3), TU 181: (40,54,3) 181
+    (42, 34, 3) way 110 then to 470's rear by proxy: 16
+    (43, 34, 3) way 106 then to 470's rear by proxy: 12
+    (44, 30, 3) way 120 then to 470's rear by proxy: 8
+    (44, 31, 3) way 116 then to 470's rear by proxy: 4
+    (44, 32, 3) way 112 then to 470's rear by proxy: None
+    (44, 33, 3) way 108 then to 470's rear by proxy: 4
+    (44, 34, 3) way 104 then to 470's rear by proxy: 8
+    (45, 30, 3) way 122 then to 470's rear by proxy: 10
+    (45, 31, 3) way 118 then to 470's rear by proxy: 6
+    (45, 32, 3) way 114 then to 470's rear by proxy: 4
+    (45, 33, 3) way 110 then to 470's rear by proxy: 6
+    (45, 34, 3) way 106 then to 470's rear by proxy: 10
+    (46, 34, 3) way 108 then to 470's rear by proxy: 14
+    (47, 34, 3) way 112 then to 470's rear by proxy: 18
+turn 5 events of 470:
+   reaction 1 ] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+   reaction 2 ] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+   reaction 3 ] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+   reaction 4 ] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+   reaction 5 ] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+   reaction 6 ] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+   reaction 7 ] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+    [AICASUALTY] turn=5 side=1 victim=1000000 vfaction=1 type=STR_CHRYSSALID_TERRORIST how=dead pos=(45,26,0) tu=12 kneel=0 seenby=1 killer=470 kfaction=0
+   reaction 8 ] turn=5 side=1 what=reaction unit=470 pos=(43,36,0)
+    [AICASUALTY] turn=6 side=0 victim=1000047 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(48,29,0) tu=5 kneel=0 seenby=1 killer=470 kfaction=0 ktype
+    [AICASUALTY] turn=6 side=0 victim=1000017 vfaction=1 type=STR_ERIDIAN_SOLDIER how=dead pos=(43,34,0) tu=1 kneel=0 seenby=1 killer=470 kfaction=0 ktype
+casualties of the two:
+    {'turn': '5', 'victim': '1000000', 'killer': '470', 'weapon': 'AUX_TANK_LASER_CANNON', 'dist': '1', 'pos': '(45,26,0)'}
+1000005 state by turn: [(3, '116/116'), (4, '116/116'), (5, '116/116'), (6, '116/116'), (7, '16/116'), (8, '16/116')]
+1000000 state by turn: [(3, '37/116', '0'), (4, '37/116', '0'), (5, '37/116', '0'), (6, None, None)]
+470 acts sample:
+   [AICAND] acts=183106d036ceb39 unit=470 l
+   [('AUX_TANK_LASER', 7, 19), ('AUX_TANK_LASER', 8, 29), ('AUX_TANK_LASER_CANNON', 8, 58), ('AUX_TANK_LASER_CANNON', 9, 87)]

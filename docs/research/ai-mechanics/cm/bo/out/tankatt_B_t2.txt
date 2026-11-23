@@ -1,0 +1,7 @@
+1000018 snap   STR_SR_RIFLE         -> 470 (AUX_TANK_LASER) from (40,55,0) exec=True dmg=0 spotted_after=0 reactions=- died_by=-
+1000023 snap   STR_CANISTER_GUN     -> 545 (AUX_WOLVERIN_WEAPON_MI) from (53,7,0) exec=True dmg=0 spotted_after=0 reactions=- died_by=-
+1000028 aimed  STR_SR_RIFLE         -> 448 (AUX_TANK_LASER) from (3,7,0) exec=True dmg=0 spotted_after=0 reactions=- died_by=-
+1000036 aimed  STR_CANISTER_GUN     -> 444 (AUX_TANK_MG) from (26,15,0) exec=True dmg=129 spotted_after=2 reactions=444,444 died_by=444
+1000047 snap   STR_SR_RIFLE         -> 470 (AUX_TANK_LASER) from (49,61,0) exec=True dmg=0 spotted_after=0 reactions=- died_by=-
+1000017 snap   STR_SR_RIFLE         -> 470 (AUX_TANK_LASER) from (55,39,0) exec=True dmg=0 spotted_after=0 reactions=- died_by=-
+1000043 snap   STR_CANISTER_GUN     -> 470 (AUX_TANK_LASER) from (50,35,3) exec=True dmg=0 spotted_after=2 reactions=- died_by=-

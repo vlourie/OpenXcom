@@ -89,6 +89,7 @@ protected:
 	Uint8 _visible: 1;
 	Uint8 _hidden: 1;
 	Uint8 _redraw: 1;
+	Uint8 _hdKind: 2;
 
 	/// Copies raw pixels.
 	template <typename T>
@@ -111,6 +112,13 @@ public:
 	/// Cleans up the surface.
 	virtual ~Surface();
 
+	/// HD render: bytes of an 8-bit frame of this size (the pitch is padded).
+	static size_t hdFrameBytes(int width, int height);
+	/// HD render: an 8-bit frame over pixels that belong to someone else (SurfaceSet's lazy copy); see hdRelease().
+	static Surface hdBorrowed(Uint8 *pixels, int width, int height, int x, int y);
+	/// HD render: lets go of borrowed pixels - must be called before a frame made by hdBorrowed() is destroyed.
+	void hdRelease() { _surface.reset(); (void)_alignedBuffer.release(); }
+
 	/// Is surface empty?
 	explicit operator bool() const
 	{
@@ -127,8 +135,18 @@ public:
 	void loadSpk(const std::string &filename);
 	/// Loads a TFTD BDY graphic.
 	void loadBdy(const std::string &filename);
+	/// A PNG file read and unpacked ahead of loadImage(), on any thread.
+	struct PngAhead
+	{
+		bool ready = false;
+		unsigned width = 0, height = 0;
+		std::vector<unsigned char> image;
+		std::vector<SDL_Color> palette;
+	};
+	/// Reads and unpacks an 8-bit PNG file for loadImage(); says nothing and leaves "ready" off when it is anything else.
+	static void readPngAhead(const std::string &filename, PngAhead &ahead);
 	/// Loads a general image file.
-	void loadImage(const std::string &filename);
+	void loadImage(const std::string &filename, PngAhead *ahead = nullptr);
 	/// Clears the surface's contents with a specified colour.
 	void clear();
 	/// Offsets the surface's colors by a set amount.
@@ -143,6 +161,17 @@ public:
 	virtual void draw();
 	/// Blits this surface onto another one.
 	virtual void blit(SDL_Surface *surface);
+	/// HD interface: draws this surface's HD version into the world layer (after a blit onto the screen).
+	/// The default scales the surface's pixels (smoothed); text, windows, buttons draw their own.
+	virtual void hdMirror();
+	/// HD interface: this surface's pixels scaled crisply (nearest), for rectangles, bars and other geometry.
+	void hdMirrorNearest();
+	/// HD interface, modern skin: what this surface is, when its owner draws it another way there.
+	/// HD_PICTURE is drawn as usual, and the text lying on it is text on a picture (outlined) even when the
+	/// picture has no HD version of its own and goes through xBRZ.
+	enum HdKind { HD_NORMAL, HD_SKIP, HD_HIGHLIGHT, HD_PICTURE };
+	void setHdKind(HdKind kind) { _hdKind = (Uint8)kind; }
+	HdKind getHdKind() const { return (HdKind)_hdKind; }
 	/// Initializes the surface's various text resources.
 	virtual void initText(Font *, Font *, Language *) {};
 	/// Copies a portion of another surface into this one.
@@ -309,6 +338,8 @@ public:
 	}
 	/// Sets the surface's special hidden flag.
 	void setHidden(bool hidden);
+	/// Gets the surface's special hidden flag (set while a window pops up, State::hideAll).
+	bool getHidden() const { return _hidden; }
 	/// Locks the surface.
 	void lock();
 	/// Unlocks the surface.

@@ -1,0 +1,6 @@
+1 DO M3 s1 turns=8
+2 DS M3 s1 turns=8
+3 DN M3 s1 turns=8
+4 DN M3 s1 turns=8
+5 DO M6 s1 turns=8
+6 DN M6 s1 turns=8

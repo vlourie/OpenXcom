@@ -79,6 +79,9 @@ private:
 	std::vector<SoldierCommendations*> _commendations;
 	std::vector<BattleUnitKills*> _killList;
 	std::vector<int> _missionIdList;
+	/// Calls the function for every mission of the campaign the soldier took part in.
+	template <typename Func>
+	void eachOwnMission(const std::vector<MissionStatistics*> *missionStatistics, Func &&func) const;
 	int _daysWoundedTotal, _totalShotByFriendlyCounter, _totalShotFriendlyCounter, _loneSurvivorTotal, _monthsService, _unconciousTotal, _shotAtCounterTotal,
 		_hitCounterTotal, _ironManTotal, _longDistanceHitCounterTotal, _lowAccuracyHitCounterTotal, _shotsFiredCounterTotal, _shotsLandedCounterTotal,
 		_shotAtCounter10in1Mission,	_hitCounter5in1Mission, _timesWoundedTotal, _KIA, _allAliensKilledTotal, _allAliensStunnedTotal,
@@ -87,6 +90,9 @@ private:
 		_martyrKillsTotal, _postMortemKills, _slaveKillsTotal, _bestSoldier, _revivedSoldierTotal, _revivedHostileTotal, _revivedNeutralTotal;
 	bool _globeTrotter;
 public:
+	/// Chooses how save() writes the kill list: false = as always (one map per kill), true = a table of names (killStrings)
+	/// and one list of numbers per kill. Set by SavedGame::save for the time of the save; load() reads both forms.
+	static void setCompactWrite(bool compact);
 	/// Construct a diary.
 	SoldierDiary();
 	/// Cleans up a diary.

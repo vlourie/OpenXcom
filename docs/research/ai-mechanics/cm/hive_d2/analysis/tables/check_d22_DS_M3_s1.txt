@@ -1,0 +1,22 @@
+===== d22_DS_M3_s1
+thinks with an intent 76 tries {1: 70, 2: 2, 5: 4}
+invariant tries = free_checked + free_none + taken, broken: 0
+no node at the end: 4 with fewer than 5 tries: 0 with a refused offer: 0 units {'1000020': 1, '1000045': 1, '1000052': 1, '1000053': 1}
+offers in thinks 0 refused 0 taken 0 thinks with a refusal 0
+refused: expanded=0 (before any search) 0 seed moved 0 units {}
+after a refusal the free node was taken at once / the free failed too: 0 0
+CHOICE 94 by scout {'0': 12, '1': 82} chosen 77 changed 73
+S1 scout=0, a chosen node not linked: 0 | scout=0 chosen linked: 3 | scout=0 chosen, not the best by flags (chosen != free): 0
+KEPT_DROP (only written now): 193 KEPT_BACK: 0
+   of those, the soldier stood on that node later: 33
+-- perf by turn
+  t 1 floods=58 floodUs=160161 intentFloods=29 intentFloodUs=84832 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=29 unusedUs=84832 sigUs=24599 freeUs=2120 stepsUs=344 pathUs=172682 paths=77 pathFails=22 thinkUs=101836 planUs 83947 planFloods 26
+  t 2 floods=4 floodUs=20796 intentFloods=4 intentFloodUs=23062 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=4 unusedUs=23062 sigUs=2199 freeUs=60 stepsUs=19 pathUs=13487 paths=6 pathFails=0 thinkUs=550 planUs 122 planFloods 0
+  t 3 floods=4 floodUs=13972 intentFloods=3 intentFloodUs=12878 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=3 unusedUs=12878 sigUs=1883 freeUs=55 stepsUs=11 pathUs=8144 paths=4 pathFails=0 thinkUs=3507 planUs 93 planFloods 0
+  t 4 floods=4 floodUs=18289 intentFloods=4 intentFloodUs=20236 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=4 unusedUs=20236 sigUs=1773 freeUs=57 stepsUs=14 pathUs=6575 paths=4 pathFails=0 thinkUs=282 planUs 79 planFloods 0
+  t 5 floods=2 floodUs=9155 intentFloods=1 intentFloodUs=5037 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=1 unusedUs=5037 sigUs=965 freeUs=25 stepsUs=5 pathUs=3889 paths=1 pathFails=0 thinkUs=5356 planUs 5194 planFloods 1
+  t 6 floods=1 floodUs=1669 intentFloods=1 intentFloodUs=2127 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=1 unusedUs=2127 sigUs=445 freeUs=26 stepsUs=19 pathUs=4495 paths=1 pathFails=0 thinkUs=128 planUs 72 planFloods 0
+  t 7 floods=3 floodUs=7636 intentFloods=3 intentFloodUs=8776 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=3 unusedUs=8776 sigUs=1108 freeUs=81 stepsUs=14 pathUs=27725 paths=6 pathFails=1 thinkUs=123 planUs 59 planFloods 0
+  t 8 floods=1 floodUs=4564 intentFloods=1 intentFloodUs=4963 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=1 unusedUs=4963 sigUs=388 freeUs=25 stepsUs=4 pathUs=16170 paths=4 pathFails=1 thinkUs=86 planUs 45 planFloods 0
+  sum floods=77 floodUs=236242 intentFloods=46 intentFloodUs=161911 offers=0 offersRefused=0 offersTaken=0 refusedUs=0 maxRefusedUs=0 takenUs=0 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=46 unusedUs=161911 sigUs=33360 freeUs=2449 stepsUs=430 pathUs=253167 paths=103 pathFails=24 thinkUs=111868
+[AIRESULT] how=timeout tac=h.rec.in:753,h.rec.out.M2:7,h.rec.out.a9:1,p.rec.in:120,p.rec.out.a9:1 seed=2015001 livesoldiers=3 livealiens=17 aborted=0 mission=STR_ERIDIAN_

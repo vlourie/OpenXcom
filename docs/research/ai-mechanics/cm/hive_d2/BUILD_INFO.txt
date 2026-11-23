@@ -1,0 +1,5 @@
+build_label=cmrun-D2
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=US + HIVE D2 CORRECTION: a refused offer costs no try, the kept node is not taken away, timings (OXCE_AI_HIVE=1 shadow, 2 active)
+patch_sha256=513a91504b3fae430d916f3332849f9e5aaa0e81eedde27936d2adc612f1a406
+exe_sha256=e575b532683055d58de965d0e97a79cbf8313eaad12f4db30a9560bd638fb458

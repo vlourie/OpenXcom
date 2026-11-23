@@ -33,7 +33,6 @@
 #include "../Mod/RuleVideo.h"
 #include "CutsceneState.h"
 #include "../Interface/Cursor.h"
-#include <algorithm>
 
 namespace OpenXcom
 {
@@ -458,17 +457,28 @@ void VideoState::init()
 			audioSequence = new AudioSequence(_game->getMod(), flcPlayer);
 		}
 
-		flcPlayer->init(videoFileName.c_str(),
+		// a file that is not FLI/FLC leaves the player without a screen: skip it instead of playing
+		const bool flcReady = flcPlayer->init(videoFileName.c_str(),
 			 _useUfoAudioSequence ? &audioHandler : NULL,
 			 _game, useInternalAudio, dx, dy);
-		flcPlayer->play(_useUfoAudioSequence);
+		if (flcReady)
+		{
+			flcPlayer->play(_useUfoAudioSequence);
+		}
 		if (_useUfoAudioSequence)
 		{
-			flcPlayer->delay(10000);
+			if (flcReady)
+			{
+				flcPlayer->delay(10000);
+			}
 			delete audioSequence;
 			audioSequence = NULL;
 		}
 		flcPlayer->deInit();
+		if (!flcReady)
+		{
+			continue;
+		}
 
 		if (flcPlayer->wasSkipped())
 		{

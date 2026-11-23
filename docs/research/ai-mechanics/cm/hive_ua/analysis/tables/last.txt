@@ -1,0 +1,64 @@
+﻿===== M6 s1
+  ua4_UO_M6_s1: negative tu 0; empty walks 84/391=21% of walks; median tu of empties 28, of all walks 70; soldier attacked that turn {'after_attack': 51, 'no_attack': 33}
+    escape without a rolled 3: 57, rolled {'0': 17, '2': 36, '-': 4}, src {'escape.known': 53, 'escape': 4}, acts {'0': 53, '2': 4}
+    rolled {'2': 267, '-': 66, '3': 21, '0': 194}; final mode for each roll {('2', '2'): 56, ('3', '3'): 21, ('0', '0'): 177, ('2', '0'): 175, ('0', '3'): 17, ('2', '3'): 36}
+  ua1_UN_M6_s1: negative tu 0; empty walks 149/352=42% of walks; median tu of empties 34, of all walks 43; soldier attacked that turn {'after_attack': 68, 'no_attack': 81}
+    escape without a rolled 3: 5, rolled {'-': 5}, src {'escape': 5}, acts {'2': 5}
+    rolled {'2': 240, '-': 93, '3': 31, '0': 145}; final mode for each roll {('2', '2'): 109, ('3', '3'): 31, ('2', '0'): 131, ('0', '0'): 145}
+  differ: turn 7 unit 1000031 RESULT spent 96 tu 0 moved 0; exec 0 acts []
+  differ: turn 8 unit 1000030 RESULT spent 96 tu 0 moved 0; exec 0 acts []
+  empty walks by node: {'changed': 138, 'same_as_free': 11}
+  nothing spent: turn 3 unit 1000034 tu 96 decisions [('0', '2', '(9,23,0)', '(8,26,0)'), ('0', '2', '(9,23,0)', '(8,26,0)'), ('0', '2', '(9,23,0)', '(8,26,0)')]
+  task ?: {'dec': 41, 'mode2': 34, 'att': 18, 'att_dmg': 1, 'dmg': 177, 'downed': 2, 'mode3': 1, 'mode0': 6}
+  task RESPOND: {'dec': 173, 'mode2': 60, 'att': 47, 'att_dmg': 4, 'dmg': 68, 'downed': 0, 'mode0': 98, 'mode3': 15}
+  task SEARCH: {'dec': 164, 'mode0': 109, 'att': 37, 'att_dmg': 4, 'dmg': 65, 'downed': 0, 'mode2': 46, 'mode3': 9}
+  task SECURE: {'dec': 131, 'mode2': 57, 'att': 43, 'att_dmg': 7, 'dmg': 160, 'downed': 2, 'mode3': 11, 'mode0': 63}
+  result RESPOND: {'unit_turns': 49, 'moved': 42, 'inside': 1, 'closer': 26, 'on_changed': 39}
+  result SEARCH: {'unit_turns': 44, 'moved': 38, 'inside': 36, 'closer': 23, 'on_changed': 32}
+  result SECURE: {'unit_turns': 39, 'moved': 26, 'inside': 23, 'closer': 8, 'on_changed': 25}
+  objective reached by turn [(1, 3), (2, 1)]
+  commander lines ['[HIVECMD] turn=1 squad=3 old=1000013 new=1000027 why=dead rank=STR_LIVE_NAVIGATOR int=5 task=SEARCH kept=1', '[HIVECMD] turn=1 squad=4 old=1000014 new=1000027 why=stunned rank=STR_LIVE_NAVIGATOR int=5 task=HOLD kept=1']
+===== M3 s1
+  ua6_UO_M3_s1: negative tu 0; empty walks 76/568=13% of walks; median tu of empties 19, of all walks 52; soldier attacked that turn {'after_attack': 26, 'no_attack': 50}
+    escape without a rolled 3: 12, rolled {'0': 3, '2': 1, '-': 8}, src {'escape.known': 4, 'escape': 8}, acts {'0': 4, '2': 8}
+    rolled {'2': 318, '-': 225, '0': 176, '3': 22}; final mode for each roll {('2', '2'): 177, ('0', '0'): 173, ('3', '3'): 22, ('2', '0'): 140, ('0', '3'): 3, ('2', '3'): 1}
+  ua2_UN_M3_s1: negative tu 0; empty walks 126/822=15% of walks; median tu of empties 23, of all walks 51; soldier attacked that turn {'after_attack': 21, 'no_attack': 105}
+    escape without a rolled 3: 11, rolled {'2': 1, '0': 3, '-': 7}, src {'escape.known': 4, 'escape': 7}, acts {'0': 4, '2': 7}
+    rolled {'2': 498, '-': 197, '0': 283, '3': 34}; final mode for each roll {('2', '2'): 256, ('0', '0'): 280, ('3', '3'): 34, ('2', '0'): 241, ('2', '3'): 1, ('0', '3'): 3}
+  differ: turn 3 unit 1000009 RESULT spent 65 tu 0 moved 1; exec 62 acts ['6:42', '2:20']
+  empty walks by node: {'changed': 106, 'same_as_free': 17, 'unmatched': 3}
+  nothing spent: turn 1 unit 1000027 tu 65 decisions [('3', '0', '(6,14,0)', '(6,14,0)'), ('3', '0', '(6,14,0)', '(6,14,0)')]
+  nothing spent: turn 1 unit 1000050 tu 65 decisions [('3', '0', '(6,16,3)', '(6,16,3)'), ('3', '0', '(6,16,3)', '(6,16,3)')]
+  nothing spent: turn 8 unit 1000018 tu 65 decisions [('0', '2', '(32,62,1)', '(37,62,3)'), ('0', '2', '(32,62,1)', '(37,62,3)'), ('0', '2', '(32,62,1)', '(37,62,3)')]
+  task ?: {'dec': 49, 'mode2': 19, 'att': 11, 'att_dmg': 4, 'dmg': 211, 'downed': 3, 'mode0': 30}
+  task RESPOND: {'dec': 309, 'mode3': 22, 'att': 72, 'att_dmg': 13, 'dmg': 421, 'downed': 4, 'mode2': 188, 'mode0': 99}
+  task SEARCH: {'dec': 253, 'mode2': 116, 'att': 48, 'att_dmg': 12, 'dmg': 324, 'downed': 8, 'mode0': 125, 'mode3': 12}
+  task SECURE: {'dec': 401, 'mode2': 113, 'att': 37, 'att_dmg': 10, 'dmg': 338, 'downed': 7, 'mode0': 277, 'mode3': 11}
+  result RESPOND: {'unit_turns': 99, 'moved': 89, 'inside': 15, 'closer': 67, 'on_changed': 61}
+  result SEARCH: {'unit_turns': 83, 'moved': 76, 'inside': 51, 'closer': 41, 'on_changed': 65}
+  result SECURE: {'unit_turns': 142, 'moved': 131, 'inside': 97, 'closer': 63, 'on_changed': 130}
+  objective reached by turn [(1, 10), (3, 1), (4, 1), (7, 2)]
+  commander lines ['[HIVECMD] turn=1 squad=10 old=1000015 new=1000030 why=dead rank=STR_LIVE_NAVIGATOR int=2 task=SEARCH kept=1', '[HIVECMD] turn=2 squad=10 old=1000030 new=1000041 why=dead rank=STR_LIVE_NAVIGATOR int=2 task=SEARCH kept=1']
+===== M8 s1
+  ua8_UO_M8_s1: negative tu 0; empty walks 97/278=34% of walks; median tu of empties 35, of all walks 65; soldier attacked that turn {'no_attack': 88, 'after_attack': 9}
+    escape without a rolled 3: 10, rolled {'0': 7, '2': 3}, src {'escape.known': 10}, acts {'0': 9, '2': 1}
+    rolled {'0': 122, '2': 149, '1': 13, '-': 21, '3': 8}; final mode for each roll {('0', '0'): 115, ('0', '3'): 7, ('2', '0'): 107, ('2', '2'): 38, ('2', '3'): 3, ('1', '1'): 13, ('3', '3'): 8, ('2', '1'): 1}
+  ua3_UN_M8_s1: negative tu 0; empty walks 69/247=27% of walks; median tu of empties 34, of all walks 77; soldier attacked that turn {'after_attack': 12, 'no_attack': 57}
+    escape without a rolled 3: 6, rolled {'0': 2, '2': 3, '-': 1}, src {'escape.known': 5, 'escape': 1}, acts {'0': 5, '2': 1}
+    rolled {'0': 102, '2': 121, '1': 11, '3': 11, '-': 39}; final mode for each roll {('0', '0'): 100, ('0', '3'): 2, ('2', '0'): 91, ('1', '1'): 11, ('2', '3'): 3, ('2', '2'): 26, ('3', '3'): 11, ('2', '1'): 1}
+  differ: turn 2 unit 1000011 RESULT spent 89 tu 0 moved 0; exec 0 acts []
+  differ: turn 2 unit 1000018 RESULT spent 89 tu 0 moved 0; exec 0 acts []
+  differ: turn 2 unit 1000010 RESULT spent 89 tu 0 moved 0; exec 0 acts []
+  differ: turn 2 unit 1000015 RESULT spent 89 tu 0 moved 0; exec 0 acts []
+  empty walks by node: {'changed': 55, 'same_as_free': 14}
+  nothing spent: turn 1 unit 1000001 tu 298 decisions [('3', '0', '(24,56,0)', '(24,56,0)'), ('3', '0', '(24,56,0)', '(24,56,0)'), ('3', '0', '(24,56,0)', '(24,56,0)')]
+  nothing spent: turn 2 unit 1000005 tu 149 decisions [('0', '2', '(31,49,1)', '(27,45,1)'), ('0', '2', '(31,49,1)', '(27,45,1)'), ('0', '2', '(31,49,1)', '(27,45,1)')]
+  task ?: {'dec': 20, 'mode0': 7, 'att': 2, 'att_dmg': 1, 'dmg': 72, 'downed': 0, 'mode1': 2, 'mode2': 10, 'mode3': 1}
+  task RESPOND: {'dec': 45, 'mode0': 18, 'att': 9, 'att_dmg': 3, 'dmg': 118, 'downed': 1, 'mode2': 24, 'mode1': 3}
+  task SEARCH: {'dec': 70, 'mode3': 11, 'att': 6, 'att_dmg': 0, 'dmg': 0, 'downed': 0, 'mode0': 42, 'mode2': 12, 'mode1': 5}
+  task SECURE: {'dec': 149, 'mode0': 124, 'att': 9, 'att_dmg': 0, 'dmg': 0, 'downed': 0, 'mode1': 8, 'mode2': 12, 'mode3': 5}
+  result RESPOND: {'unit_turns': 19, 'moved': 11, 'inside': 0, 'closer': 9, 'on_changed': 7}
+  result SEARCH: {'unit_turns': 21, 'moved': 19, 'inside': 11, 'closer': 4, 'on_changed': 13}
+  result SECURE: {'unit_turns': 47, 'moved': 36, 'inside': 40, 'closer': 13, 'on_changed': 18}
+  objective reached by turn [(1, 3), (2, 1)]
+  commander lines ['[HIVECMD] turn=2 squad=1 old=1000035 new=1000006 why=dead rank=STR_LIVE_SOLDIER int=4 task=SEARCH kept=1', '[HIVECMD] turn=2 squad=5 old=1000032 new=1000037 why=dead rank=STR_LIVE_NAVIGATOR int=5 task=SEARCH kept=1']

@@ -20,12 +20,14 @@
 #include "../fmath.h"
 #include <stack>
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include "BaseFacility.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "Craft.h"
 #include "SavedGame.h"
 #include "../Mod/RuleCraft.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "ItemContainer.h"
 #include "Soldier.h"
@@ -439,6 +441,11 @@ std::vector<Soldier*> *Base::getSoldiers()
 	return &_soldiers;
 }
 
+const std::vector<Soldier*>& Base::getSoldiers() const
+{
+	return _soldiers;
+}
+
 /**
  * Pre-calculates soldier stats with various bonuses.
  */
@@ -568,6 +575,10 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 	ModScript::DetectUfoFromBase::Worker work { target, save, distance, alreadyTracked, radar_chance, radar_max_range, hyperwave_chance, hyperwave_max_range, };
 
 	work.execute(target->getRules()->getScript<ModScript::DetectUfoFromBase>(), args);
+	if (auto *lua = _mod->getLuaHost())
+	{
+		lua->fire(LuaHost::DETECT_UFO_FROM_BASE, args.data, { target, save, distance, alreadyTracked, radar_chance, radar_max_range, hyperwave_chance, hyperwave_max_range });
+	}
 
 	return RNG::percent(args.getSecond()) ? (UfoDetection)args.getFirst() : DETECTION_NONE;
 }
@@ -825,6 +836,25 @@ int Base::getAvailableQuarters() const
  * and equipment about to arrive.
  * @return Storage space.
  */
+/**
+ * The stores count an item in an int. What is bought or sent here is paid for when it is ordered and counted when it
+ * arrives, so the room left is the largest int less what is in the stores and less what is already on its way.
+ * @param item The item.
+ * @return How many more can be ordered for this base without any of them being lost on arrival.
+ */
+int Base::getStoreRoom(const RuleItem *item) const
+{
+	int64_t held = _items->getItem(item);
+	for (const auto* transfer : _transfers)
+	{
+		if (transfer->getType() == TRANSFER_ITEM && transfer->getItems() == item)
+		{
+			held += transfer->getQuantity();
+		}
+	}
+	return (int)std::max<int64_t>(0, (int64_t)INT_MAX - held);
+}
+
 double Base::getUsedStores(bool excludeNormalItems) const
 {
 	double total = excludeNormalItems ? 0.0 : _items->getTotalSize();
@@ -859,7 +889,9 @@ bool Base::storesOverfull(double offset) const
 {
 	int capacity = getAvailableStores() * 100;
 	double used = (getUsedStores() + offset) * 100;
-	return (int)used > capacity;
+	// compared as it always was (whole hundredths), but without the cast to int: past INT_MAX that cast gave a
+	// negative number, and stores full a million times over passed for free ones
+	return std::trunc(used) > capacity;
 }
 
 /**
@@ -869,8 +901,7 @@ bool Base::storesOverfullCritical() const
 {
 	int capacity = getAvailableStores() * 100;
 	double total = getUsedStores(true);
-	int used = total * 100;
-	return used > capacity;
+	return std::trunc(total * 100) > capacity;
 }
 
 /**

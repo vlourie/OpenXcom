@@ -73,6 +73,8 @@ namespace OpenXcom
 
 		/// load a vector with article ids that are currently visible of a given section.
 		static void list(SavedGame *save, Mod *rule, const std::string &section, ArticleDefinitionList &data);
+		/// OXCE-HD: the same for every section the start screen lists, section by section in its order.
+		static void listAllSections(SavedGame *save, Mod *rule, ArticleDefinitionList &data);
 
 		/// check if this is an invisible commendation article.
 		static bool isCommendationArticleInvisible(SavedGame *save, ArticleDefinition *article);

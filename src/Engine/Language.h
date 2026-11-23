@@ -52,6 +52,9 @@ private:
 	/// Parses a text string loaded from an external file.
 	std::string loadString(const std::string &s) const;
 public:
+	/// Owns its resources: not copied.
+	Language(const Language&) = delete;
+	Language& operator=(const Language&) = delete;
 	/// Creates a blank language.
 	Language();
 	/// Cleans up the language.
@@ -66,6 +69,8 @@ public:
 	void loadRule(const std::map<std::string, ExtraStrings*> &extraStrings, const std::string &id);
 	/// Outputs the language to a HTML file.
 	void toHtml(const std::string &filename) const;
+	/// Is there a text with this ID? Unlike getString, a missing one is not reported in the log.
+	bool has(const std::string &id) const { return _strings.find(id) != _strings.end(); }
 	/// Get a localized text.
 	LocalizedText getString(const std::string &id) const;
 	/// Get a quantity-depended localized text.

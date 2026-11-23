@@ -1,0 +1,30 @@
+sc2q_Q_L2_s1: hostile turns 10, decisions 1335, hostile wall time 52 s, 39.0 ms/decision, [AISCHED] picks 0
+    turn 1: decisions 319, 21 s, 65.8 ms/decision
+    turn 2: decisions 164, 11 s, 67.1 ms/decision
+sc2s_S_L2_s1: hostile turns 4, decisions 850, hostile wall time 41 s, 48.2 ms/decision, [AISCHED] picks 473
+    turn 1: decisions 225, 19 s, 84.4 ms/decision
+    turn 2: decisions 295, 14 s, 47.5 ms/decision
+sc3r_S_L2_s1: hostile turns 4, decisions 850, hostile wall time 27 s, 31.8 ms/decision, [AISCHED] picks 473
+    turn 1: decisions 225, 13 s, 57.8 ms/decision
+    turn 2: decisions 295, 8 s, 27.1 ms/decision
+sc4t_S_L2_s1: hostile turns 4, decisions 850, hostile wall time 27 s, 31.8 ms/decision, [AISCHED] picks 473
+    turn 1: decisions 225, 12 s, 53.3 ms/decision
+    turn 2: decisions 295, 8 s, 27.1 ms/decision
+d0p_D_L2_s1: hostile turns 10, decisions 1335, hostile wall time 63 s, 47.2 ms/decision, [AISCHED] picks 0
+    turn 1: decisions 319, 21 s, 65.8 ms/decision
+    turn 2: decisions 164, 9 s, 54.9 ms/decision
+sc2q_Q_M10_s1: hostile turns 10, decisions 1109, hostile wall time 31 s, 28.0 ms/decision, [AISCHED] picks 0
+    turn 1: decisions 133, 1 s, 7.5 ms/decision
+    turn 2: decisions 148, 4 s, 27.0 ms/decision
+sc2s_S_M10_s1: hostile turns 10, decisions 956, hostile wall time 25 s, 26.2 ms/decision, [AISCHED] picks 522
+    turn 1: decisions 139, 2 s, 14.4 ms/decision
+    turn 2: decisions 129, 4 s, 31.0 ms/decision
+sc3r_S_M10_s1: hostile turns 10, decisions 956, hostile wall time 14 s, 14.6 ms/decision, [AISCHED] picks 522
+    turn 1: decisions 139, 2 s, 14.4 ms/decision
+    turn 2: decisions 129, 2 s, 15.5 ms/decision
+sc4t_S_M10_s1: hostile turns 10, decisions 956, hostile wall time 14 s, 14.6 ms/decision, [AISCHED] picks 522
+    turn 1: decisions 139, 1 s, 7.2 ms/decision
+    turn 2: decisions 129, 3 s, 23.3 ms/decision
+d0p_D_M10_s1: hostile turns 24, decisions 1766, hostile wall time 40 s, 22.7 ms/decision, [AISCHED] picks 0
+    turn 1: decisions 133, 2 s, 15.0 ms/decision
+    turn 2: decisions 148, 4 s, 27.0 ms/decision

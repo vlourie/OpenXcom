@@ -1,0 +1,26 @@
+
+== all 24 scenarios
+  metric                                                                  A        B      B-A  95% CI
+  player HP lost (AIRESULT, all sources)                              568.0    579.9    +11.9  [-15.6, +41.1]
+    in hostile segments (incl. the rest after the last snapshot)      508.0    499.4     -8.6  [-45.3, +24.1]
+    in player segments (incl. the rest)                                60.0     80.5    +20.5  [-4.2, +55.8]
+    healed back (inside the segments above, net)                       11.5      6.6     -4.9  [-16.4, +2.5]
+  hostile attack damage (AIEXEC, player+neutral, overkill)            691.1    641.8    -49.4  [-184.0, +26.9]
+  hostile damage of non-attack actions                                128.9    109.5    -19.4  [-61.3, +11.8]
+  hostile attack damage - player loss in hostile segments             183.1    142.3    -40.8  [-177.0, +33.1]
+  player actor's own HP loss in its actions                            99.1    106.9     +7.7  [-14.3, +30.1]
+  player's friendly damage                                              9.8     12.8     +3.0  [-6.4, +13.0]
+
+== without L2 and M10
+  metric                                                                  A        B      B-A  95% CI
+  player HP lost (AIRESULT, all sources)                              562.5    573.1    +10.6  [-19.3, +41.3]
+    in hostile segments (incl. the rest after the last snapshot)      499.6    487.2    -12.4  [-52.7, +22.7]
+    in player segments (incl. the rest)                                62.9     85.9    +23.0  [-3.0, +60.5]
+    healed back (inside the segments above, net)                        6.0      5.7     -0.3  [-4.0, +3.5]
+  hostile attack damage (AIEXEC, player+neutral, overkill)            708.3    655.8    -52.5  [-202.1, +29.7]
+  hostile damage of non-attack actions                                138.8    118.5    -20.4  [-67.2, +13.2]
+  hostile attack damage - player loss in hostile segments             208.7    168.6    -40.1  [-190.1, +38.4]
+  player actor's own HP loss in its actions                           103.1    113.6    +10.5  [-12.9, +33.7]
+  player's friendly damage                                              9.8     13.2     +3.3  [-7.7, +14.0]
+
+rest after the last snapshot: battles with any 12, total 1796 HP of 55097

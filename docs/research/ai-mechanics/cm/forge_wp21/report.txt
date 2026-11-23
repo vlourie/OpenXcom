@@ -1,0 +1,40 @@
+AA IDENTICAL [6748, 6748] [4366, 4366] dumps 20 {'actions': True, 'tu_changes': True, 'fingerprints': True, 'casualties': True} raw 1 {'[AIRESULT] ms=': {'values': 1, 'not_zero': 1}, '[AIREUSE] fallback_us=': {'values': 1, 'not_zero': 0}}
+BB IDENTICAL [6443, 6443] [4058, 4058] dumps 19 {'actions': True, 'tu_changes': True, 'fingerprints': True, 'casualties': True} raw 1 {'[AIRESULT] ms=': {'values': 1, 'not_zero': 1}, '[AIREUSE] fallback_us=': {'values': 1, 'not_zero': 0}}
+game OFF arch:D0 [4366, 4366] True None raw 1
+game OFF A1 [4366, 4366] True None raw 1
+game OFF C1 [4366, 4366] True None raw 1
+game A1 arch:D0 [4366, 4366] True None raw 1
+game C1 arch:D0 [4366, 4366] True None raw 1
+game A1 C1 [4366, 4366] True None raw 1
+chain A1 C1 [6748, 6748] True None
+chain C1 arch:WP2A1 [6748, 6748] True None
+chain A1 arch:WP2A1 [6748, 6748] True None
+AB prefix True True pre True dump True [50, 50] first is the action True act fields {'type': ['7', '8']}
+   post [FORGEBRANCH] d=49 phase=post from=7 to=8 fair=seen time_before=31 time_after=23 kneel_before=0 kneel_after=0 rng=c7bcd5cc1f42ddf4 actor=1000006 type=8 to=12,17,0 weapon=STR_PIR_PLASMA_RIFLE time=23 energy=0 morale=0 health=0 stun=0 mana=0 number=1 kneel=0 run=0 strafe=0 sneak=0 ignoreSpotted=0 desp
+   rng {'event_index': 614, 'events_after_act': 3, 'a': 'rng=5e388b00ea6589b8 t=1 s=1 ev=tick unit=1000006 fac=1 st=0 tu=67 noresel=0 hide=0 counter=1 second=0 pos=29,9,1 hp=66 en=96', 'b': 'rng=80c0adf90b729c5e t=1 s=1 ev=tick unit=1000006 fac=1 st=0 tu=75 noresel=0 hide=0 counter=1 second=0 pos=29,9,1 hp=66 en=96', 'rng': ['5e388b00ea6589b8', '80c0adf90b729c5e']}
+   tu {'a': 'rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=67 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0', 'b': 'rng=526120c8d65e7f81 t=1 s=1 ev=tu kind=cost was=98 now=75 unit=1000006 fac=1 st=4 tu=98 noresel=0 hide=0'}
+AC prefix True True pre True dump True [50, 50] first is the action False act fields {}
+   post 
+   rng None
+   tu None
+[FORGELEGAL] case=auto type=7 to=12,17,0 why=legal fair=seen time=31
+[FORGELEGAL] case=snap type=8 to=12,17,0 why=legal fair=seen time=23
+[FORGELEGAL] case=aimed type=9 to=12,17,0 why=legal fair=seen time=41
+[FORGELEGAL] case=melee type=10 to=12,17,0 why=not_a_shot fair=- time=0
+[FORGELEGAL] case=throw type=6 to=12,17,0 why=not_a_shot fair=- time=0
+[FORGELEGAL] case=walk type=2 to=12,17,0 why=not_a_shot fair=- time=0
+[FORGELEGAL] case=psi type=14 to=12,17,0 why=not_a_shot fair=- time=0
+[FORGELEGAL] case=own_tile type=8 to=29,9,1 why=no_enemy_there fair=- time=23
+[FORGELEGAL] case=empty_tile type=8 to=0,0,0 why=no_enemy_there fair=- time=23
+[FORGELEGAL] case=hidden_enemy why=none_on_this_map
+{'run': 'OFF', 'result': {'how': 'over', 'turn': '10', 'ms': '14880', 'vms': '320920'}, 'log_bytes': 9247484, 'forge_events': 0, 'dump_lines': 0}
+{'run': 'A1', 'result': {'how': 'over', 'turn': '10', 'ms': '16889', 'vms': '320920'}, 'log_bytes': 10960630, 'forge_events': 6748, 'dump_lines': 1301}
+{'run': 'A2', 'result': {'how': 'over', 'turn': '10', 'ms': '18219', 'vms': '320920'}, 'log_bytes': 10961363, 'forge_events': 6748, 'dump_lines': 1301}
+{'run': 'B1', 'result': {'how': 'over', 'turn': '9', 'ms': '20223', 'vms': '348680'}, 'log_bytes': 11282317, 'forge_events': 6443, 'dump_lines': 951}
+{'run': 'B2', 'result': {'how': 'over', 'turn': '9', 'ms': '20706', 'vms': '348680'}, 'log_bytes': 11282531, 'forge_events': 6443, 'dump_lines': 951}
+{'run': 'C1', 'result': {'how': 'over', 'turn': '10', 'ms': '18166', 'vms': '320920'}, 'log_bytes': 10959520, 'forge_events': 6748, 'dump_lines': 1301}
+A1 {'events': 6748, 'violations': 0, 'first_violations': [], 'notes': 0, 'tu_kinds': {'tu.clear': 2, 'tu.cost': 138, 'tu.recover': 229, 'tu.script': 4, 'tu.spend': 1789, 'tu_marked_reaction': 32}}
+A2 {'events': 6748, 'violations': 0, 'first_violations': [], 'notes': 0, 'tu_kinds': {'tu.clear': 2, 'tu.cost': 138, 'tu.recover': 229, 'tu.script': 4, 'tu.spend': 1789, 'tu_marked_reaction': 32}}
+B1 {'events': 6443, 'violations': 0, 'first_violations': [], 'notes': 0, 'tu_kinds': {'tu.clear': 2, 'tu.cost': 131, 'tu.recover': 210, 'tu.script': 6, 'tu.spend': 1863, 'tu_marked_reaction': 15}}
+B2 {'events': 6443, 'violations': 0, 'first_violations': [], 'notes': 0, 'tu_kinds': {'tu.clear': 2, 'tu.cost': 131, 'tu.recover': 210, 'tu.script': 6, 'tu.spend': 1863, 'tu_marked_reaction': 15}}
+C1 {'events': 6748, 'violations': 0, 'first_violations': [], 'notes': 0, 'tu_kinds': {'tu.clear': 2, 'tu.cost': 138, 'tu.recover': 229, 'tu.script': 4, 'tu.spend': 1789, 'tu_marked_reaction': 32}}

@@ -17,12 +17,18 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Surface.h"
+#include "HdUiArt.h"
+#include "HdUi.h"
+#include "HdItems.h"
 #include "ShaderDraw.h"
 #include "ShaderMove.h"
 #include <vector>
 #include <algorithm>
 #include <SDL_gfxPrimitives.h>
 #include <SDL_image.h>
+#if defined(OXCE_BUNDLED_SDL_IMAGE) && SDL_VERSIONNUM(SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL) < SDL_VERSIONNUM(1, 2, 13)
+#error "SDL_image.h of the system (1.2.12 of 2012, no security fixes) was taken instead of libs/SDL_image"
+#endif
 #include "../lodepng.h"
 #include "Palette.h"
 #include "Exception.h"
@@ -183,7 +189,8 @@ Surface::UniqueSurfacePtr Surface::NewSdlSurface(const Surface::UniqueBufferPtr&
  */
 void Surface::CleanSdlSurface(SDL_Surface* surface)
 {
-	if (surface->flags & SDL_SWSURFACE)
+	// SDL_SWSURFACE is 0, so "flags & SDL_SWSURFACE" never held and every clear went through SDL_FillRect's 4-byte loop
+	if (!SDL_MUSTLOCK(surface) && surface->pixels)
 	{
 		memset(surface->pixels, 0, surface->h * surface->pitch);
 	}
@@ -227,7 +234,7 @@ void Surface::UniqueSurfaceDeleter::operator ()(SDL_Surface* surf)
 /**
  * Default empty surface.
  */
-Surface::Surface() : _x{ }, _y{ }, _width{ }, _height{ }, _pitch{ }, _visible(true), _hidden(false), _redraw(false)
+Surface::Surface() : _x{ }, _y{ }, _width{ }, _height{ }, _pitch{ }, _visible(true), _hidden(false), _redraw(false), _hdKind(0)
 {
 
 }
@@ -244,13 +251,41 @@ Surface::Surface() : _x{ }, _y{ }, _width{ }, _height{ }, _pitch{ }, _visible(tr
  * @param y Y position in pixels.
  * @param bpp Bits-per-pixel depth.
  */
-Surface::Surface(int width, int height, int x, int y) : _x(x), _y(y), _visible(true), _hidden(false), _redraw(false)
+Surface::Surface(int width, int height, int x, int y) : _x(x), _y(y), _visible(true), _hidden(false), _redraw(false), _hdKind(0)
 {
 	std::tie(_alignedBuffer, _surface) = Surface::NewPair8Bit(width, height);
 	_width = _surface->w;
 	_height = _surface->h;
 	_pitch = _surface->pitch;
 	SDL_SetColorKey(_surface.get(), SDL_SRCCOLORKEY, 0);
+}
+
+size_t Surface::hdFrameBytes(int width, int height)
+{
+	return (size_t)GetPitch(8, width) * height;
+}
+
+/**
+ * HD render: an 8-bit frame over pixels that belong to someone else. Nothing is written to or read from the pixels
+ * here (they may not be backed by memory yet); the owner calls hdRelease() before the frame is destroyed.
+ */
+Surface Surface::hdBorrowed(Uint8 *pixels, int width, int height, int x, int y)
+{
+	Surface frame;
+	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(pixels, width, height, 8, GetPitch(8, width), 0, 0, 0, 0);
+	if (!surface)
+	{
+		throw Exception(SDL_GetError());
+	}
+	frame._surface = NewSdlSurface(surface);
+	frame._alignedBuffer.reset(pixels);
+	frame._x = x;
+	frame._y = y;
+	frame._width = surface->w;
+	frame._height = surface->h;
+	frame._pitch = surface->pitch;
+	SDL_SetColorKey(surface, SDL_SRCCOLORKEY, 0);
+	return frame;
 }
 
 /**
@@ -283,7 +318,7 @@ Surface::Surface(const Surface& other) : Surface{ }
  */
 Surface::~Surface()
 {
-
+	HdItems::forget(this);
 }
 
 /**
@@ -356,13 +391,92 @@ void Surface::loadScr(const std::string& filename)
  * known format into the surface.
  * @param filename Filename of the image.
  */
-void Surface::loadImage(const std::string &filename)
+void Surface::readPngAhead(const std::string &filename, PngAhead &ahead)
+{
+	// Only the plain case is taken: a file on the disk (an archive is read through one shared reader), a PNG that
+	// unpacks, 8 bits a pixel. Everything else - and every message about it - is left to loadImage(), in its turn.
+	ahead.ready = false;
+	try
+	{
+		if (!CrossPlatform::compareExt(filename, "png") || !FileMap::fileExists(filename))
+		{
+			return;
+		}
+		const FileMap::FileRecord *rec = FileMap::at(filename);
+		if (rec->zip != NULL)
+		{
+			return;
+		}
+		SDL_RWops *rw = SDL_RWFromFile(rec->fullpath.c_str(), "rb");
+		if (!rw)
+		{
+			return;
+		}
+		size_t size = 0;
+		void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+		if ((data != NULL) && (size > 8 + 12 + 12))
+		{
+			lodepng::State state;
+			state.decoder.color_convert = 0;
+			unsigned error = lodepng::decode(ahead.image, ahead.width, ahead.height, state, (const unsigned char*)data, size);
+			const LodePNGColorMode *color = &state.info_png.color;
+			if (!error && lodepng_get_bpp(color) == 8)
+			{
+				const SDL_Color *colors = (const SDL_Color*)color->palette;
+				ahead.palette.assign(colors, colors + (colors ? color->palettesize : 0));
+				ahead.ready = true;
+			}
+		}
+		if (data) { SDL_free(data); }
+	}
+	catch (...)
+	{
+		ahead.ready = false;
+	}
+	if (!ahead.ready)
+	{
+		std::vector<unsigned char>().swap(ahead.image);
+	}
+}
+
+void Surface::loadImage(const std::string &filename, PngAhead *ahead)
 {
 	// Destroy current surface (will be replaced)
 	_alignedBuffer = nullptr;
 	_surface = nullptr;
 
 	Log(LOG_VERBOSE) << "Loading image: " << filename;
+	if (ahead && ahead->ready)
+	{
+		// the file was read and unpacked ahead (readPngAhead): the same steps as the LodePNG branch below
+		*this = Surface(ahead->width, ahead->height, 0, 0);
+		setPalette(ahead->palette.data(), 0, (int)ahead->palette.size());
+
+		ShaderDrawFunc(
+			[](Uint8& dest, unsigned char& src)
+			{
+				dest = src;
+			},
+			ShaderSurface(this),
+			ShaderSurface(SurfaceRaw<unsigned char>(ahead->image, ahead->width, ahead->height))
+		);
+		int transparent = 0;
+		for (int c = 0; c < _surface->format->palette->ncolors; ++c)
+		{
+			SDL_Color *palColor = _surface->format->palette->colors + c;
+			if (palColor->unused == 0)
+			{
+				transparent = c;
+				break;
+			}
+		}
+		FixTransparent(_surface, transparent);
+		if (transparent != 0)
+		{
+			Log(LOG_WARNING) << "Image " << filename << " (from lodepng) has incorrect transparent color index " << transparent << " (instead of 0).";
+		}
+		return;
+	}
 	auto rw = FileMap::getRWops(filename);
 	if (!rw) { return; } // relevant message gets logged in FileMap.
 
@@ -702,14 +816,62 @@ void Surface::blit(SDL_Surface *surface)
 {
 	if (_visible && !_hidden)
 	{
+		// an item sprite drawn for another HD state (switched on or off, another k): its owner draws it again
+		HdItems::refresh(this);
 		if (_redraw)
 			draw();
 
-		SDL_Rect target {};
-		target.x = getX();
-		target.y = getY();
-		SDL_BlitSurface(_surface.get(), nullptr, surface, &target);
+		// the HD interface draws every surface again in the world layer; without it, only an image
+		// with an HD picture goes there (its classic pixels stay out, so that the picture shows
+		// through under what is drawn over it)
+		const bool hdUi = HdUi::isScreen(surface) && HdUi::active();
+		if (!hdUi && HdUiArt::active() && HdUiArt::drawIfPicture(this, surface))
+		{
+			return;
+		}
+		// with the HD interface the classic layer is neither shown (flip) nor dumped (writeHdTestDump) and nothing
+		// reads it back: the copy into it was an eighth of the main thread on the globe (profile 15.11)
+		if (!hdUi)
+		{
+			SDL_Rect target {};
+			target.x = getX();
+			target.y = getY();
+			SDL_BlitSurface(_surface.get(), nullptr, surface, &target);
+		}
+		if (hdUi)
+		{
+			if (_hdKind == HD_NORMAL || _hdKind == HD_PICTURE || !HdUi::skin())
+			{
+				hdMirror();
+				// a picture without an HD version (a mod's image smoothed by xBRZ): only an HD picture notes
+				// itself, and the text on this one would get the faint drop shadow and drown in it. Noted
+				// after the mirror, so it also marks an HD picture as one with text straight over it
+				if (_hdKind == HD_PICTURE)
+				{
+					HdUi::instance().notePicture(getX(), getY(), getWidth(), getHeight(), true);
+				}
+			}
+			else if (_hdKind == HD_HIGHLIGHT)
+			{
+				HdUi::instance().drawHighlight(getX(), getY(), getWidth(), getHeight());
+			}
+			HdItems::drawAttached(this);
+		}
 	}
+}
+
+/**
+ * The HD interface's version of this surface: its pixels k times bigger,
+ * smoothed (mode 2) or nearest (mode 1), index 0 transparent.
+ */
+void Surface::hdMirror()
+{
+	HdUi::instance().drawSurface(this, getX(), getY(), HdUi::mode() >= 2);
+}
+
+void Surface::hdMirrorNearest()
+{
+	HdUi::instance().drawSurface(this, getX(), getY(), false);
 }
 
 /**

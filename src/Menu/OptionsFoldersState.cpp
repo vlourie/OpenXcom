@@ -32,6 +32,7 @@ namespace OpenXcom
  */
 OptionsFoldersState::OptionsFoldersState(OptionsOrigin origin) : OptionsBaseState(origin)
 {
+	setHdScreen("foldersMenu");
 	setCategory(_btnFolders);
 
 	// Create object

@@ -21,6 +21,8 @@
 #include "../Savegame/Transfer.h"
 #include <vector>
 #include <string>
+#include "ItemCountTooltipMixin.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -35,12 +37,13 @@ class Timer;
 class Base;
 class CannotReequipState;
 class RuleItem;
+class ItemCountTooltip;
 
 /**
  * Purchase/Hire screen that lets the player buy
  * new items for a base.
  */
-class PurchaseState : public TouchState
+class PurchaseState : public BaseSwitchMixin<ItemCountTooltipMixin<TouchState>>
 {
 private:
 	Base *_base;
@@ -59,11 +62,17 @@ private:
 	std::vector<std::string> _cats;
 	size_t _vanillaCategories;
 	size_t _sel;
-	int _total, _pQty, _cQty;
+	int64_t _total;
+	int _pQty, _cQty;
 	double _iQty;
 	std::map<int, int> _iPrisonQty;
 	Uint8 _ammoColor;
 	Timer *_timerInc, *_timerDec;
+	std::string _keepCat;
+	size_t _keepScroll = 0;
+
+	/// Buys the chosen items, then closes the screen or opens it anew.
+	void purchase();
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
 	/// Determines if the current selection belongs to a given category.
@@ -83,6 +92,8 @@ public:
 	~PurchaseState();
 	/// Resets state.
 	void init() override;
+	/// Shows the given category and scroll when the screen opens.
+	void keepView(const std::string &category, size_t scroll) { _keepCat = category; _keepScroll = scroll; }
 	/// Runs the timers.
 	void think() override;
 	/// Updates the item list.
@@ -120,6 +131,10 @@ public:
 	void updateItemStrings();
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

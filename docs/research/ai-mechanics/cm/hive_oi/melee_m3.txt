@@ -1,0 +1,92 @@
+units ['1000000', '1000001', '1000002', '1000003', '1000004', '1000005', '1000085', '1000087']
+deaths {'1000002': ('1', '448', 'AUX_TANK_LASER_CANNON', '30', 'rear'), '1000004': ('1', '503', 'STR_SUPER_MAGNUM', '18', 'rear'), '1000003': ('2', '545', 'AUX_WOLVERIN_WEAPON_MINIGUN', '23'
+-- 1000000
+  t1 (45,55,3) tu 181 hp 116 mode 2 act 2 to (41,55,3) src firepoint.random seen 448,470,444,545,520,543,503,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1
+  t1 (42,55,3) tu 165 hp 116 mode 2 act 2 to (39,55,3) src firepoint seen 448,470,444,545,520,543,503,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1000077,
+  t1 (40,55,3) tu 157 hp 116 mode 2 act 2 to (40,54,3) src firepoint seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076,1000077,
+  t1 (40,55,3) tu 156 hp 116 mode 2 act 2 to (40,54,3) src firepoint seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076,1000077,
+  t2 (40,54,3) tu 181 hp 37 mode 0 act 2 to (48,3,0) src patrol.node seen 448,470,444,545,520,503,1000060,1000061,1000068,1000075,1000079,1000081 moves 3365 acts 15 near (31, '470', 'front/r
+  t2 (44,52,3) tu 145 hp 37 mode 2 act 2 to (53,38,3) src melee seen 448,470,444,545,520,503,1000060,1000061,1000068,1000075,1000079,1000081 moves 2624 acts 15 near (29, '470', 'front/right'
+  t2 (44,51,3) tu 141 hp 37 mode 2 act 2 to (40,54,3) src firepoint.random seen 448,470,444,545,520,503,1000060,1000070,1000075,1000081 moves 2394 acts 11 near (28, '470', 'front/right', '0'
+  t2 (40,54,3) tu 109 hp 37 mode 3 act 0 to (40,54,3) src escape.known seen 448,470,444,545,520,503,1000060,1000070,1000075,1000081 moves 1512 acts 11 near (31, '470', 'front/right', '0') sp
+  t3 (40,54,3) tu 181 hp 37 mode 2 act 2 to (41,54,3) src firepoint.random seen 448,470,444,545,520 moves 3382 acts 7 near (30, '470', 'front/right', '0') spent 4 dmg 0
+  t3 (41,54,3) tu 177 hp 37 mode 2 act 2 to (39,55,3) src firepoint.random seen 448,470,444,545,520 moves 3279 acts 7 near (30, '470', 'front/right', '0') spent 10 dmg 0
+  t3 (39,55,3) tu 167 hp 37 mode 0 act 2 to (48,3,0) src patrol.node seen 448,470,444,545,1000070,1000081 moves 3091 acts 6 near (31, '470', 'front/right', '0') spent 34 dmg 0
+  t3 (44,52,3) tu 133 hp 37 mode 2 act 2 to (41,55,3) src firepoint.random seen 448,470,444,545,1000070,1000081 moves 2197 acts 6 near (28, '470', 'front/right', '0') spent 22 dmg 0
+  t4 (41,55,3) tu 181 hp 37 mode 0 act 2 to (48,3,0) src patrol.node seen 448,470,444,545 moves 3506 acts 5 near (25, '444', 'front/left', '0') spent 12 dmg 0
+  t4 (43,55,3) tu 169 hp 37 mode 0 act 2 to (48,3,0) src patrol.node seen 448,470,444,545 moves 3306 acts 5 near (27, '444', 'front/left', '0') spent 22 dmg 0
+  t4 (44,51,3) tu 147 hp 37 mode 2 act 2 to (44,56,3) src firepoint.random seen 448,470,444,545,1000081 moves 2659 acts 5 near (25, '470', 'front/left', '0') spent 20 dmg 0
+  t4 (44,56,3) tu 127 hp 37 mode 2 act 2 to (44,55,3) src firepoint.fallback seen 448,470,444,545,1000081 moves 2163 acts 5 near (28, '444', 'front/left', '0') spent 4 dmg 0
+  t4 (44,55,3) tu 123 hp 37 mode 0 act 2 to (48,3,0) src patrol.node seen 448,470,444,545,1000081 moves 2034 acts 5 near (28, '444', 'front/left', '0') spent 92 dmg 0
+  t5 (44,32,3) tu 181 hp 37 mode 2 act 2 to (45,26,0) src melee seen 448,470,444,545 moves 4393 acts 5 near (5, '470', 'front', '0') spent 8 dmg 0
+  t5 (44,30,3) tu 173 hp 37 mode 2 act 2 to (45,26,0) src melee seen 448,470,444,545,1000081 moves 3971 acts 5 near (3, '470', 'front/right', '0') spent 161 dmg 96
+-- 1000001
+  t1 (22,38,3) tu 181 hp 116 mode 2 act 2 to (16,34,0) src melee seen 448,470,444,545,520,543,503,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1000077,1000
+  t1 (23,39,0) tu 167 hp 116 mode 2 act 2 to (16,34,0) src melee seen 448,470,444,545,520,543,503,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1000077,1000
+  t1 (22,39,0) tu 163 hp 116 mode 2 act 2 to (16,35,0) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076,1000077,1000
+  t1 (21,38,0) tu 157 hp 116 mode 2 act 2 to (16,35,0) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076,1000077,1000
+  t2 (16,35,0) tu 181 hp 109 mode 2 act 2 to (18,43,0) src melee seen 448,470,444,545,520,503,1000060,1000061,1000068,1000075,1000079,1000081 moves 2358 acts 15 near (19, '444', 'front', '0'
+  t2 (17,36,0) tu 175 hp 109 mode 2 act 2 to (18,43,0) src melee seen 448,470,444,545,520,503,1000060,1000061,1000068,1000069,1000075,1000079,1000080,1000081 moves 3270 acts 15 near (20, '44
+  t2 (18,43,0) tu 126 hp 109 mode 2 act 2 to (19,48,0) src firepoint.random seen 448,470,444,545,520,503,1000060,1000070,1000075,1000081 moves 2079 acts 11 near (24, '470', 'right', '0') spe
+  t2 (18,43,0) tu 124 hp 109 mode 0 act 2 to (9,11,0) src patrol.node seen 448,470,444,545,520,503,1000060,1000070,1000075,1000081 moves 2038 acts 11 near (24, '470', 'right', '0') spent 40 
+  t3 (11,37,0) tu 181 hp 105 mode 3 act 2 to (12,36,0) src escape.known seen 448,470,444,545,520 moves 3330 acts 7 near (17, '444', 'front', '0') spent 6 dmg 0
+-- 1000002
+-- 1000003
+  t1 (45,39,0) tu 181 hp 116 mode 2 act 2 to (54,24,0) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1000
+  t1 (46,39,0) tu 177 hp 116 mode 2 act 2 to (54,24,0) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1000
+  t1 (49,35,0) tu 155 hp 116 mode 2 act 2 to (49,36,0) src firepoint seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076,1000079,
+  t1 (49,36,0) tu 151 hp 116 mode 2 act 2 to (48,32,0) src firepoint.fallback seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076
+-- 1000004
+-- 1000005
+  t1 (43,57,0) tu 181 hp 116 mode 2 act 2 to (56,52,3) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1000
+  t1 (47,54,3) tu 125 hp 116 mode 2 act 2 to (52,58,3) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000066,1000069,1000073,1000074,1000075,1000
+  t1 (51,55,3) tu 103 hp 116 mode 2 act 2 to (62,58,3) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076,1000079,1000
+  t1 (62,58,3) tu 49 hp 116 mode 2 act 10 to (63,59,3) src melee seen 448,470,444,545,520,543,503,1000058,1000060,1000061,1000062,1000063,1000065,1000069,1000071,1000075,1000076,1000079,1000
+  t2 (62,58,3) tu 181 hp 116 mode 0 act 2 to (45,55,3) src patrol.node seen 448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081 moves 1610 acts 14 near (35, '470'
+  t2 (45,55,3) tu 91 hp 116 mode 0 act 2 to (43,57,0) src patrol.node seen 448,470,444,545,520,503,1000060,1000068,1000069,1000075,1000079,1000080,1000081 moves 1203 acts 14 near (32, '470',
+  t2 (43,57,0) tu 69 hp 116 mode 2 act 2 to (44,59,0) src firepoint.random seen 448,470,444,545,520,503,1000060,1000070,1000075,1000081 moves 786 acts 11 near (34, '470', 'front/right', '0')
+  t2 (44,59,0) tu 59 hp 116 mode 2 act 2 to (42,58,0) src firepoint seen 448,470,444,545,520,503,1000060,1000070,1000075,1000081 moves 659 acts 11 near (36, '470', 'front/right', '0') spent 
+  t3 (43,59,0) tu 181 hp 116 mode 2 act 2 to (39,64,0) src firepoint.random seen 448,470,444,545,520,1000081 moves 3223 acts 7 near (35, '470', 'front/right', '0') spent 36 dmg 0
+  t3 (39,64,0) tu 145 hp 116 mode 0 act 2 to (45,55,3) src patrol.node seen 448,470,444,545,520,1000081 moves 1793 acts 7 near (40, '470', 'front/right', '0') spent 32 dmg 0
+  t3 (41,57,0) tu 113 hp 116 mode 0 act 2 to (45,55,3) src patrol.node seen 448,470,444,545,1000070,1000081 moves 1604 acts 6 near (33, '470', 'front/right', '0') spent 48 dmg 0
+  t3 (45,55,3) tu 65 hp 116 mode 2 act 2 to (40,54,3) src firepoint.random seen 448,470,444,545,1000070,1000081 moves 800 acts 6 near (31, '470', 'front/right', '0') spent 22 dmg 0
+  t4 (40,54,3) tu 181 hp 116 mode 2 act 2 to (38,54,3) src firepoint.random seen 448,470,444,545 moves 3556 acts 5 near (24, '444', 'front/left', '0') spent 1 dmg 0
+  t4 (40,54,3) tu 180 hp 116 mode 0 act 2 to (43,57,0) src patrol.node seen 448,470,444,545 moves 3555 acts 5 near (24, '444', 'front/left', '0') spent 30 dmg 0
+  t4 (43,57,0) tu 150 hp 116 mode 2 act 2 to (40,56,0) src firepoint.random seen 448,470,444,545,1000081 moves 2666 acts 5 near (27, '444', 'front/left', '0') spent 14 dmg 0
+  t4 (40,56,0) tu 136 hp 116 mode 2 act 2 to (43,57,0) src firepoint seen 448,470,444,545,1000081 moves 2314 acts 5 near (24, '444', 'front/left', '0') spent 14 dmg 0
+  t4 (43,57,0) tu 122 hp 116 mode 0 act 2 to (45,55,3) src patrol.node seen 448,470,444,545,1000081 moves 1839 acts 5 near (27, '444', 'front/left', '0') spent 42 dmg 0
+  t4 (45,55,3) tu 80 hp 116 mode 2 act 2 to (40,54,3) src firepoint.random seen 448,470,444,545,1000081 moves 988 acts 5 near (29, '444', 'front/left', '0') spent 22 dmg 0
+  t5 (40,54,3) tu 181 hp 116 mode 2 act 2 to (39,55,3) src firepoint seen 448,470,444,545 moves 3548 acts 4 near (24, '444', 'left', '0') spent 6 dmg 0
+  t5 (39,55,3) tu 175 hp 116 mode 2 act 2 to (35,55,3) src firepoint seen 448,470,444,545 moves 3378 acts 4 near (23, '444', 'left', '0') spent 16 dmg 0
+  t5 (35,55,3) tu 159 hp 116 mode 2 act 2 to (18,48,0) src melee seen 448,470,444,545 moves 2526 acts 4 near (19, '444', 'left', '0') spent 24 dmg 0
+  t5 (29,55,3) tu 135 hp 116 mode 2 act 2 to (18,48,0) src melee seen 448,470,444,545 moves 2253 acts 4 near (13, '444', 'left', '0') spent 10 dmg 0
+  t6 (27,54,0) tu 181 hp 116 mode 2 act 2 to (16,52,0) src melee seen 448,470,444,545 moves 3395 acts 4 near (13, '545', 'left', '0') spent 10 dmg 0
+  t6 (25,53,0) tu 171 hp 116 mode 2 act 2 to (16,52,0) src melee seen 448,470,444,545 moves 3139 acts 4 near (11, '545', 'left', '0') spent 158 dmg 0
+  t6 (16,52,0) tu 13 hp 116 mode 0 act 2 to (43,57,0) src patrol.node seen 448,470,444,545 moves 458 acts 4 near (2, '545', 'rear/left', '0') spent 3 dmg 0
+  t6 (16,52,0) tu 10 hp 116 mode 0 act 2 to (43,57,0) src patrol.node seen 448,470,444,545 moves 451 acts 4 near (2, '545', 'rear/left', '0') spent 8 dmg 0
+-- 1000085
+  t7 (49,26,0) tu 181 hp 116 mode 2 act 2 to (47,26,0) src melee seen 470,444,545 moves 3662 acts 4 near (4, '470', 'front', '0') spent 4 dmg 0
+  t7 (48,26,0) tu 177 hp 116 mode 2 act 2 to (47,26,0) src melee seen 470,444,545 moves 3618 acts 4 near (3, '470', 'front', '0') spent 49 dmg 30
+  t7 (47,26,0) tu 128 hp 116 mode 2 act 2 to (44,25,0) src firepoint.random seen 444,545 moves 2347 acts 3 near (2, '470', 'front/left', '0') spent 14 dmg 0
+  t7 (44,25,0) tu 114 hp 116 mode 0 act 2 to (40,14,0) src patrol.node seen 444,545 moves 2078 acts 3 near (2, '470', 'rear/left', '0') spent 52 dmg 0
+  t8 (40,14,0) tu 181 hp 116 mode 0 act 2 to (28,11,0) src patrol.node seen 448,444,545 moves 3786 acts 3 near (20, '444', 'front/left', '0') spent 4 dmg 0
+  t8 (39,14,0) tu 177 hp 116 mode 2 act 2 to (36,18,0) src firepoint.random seen 448,444,545 moves 3721 acts 3 near (20, '444', 'front/left', '0') spent 22 dmg 0
+  t8 (36,18,0) tu 155 hp 116 mode 2 act 2 to (31,13,0) src firepoint seen 448,444,545 moves 3467 acts 3 near (16, '444', 'front/left', '0') spent 34 dmg 0
+  t8 (31,13,0) tu 121 hp 116 mode 0 act 2 to (28,11,0) src patrol.node seen 448,444,545 moves 2053 acts 3 near (21, '444', 'front/left', '0') spent 16 dmg 0
+  t9 (28,11,0) tu 181 hp 116 mode 2 act 2 to (29,25,0) src melee seen 448,444,545 moves 3561 acts 3 near (15, '448', 'front/left', '0') spent 4 dmg 0
+  t9 (28,12,0) tu 177 hp 116 mode 2 act 2 to (29,25,0) src melee seen 448,444,545 moves 3525 acts 3 near (14, '448', 'front/left', '0') spent 174 dmg 30
+  t10 (29,25,0) tu 181 hp 116 mode 2 act 2 to (38,14,0) src melee seen 448,444,545 moves 4551 acts 3 near (13, '448', 'rear', '0') spent 6 dmg 0
+  t10 (30,24,0) tu 175 hp 116 mode 2 act 2 to (38,14,0) src melee seen 448,444,545 moves 4359 acts 3 near (12, '448', 'rear', '0') spent 161 dmg 22
+  t10 (38,14,0) tu 14 hp 116 mode 0 act 2 to (60,6,0) src patrol.node seen 448,444,545 moves 450 acts 3 near (2, '448', 'rear', '0') spent 12 dmg 0
+-- 1000087
+  t12 (50,44,0) tu 181 hp 33 mode 2 act 10 to (51,45,0) src melee seen 448,444,545 moves 4161 acts 3 near (1, '444', 'rear/right', '0') spent 75 dmg 48
+  t12 (50,44,0) tu 106 hp 33 mode 2 act 2 to (42,36,0) src melee seen 448,545 moves 1918 acts 2 near (1, '444', 'rear/right', '0') spent 6 dmg 0
+  t12 (49,43,0) tu 100 hp 33 mode 2 act 2 to (42,36,0) src melee seen 448,545 moves 1790 acts 2 near (2, '444', 'rear/right', '0') spent 87 dmg 46
+  t12 (42,36,0) tu 13 hp 33 mode 0 act 2 to (2,31,0) src patrol.node seen 448,545 moves 440 acts 2 near (2, '448', 'front/right', '0') spent 12 dmg 0
+-- player's casualties
+   {'turn': '1', 'victim': '454', 'killer': '1000048', 'ktype': 'STR_ERIDIAN_SOLDIER', 'weapon': 'STR_CANISTER_GUN', 'hit': 'front', 'dist': '5', 'pos': '(32,14,2)'}
+   {'turn': '1', 'victim': '543', 'killer': '1000057', 'ktype': 'STR_ERIDIAN_LEADER', 'weapon': 'STR_PIR_PLASMA_RIFLE', 'hit': 'front', 'dist': '1', 'pos': '(16,5,0)'}
+   {'turn': '3', 'victim': '503', 'killer': '470', 'ktype': 'SOLDIER', 'weapon': 'AUX_TANK_LASER_CANNON', 'hit': 'rear', 'dist': '2', 'pos': '(44,24,0)'}
+   {'turn': '3', 'victim': '520', 'killer': '444', 'ktype': 'SOLDIER', 'weapon': 'AUX_TANK_CANNON', 'hit': 'front', 'dist': '14', 'pos': '(23,9,0)'}
+   {'turn': '7', 'victim': '470', 'killer': '1000085', 'ktype': 'STR_CHRYSSALID_TERRORIST', 'weapon': 'AUX_CHRYSSALID_WEAPON', 'hit': 'rear', 'dist': '2', 'pos': '(45,27,0)'}
+   {'turn': '12', 'victim': '444', 'killer': '1000087', 'ktype': 'STR_CHRYSSALID_TERRORIST', 'weapon': 'AUX_CHRYSSALID_WEAPON', 'hit': 'rear', 'dist': '1', 'pos': '(51,45,0)'}

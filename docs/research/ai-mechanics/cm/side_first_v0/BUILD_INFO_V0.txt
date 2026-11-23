@@ -1,0 +1,6 @@
+build_label=cmrun-SD
+git_commit=07680cadb
+note=HEAD + al.diff + al3.diff + SIDE-FIRST COMBAT (SideCombatDirector.h/.cpp, hooks in handleAI, AIModule::clearReserve)
+director_sha256=5bcb2f0e185af1829a8689645bc79abbbe19c945d6684bbe3b41cd9cb4069c06
+battlescapegame_sha256=10ba54e62e2c1bd113c2a0b3d5211d0c3550369a1def666a2f46ee4d88e4f8a4
+exe_sha256=fa7ea1c468c1560a0889adc07c4cbf512a0db4aec7c5c82ce539f8831b8b8539

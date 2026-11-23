@@ -1,0 +1,6 @@
+build_label=cmrun-TS
+git_commit=07680cadb7f7246fd57d663ca7a7ae1cde531b36
+note=HEAD + al.diff + al3.diff + TACTICAL TURN SOLVER V0 (TurnSolver.h/.cpp, three hooks in handleAI, patch_tts.py)
+turnsolver_sha256=2b6ccd84ccceae304a5f5d17f01756da72a459d51ecf69feacf2a041755b4377
+battlescapegame_sha256=283cf32bf54f841452406022be6b26cab47b6ca2c7ea3e60701df03e45d14bc9
+exe_sha256=6a46131dc40dcee1197e5cd3c385890fa8d6eb230861996a7979e243c55c01b4

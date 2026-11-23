@@ -1,0 +1,7 @@
+battles 48 end turn: median 13 max 61  >10: 26  >20: 11
+cheatTurn reached (turn>20, or turn>10 with <=2 hostiles alive): {'battles': 48, 'cheat_reached': 17, 'cheat_by_over20': 9}
+hostile units: {'hostile': 1989, 'saw': 1858, 'attacked': 1170, 'fell': 1454, 'fell_no_attack': 550, 'fell_never_saw': 120, 'never_saw_alive_at_end': 11}
+  saw a player unit 93%, ever attacked 59%, fell 73%, fell without one attack 38% of the fallen
+allies within 5 tiles (same level +-1) when a hostile fell: {'2-3': 341, 'fell_on_own_turn': 549, '1': 299, 'fell_on_player_turn': 905, '0': 614, '4+': 200}
+hostile turns with attacks: {'turns_with_attack': 486, 'attackers': 3162, 'solo_turns': 125, 'focus_turns': 388} attackers per such turn 6.51
+turn of a hostile's first attack (21 = later): {1: 560, 2: 225, 3: 105, 4: 76, 5: 52, 6: 31, 7: 35, 8: 16, 9: 15, 10: 15, 11: 8, 12: 4, 13: 4, 14: 4, 15: 4, 16: 2, 17: 1, 19: 1, 21: 12}

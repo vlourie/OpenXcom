@@ -1,0 +1,188 @@
+commit 03421b28a2626f5d6dcdaf9594fc13c7d0e1842f
+Author: vlourie <vlourie@gmail.com>
+Date:   Sun Sep 20 02:15:57 2026 +0300
+
+    mod: битая ссылка на исследование не роняет загрузку
+    
+    OXCE 8.7.1 проверяет имена исследований в рулсетах, и X-Piratez v.o1.1.1 с тремя
+    давними опечатками (STR_RED_BARON в crafts и две статьи ХабароПедии) на новом
+    движке не запускался: загрузка вставала на первой же ссылке.
+    
+    Mod::getResearchOrPlaceholder заводит для несуществующей темы пустышку с тем же
+    именем, которой нет в _research: открыть её невозможно, поэтому условие остаётся
+    невыполнимым ровно как в 8.7.0, а не исчезает - иначе запертое стало бы
+    доступным. Каждая дыра один раз названа в логе.
+    
+    Проверено: Пиратки и ванильный UFO грузятся до меню, ошибок нет, в логе три
+    предупреждения с именами тем.
+    
+    Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+diff --git a/src/Geoscape/GeoscapeState.cpp b/src/Geoscape/GeoscapeState.cpp
+index 005d03b0b..f58c929ca 100644
+--- a/src/Geoscape/GeoscapeState.cpp
++++ b/src/Geoscape/GeoscapeState.cpp
+@@ -3786,7 +3786,8 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
+ 				disabledRngArcs = tmp; // copy for us to modify
+ 				for (auto& rngArc : tmp.getNames())
+ 				{
+-					auto* research = mod->getResearch(rngArc, true);
++					// HD: имя дуги может оказаться пустышкой - тогда темы в _research нет
++					auto* research = mod->getResearchOrPlaceholder(rngArc);
+ 					if (save->isResearched(research))
+ 					{
+ 						++arcsEnabled;
+@@ -3798,7 +3799,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
+ 			bool canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
+ 			if (canAddOneMore && !disabledSeqArcs.empty())
+ 			{
+-				auto* ruleResearchSeq = mod->getResearch(disabledSeqArcs.front(), true); // take first
++				auto* ruleResearchSeq = mod->getResearchOrPlaceholder(disabledSeqArcs.front()); // take first
+ 				save->addFinishedResearch(ruleResearchSeq, mod, hq, true);
+ 				++arcsEnabled;
+ 				if (ruleResearchSeq)
+@@ -3817,7 +3818,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
+ 			canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
+ 			if (canAddOneMore && !disabledRngArcs.empty())
+ 			{
+-				auto* ruleResearchRng = mod->getResearch(disabledRngArcs.choose(), true); // take random
++				auto* ruleResearchRng = mod->getResearchOrPlaceholder(disabledRngArcs.choose()); // take random
+ 				save->addFinishedResearch(ruleResearchRng, mod, hq, true);
+ 				++arcsEnabled; // for good measure :)
+ 				if (ruleResearchRng)
+diff --git a/src/Mod/Mod.cpp b/src/Mod/Mod.cpp
+index 70fc11618..38ebc622c 100644
+--- a/src/Mod/Mod.cpp
++++ b/src/Mod/Mod.cpp
+@@ -744,6 +744,10 @@ Mod::~Mod()
+ 	{
+ 		delete pair.second;
+ 	}
++	for (auto& pair : _missingResearch)   // HD: пустышки для тем, которых мод не объявил
++	{
++		delete pair.second;
++	}
+ 	for (auto& pair : _manufacture)
+ 	{
+ 		delete pair.second;
+@@ -4982,6 +4986,38 @@ RuleResearch *Mod::getResearch(const std::string &id, bool error) const
+ 	return getRule(id, "Research", _research, error);
+ }
+ 
++/**
++ * Gets the research, or a placeholder that can never be discovered.
++ *
++ * HD: с OXCE 8.7.1 ссылка на несуществующую тему исследования - это исключение при
++ * загрузке рулсетов, и X-Piratez с тремя такими опечатками просто не запускается.
++ * Выбросить ссылку нельзя: условие исчезнет и запертое станет доступным, то есть
++ * поменяется механика. Поэтому заводим тему с тем же именем, которой нет в _research:
++ * в списки исследований она не попадает, открыть её невозможно, и условие остаётся
++ * невыполнимым - ровно как в 8.7.0. Каждая дыра один раз называется в логе.
++ */
++const RuleResearch *Mod::getResearchOrPlaceholder(const std::string &id) const
++{
++	if (isEmptyRuleName(id))
++	{
++		return nullptr;
++	}
++	if (auto *rule = getResearch(id, false))
++	{
++		return rule;
++	}
++	auto it = _missingResearch.find(id);
++	if (it != _missingResearch.end())
++	{
++		return it->second;
++	}
++	Log(LOG_WARNING) << "Mod refers to research '" << id << "', which no mod declares."
++		<< " Treating it as never discovered (OXCE 8.7.0 behaviour).";
++	auto *placeholder = new RuleResearch(id, 0);
++	_missingResearch[id] = placeholder;
++	return placeholder;
++}
++
+ /**
+  * Gets the ruleset list for from research list.
+  */
+diff --git a/src/Mod/Mod.h b/src/Mod/Mod.h
+index deb2d834b..fb2eac688 100644
+--- a/src/Mod/Mod.h
++++ b/src/Mod/Mod.h
+@@ -197,6 +197,10 @@ private:
+ 	std::map<std::string, RuleInventory*> _invs;
+ 	bool _inventoryOverlapsPaperdoll;
+ 	std::map<std::string, RuleResearch *> _research;
++	// HD: темы, на которые мод ссылается, но не объявляет. С 8.7.1 апстрим падает на
++	// такой ссылке при загрузке; мы держим для каждой пустышку, которую нельзя открыть,
++	// - поведение остаётся прежним (условие не выполняется никогда), а игра запускается
++	mutable std::map<std::string, RuleResearch *> _missingResearch;
+ 	std::map<std::string, RuleManufacture *> _manufacture;
+ 	std::map<std::string, RuleManufactureShortcut *> _manufactureShortcut;
+ 	std::map<std::string, RuleSoldierBonus *> _soldierBonus;
+@@ -625,7 +629,7 @@ public:
+ 		}
+ 		else if constexpr (std::is_same_v<T, RuleResearch>)
+ 		{
+-			rule = getResearch(name, true);
++			rule = getResearchOrPlaceholder(name);
+ 		}
+ 		else if constexpr (std::is_same_v<T, Unit>)
+ 		{
+@@ -1059,6 +1063,8 @@ public:
+ 
+ 	/// Gets the ruleset for a specific research project.
+ 	RuleResearch *getResearch(const std::string &id, bool error = false) const;
++	/// Gets the research, or an unobtainable placeholder if the mod never declared it.
++	const RuleResearch *getResearchOrPlaceholder(const std::string &id) const;
+ 	/// Gets the ruleset for a specific research project.
+ 	std::vector<const RuleResearch*> getResearch(const std::vector<std::string> &id) const;
+ 	/// Gets the ruleset for a specific research project.
+diff --git a/src/Mod/RuleArcScript.cpp b/src/Mod/RuleArcScript.cpp
+index e5c519bfb..e48166a3c 100644
+--- a/src/Mod/RuleArcScript.cpp
++++ b/src/Mod/RuleArcScript.cpp
+@@ -93,13 +93,14 @@ void RuleArcScript::afterLoad(const Mod* mod)
+ 	// No link, only check
+ 	for (auto& name : _randomArcs.getNames())
+ 	{
+-		auto* research = mod->getResearch(name, true); // crash if doesn't exist
++		mod->getResearchOrPlaceholder(name);   // HD: только назвать дыру в логе, не падать
+ 	}
+ 
+ 	// Link manually
+ 	for (auto& entry : _researchTriggerNames)
+ 	{
+-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
++		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
++		auto* research = mod->getResearchOrPlaceholder(entry.first);
+ 		if (research)
+ 		{
+ 			_researchTriggers[research] = entry.second;
+diff --git a/src/Mod/RuleEventScript.cpp b/src/Mod/RuleEventScript.cpp
+index c6b344c7b..5581ff9e9 100644
+--- a/src/Mod/RuleEventScript.cpp
++++ b/src/Mod/RuleEventScript.cpp
+@@ -108,7 +108,8 @@ void RuleEventScript::afterLoad(const Mod* mod)
+ 	// Link manually
+ 	for (auto& entry : _researchTriggerNames)
+ 	{
+-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
++		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
++		auto* research = mod->getResearchOrPlaceholder(entry.first);
+ 		if (research)
+ 		{
+ 			_researchTriggers[research] = entry.second;
+diff --git a/src/Mod/RuleMissionScript.cpp b/src/Mod/RuleMissionScript.cpp
+index 4e37c5422..b04794391 100644
+--- a/src/Mod/RuleMissionScript.cpp
++++ b/src/Mod/RuleMissionScript.cpp
+@@ -135,7 +135,8 @@ void RuleMissionScript::afterLoad(const Mod* mod)
+ 	// Link manually
+ 	for (auto& entry : _researchTriggerNames)
+ 	{
+-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
++		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
++		auto* research = mod->getResearchOrPlaceholder(entry.first);
+ 		if (research)
+ 		{
+ 			_researchTriggers[research] = entry.second;

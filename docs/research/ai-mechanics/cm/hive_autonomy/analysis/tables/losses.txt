@@ -1,0 +1,36 @@
+== cc8_CC_M6_s1
+   {'unit_turns': 75, 'tu_kept': 5216, 'tu_spent_on_react_hold_task': 139, 'attacked_later_this_turn': 5, 'react_after_art_turn': 5, 'unit_turns_with_react': 2, 'prepared_attack_passed_over': 2, 'shot_in_candidates_only': 4, 'react_after_other_turn': 8}
+   hold-ended turns by role:
+     ENGAGE {'unit_turns': 14, 'tu': 690, 'walk_only': 13, 'walk_tu': 594, 'shot_only': 1}
+     GUARD {'unit_turns': 45, 'tu': 3596, 'walk_only': 36, 'walk_tu': 3086, 'prepared': 2, 'shot_only': 3}
+     REINFORCE {'unit_turns': 13, 'tu': 791, 'walk_only': 12, 'walk_tu': 791}
+     SEARCH {'unit_turns': 3, 'tu': 139, 'walk_only': 3, 'walk_tu': 139}
+   rolled {'2': 54, '0': 78, '-': 3} src {'escape.known': 126, 'escape': 6, '': 3} kept {'kept_next_turn': 6, 'kept_next_turn_walk': 6}
+   reaction events by AI side, whole battle 51
+== cc5_CC_M6_s2
+   {'unit_turns': 89, 'tu_kept': 6586, 'tu_spent_on_react_hold_task': 76, 'attacked_later_this_turn': 4, 'react_after_art_turn': 3, 'unit_turns_with_react': 2, 'react_after_other_turn': 4, 'prepared_attack_passed_over': 1}
+   hold-ended turns by role:
+     ENGAGE {'unit_turns': 18, 'tu': 946, 'walk_only': 18, 'walk_tu': 946}
+     GUARD {'unit_turns': 19, 'tu': 1739, 'walk_only': 16, 'walk_tu': 1739, 'prepared': 1}
+     REINFORCE {'unit_turns': 23, 'tu': 1696, 'walk_only': 23, 'walk_tu': 1696}
+     SEARCH {'unit_turns': 29, 'tu': 2205, 'walk_only': 27, 'walk_tu': 2205}
+   rolled {'0': 91, '2': 82} src {'escape.known': 170, 'escape': 3} kept {'kept_next_turn': 2, 'kept_next_turn_walk': 2}
+   reaction events by AI side, whole battle 18
+== cc6_CV_M3_s1
+   {'unit_turns': 154, 'tu_kept': 6738, 'prepared_attack_passed_over': 5, 'react_after_art_turn': 14, 'unit_turns_with_react': 7, 'tu_spent_on_react_hold_task': 198, 'attacked_later_this_turn': 8, 'shot_in_candidates_only': 22, 'react_after_other_turn': 15}
+   hold-ended turns by role:
+     ENGAGE {'unit_turns': 39, 'tu': 951, 'prepared': 2, 'walk_only': 24, 'walk_tu': 647, 'shot_only': 9}
+     GUARD {'unit_turns': 77, 'tu': 4455, 'walk_only': 66, 'walk_tu': 4097, 'prepared': 2, 'shot_only': 8}
+     REINFORCE {'unit_turns': 15, 'tu': 337, 'walk_only': 11, 'walk_tu': 287, 'shot_only': 2}
+     SEARCH {'unit_turns': 23, 'tu': 995, 'prepared': 1, 'walk_only': 18, 'walk_tu': 877, 'shot_only': 3}
+   rolled {'0': 161, '2': 156} src {'escape.known': 306, 'escape': 11} kept {'kept_same_turn': 2, 'kept_next_turn': 13, 'kept_next_turn_walk': 13}
+   reaction events by AI side, whole battle 44
+== cc7_CL_M3_s1
+   {'unit_turns': 101, 'tu_kept': 4605, 'tu_spent_on_react_hold_task': 63, 'shot_in_candidates_only': 20, 'prepared_attack_passed_over': 4, 'react_after_art_turn': 6, 'unit_turns_with_react': 3, 'attacked_later_this_turn': 7, 'react_after_other_turn': 7}
+   hold-ended turns by role:
+     ENGAGE {'unit_turns': 10, 'tu': 191, 'prepared': 1, 'walk_only': 5, 'walk_tu': 112, 'shot_only': 2}
+     GUARD {'unit_turns': 72, 'tu': 3772, 'walk_only': 56, 'walk_tu': 3338, 'shot_only': 10, 'prepared': 1}
+     REINFORCE {'unit_turns': 4, 'tu': 106, 'shot_only': 2, 'prepared': 2}
+     SEARCH {'unit_turns': 15, 'tu': 536, 'walk_only': 9, 'walk_tu': 442, 'shot_only': 6}
+   rolled {'2': 80, '0': 98} src {'escape.known': 175, 'escape': 3} kept {'kept_next_turn': 3, 'kept_next_turn_walk': 3}
+   reaction events by AI side, whole battle 16

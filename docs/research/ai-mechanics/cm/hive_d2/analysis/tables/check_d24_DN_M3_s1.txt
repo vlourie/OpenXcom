@@ -1,0 +1,87 @@
+===== d24_DN_M3_s1
+thinks with an intent 140 tries {1: 133, 5: 7}
+invariant tries = free_checked + free_none + taken, broken: 0
+no node at the end: 6 with fewer than 5 tries: 0 with a refused offer: 4 units {'1000027': 2, '1000045': 1, '1000033': 1, '1000050': 2}
+offers in thinks 135 refused 15 taken 120 thinks with a refusal 5
+refused: expanded=0 (before any search) 0 seed moved 0 units {'1000027': 9, '1000050': 6}
+after a refusal the free node was taken at once / the free failed too: 0 15
+CHOICE 168 by scout {'0': 12, '1': 156} chosen 137 changed 135
+S1 scout=0, a chosen node not linked: 0 | scout=0 chosen linked: 2 | scout=0 chosen, not the best by flags (chosen != free): 0
+KEPT_DROP (only written now): 56 KEPT_BACK: 0
+   of those, the soldier stood on that node later: 18
+-- 1000050
+   t 1 CHOICE try 1 at (6,16,3) scout 1 free (53,5,0) chosen (3,3,2) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000050 try=1 at=(6,16,3) offer=(3,3,2) free=(53,5,0) expanded=65 us=101 seed_moved=0
+   t 1 CHOICE try 2 at (6,16,3) scout 1 free (53,11,0) chosen (8,4,0) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000050 try=2 at=(6,16,3) offer=(8,4,0) free=(53,11,0) expanded=65 us=94 seed_moved=0
+   t 1 CHOICE try 3 at (6,16,3) scout 1 free (8,39,0) chosen (14,5,3) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000050 try=3 at=(6,16,3) offer=(14,5,3) free=(8,39,0) expanded=65 us=93 seed_moved=0
+   t 1 CHOICE try 4 at (6,16,3) scout 1 free (52,37,0) chosen (-1,-1,-1) rung -1
+   t 1 CHOICE try 5 at (6,16,3) scout 1 free (55,16,3) chosen (-1,-1,-1) rung -1
+    event=PATROLEND turn=1 unit=1000050 at=(6,16,3) tries=5 free_checked=5 free_none=0 offers=3 refused=3 taken=0 end=none tu=65
+   t 1 DECIDE from (6,16,3) tu 65 mode 3 act 0 to (6,16,3)
+   t 1 CHOICE try 1 at (6,16,3) scout 1 free (65,15,3) chosen (8,4,0) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000050 try=1 at=(6,16,3) offer=(8,4,0) free=(65,15,3) expanded=68 us=103 seed_moved=0
+   t 1 CHOICE try 2 at (6,16,3) scout 1 free (60,53,3) chosen (1,4,2) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000050 try=2 at=(6,16,3) offer=(1,4,2) free=(60,53,3) expanded=68 us=96 seed_moved=0
+   t 1 CHOICE try 3 at (6,16,3) scout 1 free (50,40,0) chosen (7,3,3) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000050 try=3 at=(6,16,3) offer=(7,3,3) free=(50,40,0) expanded=68 us=99 seed_moved=0
+   t 1 CHOICE try 4 at (6,16,3) scout 1 free (44,2,1) chosen (-1,-1,-1) rung -1
+   t 1 CHOICE try 5 at (6,16,3) scout 1 free (8,39,0) chosen (-1,-1,-1) rung -1
+    event=PATROLEND turn=1 unit=1000050 at=(6,16,3) tries=5 free_checked=5 free_none=0 offers=3 refused=3 taken=0 end=none tu=65
+   t 1 DECIDE from (6,16,3) tu 65 mode 3 act 0 to (6,16,3)
+   t 2 CHOICE try 1 at (6,16,3) scout 1 free (38,8,2) chosen (25,15,0) rung 1
+    event=PATROLEND turn=2 unit=1000050 at=(6,16,3) tries=1 free_checked=0 free_none=0 offers=1 refused=0 taken=1 end=(25,15,0) tu=65
+   t 2 DECIDE from (6,16,3) tu 65 mode 2 act 2 to (5,20,3)
+   t 2 DECIDE from (5,20,3) tu 39 mode 2 act 2 to (4,17,3)
+   t 2 DECIDE from (4,17,3) tu 23 mode 0 act 2 to (25,15,0)
+-- 1000027
+   t 1 CHOICE try 1 at (6,14,0) scout 1 free (22,14,1) chosen (8,4,0) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000027 try=1 at=(6,14,0) offer=(8,4,0) free=(22,14,1) expanded=68 us=109 seed_moved=0
+   t 1 CHOICE try 2 at (6,14,0) scout 1 free (4,39,0) chosen (9,15,3) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000027 try=2 at=(6,14,0) offer=(9,15,3) free=(4,39,0) expanded=68 us=99 seed_moved=0
+   t 1 CHOICE try 3 at (6,14,0) scout 1 free (23,12,3) chosen (9,13,3) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000027 try=3 at=(6,14,0) offer=(9,13,3) free=(23,12,3) expanded=68 us=94 seed_moved=0
+   t 1 CHOICE try 4 at (6,14,0) scout 1 free (51,50,0) chosen (-1,-1,-1) rung -1
+   t 1 CHOICE try 5 at (6,14,0) scout 1 free (56,31,0) chosen (-1,-1,-1) rung -1
+    event=PATROLEND turn=1 unit=1000027 at=(6,14,0) tries=5 free_checked=5 free_none=0 offers=3 refused=3 taken=0 end=none tu=65
+   t 1 DECIDE from (6,14,0) tu 65 mode 3 act 0 to (6,14,0)
+   t 1 CHOICE try 1 at (6,14,0) scout 1 free (25,5,3) chosen (9,15,3) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000027 try=1 at=(6,14,0) offer=(9,15,3) free=(25,5,3) expanded=68 us=102 seed_moved=0
+   t 1 CHOICE try 2 at (6,14,0) scout 1 free (66,4,0) chosen (9,13,3) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000027 try=2 at=(6,14,0) offer=(9,13,3) free=(66,4,0) expanded=68 us=94 seed_moved=0
+   t 1 CHOICE try 3 at (6,14,0) scout 1 free (9,31,3) chosen (8,4,0) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000027 try=3 at=(6,14,0) offer=(8,4,0) free=(9,31,3) expanded=68 us=93 seed_moved=0
+   t 1 CHOICE try 4 at (6,14,0) scout 1 free (56,38,0) chosen (-1,-1,-1) rung -1
+   t 1 CHOICE try 5 at (6,14,0) scout 1 free (25,8,0) chosen (-1,-1,-1) rung -1
+    event=PATROLEND turn=1 unit=1000027 at=(6,14,0) tries=5 free_checked=5 free_none=0 offers=3 refused=3 taken=0 end=none tu=65
+   t 1 DECIDE from (6,14,0) tu 65 mode 3 act 0 to (6,14,0)
+   t 1 CHOICE try 1 at (6,14,0) scout 1 free (56,51,0) chosen (8,4,0) rung 0
+    event=OFFER_REFUSED turn=1 unit=1000027 try=1 at=(6,14,0) offer=(8,4,0) free=(56,51,0) expanded=68 us=118 seed_moved=0
+   t 1 CHOICE try 2 at (6,14,0) scout 1 free (62,42,0) chosen (5,6,0) rung 1
+    event=OFFER_REFUSED turn=1 unit=1000027 try=2 at=(6,14,0) offer=(5,6,0) free=(62,42,0) expanded=68 us=94 seed_moved=0
+   t 1 CHOICE try 3 at (6,14,0) scout 1 free (66,63,0) chosen (5,10,0) rung 1
+    event=OFFER_REFUSED turn=1 unit=1000027 try=3 at=(6,14,0) offer=(5,10,0) free=(66,63,0) expanded=68 us=94 seed_moved=0
+   t 1 CHOICE try 4 at (6,14,0) scout 1 free (22,14,1) chosen (-1,-1,-1) rung -1
+   t 1 CHOICE try 5 at (6,14,0) scout 1 free (3,17,0) chosen (-1,-1,-1) rung -1
+    event=PATROLEND turn=1 unit=1000027 at=(6,14,0) tries=5 free_checked=5 free_none=0 offers=3 refused=3 taken=0 end=(3,17,0) tu=65
+   t 1 DECIDE from (6,14,0) tu 65 mode 0 act 2 to (3,17,0)
+   t 1 CHOICE try 1 at (3,17,0) scout 1 free (54,1,3) chosen (2,11,0) rung 1
+    event=PATROLEND turn=1 unit=1000027 at=(3,17,0) tries=1 free_checked=0 free_none=0 offers=1 refused=0 taken=1 end=(2,11,0) tu=45
+   t 1 DECIDE from (3,17,0) tu 45 mode 0 act 2 to (2,11,0)
+   t 2 CHOICE try 1 at (2,11,0) scout 1 free (63,30,0) chosen (41,18,0) rung 1
+    event=PATROLEND turn=2 unit=1000027 at=(2,11,0) tries=1 free_checked=0 free_none=0 offers=1 refused=0 taken=1 end=(41,18,0) tu=65
+   t 2 DECIDE from (2,11,0) tu 65 mode 0 act 2 to (41,18,0)
+   t 2 DECIDE from (4,18,0) tu 33 mode 2 act 8 to (21,28,0)
+   t 2 DECIDE from (4,18,0) tu 10 mode 0 act 2 to (41,18,0)
+-- perf by turn
+  t 1 floods=73 floodUs=187321 intentFloods=43 intentFloodUs=116749 offers=72 offersRefused=15 offersTaken=57 refusedUs=1489 maxRefusedUs=118 takenUs=26197 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=5 unusedUs=26249 sigUs=30924 freeUs=2745 stepsUs=545 pathUs=50203 paths=117 pathFails=49 thinkUs=103351 planUs 83042 planFloods 26
+  t 2 floods=16 floodUs=34896 intentFloods=16 intentFloodUs=42225 offers=14 offersRefused=0 offersTaken=14 refusedUs=0 maxRefusedUs=0 takenUs=5469 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=2 unusedUs=14793 sigUs=7126 freeUs=414 stepsUs=83 pathUs=6201 paths=17 pathFails=0 thinkUs=501 planUs 122 planFloods 0
+  t 3 floods=9 floodUs=14673 intentFloods=9 intentFloodUs=18809 offers=9 offersRefused=0 offersTaken=9 refusedUs=0 maxRefusedUs=0 takenUs=3439 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=0 unusedUs=0 sigUs=4017 freeUs=262 stepsUs=44 pathUs=25591 paths=14 pathFails=2 thinkUs=321 planUs 109 planFloods 0
+  t 4 floods=10 floodUs=15332 intentFloods=10 intentFloodUs=19841 offers=10 offersRefused=0 offersTaken=10 refusedUs=0 maxRefusedUs=0 takenUs=4006 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=0 unusedUs=0 sigUs=4368 freeUs=275 stepsUs=47 pathUs=4006 paths=10 pathFails=0 thinkUs=272 planUs 94 planFloods 0
+  t 5 floods=13 floodUs=30829 intentFloods=13 intentFloodUs=38651 offers=12 offersRefused=0 offersTaken=12 refusedUs=0 maxRefusedUs=0 takenUs=6771 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=1 unusedUs=3888 sigUs=7637 freeUs=444 stepsUs=62 pathUs=12236 paths=14 pathFails=0 thinkUs=242 planUs 86 planFloods 0
+  t 6 floods=6 floodUs=17403 intentFloods=6 intentFloodUs=20049 offers=6 offersRefused=0 offersTaken=6 refusedUs=0 maxRefusedUs=0 takenUs=4807 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=0 unusedUs=0 sigUs=2494 freeUs=163 stepsUs=28 pathUs=4807 paths=6 pathFails=0 thinkUs=175 planUs 52 planFloods 0
+  t 7 floods=5 floodUs=11582 intentFloods=5 intentFloodUs=13823 offers=5 offersRefused=0 offersTaken=5 refusedUs=0 maxRefusedUs=0 takenUs=1740 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=0 unusedUs=0 sigUs=2163 freeUs=135 stepsUs=24 pathUs=1740 paths=5 pathFails=0 thinkUs=160 planUs 114 planFloods 0
+  t 8 floods=7 floodUs=16693 intentFloods=7 intentFloodUs=19641 offers=7 offersRefused=0 offersTaken=7 refusedUs=0 maxRefusedUs=0 takenUs=3002 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=0 unusedUs=0 sigUs=2859 freeUs=206 stepsUs=34 pathUs=3002 paths=7 pathFails=0 thinkUs=124 planUs 53 planFloods 0
+  sum floods=139 floodUs=328729 intentFloods=109 intentFloodUs=289788 offers=135 offersRefused=15 offersTaken=120 refusedUs=1489 maxRefusedUs=118 takenUs=55431 seedMoved=0 repeatFloods=0 repeatUs=0 repeatTurnFloods=0 repeatTurnUs=0 unusedFloods=8 unusedUs=44930 sigUs=61588 freeUs=4644 stepsUs=867 pathUs=107786 paths=190 pathFails=51 thinkUs=105146
+[AIRESULT] how=timeout tac=h.rec.in:805,h.rec.out.M2:5,h.rec.out.a8:1,h.rec.out.a9:3,p.rec.in:133,p.rec.out.a8:1 seed=2015001 livesoldiers=4 livealiens=19 aborted=0 missi

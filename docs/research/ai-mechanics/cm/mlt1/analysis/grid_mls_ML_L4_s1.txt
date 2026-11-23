@@ -1,0 +1,11 @@
+first plan line 334 first hostile decision line 1494
+  [AIMISSION] what=plan turn=1 cell=4,3 fighters=1000010>44,34,3;1000023>47,34,3
+grid kinds: {'aistart': 9, 'end': 1}
+  t4 aistart: tiles 519 of 527, cell 0,0 (14, 14), cell 1,0 (1, 1), empty []
+  t5 aistart: tiles 519 of 527, cell 0,0 (14, 14), cell 1,0 (1, 1), empty []
+  t6 aistart: tiles 519 of 527, cell 0,0 (14, 14), cell 1,0 (1, 1), empty []
+  t7 aistart: tiles 518 of 527, cell 0,0 (13, 14), cell 1,0 (1, 1), empty []
+  t8 aistart: tiles 517 of 527, cell 0,0 (12, 14), cell 1,0 (1, 1), empty []
+  t9 aistart: tiles 517 of 527, cell 0,0 (12, 14), cell 1,0 (1, 1), empty []
+  t10 end: tiles 517 of 527, cell 0,0 (12, 14), cell 1,0 (1, 1), empty []
+to turn 5: {'blast': 8}

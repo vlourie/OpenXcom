@@ -1,0 +1,13 @@
+sc3r_S_M10_s1 vs sc2q_Q_M10_s1
+  identical record lines before the first difference: 38 (S 2233, control 2531)
+  [AISCHED] picks 522: {'attack': 178, 'order': 323, 'attack.same': 11, 'none': 10}; sites {'first': 10, 'limit': 483, 'idle': 26, 'out.restart': 2, 'out': 1}; wraps 10
+  pass integrity: repeated in a first-pass round 0, repeated in the second pass 0; turns over 8 picks/unit 0; max picks in a turn 77
+  S: activations 511, decisions/activation {1: 181, 2: 317, 3: 12, 4: 1}, max n 2, activations/unit-turn {1: 168, 2: 167, 3: 3}, TU rise 0, decisions at TU<=5 1
+  restarts after a cleared selection that chose a unit: 2, that found nobody: 0
+  activations over the engine's bound (1 + restarts in the first pass, 1 in the second): 0 []
+  control: activations 558, decisions/activation {1: 176, 2: 356, 3: 13, 4: 12, 7: 1}, max n 2, activations/unit-turn {1: 184, 2: 184, 3: 2}, TU rise 0, decisions at TU<=5 5
+  picks out of the engine's order: 178; the chosen unit's AIModule then attacked 116, the attack executed (time units spent, no walk) 115
+  first hostile turn with another activation order: 1
+  reaction events S 97, control 167
+  decisions at TU<=5: S 1 of 956, control 5 of 1109; max activations/unit-turn S 3, control 3
+  LIMITS OK

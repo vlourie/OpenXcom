@@ -1,0 +1,752 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/td/tree/src/Battlescape/AiProbe.h	2026-10-30 00:57:25.765545200 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/sc/tree/src/Battlescape/AiProbe.h	2026-10-30 03:21:25.023487400 +0200
+@@ -282,6 +282,25 @@
+ bool secondPassWrapped(SavedBattleGame *save, const BattleUnit *left, const BattleUnit *selected);
+ /// P0-D SECOND_PASS: handleAI got `unit` - the first one of a side's turn is where that turn's traversal began.
+ void passStartNote(SavedBattleGame *save, const BattleUnit *unit);
++/// SIDE_TURN_ACTION_SCHEDULER stage 2 (OXCE_AI_SCHEDULER, bench only, the hostile side): the scheduler picks the next unit.
++bool schedActive(const SavedBattleGame *save);
++/// The side turn's first activation: the scheduler's choice when it differs from `unit` (the vector's first, which
++/// SavedBattleGame::endTurn selected), else nullptr - also when the scheduler is off or the turn has begun.
++BattleUnit *schedFirst(SavedBattleGame *save, BattleUnit *unit);
++/// The next unit within the engine's two passes (the place of selectNextPlayerUnit(true, setReselect)): the left unit is
++/// flagged when setReselect; in the first pass every unit is activated once, in the second each one left is flagged as before;
++/// among the candidates the lowest in the vector with an attack on a player unit it sees from where it stands goes first, the
++/// lowest in the vector otherwise (the engine's own order). *wrapped - the first pass came round (the engine's wrap).
++BattleUnit *schedPick(SavedBattleGame *save, bool setReselect, bool secondMove, bool *wrapped, const char *site);
++/// Stage 3 COVER (OXCE_AI_SCHED_COVER=<n>, only with the scheduler): at the start of `unit`'s activation, after an attack pick
++/// of the side turn - the unit has no attack from where it stands, its reaction weapon (TileEngine::determineReactionType) a
++/// snap shot it can still pay for after facing the nearest enemy its side sees now within the reaction distance and the
++/// weapon's range: it covers instead of acting (`target` - that enemy's position to face). At most n units per side turn.
++bool schedCover(SavedBattleGame *save, BattleUnit *unit, Position &target);
++/// stage 3 diagnostics: is the unit one of the covering units of the last hostile turn, in the player's next turn
++bool coverWatch(const SavedBattleGame *save, const BattleUnit *bu);
++/// stage 3 diagnostics: [AICOVERGATE] - where TileEngine's reaction checks stopped (or passed) a covering unit for this mover
++void coverGate(const SavedBattleGame *save, const BattleUnit *mover, const BattleUnit *bu, const char *gate, double a, double b);
+ /// U1 A* TOTAL TU COST (OXCE_AI_ASTAR_COST_FIX, bench only): when A* takes the destination off its open list,
+ /// _totalTUCost becomes that terminal node's cost - the path's cumulative cost - instead of the last neighbour the search
+ /// tried. The path and the search order stay the same.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/td/tree/src/Battlescape/AiProbe.cpp	2026-10-30 00:57:25.661052500 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/sc/tree/src/Battlescape/AiProbe.cpp	2026-10-30 03:21:21.678884100 +0200
+@@ -189,6 +189,12 @@
+ bool botTurn(const SavedBattleGame *) { return false; }
+ bool secondPassWrapped(SavedBattleGame *, const BattleUnit *left, const BattleUnit *selected) { return selected->getId() <= left->getId(); }
+ void passStartNote(SavedBattleGame *, const BattleUnit *) {}
++bool schedActive(const SavedBattleGame *) { return false; }
++BattleUnit *schedFirst(SavedBattleGame *, BattleUnit *) { return nullptr; }
++BattleUnit *schedPick(SavedBattleGame *save, bool setReselect, bool, bool *, const char *) { return save->selectNextPlayerUnit(true, setReselect); }
++bool schedCover(SavedBattleGame *, BattleUnit *, Position &) { return false; }
++bool coverWatch(const SavedBattleGame *, const BattleUnit *) { return false; }
++void coverGate(const SavedBattleGame *, const BattleUnit *, const BattleUnit *, const char *, double, double) {}
+ bool panicTurnFix() { return false; }
+ void panicState(SavedBattleGame *, bool) {}
+ void shotDivider(SavedBattleGame *, const BattleUnit *, double) {}
+@@ -2080,6 +2086,352 @@
+ 	}
+ }
+ 
++namespace
++{
++/// SIDE_TURN_ACTION_SCHEDULER: the side turn the scheduler works in, whether its first unit was chosen, the units activated in
++/// the current round of the first pass, the picks made
++const SavedBattleGame *schedSave = nullptr;
++int schedTurn = -1, schedSide = -1, schedPicks = 0;
++bool schedStarted = false;
++std::set<int> schedVisited;
++/// stage 3 COVER: the attack picks of the side turn and the last attacker (A), the covering units assigned (B)
++int schedAttackPicks = 0, schedLastAttacker = -1, schedCovers = 0;
++/// the hostile turn of the last COVER orders and the units ordered (watched in the player's next turn)
++int coverTurn = -1;
++std::set<int> coverIds;
++
++void schedKey(const SavedBattleGame *save)
++{
++	// a new side turn, or another battle (a load in the middle of a turn gives a new SavedBattleGame: the engine also starts
++	// its first pass afresh then - _AISecondMove is not saved)
++	if (save != schedSave || save->getTurn() != schedTurn || (int)save->getSide() != schedSide)
++	{
++		schedSave = save;
++		schedTurn = save->getTurn();
++		schedSide = (int)save->getSide();
++		schedPicks = 0;
++		schedStarted = false;
++		schedVisited.clear();
++		schedAttackPicks = 0;
++		schedLastAttacker = -1;
++		schedCovers = 0;
++	}
++}
++
++/// Can the unit attack a player unit it sees from where it stands now: its main weapon's cheapest shot (the time units and the
++/// ammo for it), the weapon's range and the engine's line of fire from the weapon (the test of AIModule::selectNearestTarget);
++/// or a melee hit on an adjacent one it sees. Only what the unit itself sees and has; reads only, no RNG. The target's id, or -1.
++int schedAttack(SavedBattleGame *save, BattleUnit *u)
++{
++	TileEngine *te = save->getTileEngine();
++	BattleItem *w = u->getMainHandWeapon(false);
++	if (w && w->getRules()->getBattleType() == BT_FIREARM)
++	{
++		bool shot = false;
++		for (BattleActionType t : { BA_SNAPSHOT, BA_AUTOSHOT, BA_AIMEDSHOT })
++		{
++			BattleActionCost cost(t, u, w);
++			if (cost.Time > 0 && static_cast<const BattleItem *>(w)->getAmmoForAction(t) && cost.haveTU())
++			{
++				shot = true;
++				break;
++			}
++		}
++		if (shot)
++		{
++			for (BattleUnit *bu : *u->getVisibleUnits())
++			{
++				if (bu->isOut() || bu->getFaction() != FACTION_PLAYER || !bu->getTile()
++					|| w->getRules()->isOutOfRange(Position::distanceSq(u->getPosition(), bu->getPosition())))
++				{
++					continue;
++				}
++				BattleAction a;
++				a.actor = u;
++				a.weapon = w;
++				a.type = BA_SNAPSHOT;
++				a.target = bu->getPosition();
++				Position origin = te->getOriginVoxel(a, 0), scan;
++				if (te->canTargetUnit(&origin, bu->getTile(), &scan, u, false))
++				{
++					return bu->getId();
++				}
++			}
++		}
++	}
++	BattleItem *m = u->getUtilityWeapon(BT_MELEE);
++	if (m)
++	{
++		BattleActionCost cost(BA_HIT, u, m);
++		if (cost.Time > 0 && cost.haveTU())
++		{
++			for (BattleUnit *bu : *u->getVisibleUnits())
++			{
++				if (!bu->isOut() && bu->getFaction() == FACTION_PLAYER && bu->getTile()
++					&& te->validMeleeRange(u, bu, te->getDirectionTo(u->getPosition(), bu->getPosition())))
++				{
++					return bu->getId();
++				}
++			}
++		}
++	}
++	return -1;
++}
++
++/// The choice among the candidates (vector order): the lowest one with an attack, else the lowest; logged as [AISCHED].
++BattleUnit *schedChoose(SavedBattleGame *save, const std::vector<BattleUnit *> &cands, const BattleUnit *left, int pass,
++	bool wrapped, const char *site)
++{
++	const auto t0 = std::chrono::steady_clock::now();
++	BattleUnit *order = cands.empty() ? nullptr : cands.front();
++	BattleUnit *chosen = nullptr;
++	int aim = -1;
++	std::ostringstream list;
++	for (BattleUnit *bu : cands)
++	{
++		const int t = schedAttack(save, bu);
++		list << (list.tellp() > 0 ? "," : "") << bu->getId() << ":" << (t >= 0 ? "a" : "-") << bu->getTimeUnits();
++		if (t >= 0 && !chosen)
++		{
++			chosen = bu;
++			aim = t;
++		}
++	}
++	const bool attack = chosen != nullptr;
++	if (!chosen)
++	{
++		chosen = order;
++	}
++	else
++	{
++		++schedAttackPicks;
++		schedLastAttacker = chosen->getId();
++	}
++	++schedPicks;
++	const long long us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count();
++	Log(LOG_INFO) << "[AISCHED] us=" << us << " turn=" << save->getTurn() << " side=" << (int)save->getSide() << " pick=" << schedPicks
++		<< " pass=" << pass << " site=" << site << " wrap=" << (wrapped ? 1 : 0)
++		<< " left=" << (left ? left->getId() : -1) << " order=" << (order ? order->getId() : -1)
++		<< " chosen=" << (chosen ? chosen->getId() : -1) << " why=" << (!chosen ? "none" : attack ? (chosen == order ? "attack.same" : "attack") : "order")
++		<< " aim=" << aim << " cands=" << (list.tellp() > 0 ? list.str() : "-");
++	if (chosen)
++	{
++		schedVisited.insert(chosen->getId());
++	}
++	return chosen;
++}
++
++/// Stage 3 (OXCE_AI_SCHED_SAVEAT=<turn>:<pick>): the battle saved right after that pick of the side turn - the chosen unit is
++/// selected, its activation begins with the next think; to the user folder as sched_<turn>_<pick>.asav. Reads nothing back.
++void schedSaveAt(SavedBattleGame *save, const BattleUnit *chosen)
++{
++	static const std::pair<int, int> at = []
++	{
++		const char *s = getenv("OXCE_AI_SCHED_SAVEAT");
++		int t = 0, p = 0;
++		if (!active() || !s || sscanf(s, "%d:%d", &t, &p) != 2)
++		{
++			t = 0;
++		}
++		return std::make_pair(t, p);
++	}();
++	if (at.first <= 0 || save->getTurn() != at.first || schedPicks != at.second || !save->getBattleState())
++	{
++		return;
++	}
++	const std::string name = "sched_" + std::to_string(at.first) + "_" + std::to_string(at.second) + ".asav";
++	Game *game = save->getBattleState()->getGame();
++	game->getSavedGame()->save(name, game->getMod());
++	Log(LOG_INFO) << "[AISCHEDSAVE] turn=" << save->getTurn() << " side=" << (int)save->getSide() << " pick=" << schedPicks
++		<< " selected=" << (chosen ? chosen->getId() : -1) << " file=" << name;
++}
++}
++
++bool schedActive(const SavedBattleGame *save)
++{
++	static const bool on = active() && envOn("OXCE_AI_SCHEDULER");
++	return on && save->getSide() == FACTION_HOSTILE && !botTurn(save);
++}
++
++BattleUnit *schedFirst(SavedBattleGame *save, BattleUnit *unit)
++{
++	if (!schedActive(save))
++	{
++		return nullptr;
++	}
++	schedKey(save);
++	if (schedStarted)
++	{
++		return nullptr;
++	}
++	schedStarted = true;
++	// the engine's first round runs from the selected unit to the vector's end: at a turn's start that is the first selectable
++	// one, after a load in the middle of a turn the saved one - the units before it count as visited in this round, as there
++	std::vector<BattleUnit *> cands;
++	bool before = unit != nullptr;
++	for (auto *bu : *save->getUnits())
++	{
++		before = before && bu != unit;
++		if (before)
++		{
++			schedVisited.insert(bu->getId());
++		}
++		else if (bu->isSelectable(save->getSide(), true, false))
++		{
++			cands.push_back(bu);
++		}
++	}
++	if (cands.empty())
++	{
++		schedVisited.clear();
++		return nullptr;
++	}
++	BattleUnit *chosen = schedChoose(save, cands, nullptr, 1, false, "first");
++	return chosen && chosen != unit ? chosen : nullptr;
++}
++
++BattleUnit *schedPick(SavedBattleGame *save, bool setReselect, bool secondMove, bool *wrapped, const char *site)
++{
++	schedKey(save);
++	schedStarted = true;
++	BattleUnit *left = save->getSelectedUnit();
++	if (left && setReselect)
++	{
++		left->dontReselect(); // as SavedBattleGame::selectPlayerUnit
++	}
++	// first pass: the ones not yet activated in this round; second pass: every one not flagged (each is flagged as it leaves)
++	auto candidates = [&]()
++	{
++		std::vector<BattleUnit *> c;
++		for (auto *bu : *save->getUnits())
++		{
++			if (bu->isSelectable(save->getSide(), true, false) && (secondMove || !schedVisited.count(bu->getId())))
++			{
++				c.push_back(bu);
++			}
++		}
++		return c;
++	};
++	// no selection (the active unit died or left the side: SavedBattleGame::clearUnitSelection): the engine's walk starts again
++	// from the vector's start without the second pass - a new first-pass round, as there
++	const bool restart = !left && !secondMove;
++	if (restart)
++	{
++		schedVisited.clear();
++	}
++	std::vector<BattleUnit *> cands = candidates();
++	bool wrap = false;
++	if (cands.empty() && !secondMove)
++	{
++		// every unit had its turn in this round: the engine's selection wraps round to the vector's start here
++		wrap = true;
++		schedVisited.clear();
++		cands = candidates();
++	}
++	if (wrapped)
++	{
++		*wrapped = wrap;
++	}
++	const std::string where = std::string(site) + (restart ? ".restart" : "");
++	BattleUnit *chosen = schedChoose(save, cands, left, secondMove ? 2 : 1, wrap, where.c_str());
++	save->setSelectedUnit(chosen);
++	schedSaveAt(save, chosen);
++	return chosen;
++}
++
++bool schedCover(SavedBattleGame *save, BattleUnit *unit, Position &target)
++{
++	static const int coverMax = active() ? (int)param("OXCE_AI_SCHED_COVER", 0) : 0;
++	if (coverMax <= 0 || !unit || !schedActive(save))
++	{
++		return false;
++	}
++	schedKey(save);
++	// A first: only after an attack pick of this side turn; B has no attack of its own from where it stands now
++	if (schedCovers >= coverMax || schedAttackPicks == 0 || unit->getTurretType() != -1 || schedAttack(save, unit) >= 0)
++	{
++		return false;
++	}
++	// the weapon the engine reacts with for the AI side (TileEngine::determineReactionType: the quickest one) - a snap shot
++	BattleItem *w = unit->getMainHandWeapon(true, true);
++	if (!w || w->getRules()->getBattleType() != BT_FIREARM || !static_cast<const BattleItem *>(w)->getAmmoForAction(BA_SNAPSHOT))
++	{
++		return false;
++	}
++	BattleActionCost snap(BA_SNAPSHOT, unit, w);
++	if (snap.Time <= 0)
++	{
++		return false;
++	}
++	// the enemy to face: one its side sees now (no other knowledge), the nearest within the reaction distance
++	// (TileEngine::getSpottingUnits) and the snap shot's range
++	TileEngine *te = save->getTileEngine();
++	const BattleUnit *enemy = nullptr;
++	int best = INT_MAX;
++	for (BattleUnit *bu : *save->getUnits())
++	{
++		if (bu->getFaction() != FACTION_HOSTILE || bu->isOut())
++		{
++			continue;
++		}
++		for (BattleUnit *seen : *bu->getVisibleUnits())
++		{
++			if (seen->isOut() || seen->getFaction() != FACTION_PLAYER || !seen->getTile())
++			{
++				continue;
++			}
++			const int d = unit->distance3dToUnitSq(seen);
++			if (d < best && Position::distance2dSq(unit->getPosition(), seen->getPosition()) <= te->getMaxViewDistanceSq()
++				&& !w->getRules()->isOutOfRange(d))
++			{
++				best = d;
++				enemy = seen;
++			}
++		}
++	}
++	if (!enemy)
++	{
++		return false;
++	}
++	// the turn to face it is paid as usual (UnitTurnBState); the snap shot must stay affordable after it
++	const int face = unit->directionTo(enemy->getPosition());
++	const int diff = std::abs(face - unit->getDirection());
++	const int steps = std::min(diff, 8 - diff);
++	const int tuAfter = unit->getTimeUnits() - steps * unit->getTurnCost();
++	if (tuAfter < snap.Time)
++	{
++		return false;
++	}
++	++schedCovers;
++	if (coverTurn != save->getTurn())
++	{
++		coverTurn = save->getTurn();
++		coverIds.clear();
++	}
++	coverIds.insert(unit->getId());
++	target = enemy->getPosition();
++	Log(LOG_INFO) << "[AICOVER] turn=" << save->getTurn() << " side=" << (int)save->getSide() << " pick=" << schedPicks
++		<< " unit=" << unit->getId() << " pos=" << unit->getPosition() << " tu=" << unit->getTimeUnits() << " dir=" << unit->getDirection()
++		<< " face=" << face << " steps=" << steps << " tuAfter=" << tuAfter << " weapon=" << w->getRules()->getType()
++		<< " snapTU=" << snap.Time << " reactions=" << unit->getBaseStats()->reactions << " enemy=" << enemy->getId()
++		<< " epos=" << target << " distSq=" << best << " a=" << schedLastAttacker << " n=" << schedCovers;
++	return true;
++}
++
++bool coverWatch(const SavedBattleGame *save, const BattleUnit *bu)
++{
++	return coverTurn >= 0 && bu && save->getSide() == FACTION_PLAYER && save->getTurn() == coverTurn + 1 && coverIds.count(bu->getId());
++}
++
++void coverGate(const SavedBattleGame *save, const BattleUnit *mover, const BattleUnit *bu, const char *gate, double a, double b)
++{
++	Log(LOG_INFO) << "[AICOVERGATE] turn=" << save->getTurn() << " side=" << (int)save->getSide() << " mover=" << mover->getId()
++		<< " mpos=" << mover->getPosition() << " mtu=" << mover->getTimeUnits() << " mscore=" << (int)mover->getReactionScore()
++		<< " unit=" << bu->getId() << " upos=" << bu->getPosition() << " udir=" << bu->getDirection() << " utu=" << bu->getTimeUnits()
++		<< " uscore=" << (int)bu->getReactionScore() << " d2=" << Position::distance2dSq(mover->getPosition(), bu->getPosition())
++		<< " gate=" << gate << " a=" << a << " b=" << b;
++}
++
+ bool astarCostFix()
+ {
+ 	static const bool on = releaseBase() ? releaseFixes() : active(); // clean1: U1 always in the bench
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/td/tree/src/Battlescape/BattlescapeGame.cpp	2026-10-30 00:57:25.423057000 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/sc/tree/src/Battlescape/BattlescapeGame.cpp	2026-10-30 03:14:13.455433400 +0200
+@@ -216,6 +216,19 @@
+ }
+ 
+ /**
++ * The AI side's next unit: SIDE_TURN_ACTION_SCHEDULER (bench, OXCE_AI_SCHEDULER) chooses it within the same two passes,
++ * otherwise the engine's selection as before.
++ */
++static BattleUnit *aiSelectNext(SavedBattleGame *save, bool setReselect, bool secondMove, bool *wrapped, const char *site)
++{
++	if (AiProbe::schedActive(save))
++	{
++		return AiProbe::schedPick(save, setReselect, secondMove, wrapped, site);
++	}
++	return save->selectNextPlayerUnit(true, setReselect);
++}
++
++/**
+  * Checks for units panicking or falling and so on.
+  */
+ int BattlescapeGame::think()
+@@ -268,7 +281,7 @@
+ 				}
+ 				else
+ 				{
+-					if (_save->selectNextPlayerUnit(true, _AISecondMove) == 0)
++					if (aiSelectNext(_save, _AISecondMove, _AISecondMove, nullptr, "none") == 0)
+ 					{
+ 						if (!_save->getDebugMode())
+ 						{
+@@ -384,6 +397,12 @@
+ {
+ 	std::ostringstream ss;
+ 
++	// SIDE_TURN_ACTION_SCHEDULER (bench): the side turn's first unit is the scheduler's choice; the chosen one acts from the next think
++	if (BattleUnit *first = AiProbe::schedFirst(_save, unit))
++	{
++		_save->setSelectedUnit(first);
++		return;
++	}
+ 	AiProbe::passStartNote(_save, unit); // P0-D: the first unit of a side's turn - where its traversal began
+ #ifdef OXCE_AI_DEV
+ 	AiCoverMap::update(_save); // the enemy's cover map (OXCE_AI_COVERMAP): built on the first decision, refreshed after
+@@ -403,7 +422,8 @@
+ 		{
+ 			return;
+ 		}
+-		if (_save->selectNextPlayerUnit(true, _AISecondMove) == 0)
++		bool schedWrapped = false;
++		if (aiSelectNext(_save, _AISecondMove, _AISecondMove, &schedWrapped, "limit") == 0)
+ 		{
+ 			if (!_save->getDebugMode())
+ 			{
+@@ -421,7 +441,7 @@
+ 			_parentState->updateSoldierInfo();
+ 			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
+ 			// P0-D (clean2): the second pass begins when the selection wrapped round (the bot's turn: by index, upstream: by id)
+-			if (AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
++			if (AiProbe::schedActive(_save) ? schedWrapped : AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
+ 			{
+ 				_AISecondMove = true;
+ 			}
+@@ -430,6 +450,24 @@
+ 		return;
+ 	}
+ 
++	// SIDE_TURN_ACTION_SCHEDULER stage 3 COVER (bench, OXCE_AI_SCHED_COVER): a unit without an attack keeps its time units for
++	// reaction fire in the enemy's turn - it faces the enemy its side sees (the engine's turn, paid as usual) and its activation
++	// ends for this side turn; the next think selects the next unit
++	Position coverTarget;
++	if (_AIActionCounter == 0 && AiProbe::schedCover(_save, unit, coverTarget))
++	{
++		unit->dontReselect();
++		if (unit->directionTo(coverTarget) != unit->getDirection())
++		{
++			BattleAction turn;
++			turn.actor = unit;
++			turn.type = BA_TURN;
++			turn.target = coverTarget;
++			statePushBack(new UnitTurnBState(this, turn));
++		}
++		return;
++	}
++
+ 	unit->setVisible(false); //Possible TODO: check number of player unit observers, then hide the unit if no one can see it. Should then be able to skip the next FOV call.
+ 
+ 	_save->getTileEngine()->calculateFOV(unit->getPosition(), 1, false); // might need this populate _visibleUnit for a newly-created alien.
+@@ -646,7 +684,8 @@
+ 		}
+ 		_parentState->debug("Idle");
+ 		_AIActionCounter = 0;
+-		if (_save->selectNextPlayerUnit(true, _AISecondMove) == 0)
++		bool schedWrapped = false;
++		if (aiSelectNext(_save, _AISecondMove, _AISecondMove, &schedWrapped, "idle") == 0)
+ 		{
+ 			if (!_save->getDebugMode())
+ 			{
+@@ -664,7 +703,7 @@
+ 			_parentState->updateSoldierInfo();
+ 			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
+ 			// P0-D (clean2): the second pass begins when the selection wrapped round (the bot's turn: by index, upstream: by id)
+-			if (AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
++			if (AiProbe::schedActive(_save) ? schedWrapped : AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
+ 			{
+ 				_AISecondMove = true;
+ 			}
+@@ -1494,7 +1533,7 @@
+ 				if (_AIActionCounter > 2 || _save->getSelectedUnit() == 0 || _save->getSelectedUnit()->isOut())
+ 				{
+ 					_AIActionCounter = 0;
+-					if (_states.empty() && _save->selectNextPlayerUnit(true) == 0)
++					if (_states.empty() && aiSelectNext(_save, false, _AISecondMove, nullptr, "pop") == 0)
+ 					{
+ 						if (!_save->getDebugMode())
+ 						{
+@@ -1556,7 +1595,7 @@
+ 		if (_save->getSide() == FACTION_PLAYER)
+ 			_save->setSelectedUnit(0);
+ 		else
+-			_save->selectNextPlayerUnit(true, true);
++			aiSelectNext(_save, true, _AISecondMove, nullptr, "out");
+ 	}
+ 	_parentState->updateSoldierInfo();
+ }
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/td/tree/src/Battlescape/ProjectileFlyBState.cpp	2026-10-30 00:57:25.532674300 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/sc/tree/src/Battlescape/ProjectileFlyBState.cpp	2026-10-30 03:02:32.854494900 +0200
+@@ -43,10 +43,59 @@
+ #include "AiProbe.h"
+ #include "../Savegame/BattleUnitStatistics.h"
+ #include "../fmath.h"
++#ifdef OXCE_AI_DEV
++#include <sstream>
++#include "../Engine/Logger.h"
++#endif
+ 
+ namespace OpenXcom
+ {
+ 
++#ifdef OXCE_AI_DEV
++/// SIDE_TURN_ACTION_SCHEDULER stage 3 (the bench): why the hostile side's own shot was dropped before it flew - [AISHOTCANCEL];
++/// for an arcing shot also the throw tests from here of the engine (Projectile::calculateThrow: the target unit's three voxels)
++/// and of AIModule (the one voxel it checked before the decision). Reads only, no RNG.
++static void aiShotCancel(BattlescapeGame *parent, BattleAction &action, const char *why)
++{
++	SavedBattleGame *save = parent->getSave();
++	if (!AiProbe::active() || !action.actor || action.actor->getFaction() != FACTION_HOSTILE || save->getSide() != FACTION_HOSTILE)
++	{
++		return;
++	}
++	std::ostringstream ss;
++	ss << "[AISHOTCANCEL] turn=" << save->getTurn() << " unit=" << action.actor->getId() << " type=" << (int)action.type
++		<< " why=" << why << " pos=" << action.actor->getPosition() << " dir=" << action.actor->getDirection()
++		<< " target=" << action.target << " tu=" << action.actor->getTimeUnits()
++		<< " distSq=" << action.actor->distance3dToPositionSq(action.target);
++	Tile *tt = save->getTile(action.target);
++	if (action.weapon && action.weapon->getArcingShot(action.type) && tt)
++	{
++		TileEngine *te = save->getTileEngine();
++		const Position origin = te->getOriginVoxel(action, 0);
++		BattleUnit *tu = tt->getOverlappingUnit(save);
++		ss << " origin=" << origin << " onTarget=" << (tu ? tu->getId() : -1) << " engine=";
++		if (tu)
++		{
++			Position base = action.target.toVoxel() + Position(8, 8, 1 - tt->getTerrainLevel() + tu->getFloatHeight());
++			for (int dz : { tu->getHeight() / 2 + 1, 2, tu->getHeight() - 1 })
++			{
++				ss << (te->validateThrow(action, origin, base + Position(0, 0, dz), save->getDepth()) ? 1 : 0);
++			}
++		}
++		else
++		{
++			ss << "-";
++		}
++		const Position ai = action.target.toVoxel() + Position(8, 8, 2 - tt->getTerrainLevel());
++		ss << " ai=" << (te->validateThrow(action, origin, ai, save->getDepth()) ? 1 : 0);
++	}
++	Log(LOG_INFO) << ss.str();
++}
++#define AI_SHOT_CANCEL(why) aiShotCancel(_parent, _action, why)
++#else
++#define AI_SHOT_CANCEL(why)
++#endif
++
+ /**
+  * Sets up an ProjectileFlyBState.
+  */
+@@ -79,12 +128,14 @@
+ 
+ 	if (!weapon) // can't shoot without weapon
+ 	{
++		AI_SHOT_CANCEL("noweapon");
+ 		_parent->popState();
+ 		return;
+ 	}
+ 
+ 	if (!_parent->getSave()->getTile(_action.target)) // invalid target position
+ 	{
++		AI_SHOT_CANCEL("notile");
+ 		_parent->popState();
+ 		return;
+ 	}
+@@ -92,6 +143,7 @@
+ 	//test TU only on first lunch waypoint or normal shoot
+ 	if (_range == 0 && !_action.haveTU(&_action.result))
+ 	{
++		AI_SHOT_CANCEL("tu");
+ 		_parent->popState();
+ 		return;
+ 	}
+@@ -104,6 +156,7 @@
+ 		_ammo = _action.weapon->getAmmoForAction(_action.type, reactionShoot ? nullptr : &_action.result);
+ 		if (!_ammo)
+ 		{
++			AI_SHOT_CANCEL("ammo");
+ 			_parent->popState();
+ 			return;
+ 		}
+@@ -112,6 +165,7 @@
+ 	if (_unit->isOut() || _unit->isOutThresholdExceed())
+ 	{
+ 		// something went wrong - we can't shoot when dead or unconscious, or if we're about to fall over.
++		AI_SHOT_CANCEL("out");
+ 		_parent->popState();
+ 		return;
+ 	}
+@@ -147,6 +201,7 @@
+ 		{
+ 			// out of range
+ 			_action.result = "STR_OUT_OF_RANGE";
++			AI_SHOT_CANCEL("range");
+ 			_parent->popState();
+ 			return;
+ 		}
+@@ -156,6 +211,7 @@
+ 		{
+ 			// out of range
+ 			_action.result = "STR_OUT_OF_RANGE";
++			AI_SHOT_CANCEL("throwrange");
+ 			_parent->popState();
+ 			return;
+ 		}
+@@ -167,6 +223,7 @@
+ 		}
+ 		break;
+ 	default:
++		AI_SHOT_CANCEL("type");
+ 		_parent->popState();
+ 		return;
+ 	}
+@@ -530,6 +587,7 @@
+ 			_parent->getMap()->setProjectile(0);
+ 			_action.result = "STR_UNABLE_TO_THROW_HERE";
+ 			_action.clearTU();
++			AI_SHOT_CANCEL("throwhere");
+ 			_parent->popState();
+ 			return false;
+ 		}
+@@ -566,6 +624,7 @@
+ 				_action.result = "STR_NO_TRAJECTORY";
+ 			}
+ 			_unit->abortTurn();
++			AI_SHOT_CANCEL("notrajectory");
+ 			_parent->popState();
+ 			return false;
+ 		}
+@@ -609,6 +668,7 @@
+ 				_action.result = "STR_NO_LINE_OF_FIRE";
+ 			}
+ 			_unit->abortTurn();
++			AI_SHOT_CANCEL("nolof");
+ 			_parent->popState();
+ 			return false;
+ 		}
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/td/tree/src/Battlescape/TileEngine.cpp	2026-10-30 00:57:25.337882200 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/sc/tree/src/Battlescape/TileEngine.cpp	2026-10-30 03:21:44.437475000 +0200
+@@ -2582,6 +2582,10 @@
+ 		{
+ 			if (reactor->count > 10 || !tryReaction(reactor, unit, originalAction))
+ 			{
++				if (AiProbe::coverWatch(_save, reactor->unit))
++				{
++					AiProbe::coverGate(_save, unit, reactor->unit, reactor->count > 10 ? "count" : "try", reactor->reactionScore, reactor->count);
++				}
+ 				for (std::vector<ReactionScore>::iterator i = spotters.begin(); i != spotters.end(); ++i)
+ 				{
+ 					if (&(*i) == reactor)
+@@ -2621,6 +2625,18 @@
+ 	{
+ 		for (auto* bu : *_save->getUnits())
+ 		{
++			// SIDE_TURN_SCHEDULER stage 3 (bench, log only): a covering unit stopped by the first gates (pure checks)
++			const bool coverWatch = AiProbe::coverWatch(_save, bu);
++			if (coverWatch)
++			{
++				const int d2 = Position::distance2dSq(unit->getPosition(), bu->getPosition());
++				if (bu->isOut() || bu->isOutThresholdExceed())
++					AiProbe::coverGate(_save, unit, bu, "out", 0, 0);
++				else if (bu->getReactionScore() < threshold)
++					AiProbe::coverGate(_save, unit, bu, "score", bu->getReactionScore(), threshold);
++				else if (d2 > getMaxViewDistanceSq())
++					AiProbe::coverGate(_save, unit, bu, "dist", d2, getMaxViewDistanceSq());
++			}
+ 				// not dead/unconscious
+ 			if (!bu->isOut() &&
+ 				// not dying or not about to pass out
+@@ -2666,11 +2682,16 @@
+ 				}
+ 
+ 					// can actually see the target Tile, or we got hit
+-				if ((bu->checkViewSector(unit->getPosition()) || gotHit) &&
++				const bool inSector = bu->checkViewSector(unit->getPosition()) || gotHit;
+ 					// can actually target the unit
+-					canTargetUnit(&originVoxel, tile, &targetVoxel, bu, false) &&
++				const bool canTarget = inSector && canTargetUnit(&originVoxel, tile, &targetVoxel, bu, false);
+ 					// can actually see the unit
+-					visible(bu, tile))
++				const bool seen = canTarget && visible(bu, tile);
++				if (coverWatch && !seen)
++				{
++					AiProbe::coverGate(_save, unit, bu, !inSector ? "sector" : !canTarget ? "lof" : "visible", gotHit, 0);
++				}
++				if (seen)
+ 				{
+ 					if (bu->getFaction() == FACTION_PLAYER)
+ 					{
+@@ -2717,6 +2738,11 @@
+ 
+ 							bool outOfRange = weapon->getRules()->isOutOfRange(distanceSq);
+ 
++							if (coverWatch)
++							{
++								AiProbe::coverGate(_save, unit, bu, outOfRange ? "range" : accuracy < reactionFireThreshold ? "accuracy" : "spotter",
++									accuracy, reactionFireThreshold);
++							}
+ 							if (accuracy >= reactionFireThreshold && !outOfRange)
+ 							{
+ 								spotters.push_back(rs);
+@@ -2724,9 +2750,17 @@
+ 						}
+ 						else
+ 						{
++							if (coverWatch)
++							{
++								AiProbe::coverGate(_save, unit, bu, "spotter", rs.reactionScore, threshold);
++							}
+ 							spotters.push_back(rs);
+ 						}
+ 					}
++					else if (coverWatch)
++					{
++						AiProbe::coverGate(_save, unit, bu, "weapon", 0, 0);
++					}
+ 				}
+ 			}
+ 		}

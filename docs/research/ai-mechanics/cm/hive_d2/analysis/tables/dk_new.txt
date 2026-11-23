@@ -1,0 +1,14 @@
+bool dropKept(SavedBattleGame *save, BattleUnit *unit, Node *kept)
+{
+	NodeFit fit;
+	if (!taskOf(save, unit, fit)) return false;
+	const int turn = save->getTurn(), id = unit->getId();
+	const auto back = hq.fellBack.find(id);
+	const auto was = hq.dropped.find(id);
+	if ((back != hq.fellBack.end() && back->second == turn) || (was != hq.dropped.end() && was->second == turn)) return false;
+	const int d = dist(fit.center, kept->getPosition());
+	if (d <= fit.radius || (fit.here > fit.radius && d < fit.here)) return false;
+	hq.dropped[id] = turn;
+	Log(LOG_INFO) << "[HIVEUA] event=KEPT_DROP turn=" << turn << " unit=" << id << " squad=" << fit.squad << " kind=" << fit.kind << " at=" << pos(unit->getPosition()) << " center=" << pos(fit.center) << " radius=" << fit.radius << " node=" << pos(kept->getPosition()) << " real=" << (mode() == 2 ? 1 : 0);
+	return mode() == 2;
+}

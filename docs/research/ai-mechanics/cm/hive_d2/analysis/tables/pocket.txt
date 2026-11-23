@@ -1,0 +1,63 @@
+===== d21_DO_M3_s1
+  line 774 #48 unit 1000016 from (2,11,0) tu 65 mode 0 act 2 to (45,11,0)
+  line 779 #49 unit 1000016 from (4,18,0) tu 25 mode 3 act 2 to (1,20,0)
+  line 907 #70 unit 1000027 from (6,14,0) tu 65 mode 2 act 2 to (9,19,0)  <== first think
+  line 912 #71 unit 1000027 from (4,17,0) tu 49 mode 0 act 2 to (25,18,3)
+  line 917 #72 unit 1000027 from (4,18,0) tu 45 mode 0 act 2 to (25,18,3)
+  line 927 #74 unit 1000028 from (2,7,0) tu 43 mode 2 act 2 to (4,7,0)
+  line 1142 #108 unit 1000050 from (6,16,3) tu 65 mode 0 act 2 to (1,4,2)  <== first think
+  line 1150 #109 unit 1000050 from (4,17,0) tu 31 mode 0 act 2 to (1,4,2)
+  line 1352 #144 unit 1000027 from (6,18,0) tu 37 mode 3 act 2 to (2,20,0)
+  line 1358 #145 unit 1000028 from (2,7,0) tu 42 mode 2 act 2 to (5,7,0)
+  line 1363 #146 unit 1000028 from (3,7,0) tu 38 mode 2 act 8 to (16,5,0)
+  line 1439 #160 unit 1000050 from (4,18,0) tu 27 mode 2 act 8 to (25,24,0)
+  last known place on turn 1 of those within 8 tiles of (6,15):
+     1000012 (9,13,3)
+     1000016 (1,20,0)
+     1000027 (2,20,0)
+     1000028 (3,7,0)
+     1000043 (5,19,3)
+     1000050 (4,18,0)
+===== d23_DN_M3_s1
+  line 765 FIELD unit 1000050 at (6,16,3) tiles 1526
+  line 791 FIELD unit 1000027 at (6,14,0) tiles 1900
+  line 1000 #50 unit 1000016 from (2,11,0) tu 65 mode 0 act 2 to (8,19,0)
+  line 1006 #51 unit 1000016 from (4,18,0) tu 25 mode 2 act 8 to (25,24,0)
+  line 1180 REFUSED unit 1000027 offer (8,4,0) free (22,14,1) expanded 68
+  line 1182 REFUSED unit 1000027 offer (9,15,3) free (4,39,0) expanded 68
+  line 1184 REFUSED unit 1000027 offer (9,13,3) free (23,12,3) expanded 68
+  line 1187 END unit 1000027 tries 5 end none
+  line 1188 #70 unit 1000027 from (6,14,0) tu 65 mode 3 act 0 to (6,14,0)  <== first think
+  line 1202 #72 unit 1000028 from (2,7,0) tu 43 mode 2 act 2 to (4,8,0)
+  line 1689 REFUSED unit 1000027 offer (9,15,3) free (25,5,3) expanded 68
+  line 1691 REFUSED unit 1000027 offer (9,13,3) free (66,4,0) expanded 68
+  line 1693 REFUSED unit 1000027 offer (8,4,0) free (9,31,3) expanded 68
+  line 1696 END unit 1000027 tries 5 end none
+  line 1697 #132 unit 1000027 from (6,14,0) tu 65 mode 3 act 0 to (6,14,0)
+  line 1701 #133 unit 1000028 from (2,7,0) tu 29 mode 2 act 6 to (32,10,2)
+  line 1801 REFUSED unit 1000050 offer (3,3,2) free (53,5,0) expanded 65
+  line 1803 REFUSED unit 1000050 offer (8,4,0) free (53,11,0) expanded 65
+  line 1805 REFUSED unit 1000050 offer (14,5,3) free (8,39,0) expanded 65
+  line 1808 END unit 1000050 tries 5 end none
+  line 1809 #146 unit 1000050 from (6,16,3) tu 65 mode 3 act 0 to (6,16,3)  <== first think
+  line 2067 REFUSED unit 1000027 offer (8,4,0) free (56,51,0) expanded 68
+  line 2069 REFUSED unit 1000027 offer (5,6,0) free (62,42,0) expanded 68
+  line 2071 REFUSED unit 1000027 offer (5,10,0) free (66,63,0) expanded 68
+  line 2074 END unit 1000027 tries 5 end (3,17,0)
+  line 2075 #178 unit 1000027 from (6,14,0) tu 65 mode 0 act 2 to (3,17,0)
+  line 2081 FIELD unit 1000027 at (3,17,0) tiles 68
+  line 2083 END unit 1000027 tries 1 end (2,11,0)
+  line 2084 #179 unit 1000027 from (3,17,0) tu 45 mode 0 act 2 to (2,11,0)
+  line 2127 REFUSED unit 1000050 offer (8,4,0) free (65,15,3) expanded 68
+  line 2129 REFUSED unit 1000050 offer (1,4,2) free (60,53,3) expanded 68
+  line 2131 REFUSED unit 1000050 offer (7,3,3) free (50,40,0) expanded 68
+  line 2134 END unit 1000050 tries 5 end none
+  line 2135 #184 unit 1000050 from (6,16,3) tu 65 mode 3 act 0 to (6,16,3)
+  last known place on turn 1 of those within 8 tiles of (6,15):
+     1000016 (4,18,0)
+     1000027 (2,11,0)
+     1000028 (2,7,0)
+     1000036 (9,11,3)
+     1000038 (8,9,0)
+     1000050 (6,16,3)
+     1000058 (0,22,0)

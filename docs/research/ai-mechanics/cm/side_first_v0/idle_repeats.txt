@@ -1,0 +1,6 @@
+sfF D M3 {'rep': 311, 'rep_act_10': 1, 'rep_act_2': 310, 'rep_hurt': 0, 'rep_moved': 0, 'rep_think': 311, 'run_max': 6, 'spent0': 520, 'spent0_act_10': 3, 'spent0_act_2': 517}
+sfF XN M3 {'rep': 90, 'rep_act_10': 4, 'rep_act_2': 86, 'rep_hurt': 0, 'rep_moved': 0, 'rep_think': 90, 'run_max': 6, 'spent0': 175, 'spent0_act_10': 6, 'spent0_act_2': 167, 'spent0_act_8': 2}
+sfH XN M3 {'rep': 165, 'rep_act_10': 11, 'rep_act_2': 148, 'rep_act_8': 6, 'rep_hurt': 0, 'rep_moved': 0, 'rep_think': 165, 'run_max': 6, 'spent0': 280, 'spent0_act_10': 22, 'spent0_act_2': 248, 'spent0_act_8': 10}
+sfF D L8 {'rep': 77, 'rep_act_2': 77, 'rep_hurt': 0, 'rep_moved': 0, 'rep_think': 77, 'run_max': 4, 'spent0': 183, 'spent0_act_2': 183}
+sfF XN L8 {'rep': 84, 'rep_act_2': 84, 'rep_hurt': 0, 'rep_moved': 0, 'rep_think': 84, 'run_max': 6, 'spent0': 252, 'spent0_act_15': 1, 'spent0_act_2': 251}
+sfI XN L8 {'rep': 254, 'rep_act_15': 2, 'rep_act_2': 252, 'rep_hurt': 0, 'rep_moved': 0, 'rep_think': 254, 'run_max': 5, 'spent0': 414, 'spent0_act_15': 3, 'spent0_act_2': 411}

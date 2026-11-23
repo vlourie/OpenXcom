@@ -1,0 +1,89 @@
+battles 48 turns 820 decisions 39508 with a gun and a known target 31146
+target pairs at decisions: lof 1 23095 lof 0 113331 lof 0 with TU 98045 and a comrade on the flat lane 62896
+  24996  0 (turn, B, T) with lof 0, TU for a shot, a comrade within 1.5 of the flat lane
+   9124  lof 0, TU for a shot, one comrade strictly on the lane within a cell of the ray
+    290  line evidence: that comrade has the line to T from its cell and stands within 3 of B, or the same B got the line once the comrade left
+    251  A has a free cell off the lane within its TU
+    227  the step leaves A all it spent on attacks in D0
+     77  this weapon wounded this T in this battle
+     46  B has no other shot with a line
+     16  own move costs B at least one shot, even by the optimistic flat cell
+     20  2x refuted: the comrade left, the engine still said lof 0
+      9  8a B did not attack at all in D0
+      7  8b B attacked in D0
+natural flips (engine line appears on the same cells once a comrade of the lane left): {'after comrade left': 80, 'next turn': 18, 'same turn': 62}
+
+battle: turns flat tight line wound self decisions
+L10_s1 11 98 55 1 0 0 375
+L10_s2 14 93 56 0 0 0 338
+L11_s1 60 261 113 2 0 0 2079
+L11_s2 60 306 144 1 0 0 2811
+L12_s1 9 154 37 0 0 0 463
+L12_s2 16 761 261 1 0 0 946
+L1_s1 15 211 77 2 0 0 351
+L1_s2 16 194 70 7 0 0 294
+L2_s1 10 909 217 6 4 0 1335
+L2_s2 25 2001 693 18 6 1 2532
+L3_s1 2 0 0 0 0 0 5
+L3_s2 2 6 3 0 0 0 21
+L4_s1 10 521 215 2 0 0 175
+L4_s2 7 277 119 0 0 0 140
+L5_s1 8 1113 436 35 0 0 993
+L5_s2 20 293 164 3 2 0 611
+L6_s1 60 714 223 11 0 0 809
+L6_s2 24 493 181 5 4 0 874
+L7_s1 22 741 234 23 10 6 1068
+L7_s2 8 541 193 18 3 1 670
+L8_s1 10 587 195 2 0 0 506
+L8_s2 6 285 102 1 0 0 441
+L9_s1 11 84 31 0 0 0 113
+L9_s2 11 448 202 3 1 1 293
+M10_s1 24 959 355 14 4 1 1766
+M10_s2 11 875 399 5 1 0 1279
+M11_s1 60 122 26 0 0 0 815
+M11_s2 60 212 55 0 0 0 1964
+M12_s1 2 6 4 0 0 0 12
+M12_s2 4 14 12 4 0 0 25
+M1_s1 11 1483 631 8 2 0 1044
+M1_s2 17 1799 770 7 4 0 1328
+M2_s1 15 1173 422 16 9 1 1992
+M2_s2 38 1190 452 17 6 1 2389
+M3_s1 21 603 176 25 11 2 902
+M3_s2 6 584 265 7 3 0 755
+M4_s1 3 203 100 2 0 0 393
+M4_s2 3 164 64 1 0 0 486
+M5_s1 15 1081 356 22 0 0 1053
+M5_s2 10 937 265 3 2 0 818
+M6_s1 26 659 188 2 1 0 1046
+M6_s2 29 791 226 8 2 1 1215
+M7_s1 2 74 38 1 1 0 165
+M7_s2 5 208 88 3 1 1 398
+M8_s1 12 381 106 0 0 0 338
+M8_s2 5 170 50 3 0 0 132
+M9_s1 2 90 23 1 0 0 435
+M9_s2 2 127 32 0 0 0 515
+
+friendly fire of plain shots: {'shots': 5385, 'fdmg_all': 12650, 'dmg_all': 30628, 'shots_fdmg': 247, 'shots_fdmg_lane': 195, 'fdmg_lane': 9612}
+by weapon: [('STR_CANISTER_GUN', 1657), ('STR_LUGER', 1178), ('STR_CD_RIFLE', 758), ('STR_PIR_PLASMA_RIFLE', 716), ('STR_PIR_HEAVY_PLASMA', 665), ('STR_CHAINGUN', 637), ('STR_MACHINEGUN_LIGHT', 606), ('STR_UAC_ROCKET_LAUNCHER', 451), ('STR_CD_PISTOL', 377), ('STR_UAC_HEAVY_NAILGUN', 372)]
+
+shortlist (all gates): 16
+L2_s2 t2 B1000020(48, 29, 2) tu118 T324(41, 28, 0) d8 STR_CD_RIFLE m8 29TU p71 hurtT 49 | A1000023(45, 29, 1) tu134 dB3 dT4 perp0.42 lofT 1 off [8, [45, 27, 1]] needA 116 acted 0 | own [16, [45, 31, 2]] fit 12 shots place 4 self 3 | B did [(2, None, 16, 0, 0), (2, None, 16, 0, 0), (2, None, 16, 0, 0), (2, None, 16, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+L7_s1 t7 B1000015(55, 33, 0) tu23 T368(24, 56, 2) d39 STR_HEAVY_LASER_PIR m8 21TU p71 hurtT 38 | A1000012(52, 35, 0) tu25 dB3 dT28 perp0.18 lofT 1 off [8, [52, 33, 0]] needA 0 acted 2 | own [10, [54, 31, 0]] fit 0 shots place 1 self 0 | B did [(2, None, 0, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+L7_s1 t11 B1000013(55, 40, 0) tu67 T471(20, 22, 1) d40 STR_LASER_RIFLE_PIR m8 16TU p86 hurtT 10 | A1000019(52, 38, 0) tu67 dB3 dT32 perp0.41 lofT 1 off [6, [53, 37, 0]] needA 18 acted 0 | own [33, [53, 45, 1]] fit 65 shots place 4 self 2 | B did [(2, None, 42, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+L9_s2 t2 B1000014(9, 41, 0) tu86 T571(12, 38, 0) d5 STR_SONIC_PISTOL m8 25TU p89 hurtT 14 | A1000005(11, 39, 0) tu14 dB2 dT1 perp0.0 lofT 1 off [8, [11, 37, 0]] needA 0 acted 2 | own [22, [14, 40, 0]] fit 24 shots place 3 self 2 | B did [(0, None, 0, 0, 0), (2, None, 2, 0, 0), (2, None, 14, 0, 0)] flip True other 0
+M2_s1 t1 B1000000(27, 27, 2) tu126 T108(56, 54, 1) d40 STR_CD_RIFLE m8 27TU p56 hurtT 35 | A1000052(28, 29, 2) tu163 dB2 dT28 perp0.78 lofT 1 off [4, [28, 30, 2]] needA 0 acted 0 | own [118, [12, 37, 3]] fit 0 shots place 4 self 0 | B did [(2, None, 74, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+M2_s2 t3 B1000027(22, 31, 1) tu134 T257(52, 17, 0) d34 STR_CD_RIFLE m8 29TU p71 hurtT 12 | A1000026(25, 29, 1) tu75 dB3 dT27 perp0.54 lofT 1 off [8, [25, 27, 1]] needA 29 acted 2 | own None fit 0 shots place 4 self 0 | B did [(0, None, 0, 0, 0), (2, None, 4, 0, 0), (2, None, 12, 0, 0), (2, None, 18, 0, 0), (2, None, 46, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+M3_s1 t2 B1000008(33, 59, 0) tu21 T444(31, 16, 0) d44 AUX_SILACOID_WEAPON m8 17TU p54 hurtT 118 | A1000025(33, 55, 0) tu65 dB4 dT39 perp0.19 lofT 1 off [12, [35, 57, 0]] needA 25 acted 0 | own [8, [31, 59, 0]] fit 0 shots place 1 self 0 | B did [(2, None, 0, 0, 0), (2, None, 4, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip True other 0
+M6_s2 t17 B1000021(40, 5, 0) tu41 T448(16, 23, 1) d30 STR_HEAVY_GAUSS m8 38TU p55 hurtT 59 | A1000005(37, 8, 0) tu24 dB3 dT21 perp0.6 lofT 1 off [6, [38, 9, 0]] needA 0 acted 3 | own [18, [36, 6, 0]] fit 0 shots place 1 self 0 | B did [(2, None, 0, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+M7_s2 t3 B1000022(47, 30, 0) tu25 T1(40, 10, 0) d22 STR_HEAVY_LASER_PIR m8 18TU p44 hurtT 43 | A1000002(47, 29, 0) tu9 dB1 dT19 perp0.33 lofT 1 off [6, [48, 30, 0]] needA 0 acted 8 | own [10, [48, 28, 0]] fit 0 shots place 1 self 0 | B did [(2, None, 0, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+L7_s1 t6 B1000017(49, 26, 0) tu67 T471(27, 33, 1) d24 STR_LASER_RIFLE_PIR m8 16TU p86 hurtT 10 | A1000010(46, 26, 0) tu36 dB3 dT19 perp0.91 lofT 1 off [6, [45, 25, 0]] needA 23 acted 2 | own [12, [52, 26, 0]] fit 34 shots place 4 self 3 | B did [(2, None, 34, 0, 0), (7, 471, 24, 0, 0), (2, None, 0, 0, 0), (2, None, 4, 0, 0)] flip False other 0
+L7_s1 t8 B1000020(45, 25, 0) tu67 T368(25, 56, 2) d37 STR_HEAVY_LASER_PIR m8 21TU p65 hurtT 38 | A1000017(44, 26, 0) tu40 dB1 dT30 perp0.3 lofT 1 off [6, [43, 25, 0]] needA 0 acted 2 | own [8, [45, 27, 0]] fit 120 shots place 3 self 2 | B did [(2, None, 2, 0, 0), (2, None, 24, 0, 0), (8, 368, 22, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+L7_s1 t10 B1000022(36, 20, 0) tu119 T471(17, 19, 1) d20 STR_PIR_PLASMA_RIFLE m8 28TU p103 hurtT 8 | A1000020(33, 20, 0) tu23 dB3 dT16 perp0.16 lofT 1 off [8, [33, 18, 0]] needA 0 acted 2 | own [10, [37, 18, 0]] fit 3654 shots place 4 self 3 | B did [(2, None, 46, 0, 0), (7, 471, 38, 0, 0), (8, 471, 28, 0, 0), (2, None, 4, 0, 0)] flip False other 0
+L7_s1 t11 B1000019(46, 30, 0) tu23 T471(20, 22, 1) d28 STR_LASER_RIFLE_PIR m8 16TU p86 hurtT 10 | A1000029(42, 29, 0) tu298 dB4 dT22 perp0.22 lofT 0 off [8, [42, 27, 0]] needA 0 acted 0 | own [12, [46, 27, 0]] fit 0 shots place 1 self 0 | B did [(2, None, 0, 0, 0), (8, 471, 18, 0, 0)] flip True other 0
+L7_s2 t8 B1000009(10, 14, 0) tu67 T368(41, 23, 0) d33 STR_LASER_RIFLE_PIR m8 16TU p86 hurtT 10 | A1000018(13, 15, 0) tu67 dB3 dT28 perp0.12 lofT 1 off [8, [13, 17, 0]] needA 48 acted 0 | own [8, [10, 16, 0]] fit 189 shots place 4 self 3 | B did [(2, None, 18, 0, 0), (9, 368, 42, 0, 0), (2, None, 0, 0, 0), (2, None, 0, 0, 0)] flip False other 0
+M10_s1 t22 B1000047(20, 33, 0) tu42 T1(47, 19, 0) d31 AUX_DOOM_IMP_WEAPON m8 31TU p38 hurtT 9 | A1000018(33, 26, 0) tu45 dB13 dT14 perp0.23 lofT 1 off [6, [32, 25, 0]] needA 33 acted 3 | own None fit 0 shots place 1 self 0 | B did [(2, None, 0, 0, 0), (2, None, 0, 0, 0), (8, 1, 31, 0, 9), (2, None, 0, 0, 0)] flip True other 0
+M3_s1 t2 B1000010(38, 57, 0) tu65 T444(31, 16, 0) d42 STR_SR_RIFLE m8 20TU p74 hurtT 5 | A1000018(38, 56, 0) tu65 dB1 dT40 perp0.17 lofT 1 off [8, [40, 56, 0]] needA 41 acted 0 | own [6, [37, 56, 0]] fit 85 shots place 3 self 2 | B did [(6, 503, 14, 0, 0), (2, None, 4, 0, 0), (9, 503, 42, 0, 0)] flip False other 0
+
+wounding, before gates 6 and 7: 77 B without attack 25 B without damage 58 B fired at T 21
+
+calibration M10: engine 28 flat 672 engine in flat 23 tight 280 tight in engine 9 evidence 18 evidence in engine 3

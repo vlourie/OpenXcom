@@ -1,0 +1,7 @@
+name: "HD render demo pack"
+version: 0.2
+author: "Vitali + Claude"
+description: "Demo HD sprite pack for the HD renderer: an antialiased battlescape cursor (CURSOR.PCK 0-5) and soft translucent smoke (SMOKE.PCK 8-19). Needs the HD battlescape scale option set to 4 (Options -> Advanced -> OXCE -> Battlescape) and HD sprites mode 1 or 2. Frames without an HD version keep drawing as before."
+id: hd_demo
+master: "*"
+reservedSpace: 1

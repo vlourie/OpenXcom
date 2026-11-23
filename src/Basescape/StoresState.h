@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "BaseSwitch.h"
 #include <vector>
 
 namespace OpenXcom
@@ -64,7 +65,7 @@ struct StoredItem
  * Stores window that displays all
  * the items currently stored in a base.
  */
-class StoresState : public State
+class StoresState : public BaseSwitchMixin<State>
 {
 private:
 	Base *_base;
@@ -109,6 +110,13 @@ public:
 	void sortSpaceUsedClick(Action *action);
 	/// Handler for clicking the Stores list.
 	void lstStoresClick(Action* action);
+	/// Handlers for the cursor on the list rows: the ammunition hint (oxceHdAmmoHint).
+	void lstStoresMouseOver(Action* action);
+	void lstStoresMouseOut(Action* action);
+private:
+	/// Lights the rows of the ammunition that fits the weapon (nullptr: the usual colour).
+	void showAmmoHint(const RuleItem *weapon);
+	const RuleItem *_hintWeapon = nullptr;
 };
 
 }

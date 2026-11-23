@@ -1,0 +1,8 @@
+1000053 stun at (64,12,0) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=1 act=7 to=(56,20,0) aim=1000068 from=(64,12,0) | reactions so far: -
+1000053 stun at (64,12,0) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=1 act=7 to=(56,20,0) aim=1000068 from=(64,12,0) | reactions so far: -
+1000053 dead at (64,12,0) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=1 act=7 to=(56,20,0) aim=1000068 from=(64,12,0) | reactions so far: -
+1000029 dead at (61,8,0) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=1 act=7 to=(56,20,0) aim=1000068 from=(64,12,0) | reactions so far: -
+1000049 dead at (65,9,3) by 1000053 STR_WEAPON_UNKNOWN | during 1000053 n=1 act=7 to=(56,20,0) aim=1000068 from=(64,12,0) | reactions so far: -
+1000036 dead at (25,17,0) by 444 AUX_TANK_CANNON | during 1000042 n=1 act=8 to=(42,23,0) aim=470 from=(25,19,0) | reactions so far: 444,444
+1000042 dead at (25,19,0) by 444 AUX_TANK_CANNON | during 1000042 n=1 act=8 to=(42,23,0) aim=470 from=(25,19,0) | reactions so far: 444,444
+1000051 stun at (24,19,0) by 444 AUX_TANK_CANNON | during 1000042 n=1 act=8 to=(42,23,0) aim=470 from=(25,19,0) | reactions so far: 444,444

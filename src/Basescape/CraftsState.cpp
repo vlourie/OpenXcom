@@ -28,6 +28,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/Craft.h"
+#include "../Savegame/CraftWeapon.h"
 #include "../Mod/RuleCraft.h"
 #include "../Savegame/Base.h"
 #include "../Menu/ErrorMessageState.h"
@@ -73,6 +74,13 @@ CraftsState::CraftsState(Base *base) : _base(base)
 	add(_txtHwp, "text", "craftSelect");
 	add(_lstCrafts, "list", "craftSelect");
 
+	// the previous/next base arrows, as on the research and workshop screens (ticket XP-000224): bases with craft;
+	// the switch's base line takes the place of the screen's own
+	_txtBase->setVisible(false);
+	addBaseSwitch(_base, "craftSelect", "text", "button", 24,
+		[](const Base *other) { return !other->getCrafts()->empty(); },
+		[](Base *other) { return withBaseSwitch(new CraftsState(other)); });
+
 	centerAllSurfaces();
 
 	// Set up objects
@@ -112,7 +120,7 @@ CraftsState::CraftsState(Base *base) : _base(base)
  */
 CraftsState::~CraftsState()
 {
-
+	delete _weaponIcons;
 }
 
 /**
@@ -132,13 +140,39 @@ void CraftsState::init()
 void CraftsState::initList(size_t scrl)
 {
 	_lstCrafts->clearList();
-	for (const auto* craft : *_base->getCrafts())
+
+	// OXCE-HD: the pictures of the installed weapons and equipment before the name (Options::oxceCraftWeaponIcons),
+	// 9 pixels each, taken from the name column (the status caption cannot move: the weapons caption starts
+	// right after it). Counted anew: the list comes back here from the craft screen
+	int icons = 0;
+	if (Options::oxceCraftWeaponIcons)
+	{
+		for (const auto* craft : *_base->getCrafts())
+		{
+			icons = std::max(icons, craft->getNumWeapons());
+		}
+	}
+	if (icons > 0 && !_weaponIcons)
+	{
+		_weaponIcons = new CraftWeaponIcons(_game->getMod(), _lstCrafts->getPalette());
+	}
+	_lstCrafts->setIconColumn(8, 9 * icons, 0, std::max(1, icons));
+	_lstCrafts->setMargin(8 + 9 * icons);
+	_lstCrafts->setColumns(5, 94 - 9 * icons, 68, 44, 46, 28);
+
+	int row = 0;
+	for (auto* craft : *_base->getCrafts())
 	{
 		std::ostringstream ss, ss2, ss3;
 		ss << craft->getNumWeapons() << "/" << craft->getRules()->getWeapons();
 		ss2 << craft->getNumTotalSoldiers();
 		ss3 << craft->getNumTotalVehicles();
 		_lstCrafts->addRow(5, craft->getName(_game->getLanguage()).c_str(), tr(craft->getStatus()).c_str(), ss.str().c_str(), ss2.str().c_str(), ss3.str().c_str());
+		if (icons > 0)
+		{
+			_lstCrafts->setRowIcons(row, _weaponIcons->of(craft, Options::oxceHdCraftWeaponToggle));
+		}
+		++row;
 	}
 
 	if (scrl)
@@ -171,6 +205,18 @@ void CraftsState::lstCraftsClick(Action *action)
 
 	if (_game->isLeftClick(action))
 	{
+		// OXCE-HD (oxceHdCraftWeaponToggle): a click on a weapon's icon switches that weapon, the rest of the row works as before
+		if (Options::oxceHdCraftWeaponToggle && _weaponIcons)
+		{
+			const int slot = _lstCrafts->getIconSlotAt((int)(action->getRelativeXMouse() / action->getXScale()));
+			CraftWeapon *weapon = slot >= 0 ? _weaponIcons->weaponAt(crafts[row], slot) : nullptr;
+			if (weapon)
+			{
+				CraftWeaponIcons::toggle(crafts[row], weapon);
+				initList(_lstCrafts->getScroll());
+				return;
+			}
+		}
 		if (crafts[row]->getStatus() != "STR_OUT")
 		{
 			_game->pushState(new CraftInfoState(_base, row));

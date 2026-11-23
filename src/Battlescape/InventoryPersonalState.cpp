@@ -39,6 +39,7 @@ namespace OpenXcom
  */
 InventoryPersonalState::InventoryPersonalState(Soldier* soldier)
 {
+	setHdScreen("inventoryPersonal");
 	_screen = false;
 
 	// Create objects
@@ -59,6 +60,7 @@ InventoryPersonalState::InventoryPersonalState(Soldier* soldier)
 	// Set up objects
 	_window->setHighContrast(true);
 	_window->setBackground(_game->getMod()->getSurface("TAC00.SCR"));
+	_window->setInterfaceName("battlescape");
 
 	_txtTitle->setHighContrast(true);
 	_txtTitle->setAlign(ALIGN_CENTER);

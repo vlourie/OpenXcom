@@ -155,6 +155,11 @@ int adl_gv_tempo = 120;
 int adl_gv_tempo_run = 60;
 int adl_gv_tempo_inc = 70;
 unsigned char* adl_gv_samples_addr = 0;
+// the track being played is [start, end): every read of the player stays inside (a damaged or cut track ends early)
+unsigned char* adl_gv_music_start = 0;
+unsigned char* adl_gv_music_end = 0;
+unsigned int adl_gv_samples_count = 0;
+#define ADL_NOTES 108 // 9 * 12, the size of the note tables
 unsigned char* adl_gv_subtracks[128];
 unsigned int adl_gv_instruments_count = 0;
 unsigned int adl_gv_subtracks_count = 0;
@@ -378,12 +383,14 @@ void adlib_reset_channels()
 int get_pitched_freq_instr(int note, int instrument)
 {
 	int pitch = instruments[instrument].cur_pitchbend;
+	if (note < 0 || note >= ADL_NOTES)
+		return 0; // not a note of the tables
 	if (pitch==0)
 		return adl_gv_freq_table[note];
 	else if (pitch>0)
 		return adl_gv_freq_table[note] + adl_gv_detune_table[note]*pitch;
 	else
-		return adl_gv_freq_table[note] + adl_gv_detune_table[note-1]*pitch;
+		return adl_gv_freq_table[note] + adl_gv_detune_table[note > 0 ? note-1 : 0]*pitch;
 }
 
 // sets pitch for particular instrument
@@ -476,6 +483,8 @@ void adlib_play_note(int note, int volume, int instrument)
 		}
 		return;
 	}
+	if (note < 0 || note >= ADL_NOTES || (unsigned int)sample_id >= adl_gv_samples_count)
+		return; // a note outside the tables or a sample the track does not have: nothing to play
 	if (volume>127) volume=127;
 	channel = adlib_get_unused_channel(sample_id, &same_sample);
 	adlib_channels[channel].cur_volume = volume;
@@ -516,13 +525,15 @@ void adlib_play_note(int note, int volume, int instrument)
 int get_numseq(unsigned char** mus_ptr)
 {
 	unsigned char c;
-	int v=0;
+	unsigned int v=0;
 	do {
+		if (*mus_ptr == 0 || *mus_ptr < adl_gv_music_start || *mus_ptr >= adl_gv_music_end)
+			return 0; // the data ended inside a number; the reader of the commands meets the same end and stops
 		c = *(*(unsigned char**)mus_ptr);
 		v = (v<<7) + (c & 0x7f);
 		(*((unsigned char**)mus_ptr))++;
 	} while (c&0x80);
-	return v;
+	return (int)v;
 }
 
 //MAIN FUNCTION - instantly stops music
@@ -571,15 +582,34 @@ int decode_op(int instrument, bool* another_loop)
 	unsigned char* music_ptr = instr1->cur_address;
 	unsigned char opcode,arg1,arg2;
 	int delay = 0;
+	// Commands without a delay between them are read in one go. The reader only moves forward (every command reads its
+	// byte and a delay) except at a call of a subtrack or a return from it, and what it reads next depends only on
+	// where it is, where it returns to and the running command. So a read that never reaches a delay (a subtrack that
+	// calls itself, two that call each other) goes round a circle that passes a jump: the state after each jump is
+	// watched for a repeat (Brent: the state is kept at jump 1, 2, 4, 8, ...; a circle is met within twice its length
+	// past its start). Any number of calls of a subtrack that do reach the end is played, as the original player did.
+	struct { unsigned char *ptr, *ret; unsigned char prev; } kept = { 0, 0, 0 };
+	bool keeping = false;
+	unsigned long power = 1, lam = 0;
+// the state after a jump: the same as the one kept - no progress, the track is over; else maybe keep it
+#define ADL_JUMPED() do { \
+		if (keeping && kept.ptr == music_ptr && kept.ret == instr1->return_address && kept.prev == instr1->prev_cmd) goto track_over; \
+		if (!keeping || ++lam == power) { kept.ptr = music_ptr; kept.ret = instr1->return_address; kept.prev = instr1->prev_cmd; \
+			if (keeping) { power <<= 1; lam = 0; } keeping = true; } \
+	} while (0)
+// one byte of the track; no more data - the track is over, as with command 0xff
+#define ADL_READ(var) do { if (music_ptr < adl_gv_music_start || music_ptr >= adl_gv_music_end) goto track_over; var = *(music_ptr++); } while (0)
 
 	do {
-		opcode = *(music_ptr++);
+		ADL_READ(opcode);
 		if (opcode == 0xfe) //call for subtrack
 		{
-			arg1 = *(music_ptr++);
+			ADL_READ(arg1);
+			if (arg1 >= adl_gv_subtracks_count) goto track_over; // no such subtrack
 				//printf("Call for subtrack [%d] %d\n",instrument,arg1);
 			instr1->return_address = music_ptr;
 			music_ptr = adl_gv_subtracks[arg1];
+			ADL_JUMPED();
 		}
 		else if (opcode == 0xfd) //return from subtrack
 		{
@@ -592,6 +622,7 @@ int decode_op(int instrument, bool* another_loop)
 				music_ptr = instr1->return_address;
 					//printf("Return from subtrack [%d] -> %x\n",instrument,instr1->return_address);
 				instr1->return_address = 0;
+				ADL_JUMPED();
 			}
 		}
 		else if (opcode == 0xff) //finishing track
@@ -605,7 +636,7 @@ int decode_op(int instrument, bool* another_loop)
 		{
 			instr1->prev_cmd = opcode;
 				//printf("Opcode [%d]: %02Xh\n", instrument, opcode);
-			opcode = *(music_ptr++); //read "repeated" opcode which goes to arg
+			ADL_READ(opcode); //read "repeated" opcode which goes to arg
 		}
 
 		if (opcode<0x80) //can be not a opcode, just the repeated command
@@ -614,7 +645,7 @@ int decode_op(int instrument, bool* another_loop)
 			opcode = instr1->prev_cmd;
 			switch (opcode & 0xf0) {
 			case 0x80: //note off
-				arg2 = *(music_ptr++);
+				ADL_READ(arg2);
 					//printf("Opcode [%d] NOTE OFF: %d\n", instrument, arg1);
 				adlib_play_note(arg1,0,instrument);
 				--adl_gv_polyphony_level;
@@ -625,7 +656,7 @@ int decode_op(int instrument, bool* another_loop)
 				}
 				break;
 			case 0x90: //note on
-				arg2 = *(music_ptr++);
+				ADL_READ(arg2);
 				if (arg2 == 0) //volume==0 - note off
 				{
 						//printf("Opcode [%d] NOTE off: %d, volume=%d\n", instrument, arg1, arg2);
@@ -657,7 +688,7 @@ int decode_op(int instrument, bool* another_loop)
 				}
 				break;
 			case 0xB0: //set controller
-				arg2 = *(music_ptr++);
+				ADL_READ(arg2);
 					//printf("Opcode [%d] CONTROLLER: %02Xh, %d\n", instrument, arg1, arg2);
 				if (arg1 == 0 && arg2 != 0) //tempo change
 					adl_gv_tempo = arg2 * 0.8;
@@ -674,7 +705,7 @@ int decode_op(int instrument, bool* another_loop)
 					}
 */				}
 				else if (arg1 == 0x7e) //setting up chorus (slave) instrument
-					adl_gv_chorus_instruments[instrument] = arg2-1;
+					adl_gv_chorus_instruments[instrument] = (arg2 >= 1 && arg2 <= 16) ? arg2-1 : 0; // one of the 16 instruments
 				else if (arg1 == 0x7f) //clearing chorus (slave) instrument
 					adl_gv_chorus_instruments[instrument] = 0;
 
@@ -704,50 +735,87 @@ int decode_op(int instrument, bool* another_loop)
 	instr1->cur_address = music_ptr;
 	//if (delay!=0) printf("* Delay[%d] = %d\n", instrument, delay);
 	return delay;
+track_over:
+#undef ADL_READ
+#undef ADL_JUMPED
+	adl_gv_music_playing = false;
+	instr1->cur_address = music_ptr;
+	return 0;
 }
 
 // music initialization function, sets up subblock array,
 // tempo, instrument addresses and samples
 void init_music_data(unsigned char* music_ptr,int length)
 {
-	unsigned int i, to_add, j;
+	unsigned int i, to_add, j, subtracks;
 	unsigned char* start=music_ptr;
+	unsigned char* end=(music_ptr && length>0) ? music_ptr+length : music_ptr;
+// bytes left from music_ptr to the end of the track
+#define ADL_ROOM(n) ((long)(end - music_ptr) >= (long)(n))
 	for (i=0; i<16; ++i)
 	{
 		instruments[i].start_address = 0;
 	}
 	adl_gv_subtracks_count = 0;
+	adl_gv_instruments_count = 0;
+	adl_gv_samples_count = 0;
+	adl_gv_music_start = start;
+	adl_gv_music_end = end;
+	adl_gv_samples_addr = start;
+	// a section that does not fit into the data: nothing is set up, nothing plays
+	if (!start || !ADL_ROOM(1)) return;
 
 	i = *music_ptr;
 	if (i>56) adl_gv_FORMAT=0; //switch to old
 	else  adl_gv_FORMAT=1;
-	if (adl_gv_FORMAT==1) music_ptr += (*music_ptr )+1; //skip name
-	adl_gv_tempo = *(music_ptr++);
-	adl_gv_samples_addr = music_ptr+1; //samples
-	music_ptr += ((*music_ptr) * 24) +1; //moving to next section - subtracks
-	adl_gv_subtracks_count = *(music_ptr++);
-	for(i=0; i<adl_gv_subtracks_count; ++i)
+	if (adl_gv_FORMAT==1)
 	{
+		if (!ADL_ROOM(i+1)) return;
+		music_ptr += (*music_ptr )+1; //skip name
+	}
+	if (!ADL_ROOM(2)) return;
+	adl_gv_tempo = *(music_ptr++);
+	i = *music_ptr; //number of samples
+	if (!ADL_ROOM(i*24+2)) return;
+	adl_gv_samples_addr = music_ptr+1; //samples
+	adl_gv_samples_count = i;
+	music_ptr += ((*music_ptr) * 24) +1; //moving to next section - subtracks
+	subtracks = *(music_ptr++);
+	if (subtracks > 128)
+	{
+		// more subtracks than the table holds: not a track of the game
+		return;
+	}
+	for(i=0; i<subtracks; ++i)
+	{
+		if (!ADL_ROOM(4)) return;
 		to_add = peek_u16(music_ptr); //reading 16bit length
+		if (!ADL_ROOM(to_add)) return;
 		adl_gv_subtracks[i] = music_ptr+4; //store subtrack pointers
 		music_ptr += to_add;
 	}
+	adl_gv_subtracks_count = subtracks;
+	if (!ADL_ROOM(1)) return;
 	adl_gv_instruments_count = *(music_ptr++);
 	for (i=0; i<adl_gv_instruments_count; ++i)
 	{
+		if (!ADL_ROOM(adl_gv_FORMAT==1 ? 5 : 4)) break;
 		to_add = peek_u16(music_ptr); //reading 16bit length
+		// the player has 16 instruments: a part for a 17th one or later (old format: the 17th part and on, new format:
+		// a channel above 15) is not played and leaves the 16th one its own part (it took it over before); no track of
+		// the original game has such a part
 		if (adl_gv_FORMAT==1)
 		{
 			j = *(music_ptr+4);
-			if (j>15) j=15;
-			instruments[j].start_address = music_ptr+5;
+			if (j<=15) instruments[j].start_address = music_ptr+5;
 		}
 		else
 		if (adl_gv_FORMAT==0)
 		{
 			j = i;
-			instruments[j].start_address = music_ptr+4; //old format, without title
+			if (j<=15) instruments[j].start_address = music_ptr+4; //old format, without title
 		}
+		if (!ADL_ROOM(to_add)) break;
 		music_ptr += to_add;
 		if (music_ptr-start>=length)
 		{
@@ -755,6 +823,7 @@ void init_music_data(unsigned char* music_ptr,int length)
 			break;
 		}
 	}
+#undef ADL_ROOM
 }
 
 
@@ -795,6 +864,13 @@ void func_load_music_state(int i)
 void func_play_tick()
 {
 	bool another_loop;
+	// A restart puts every instrument at its start; the pass after it depends only on what a restart leaves as it was
+	// (the running command and the return address of each). The same of those after two restarts within one tick: the
+	// track restarts without a delay for ever. Watched as in decode_op (Brent), so a track that restarts once more and
+	// then goes on plays as before.
+	struct Kept { unsigned char prev[16]; unsigned char *ret[16]; bool playing; } kept, now;
+	bool keeping = false;
+	unsigned long power = 1, lam = 0;
 
 	if (!adl_gv_music_playing) return;
 	fade_volume_if_need();
@@ -819,6 +895,27 @@ void func_play_tick()
 		if (!another_loop && adl_gv_music_playing) break;
 		init_music();
 		clear_channels();
+		if (another_loop)
+		{
+			for (int i = 0; i < 16; ++i)
+			{
+				now.prev[i] = instruments[i].prev_cmd;
+				now.ret[i] = instruments[i].return_address;
+			}
+			now.playing = adl_gv_music_playing;
+			if (keeping && now.playing == kept.playing && memcmp(now.prev, kept.prev, sizeof(now.prev)) == 0 && memcmp(now.ret, kept.ret, sizeof(now.ret)) == 0)
+			{
+				// no delay anywhere on the way round: it would restart within this tick for ever
+				func_mute();
+				break;
+			}
+			if (!keeping || ++lam == power)
+			{
+				kept = now;
+				if (keeping) { power <<= 1; lam = 0; }
+				keeping = true;
+			}
+		}
 	} while (another_loop);
 }
 

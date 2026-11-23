@@ -1,0 +1,15 @@
+big: 1 1000019 (23,30,0) (39,24,0) STR_FLECHETTE_GUN 470 239 line 1186
+    [AIEVENT] turn=1 side=1 what=reaction unit=444 pos=(23,30,0)
+    [AIEVENT] turn=1 side=1 what=reaction unit=444 pos=(23,30,0)
+    [AIEVENT] turn=1 side=1 what=reaction unit=448 pos=(23,30,0)
+    [AICASUALTY] turn=1 side=1 victim=543 vfaction=0 type=SOLDIER how=dead pos=(33,29,2) tu=14 kneel=0 seenby=0 killer=444 kfaction=0 ktype=SOLDIER dist=2 weapon=AUX_TANK_CAN
+    [AICASUALTY] turn=1 side=1 victim=1000019 vfaction=1 type=STR_MUTON_NAVIGATOR how=dead pos=(23,30,0) tu=6 kneel=0 seenby=2 killer=448 kfaction=0 ktype=SOLDIER dist=9 weap
+player's units at aistart t1: {'470': ('(39,24,0)', '0', '157/168'), '444': ('(31,29,2)', '7', '170/170'), '448': ('(31,25,2)', '5', '171/171'), '545': ('(32,36,2)', '3', '68/68'), '503': ('(36,29,2)', '4', '85/85'), '543': ('(33,29,2)', '4', '85/85'), '520': 
+cc3_CO_M6_s1 player's dead 4 by own side [('1', '543', '444', 'AUX_TANK_CANNON', '2')]
+scpa_D_M6_s2 player's dead 5 by own side []
+scpa_D_M3_s1 player's dead 6 by own side [('3', '503', '470', 'AUX_TANK_LASER_CANNON', '2'), ('3', '520', '444', 'AUX_TANK_CANNON', '14')]
+1000005 decisions 26 with damage [('1', 31)] last 6 (16,52,0) 10 116
+casualty lines: [{'turn': '7', 'how': 'stun', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'dist': '14'}, {'turn': '7', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'dist': '14'}, {'turn': '7', 'how': 'stun', 'killer': '444', 'weapon': 'STR
+t7 onward states: [(6, '116/116', '0'), (7, '16/116', '7'), (8, '16/116', '7'), (9, '16/116', '7'), (10, '16/116', '7'), (11, '16/116', '7'), (12, '16/116', '7')]
+result {'how': 'over', 'turn': '21', 'pdead': '6', 'hdead': '61'}
+alive of AI side by turn: [(1, 54), (2, 50), (3, 42), (4, 33), (5, 29), (6, 24), (7, 19), (8, 17), (9, 11), (10, 8), (11, 9), (12, 7), (13, 5), (14, 5)]

@@ -21,6 +21,7 @@
 #include "Surface.h"
 #include "FileMap.h"
 #include "Unicode.h"
+#include "Exception.h"
 
 namespace OpenXcom
 {
@@ -55,6 +56,9 @@ void Font::load(const YAML::YamlNodeReader& reader)
 	int height = reader["height"].readVal(0);
 	int spacing = reader["spacing"].readVal(0);
 	_monospace = reader["monospace"].readVal(_monospace);
+	// the first character of the file: the stand-in for '?' when the font has none (the table has no order of its own)
+	UCode first = 0;
+	bool haveFirst = false;
 	for (const auto& imageReader : reader["images"].children())
 	{
 		FontImage image;
@@ -67,6 +71,22 @@ void Font::load(const YAML::YamlNodeReader& reader)
 		image.surface->loadImage(file);
 		_images.push_back(image);
 		init(_images.size() - 1, chars);
+		if (!haveFirst && !chars.empty())
+		{
+			first = chars[0];
+			haveFirst = true;
+		}
+	}
+	if (_chars.empty())
+	{
+		// the sizes of the font are those of its first image, and there is nothing to draw a character with
+		throw Exception("Invalid font: no images or no characters.");
+	}
+	if (_chars.find('?') == _chars.end())
+	{
+		// every character the font lacks is drawn as '?': a font without it draws them as the first character of its
+		// first image (as that character is drawn in the end, should a later image map it again)
+		_chars['?'] = _chars.at(first);
 	}
 }
 
@@ -105,6 +125,10 @@ void Font::init(size_t index, const UString &str)
 {
 	FontImage *image = &_images[index];
 	Surface *surface = image->surface;
+	if (image->width <= 0 || image->height <= 0 || surface->getWidth() < image->width)
+	{
+		throw Exception("Invalid font image: the size of a character is zero or wider than the image.");
+	}
 	surface->lock();
 	int length = (surface->getWidth() / image->width);
 

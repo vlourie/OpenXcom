@@ -71,6 +71,8 @@ private:
 	const UfoTrajectory *_trajectory;
 	size_t _trajectoryPoint;
 	bool _detected, _hyperDetected, _processedIntercept;
+	bool _baseDefenseDone = false; ///< the defences of the attacked base have fired at it (see getBaseDefenseDone)
+	bool _hdDecoded;    ///< has a hyper-wave decoder ever read it (the HD globe's outline; no effect on the game)
 	int _shootingAt, _hitFrame, _fireCountdown, _escapeCountdown;
 	RuleUfoStats _stats;
 	/// Calculates a new speed vector to the destination.
@@ -89,6 +91,8 @@ private:
 
 	void backupOriginalDestination();
 public:
+	/// Lua: the tags, the same ones the script reads.
+	const ScriptValues<Ufo> &getScriptValuesRaw() const { return _scriptValues; }
 	/// Creates a UFO of the specified type.
 	Ufo(const RuleUfo *rules, int uniqueId, int hunterKillerPercentage = 0, int huntMode = 0, int huntBehavior = 0);
 	/// Cleans up the UFO.
@@ -175,6 +179,13 @@ public:
 	bool getHyperDetected() const;
 	/// Sets the UFO's hyper detection status.
 	void setHyperDetected(bool hyperdetected);
+	/// Has a hyper-wave decoder ever read this UFO? Kept in the save; only the HD globe asks it.
+	bool getHdDecoded() const { return _hdDecoded; }
+	/// An assault on a base goes by phases: arrival, the fire of the base's defences, the ground battle. This is set
+	/// when the defences have fired at this UFO; if the battle then cannot be generated, the assault is tried again
+	/// from the battle, not from the defences. Saved as "baseDefenseDone" only when set; a save without it is as before.
+	bool getBaseDefenseDone() const { return _baseDefenseDone; }
+	void setBaseDefenseDone(bool done) { _baseDefenseDone = done; }
 	/// Gets the UFO's progress on the trajectory track.
 	size_t getTrajectoryPoint() const { return _trajectoryPoint; }
 	/// Sets the UFO's progress on the trajectory track.

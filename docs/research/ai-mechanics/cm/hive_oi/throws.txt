@@ -1,0 +1,49 @@
+AISTATE kinds {'before': 49, 'aistart': 223, 'pstart': 214, 'end': 19}
+==== cc3_CO_M6_s1
+throws 6
+-- AI turn 1: 5 throws
+   1000006 from (36,14,0) to (36,33,2) tu 42 src sniper units in radius: 444@5 545@4 520@0 543@4 503@4
+   1000010 from (19,28,0) to (31,25,2) tu 38 src grenade units in radius: 448@0 444@4 543@4 503@5
+   1000017 from (44,12,0) to (36,29,2) tu 74 src sniper units in radius: 448@5 470@5 444@5 520@4 543@3 503@0
+   1000025 from (2,25,0) to (32,36,2) tu 74 src sniper units in radius: 545@0 520@4
+   1000027 from (46,30,2) to (36,33,2) tu 62 src sniper units in radius: 444@5 545@4 520@0 543@4 503@4
+-- AI turn 2: 1 throws
+   1000009 from (8,26,0) to (31,31,0) tu 63 src grenade units in radius: 448@0 545@5
+carriers 20 threw 6 throws 6
+carrier-turns where the engine's list had a legal throw with TU: 19  decisions: 26  carriers with at least one: 14
+carriers killed without having thrown: 6 of 12
+AISTATE kinds {'before': 45, 'aistart': 470, 'pstart': 459, 'end': 4}
+==== scpa_D_M6_s2
+throws 2
+-- AI turn 2: 1 throws
+   1000026 from (3,40,0) to (22,20,0) tu 68 src sniper units in radius: 545@4 454@0
+-- AI turn 9: 1 throws
+   1000024 from (28,15,0) to (42,41,0) tu 50 src sniper units in radius: 448@0
+carriers 18 threw 2 throws 2
+carrier-turns where the engine's list had a legal throw with TU: 20  decisions: 30  carriers with at least one: 14
+carriers killed without having thrown: 15 of 17
+AISTATE kinds {'before': 90, 'aistart': 479, 'pstart': 435, 'end': 5}
+==== scpa_D_M3_s1
+throws 15
+-- AI turn 1: 6 throws
+   1000013 from (50,3,0) to (39,12,0) tu 52 src sniper units in radius: 470@5 545@2 520@3 503@0
+   1000019 from (35,65,3) to (15,55,0) tu 52 src sniper units in radius: 
+   1000032 from (67,38,0) to (53,39,3) tu 52 src sniper units in radius: 
+   1000035 from (22,16,2) to (33,14,2) tu 52 src grenade units in radius: 448@4 470@2 444@0 545@4 520@5
+   1000044 from (52,57,0) to (53,59,3) tu 52 src sniper units in radius: 
+   1000045 from (4,37,0) to (8,48,0) tu 36 src sniper units in radius: 
+-- AI turn 2: 7 throws
+   1000010 from (38,57,0) to (44,24,0) tu 52 src sniper units in radius: 470@2 503@0
+   1000011 from (38,57,0) to (44,24,0) tu 36 src sniper units in radius: 470@2 503@0
+   1000028 from (3,7,0) to (32,10,2) tu 52 src sniper units in radius: 448@0 545@5
+   1000034 from (54,31,3) to (52,11,3) tu 44 src sniper units in radius: 
+   1000042 from (25,18,0) to (37,12,2) tu 52 src sniper units in radius: 448@5 545@0
+   1000050 from (4,18,0) to (19,20,0) tu 52 src sniper units in radius: 
+   1000055 from (3,7,0) to (32,10,2) tu 41 src sniper units in radius: 448@0 545@5
+-- AI turn 3: 1 throws
+   1000055 from (3,7,0) to (32,12,2) tu 57 src sniper units in radius: 545@0
+-- AI turn 12: 1 throws
+   1000020 from (48,46,0) to (51,45,0) tu 52 src sniper units in radius: 444@0
+carriers 45 threw 14 throws 15
+carrier-turns where the engine's list had a legal throw with TU: 84  decisions: 135  carriers with at least one: 39
+carriers killed without having thrown: 29 of 43

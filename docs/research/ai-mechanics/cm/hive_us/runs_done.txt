@@ -1,0 +1,6 @@
+1 QN M6 s1 turns=8
+2 QN M3 s1 turns=8
+3 QN M8 s1 turns=8
+4 QO M6 s1 turns=8
+5 QS M6 s1 turns=8
+6 QN M6 s1 turns=8

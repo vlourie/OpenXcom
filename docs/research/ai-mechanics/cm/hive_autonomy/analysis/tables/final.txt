@@ -1,0 +1,44 @@
+===== M6 s1
+  cc3_CO_M6_s1 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 21, 'F2_rolled_escape_kept': 21, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 0, 'stand_attack': 0, 'stand_combat_walk': 0, 'stand_esc_dice': 0, 'stand_esc_kept': 0, 'stand_stood_mode0': 0}
+    units {'no_answer_ut': 155}
+    tu {'has_tumax': 0, 'rises': 0} stability {}
+  cc8_CC_M6_s1 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 26, 'F2_rolled_escape_kept': 26, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 0, 'stand_attack': 0, 'stand_combat_walk': 0, 'stand_esc_dice': 0, 'stand_esc_kept': 0, 'stand_stood_mode0': 0}
+    units {'no_answer_ut': 179}
+    tu {'has_tumax': 0, 'rises': 0} stability {'savecheck': 8, 'savecheck_bad': 0}
+  ra1_AN_M6_s1 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 22, 'F2_rolled_escape_kept': 22, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 5, 'stand_attack': 49, 'stand_combat_walk': 10, 'stand_esc_dice': 4, 'stand_esc_kept': 1, 'stand_stood_mode0': 79}
+    units {'FREE_acted_after_answer': 35, 'FREE_attacked': 15, 'FREE_end_tu_idle': 272, 'FREE_moved': 40, 'FREE_nothing': 0, 'FREE_tu_spent': 3195, 'FREE_ut': 43, 'STAND_acted_after_answer': 31, 'STAND_attacked': 29, 'STAND_end_tu_idle': 2819, 'STAND_moved': 17, 'STAND_nothing': 20, 'STAND_tu_spent': 2369, 'STAND_ut': 54, 'no_answer_ut': 43}
+    tu {'has_tumax': 0, 'rises': 0} stability {'savecheck': 6, 'savecheck_bad': 0}
+  org CC {'squads': 9, 'tasks': 20, 'kinds': {'contact': 14, None: 4, 'sector_node': 2}, 'assigns': {'MAINTAIN': 7, 'ENGAGE': 9, 'REINFORCE': 5}, 'orders': {'SEARCH:GO': 54, 'SEARCH:STAY': 8, 'HOLD:STAY': 56, 'HOLD:GO': 15}, 'commanders': 9}
+  org RA {'squads': 9, 'tasks': 16, 'kinds': {'contact': 11, None: 5}, 'assigns': {'MAINTAIN': 5, 'ENGAGE': 8, 'REINFORCE': 3}, 'orders': {'SEARCH:GO': 48, 'SEARCH:STAY': 1, 'HOLD:STAY': 50, 'HOLD:GO': 6}, 'commanders': 9}
+  organization lines the same: True
+===== M6 s2
+  scpa_D_M6_s2 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 22, 'F2_rolled_escape_kept': 22, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 0, 'stand_attack': 0, 'stand_combat_walk': 0, 'stand_esc_dice': 0, 'stand_esc_kept': 0, 'stand_stood_mode0': 0}
+    units {'no_answer_ut': 170}
+    tu {'has_tumax': 0, 'rises': 0} stability {}
+  cc5_CC_M6_s2 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 21, 'F2_rolled_escape_kept': 21, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 0, 'stand_attack': 0, 'stand_combat_walk': 0, 'stand_esc_dice': 0, 'stand_esc_kept': 0, 'stand_stood_mode0': 0}
+    units {'no_answer_ut': 158}
+    tu {'has_tumax': 0, 'rises': 0} stability {'savecheck': 8, 'savecheck_bad': 0}
+  ra2_AN_M6_s2 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 33, 'F2_rolled_escape_kept': 33, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 19, 'stand_attack': 11, 'stand_combat_walk': 8, 'stand_esc_dice': 3, 'stand_esc_kept': 0, 'stand_stood_mode0': 28}
+    units {'FREE_acted_after_answer': 86, 'FREE_attacked': 20, 'FREE_end_tu_idle': 949, 'FREE_moved': 95, 'FREE_nothing': 0, 'FREE_tu_spent': 6736, 'FREE_ut': 98, 'STAND_acted_after_answer': 8, 'STAND_attacked': 7, 'STAND_end_tu_idle': 1135, 'STAND_moved': 7, 'STAND_nothing': 10, 'STAND_tu_spent': 631, 'STAND_ut': 18, 'no_answer_ut': 61}
+    tu {'has_tumax': 0, 'rises': 0} stability {'savecheck': 8, 'savecheck_bad': 0}
+  org CC {'squads': 8, 'tasks': 31, 'kinds': {'contact': 13, None: 4, 'sector_node': 14}, 'assigns': {'ENGAGE': 9, 'MAINTAIN': 9, 'REINFORCE': 4}, 'orders': {'SEARCH:GO': 92, 'HOLD:STAY': 21, 'SEARCH:STAY': 19, 'HOLD:GO': 2}, 'commanders': 8}
+  org RA {'squads': 8, 'tasks': 28, 'kinds': {'contact': 16, 'sector_node': 8, None: 4}, 'assigns': {'ENGAGE': 13, 'MAINTAIN': 8, 'REINFORCE': 3}, 'orders': {'SEARCH:GO': 120, 'HOLD:STAY': 18, 'SEARCH:STAY': 14}, 'commanders': 8}
+  organization lines the same: True
+===== M3 s1
+  scpa_D_M3_s1 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 22, 'F2_rolled_escape_kept': 22, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 0, 'stand_attack': 0, 'stand_combat_walk': 0, 'stand_esc_dice': 0, 'stand_esc_kept': 0, 'stand_stood_mode0': 0}
+    units {'no_answer_ut': 267}
+    tu {'has_tumax': 0, 'rises': 0} stability {}
+  cc6_CV_M3_s1 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 28, 'F2_rolled_escape_kept': 28, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 0, 'stand_attack': 0, 'stand_combat_walk': 0, 'stand_esc_dice': 0, 'stand_esc_kept': 0, 'stand_stood_mode0': 0}
+    units {'no_answer_ut': 335}
+    tu {'has_tumax': 0, 'rises': 0} stability {'savecheck': 8, 'savecheck_bad': 0, 'hivesave': 1}
+  ra3_AV_M3_s1 {'F1_stand_art_escape': 0, 'F2_rolled_escape': 36, 'F2_rolled_escape_kept': 36, 'F3_free_held_stand': 0, 'F3_stand_mode0_walk': 0, 'free_mode3_fallback': 3, 'stand_attack': 18, 'stand_combat_walk': 19, 'stand_esc_dice': 5, 'stand_esc_kept': 0, 'stand_stood_mode0': 134}
+    units {'FREE_acted_after_answer': 87, 'FREE_attacked': 39, 'FREE_end_tu_idle': 111, 'FREE_moved': 85, 'FREE_nothing': 1, 'FREE_tu_spent': 5207, 'FREE_ut': 91, 'STAND_acted_after_answer': 18, 'STAND_attacked': 13, 'STAND_end_tu_idle': 3451, 'STAND_moved': 15, 'STAND_nothing': 49, 'STAND_tu_spent': 1103, 'STAND_ut': 71, 'no_answer_ut': 129}
+    tu {'has_tumax': 0, 'rises': 0} stability {'savecheck': 8, 'savecheck_bad': 0, 'hivesave': 1}
+  org CC {'squads': 12, 'tasks': 51, 'kinds': {'contact': 24, 'sector_node': 20, None: 7}, 'assigns': {'ENGAGE': 17, 'MAINTAIN': 17, 'REINFORCE': 7}, 'orders': {'SEARCH:GO': 142, 'HOLD:STAY': 83, 'SEARCH:STAY': 34, 'HOLD:GO': 17}, 'commanders': 12}
+  org RA {'squads': 12, 'tasks': 51, 'kinds': {'contact': 27, 'sector_node': 12, None: 12}, 'assigns': {'ENGAGE': 19, 'MAINTAIN': 15, 'REINFORCE': 8}, 'orders': {'SEARCH:GO': 124, 'HOLD:STAY': 66, 'SEARCH:STAY': 21, 'HOLD:GO': 14}, 'commanders': 12}
+  organization lines the same: True
+===== causal units
+ M6 s1 1000003 {1: {'attacks': 1, 'dmg': 0, 'esc': 1, 'steps_tu': 20}, 2: {'attacks': 2, 'dmg': 0, 'esc': 0, 'steps_tu': 8}} {1: {'attacks': 2, 'dmg': 0, 'esc': 0, 'steps_tu': 13}}
+ M6 s1 1000007 {1: {'attacks': 0, 'dmg': 0, 'esc': 3, 'steps_tu': 62}} {1: {'attacks': 0, 'dmg': 0, 'esc': 0, 'steps_tu': 62}, 2: {'attacks': 0, 'dmg': 0, 'esc': 1, 'steps_tu': 64}}
+ M6 s2 1000000 {1: {'attacks': 2, 'dmg': 0, 'esc': 1, 'steps_tu': 14}} {1: {'attacks': 3, 'dmg': 0, 'esc': 0, 'steps_tu': 0}, 2: {'attacks': 1, 'dmg': 0, 'esc': 0, 'steps_tu': 0}}
+ M3 s1 1000006 {1: {'attacks': 0, 'dmg': 0, 'esc': 1, 'steps_tu': 4}, 2: {'attacks': 0, 'dmg': 0, 'esc': 1, 'steps_tu': 8}} {1: {'attacks': 3, 'dmg': 11, 'esc': 0, 'steps_tu': 1}, 2: {'attacks': 3, 'dmg': 9, 'esc': 0, 'steps_tu': 0}}

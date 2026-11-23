@@ -40,6 +40,7 @@ namespace OpenXcom
  */
 OptionsConfirmState::OptionsConfirmState(OptionsOrigin origin) : _origin(origin), _countdown(15)
 {
+	setHdScreen("optionsDialog");
 	_screen = false;
 
 	// Create objects

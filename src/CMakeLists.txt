@@ -7,6 +7,7 @@ set ( root_src
 set ( basescape_src
   Basescape/BaseInfoState.cpp
   Basescape/BasescapeState.cpp
+  Basescape/BaseSwitch.cpp
   Basescape/BaseView.cpp
   Basescape/BuildFacilitiesState.cpp
   Basescape/CraftArmorState.cpp
@@ -21,12 +22,16 @@ set ( basescape_src
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/GlobalAlienContainmentState.cpp
+  Basescape/GlobalTransfersState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchDiaryState.cpp
   Basescape/GlobalResearchState.cpp
   Basescape/ItemLocationsState.cpp
+  Basescape/ItemCountTooltip.cpp
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
+  Basescape/ManufactureDeliveryPlanState.cpp
+  Basescape/ManufactureDeliveryState.cpp
   Basescape/ManufactureInfoState.cpp
   Basescape/ManufactureStartState.cpp
   Basescape/ManufactureState.cpp
@@ -58,9 +63,12 @@ set ( basescape_src
   Basescape/SoldierTransformationState.cpp
   Basescape/SoldierTransformationListState.cpp
   Basescape/SoldierTransformState.cpp
+  Basescape/SoldierVoiceState.cpp
   Basescape/StoresState.cpp
   Basescape/TechTreeSelectState.cpp
   Basescape/TechTreeViewerState.cpp
+  Basescape/TradeConfirmState.cpp
+  Basescape/TrainingBlocksState.cpp
   Basescape/TransferBaseState.cpp
   Basescape/TransferConfirmState.cpp
   Basescape/TransferItemsState.cpp
@@ -72,9 +80,15 @@ set ( battlescape_src
   Battlescape/ActionMenuItem.cpp
   Battlescape/ActionMenuState.cpp
   Battlescape/AIModule.cpp
+  Battlescape/AiCandidates.cpp
+  Battlescape/AiCoverMap.cpp
+  Battlescape/AiProbe.cpp
   Battlescape/AlienInventory.cpp
   Battlescape/AlienInventoryState.cpp
   Battlescape/AliensCrashState.cpp
+  Battlescape/CollapseCore.cpp
+  Battlescape/CollapsePilot.cpp
+  Battlescape/CollapsePilotData.cpp
   Battlescape/BattlescapeGame.cpp
   Battlescape/BattlescapeGenerator.cpp
   Battlescape/BattlescapeMessage.cpp
@@ -84,6 +98,7 @@ set ( battlescape_src
   Battlescape/BriefingState.cpp
   Battlescape/Camera.cpp
   Battlescape/CannotReequipState.cpp
+  Battlescape/ReequipManufactureState.cpp
   Battlescape/CommendationLateState.cpp
   Battlescape/CommendationState.cpp
   Battlescape/ConfirmEndMissionState.cpp
@@ -101,7 +116,17 @@ set ( battlescape_src
   Battlescape/InventorySaveState.cpp
   Battlescape/InventoryState.cpp
   Battlescape/ItemSprite.cpp
+  Battlescape/KnowledgeArmor.cpp
   Battlescape/Map.cpp
+  Battlescape/MapWeather.cpp
+  Battlescape/MapOverlay.cpp
+  Battlescape/MapCell.cpp
+  Battlescape/MapFx.cpp
+  Battlescape/MapLight.cpp
+  Battlescape/MapSteps.cpp
+  Battlescape/MapAim.cpp
+  Battlescape/MapShadows.cpp
+  Battlescape/MapEdge.cpp
   Battlescape/MedikitState.cpp
   Battlescape/MedikitView.cpp
   Battlescape/MeleeAttackBState.cpp
@@ -122,6 +147,7 @@ set ( battlescape_src
   Battlescape/ScannerState.cpp
   Battlescape/ScannerView.cpp
   Battlescape/SkillMenuState.cpp
+  Battlescape/SoldierStatChangeState.cpp
   Battlescape/TileEngine.cpp
   Battlescape/TurnDiaryState.cpp
   Battlescape/UnitDieBState.cpp
@@ -129,6 +155,7 @@ set ( battlescape_src
   Battlescape/UnitInfoState.cpp
   Battlescape/UnitPanicBState.cpp
   Battlescape/UnitSprite.cpp
+  Battlescape/UnitTeleportingState.cpp
   Battlescape/UnitTurnBState.cpp
   Battlescape/UnitWalkBState.cpp
   Battlescape/WarningMessage.cpp
@@ -140,17 +167,64 @@ set ( engine_src
   Engine/Adlib/fmopl.cpp
   Engine/AdlibMusic.cpp
   Engine/CatFile.cpp
+  Engine/CrashTrace.cpp
   Engine/CrossPlatform.cpp
   Engine/FastLineClip.cpp
+  Engine/Feedback.cpp
   Engine/FileMap.cpp
   Engine/FlcPlayer.cpp
   Engine/Font.cpp
   Engine/Game.cpp
   Engine/GMCat.cpp
+  Engine/HdBase.cpp
+  Engine/HdBaseLife.cpp
+  Engine/HdBaseScene.cpp
+  Engine/HdCraftBack.cpp
+  Engine/HdCraftLights.cpp
+  Engine/HdCraftRoute.cpp
+  Engine/HdFx.cpp
+  Engine/HdShots.cpp
+  Engine/HdItems.cpp
+  Engine/HdOutline.cpp
+  Engine/HdRadar.cpp
+  Engine/HdPilotVoice.cpp
+  Engine/HdBattleHud.cpp
+  Engine/HdKillCam.cpp
+  Engine/HdVideo.cpp
+  Engine/HdBlit.cpp
+  Engine/HdCanvas.cpp
+  Engine/HdSmooth.cpp
+  Engine/HdSmoke.cpp
+  Engine/HdFire.cpp
+  Engine/HdWeather.cpp
+  Engine/HdWeatherExtras.cpp
+  Engine/HdUi.cpp
+  Engine/HdSprites.cpp
+  Engine/HdPaletteShift.cpp
+  Engine/HdUiArt.cpp
+  Engine/HdFont.cpp
+  Engine/HdUiDraw.cpp
+  Engine/HdScreens.cpp
+  Engine/HdTest.cpp
+  Engine/HdControl.cpp
+  Engine/HdWorkers.cpp
+  Engine/HdGpu.cpp
+  Engine/HdGpuCanvas.cpp
+  Engine/HdGpuWorld.cpp
+  Engine/HdTurn.cpp
+  Engine/HdTurnGroups.cpp
+  Engine/HdUpdateNotice.cpp
+  Engine/HdChatNotice.cpp
+  Engine/HdPlateCanvas.cpp
+  Engine/HdTrackNotice.cpp
+  Interface/MusicNoteButton.cpp
+  Engine/HdScreenThemes.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp
   Engine/LanguagePlurality.cpp
   Engine/LocalizedText.cpp
+  Engine/LuaSandbox.cpp
+  Engine/ModCheck.cpp
   Engine/ModInfo.cpp
   Engine/Music.cpp
   Engine/OpenGL.cpp
@@ -190,6 +264,7 @@ set ( geoscape_src
   Geoscape/BuildNewBaseState.cpp
   Geoscape/ConfirmCydoniaState.cpp
   Geoscape/ConfirmDestinationState.cpp
+  Geoscape/CraftLaunchState.cpp
   Geoscape/ConfirmLandingState.cpp
   Geoscape/ConfirmNewBaseState.cpp
   Geoscape/CraftErrorState.cpp
@@ -202,6 +277,7 @@ set ( geoscape_src
   Geoscape/FundingState.cpp
   Geoscape/GeoscapeCraftState.cpp
   Geoscape/GeoscapeEventState.cpp
+  Geoscape/GeoscapeGlobalTransfers.cpp
   Geoscape/GeoscapeState.cpp
   Geoscape/Globe.cpp
   Geoscape/GraphsState.cpp
@@ -253,14 +329,17 @@ set ( interface_src
 
 set ( menu_src
   Menu/AbandonGameState.cpp
+  Menu/AdultChoiceState.cpp
   Menu/ConfirmLoadState.cpp
   Menu/CutsceneState.cpp
   Menu/DeleteGameState.cpp
   Menu/ErrorMessageState.cpp
+  Menu/GentleChoiceState.cpp
   Menu/ListGamesState.cpp
   Menu/ListLoadOriginalState.cpp
   Menu/ListLoadState.cpp
   Menu/ListSaveState.cpp
+  Menu/LanguageChoiceState.cpp
   Menu/LoadGameState.cpp
   Menu/MainMenuState.cpp
   Menu/NewBattleState.cpp
@@ -274,11 +353,20 @@ set ( menu_src
   Menu/OptionsControlsState.cpp
   Menu/OptionsDefaultsState.cpp
   Menu/OptionsFoldersState.cpp
+  Menu/OptionDetailState.cpp
+  Menu/OptionsCustomColorState.cpp
+  Menu/OptionsButtonFaceState.cpp
+  Menu/OptionsButtonInkState.cpp
+  Menu/OptionsScreenThemesState.cpp
+  Menu/HdLabPasswordState.cpp
+  Menu/OptionsHdState.cpp
   Menu/OptionsGeoscapeState.cpp
   Menu/ModConfirmExtendedState.cpp
   Menu/ModListState.cpp
+  Menu/ReportsState.cpp
   Menu/OptionsNoAudioState.cpp
   Menu/OptionsVideoState.cpp
+  Menu/LuaScreenState.cpp
   Menu/PauseState.cpp
   Menu/SaveGameState.cpp
   Menu/SetWindowedRootState.cpp
@@ -300,6 +388,7 @@ set ( mod_src
   Mod/ExtraSounds.cpp
   Mod/ExtraSprites.cpp
   Mod/ExtraStrings.cpp
+  Mod/LuaHost.cpp
   Mod/MapBlock.cpp
   Mod/MapData.cpp
   Mod/MapDataSet.cpp
@@ -340,6 +429,7 @@ set ( mod_src
   Mod/RuleTerrain.cpp
   Mod/RuleUfo.cpp
   Mod/RuleVideo.cpp
+  Mod/RuleVoiceSet.cpp
   Mod/RuleWeaponSet.cpp
   Mod/SoldierNamePool.cpp
   Mod/SoundDefinition.cpp
@@ -455,8 +545,22 @@ set ( cxx_src
 
 set ( c_src
   ../libs/miniz/miniz.c
+  ../libs/lua/oxce_lua.cpp
 )
 set_property ( SOURCE ${c_src} APPEND PROPERTY COMPILE_DEFINITIONS MINIZ_NO_STDIO )
+
+# the packed collapse pilot table (tools/collapse_blob.py) built into the exe; the stand build takes the experimental
+# buildings too
+if ( OXCE_AI_DEV )
+  set ( collapse_blob_in "${CMAKE_CURRENT_SOURCE_DIR}/Battlescape/CollapsePilotData.bin" )
+else ()
+  set ( collapse_blob_in "${CMAKE_CURRENT_SOURCE_DIR}/Battlescape/CollapsePilotData.player.bin" )
+endif ()
+set ( collapse_blob_c "${CMAKE_CURRENT_BINARY_DIR}/CollapsePilotBlob.c" )
+add_custom_command ( OUTPUT "${collapse_blob_c}"
+  COMMAND ${CMAKE_COMMAND} -DIN=${collapse_blob_in} -DOUT=${collapse_blob_c} -DNAME=collapse_blob -P "${CMAKE_SOURCE_DIR}/cmake/bin2c.cmake"
+  DEPENDS "${collapse_blob_in}" "${CMAKE_SOURCE_DIR}/cmake/bin2c.cmake" VERBATIM )
+set ( c_src ${c_src} "${collapse_blob_c}" )
 set_property ( SOURCE Engine/Scalers/xbrz.cpp APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused\ )
 
 set ( data_install_dir bin )
@@ -485,6 +589,11 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES 
   set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wignored-qualifiers\ )
   set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused-parameter\ )
   set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-inline\ )
+  # the answer of a [[nodiscard]] function left unlooked at (HdWorkers::run: a batch that is not whole would be
+  # kept) stops the build. Windows only: elsewhere the C library marks its own functions the same way
+  if ( WIN32 )
+    set_property ( SOURCE ${cxx_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Werror=unused-result\ )
+  endif ()
   if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
     # apple clang 11.0 goes crazy with -Wshadow on the yaml-cpp source code
     set_property ( SOURCE ${cxx_src} ${c_src} APPEND_STRING PROPERTY COMPILE_FLAGS -Wshadow\ )
@@ -538,6 +647,8 @@ endif ()
 if ( WIN32 )
   set ( application_type WIN32 )
   set ( openxcom_icon OpenXcom.rc )
+  # Ninja does not scan .rc includes: rebuild the version resource when version.h changes
+  set_source_files_properties ( OpenXcom.rc PROPERTIES OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version.h;${CMAKE_CURRENT_SOURCE_DIR}/resource.h" )
 endif ()
 
 if ( UNIX AND EMBED_ASSETS )
@@ -599,6 +710,11 @@ endif ()
 
 add_executable ( openxcom  ${application_type} ${openxcom_src} ${openxcom_icon} )
 
+# tests/parsers: the tests of the data parsers linked with the game's own code - a build of its own, never the player's
+if ( OXCE_PARSERS_TEST )
+  include ( "${OXCE_PARSERS_TEST}/hook.cmake" )
+endif ()
+
 if ( EMBED_ASSETS )
   add_dependencies(openxcom zips)
 endif ()
@@ -621,11 +737,38 @@ if (${CMAKE_SYSTEM_NAME} MATCHES FreeBSD OR ${CMAKE_SYSTEM_NAME} MATCHES NetBSD 
 endif ()
 
 if (WIN32)
-  set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
+  # crashDump names functions by the export table (dbghelp reads only it, checked 27.10): the COFF symbol table
+  # (12 MB of the exe) is not read by anything. A Debug build keeps its symbols for the debugger instead: without
+  # inlining it has more functions than an export table holds (ld: "export ordinal too large", 65535 at most)
+  if ( NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
+    set(CMAKE_EXE_LINKER_FLAGS "-Wl,--export-all-symbols -s")
+  endif ()
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)
 
-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
+if ( OXCE_BUNDLED_SDL_IMAGE )
+  # SDL_image 1.2 of the fixed SDL-1.2 branch, all the formats the package of MSYS2 had (libs/SDL_image/README_OXCE.md)
+  set ( sdl_image_dir ${CMAKE_SOURCE_DIR}/libs/SDL_image )
+  add_library ( oxce_sdl_image STATIC
+    ${sdl_image_dir}/IMG.c ${sdl_image_dir}/IMG_bmp.c ${sdl_image_dir}/IMG_gif.c ${sdl_image_dir}/IMG_jpg.c
+    ${sdl_image_dir}/IMG_lbm.c ${sdl_image_dir}/IMG_pcx.c ${sdl_image_dir}/IMG_png.c ${sdl_image_dir}/IMG_pnm.c
+    ${sdl_image_dir}/IMG_tga.c ${sdl_image_dir}/IMG_tif.c ${sdl_image_dir}/IMG_webp.c ${sdl_image_dir}/IMG_xcf.c
+    ${sdl_image_dir}/IMG_xpm.c ${sdl_image_dir}/IMG_xv.c )
+  target_compile_definitions ( oxce_sdl_image PRIVATE LOAD_BMP LOAD_GIF LOAD_JPG LOAD_LBM LOAD_PCX LOAD_PNG LOAD_PNM
+    LOAD_TGA LOAD_TIF LOAD_WEBP LOAD_XCF LOAD_XPM LOAD_XV )
+  # (the code of others: its warnings are not ours to fix; the flags of the game's build type apply as to any file)
+  target_compile_options ( oxce_sdl_image PRIVATE -w )
+  set ( system_libs ${system_libs} oxce_sdl_image )
+endif ()
+
+if ( WIN32 )
+  # static MSYS2/MinGW link set for the portable Windows build
+  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )
+else ()
+  # the HD renderer draws on std::thread workers
+  find_package ( Threads REQUIRED )
+  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} Threads::Threads )
+endif ()
 
 # Pack libraries into bundle and link executable appropriately
 if ( APPLE AND CREATE_BUNDLE )
@@ -652,7 +795,7 @@ if ( NOT EMBED_ASSETS )
 endif ()
 
 # Copy Windows DLLs to bin folder
-if ( WIN32 )
+if ( FALSE )
   if ( CMAKE_CL_64 )
     file ( GLOB Windows_dll "${DEPS_DIR}/lib/x64/*.dll" )
   else ( )

@@ -1,0 +1,208 @@
+==== scpa_D_M3_s1: lines of fire from 10 logs of M3_s1: 21968
+ t2 target 470 at (42,23,0) dir 3 hp 138/168: 3 capable
+     1000000 CHRYSSALID_T CHRYSSALID_W from (40,54,3) tu 181: cell (42, 22, 0) way 166 shots 1 arc rear eyes 0 | D0: no attack
+     1000001 CHRYSSALID_T CHRYSSALID_W from (16,35,0) tu 181: cell (41, 23, 0) way 166 shots 1 arc rear eyes 0 | D0: no attack
+     1000057 ERIDIAN_LEAD PIR_PLASMA_R from (14,5,0) tu 77: cell (11, 7, 0) way 16 shots 3 arc rear eyes 1 | D0: no attack
+ t3 target 470 at (43,24,0) dir 3 hp 132/168: 3 capable
+     1000000 CHRYSSALID_T CHRYSSALID_W from (40,54,3) tu 181: cell (43, 23, 0) way 160 shots 1 arc rear eyes 2 | D0: no attack
+     1000001 CHRYSSALID_T CHRYSSALID_W from (11,37,0) tu 181: cell (42, 24, 0) way 150 shots 2 arc rear eyes 2 | D0: no attack
+     1000005 CHRYSSALID_T CHRYSSALID_W from (43,59,0) tu 181: cell (42, 24, 0) way 166 shots 1 arc rear eyes 2 | D0: no attack
+ t4 target 444 at (16,34,0) dir 4 hp 91/170: 2 capable
+     1000000 CHRYSSALID_T CHRYSSALID_W from (41,55,3) tu 181: cell (17, 36, 0) way 154 shots 1 arc front eyes 1 | D0: no attack
+     1000005 CHRYSSALID_T CHRYSSALID_W from (40,54,3) tu 181: cell (17, 33, 0) way 164 shots 1 arc rear eyes 0 | D0: no attack
+ t4 target 470 at (42,26,0) dir 5 hp 132/168: 2 capable
+     1000000 CHRYSSALID_T CHRYSSALID_W from (41,55,3) tu 181: cell (44, 25, 0) way 144 shots 2 arc rear eyes 0 | D0: no attack
+     1000005 CHRYSSALID_T CHRYSSALID_W from (40,54,3) tu 181: cell (44, 25, 0) way 146 shots 2 arc rear eyes 0 | D0: no attack
+ t5 target 444 at (16,49,0) dir 4 hp 71/170: 2 capable
+     1000000 CHRYSSALID_T CHRYSSALID_W from (44,32,3) tu 181: cell (18, 48, 0) way 150 shots 2 arc rear eyes 0 | D0: no attack
+     1000005 CHRYSSALID_T CHRYSSALID_W from (40,54,3) tu 181: cell (18, 48, 0) way 100 shots 5 arc rear eyes 0 | D0: no attack
+ t5 target 470 at (46,27,0) dir 4 hp 132/168: 2 capable
+     1000000 CHRYSSALID_T CHRYSSALID_W from (44,32,3) tu 181: cell (45, 26, 0) way 34 shots 9 arc rear eyes 0 | D0: no attack
+     1000005 CHRYSSALID_T CHRYSSALID_W from (40,54,3) tu 181: cell (45, 26, 0) way 150 shots 2 arc rear eyes 0 | D0: no attack
+ t5 target 545 at (14,48,0) dir 4 hp 68/68: 2 capable
+     1000000 CHRYSSALID_T CHRYSSALID_W from (44,32,3) tu 181: cell (15, 47, 0) way 152 shots 1 arc rear eyes 0 | D0: no attack
+     1000005 CHRYSSALID_T CHRYSSALID_W from (40,54,3) tu 181: cell (15, 47, 0) way 114 shots 4 arc rear eyes 0 | D0: no attack
+target-turns with enough capable fighters: 7
+==== scpa_D_M6_s2: lines of fire from 9 logs of M6_s2: 3292
+ t1 target 444 at (18,40,0) dir 6 hp 170/170: 8 capable
+     1000010 MUTON_NAVIGA GAUSS_RIFLE from (22,43,1) tu 111: cell (23, 46, 1) way 30 shots 2 arc rear eyes 0 | D0: GAUSS_RI@543:17
+     1000016 MUTON_NAVIGA GAUSS_RIFLE from (43,45,0) tu 111: cell (48, 40, 0) way 48 shots 1 arc rear eyes 0 | D0: GAUSS_RI@470:0
+     1000017 MUTON_NAVIGA GAUSS_RIFLE from (16,46,0) tu 111: cell (21, 46, 0) way 78 shots 1 arc rear eyes 0 | D0: GAUSS_RI@470:0;GAUSS_RI@444:0
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (26,46,0) tu 111: cell (23, 46, 1) way 27 shots 2 arc rear eyes 0 | D0: HEAVY_GA@444:0
+     1000022 MUTON_NAVIGA GAUSS_SNIPER from (33,45,0) tu 111: cell (33, 47, 0) way 8 shots 1 arc rear eyes 0 | D0: no attack
+     1000024 MUTON_NAVIGA GAUSS_SNIPER from (37,9,0) tu 111: cell (42, 12, 0) way 30 shots 1 arc rear eyes 2 | D0: no attack
+     1000031 MUTON_ENGINE GAUSS_RIFLE from (34,11,0) tu 84: cell (42, 12, 0) way 34 shots 1 arc rear eyes 2 | D0: no attack
+     1000032 MUTON_ENGINE HEAVY_GAUSS from (34,7,0) tu 96: cell (42, 12, 0) way 48 shots 1 arc rear eyes 2 | D0: no attack
+ t1 target 448 at (16,21,0) dir 3 hp 171/171: 2 capable
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (6,4,0) tu 111: cell (5, 7, 0) way 22 shots 2 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0
+     1000032 MUTON_ENGINE HEAVY_GAUSS from (34,7,0) tu 96: cell (34, 11, 0) way 24 shots 2 arc side eyes 4 | D0: no attack
+ t1 target 470 at (33,18,0) dir 5 hp 168/168: 3 capable
+     1000024 MUTON_NAVIGA GAUSS_SNIPER from (37,9,0) tu 111: cell (43, 13, 0) way 36 shots 1 arc rear eyes 1 | D0: no attack
+     1000031 MUTON_ENGINE GAUSS_RIFLE from (34,11,0) tu 84: cell (43, 13, 0) way 40 shots 1 arc rear eyes 1 | D0: no attack
+     1000032 MUTON_ENGINE HEAVY_GAUSS from (34,7,0) tu 96: cell (43, 13, 0) way 54 shots 1 arc rear eyes 1 | D0: no attack
+ t1 target 545 at (18,20,0) dir 0 hp 68/68: 7 capable
+     1000010 MUTON_NAVIGA GAUSS_RIFLE from (22,43,1) tu 111: cell (22, 43, 1) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@543:17
+     1000016 MUTON_NAVIGA GAUSS_RIFLE from (43,45,0) tu 111: cell (48, 37, 0) way 60 shots 1 arc rear eyes 0 | D0: GAUSS_RI@470:0
+     1000017 MUTON_NAVIGA GAUSS_RIFLE from (16,46,0) tu 111: cell (18, 47, 0) way 66 shots 1 arc rear eyes 0 | D0: GAUSS_RI@470:0;GAUSS_RI@444:0
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (26,46,0) tu 111: cell (23, 45, 0) way 14 shots 2 arc rear eyes 0 | D0: HEAVY_GA@444:0
+     1000022 MUTON_NAVIGA GAUSS_SNIPER from (33,45,0) tu 111: cell (36, 45, 0) way 12 shots 1 arc rear eyes 0 | D0: no attack
+     1000032 MUTON_ENGINE HEAVY_GAUSS from (34,7,0) tu 96: cell (40, 15, 0) way 55 shots 1 arc side eyes 2 | D0: no attack
+     1000036 MUTON_LEADER GAUSS_RIFLE from (4,43,1) tu 134: cell (2, 36, 0) way 73 shots 1 arc rear eyes 1 | D0: GAUSS_RI@448:0
+ t2 target 444 at (8,30,0) dir 0 hp 170/170: 2 capable
+     1000010 MUTON_NAVIGA GAUSS_RIFLE from (22,45,0) tu 111: cell (22, 45, 0) way 0 shots 3 arc rear eyes 1 | D0: GAUSS_RI@543:0;GAUSS_RI@543:25;GAUSS_RI@444:0
+     1000036 MUTON_LEADER GAUSS_RIFLE from (2,43,0) tu 134: cell (2, 42, 0) way 4 shots 3 arc rear eyes 0 | D0: GAUSS_RI@448:0;GAUSS_RI@448:0;GAUSS_RI@444:0
+ t2 target 448 at (16,21,0) dir 0 hp 171/171: 5 capable
+     1000010 MUTON_NAVIGA GAUSS_RIFLE from (22,45,0) tu 111: cell (21, 46, 0) way 6 shots 3 arc rear eyes 1 | D0: GAUSS_RI@543:0;GAUSS_RI@543:25;GAUSS_RI@444:0
+     1000016 MUTON_NAVIGA GAUSS_RIFLE from (48,41,0) tu 111: cell (48, 41, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@454:52
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (21,45,1) tu 111: cell (21, 45, 1) way 0 shots 2 arc rear eyes 1 | D0: HEAVY_GA@545:6;HEAVY_GA@545:46
+     1000022 MUTON_NAVIGA GAUSS_SNIPER from (37,41,0) tu 111: cell (38, 41, 0) way 4 shots 1 arc rear eyes 0 | D0: GAUSS_SN@545:0
+     1000036 MUTON_LEADER GAUSS_RIFLE from (2,43,0) tu 134: cell (2, 42, 0) way 4 shots 3 arc rear eyes 0 | D0: GAUSS_RI@448:0;GAUSS_RI@448:0;GAUSS_RI@444:0
+ t2 target 470 at (44,17,0) dir 1 hp 168/168: 6 capable
+     1000010 MUTON_NAVIGA GAUSS_RIFLE from (22,45,0) tu 111: cell (15, 41, 0) way 36 shots 2 arc rear eyes 0 | D0: GAUSS_RI@543:0;GAUSS_RI@543:25;GAUSS_RI@444:0
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (5,7,0) tu 111: cell (10, 19, 0) way 76 shots 1 arc rear eyes 2 | D0: GAUSS_RI@454:0;GAUSS_RI@545:0;GAUSS_RI@448:0
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (21,45,1) tu 111: cell (24, 43, 2) way 24 shots 2 arc rear eyes 1 | D0: HEAVY_GA@545:6;HEAVY_GA@545:46
+     1000024 MUTON_NAVIGA GAUSS_SNIPER from (41,14,0) tu 111: cell (39, 18, 0) way 26 shots 1 arc rear eyes 1 | D0: no attack
+     1000031 MUTON_ENGINE GAUSS_RIFLE from (36,12,0) tu 96: cell (39, 18, 0) way 46 shots 1 arc rear eyes 1 | D0: GAUSS_RI@545:20;GAUSS_RI@543:91
+     1000036 MUTON_LEADER GAUSS_RIFLE from (2,43,0) tu 134: cell (15, 41, 0) way 60 shots 1 arc rear eyes 0 | D0: GAUSS_RI@448:0;GAUSS_RI@448:0;GAUSS_RI@444:0
+ t2 target 545 at (18,20,0) dir 1 hp 68/68: 3 capable
+     1000010 MUTON_NAVIGA GAUSS_RIFLE from (22,45,0) tu 111: cell (22, 45, 0) way 0 shots 3 arc rear eyes 1 | D0: GAUSS_RI@543:0;GAUSS_RI@543:25;GAUSS_RI@444:0
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (21,45,1) tu 111: cell (21, 45, 1) way 0 shots 2 arc rear eyes 1 | D0: HEAVY_GA@545:6;HEAVY_GA@545:46
+     1000036 MUTON_LEADER GAUSS_RIFLE from (2,43,0) tu 134: cell (0, 36, 0) way 37 shots 2 arc rear eyes 0 | D0: GAUSS_RI@448:0;GAUSS_RI@448:0;GAUSS_RI@444:0
+ t3 target 448 at (17,20,0) dir 7 hp 171/171: 10 capable
+     1000010 MUTON_NAVIGA GAUSS_RIFLE from (22,45,0) tu 111: cell (22, 45, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@448:0;GAUSS_RI@448:0
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (41,6,0) tu 111: cell (40, 15, 0) way 54 shots 1 arc rear eyes 1 | D0: no attack
+     1000016 MUTON_NAVIGA GAUSS_RIFLE from (48,41,0) tu 111: cell (48, 37, 0) way 16 shots 2 arc rear eyes 0 | D0: no attack
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (21,45,1) tu 111: cell (21, 45, 1) way 0 shots 2 arc rear eyes 0 | D0: no attack
+     1000022 MUTON_NAVIGA GAUSS_SNIPER from (37,41,0) tu 111: cell (37, 41, 0) way 0 shots 1 arc rear eyes 0 | D0: GAUSS_SN@448:0
+     1000023 MUTON_NAVIGA GAUSS_RIFLE from (40,6,2) tu 111: cell (40, 15, 0) way 72 shots 1 arc rear eyes 1 | D0: no attack
+     1000024 MUTON_NAVIGA GAUSS_SNIPER from (36,10,0) tu 111: cell (40, 15, 0) way 36 shots 1 arc rear eyes 1 | D0: GAUSS_SN@503:97
+     1000032 MUTON_ENGINE HEAVY_GAUSS from (34,7,0) tu 96: cell (40, 15, 0) way 55 shots 1 arc rear eyes 1 | D0: no attack
+     1000035 MUTON_LEADER GAUSS_RIFLE from (28,5,0) tu 134: cell (40, 10, 1) way 84 shots 1 arc rear eyes 0 | D0: no attack
+     1000036 MUTON_LEADER GAUSS_RIFLE from (2,41,0) tu 134: cell (18, 47, 0) way 88 shots 1 arc rear eyes 0 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0
+ t4 target 444 at (23,14,0) dir 3 hp 170/170: 2 capable
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (9,7,0) tu 111: cell (9, 7, 0) way 0 shots 3 arc rear eyes 0 | D0: no attack
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (6,43,1) tu 111: cell (3, 35, 0) way 46 shots 1 arc side eyes 0 | D0: HEAVY_GA@448:0
+ t4 target 448 at (17,20,0) dir 2 hp 171/171: 3 capable
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (9,7,0) tu 111: cell (9, 7, 0) way 0 shots 3 arc rear eyes 0 | D0: no attack
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (6,43,1) tu 111: cell (2, 38, 1) way 30 shots 2 arc rear eyes 0 | D0: HEAVY_GA@448:0
+     1000036 MUTON_LEADER GAUSS_RIFLE from (15,41,0) tu 134: cell (6, 32, 0) way 57 shots 1 arc rear eyes 0 | D0: GAUSS_RI@448:0
+ t4 target 470 at (36,15,0) dir 6 hp 168/168: 2 capable
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (34,7,0) tu 111: cell (40, 15, 0) way 54 shots 1 arc rear eyes 1 | D0: no attack
+     1000023 MUTON_NAVIGA GAUSS_RIFLE from (43,10,0) tu 111: cell (40, 15, 0) way 32 shots 2 arc rear eyes 1 | D0: GAUSS_RI@470:19;GAUSS_RI@470:29
+ t5 target 444 at (24,38,0) dir 5 hp 170/170: 5 capable
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (26,6,0) tu 111: cell (26, 12, 0) way 32 shots 2 arc rear eyes 1 | D0: HEAVY_GA@448:0
+     1000022 MUTON_NAVIGA GAUSS_SNIPER from (37,38,0) tu 111: cell (37, 38, 0) way 0 shots 1 arc rear eyes 0 | D0: GAUSS_SN@444:34
+     1000032 MUTON_ENGINE HEAVY_GAUSS from (28,10,0) tu 96: cell (26, 12, 0) way 24 shots 2 arc rear eyes 1 | D0: HEAVY_GA@444:0
+     1000035 MUTON_LEADER GAUSS_RIFLE from (28,13,0) tu 134: cell (28, 13, 0) way 0 shots 3 arc rear eyes 1 | D0: no attack
+     1000036 MUTON_LEADER GAUSS_RIFLE from (30,28,0) tu 134: cell (30, 28, 0) way 0 shots 3 arc rear eyes 1 | D0: GAUSS_RI@444:7;GAUSS_RI@444:0;GAUSS_RI@444:0
+ t5 target 448 at (25,17,0) dir 1 hp 171/171: 4 capable
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (4,4,0) tu 111: cell (2, 17, 0) way 64 shots 1 arc rear eyes 0 | D0: GAUSS_RI@448:0
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (2,38,1) tu 111: cell (11, 48, 0) way 66 shots 1 arc rear eyes 1 | D0: HEAVY_GA@444:0;HEAVY_GA@444:0
+     1000022 MUTON_NAVIGA GAUSS_SNIPER from (37,38,0) tu 111: cell (35, 38, 0) way 8 shots 1 arc rear eyes 0 | D0: GAUSS_SN@444:34
+     1000036 MUTON_LEADER GAUSS_RIFLE from (30,28,0) tu 134: cell (30, 28, 0) way 0 shots 3 arc rear eyes 1 | D0: GAUSS_RI@444:7;GAUSS_RI@444:0;GAUSS_RI@444:0
+ t5 target 470 at (34,16,0) dir 5 hp 120/168: 2 capable
+     1000035 MUTON_LEADER GAUSS_RIFLE from (28,13,0) tu 134: cell (40, 15, 0) way 67 shots 1 arc rear eyes 1 | D0: no attack
+     1000036 MUTON_LEADER GAUSS_RIFLE from (30,28,0) tu 134: cell (41, 18, 0) way 73 shots 1 arc rear eyes 1 | D0: GAUSS_RI@444:7;GAUSS_RI@444:0;GAUSS_RI@444:0
+ t6 target 444 at (20,42,0) dir 5 hp 129/170: 3 capable
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (33,10,0) tu 111: cell (28, 14, 0) way 30 shots 2 arc rear eyes 0 | D0: HEAVY_GA@470:46
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (5,41,1) tu 111: cell (7, 35, 0) way 36 shots 1 arc side eyes 0 | D0: HEAVY_GA@444:0
+     1000035 MUTON_LEADER GAUSS_RIFLE from (33,11,0) tu 134: cell (28, 14, 0) way 26 shots 2 arc rear eyes 0 | D0: GAUSS_RI@470:0;GAUSS_RI@448:0
+ t6 target 448 at (28,16,0) dir 2 hp 171/171: 2 capable
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (33,10,0) tu 111: cell (30, 8, 0) way 16 shots 2 arc side eyes 0 | D0: HEAVY_GA@470:46
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (5,41,1) tu 111: cell (8, 46, 0) way 34 shots 2 arc rear eyes 1 | D0: HEAVY_GA@444:0
+ t7 target 470 at (11,20,0) dir 7 hp 74/168: 2 capable
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (40,15,0) tu 111: cell (40, 15, 0) way 0 shots 2 arc rear eyes 0 | D0: HEAVY_GA@-1:0
+     1000018 MUTON_NAVIGA HEAVY_GAUSS from (7,36,0) tu 111: cell (7, 36, 0) way 0 shots 2 arc rear eyes 1 | D0: no attack
+ t9 target 448 at (42,41,0) dir 3 hp 170/171: 2 capable
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (26,6,0) tu 111: cell (28, 15, 0) way 58 shots 1 arc rear eyes 0 | D0: no attack
+     1000024 MUTON_NAVIGA GAUSS_SNIPER from (25,12,0) tu 111: cell (28, 15, 0) way 24 shots 1 arc rear eyes 0 | D0: PIR_ALIE@448:0
+ t12 target 444 at (16,19,0) dir 5 hp 127/170: 2 capable
+     1000013 MUTON_NAVIGA HEAVY_GAUSS from (37,8,2) tu 111: cell (37, 9, 0) way 66 shots 1 arc rear eyes 1 | D0: no attack
+     1000033 MUTON_ENGINE GAUSS_SNIPER from (42,9,0) tu 96: cell (37, 9, 0) way 20 shots 1 arc rear eyes 1 | D0: no attack
+target-turns with enough capable fighters: 20
+==== cc3_CO_M6_s1: lines of fire from 28 logs of M6_s1: 5316
+ t1 target 444 at (31,29,2) dir 7 hp 170/170: 6 capable
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (37,42,2) tu 111: cell (38, 40, 2) way 10 shots 3 arc rear eyes 3 | D0: no attack
+     1000016 MUTON_NAVIGA HEAVY_GAUSS from (8,47,0) tu 111: cell (20, 40, 0) way 62 shots 1 arc side eyes 1 | D0: no attack
+     1000018 MUTON_NAVIGA GAUSS_RIFLE from (14,42,0) tu 111: cell (28, 36, 0) way 68 shots 1 arc rear eyes 2 | D0: GAUSS_RI@520:0
+     1000026 MUTON_NAVIGA GAUSS_RIFLE from (26,30,0) tu 111: cell (28, 36, 0) way 28 shots 2 arc rear eyes 2 | D0: no attack
+     1000027 MUTON_NAVIGA GAUSS_RIFLE from (48,32,2) tu 111: cell (42, 26, 2) way 36 shots 2 arc rear eyes 0 | D0: PIR_ALIE@520:0
+     1000029 MUTON_NAVIGA GAUSS_RIFLE from (20,26,0) tu 111: cell (28, 36, 0) way 56 shots 1 arc rear eyes 2 | D0: GAUSS_RI@470:0;GAUSS_RI@444:0;GAUSS_RI@545:0
+ t1 target 448 at (31,25,2) dir 5 hp 171/171: 8 capable
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (37,42,2) tu 111: cell (42, 26, 2) way 78 shots 1 arc rear eyes 0 | D0: no attack
+     1000017 MUTON_NAVIGA GAUSS_RIFLE from (44,12,0) tu 74: cell (43, 12, 0) way 4 shots 2 arc rear eyes 1 | D0: PIR_ALIE@503:0
+     1000022 MUTON_NAVIGA GAUSS_RIFLE from (41,6,0) tu 111: cell (40, 5, 0) way 6 shots 3 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0;GAUSS_RI@470:0
+     1000023 MUTON_NAVIGA GAUSS_SNIPER from (34,4,0) tu 111: cell (38, 2, 0) way 20 shots 1 arc rear eyes 0 | D0: GAUSS_SN@470:0
+     1000026 MUTON_NAVIGA GAUSS_RIFLE from (26,30,0) tu 111: cell (26, 14, 0) way 64 shots 1 arc rear eyes 1 | D0: no attack
+     1000027 MUTON_NAVIGA GAUSS_RIFLE from (48,32,2) tu 111: cell (42, 26, 2) way 36 shots 2 arc rear eyes 0 | D0: PIR_ALIE@520:0
+     1000029 MUTON_NAVIGA GAUSS_RIFLE from (20,26,0) tu 111: cell (26, 14, 0) way 66 shots 1 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@444:0;GAUSS_RI@545:0
+     1000036 MUTON_ENGINE GAUSS_SNIPER from (45,7,0) tu 96: cell (46, 8, 0) way 6 shots 1 arc rear eyes 1 | D0: GAUSS_SN@470:0
+ t1 target 470 at (39,24,0) dir 0 hp 157/168: 6 capable
+     1000001 MUTON_SOLDIE GAUSS_RIFLE from (42,42,0) tu 96: cell (41, 34, 0) way 38 shots 2 arc rear eyes 2 | D0: GAUSS_RI@545:0
+     1000000 MUTON_SOLDIE GAUSS_RIFLE from (45,48,0) tu 96: cell (43, 46, 0) way 13 shots 2 arc rear eyes 3 | D0: GAUSS_RI@545:0;GAUSS_RI@545:0
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (37,42,2) tu 111: cell (37, 42, 2) way 0 shots 3 arc rear eyes 3 | D0: no attack
+     1000016 MUTON_NAVIGA HEAVY_GAUSS from (8,47,0) tu 111: cell (4, 37, 0) way 48 shots 1 arc side eyes 0 | D0: no attack
+     1000026 MUTON_NAVIGA GAUSS_RIFLE from (26,30,0) tu 111: cell (36, 38, 0) way 56 shots 1 arc rear eyes 3 | D0: no attack
+     1000027 MUTON_NAVIGA GAUSS_RIFLE from (48,32,2) tu 111: cell (48, 32, 2) way 0 shots 3 arc rear eyes 1 | D0: PIR_ALIE@520:0
+ t1 target 545 at (32,36,2) dir 3 hp 68/68: 15 capable
+     1000003 MUTON_SOLDIE GAUSS_RIFLE from (10,40,0) tu 96: cell (10, 37, 0) way 13 shots 2 arc rear eyes 0 | D0: GAUSS_RI@545:0
+     1000008 MUTON_SOLDIE GAUSS_RIFLE from (6,44,0) tu 96: cell (6, 37, 0) way 30 shots 2 arc rear eyes 0 | D0: GAUSS_RI@545:0;GAUSS_RI@545:0
+     1000014 MUTON_NAVIGA GAUSS_RIFLE from (37,42,2) tu 111: cell (28, 36, 0) way 66 shots 1 arc rear eyes 2 | D0: no attack
+     1000016 MUTON_NAVIGA HEAVY_GAUSS from (8,47,0) tu 111: cell (8, 47, 0) way 0 shots 2 arc rear eyes 0 | D0: no attack
+     1000017 MUTON_NAVIGA GAUSS_RIFLE from (44,12,0) tu 74: cell (40, 15, 0) way 24 shots 1 arc rear eyes 1 | D0: PIR_ALIE@503:0
+     1000018 MUTON_NAVIGA GAUSS_RIFLE from (14,42,0) tu 111: cell (9, 37, 0) way 30 shots 2 arc rear eyes 0 | D0: GAUSS_RI@520:0
+     1000022 MUTON_NAVIGA GAUSS_RIFLE from (41,6,0) tu 111: cell (40, 15, 0) way 38 shots 2 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0;GAUSS_RI@470:0
+     1000024 MUTON_NAVIGA GAUSS_RIFLE from (8,26,0) tu 111: cell (8, 26, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0
+     1000025 MUTON_NAVIGA GAUSS_RIFLE from (2,25,0) tu 74: cell (2, 25, 0) way 0 shots 2 arc rear eyes 0 | D0: PIR_ALIE@545:0
+     1000026 MUTON_NAVIGA GAUSS_RIFLE from (26,30,0) tu 111: cell (25, 31, 0) way 6 shots 3 arc rear eyes 1 | D0: no attack
+     1000029 MUTON_NAVIGA GAUSS_RIFLE from (20,26,0) tu 111: cell (20, 27, 0) way 4 shots 3 arc rear eyes 2 | D0: GAUSS_RI@470:0;GAUSS_RI@444:0;GAUSS_RI@545:0
+     1000030 MUTON_SOLDIE GAUSS_RIFLE from (2,39,0) tu 96: cell (3, 37, 0) way 10 shots 3 arc rear eyes 0 | D0: GAUSS_RI@545:0;GAUSS_RI@545:0
+     1000032 MUTON_SOLDIE GAUSS_RIFLE from (4,34,0) tu 96: cell (4, 34, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@470:0
+     1000033 MUTON_SOLDIE GAUSS_RIFLE from (20,15,0) tu 96: cell (20, 25, 0) way 58 shots 1 arc rear eyes 2 | D0: no attack
+     1000035 MUTON_ENGINE GAUSS_RIFLE from (17,19,0) tu 96: cell (20, 25, 0) way 64 shots 1 arc rear eyes 2 | D0: no attack
+ t2 target 444 at (28,17,0) dir 7 hp 74/170: 6 capable
+     1000003 MUTON_SOLDIE GAUSS_RIFLE from (14,38,0) tu 96: cell (16, 43, 0) way 24 shots 2 arc rear eyes 1 | D0: no attack
+     1000016 MUTON_NAVIGA HEAVY_GAUSS from (20,40,0) tu 111: cell (20, 40, 0) way 0 shots 2 arc rear eyes 1 | D0: no attack
+     1000017 MUTON_NAVIGA GAUSS_RIFLE from (44,12,0) tu 111: cell (44, 12, 0) way 0 shots 3 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0;GAUSS_RI@470:0
+     1000022 MUTON_NAVIGA GAUSS_RIFLE from (41,6,0) tu 111: cell (45, 9, 0) way 22 shots 2 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0;GAUSS_RI@470:18
+     1000024 MUTON_NAVIGA GAUSS_RIFLE from (9,34,0) tu 111: cell (20, 40, 0) way 56 shots 1 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@545:0;GAUSS_RI@470:0
+     1000036 MUTON_ENGINE GAUSS_SNIPER from (45,7,0) tu 96: cell (45, 9, 0) way 9 shots 1 arc rear eyes 1 | D0: GAUSS_SN@470:0
+ t2 target 448 at (31,31,0) dir 4 hp 153/171: 7 capable
+     1000003 MUTON_SOLDIE GAUSS_RIFLE from (14,38,0) tu 96: cell (19, 25, 0) way 62 shots 1 arc rear eyes 1 | D0: no attack
+     1000008 MUTON_SOLDIE GAUSS_RIFLE from (10,37,0) tu 96: cell (19, 25, 0) way 66 shots 1 arc rear eyes 1 | D0: GAUSS_RI@470:0
+     1000016 MUTON_NAVIGA HEAVY_GAUSS from (20,40,0) tu 111: cell (29, 29, 0) way 62 shots 1 arc rear eyes 0 | D0: no attack
+     1000024 MUTON_NAVIGA GAUSS_RIFLE from (9,34,0) tu 111: cell (19, 25, 0) way 58 shots 1 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@545:0;GAUSS_RI@470:0
+     1000025 MUTON_NAVIGA GAUSS_RIFLE from (2,25,0) tu 111: cell (19, 25, 0) way 68 shots 1 arc rear eyes 1 | D0: GAUSS_RI@545:0;GAUSS_RI@545:0
+     1000035 MUTON_ENGINE GAUSS_RIFLE from (18,20,0) tu 96: cell (18, 23, 0) way 60 shots 1 arc rear eyes 1 | D0: no attack
+     1000037 MUTON_ENGINE HEAVY_GAUSS from (5,18,0) tu 96: cell (8, 25, 0) way 44 shots 1 arc side eyes 0 | D0: no attack
+ t2 target 470 at (40,23,0) dir 1 hp 157/168: 11 capable
+     1000003 MUTON_SOLDIE GAUSS_RIFLE from (14,38,0) tu 96: cell (9, 37, 0) way 23 shots 2 arc rear eyes 0 | D0: no attack
+     1000008 MUTON_SOLDIE GAUSS_RIFLE from (10,37,0) tu 96: cell (10, 37, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@470:0
+     1000016 MUTON_NAVIGA HEAVY_GAUSS from (20,40,0) tu 111: cell (19, 32, 0) way 34 shots 2 arc rear eyes 1 | D0: no attack
+     1000024 MUTON_NAVIGA GAUSS_RIFLE from (9,34,0) tu 111: cell (9, 34, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@470:0;GAUSS_RI@545:0;GAUSS_RI@470:0
+     1000025 MUTON_NAVIGA GAUSS_RIFLE from (2,25,0) tu 111: cell (4, 27, 0) way 12 shots 3 arc rear eyes 0 | D0: GAUSS_RI@545:0;GAUSS_RI@545:0
+     1000027 MUTON_NAVIGA GAUSS_RIFLE from (46,30,2) tu 111: cell (35, 23, 2) way 58 shots 1 arc rear eyes 0 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0;GAUSS_RI@470:16
+     1000030 MUTON_SOLDIE GAUSS_RIFLE from (4,37,0) tu 96: cell (4, 37, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@470:0
+     1000032 MUTON_SOLDIE GAUSS_RIFLE from (4,34,0) tu 96: cell (4, 34, 0) way 0 shots 3 arc rear eyes 0 | D0: GAUSS_RI@470:0
+     1000033 MUTON_SOLDIE GAUSS_RIFLE from (20,17,2) tu 96: cell (20, 15, 0) way 28 shots 2 arc rear eyes 1 | D0: no attack
+     1000035 MUTON_ENGINE GAUSS_RIFLE from (18,20,0) tu 96: cell (20, 15, 0) way 52 shots 1 arc rear eyes 1 | D0: no attack
+     1000037 MUTON_ENGINE HEAVY_GAUSS from (5,18,0) tu 96: cell (9, 26, 0) way 50 shots 1 arc rear eyes 0 | D0: no attack
+ t2 target 545 at (31,36,0) dir 6 hp 68/68: 2 capable
+     1000016 MUTON_NAVIGA HEAVY_GAUSS from (20,40,0) tu 111: cell (36, 38, 0) way 68 shots 1 arc rear eyes 1 | D0: no attack
+     1000027 MUTON_NAVIGA GAUSS_RIFLE from (46,30,2) tu 111: cell (36, 38, 0) way 72 shots 1 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0;GAUSS_RI@470:16
+ t3 target 444 at (28,17,0) dir 2 hp 61/170: 3 capable
+     1000024 MUTON_NAVIGA GAUSS_RIFLE from (11,34,0) tu 111: cell (17, 38, 0) way 32 shots 2 arc rear eyes 1 | D0: GAUSS_RI@545:0;GAUSS_RI@470:2
+     1000025 MUTON_NAVIGA GAUSS_RIFLE from (4,25,0) tu 111: cell (17, 38, 0) way 78 shots 1 arc rear eyes 1 | D0: GAUSS_RI@448:6
+     1000032 MUTON_SOLDIE GAUSS_RIFLE from (4,34,0) tu 96: cell (8, 47, 0) way 63 shots 1 arc rear eyes 0 | D0: GAUSS_RI@545:0;GAUSS_RI@545:0;GAUSS_RI@470:0
+ t3 target 448 at (30,34,0) dir 4 hp 149/171: 3 capable
+     1000024 MUTON_NAVIGA GAUSS_RIFLE from (11,34,0) tu 111: cell (23, 25, 0) way 66 shots 1 arc rear eyes 0 | D0: GAUSS_RI@545:0;GAUSS_RI@470:2
+     1000025 MUTON_NAVIGA GAUSS_RIFLE from (4,25,0) tu 111: cell (23, 25, 0) way 76 shots 1 arc rear eyes 0 | D0: GAUSS_RI@448:6
+     1000027 MUTON_NAVIGA GAUSS_RIFLE from (46,30,2) tu 111: cell (31, 28, 2) way 68 shots 1 arc rear eyes 1 | D0: GAUSS_RI@470:0;GAUSS_RI@470:0;GAUSS_RI@470:0
+ t3 target 470 at (36,20,0) dir 4 hp 109/168: 3 capable
+     1000017 MUTON_NAVIGA GAUSS_RIFLE from (44,12,0) tu 111: cell (44, 12, 0) way 0 shots 3 arc rear eyes 1 | D0: GAUSS_RI@444:0;GAUSS_RI@444:0;GAUSS_RI@444:0
+     1000022 MUTON_NAVIGA GAUSS_RIFLE from (41,6,0) tu 111: cell (39, 4, 0) way 12 shots 3 arc rear eyes 0 | D0: GAUSS_RI@470:34;GAUSS_RI@470:46;GAUSS_RI@470:0
+     1000036 MUTON_ENGINE GAUSS_SNIPER from (45,9,0) tu 96: cell (39, 4, 0) way 34 shots 1 arc rear eyes 0 | D0: no attack
+ t4 target 448 at (45,19,0) dir 1 hp 143/171: 2 capable
+     1000025 MUTON_NAVIGA GAUSS_RIFLE from (4,25,0) tu 111: cell (16, 29, 0) way 56 shots 1 arc rear eyes 1 | D0: GAUSS_RI@-1:0
+     1000027 MUTON_NAVIGA GAUSS_RIFLE from (46,32,2) tu 111: cell (49, 30, 2) way 16 shots 2 arc rear eyes 0 | D0: GAUSS_RI@448:0;GAUSS_RI@448:0
+target-turns with enough capable fighters: 12

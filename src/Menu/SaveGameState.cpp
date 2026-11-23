@@ -18,6 +18,7 @@
  */
 #include "SaveGameState.h"
 #include <sstream>
+#include <algorithm>
 #include "../Engine/Logger.h"
 #include "../Engine/Game.h"
 #include "../Engine/Exception.h"
@@ -30,6 +31,7 @@
 #include "ErrorMessageState.h"
 #include "MainMenuState.h"
 #include "../Savegame/SavedGame.h"
+#include "../Mod/LuaHost.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 
@@ -82,7 +84,7 @@ SaveGameState::SaveGameState(OptionsOrigin origin, SaveType type, SDL_Color *pal
 		if (currentTurn > 0 && Options::autosaveSlots >= 2 && Options::autosaveSlots <= 10)
 		{
 			// multi-slot autosave
-			int slotIndex = (currentTurn / Options::autosaveFrequency) % Options::autosaveSlots;
+			int slotIndex = (currentTurn / std::max(1, Options::autosaveFrequency)) % Options::autosaveSlots;
 			_filename = "_" + std::to_string(slotIndex) + SavedGame::AUTOSAVE_BATTLESCAPE;
 		}
 		else
@@ -94,6 +96,10 @@ SaveGameState::SaveGameState(OptionsOrigin origin, SaveType type, SDL_Color *pal
 	case SAVE_IRONMAN:
 	case SAVE_IRONMAN_END:
 		_filename = CrossPlatform::sanitizeFilename(_game->getSavedGame()->getName()) + ".sav";
+		break;
+	case SAVE_BATTLE_END:
+		// leaving a battle with no battle saves (Options::oxceNoBattleSaves): the turn autosave is off then, its slot is free
+		_filename = SavedGame::AUTOSAVE_BATTLESCAPE;
 		break;
 	default:
 		break;
@@ -149,12 +155,14 @@ void SaveGameState::buildUi(SDL_Color *palette)
 void SaveGameState::think()
 {
 	State::think();
-	// Make sure it gets drawn properly
-	if (_firstRun < 10)
+	// Make sure it gets drawn properly: the work starts after a frame with this screen (Game::shownSince)
+	if (_firstRun == 0)
 	{
-		_firstRun++;
+		_firstRun = 1;
+		_shownFrame = _game->getFrameCount();
+		_shownSince = SDL_GetTicks();
 	}
-	else
+	if (_game->shownSince(_shownFrame, _shownSince))
 	{
 		_game->popState();
 
@@ -176,10 +184,24 @@ void SaveGameState::think()
 		case SAVE_QUICK:
 		case SAVE_AUTO_GEOSCAPE:
 		case SAVE_AUTO_BATTLESCAPE:
+		case SAVE_BATTLE_END:
 			// automatic save, give it a default name
 			_game->getSavedGame()->setName(_filename);
 		default:
 			break;
+		}
+
+		// the queue of Lua is not in the save: a save before it runs would load into another battle
+		if (auto *lua = _game->getMod()->getLuaHost())
+		{
+			if (auto *battle = _game->getSavedGame()->getSavedBattle())
+			{
+				lua->runQueue(battle, true);
+			}
+			else
+			{
+				lua->runQueue(_game->getSavedGame());
+			}
 		}
 
 		// Save the game
@@ -194,7 +216,7 @@ void SaveGameState::think()
 				throw Exception("Save backed up in " + backup);
 			}
 
-			if (_type == SAVE_IRONMAN_END)
+			if (_type == SAVE_IRONMAN_END || _type == SAVE_BATTLE_END)
 			{
 				Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
 				_game->getScreen()->resetDisplay(false);

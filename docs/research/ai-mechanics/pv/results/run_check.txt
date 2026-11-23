@@ -1,0 +1,10 @@
+19:00:49 phase check jobs 6 parallel 24
+19:02:21 1/6 sl_fx_D1_L4 code=0 48s total=92s
+19:02:21 1/6 sl_rel_D1_L4 code=0 45s total=92s
+19:02:36 2/6 D1_L4_s1 code=0 107s total=107s
+19:02:38 3/6 D0_M1_s1 code=0 109s total=109s
+19:02:41 4/6 D1_M1_s1 code=0 113s total=113s
+19:02:44 5/6 D0_L4_s1 code=0 116s total=116s
+19:03:13 6/6 sl_fx_D0_M1 code=0 54s total=144s
+19:03:13 6/6 sl_rel_D0_M1 code=0 91s total=144s
+19:03:13 ALL DONE

@@ -1,0 +1,66 @@
+identical lines before the first difference: 166
+ active: [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(23,1,1) tu=96 mode=3 act=0 to=(23,1,1) run=0 kneel=0 aim=-1 weapon=STR_GAUSS_PISTOL seen=293,575,538,582,571,297,307,581 hu=3be6bd83ef2473ab h
+ D0    : [AIDECIDE] turn=1 side=1 unit=1000000 n=1 from=(23,1,1) tu=96 mode=0 act=2 to=(25,11,0) run=0 kneel=0 aim=-1 weapon=STR_GAUSS_PISTOL seen=293,575,538,582,571,297,307,581 hu=3be6bd83ef2473ab 
+ orders of that unit that turn:
+    [HIVEORD] turn=1 id=2 squad=0 unit=1000000 task=HOLD kind=STAY state=CREATED target=(23,1,1) at=(23,1,1) tu=96 why=post_in_sector overrides=0 note=expect=at_target success=near2 cancel=objective_or_task_change
+    [HIVEORD] turn=1 id=2 squad=0 unit=1000000 task=HOLD kind=STAY state=ASSIGNED target=(23,1,1) at=(23,1,1) tu=96 why=post_in_sector overrides=0 note=
+    [HIVEORD] turn=1 id=2 squad=0 unit=1000000 task=HOLD kind=STAY state=VALIDATED target=(23,1,1) at=(23,1,1) tu=96 why=post_in_sector overrides=0 note=no_walk
+    [HIVEORD] turn=1 id=2 squad=0 unit=1000000 task=HOLD kind=STAY state=EXECUTING target=(23,1,1) at=(23,1,1) tu=96 why=post_in_sector overrides=0 note=stays
+    [HIVEORD] turn=1 id=2 squad=0 unit=1000000 task=HOLD kind=STAY state=COMPLETED target=(23,1,1) at=(23,1,1) tu=96 why=post_in_sector overrides=0 note=held_turn
+orders: 222 last state: [('BLOCKED', 99), ('COMPLETED', 80), ('CANCELLED', 28), ('INTERRUPTED', 15)]
+by kind and result:
+   ('HOLD', 'GO', 'take_post', 'INTERRUPTED') 2
+   ('HOLD', 'STAY', 'post_in_sector', 'CANCELLED') 2
+   ('HOLD', 'STAY', 'post_in_sector', 'COMPLETED') 76
+   ('HOLD', 'STAY', 'post_in_sector', 'INTERRUPTED') 2
+   ('SEARCH', 'GO', 'seek_contact', 'BLOCKED') 94
+   ('SEARCH', 'GO', 'seek_contact', 'CANCELLED') 12
+   ('SEARCH', 'GO', 'seek_contact', 'COMPLETED') 1
+   ('SEARCH', 'GO', 'seek_contact', 'INTERRUPTED') 10
+   ('SEARCH', 'GO', 'sweep_sector', 'BLOCKED') 5
+   ('SEARCH', 'GO', 'sweep_sector', 'CANCELLED') 11
+   ('SEARCH', 'GO', 'sweep_sector', 'COMPLETED') 1
+   ('SEARCH', 'STAY', 'at_contact', 'COMPLETED') 2
+   ('SEARCH', 'STAY', 'at_contact', 'INTERRUPTED') 1
+   ('SEARCH', 'STAY', 'at_node', 'CANCELLED') 3
+the units' own decisions over an order, by action type: [('2', 46), ('8', 37), ('7', 14), ('6', 6), ('9', 2)]
+GO orders: 136 completed: 2 by distinct units: 2 by distinct squads: 1 of tasks: Counter({'SEARCH': 2})
+ of the completed, the unit really within 2 tiles of the target at the last record: 2
+commander changes:
+   [HIVECMD] turn=3 squad=4 old=1000006 new=-1 why=dead rank=- int=0 task=SEARCH kept=1
+   [HIVECMD] turn=5 squad=3 old=1000005 new=1000030 why=dead rank=STR_LIVE_TERRORIST int=5 task=SEARCH kept=1
+   [HIVECMD] turn=6 squad=0 old=1000025 new=1000018 why=dead rank=STR_LIVE_NAVIGATOR int=5 task=HOLD kept=1
+   [HIVECMD] turn=6 squad=1 old=1000027 new=1000010 why=dead rank=STR_LIVE_NAVIGATOR int=5 task=SEARCH kept=1
+   [HIVECMD] turn=7 squad=2 old=1000023 new=1000024 why=dead rank=STR_LIVE_ENGINEER int=6 task=HOLD kept=1
+task changes: 0 | objectives set: 15
+squad events: 2
+contact records with the observer's own line for that turn: 53 target not in its sees at the start of the side's turn (may have come into sight since): 21 of all 53
+active: player falls 1, hostile down 24, shots 73
+D0: player falls 1, hostile down 26, shots 63
+per turn: patrol decisions (walks, stops) | shots | TU% left at the player's turn; active / D0
+   1: 25(24,0) 13 56  /  70(70,0) 11 38
+   2: 24(21,0) 16 61  /  51(51,0) 10 35
+   3: 9(5,0) 15 76  /  36(35,0) 9 43
+   4: 4(4,0) 16 61  /  14(14,0) 5 48
+   5: 2(2,0) 5 81  /  24(24,0) 3 37
+   6: 4(4,0) 1 84  /  23(23,0) 4 40
+   7: 6(6,0) 0 96  /  22(22,0) 4 41
+   8: 0(0,0) 0 84  /  21(21,0) 6 35
+   9: 0(0,0) 4 87  /  16(16,0) 4 49
+  10: 0(0,0) 3 90  /  17(17,0) 6 35
+  11: 0(0,0) 0 98  /  16(16,0) 1 53
+  12: 0(0,0) 0 99  /  12(12,0) 0 56
+result: {'how': 'timeout', 'turn': '13', 'phplost': '143', 'pdead': '0', 'hdead': '24', 'hattacks': '73', 'pattacks': '143', 'livesoldiers': '7', 'livealiens': '6', 'ms': '31108'}
+   [HIVETURN] turn=1 alive=25 squads=5 hold=2 search=3 holdUnits=12 holdTuPct=83 searchUnits=13 searchTuPct=38 created=39 validated=23 executing=19 completed=13 blocked=5 interrupted=0 cancelled=13 thinks=77 thinkUs=795
+   [HIVETURN] turn=2 alive=22 squads=5 hold=2 search=3 holdUnits=11 holdTuPct=85 searchUnits=11 searchTuPct=46 created=63 validated=37 executing=31 completed=22 blocked=15 interrupted=1 cancelled=14 thinks=71 thinkUs=293
+   [HIVETURN] turn=3 alive=17 squads=4 hold=2 search=2 holdUnits=10 holdTuPct=98 searchUnits=7 searchTuPct=55 created=88 validated=52 executing=42 completed=31 blocked=25 interrupted=6 cancelled=20 thinks=49 thinkUs=298
+   [HIVETURN] turn=4 alive=16 squads=4 hold=2 search=2 holdUnits=9 holdTuPct=79 searchUnits=7 searchTuPct=37 created=108 validated=62 executing=49 completed=40 blocked=35 interrupted=7 cancelled=21 thinks=44 thinkUs=235
+   [HIVETURN] turn=5 alive=12 squads=3 hold=2 search=1 holdUnits=8 holdTuPct=87 searchUnits=4 searchTuPct=68 created=129 validated=73 executing=57 completed=49 blocked=44 interrupted=10 cancelled=24 thinks=28 thinkUs=142
+   [HIVETURN] turn=6 alive=10 squads=2 hold=1 search=1 holdUnits=5 holdTuPct=97 searchUnits=5 searchTuPct=71 created=143 validated=82 executing=61 completed=54 blocked=49 interrupted=11 cancelled=26 thinks=21 thinkUs=202
+   [HIVETURN] turn=7 alive=7 squads=2 hold=1 search=1 holdUnits=4 holdTuPct=100 searchUnits=3 searchTuPct=90 created=157 validated=89 executing=66 completed=58 blocked=56 interrupted=15 cancelled=28 thinks=25 thinkUs=185
+   [HIVETURN] turn=8 alive=7 squads=2 hold=1 search=1 holdUnits=4 holdTuPct=75 searchUnits=3 searchTuPct=97 created=172 validated=94 executing=69 completed=63 blocked=66 interrupted=15 cancelled=28 thinks=12 thinkUs=113
+   [HIVETURN] turn=9 alive=7 squads=2 hold=1 search=1 holdUnits=4 holdTuPct=100 searchUnits=3 searchTuPct=70 created=187 validated=99 executing=73 completed=68 blocked=76 interrupted=15 cancelled=28 thinks=16 thinkUs=129
+   [HIVETURN] turn=10 alive=7 squads=2 hold=1 search=1 holdUnits=4 holdTuPct=100 searchUnits=3 searchTuPct=78 created=196 validated=103 executing=77 completed=72 blocked=81 interrupted=15 cancelled=28 thinks=16 thinkUs=177
+   [HIVETURN] turn=11 alive=7 squads=2 hold=1 search=1 holdUnits=4 holdTuPct=100 searchUnits=3 searchTuPct=95 created=208 validated=107 executing=81 completed=76 blocked=89 interrupted=15 cancelled=28 thinks=14 thinkUs=110
+   [HIVETURN] turn=12 alive=7 squads=2 hold=1 search=1 holdUnits=4 holdTuPct=100 searchUnits=3 searchTuPct=97 created=222 validated=111 executing=85 completed=80 blocked=99 interrupted=15 cancelled=28 thinks=13 thinkUs=103
+plan, us: ['226', '177', '209', '149', '93', '139', '121', '95', '101', '86', '89', '84']

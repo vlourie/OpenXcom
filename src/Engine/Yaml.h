@@ -254,6 +254,8 @@ public:
 
 	/// Returns base class to avoid slicing
 	YamlNodeReader toBase() const;
+	/// Number of nodes in the tree
+	size_t getNodeCount() const;
 
 	friend YamlNodeReader;
 	friend YamlRootNodeWriter;
@@ -351,6 +353,9 @@ public:
 
 	/// Emits a yaml string based on the current node and its subtree
 	YamlString emit();
+	/// Appends the yaml text of the current node and its subtree to a string. With the expected length of the text given,
+	/// the text is written in one pass; a hint that is too small or can't be had only costs the second pass
+	void emitTo(std::string& out, size_t sizeHint = 0);
 
 	friend YamlRootNodeReader;
 	friend YamlRootNodeWriter;
@@ -376,6 +381,14 @@ public:
 
 	/// Returns base class to avoid slicing
 	YamlNodeWriter toBase();
+
+	/// Takes room for a tree of a known size at once, so that it doesn't grow by doubling and copying itself.
+	/// A size that can't be had is ignored: the tree then grows as it always did
+	void reserve(size_t nodes, size_t arenaBytes);
+	/// Number of nodes in the tree
+	size_t getNodeCount() const;
+	/// Bytes of the tree's string arena in use
+	size_t getArenaSize() const;
 
 	friend YamlNodeReader;
 	friend YamlNodeWriter;
@@ -529,9 +542,14 @@ inline void YamlNodeWriter::setValue(const InputType& inputValue)
 template <typename EnumType>
 typename std::enable_if<std::is_enum<EnumType>::value, bool>::type inline from_chars(ryml::csubstr buf, EnumType* v) noexcept
 {
-	int value = static_cast<int>(*v);
+	// The target is written only on success and never read: it may be not initialized yet, and loading an
+	// enum from such memory is undefined on its own (it used to be read here just to be written back on failure).
+	int value = 0;
 	bool result = ryml::atoi(buf, &value);
-	*v = static_cast<EnumType>(value);
+	if (result)
+	{
+		*v = static_cast<EnumType>(value);
+	}
 	return result;
 }
 

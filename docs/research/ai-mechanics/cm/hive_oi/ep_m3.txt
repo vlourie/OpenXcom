@@ -1,0 +1,87 @@
+==== scpa_D_M3_s1 target 470
+ t3 pstart: pos (42,23,0) dir 3 tu 195 hp 132/168
+ t3 aistart: pos (43,24,0) dir 3 tu 6 hp 132/168 spotted 0 sniped 1 seenby 2 wounds 0
+ t4 pstart: pos (43,24,0) dir 3 tu 195 hp 132/168
+ t4 aistart: pos (42,26,0) dir 5 tu 156 hp 132/168 spotted 0 sniped 1 seenby 2 wounds 0
+ t5 pstart: pos (42,26,0) dir 5 tu 195 hp 132/168
+ t5 aistart: pos (46,27,0) dir 4 tu 156 hp 132/168 spotted 0 sniped 1 seenby 3 wounds 0
+ t6 pstart: pos (46,27,0) dir 4 tu 195 hp 36/168
+ t6 aistart: pos (45,27,0) dir 6 tu 25 hp 36/168 spotted 0 sniped 1 seenby 4 wounds 0
+ t7 pstart: pos (45,27,0) dir 6 tu 195 hp 36/168
+ t7 aistart: pos (45,27,0) dir 2 tu 116 hp 36/168 spotted 0 sniped 1 seenby 5 wounds 0
+ t3 1000000 from (40,54,3) tu 181 hp 37 mode 2 act 2 to (41,54,3) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/right spent 4 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d31
+ t3 1000000 from (41,54,3) tu 177 hp 37 mode 2 act 2 to (39,55,3) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/right spent 10 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d31
+ t3 1000005 from (43,59,0) tu 181 hp 116 mode 2 act 2 to (39,64,0) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/right spent 36 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d35
+ t3 1000005 from (39,64,0) tu 145 hp 116 mode 0 act 2 to (45,55,3) CHRYSSALID_W src patrol.node tgt  side-if-from-to front/right spent 32 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d41
+ t3 1000000 from (39,55,3) tu 167 hp 37 mode 0 act 2 to (48,3,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to rear/left spent 34 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d32
+ t3 1000000 from (44,52,3) tu 133 hp 37 mode 2 act 2 to (41,55,3) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/right spent 22 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d29
+ t3 1000005 from (41,57,0) tu 113 hp 116 mode 0 act 2 to (45,55,3) CHRYSSALID_W src patrol.node tgt  side-if-from-to front/right spent 48 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d34
+ t3 1000005 from (45,55,3) tu 65 hp 116 mode 2 act 2 to (40,54,3) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/right spent 22 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d32
+ t4 1000000 from (41,55,3) tu 181 hp 37 mode 0 act 2 to (48,3,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to rear/right spent 12 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d30
+ t4 1000000 from (43,55,3) tu 169 hp 37 mode 0 act 2 to (48,3,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to rear/right spent 22 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d30
+ t4 1000005 from (40,54,3) tu 181 hp 116 mode 2 act 2 to (38,54,3) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/left spent 1 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d29
+ t4 1000005 from (40,54,3) tu 180 hp 116 mode 0 act 2 to (43,57,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to front/left spent 30 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d29
+ t4 1000000 from (44,51,3) tu 147 hp 37 mode 2 act 2 to (44,56,3) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/left spent 20 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d26
+ t4 1000005 from (43,57,0) tu 150 hp 116 mode 2 act 2 to (40,56,0) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/left spent 14 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d32
+ t4 1000005 from (40,56,0) tu 136 hp 116 mode 2 act 2 to (43,57,0) CHRYSSALID_W src firepoint tgt  side-if-from-to front/left spent 14 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d31
+ t4 1000000 from (44,56,3) tu 127 hp 37 mode 2 act 2 to (44,55,3) CHRYSSALID_W src firepoint.fallback tgt  side-if-from-to front/left spent 4 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d31
+ t4 1000000 from (44,55,3) tu 123 hp 37 mode 0 act 2 to (48,3,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to rear/right spent 92 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d30
+ t4 1000005 from (43,57,0) tu 122 hp 116 mode 0 act 2 to (45,55,3) CHRYSSALID_W src patrol.node tgt  side-if-from-to front/left spent 42 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d32
+ t4 1000005 from (45,55,3) tu 80 hp 116 mode 2 act 2 to (40,54,3) CHRYSSALID_W src firepoint.random tgt  side-if-from-to front/left spent 22 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d30
+ t5 1000000 from (44,32,3) tu 181 hp 37 mode 2 act 2 to (45,26,0) CHRYSSALID_W src melee tgt  side-if-from-to rear/right spent 8 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d6
+ t5 1000000 from (44,30,3) tu 173 hp 37 mode 2 act 2 to (45,26,0) CHRYSSALID_W src melee tgt  side-if-from-to rear/right spent 161 dmg 96 down 0 | on 470: t10 CHRYSSAL tu15 p101 lof0 d4
+ t5 1000005 from (40,54,3) tu 181 hp 116 mode 2 act 2 to (39,55,3) CHRYSSALID_W src firepoint tgt  side-if-from-to front spent 6 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d28
+ t5 1000005 from (39,55,3) tu 175 hp 116 mode 2 act 2 to (35,55,3) CHRYSSALID_W src firepoint tgt  side-if-from-to front spent 16 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d29
+ t5 1000005 from (35,55,3) tu 159 hp 116 mode 2 act 2 to (18,48,0) CHRYSSALID_W src melee tgt  side-if-from-to front/right spent 24 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d31
+ t5 1000005 from (29,55,3) tu 135 hp 116 mode 2 act 2 to (18,48,0) CHRYSSALID_W src melee tgt  side-if-from-to front/right spent 10 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d33
+ t6 1000005 from (27,54,0) tu 181 hp 116 mode 2 act 2 to (16,52,0) CHRYSSALID_W src melee tgt  side-if-from-to front/left spent 10 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d33
+ t6 1000005 from (25,53,0) tu 171 hp 116 mode 2 act 2 to (16,52,0) CHRYSSALID_W src melee tgt  side-if-from-to front/left spent 158 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d33
+ t6 1000005 from (16,52,0) tu 13 hp 116 mode 0 act 2 to (43,57,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to left spent 3 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d39
+ t6 1000005 from (16,52,0) tu 10 hp 116 mode 0 act 2 to (43,57,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to left spent 8 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d39
+ t7 1000085 from (49,26,0) tu 181 hp 116 mode 2 act 2 to (47,26,0) CHRYSSALID_W src melee tgt  side-if-from-to front/left spent 4 dmg 0 down 0 | on 470: t10 CHRYSSAL tu15 p124 lof0 d5
+ t7 1000085 from (48,26,0) tu 177 hp 116 mode 2 act 2 to (47,26,0) CHRYSSALID_W src melee tgt  side-if-from-to front/left spent 49 dmg 30 down 1 | on 470: t10 CHRYSSAL tu15 p124 lof0 d4
+ t7 1000085 from (47,26,0) tu 128 hp 116 mode 2 act 2 to (44,25,0) CHRYSSALID_W src firepoint.random tgt  side-if-from-to rear/left spent 14 dmg 0 down 0 | on 470: 
+ t7 1000085 from (44,25,0) tu 114 hp 116 mode 0 act 2 to (40,14,0) CHRYSSALID_W src patrol.node tgt  side-if-from-to left spent 52 dmg 0 down 0 | on 470: 
+-- reactions and casualties in the window, in log order
+  [AIEVENT] turn=3 side=1 what=reaction unit=444 pos=(22,17,0)
+  casualty {'turn': '3', 'victim': '520', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'front', 'dist': '14', 'pos': '(23,9,0)'}
+  casualty {'turn': '3', 'victim': '1000027', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'under', 'dist': '8', 'pos': '(23,16,0)'}
+  casualty {'turn': '3', 'victim': '1000030', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'under', 'dist': '8', 'pos': '(22,17,0)'}
+  casualty {'turn': '3', 'victim': '1000016', 'how': 'dead', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'under', 'dist': '21', 'pos': '(9,13,0)'}
+  [AIEVENT] turn=3 side=1 what=reaction unit=444 pos=(18,33,0)
+  [AIEVENT] turn=3 side=1 what=reaction unit=444 pos=(18,33,0)
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000009', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'rear', 'dist': '22', 'pos': '(16,41,0)'}
+  casualty {'turn': '3', 'victim': '1000012', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'right', 'dist': '28', 'pos': '(7,41,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000080', 'how': 'dead', 'killer': '444', 'weapon': 'AUX_TANK_CANNON', 'hit': 'under', 'dist': '33', 'pos': '(13,51,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'right', 'dist': '19', 'pos': '(14,35,0)'}
+  casualty {'turn': '3', 'victim': '1000001', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEAPON_UNKNOWN', 'hit': 'left', 'dist': '21', 'pos': '(12,36,0)'}
+  casualty {'turn': '3', 'victim': '1000045', 'how': 'stun', 'killer': '444', 'weapon': 'STR_WEA

@@ -1,0 +1,9 @@
+﻿- Launcher: Lua mods by players that we have checked will appear in the list of components as an optional tick, marked "a player's mod, checked by us". They never install on their own. There are no such mods yet.
+- Launcher: if a checked mod has to be taken back, the launcher switches it off by itself and tells you why once; the mod's files leave with the update. Saves are not touched.
+- For mod authors: Lua mods see much more: unit stats and equipment, map tiles, item and armor rules, the date, countries, UFOs and craft. New handlers: the chance of psi and melee attacks, experience, the sound of a step, the end of a month for a country, UFO detection, shop prices, the reaction chance, visibility, a target's weight for the AI, armor and weapon formulas, rows of your own on the stats page. The launcher's guide and recipes are updated.
+- Globe: the T'Lieh Brig and Heavy Brig now fly wide end first, with the narrow tail behind.
+- Lua mods: in a campaign battle a mod now starts with clean variables, as the guide promises; new mod errors are no longer lost when the log is full; a wrong body part from a mod becomes the head and does not corrupt the game's memory.
+- Battle: with corner shading on, the dead tree and other thin objects on a plate no longer stand in a dark diamond the size of the whole tile.
+- HD interface: the inventory screen's keys now always take the battle panel's colour; the windows' own button colour no longer affects them.
+- HD interface, paper dolls: all human soldiers now have HD paper dolls: 42 armors for women and 38 for men, with new bodies and faces for all 128 male looks.
+- New mod "X-Piratez vlourie soundtracks": eight background tracks for your own player, the files are in the mod's music folder. It is off, and the game does not play them by itself.

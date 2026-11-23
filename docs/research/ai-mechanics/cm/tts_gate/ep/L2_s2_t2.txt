@@ -1,0 +1,232 @@
+== timeline turn 2
+1933 T [AISTATE] pstart turn=2 unit=324 type=SOLDIER faction=0 status=0 pos=(39,37,0) dir=2 tu=246 hp=88/88 stun=0 morale=90 kneel=0 weapon=STR_SWORD spotted=0 sniped=3 sees=1000007,1000017,1000043,1000046 seenby=4 known=8 near=9 shade=1 tuma
+1957 B [AISTATE] pstart turn=2 unit=1000020 type=STR_NINJA_WARRIOR faction=1 status=0 pos=(45,31,2) dir=5 tu=70 hp=90/90 stun=0 morale=100 kneel=0 weapon=STR_CD_RIFLE spotted=255 sniped=0 sees=- seenby=0 known=5 near=8 shade=6 tumax=134 wound
+1960 A [AISTATE] pstart turn=2 unit=1000023 type=STR_NINJA_WARRIOR faction=1 status=0 pos=(45,29,1) dir=7 tu=86 hp=90/90 stun=0 morale=100 kneel=0 weapon=STR_CD_RIFLE spotted=255 sniped=0 sees=- seenby=0 known=5 near=10 shade=6 tumax=134 woun
+2044 T [AIDECIDE] turn=2 side=0 unit=324 n=1 from=(39,37,0) tu=246 mode=2 act=2 to=(35,34,4) run=0 kneel=0 aim=1000003 weapon=STR_SWORD seen=1000007,1000012,1000017,1000026,1000039,1000040,1000041,1000043,1000045,1000046,1000047,1000048,10000
+2049 T [AIDECIDE] turn=2 side=0 unit=324 n=2 from=(39,36,0) tu=242 mode=2 act=2 to=(39,34,0) run=0 kneel=0 aim=1000015 weapon=STR_SWORD seen=1000007,1000012,1000015,1000017,1000026,1000039,1000040,1000041,1000043,1000045,1000046,1000047,10000
+2054 ? [AICASUALTY] turn=2 side=0 victim=1000015 vfaction=1 type=STR_NINJA_GAL how=dead pos=(39,33,0) tu=2 kneel=0 seenby=1 killer=324 kfaction=0 ktype=SOLDIER dist=1 weapon=STR_SWORD hit=rear terrain=0
+2165 T [AIDECIDE] turn=2 side=0 unit=324 n=1 from=(39,34,0) tu=222 mode=0 act=2 to=(36,26,0) run=0 kneel=0 aim=-1 weapon=STR_SWORD seen=1000001,1000007,1000012,1000017,1000026,1000027,1000034,1000037,1000039,1000041,1000043,1000044,1000045,10
+2170 T [AIDECIDE] turn=2 side=0 unit=324 n=2 from=(36,26,0) tu=176 mode=0 act=2 to=(37,34,2) run=0 kneel=0 aim=-1 weapon=STR_SWORD seen=1000001,1000007,1000012,1000017,1000026,1000027,1000034,1000037,1000039,1000041,1000043,1000044,1000045,10
+2293 T [AISTATE] aistart turn=2 unit=324 type=SOLDIER faction=0 status=0 pos=(41,28,0) dir=2 tu=134 hp=88/88 stun=0 morale=100 kneel=0 weapon=STR_SWORD spotted=0 sniped=3 sees=- seenby=1 known=22 near=7 shade=6 tumax=246 wounds=0 threat=0.062
+2316 B [AISTATE] aistart turn=2 unit=1000020 type=STR_NINJA_WARRIOR faction=1 status=0 pos=(45,31,2) dir=5 tu=134 hp=90/90 stun=0 morale=99 kneel=0 weapon=STR_CD_RIFLE spotted=255 sniped=0 sees=- seenby=0 known=8 near=5 shade=6 tumax=134 woun
+2319 A [AISTATE] aistart turn=2 unit=1000023 type=STR_NINJA_WARRIOR faction=1 status=0 pos=(45,29,1) dir=6 tu=134 hp=90/90 stun=0 morale=99 kneel=0 weapon=STR_CD_RIFLE spotted=255 sniped=0 sees=324 seenby=0 known=8 near=4 shade=6 tumax=134 wo
+2545 B [AIDECIDE] turn=2 side=1 unit=1000020 n=1 from=(45,31,2) tu=134 mode=0 act=2 to=(48,29,2) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=1626319f8836db9e hi=d16d93572fdf144b ho=e133dba0f736aa78 hou=23a
+      exec {'pos': [48, 29, 2], 'tu': 118, 'spent': 16, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+2550 B [AIDECIDE] turn=2 side=1 unit=1000020 n=2 from=(48,29,2) tu=118 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=1cea4186785dba0d hi=d16d93572fdf144b ho=e133dba0f736aa78 hou=23aa
+      exec {'pos': [45, 31, 2], 'tu': 102, 'spent': 16, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+2571 A [AIDECIDE] turn=2 side=1 unit=1000023 n=1 from=(45,29,1) tu=134 mode=2 act=7 to=(41,28,0) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=eb5e8f22a1ea4344 hi=d16d93572fdf144b ho=e133dba0f736aa78 hou=aa6
+      exec {'pos': [45, 29, 1], 'tu': 76, 'spent': 58, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+2577 A [AIDECIDE] turn=2 side=1 unit=1000023 n=2 from=(45,29,1) tu=76 mode=2 act=7 to=(41,28,0) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=1ee28e4f25b763f1 hi=558277330421ebc7 ho=ca610843fba2fb38 hou=d662
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 58, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+2965 ? [AICASUALTY] turn=2 side=1 victim=1000055 vfaction=1 type=STR_NINJA_ASSASSIN how=stun pos=(40,28,0) tu=5 kneel=0 seenby=1 killer=324 kfaction=0 ktype=SOLDIER dist=1 weapon=STR_SWORD hit=front terrain=0
+3077 B [AIDECIDE] turn=2 side=1 unit=1000020 n=1 from=(45,31,2) tu=102 mode=0 act=2 to=(48,29,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=2b7c7b7de3283359 hi=53b754e71aa00456 ho=1d383486dfc58430 hou=23aa
+      exec {'pos': [48, 29, 2], 'tu': 86, 'spent': 16, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3081 B [AIDECIDE] turn=2 side=1 unit=1000020 n=2 from=(48,29,2) tu=86 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=56c264048b77ae0a hi=53b754e71aa00456 ho=1d383486dfc58430 hou=23aae
+      exec {'pos': [45, 31, 2], 'tu': 70, 'spent': 16, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3111 A [AIDECIDE] turn=2 side=1 unit=1000023 n=1 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=e6d8f6d8ab79c669 hi=53b754e71aa00456 ho=1d383486dfc58430 hou=3472
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3115 A [AIDECIDE] turn=2 side=1 unit=1000023 n=2 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=95ddaa1eceda7aea hi=53b754e71aa00456 ho=1d383486dfc58430 hou=3472
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3489 B [AIDECIDE] turn=2 side=1 unit=1000020 n=1 from=(45,31,2) tu=70 mode=0 act=2 to=(48,29,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=68c79bdcf81540e4 hi=76e8eaed63431533 ho=491659c9e1aaa6c hou=23aae1
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 16, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3493 B [AIDECIDE] turn=2 side=1 unit=1000020 n=2 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=fa4ef4e8ab152217 hi=76e8eaed63431533 ho=491659c9e1aaa6c hou=23aae
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3502 A [AIDECIDE] turn=2 side=1 unit=1000023 n=1 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=6d5b510e82217594 hi=76e8eaed63431533 ho=491659c9e1aaa6c hou=34726f
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3505 A [AIDECIDE] turn=2 side=1 unit=1000023 n=2 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=fa4ef4e8ab152217 hi=76e8eaed63431533 ho=491659c9e1aaa6c hou=34726
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3704 B [AIDECIDE] turn=2 side=1 unit=1000020 n=1 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=43d6910aa96afc04 hi=57ab10e1f610b0fa ho=ce4263afd7842264 hou=23aae
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3708 B [AIDECIDE] turn=2 side=1 unit=1000020 n=2 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=d0ca34e4d25ea887 hi=57ab10e1f610b0fa ho=ce4263afd7842264 hou=23aa
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3715 A [AIDECIDE] turn=2 side=1 unit=1000023 n=1 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=43d6910aa96afc04 hi=57ab10e1f610b0fa ho=ce4263afd7842264 hou=3472
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3718 A [AIDECIDE] turn=2 side=1 unit=1000023 n=2 from=(45,29,1) tu=18 mode=3 act=0 to=(45,29,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=d0ca34e4d25ea887 hi=57ab10e1f610b0fa ho=ce4263afd7842264 hou=3472
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3864 ? [AICASUALTY] turn=2 side=1 victim=1000057 vfaction=1 type=STR_NINJA_ASSASSIN how=dead pos=(42,28,0) tu=7 kneel=0 seenby=1 killer=324 kfaction=0 ktype=SOLDIER dist=1 weapon=STR_SWORD hit=front terrain=0
+3963 B [AIDECIDE] turn=2 side=1 unit=1000020 n=1 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=1a7e9cf1bbc5ba99 hi=4f98176d1734243c ho=2e7e4d8f6038932 hou=23aae1
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3966 B [AIDECIDE] turn=2 side=1 unit=1000020 n=2 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=c9835037df266f1a hi=4f98176d1734243c ho=2e7e4d8f6038932 hou=23aae1
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3973 A [AIDECIDE] turn=2 side=1 unit=1000023 n=1 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=1a7e9cf1bbc5ba99 hi=4f98176d1734243c ho=2e7e4d8f6038932 hou=34726
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+3976 A [AIDECIDE] turn=2 side=1 unit=1000023 n=2 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=c9835037df266f1a hi=4f98176d1734243c ho=2e7e4d8f6038932 hou=34726
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4222 B [AIDECIDE] turn=2 side=1 unit=1000020 n=1 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=fe565fa5a5a0f4b1 hi=734f6df192194132 ho=dbae296e6eed39eb hou=23aa
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4225 B [AIDECIDE] turn=2 side=1 unit=1000020 n=2 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=-1 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=ad5b12ebc901a932 hi=734f6df192194132 ho=dbae296e6eed39eb hou=23aae
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4232 A [AIDECIDE] turn=2 side=1 unit=1000023 n=1 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=fe565fa5a5a0f4b1 hi=734f6df192194132 ho=dbae296e6eed39eb hou=3472
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4235 A [AIDECIDE] turn=2 side=1 unit=1000023 n=2 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=ad5b12ebc901a932 hi=734f6df192194132 ho=dbae296e6eed39eb hou=3472
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4489 B [AIDECIDE] turn=2 side=1 unit=1000020 n=1 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=5c45b40a28ca2afd hi=d8698ac45b6cce8d ho=85bd967dffc9aeaa hou=23aa
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4492 B [AIDECIDE] turn=2 side=1 unit=1000020 n=2 from=(48,29,2) tu=54 mode=0 act=2 to=(45,31,2) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=b4a67504c2adf7e hi=d8698ac45b6cce8d ho=85bd967dffc9aeaa hou=23aae
+      exec {'pos': [48, 29, 2], 'tu': 54, 'spent': 0, 'seen': 0, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4499 A [AIDECIDE] turn=2 side=1 unit=1000023 n=1 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=5c45b40a28ca2afd hi=d8698ac45b6cce8d ho=85bd967dffc9aeaa hou=3472
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+4502 A [AIDECIDE] turn=2 side=1 unit=1000023 n=2 from=(45,29,1) tu=18 mode=0 act=2 to=(47,31,1) run=0 kneel=0 aim=324 weapon=STR_CD_RIFLE seen=191,91,157,324,344,301,335,229 hu=b4a67504c2adf7e hi=d8698ac45b6cce8d ho=85bd967dffc9aeaa hou=34726
+      exec {'pos': [45, 29, 1], 'tu': 18, 'spent': 0, 'seen': 1, 'spotted': 0, 'dmg': 0, 'stunned': 0, 'downed': 0, 'fdmg': 0, 'fdowned': 0, 'hp': 90}
+
+== first list of B in the turn with T
+rec 340 n 1 pos (45, 31, 2) tu 134 kneel 0 src patrol.node t 2 to (48, 29, 2)
+    {'id': '18607f3e64178f48', 'k': 'a', 't': 8, 'to': [41, 28, 0], 'tu': 29, 'u': 324, 'w': 'STR_CD_RIFLE', 'p': 71, 'lof': 0, 'd': 5}
+    {'id': '27bc8ecfdcdfa63b', 'k': 'a', 't': 7, 'to': [41, 28, 0], 'tu': 58, 'u': 324, 'w': 'STR_CD_RIFLE', 'p': 57, 'lof': 0, 'd': 5}
+    {'id': 'fb1f341f385b2c0d', 'k': 'a', 't': 9, 'to': [41, 28, 0], 'tu': 58, 'u': 324, 'w': 'STR_CD_RIFLE', 'p': 97, 'lof': 0, 'd': 5}
+    {'id': 'f37bd635e247c146', 'k': 'a', 't': 10, 'to': [41, 28, 0], 'tu': 16, 'u': 324, 'w': 'STR_KUNG_FU_ALT', 'p': 171, 'lof': 0, 'd': 5}
+    {'id': '474a241b22703a0c', 'k': 'a', 't': 6, 'to': [41, 28, 0], 'tu': 53, 'u': 324, 'w': 'STR_EMP_GRENADE', 'p': 82, 'lof': 0, 'd': 5}
+   lof 1 targets: []
+   near cells: [((46, 31, 2), 4), ((45, 32, 2), 4), ((44, 31, 2), 4), ((46, 32, 2), 6), ((44, 32, 2), 6), ((46, 30, 2), 6), ((47, 30, 2), 10), ((43, 32, 2), 10), ((47, 32, 2), 10), ((46, 29, 2), 10), ((47, 29, 2), 12), ((48, 30, 2), 14), ((42, 32, 2), 14), ((46, 28, 2), 14), ((48, 29, 2), 16), ((42, 33, 2), 18), ((42, 34, 2), 22), ((44, 28, 2), 26)]
+   who stands near the lane: []
+
+== all lists of A on its cell in the turn
+rec 345 n 1 pos (45, 29, 1) tu 134 t 7 to (41, 28, 0) src sniper T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 346 n 2 pos (45, 29, 1) tu 76 t 7 to (41, 28, 0) src sniper T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 436 n 1 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 437 n 2 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 497 n 1 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 498 n 2 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 549 n 1 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 550 n 2 pos (45, 29, 1) tu 18 t 0 to (45, 29, 1) src escape.known T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 607 n 1 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 608 n 2 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 657 n 1 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 658 n 2 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 725 n 1 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+rec 726 n 2 pos (45, 29, 1) tu 18 t 2 to (47, 31, 1) src patrol.node T: {'to': (41, 28, 0), 'lof': 1, 'tu': 29, 'p': 71, 'w': 'STR_CD_RIFLE', 'd': 5, 'mode': 8} with a line: [(324, 29, 71, 5)]
+
+== B's own list through the battle around the turn: did the line to T ever exist from this cell
+ turn 1 n 1 pos (45, 31, 2) tu 134 T at (39, 37, 0) lof 0 d 9 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 1 n 2 pos (48, 29, 2) tu 118 T at (39, 37, 0) lof 0 d 13 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 1 n 1 pos (45, 31, 2) tu 102 T at (39, 37, 0) lof 0 d 9 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 1 n 2 pos (48, 29, 2) tu 86 T at (39, 37, 0) lof 0 d 13 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 1 pos (45, 31, 2) tu 134 T at (41, 28, 0) lof 0 d 5 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 2 n 2 pos (48, 29, 2) tu 118 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 1 pos (45, 31, 2) tu 102 T at (41, 28, 0) lof 0 d 5 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 2 n 2 pos (48, 29, 2) tu 86 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 1 pos (45, 31, 2) tu 70 T at (41, 28, 0) lof 0 d 5 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 2 n 2 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 1 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 2 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 1 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 2 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 1 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 2 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 1 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 2 n 2 pos (48, 29, 2) tu 54 T at (41, 28, 0) lof 0 d 8 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 3 n 1 pos (48, 29, 2) tu 134 T at (43, 27, 1) lof 0 d 6 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 3 n 2 pos (45, 31, 2) tu 118 T at (43, 27, 1) lof 0 d 5 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 3 n 1 pos (48, 29, 2) tu 102 T at (43, 27, 1) lof 0 d 6 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 3 n 2 pos (45, 31, 2) tu 86 T at (43, 27, 1) lof 0 d 5 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 3 n 1 pos (48, 29, 2) tu 70 T at (43, 27, 1) lof 0 d 6 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 3 n 2 pos (45, 31, 2) tu 54 T at (43, 27, 1) lof 0 d 5 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 4 n 1 pos (45, 31, 2) tu 134 T at (32, 35, 2) lof 0 d 14 w STR_CD_RIFLE tu 29 did t 2 to (48, 29, 2) dmg 0
+ turn 4 n 2 pos (48, 29, 2) tu 118 T at (32, 35, 2) lof 0 d 18 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 4 n 1 pos (45, 31, 2) tu 102 T at (32, 35, 2) lof 0 d 14 w STR_CD_RIFLE tu 29 did t 2 to (47, 32, 2) dmg 0
+ turn 4 n 2 pos (47, 32, 2) tu 92 T at (32, 35, 2) lof 0 d 16 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 4 n 1 pos (45, 31, 2) tu 82 T at (32, 35, 2) lof 0 d 14 w STR_CD_RIFLE tu 29 did t 2 to (47, 32, 2) dmg 0
+ turn 4 n 2 pos (47, 32, 2) tu 72 T at (32, 35, 2) lof 0 d 16 w STR_CD_RIFLE tu 29 did t 2 to (45, 31, 2) dmg 0
+ turn 4 n 1 pos (45, 31, 2) tu 62 T at (32, 35, 2) lof 0 d 14 w STR_CD_RIFLE tu 29 did t 0 to (45, 31, 2) dmg 0
+
+== shots at T in the battle by this side
+ turn 1 unit 1000007 from (51, 45, 0) mode 7 STR_BLUNDERBUSS dmg 0 stun 0 fdmg 0 downed 0
+ turn 1 unit 1000015 from (39, 36, 0) mode 7 STR_BLUNDERBUSS dmg 0 stun 0 fdmg 0 downed 0
+ turn 1 unit 1000031 from (7, 50, 1) mode 9 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 1 unit 1000031 from (7, 50, 1) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 1 unit 1000046 from (49, 37, 0) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 1 unit 1000051 from (38, 37, 4) mode 7 STR_NINJA_SAWED_OFF dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000023 from (45, 29, 1) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000023 from (45, 29, 1) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000008 from (43, 29, 0) mode 8 STR_NINJA_SMG dmg 0 stun 0 fdmg 0 downed 0
+ turn 2 unit 1000008 from (43, 29, 0) mode 8 STR_NINJA_SMG dmg 0 stun 0 fdmg 0 downed 0
+ turn 3 unit 1000023 from (44, 27, 1) mode 7 STR_CD_RIFLE dmg 6 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000016 from (32, 32, 2) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000016 from (32, 32, 2) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 4 unit 1000059 from (32, 31, 2) mode 8 STR_ABC_GUN dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000003 from (34, 44, 0) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000014 from (32, 33, 4) mode 8 STR_HAXXOR dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000014 from (32, 33, 4) mode 8 STR_HAXXOR dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000025 from (22, 36, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000029 from (21, 54, 0) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000029 from (21, 54, 0) mode 7 STR_CD_RIFLE dmg 2 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000031 from (10, 50, 1) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000031 from (10, 50, 1) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000043 from (23, 50, 1) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 71 downed 0
+ turn 5 unit 1000052 from (44, 32, 4) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000052 from (44, 32, 4) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000059 from (35, 31, 4) mode 8 STR_ABC_GUN dmg 0 stun 0 fdmg 20 downed 0
+ turn 5 unit 1000061 from (43, 23, 4) mode 8 AUX_XTURRET_14MMCHAINGUN_WEAPON dmg 4 stun 3 fdmg 0 downed 0
+ turn 5 unit 1000061 from (43, 23, 4) mode 8 AUX_XTURRET_14MMCHAINGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000062 from (43, 35, 4) mode 8 AUX_XTURRET_14MMCHAINGUN_WEAPON dmg 24 stun 6 fdmg 0 downed 0
+ turn 5 unit 1000066 from (47, 32, 4) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000066 from (47, 32, 4) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000070 from (47, 27, 4) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000070 from (47, 27, 4) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000001 from (23, 9, 0) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000029 from (19, 55, 0) mode 8 STR_CD_RIFLE dmg 4 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000043 from (23, 50, 1) mode 8 STR_CD_PISTOL dmg 4 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000043 from (23, 50, 1) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000052 from (44, 32, 4) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000052 from (44, 32, 4) mode 8 STR_CD_PISTOL dmg 7 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000066 from (47, 32, 4) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 5 unit 1000070 from (47, 27, 4) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000029 from (19, 55, 0) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000031 from (22, 38, 0) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000044 from (24, 30, 1) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000044 from (24, 30, 1) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000001 from (30, 19, 0) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000044 from (24, 30, 1) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 6 unit 1000044 from (24, 30, 1) mode 8 STR_CD_PISTOL dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000006 from (20, 53, 0) mode 8 STR_HAXXOR dmg 0 stun 0 fdmg 0 downed 0
+ turn 7 unit 1000007 from (21, 44, 0) mode 7 STR_BLUNDERBUSS dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000059 from (35, 23, 4) mode 9 STR_ABC_GUN dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000059 from (35, 23, 4) mode 8 STR_ABC_GUN dmg 0 stun 0 fdmg 6 downed 0
+ turn 8 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 8 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 9 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000035 from (27, 35, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000035 from (27, 35, 0) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000059 from (43, 37, 0) mode 9 STR_ABC_GUN dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 21 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000035 from (27, 35, 0) mode 7 STR_CD_RIFLE dmg 6 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000035 from (27, 35, 0) mode 7 STR_CD_RIFLE dmg 12 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000059 from (43, 37, 0) mode 9 STR_ABC_GUN dmg 0 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 22 unit 1000059 from (37, 37, 0) mode 8 STR_ABC_GUN dmg 0 stun 0 fdmg 0 downed 0
+ turn 23 unit 1000020 from (40, 35, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 23 unit 1000020 from (40, 36, 0) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 23 unit 1000035 from (27, 35, 0) mode 7 STR_CD_RIFLE dmg 8 stun 0 fdmg 0 downed 0
+ turn 23 unit 1000035 from (27, 35, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 23 unit 1000059 from (36, 38, 0) mode 9 STR_ABC_GUN dmg 0 stun 0 fdmg 0 downed 0
+ turn 23 unit 1000059 from (36, 38, 0) mode 8 STR_ABC_GUN dmg 12 stun 6 fdmg 0 downed 0
+ turn 23 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 23 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000020 from (40, 36, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000020 from (40, 36, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000035 from (24, 33, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000035 from (24, 33, 0) mode 7 STR_CD_RIFLE dmg 11 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000059 from (36, 38, 0) mode 9 STR_ABC_GUN dmg 0 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000059 from (36, 38, 0) mode 9 STR_ABC_GUN dmg 6 stun 3 fdmg 0 downed 0
+ turn 24 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 24 unit 1000065 from (39, 36, 2) mode 8 AUX_TANK_LIGHT_MINIGUN_WEAPON dmg 0 stun 0 fdmg 0 downed 0
+ turn 25 unit 1000020 from (40, 36, 0) mode 7 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 25 unit 1000020 from (38, 40, 0) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 25 unit 1000035 from (20, 35, 0) mode 8 STR_CD_RIFLE dmg 0 stun 0 fdmg 0 downed 0
+ turn 25 unit 1000059 from (32, 44, 0) mode 9 STR_ABC_GUN dmg 39 stun 20 fdmg 0 downed 1
+
+== T state
+[AISTATE] before turn=1 unit=324 type=SOLDIER faction=0 status=0 pos=(27,40,1) dir=0 tu=246 hp=88/88 stun=0 morale=90 kneel=0 weapon=STR_SWORD spotted=255 sniped=0 sees=- seenby=0 known=0 near=-1 shade=4 tumax=
+[AISTATE] aistart turn=1 unit=324 type=SOLDIER faction=0 status=0 pos=(39,37,0) dir=2 tu=184 hp=88/88 stun=0 morale=90 kneel=0 weapon=STR_SWORD spotted=0 sniped=3 sees=1000007,1000056 seenby=1 known=10 near=1 s
+[AISTATE] pstart turn=2 unit=324 type=SOLDIER faction=0 status=0 pos=(39,37,0) dir=2 tu=246 hp=88/88 stun=0 morale=90 kneel=0 weapon=STR_SWORD spotted=0 sniped=3 sees=1000007,1000017,1000043,1000046 seenby=4 kn
+[AISTATE] aistart turn=2 unit=324 type=SOLDIER faction=0 status=0 pos=(41,28,0) dir=2 tu=134 hp=88/88 stun=0 morale=100 kneel=0 weapon=STR_SWORD spotted=0 sniped=3 sees=- seenby=1 known=22 near=7 shade=6 tumax=
+[AISTATE] pstart turn=3 unit=324 type=SOLDIER faction=0 status=0 pos=(41,28,0) dir=2 tu=246 hp=88/88 stun=0 morale=90 kneel=0 weapon=STR_SWORD spotted=0 sniped=2 sees=1000008 seenby=2 known=9 near=3 shade=6 tum
+[AISTATE] aistart turn=3 unit=324 type=SOLDIER faction=0 status=0 pos=(43,27,1) dir=7 tu=163 hp=88/88 stun=0 morale=90 kneel=0 weapon=STR_SWORD spotted=0 sniped=2 sees=- seenby=0 known=18 near=3 shade=6 tumax=2
+[AICASUALTY] turn=25 side=1 victim=324 vfaction=0 type=SOLDIER how=stun pos=(21,51,0) tu=246 kneel=0 seenby=2 killer=1000059 kfaction=1 ktype=STR_NINJA_MEDIC dist=13 weapon=STR_ABC_GUN hit=under terra

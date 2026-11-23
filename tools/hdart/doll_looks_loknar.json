@@ -1,0 +1,18 @@
+{
+  "F0": {"hair": "dark indigo-blue", "eyes": "bright green"},
+  "F1": {"hair": "vivid green", "eyes": "soft violet"},
+  "F2": {"hair": "chestnut brown", "eyes": "deep red"},
+  "F3": {"hair": "very dark plum with crimson red streaks", "eyes": "bright green"},
+  "F4": {"hair": "black with a few grey highlights", "eyes": "bright green"},
+  "F5": {"hair": "very dark plum with crimson red streaks", "eyes": "amber"},
+  "F6": {"hair": "dark forest green", "eyes": "amber"},
+  "F7": {"hair": "vivid violet", "eyes": "bright sky blue"},
+  "M0": {"hair": "very dark plum with crimson red streaks", "eyes": "bright green"},
+  "M1": {"hair": "black with a few grey highlights", "eyes": "bright violet"},
+  "M2": {"hair": "chestnut brown", "eyes": "bright red"},
+  "M3": {"hair": "dark forest green", "eyes": "bright violet"},
+  "M4": {"hair": "black with a few grey highlights", "eyes": "bright green"},
+  "M5": {"hair": "dark indigo-blue", "eyes": "golden amber"},
+  "M6": {"hair": "golden blonde", "eyes": "bright sky blue"},
+  "M7": {"hair": "dark forest green", "eyes": "soft violet"}
+}

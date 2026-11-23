@@ -110,7 +110,7 @@ void PsiTrainingState::btnBaseXClick(Action *action)
 	{
 		if (action->getSender() == _btnBases[i])
 		{
-			_game->pushState(new AllocatePsiTrainingState(_bases.at(i)));
+			_game->pushState(withBaseSwitch(new AllocatePsiTrainingState(_bases.at(i))));
 			break;
 		}
 	}

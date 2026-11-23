@@ -1,0 +1,2 @@
+﻿Craft window (base - craft): the blinking HD lights of the craft no longer appear before the craft itself - they light up once the window has fully opened (ticket XP-000599).
+Desert battles (sand and red desert): the small rocks are redrawn after the original - a solid blue-grey stone of the same size and shape, without the yellow middle (ticket XP-000596).

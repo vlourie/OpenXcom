@@ -1,0 +1,14 @@
+active [('m0_none', 4), ('m0_walk', 216), ('m2_fire', 140), ('m2_walk', 46), ('m3_none', 138), ('m3_walk', 44)]
+D0 [('m0_walk', 461), ('m2_fire', 102), ('m2_walk', 24), ('m3_none', 76), ('m3_walk', 19)]
+active by the order at the moment of the decision:
+  HOLD_GO_COMPLETED: [('m2_fire', 5), ('m2_walk', 5), ('m3_none', 16), ('m3_walk', 5)]
+  HOLD_GO_EXECUTING: [('m0_walk', 21), ('m2_fire', 10), ('m2_walk', 5), ('m3_walk', 2)]
+  HOLD_GO_VALIDATED: [('m0_walk', 11), ('m2_fire', 13), ('m2_walk', 2), ('m3_none', 2), ('m3_walk', 4)]
+  HOLD_STAY_COMPLETED: [('m2_walk', 2)]
+  HOLD_STAY_EXECUTING: [('m2_fire', 5), ('m2_walk', 2), ('m3_none', 37)]
+  HOLD_STAY_VALIDATED: [('m2_fire', 35), ('m2_walk', 8), ('m3_none', 38), ('m3_walk', 16)]
+  REFUSED_NOW_free_patrol: [('m0_walk', 79), ('m2_fire', 6), ('m3_none', 11), ('m3_walk', 1)]
+  SEARCH_GO_COMPLETED: [('m0_none', 4), ('m3_none', 30), ('m3_walk', 3)]
+  SEARCH_GO_EXECUTING: [('m0_walk', 60), ('m2_fire', 23), ('m2_walk', 6), ('m3_none', 4), ('m3_walk', 4)]
+  SEARCH_GO_VALIDATED: [('m0_walk', 45), ('m2_fire', 43), ('m2_walk', 16), ('m3_walk', 9)]
+refused 'no path': {'other': 96, 'target_is_own_tile': 1}

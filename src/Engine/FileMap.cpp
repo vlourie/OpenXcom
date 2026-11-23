@@ -40,6 +40,7 @@
 #include <sstream>
 #include <istream>
 #include <unordered_map>
+#include <string_view>
 #include <unordered_set>
 
 #include "FileMap.h"
@@ -102,9 +103,11 @@ void *SDL_LoadFile_RW(SDL_RWops *src, size_t *datasize, int freesrc)
 		return NULL;
 	}
 
+	bool wholeFile = true;
 	size = SDL_RWsize(src);
 	if (size < 0) {
 		size = FILE_CHUNK_SIZE;
+		wholeFile = false;
 	}
 	data = SDL_malloc((size_t)(size + 1));
 
@@ -130,6 +133,9 @@ void *SDL_LoadFile_RW(SDL_RWops *src, size_t *datasize, int freesrc)
 				break;
 			}
 		size_total += size_read;
+		if (wholeFile) {
+			break;
+		}
 	}
 
 	if (datasize) {
@@ -336,8 +342,14 @@ static bool ls_r(const std::string &basePath, const std::string &relPath, dirlis
 	//Log(LOG_VERBOSE) << "ls_r: listing "<<fullDir<<" count="<<files.size();
 	for (auto i = files.begin(); i != files.end(); ++i) {
 		if (std::get<1>(*i)) { // it's a subfolder
+#ifndef _WIN32
 			auto fullpath = concatPaths(fullDir, std::get<0>(*i));
-			if (CrossPlatform::folderExists(fullpath)) {
+			if (CrossPlatform::folderExists(fullpath))
+#endif
+			{
+				// (on Windows the listing has said it is a folder; asking again cost one more request to the file
+				// system per folder, thousands in an HD pack. A folder that cannot be listed - a link to nowhere -
+				// gives no entries, which is what skipping it gave)
 				auto nextRelPath = concatOptionalPaths(relPath, std::get<0>(*i));
 				ls_r(basePath, nextRelPath, dlist);
 				continue;
@@ -391,28 +403,21 @@ struct VFSLayer {
 		auto crelpath = canonicalize(relpath);
 
 		if (isRuleset(crelpath)) {
-			rulesets.push_back(frec);
+			rulesets.push_back(std::move(frec));
 			return;
 		}
+		// update corresponding vdir
+		auto const pos = crelpath.find_last_of('/');
+		if (pos != crelpath.npos) {
+			vdirs[crelpath.substr(0, pos)].insert(crelpath.substr(pos + 1));
+		} else {
+			vdirs[std::string()].insert(crelpath);
+		}
+		// actually insert (the path and the record are moved in: a mod has a hundred thousand files);
 		// shouldn't happen, but overwrite nevertheless
 		auto existing = resources.find(crelpath);
 		if (existing != resources.end()) { resources.erase(existing); }
-		// actually insert
-		resources.insert(std::make_pair(crelpath, frec));
-
-		// update corresponding vdir
-		std::string basename = crelpath;
-		std::string dirname = "";
-		auto const pos = crelpath.find_last_of('/');
-		if (pos != crelpath.npos) {
-			basename = crelpath.substr(pos + 1);
-			dirname = crelpath.substr(0, pos);
-		}
-		auto existing_vd = vdirs.find(dirname);
-		if (existing_vd == vdirs.end()) {
-			vdirs.insert(std::pair<std::string, NameSet>(dirname, NameSet()));
-		}
-		vdirs.at(dirname).insert(basename);
+		resources.emplace(std::move(crelpath), std::move(frec));
 	}
 	/** maps a zipped moddir from filesystem
 	* @param zippath - path to the .zip
@@ -518,7 +523,7 @@ struct VFSLayer {
 			relpath = concatOptionalPaths(i->first, i->second);
 			frec.fullpath = concatPaths(fullpath, relpath);
 			if (isRuleset(i->second) && ignore_ruls) { continue; }
-			insert(relpath, frec);
+			insert(relpath, std::move(frec));
 			mapped_count ++;
 		}
 		return mapped_count > 1;
@@ -535,38 +540,46 @@ struct VFSLayer {
 };
 struct VFSLayerStack {
 	std::vector<VFSLayer *> layers;
-	FileSet resources;
+	// The stack only points into its layers: a path and a record are the layer's own, and so is the set of names
+	// of a folder that one layer alone has. A layer is immutable once mapped and outlives every stack
+	// (FileMap::clear() drops the stacks first). Copies were made before - of every file into the stack of its mod
+	// and again into the stack of the game: with the hundred thousand files of an HD pack that was 80 MiB kept
+	// for the whole session and a tenth of the game's start.
+	std::unordered_map<std::string_view, const FileRecord *> resources;	// relpath -> frec of the topmost layer
 	std::vector<FileRecord> rulesets;
-	std::unordered_map<std::string, NameSet> vdirs;
+	std::unordered_map<std::string_view, const NameSet *> vdirs;
+	std::unordered_map<std::string_view, std::unique_ptr<NameSet>> mergedVdirs;	// folders that several layers have
 
-	VFSLayerStack() : layers(), resources(), rulesets(), vdirs() { }
+	VFSLayerStack() : layers(), resources(), rulesets(), vdirs(), mergedVdirs() { }
 
 	void clear() {
 		layers.clear(); 	// not deleting them, they're owned by VFSLayerSet
 		resources.clear();
 		rulesets.clear();
 		vdirs.clear();
+		mergedVdirs.clear();
 	}
 	void _merge_vdirs(VFSLayer *src) {
-		auto src_vdirs = src->vdirs;
-		for (auto i = src_vdirs.begin(); i != src_vdirs.end(); ++i) {
+		for (auto i = src->vdirs.begin(); i != src->vdirs.end(); ++i) {
 			auto vdi = vdirs.find(i->first);
 			if (vdi == vdirs.end()) {
-				vdirs.insert(*i);
+				vdirs.emplace(std::string_view(i->first), &i->second);
 			} else {
+				auto merged = mergedVdirs.find(vdi->first);
+				if (merged == mergedVdirs.end()) {
+					merged = mergedVdirs.emplace(vdi->first, std::make_unique<NameSet>(*vdi->second)).first;
+					vdi->second = merged->second.get();
+				}
 				for (auto ni = i->second.begin(); ni != i->second.end(); ++ni) {
-					vdi->second.insert(*ni);
+					merged->second->insert(*ni);
 				}
 			}
 		}
 	}
 	void _merge_resources(VFSLayer *src, bool reverse) {
 		for (auto ri = src->resources.begin(); ri != src->resources.end(); ++ri) {
-			auto crelpath = ri->first;
-			auto frec = ri->second;
-			auto existing = resources.find(crelpath);
-			if ((!reverse) && (existing != resources.end())) { resources.erase(existing); }
-			resources.insert(std::make_pair(crelpath, frec));
+			auto added = resources.emplace(std::string_view(ri->first), &ri->second);
+			if ((!reverse) && (!added.second)) { added.first->second = &ri->second; }
 		}
 	}
 	void push_back(VFSLayer *layer) {
@@ -589,16 +602,16 @@ struct VFSLayerStack {
 	}
 	const FileRecord *at(const std::string& relpath) {
 		auto crelpath = canonicalize(relpath);
-		auto it = resources.find(crelpath);
-		return (it == resources.end()) ? NULL : &it->second;
+		auto it = resources.find(std::string_view(crelpath));
+		return (it == resources.end()) ? NULL : it->second;
 	}
 	const NameSet& ls(const std::string& relpath) {
 		auto crelpath = canonicalize(relpath);
 		while (crelpath.size() > 0 && crelpath[crelpath.size() - 1] == '/') {
 			crelpath.resize(crelpath.size() - 1);
 		}
-		auto it = vdirs.find(crelpath);
-		return (it == vdirs.end()) ? emptySet : it->second;
+		auto it = vdirs.find(std::string_view(crelpath));
+		return (it == vdirs.end()) ? emptySet : *it->second;
 	}
 	const std::vector<const FileRecord *> get_slice(const std::string& relpath) {
 		std::vector<const FileRecord *> rv;

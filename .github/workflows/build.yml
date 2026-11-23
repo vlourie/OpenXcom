@@ -1,0 +1,82 @@
+# The build check of OXCE-HD: every push that touches the engine is compiled from scratch the way the project is
+# built at home (MSYS2 MinGW64, CMake + Ninja, docs/SETUP.md). It checks that the code compiles and links; the
+# picture checks (Ctrl+F8 dumps, the hidden bench) need the game's data, which is not in the repository, and run locally.
+name: Build
+
+on:
+  push:
+    branches: [hd-render, oxce-plus]
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows (MSYS2 MinGW64)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-yaml-cpp
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-libjpeg-turbo
+            mingw-w64-x86_64-libtiff
+            mingw-w64-x86_64-libwebp
+
+      # The SDL 1.2 family is taken at the versions the releases are built with, not the newest ones: the newest
+      # "SDL" of MSYS2 is sdl12-compat (SDL 1.2 calls over SDL2/SDL3, another library altogether), and the newest
+      # libmikmod no longer links statically with SDL_mixer. Their dependencies come from the repository as usual.
+      # SDL_image is not installed at all: the package is the archive of 2012 with no security fixes, the game builds
+      # its own from libs/SDL_image (see libs/SDL_image/README_OXCE.md). The image libraries it reads the formats
+      # with (png, jpeg, tiff, webp) used to come as dependencies of that package and are listed above instead.
+      - name: Install SDL 1.2 (the versions of the release build)
+        run: |
+          repo=https://repo.msys2.org/mingw/mingw64
+          pacman -U --noconfirm --needed \
+            "$repo/mingw-w64-x86_64-SDL-1.2.15+r419+gef3a6c05-1-any.pkg.tar.zst" \
+            "$repo/mingw-w64-x86_64-SDL_mixer-1.2.12-10-any.pkg.tar.zst" \
+            "$repo/mingw-w64-x86_64-SDL_gfx-2.0.27-1-any.pkg.tar.zst" \
+            "$repo/mingw-w64-x86_64-libmikmod-3.3.13-1-any.pkg.tar.zst"
+          pacman -Q mingw-w64-x86_64-SDL mingw-w64-x86_64-SDL_mixer mingw-w64-x86_64-SDL_gfx mingw-w64-x86_64-libmikmod mingw-w64-x86_64-gcc
+          if pacman -Q mingw-w64-x86_64-SDL_image; then echo "the SDL_image of the system must not be there"; exit 1; fi
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: ninja -C build openxcom
+
+      - name: Check the executable
+        run: test -s build/bin/openxcom.exe && ls -l build/bin/openxcom.exe

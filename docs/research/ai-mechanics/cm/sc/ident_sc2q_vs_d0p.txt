@@ -1,0 +1,3 @@
+L2_s1: turns<=9 lines 2901/2901 IDENTICAL
+M10_s1: turns<=9 lines 2372/2372 IDENTICAL
+OFF == D0

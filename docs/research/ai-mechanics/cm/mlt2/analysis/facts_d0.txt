@@ -1,0 +1,203 @@
+protocol fighters: 18 Counter({'STR_PIR_PLASMA_RIFLE': 11, 'STR_PIR_PLASMA_PISTOL': 4, 'STR_PIR_HEAVY_PLASMA': 3}) by reach Counter({60: 11, 39: 4, 86: 3})
+
+--- buildings: cell fac | modules | by z | armor range | breakable by rifle (60) / pistol (39) | nodes | nearest fighters' start distance
+1,0  WELL                             1 z{0: 1} a30-30 br1/1 nodes1 near[9, 27, 33]
+4,3  PSIONIC_LABORATORY               1 z{3: 1} a30-30 br1/1 nodes3 near[25, 27, 28]
+2,0  SUMMONING_CIRCLE                 2 z{2: 2} a20-20 br2/2 nodes1 near[1, 33, 35]
+4,2  STUDY_ROOM                       2 z{3: 2} a12-40 br2/1 nodes2 near[29, 30, 31]
+5,3  LIBRARY                          2 z{3: 2} a40-40 br2/0 nodes0 near[35, 36, 36]
+2,3  POWER_PLANT                      9 z{2: 9} a40-50 br9/0 nodes0 near[7, 10, 17]
+3,2  SURGERY_ROOM                    10 z{2: 2, 3: 8} a8-40 br10/8 nodes1 near[21, 24, 24]
+2,2  DRUG_DEN                        11 z{3: 11} a20-25 br11/11 nodes0 near[16, 20, 21]
+5,4  DATA_CENTER                     11 z{3: 11} a12-40 br11/4 nodes4 near[32, 35, 35]
+0,0  LABORATORY                      14 z{1: 2, 2: 1, 3: 11} a12-50 br14/10 nodes3 near[19, 25, 32]
+5,2  MED_BAY                         15 z{1: 10, 3: 5} a12-25 br15/15 nodes1 near[37, 38, 40]
+5,5  COMPUTER_CORE                   15 z{2: 3, 3: 12} a40-40 br15/0 nodes2 near[31, 34, 37]
+3,0  PERSONAL_LABS                   17 z{1: 8, 2: 1, 3: 8} a12-40 br17/12 nodes6 near[11, 38, 40]
+0,1  WORKSHOP                        20 z{2: 1, 3: 19} a8-40 br20/18 nodes2 near[15, 22, 22]
+4,5  MESS_HALL_ADV                   23 z{0: 4, 2: 9, 3: 9, 4: 1} a20-40 br23/19 nodes0 near[21, 24, 27]
+2,1  ALENIUM_CHAMBER                 24 z{3: 24} a20-40 br24/20 nodes1 near[11, 25, 26]
+4,4  FUSION_REACTOR                  29 z{0: 9, 1: 9, 2: 9, 3: 2} a40-40 br29/0 nodes0 near[23, 25, 25]
+0,2  FUSION_BALL_DEFENSES            32 z{3: 32} a70-70 br0/0 nodes1 near[5, 12, 12]
+1,2  FUSION_BALL_DEFENSES            32 z{3: 32} a70-70 br0/0 nodes1 near[12, 15, 16]
+1,3  FUSION_BALL_DEFENSES            32 z{3: 32} a70-70 br0/0 nodes1 near[7, 9, 10]
+5,1  - (not a corner)                54 z{1: 19, 2: 11, 3: 23, 4: 1} a20-40 br54/53 nodes0 near[33, 43, 45]
+4,0  LIVING_QUARTERS_ADVANCED_LARGE  55 z{1: 19, 3: 36} a20-25 br55/55 nodes0 near[21, 43, 46]
+5,0  - (not a corner)                55 z{1: 19, 3: 36} a20-25 br55/55 nodes0 near[31, 49, 52]
+4,1  - (not a corner)                61 z{1: 19, 2: 11, 3: 31} a14-40 br61/55 nodes0 near[24, 35, 38]
+cells without modules: ['0,3', '0,4', '1,1', '2,4', '3,1', '3,3'] ['ACCESS_LIFT', 'HANGAR', 'JAIL', 'HANGAR', 'ONSEN', 'WITCH_CAVE']
+
+--- hostile losses: turn victim type how pos killer side weapon dist seenby
+ t1 1000010 DOOM_SOLDIER dead (34,44,2) friendly 1000024 STR_PLASMA_SCORCHER d4 seenby0 
+ t1 1000023 DOOM_SARGE dead (34,48,2) friendly 1000019 STR_PIR_PLASMA_RIFLE d3 seenby0 
+ t1 1000031 DOOM_IMP_TERRORIST dead (31,44,2) player 96 AUX_TANK_LASER_CANNON d4 seenby1 
+ t1 1000019 DOOM_SARGE dead (34,51,2) player 393 AUX_ACAR_WEAPON_LASCANNON d8 seenby2 
+ t1 1000029 DOOM_IMP_TERRORIST dead (31,54,2) player 393 AUX_ACAR_WEAPON_LASCANNON d10 seenby2 
+ t1 1000030 DOOM_IMP_TERRORIST dead (24,51,2) player 363 AUX_ACAR_WEAPON_LASCANNON d22 seenby2 
+ t1 1000002 DOOM_DEMON_TERRORIST dead (28,54,2) player 393 AUX_ACAR_WEAPON_LASCANNON d13 seenby4 
+ t1 1000036 DOOM_HELL_BARON_TERRORIST dead (24,44,2) player 472 AUX_ACAR_WEAPON_XGAUSS d23 seenby2 
+ t1 1000017 DOOM_SARGE dead (21,57,3) player 363 AUX_ACAR_WEAPON_LASCANNON d25 seenby2 FIGHTER
+ t1 1000032 DOOM_IMP_TERRORIST dead (24,51,2) player 363 AUX_ACAR_WEAPON_LASCANNON d22 seenby2 
+ t2 1000024 DOOM_SARGE dead (28,51,2) player 184 AUX_TANK_LASER d25 seenby2 
+ t2 1000011 DOOM_SOLDIER dead (24,54,2) player 393 AUX_ACAR_WEAPON_LASCANNON d17 seenby1 FIGHTER
+ t2 1000001 DOOM_CACODEMON_TERRORIST dead (27,46,2) player 472 AUX_ACAR_WEAPON_XGAUSS d19 seenby4 
+ t2 1000034 DOOM_SARGE dead (16,30,2) player 471 AUX_ACAR_WEAPON_LASCANNON d7 seenby1 FIGHTER
+ t2 1000026 DOOM_GUNNER dead (21,35,2) player 471 AUX_ACAR_WEAPON_LASCANNON d14 seenby1 
+ t2 1000020 DOOM_SARGE dead (23,39,2) player 363 AUX_ACAR_WEAPON_LASCANNON d18 seenby3 
+ t2 1000006 DOOM_SOLDIER dead (20,44,4) player 363 AUX_ACAR_WEAPON_LASCANNON d20 seenby3 FIGHTER
+ t2 1000007 DOOM_SOLDIER dead (24,33,2) player 394 STR_XG_HEAVY d6 seenby2 
+ t2 1000003 DOOM_DEMON_TERRORIST dead (22,33,2) player 394 STR_XG_HEAVY d8 seenby2 
+ t2 1000015 DOOM_SARGE dead (20,40,4) player 472 AUX_ACAR_WEAPON_XGAUSS d27 seenby2 FIGHTER
+ t2 1000025 DOOM_GUNNER dead (25,35,2) friendly 1000027 STR_PIR_ALIEN_GRENADE d25 seenby1 
+ t3 1000009 DOOM_SOLDIER dead (13,46,2) player 363 AUX_ACAR_WEAPON_LASCANNON d27 seenby1 
+ t3 1000004 DOOM_SOLDIER dead (18,33,2) player 67 STR_GATLING_LASER d8 seenby1 FIGHTER
+ t3 1000013 DOOM_SOLDIER dead (15,51,2) player 394 STR_XG_HEAVY d16 seenby3 FIGHTER
+ t3 1000018 DOOM_SARGE dead (10,49,2) player 394 STR_XG_HEAVY d18 seenby3 FIGHTER
+ t3 1000028 DOOM_IMP_TERRORIST dead (4,5,2) player 255 STR_PIR_HEAVY_PLASMA d30 seenby2 
+ t3 1000014 DOOM_SARGE dead (3,5,2) player 255 STR_PIR_HEAVY_PLASMA d31 seenby2 FIGHTER
+ t3 1000000 DOOM_CACODEMON_TERRORIST dead (8,43,2) player 363 AUX_ACAR_WEAPON_LASCANNON d32 seenby2 
+ t3 1000027 DOOM_GUNNER dead (7,52,2) player 67 STR_GATLING_LASER d23 seenby3 FIGHTER
+ t3 1000021 DOOM_SARGE dead (3,31,4) player 472 AUX_ACAR_WEAPON_XGAUSS d2 seenby1 FIGHTER
+ t4 1000022 DOOM_SARGE dead (22,12,2) player 366 AUX_TANK_LASER d8 seenby1 FIGHTER
+ t5 1000012 DOOM_SOLDIER dead (13,17,2) player 67 STR_GATLING_LASER d15 seenby1 FIGHTER
+ t5 1000016 DOOM_SARGE dead (23,7,2) player 255 STR_PIR_HEAVY_PLASMA d1 seenby2 FIGHTER
+ t5 1000008 DOOM_SOLDIER dead (14,14,2) player 102 STR_XG_HEAVY d6 seenby1 FIGHTER
+ t5 1000005 DOOM_SOLDIER dead (11,27,2) player 340 AUX_TANK_PSI_CANNON d7 seenby2 FIGHTER
+ t7 1000033 DOOM_SARGE dead (7,3,2) friendly 1000035 STR_PIR_HEAVY_PLASMA d2 seenby0 FIGHTER
+ t10 1000035 DOOM_SARGE dead (9,5,2) player 418 STR_PIR_HEAVY_PLASMA d6 seenby1 FIGHTER
+losses by turn and killer: [((1, 'friendly'), 2), ((1, 'player'), 8), ((2, 'friendly'), 1), ((2, 'player'), 10), ((3, 'player'), 9), ((4, 'player'), 1), ((5, 'player'), 4), ((7, 'friendly'), 1), ((10, 'player'), 1)]
+
+--- plans:
+ t1 cell 4,3 1000010>44,34,3;1000023>47,34,3
+ t1 cell 4,3 1000019>44,34,3;1000036>47,34,3
+ t1 cell 4,3 1000015>47,34,3;1000036>44,34,3
+ t1 cell 4,3 1000006>47,34,3;1000015>44,34,3
+ t2 cell 4,3 1000015>44,34,3;1000018>47,34,3
+ t2 cell 4,3 1000004>44,34,3;1000018>47,34,3
+ t3 cell 4,3 1000016>47,34,3;1000022>44,34,3
+ t4 cell 4,3 1000005>47,34,3;1000016>44,34,3
+ t5 cell 4,3 1000005>44,34,3;1000008>47,34,3
+ t5 cell 4,3 1000005>44,34,3;1000033>47,34,3
+ t5 cell 4,3 1000033>44,34,3;1000035>47,34,3
+
+--- fighters' decisions: unit turn from > to mode act tu spent end | last trail
+1000004 STR_PIR_PLASMA_RIFLE start 0,44,4
+  t1 (0,44,4) > (12,35,3) m0 a2 tu81 sp78 end(11, 31, 2) dmg0 lost0 | walk.stop.tu 11,31,2>12,31,2 d2 bam0 mt0 sz1 tu3/4 en31/2 rs0 bu-1
+  t2 (11,31,2) > (16,31,2) m2 a2 tu81 sp20 end(16, 31, 2) dmg0 lost0 | walk.stop.spotted 16,31,2>16,31,2 d2 bam0 mt0 sz1 tu61/-1 en55/-1 rs0 
+  t2 (16,31,2) > (20,33,2) m2 a2 tu61 sp14 end(18, 33, 2) dmg0 lost0 | walk.stop.spotted 18,33,2>18,33,2 d3 bam0 mt0 sz1 tu47/-1 en48/-1 rs0 
+  t2 (18,33,2) > (22,35,3) m2 a7 tu47 sp25 end(18, 33, 2) dmg0 lost0 | 
+  t2 (18,33,2) > (22,35,3) m2 a8 tu22 sp19 end(18, 33, 2) dmg0 lost0 | 
+1000005 STR_PIR_PLASMA_RIFLE start 4,40,4
+  t1 (4,40,4) > (2,25,3) m0 a2 tu81 sp80 end(4, 28, 4) dmg0 lost0 | walk.stop.tu 4,28,4>4,27,4 d0 bam0 mt0 sz1 tu1/4 en36/2 rs0 bu-1
+  t2 (4,28,4) > (2,25,3) m0 a2 tu81 sp50 end(2, 25, 3) dmg0 lost0 | 
+  t2 (2,25,3) > (44,37,2) m0 a2 tu31 sp24 end(4, 22, 2) dmg0 lost0 | walk.stop.tu 4,22,2>4,21,2 d0 bam0 mt0 sz1 tu7/8 en39/4 rs0 bu-1
+  t2 (4,22,2) > (44,37,2) m0 a2 tu7 sp0 end(4, 22, 2) dmg0 lost0 | walk.stop.tu 4,22,2>4,21,2 d0 bam0 mt0 sz1 tu7/8 en39/4 rs0 bu-1
+  t2 (4,22,2) > (44,37,2) m0 a2 tu7 sp0 end(4, 22, 2) dmg0 lost0 | walk.stop.tu 4,22,2>4,21,2 d0 bam0 mt0 sz1 tu7/8 en39/4 rs0 bu-1
+  t2 (4,22,2) > (44,37,2) m0 a2 tu7 sp0 end(4, 22, 2) dmg0 lost0 | walk.stop.tu 4,22,2>4,21,2 d0 bam0 mt0 sz1 tu7/8 en39/4 rs0 bu-1
+  t2 (4,22,2) > (44,37,2) m0 a2 tu7 sp0 end(4, 22, 2) dmg0 lost0 | walk.stop.tu 4,22,2>4,21,2 d0 bam0 mt0 sz1 tu7/8 en39/4 rs0 bu-1
+  t3 (4,22,2) > (44,37,2) m0 a2 tu81 sp46 end(10, 26, 2) dmg0 lost0 | walk.stop.turnspot 10,26,2>10,26,2 d3 bam0 mt0 sz1 tu35/-1 en49/-1 rs0
+  t3 (10,26,2) > (25,38,2) m2 a7 tu35 sp25 end(10, 26, 2) dmg0 lost0 | 
+  t3 (10,26,2) > (44,37,2) m0 a2 tu10 sp10 end(12, 27, 2) dmg0 lost0 | walk.stop.tu 12,27,2>13,28,2 d3 bam0 mt0 sz1 tu0/6 en44/3 rs0 bu-1
+  t4 (12,27,2) > (8,25,2) m2 a2 tu81 sp4 end(11, 27, 2) dmg0 lost0 | walk.stop.turnspot 11,27,2>11,27,2 d7 bam0 mt0 sz1 tu77/-1 en68/-1 rs0
+  t4 (11,27,2) > (11,20,2) m2 a7 tu77 sp26 end(11, 27, 2) dmg0 lost0 | 
+  t4 (11,27,2) > (11,20,2) m2 a7 tu51 sp25 end(11, 27, 2) dmg0 lost0 | 
+  t4 (11,27,2) > (11,20,2) m2 a7 tu26 sp25 end(11, 27, 2) dmg0 lost0 | 
+1000006 STR_PIR_PLASMA_PISTOL start 20,44,4
+  t1 (20,44,4) > (40,45,2) m2 a8 tu81 sp14 end(20, 44, 4) dmg37 lost0 | 
+  t1 (20,44,4) > (40,45,2) m2 a8 tu67 sp14 end(20, 44, 4) dmg25 lost0 | 
+  t1 (20,44,4) > (41,54,2) m2 a8 tu53 sp15 end(20, 44, 4) dmg0 lost0 | 
+  t1 (20,44,4) > (41,54,2) m2 a8 tu38 sp14 end(20, 44, 4) dmg0 lost0 | 
+  t1 (20,44,4) > (41,54,2) m2 a8 tu24 sp14 end(20, 44, 4) dmg0 lost0 | 
+  t1 (20,44,4) > (12,25,3) m0 a2 tu10 sp4 end(20, 44, 4) dmg0 lost0 | walk.stop.tu 20,44,4>19,44,4 d6 bam0 mt0 sz1 tu6/8 en70/4 rs0 bu-1
+1000008 STR_PIR_PLASMA_PISTOL start 1,49,2
+  t1 (1,49,2) > (4,15,3) m0 a2 tu81 sp78 end(3, 33, 2) dmg0 lost0 | walk.stop.tu 3,33,2>3,32,2 d0 bam0 mt0 sz1 tu3/4 en35/2 rs0 bu-1
+  t2 (3,33,2) > (4,15,3) m0 a2 tu81 sp78 end(5, 19, 2) dmg0 lost0 | walk.stop.tu 5,19,2>5,18,2 d0 bam0 mt0 sz1 tu3/4 en32/2 rs0 bu-1
+  t3 (5,19,2) > (4,15,3) m0 a2 tu81 sp79 end(5, 14, 3) dmg0 lost0 | walk.stop.tu 5,14,3>4,15,3 d5 bam0 mt0 sz1 tu2/6 en29/3 rs0 bu-1
+  t4 (5,14,3) > (4,15,3) m0 a2 tu81 sp6 end(4, 15, 3) dmg0 lost0 | 
+  t4 (4,15,3) > (57,14,3) m0 a2 tu75 sp60 end(11, 14, 2) dmg0 lost0 | walk.stop.spotted 11,14,2>11,14,2 d2 bam0 mt0 sz1 tu15/-1 en32/-1 rs0 
+  t4 (11,14,2) > (57,14,3) m0 a2 tu15 sp12 end(14, 14, 2) dmg0 lost0 | walk.stop.tu 14,14,2>15,14,2 d2 bam0 mt0 sz1 tu3/4 en26/2 rs0 bu-1
+1000010 not in the dump: out before the side moved start None
+1000015 STR_PIR_PLASMA_RIFLE start 20,40,4
+  t1 (20,40,4) > (20,40,4) m3 a0 tu89 sp0 end(20, 40, 4) dmg0 lost0 | 
+  t1 (20,40,4) > (20,40,4) m3 a0 tu89 sp0 end(20, 40, 4) dmg0 lost0 | 
+  t1 (20,40,4) > (20,40,4) m3 a0 tu89 sp0 end(20, 40, 4) dmg0 lost0 | 
+  t2 (20,40,4) > (40,44,2) m2 a7 tu89 sp28 end(20, 40, 4) dmg0 lost225 | 
+1000016 STR_PIR_HEAVY_PLASMA start 24,4,3
+  t1 (24,4,3) > (22,11,0) m0 a2 tu89 sp36 end(23, 7, 2) dmg0 lost0 | walk.stop.turnspot 23,7,2>23,7,2 d3 bam0 mt0 sz1 tu53/-1 en64/-1 rs0 b
+  t1 (23,7,2) > (19,3,2) m2 a2 tu53 sp28 end(19, 3, 2) dmg0 lost0 | 
+  t1 (19,3,2) > (18,3,2) m2 a2 tu25 sp4 end(18, 3, 2) dmg0 lost0 | 
+  t1 (18,3,2) > (22,11,0) m0 a2 tu21 sp16 end(15, 5, 0) dmg0 lost0 | walk.stop.tu 15,5,0>16,6,0 d3 bam0 mt0 sz1 tu5/12 en40/6 rs0 bu-1
+  t2 (15,5,0) > (22,11,0) m0 a2 tu89 sp84 end(22, 9, 0) dmg0 lost0 | walk.stop.tu 22,9,0>23,9,0 d2 bam0 mt0 sz1 tu5/8 en34/4 rs0 bu-1
+  t3 (22,9,0) > (22,11,0) m0 a2 tu89 sp32 end(22, 11, 0) dmg0 lost0 | 
+  t3 (22,11,0) > (24,4,3) m0 a2 tu57 sp56 end(23, 17, 0) dmg0 lost0 | walk.stop.tu 23,17,0>22,17,0 d6 bam0 mt0 sz1 tu1/8 en26/4 rs0 bu-1
+  t4 (23,17,0) > (24,4,3) m0 a2 tu89 sp40 end(21, 17, 2) dmg0 lost0 | walk.stop.turnspot 21,17,2>21,17,2 d0 bam0 mt0 sz1 tu49/-1 en50/-1 rs0
+  t4 (21,17,2) > (24,4,3) m0 a2 tu49 sp36 end(23, 9, 2) dmg0 lost0 | walk.stop.spotted 23,9,2>23,9,2 d0 bam0 mt0 sz1 tu13/-1 en32/-1 rs0 bu
+  t4 (23,9,2) > (24,4,3) m0 a2 tu13 sp12 end(23, 7, 2) dmg0 lost0 | walk.stop.tu 23,7,2>22,7,2 d6 bam0 mt0 sz1 tu1/8 en26/4 rs0 bu-1
+1000018 STR_PIR_PLASMA_RIFLE start 14,48,2
+  t1 (14,48,2) > (14,48,2) m3 a0 tu89 sp0 end(14, 48, 2) dmg0 lost0 | 
+  t1 (14,48,2) > (14,48,2) m3 a0 tu89 sp0 end(14, 48, 2) dmg0 lost0 | 
+  t2 (14,48,2) > (10,49,2) m3 a2 tu89 sp18 end(10, 49, 2) dmg0 lost0 | 
+1000019 not in the dump: out before the side moved start None
+1000022 STR_PIR_PLASMA_RIFLE start 6,37,3
+  t1 (6,37,3) > (22,10,3) m0 a2 tu89 sp86 end(11, 21, 2) dmg0 lost0 | walk.stop.tu 11,21,2>12,21,2 d2 bam0 mt0 sz1 tu3/4 en37/2 rs0 bu-1
+  t2 (11,21,2) > (22,10,3) m0 a2 tu89 sp4 end(12, 21, 2) dmg0 lost0 | walk.stop.turnspot 12,21,2>12,21,2 d1 bam0 mt0 sz1 tu85/-1 en71/-1 rs0
+  t2 (12,21,2) > (13,24,2) m3 a2 tu85 sp26 end(13, 24, 2) dmg0 lost0 | 
+  t3 (13,24,2) > (22,10,3) m0 a2 tu89 sp84 end(22, 12, 2) dmg0 lost0 | walk.stop.tu 22,12,2>22,11,2 d0 bam0 mt0 sz1 tu5/10 en40/5 rs0 bu-1
+1000023 not in the dump: out before the side moved start None
+1000033 STR_PIR_HEAVY_PLASMA start 4,30,2
+  t1 (4,30,2) > (3,5,3) m0 a2 tu89 sp88 end(5, 12, 2) dmg0 lost0 | walk.stop.tu 5,12,2>5,11,2 d0 bam0 mt0 sz1 tu1/4 en36/2 rs0 bu-1
+  t2 (5,12,2) > (3,5,3) m0 a2 tu89 sp28 end(5, 5, 2) dmg0 lost0 | walk.stop.turnspot 5,5,2>5,5,2 d1 bam0 mt0 sz1 tu61/-1 en58/-1 rs0 bu-
+  t2 (5,5,2) > (34,5,2) m2 a7 tu61 sp36 end(5, 5, 2) dmg0 lost0 | 
+  t2 (5,5,2) > (3,5,3) m0 a2 tu25 sp24 end(7, 1, 2) dmg0 lost0 | walk.stop.tu 7,1,2>7,0,2 d0 bam0 mt0 sz1 tu1/10 en48/5 rs0 bu-1
+  t3 (7,1,2) > (3,5,3) m0 a2 tu89 sp47 end(3, 5, 3) dmg0 lost0 | 
+  t3 (3,5,3) > (4,2,1) m0 a8 tu42 sp29 end(3, 5, 3) dmg0 lost0 | 
+  t3 (3,5,3) > (4,2,1) m0 a8 tu13 sp0 end(3, 5, 3) dmg0 lost0 | 
+  t3 (3,5,3) > (3,5,3) m3 a0 tu13 sp0 end(3, 5, 3) dmg0 lost0 | 
+  t4 (3,5,3) > (4,2,1) m0 a8 tu89 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t4 (3,5,3) > (4,2,1) m0 a8 tu63 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t4 (3,5,3) > (4,2,1) m0 a8 tu37 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t4 (3,5,3) > (4,2,1) m0 a8 tu11 sp0 end(3, 5, 3) dmg0 lost0 | 
+  t5 (3,5,3) > (4,2,1) m0 a8 tu89 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t5 (3,5,3) > (4,2,1) m0 a8 tu63 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t5 (3,5,3) > (4,2,1) m0 a8 tu37 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t5 (3,5,3) > (4,2,1) m0 a8 tu11 sp0 end(3, 5, 3) dmg0 lost0 | 
+  t6 (3,5,3) > (4,2,1) m0 a8 tu89 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t6 (3,5,3) > (4,2,1) m0 a8 tu63 sp26 end(3, 5, 3) dmg0 lost0 | 
+  t6 (3,5,3) > (3,5,3) m3 a0 tu37 sp0 end(3, 5, 3) dmg0 lost0 | 
+  t7 (3,5,3) > (5,2,1) m0 a8 tu89 sp27 end(3, 5, 3) dmg0 lost0 | 
+  t7 (3,5,3) > (47,28,4) m0 a2 tu62 sp44 end(7, 3, 2) dmg0 lost0 | walk.stop.turnspot 7,3,2>7,3,2 d3 bam0 mt0 sz1 tu18/-1 en60/-1 rs0 bu-
+1000035 STR_PIR_HEAVY_PLASMA start 2,37,2
+  t1 (2,37,2) > (5,0,3) m0 a2 tu89 sp84 end(6, 21, 2) dmg0 lost0 | walk.stop.tu 6,21,2>5,20,2 d7 bam0 mt0 sz1 tu5/6 en38/3 rs0 bu-1
+  t2 (6,21,2) > (5,0,3) m0 a2 tu89 sp30 end(5, 15, 2) dmg0 lost0 | walk.stop.turnspot 5,15,2>5,15,2 d1 bam0 mt0 sz1 tu59/-1 en59/-1 rs0 b
+  t2 (5,15,2) > (16,14,2) m2 a7 tu59 sp36 end(5, 15, 2) dmg141 lost0 | 
+  t2 (5,15,2) > (5,0,3) m0 a2 tu23 sp20 end(5, 10, 2) dmg0 lost0 | walk.stop.tu 5,10,2>5,9,2 d0 bam0 mt0 sz1 tu3/4 en49/2 rs0 bu-1
+  t3 (5,10,2) > (5,0,3) m0 a2 tu89 sp20 end(5, 5, 2) dmg0 lost0 | walk.stop.turnspot 5,5,2>5,5,2 d1 bam0 mt0 sz1 tu69/-1 en70/-1 rs0 bu-
+  t3 (5,5,2) > (5,0,3) m0 a2 tu69 sp49 end(5, 0, 3) dmg0 lost0 | 
+  t3 (5,0,3) > (4,2,1) m0 a8 tu20 sp1 end(5, 0, 3) dmg0 lost0 | 
+  t3 (5,0,3) > (4,2,1) m0 a8 tu19 sp0 end(5, 0, 3) dmg0 lost0 | 
+  t4 (5,0,3) > (4,2,1) m0 a8 tu89 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t4 (5,0,3) > (4,2,1) m0 a8 tu63 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t4 (5,0,3) > (4,2,1) m0 a8 tu37 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t4 (5,0,3) > (4,2,1) m0 a8 tu11 sp0 end(5, 0, 3) dmg0 lost0 | 
+  t5 (5,0,3) > (4,2,1) m0 a8 tu89 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t5 (5,0,3) > (4,2,1) m0 a8 tu63 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t5 (5,0,3) > (4,2,1) m0 a8 tu37 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t5 (5,0,3) > (4,2,1) m0 a8 tu11 sp0 end(5, 0, 3) dmg0 lost0 | 
+  t6 (5,0,3) > (4,2,1) m0 a8 tu89 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t6 (5,0,3) > (5,2,1) m0 a8 tu63 sp27 end(5, 0, 3) dmg0 lost0 | 
+  t6 (5,0,3) > (5,2,1) m0 a8 tu36 sp26 end(5, 0, 3) dmg0 lost0 | 
+  t6 (5,0,3) > (5,2,1) m0 a8 tu10 sp0 end(5, 0, 3) dmg0 lost0 | 
+  t7 (5,0,3) > (26,12,1) m0 a2 tu89 sp12 end(5, 3, 2) dmg0 lost0 | walk.stop.turnspot 5,3,2>5,3,2 d3 bam0 mt0 sz1 tu77/-1 en74/-1 rs0 bu-
+  t7 (5,3,2) > (11,4,2) m2 a7 tu77 sp36 end(5, 3, 2) dmg79 lost0 | 
+  t7 (5,3,2) > (18,5,2) m2 a7 tu41 sp35 end(5, 3, 2) dmg0 lost0 | 
+  t7 (5,3,2) > (26,12,1) m0 a2 tu6 sp4 end(6, 3, 2) dmg0 lost0 | walk.stop.tu 6,3,2>7,3,2 d2 bam0 mt0 sz1 tu2/4 en72/2 rs0 bu-1
+  t8 (6,3,2) > (26,12,1) m0 a2 tu89 sp50 end(13, 11, 2) dmg0 lost0 | walk.stop.turnspot 13,11,2>13,11,2 d3 bam0 mt0 sz1 tu39/-1 en55/-1 rs0
+  t8 (13,11,2) > (26,12,1) m0 a2 tu39 sp12 end(15, 13, 2) dmg0 lost0 | walk.stop.spotted 15,13,2>15,13,2 d3 bam0 mt0 sz1 tu27/-1 en49/-1 rs0 
+  t8 (15,13,2) > (13,8,2) m3 a2 tu27 sp24 end(13, 8, 2) dmg0 lost0 | 
+  t9 (13,8,2) > (9,5,2) m3 a2 tu89 sp22 end(9, 5, 2) dmg0 lost0 | 
+1000036 not in the dump: out before the side moved start None
+
+--- player's positions at their first decision of turn 1 (analysis only, the plan must not read them):
+38 [('4,0', 8), ('4,1', 7), ('4,5', 4), ('5,0', 4), ('5,1', 4), ('3,4', 2), ('1,4', 2), ('2,2', 1), ('5,2', 1), ('4,3', 1), ('2,1', 1), ('2,0', 1), ('3,1', 1), ('4,4', 1)]
+hostile starts by cell: [('0,4', 6), ('0,3', 4), ('2,4', 2), ('2,5', 2), ('1,5', 1), ('2,0', 1), ('1,4', 1), ('0,5', 1)]
+hostile fighter starts: [('1000004', '0,44,4'), ('1000005', '4,40,4'), ('1000006', '20,44,4'), ('1000008', '1,49,2'), ('1000011', '24,54,2'), ('1000012', '4,49,2'), ('1000013', '14,54,2'), ('1000014', '0,40,4'), ('1000015', '20,40,4'), ('1000016', '24,4,3'), ('1000017', '21,57,2'), ('1000018', '14,48,2'), ('1000021', '4,44,2'), ('1000022', '6,37,3'), ('1000027', '4,51,2'), ('1000033', '4,30,2'), ('1000034', '4,37,2'), ('1000035', '2,37,2')]

@@ -57,6 +57,8 @@ static int gmext_read_stream (struct gmstream *p,
 	if (!n--)
 		return -1;
 	p->tempo = *data++;
+	if (!p->tempo)
+		return -1;	// the tempo event divides by it
 
 	// subsequences
 	if (!n--)
@@ -67,7 +69,7 @@ static int gmext_read_stream (struct gmstream *p,
 		if (n < 4)
 			return -1;
 		unsigned int s = read_uint32_le(data);
-		if (s < 4)
+		if (s < 4 || s > n)
 			return -1;
 		p->subs[i].size = s - 4;
 		p->subs[i].data = data + 4;
@@ -85,7 +87,7 @@ static int gmext_read_stream (struct gmstream *p,
 			return -1;
 		p->tracks[i].channel = *data++;
 		unsigned int s = read_uint32_le(data);
-		if (s < 4)
+		if (s < 4 || s > n)
 			return -1;
 		p->tracks[i].seq.size = s - 4;
 		p->tracks[i].seq.data = data + 4;
@@ -159,18 +161,34 @@ struct output_status {
 	unsigned int delta;
 	unsigned int patch;
 	unsigned char prevcmd;
+	/// The commands read so far for the whole stream, calls of subsequences counted at every call.
+	unsigned long work;
 };
+
+/// No track of the game comes near either: the commands a stream may read (a subsequence called from a subsequence
+/// called many times multiplies them, and a call writes nothing) and the MIDI it may make.
+static const unsigned long GMEXT_MAX_WORK = 1ul << 24;
+static const size_t GMEXT_MAX_MIDI = 64u << 20;
 
 static int gmext_write_sequence (std::vector<unsigned char> &midi,
 	const struct gmstream *stream, unsigned int channel,
-	const struct seq *seq, struct output_status *status)
+	const struct seq *seq, struct output_status *status, int depth = 0)
 {
 	const unsigned char *data = seq->data;
 	unsigned int left = seq->size;
 
+	// a subsequence that inserts itself (directly or in a ring) never ends: a chain of different subsequences
+	// is never deeper than their number
+	if (depth > stream->nsubs)
+		return -1;
+
 	unsigned char cmd = -1;
 
 	while (left) {
+
+		// every command of every branch: subsequences that call each other many times do not end in any time
+		if (++status->work > GMEXT_MAX_WORK || midi.size() > GMEXT_MAX_MIDI)
+			return -1;
 
 		// read delta
 		unsigned int ndelta = 0;
@@ -208,7 +226,7 @@ static int gmext_write_sequence (std::vector<unsigned char> &midi,
 						return -1;
 					if (gmext_write_sequence(midi,
 						stream, channel,
-						&stream->subs[*data++], status)
+						&stream->subs[*data++], status, depth + 1)
 							== -1)
 						return -1;
 					cmd = 0;
@@ -232,7 +250,7 @@ static int gmext_write_sequence (std::vector<unsigned char> &midi,
 				unsigned char data2 = *data++;
 				if (data2)
 					data2 = (unsigned int) data2 *
-						(channel==9 ? 80 : volume[status->patch]) >> 7;
+						(channel==9 ? 80 : volume[status->patch & 0x7F]) >> 7;
 				gmext_write_delta(midi, status->delta);
 				midi.push_back(cmd | channel);
 				midi.push_back(data1);
@@ -314,6 +332,7 @@ static int gmext_write_midi (const struct gmstream *stream,
 	gmext_write_end_ev(midi);
 
 	// write tracks
+	unsigned long work = 0;
 	for (int j=0; j<stream->ntracks; ++j) {
 
 		// header
@@ -333,11 +352,12 @@ static int gmext_write_midi (const struct gmstream *stream,
 			midi.push_back(midi_track_init[i]);
 
 		// body
-		struct output_status status = { 0, 0, 0 };
+		struct output_status status = { 0, 0, 0, work };
 		if (gmext_write_sequence(midi, stream,
 				stream->tracks[j].channel,
 				&stream->tracks[j].seq, &status) == -1)
 			return -1;
+		work = status.work;
 
 		// end of track
 		gmext_write_delta(midi, status.delta);
@@ -374,8 +394,9 @@ Music *GMCatFile::loadMIDI(unsigned int i)
 	auto nameskip = SDL_ReadU8(cat_rwops) + 1;
 	SDL_RWseek(cat_rwops, RW_SEEK_SET, 0);
 	auto data = (unsigned char *)SDL_LoadFile_RW(cat_rwops, &size, SDL_TRUE);
-	if (gmext_read_stream(&stream, size - nameskip, data + nameskip) == -1) {
+	if (!data || size < (size_t)nameskip || gmext_read_stream(&stream, size - nameskip, data + nameskip) == -1) {
 		Log(LOG_ERROR) << "GMCatFile::loadMIDI("<<fileName()<<", "<<i<<"): Error reading MIDI stream";
+		SDL_free(data);
 		return music;
 	}
 

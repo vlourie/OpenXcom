@@ -22,6 +22,9 @@
 #include "../Engine/Action.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
+#include <sstream>
+#include "../Engine/HdUi.h"
+#include "../Engine/Unicode.h"
 #include "NumberText.h"
 
 namespace OpenXcom
@@ -103,6 +106,7 @@ void FpsCounter::update()
 {
 	int fps = (int)floor((double)_frames / _timer->getTime() * 1000);
 	_text->setValue(fps);
+	_fps = fps;
 	_frames = 0;
 	_redraw = true;
 }
@@ -114,6 +118,26 @@ void FpsCounter::draw()
 {
 	Surface::draw();
 	_text->blit(this->getSurface());
+}
+
+/**
+ * The HD interface's counter: the number in the interface's smooth font like the other numbers of the HD screens
+ * (the stack numbers of the inventory), not the classic square digits. Without the HD fonts: the classic digits.
+ */
+void FpsCounter::hdMirror()
+{
+	HdUi &ui = HdUi::instance();
+	if (!HdUi::skin() || !ui.hasFonts())
+	{
+		Surface::hdMirror();
+		return;
+	}
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	std::ostringstream ss;
+	ss << _fps;
+	const UString s = Unicode::convUtf8ToUtf32(ss.str());
+	const Uint32 face = HdUi::rgba(pal[(Uint8)(_text->getColor() + 1)]);
+	ui.drawTtfString(s, false, 6.0f, getX() + 1, getY(), face, 0xE0000000u);
 }
 
 void FpsCounter::addFrame()

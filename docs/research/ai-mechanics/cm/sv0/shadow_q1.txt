@@ -1,0 +1,66 @@
+historical 'none' unit-turns with shadow decisions: 746 (no decision logged: 0)
+  1 allowed at decision time                       67
+  2 escape/panic/mission                          296
+  3 ambush/conscious choice                       207
+  5 shot not confirmed                            176
+  of group 5 (first decision allowed by class, no useful legal shot now): no_lof=90, low_effect=67, no_estimate=14, no_weapon=3, no_target=2
+  of group 1, what the shadow coordinator did: would fire by order=53, no shared target (fewer than 2 shooters)=12, other (order elsewhere, used)=2
+first decision class x useful legal shot now (group 4 = column ok):
+  allowed      ok=  57 no= 175
+  ambush       ok=  46 no=  31
+  attack       ok=   0 no=   1
+  charging     ok=   2 no=  20
+  combat_move  ok=  19 no= 119
+  escape       ok=  93 no= 180
+  mission      ok=   1 no=   2
+all hostile decisions of the shadow run, by class: allowed=22944, attack=5946, combat_move=3561, escape=2776, mission=1733, ambush=1292, charging=1072, tu_changed=168, other_act=16
+  class allowed, by shot: no_lof=10026, no_target=5731, no_weapon=3130, no_tu=3031, low_effect=574, ok=329, no_estimate=123
+per battle: none / allowed
+  scpa_D_L10_s1             0    0
+  scpa_D_L10_s2             0    0
+  scpa_D_L11_s1             0    0
+  scpa_D_L11_s2             0    0
+  scpa_D_L12_s1             1    0
+  scpa_D_L12_s2             0    0
+  scpa_D_L1_s1             11    2
+  scpa_D_L1_s2             14    0
+  scpa_D_L2_s1             39    5
+  scpa_D_L2_s2             65    6
+  scpa_D_L3_s1              0    0
+  scpa_D_L3_s2              0    0
+  scpa_D_L4_s1              1    0
+  scpa_D_L4_s2              0    0
+  scpa_D_L5_s1             18    0
+  scpa_D_L5_s2             25    0
+  scpa_D_L6_s1              1    1
+  scpa_D_L6_s2              8    1
+  scpa_D_L7_s1             26    6
+  scpa_D_L7_s2             10    1
+  scpa_D_L8_s1             13    0
+  scpa_D_L8_s2             50    1
+  scpa_D_L9_s1              4    2
+  scpa_D_L9_s2              8    0
+  scpa_D_M10_s1           137    9
+  scpa_D_M10_s2            85    1
+  scpa_D_M11_s1             0    0
+  scpa_D_M11_s2             0    0
+  scpa_D_M12_s1             0    0
+  scpa_D_M12_s2             0    0
+  scpa_D_M1_s1              7    0
+  scpa_D_M1_s2              1    0
+  scpa_D_M2_s1             43    1
+  scpa_D_M2_s2             26    6
+  scpa_D_M3_s1              8    0
+  scpa_D_M3_s2             16    3
+  scpa_D_M4_s1             13    3
+  scpa_D_M4_s2             21    3
+  scpa_D_M5_s1             23    0
+  scpa_D_M5_s2             12    1
+  scpa_D_M6_s1              1    0
+  scpa_D_M6_s2              1    0
+  scpa_D_M7_s1              2    1
+  scpa_D_M7_s2             15    5
+  scpa_D_M8_s1              0    0
+  scpa_D_M8_s2              3    0
+  scpa_D_M9_s1             10    1
+  scpa_D_M9_s2             28    8

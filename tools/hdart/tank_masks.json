@@ -1,0 +1,21 @@
+{
+ "_comment": "Turret masks of the X-Piratez pirate tank, drawn by hand on the 64x80 tank canvas (the parts lie at (16,8), (32,16), (0,16), (16,24)). Polygons of pixel centres [x, y]. dome: the turret body - it turns, and the hull keeps its own dome as the turret base. barrel: the gun - it turns and is taken off the hull. mirror: a direction that is the horizontal mirror image of another one. same_as: a sheet drawn from the same model; barrel_grows_by_difference: its barrel also takes the pixels next to the barrel that differ from that sheet (a bigger muzzle).",
+ "PIR_TANK": {
+  "mirror": {"4": 2, "5": 1, "6": 0},
+  "dome": {
+   "0": [[12, 26], [19, 19], [41, 19], [43, 23], [43, 36], [38, 39], [24, 39], [15, 35], [12, 30]],
+   "1": [[18, 15], [35, 15], [37, 18], [37, 36], [17, 36], [16, 33], [16, 18]],
+   "2": [[12, 24], [18, 18], [27, 15], [37, 15], [44, 20], [46, 28], [45, 33], [40, 38], [18, 38], [13, 33]],
+   "3": [[27, 12], [38, 12], [38, 15], [42, 16], [43, 18], [43, 31], [41, 34], [24, 34], [22, 31], [22, 18], [23, 16], [27, 15]],
+   "7": [[22, 19], [40, 19], [42, 21], [42, 32], [40, 34], [22, 34], [20, 32], [20, 21]]
+  },
+  "barrel": {
+   "0": [[40, 23], [47, 17], [54, 17], [54, 21], [46, 28], [42, 28]],
+   "1": [[37, 22], [56, 22], [56, 30], [37, 30]],
+   "2": [[40, 31], [45, 30], [53, 37], [53, 42], [47, 43], [40, 36]],
+   "3": [[28, 31], [33, 31], [33, 42], [28, 42]],
+   "7": [[30, 8], [35, 8], [35, 19], [30, 19]]
+  }
+ },
+ "PIR_TANK_L": {"same_as": "PIR_TANK", "barrel_grows_by_difference": true}
+}

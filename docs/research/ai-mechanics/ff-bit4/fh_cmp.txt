@@ -1,0 +1,153 @@
+== E vs E1 (must play the same); the F column below is FH
+G1706: IDENTICAL (11586 lines)
+G1108: IDENTICAL (12944 lines)
+G1556: IDENTICAL (7688 lines)
+G1552: IDENTICAL (4203 lines)
+G1458: IDENTICAL (2104 lines)
+G1401: IDENTICAL (6665 lines)
+G1551: IDENTICAL (27746 lines)
+S1402: IDENTICAL (11537 lines)
+S1152: IDENTICAL (21832 lines)
+S1701: IDENTICAL (7862 lines)
+S1408: IDENTICAL (15096 lines)
+S1110: IDENTICAL (11069 lines)
+T1451: IDENTICAL (20577 lines)
+B1458: IDENTICAL (4782 lines)
+N1406: IDENTICAL (14579 lines)
+G1107: IDENTICAL (8509 lines)
+G1707: IDENTICAL (8378 lines)
+G1553: IDENTICAL (19166 lines)
+S1101: IDENTICAL (11703 lines)
+S1705: IDENTICAL (7159 lines)
+C_MS1101: IDENTICAL (1802 lines)
+C_RC1101: IDENTICAL (9277 lines)
+C_ZO1101: IDENTICAL (1437 lines)
+identical 23/23
+
+== per battle, E -> F (HOSTILE)
+battle	group	outcome	turns	own KO sec	own KO all blasts	sec blasts own hit	cas own	useful att	dmg to player	player dead+out	enemy dead+out	veto ff.sec/sniper/react
+G1706	target	win->win	20->19	25->0	26->4	37->0	29->7	2->4	1860->1826	0->1	100->85	55/1/0
+G1108	target	win->win	24->24	13->5	17->8	24->21	24->9	5->5	1874->1709	0->0	107->96	40/9/0
+G1556	target	win->win	13->20	17->0	17->1	20->0	18->3	0->0	478->677	0->0	71->81	65/0/0
+G1552	target	win->win	7->8	0->0	0->1	0->0	1->2	1->0	203->385	0->0	49->61	90/0/0
+G1458	target	win->win	4->5	23->0	23->0	29->0	24->0	0->0	109->358	0->0	41->44	44/1/0
+G1401	target	win->win	12->19	19->11	21->16	37->31	25->20	0->0	716->880	0->0	78->93	5/0/0
+G1551	target	win->win	30->31	13->13	14->19	62->48	29->27	6->14	2884->9047	1->2	101->103	58/212/0
+S1402	target	loss->loss	6->6	0->0	7->7	0->0	14->14	6->6	3065->3065	8->8	25->25	0/0/0
+S1152	target	loss->loss	17->17	0->0	5->5	0->0	22->22	37->37	3809->3809	8->8	60->60	0/0/0
+S1701	target	loss->loss	5->5	0->0	5->5	0->0	13->13	18->18	3949->3949	8->8	36->36	0/0/0
+S1408	target	loss->loss	11->5	0->0	5->8	1->1	24->13	37->17	3726->3705	8->8	47->25	34/0/0
+S1110	target	loss->loss	8->10	0->0	7->21	1->0	19->30	33->28	5248->5433	8->8	35->50	19/18/0
+T1451	target	draw->draw	61->61	0->0	6->10	0->0	11->14	51->40	2061->1739	5->5	53->53	10/6/0
+B1458	target	loss->loss	6->5	0->0	4->0	1->0	4->0	22->9	2987->2549	8->8	14->14	15/19/0
+N1406	target	draw->draw	61->61	0->0	7->7	0->0	15->15	18->18	3097->3097	7->7	51->51	0/0/0
+G1107	target	win->win	19->11	24->0	26->0	35->0	27->0	1->1	175->86	0->0	94->66	40/0/0
+G1707	target	loss->loss	5->5	0->0	0->0	0->0	0->0	2->2	110->110	8->8	17->17	0/0/0
+G1553	target	win->win	20->20	5->6	6->6	20->25	13->14	1->2	4532->880	0->0	92->87	23/0/0
+S1101	target	loss->loss	7->7	0->0	24->24	0->0	29->29	21->21	4679->4679	8->8	46->46	0/0/0
+S1705	target	loss->loss	4->4	0->0	14->14	0->0	21->21	17->17	2807->2807	8->8	30->30	0/0/0
+C_MS1101	control	win->win	9->9	0->0	0->0	0->0	0->0	0->0	131->131	0->0	9->9	0/0/0
+C_RC1101	control	draw->draw	61->61	0->0	0->0	0->0	1->1	0->0	0->0	4->4	14->14	0/0/0
+C_ZO1101	control	win->win	4->4	0->0	0->0	0->0	0->0	0->0	0->0	0->0	26->26	0/0/0
+
+== totals E | F
+-- target
+hdead	1055	1038
+hout	92	85
+how.over	18	18
+how.timeout	2	2
+outcome.draw	2	2
+outcome.loss	9	9
+outcome.win	9	9
+pdead	60	58
+phplost	7240	7091
+pout	25	29
+recs	38037	39435
+s0_att	1766	1758
+s0_cyc	802	788
+s0_edmg	36283	40738
+s0_esec_dmg	3916	12363
+s0_esec_ko	22	74
+s0_fdmg_exec	29	58
+s0_fsec_dmg	0	11732
+s0_useful	718	682
+s1_att	6640	6301
+s1_cas_ff	362	253
+s1_cyc	2648	2722
+s1_edmg	48369	50790
+s1_egren_dmg	32258	33328
+s1_egren_ko	20	27
+s1_elaunch_dmg	12643	11460
+s1_elaunch_ko	8	8
+s1_eother_dmg	35	30
+s1_esec_dmg	6185	10501
+s1_eshot_dmg	24078	26374
+s1_eshot_ko	15	11
+s1_fdmg_exec	31753	23722
+s1_fgren_dmg	8288	8822
+s1_fgren_ko	16	19
+s1_flaunch_dmg	13752	15376
+s1_flaunch_ko	62	78
+s1_fother_dmg	561	561
+s1_fother_ko	2	2
+s1_fsec_dmg	33670	11581
+s1_fsec_ko	139	35
+s1_fshot_dmg	6531	9133
+s1_fshot_ko	17	24
+s1_lch	36	36
+s1_n_sec	0	498
+s1_n_secsn	0	266
+s1_thr	330	349
+s1_useful	278	239
+sec_blasts	652	329
+sec_blasts_own_hit	267	126
+sec_blasts_own_ko	99	28
+t_hattacks	6640	6301
+t_hdead	1055	1038
+t_hout	92	85
+t_pdead	60	58
+t_phplost	7240	7091
+t_pout	25	29
+t_pwounded	88	88
+t_turn	340	343
+turn	340	343
+-- control
+hdead	47	47
+hout	2	2
+how.over	2	2
+how.timeout	1	1
+outcome.draw	1	1
+outcome.win	2	2
+pdead	0	0
+phplost	0	0
+pout	4	4
+recs	2027	2027
+s0_att	67	67
+s0_cyc	97	97
+s0_edmg	1753	1753
+s0_fdmg_exec	0	0
+s0_useful	42	42
+s1_att	94	94
+s1_cas_ff	1	1
+s1_cyc	94	94
+s1_edmg	131	131
+s1_egren_dmg	131	131
+s1_fdmg_exec	78	78
+s1_thr	1	1
+t_hattacks	94	94
+t_hdead	47	47
+t_hout	2	2
+t_pdead	0	0
+t_phplost	0	0
+t_pout	4	4
+t_pwounded	0	0
+t_turn	74	74
+turn	74	74
+
+== per-battle signs F vs E (less / same / more), target battles
+s1_fsec_ko	6 / 13 / 1
+s1_cas_ff	9 / 7 / 4
+s1_useful	5 / 12 / 3
+s1_edmg	7 / 7 / 6
+t_phplost	5 / 9 / 6
+t_pdead	4 / 14 / 2

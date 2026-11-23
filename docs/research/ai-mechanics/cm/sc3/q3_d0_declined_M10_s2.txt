@@ -1,0 +1,8 @@
+== d0p_D_M10_s2
+  turn 1 unit 1000018 n=2 act=9 aim=114 to=(11,42,0) from=(13,20,1) weapon=STR_GRENADE_LAUNCHER tu=85->85
+  turn 1 unit 1000018 n=1 act=9 aim=16 to=(15,34,0) from=(12,21,1) weapon=STR_GRENADE_LAUNCHER tu=79->79
+  turn 1 unit 1000018 n=2 act=8 aim=16 to=(15,34,0) from=(12,21,1) weapon=STR_GRENADE_LAUNCHER tu=79->79
+  turn 2 unit 1000018 n=2 act=9 aim=1 to=(15,34,0) from=(13,20,1) weapon=STR_GRENADE_LAUNCHER tu=83->83
+  turn 2 unit 1000019 n=2 act=8 aim=1 to=(15,34,0) from=(14,21,0) weapon=STR_GRENADE_LAUNCHER tu=85->85
+  turn 2 unit 1000019 n=1 act=8 aim=1 to=(15,34,0) from=(14,21,0) weapon=STR_GRENADE_LAUNCHER tu=85->85
+  turn 2 unit 1000019 n=2 act=9 aim=1 to=(15,34,0) from=(14,21,0) weapon=STR_GRENADE_LAUNCHER tu=85->85

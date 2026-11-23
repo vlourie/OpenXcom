@@ -1,0 +1,252 @@
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/AiProbe.h	2026-10-30 00:13:37.082664600 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/fcs/tree/src/Battlescape/AiProbe.h	2026-11-05 09:19:37.503088900 +0200
+@@ -309,6 +309,8 @@
+ void beforeThink(SavedBattleGame *save, BattleUnit *unit);
+ /// One line per AI decision (after the unit has thought, before the action runs).
+ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
++/// FIRST_CONTACT_SURVIVAL_V0 (OXCE_AI_FCS=2): the flight's cell, moved off the known lines of fire when there is such a cell in reach.
++void fcsEscape(SavedBattleGame *save, BattleUnit *unit, const std::vector<int> &reachable, Position &target);
+ /// One line per unit on the field: position, TU, health, who it sees and who has spotted it.
+ void logState(SavedBattleGame *save, const char *when);
+ /// The smarter enemy under test (OXCE_AI_TACTICS): true for hostile units only.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/AiProbe.cpp	2026-10-30 00:13:37.184689200 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/fcs/tree/src/Battlescape/AiProbe.cpp	2026-11-05 09:20:33.875681200 +0200
+@@ -237,6 +237,7 @@
+ void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
+ void beforeThink(SavedBattleGame *, BattleUnit *) {}
+ void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
++void fcsEscape(SavedBattleGame *, BattleUnit *, const std::vector<int> &, Position &) {}
+ void logState(SavedBattleGame *, const char *) {}
+ bool tactics(const BattleUnit *) { return false; }
+ bool careful(const BattleUnit *) { return false; }
+@@ -3512,7 +3513,7 @@
+ 	static const std::string text = []
+ 	{
+ 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
+-			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
++			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_FCS", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
+ 			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_ESCAPEPROF", "OXCE_AI_RECORD_REUSE",
+ 			"OXCE_AI_AMBUSH_MEMO", "OXCE_AI_ESCAPE_REACH_FIRST", "OXCE_AI_WALKFOVPROF", "OXCE_AI_WALKFOV_SKIP", "OXCE_AI_BLAST_PROBE" }; // the fast mode, the light skip, the profiles, the record's reuse, the ambush memo, the escape order and the display's FOV skip change what is computed, not how the bench plays
+ 		std::vector<std::string> vars;
+@@ -3835,6 +3836,146 @@
+ 
+ }
+ 
++/// FIRST_CONTACT_SURVIVAL_V0 (OXCE_AI_FCS=2): only the enemies the side has laid eyes on this turn count, from where they stand. Nothing when the unit's
++/// own cell or the chosen one has no such line; else the first of the reachable cells (they are sorted by cost) with none. No random numbers, no TU, no other change.
++void fcsEscape(SavedBattleGame *save, BattleUnit *unit, const std::vector<int> &reachable, Position &target)
++{
++	static const int mode = (int)param("OXCE_AI_FCS", 0);
++	if (mode != 2 || unit->getFaction() != FACTION_HOSTILE || save->getSide() != FACTION_HOSTILE)
++	{
++		return;
++	}
++	std::vector<BattleUnit *> known;
++	for (auto *bu : *save->getUnits())
++	{
++		if (!bu->isOut() && bu->getFaction() == FACTION_PLAYER && bu->getTurnsSinceSpottedByFaction(FACTION_HOSTILE) == 0)
++		{
++			known.push_back(bu);
++		}
++	}
++	TileEngine *te = save->getTileEngine();
++	const Position at = unit->getPosition();
++	const auto lines = [&](const Position &pos)
++	{
++		Tile *tile = save->getTile(pos);
++		int n = 0;
++		for (auto *e : known)
++		{
++			Position origin = te->getSightOriginVoxel(e);
++			origin.z -= 2;
++			Position scan;
++			if (tile && (pos == at ? te->canTargetUnit(&origin, tile, &scan, e, false) : te->freeLine(origin, tile, e, unit)))
++			{
++				++n;
++			}
++		}
++		return n;
++	};
++	const int here = lines(at);
++	const int there = target == at ? here : lines(target);
++	if (here == 0 || there == 0)
++	{
++		return;
++	}
++	int checked = 0;
++	for (int index : reachable)
++	{
++		const Position pos = save->getTileCoords(index);
++		Tile *tile = save->getTile(pos);
++		if (pos == at || !tile || tile->getFire() || tile->getDangerous())
++		{
++			continue;
++		}
++		++checked;
++		if (lines(pos) == 0)
++		{
++			Log(LOG_INFO) << "[FCSACT] turn=" << save->getTurn() << " unit=" << unit->getId() << " tu=" << unit->getTimeUnits() << " from=" << at << " dest=" << target
++				<< " here=" << here << " there=" << there << " known=" << known.size() << " new=" << pos << " checked=" << checked;
++			target = pos;
++			return;
++		}
++	}
++	Log(LOG_INFO) << "[FCSACT] turn=" << save->getTurn() << " unit=" << unit->getId() << " tu=" << unit->getTimeUnits() << " from=" << at << " dest=" << target
++		<< " here=" << here << " there=" << there << " known=" << known.size() << " new=- checked=" << checked;
++}
++
++/// FIRST_CONTACT_SURVIVAL_V0 (OXCE_AI_FCS): 1 - shadow, one [FCSLOS] line per hostile decision of turn 1. Only the enemies the side has
++/// laid eyes on this turn count; a cell is "safe" when none of them has a line of fire to it from where it stands now. safeOld - the same
++/// by canTargetUnit's answer for a unit not on the tile, the one the AI's own getSpottingUnits gets. Reads, changes nothing.
++void fcsProbe(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
++{
++	static const int mode = (int)param("OXCE_AI_FCS", 0);
++	if (mode != 1 || unit->getFaction() != FACTION_HOSTILE || save->getSide() != FACTION_HOSTILE || save->getTurn() > 1)
++	{
++		return;
++	}
++	std::vector<BattleUnit *> known;
++	for (auto *bu : *save->getUnits())
++	{
++		if (!bu->isOut() && bu->getFaction() == FACTION_PLAYER && bu->getTurnsSinceSpottedByFaction(FACTION_HOSTILE) == 0)
++		{
++			known.push_back(bu);
++		}
++	}
++	TileEngine *te = save->getTileEngine();
++	const Position at = unit->getPosition();
++	const auto lines = [&](const Position &pos, std::ostringstream *who, bool old)
++	{
++		Tile *tile = save->getTile(pos);
++		int n = 0;
++		if (!tile)
++		{
++			return n;
++		}
++		for (auto *e : known)
++		{
++			Position origin = te->getSightOriginVoxel(e);
++			origin.z -= 2;
++			Position scan;
++			if (pos == at ? te->canTargetUnit(&origin, tile, &scan, e, false)
++				: old ? te->canTargetUnit(&origin, tile, &scan, e, false, unit) : te->freeLine(origin, tile, e, unit))
++			{
++				++n;
++				if (!who)
++				{
++					break;
++				}
++				*who << (who->tellp() > 0 ? "," : "") << e->getId();
++			}
++		}
++		return n;
++	};
++	std::ostringstream now, dest, best;
++	lines(at, &now, false);
++	lines(action.target, &dest, false);
++	std::vector<std::pair<int, Position> > safe;
++	int cells = 0, safeOld = 0;
++	if (pending.unit == unit->getId() && !pending.wantReach)
++	{
++		for (const auto &m : pending.set.moves)
++		{
++			if (m.kind == AiCandidates::MOVE && m.tu >= 0)
++			{
++				++cells;
++				safeOld += lines(m.tile, nullptr, true) == 0 ? 1 : 0;
++				if (lines(m.tile, nullptr, false) == 0)
++				{
++					safe.push_back(std::make_pair(m.tu, m.tile));
++				}
++			}
++		}
++	}
++	std::stable_sort(safe.begin(), safe.end(), [](const std::pair<int, Position> &a, const std::pair<int, Position> &b) { return a.first < b.first; });
++	for (size_t i = 0; i < safe.size() && i < 8; ++i)
++	{
++		best << (i ? ";" : "") << safe[i].second.x << "." << safe[i].second.y << "." << safe[i].second.z << ":" << safe[i].first;
++	}
++	Log(LOG_INFO) << "[FCSLOS] turn=" << save->getTurn() << " unit=" << unit->getId() << " n=" << action.number
++		<< " tu=" << unit->getTimeUnits() << " act=" << (int)action.type << " known=" << known.size()
++		<< " now=" << (now.tellp() > 0 ? now.str() : std::string("-")) << " dest=" << (dest.tellp() > 0 ? dest.str() : std::string("-"))
++		<< " cells=" << cells << " safeOld=" << safeOld << " safe=" << safe.size() << " best=" << (safe.empty() ? std::string("-") : best.str());
++}
++
+ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
+ {
+ 	if (!active())
+@@ -3888,6 +4029,7 @@
+ 	if (record())
+ 	{
+ 		reachFallback(save, unit);
++		fcsProbe(save, unit, action);
+ 		writeRecord(save, unit, action, hashUnits, hashItems, hashOrder, hashMap, hashRng);
+ 	}
+ 	pathClose(unit);
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/AIModule.cpp	2026-10-30 00:13:37.553271300 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/fcs/tree/src/Battlescape/AIModule.cpp	2026-11-05 09:19:37.504136200 +0200
+@@ -1243,6 +1243,10 @@
+ 		_unit->setCharging(0);
+ 		action->type = _escapeAction.type;
+ 		action->target = _escapeAction.target;
++		if (action->type == BA_WALK)
++		{
++			AiProbe::fcsEscape(_save, _unit, _reachable, action->target);
++		}
+ 		// end this unit's turn.
+ 		action->finalAction = true;
+ 		// ignore new targets.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/TileEngine.h	2026-10-30 00:13:37.097450400 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/fcs/tree/src/Battlescape/TileEngine.h	2026-11-05 09:13:55.760924000 +0200
+@@ -278,6 +278,8 @@
+ 	int checkVoxelExposure(Position *originVoxel, Tile *tile, BattleUnit *excludeUnit, BattleUnit *excludeAllBut);
+ 	/// Checks validity for targetting a unit.
+ 	bool canTargetUnit(Position *originVoxel, Tile *tile, Position *scanVoxel, BattleUnit *excludeUnit, bool rememberObstacles, BattleUnit *potentialUnit = 0);
++	/// FIRST_CONTACT_SURVIVAL_V0: would a line reach the place of the unit's body on this tile unhit? Pure read, no random numbers.
++	bool freeLine(const Position &originVoxel, Tile *tile, BattleUnit *excludeUnit, BattleUnit *body);
+ 	/// Check validity for targetting a tile.
+ 	bool canTargetTile(Position *originVoxel, Tile *tile, int part, Position *scanVoxel, BattleUnit *excludeUnit, bool rememberObstacles);
+ 	/// Calculates the z voxel for shadows.
+--- C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/ce/tree_d0/src/Battlescape/TileEngine.cpp	2026-10-30 00:13:37.095443500 +0200
++++ C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/256842df-d34a-4d31-a77d-3f9de8ee29de/scratchpad/fcs/tree/src/Battlescape/TileEngine.cpp	2026-11-05 09:13:55.761925300 +0200
+@@ -2337,6 +2337,40 @@
+ }
+ 
+ /**
++ * FIRST_CONTACT_SURVIVAL_V0: the scan of canTargetUnit for a unit that does not stand on the tile: a line that reaches the place of its body unhit.
++ */
++bool TileEngine::freeLine(const Position &originVoxel, Tile *tile, BattleUnit *excludeUnit, BattleUnit *body)
++{
++	Position targetVoxel = tile->getPosition().toVoxel() + Position(8, 8, 0);
++	const int minHeight = targetVoxel.z - tile->getTerrainLevel() + body->getFloatHeight();
++	int heightRange = body->getHeight();
++	const int centerHeight = minHeight + heightRange / 2;
++	heightRange = std::max(0, std::min(10, heightRange / 2));
++	const int unitRadius = body->getArmor()->getSize() > 1 ? 3 : body->getLoftemps();
++	const Position relPos = targetVoxel - originVoxel;
++	const float len = sqrt((float)(relPos.x * relPos.x + relPos.y * relPos.y));
++	const float normal = len > 0 ? unitRadius / len : 0;
++	const int relX = floor(((float)relPos.y) * normal + 0.5);
++	const int relY = floor(((float)-relPos.x) * normal + 0.5);
++	const int sliceTargets[] = {0,0, relX,relY, -relX,-relY, relY,-relX, -relY,relX};
++	std::vector<Position> trajectory;
++	for (int i = 0; i <= heightRange; ++i)
++	{
++		for (int j = 0; j < 5; ++j)
++		{
++			if (i < (heightRange - 1) && j > 2) break;
++			Position scan(targetVoxel.x + sliceTargets[j * 2], targetVoxel.y + sliceTargets[j * 2 + 1], centerHeight + heightFromCenter[i]);
++			trajectory.clear();
++			if (calculateLineVoxel(originVoxel, scan, false, &trajectory, excludeUnit) == V_EMPTY)
++			{
++				return true;
++			}
++		}
++	}
++	return false;
++}
++
++/**
+  * Checks for a tile part available for targeting and what particular voxel.
+  * @param originVoxel Voxel of trace origin (gun's barrel).
+  * @param tile The tile to check for.

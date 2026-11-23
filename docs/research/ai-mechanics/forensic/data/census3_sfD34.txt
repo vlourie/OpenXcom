@@ -1,0 +1,56 @@
+﻿battles 8
+
+== Who can hurt the squad {'units_attacked': 173, 'units_hurt_player': 52, 'attack_tu': 21663, 'attack_tu_units_never_hurt_player': 10468, 'attack_tu_weapons_never_hurt_player': 5962, 'attacks': 662, 'attacks_weapons_never_hurt_player': 182, 'player_dmg_stun': 3563, 'top3_share_x1000': 5941}
+  attack TU by units that never hurt a player unit in the battle: 48.3%
+  attack TU by weapons that never hurt a player unit in the battle: 27.5%; attacks 27.5%
+
+== Unit turns: hurter = unit that hurt a player unit at least once in this battle {'nonhurter_unit_turns': 787, 'nonhurter_attack': 224, 'nonhurter_no_target': 421, 'nonhurter_no_target_known': 408, 'nonhurter_no_target_tu': 19298, 'hurter_unit_turns': 427, 'hurter_no_target': 119, 'hurter_no_target_known': 109, 'hurter_no_target_known_near15': 16, 'hurter_no_target_tu': 3358, 'hurter_legal_no_attack': 106, 'legal_noatt_d21-30': 43, 'legal_no_attack_effective_weapon': 194, 'nonhurter_legal_no_attack': 142, 'legal_noatt_d31+': 132, 'nonhurter_no_target_known_near15': 130, 'attacked_end_sees_tu_ok': 10, 'hurter_attack': 202, 'noatt_end_sees': 89, 'legal_noatt_d08-12': 10, 'legal_noatt_d00-07': 24, 'noatt_own_any': 30, 'hurter_legal_own_no_attack': 8, 'bound_fire_dmg': 806, 'bound_own_more': 10, 'bound_own_start': 31, 'bound_own_any': 54, 'legal_noatt_d13-20': 39, 'nonhurter_legal_own_no_attack': 14, 'noatt_end_sees_tu_ok': 10, 'endok_lastsrc_escape': 6, 'bound_own_end': 24, 'endok_lastsrc_patrol.node': 2, 'endok_lastsrc_firepoint': 1, 'endok_lastsrc_ambush': 1}
+  hurter: unit-turns 427, attack 47.3%, legal but no attack 24.8%, no target 27.9% (known 25.5%, known within 15: 3.7%), TU unused on no target 3358
+  nonhurter: unit-turns 787, attack 28.5%, legal but no attack 18.0%, no target 53.5% (known 51.8%, known within 15: 16.5%), TU unused on no target 19298
+  legal (side spotted + LOF) no attack, by distance: {'legal_noatt_d00-07': 24, 'legal_noatt_d08-12': 10, 'legal_noatt_d13-20': 39, 'legal_noatt_d21-30': 43, 'legal_noatt_d31+': 132}
+  of them own vision at the start of the turn: hurter 8 nonhurter 14
+  upper bound of the 'fire instead of not firing' lever: 806 HP against 3563 HP+stun dealt to players by aimed attacks
+  own vision lever (one mean attack): no attack + own vision at turn start: 31 HP; no attack + own vision at turn end with TU for the cheapest attack: 10 unit-turns (of 89 seeing at the end), 24 HP; either: 30 unit-turns, 54 HP; attacked, still sees and has TU for one more: 10 unit-turns, 10 HP
+  sees at turn end, TU for a ranged attack, did not attack, last decision: [('escape', 6), ('patrol.node', 2), ('firepoint', 1), ('ambush', 1)]
+
+== End-of-turn exposure (hostile at player phase start): units, hp, hp lost, dead; loss %, death %
+  seen    units=147 hp=12381 lost=6106 dead=74 loss=49.3% death=50.3%
+  unseen  units=1155 hp=99568 lost=6612 dead=75 loss=6.6% death=6.5%
+ Seen at player phase start, by last own decision: n, lost, dead, lost/unit, death%
+  patrol.node            n=    47 lost=  2301 dead=   20 lost/unit=  49.0 death= 42.6%
+  shot                   n=    24 lost=   918 dead=   14 lost/unit=  38.2 death= 58.3%
+  escape                 n=    23 lost=  1014 dead=   15 lost/unit=  44.1 death= 65.2%
+  none                   n=    17 lost=   602 dead=   10 lost/unit=  35.4 death= 58.8%
+  sniper                 n=    10 lost=   137 dead=    2 lost/unit=  13.7 death= 20.0%
+  ambush                 n=     8 lost=   158 dead=    3 lost/unit=  19.8 death= 37.5%
+  firepoint              n=     6 lost=   307 dead=    3 lost/unit=  51.2 death= 50.0%
+  melee                  n=     4 lost=   311 dead=    3 lost/unit=  77.8 death= 75.0%
+  escape.known           n=     3 lost=    72 dead=    1 lost/unit=  24.0 death= 33.3%
+  leeroy                 n=     3 lost=   170 dead=    2 lost/unit=  56.7 death= 66.7%
+  firepoint.random       n=     2 lost=   116 dead=    1 lost/unit=  58.0 death= 50.0%
+
+== Life and chance of the dead {'dead': 257, 'dead_never_decided': 53, 'dead_attacked': 142, 'dead_never_had_target': 41, 'dead_had_legal_never_attacked': 21}
+
+== Per battle: hostiles attacked / hurt players, TU share of useless units, top3 share
+sfF_D_L4_s3 attacked 16 hurt 4 uselessTU% 49 dmg 219 top3% 99
+sfF_D_L4_s4 attacked 21 hurt 6 uselessTU% 68 dmg 175 top3% 96
+sfF_D_L8_s3 attacked 14 hurt 7 uselessTU% 41 dmg 1500 top3% 93
+sfF_D_L8_s4 attacked 10 hurt 4 uselessTU% 50 dmg 748 top3% 93
+sfF_D_M3_s3 attacked 37 hurt 17 uselessTU% 28 dmg 374 top3% 43
+sfF_D_M3_s4 attacked 40 hurt 12 uselessTU% 64 dmg 408 top3% 70
+sfF_D_M8_s3 attacked 16 hurt 2 uselessTU% 28 dmg 139 top3% 100
+sfF_D_M8_s4 attacked 19 hurt 0 uselessTU% 100 dmg 0 top3% 0
+
+== Examples
+{"kind": "ff", "battle": "sfF_D_L4_s3", "rec": 87, "turn": 1, "unit": 1000009, "type": "STR_DOOM_SOLDIER", "w": "STR_PIR_PLASMA_RIFLE", "mode": 9, "fdmg": 114, "fdowned": 1, "pos": [8, 44, 2], "to": [40, 43, 2]}
+{"kind": "ff", "battle": "sfF_D_L4_s3", "rec": 207, "turn": 2, "unit": 1000016, "type": "STR_DOOM_SARGE", "w": "STR_PLASMA_SCORCHER", "mode": 7, "fdmg": 121, "fdowned": 1, "pos": [17, 42, 2], "to": [13, 47, 2]}
+{"kind": "patrol_known", "battle": "sfF_D_L4_s3", "rec": 218, "turn": 2, "unit": 1000034, "type": "STR_DOOM_HELL_BARON_TERRORIST", "w": "AUX_DOOM_HELL_BARON_WEAPON", "near": 12, "known": 9, "tu": 122, "pos": [1, 49, 2], "to": [12, 35, 3], "spent": 8, "posafter": [2, 49, 2], "trail": ["walk.stop.spotted 2,49,2>2,49,2 d2 bam0 mt0 sz1 tu114/-1 en98/-1 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "sfF_D_L4_s3", "rec": 219, "turn": 2, "unit": 1000034, "type": "STR_DOOM_HELL_BARON_TERRORIST", "w": "AUX_DOOM_HELL_BARON_WEAPON", "near": 12, "known": 9, "tu": 114, "pos": [2, 49, 2], "to": [12, 35, 3], "spent": 20, "posafter": [2, 44, 2], "trail": ["walk.stop.turnspot 2,44,2>2,44,2 d1 bam0 mt0 sz1 tu94/-1 en88/-1 rs0 bu-1"]}
+{"kind": "ff", "battle": "sfF_D_L4_s4", "rec": 84, "turn": 1, "unit": 1000014, "type": "STR_DOOM_SARGE", "w": "STR_PIR_PLASMA_RIFLE", "mode": 7, "fdmg": 89, "fdowned": 1, "pos": [0, 40, 4], "to": [14, 42, 2]}
+{"kind": "ff", "battle": "sfF_D_L4_s4", "rec": 92, "turn": 1, "unit": 1000020, "type": "STR_DOOM_SARGE", "w": "STR_PIR_HEAVY_PLASMA", "mode": 7, "fdmg": 182, "fdowned": 1, "pos": [1, 57, 3], "to": [14, 42, 2]}
+{"kind": "patrol_known", "battle": "sfF_D_L4_s4", "rec": 270, "turn": 2, "unit": 1000021, "type": "STR_DOOM_SARGE", "w": "STR_PIR_PLASMA_RIFLE", "near": 10, "known": 15, "tu": 57, "pos": [5, 41, 2], "to": [1, 7, 2], "spent": 56, "posafter": [5, 29, 2], "trail": ["walk.stop.tu 5,29,2>5,28,2 d0 bam0 mt0 sz1 tu1/4 en54/2 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "sfF_D_L4_s4", "rec": 271, "turn": 2, "unit": 1000027, "type": "STR_DOOM_IMP_TERRORIST", "w": "AUX_DOOM_IMP_WEAPON", "near": 12, "known": 15, "tu": 114, "pos": [5, 50, 2], "to": [27, 2, 0], "spent": 112, "posafter": [8, 25, 2], "trail": ["walk.stop.tu 8,25,2>9,24,2 d1 bam0 mt0 sz1 tu2/6 en44/3 rs0 bu-1"]}
+{"kind": "patrol_known", "battle": "sfF_D_M3_s3", "rec": 217, "turn": 2, "unit": 1000009, "type": "STR_SILACOID_TERRORIST", "w": "AUX_SILACOID_WEAPON", "near": 10, "known": 6, "tu": 59, "pos": [34, 48, 1], "to": [25, 45, 1], "spent": 18, "posafter": [31, 45, 1], "trail": ["walk.stop.spotted 31,45,1>31,45,1 d7 bam0 mt2 sz1 tu41/-1 en71/-1 rs8 bu-1"]}
+{"kind": "patrol_known", "battle": "sfF_D_M3_s3", "rec": 267, "turn": 2, "unit": 1000046, "type": "STR_ERIDIAN_BEASTMASTER", "w": "STR_SR_RIFLE", "near": 11, "known": 6, "tu": 49, "pos": [24, 57, 1], "to": [2, 2, 1], "spent": 26, "posafter": [20, 58, 1], "trail": ["walk.stop.reserve 20,58,1>19,57,1 d7 bam0 mt2 sz1 tu23/6 en77/3 rs8 bu-1"]}
+{"kind": "ff", "battle": "sfF_D_M3_s4", "rec": 61, "turn": 1, "unit": 1000016, "type": "STR_ERIDIAN_SOLDIER", "w": "STR_CANISTER_GUN", "mode": 8, "fdmg": 40, "fdowned": 0, "pos": [2, 1, 0], "to": [13, 3, 0]}
+{"kind": "patrol_known", "battle": "sfF_D_M3_s4", "rec": 634, "turn": 5, "unit": 1000042, "type": "STR_ERIDIAN_SOLDIER", "w": "STR_CANISTER_GUN", "near": 9, "known": 5, "tu": 42, "pos": [48, 15, 0], "to": [65, 7, 0], "spent": 38, "posafter": [48, 10, 0], "trail": ["walk.stop.tu 48,10,0>49,9,0 d1 bam0 mt2 sz1 tu4/6 en70/3 rs0 bu-1"]}

@@ -31,6 +31,13 @@ class Exception : public std::runtime_error
 {
 public:
 	Exception(const std::string &msg);
+	/// Where it was thrown: return addresses for CrashTrace::describe (none where the platform gives none).
+	void *const *getFrames() const { return _frames; }
+	int getFrameCount() const { return _frameCount; }
+private:
+	static const int MAX_FRAMES = 20;
+	void *_frames[MAX_FRAMES];
+	int _frameCount;
 };
 
 }

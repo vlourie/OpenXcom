@@ -1,0 +1,1 @@
+﻿- The update is smaller: encyclopedia pictures that were not redrawn are no longer downloaded again (about 0.4 GB instead of ~1.5 GB). Pictures and game are the same as in 2026.11.02-2.

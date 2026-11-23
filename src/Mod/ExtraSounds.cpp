@@ -23,6 +23,7 @@
 #include "../Engine/Sound.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Options.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Unicode.h"
 #include "Mod.h"
@@ -94,6 +95,12 @@ SoundSet *ExtraSounds::loadSoundSet(SoundSet *set) const
 	{
 		int startSound = pair.first;
 		const auto& fileName = pair.second;
+		if (fileName.empty())
+		{
+			// no file to read: the sound at this index is left as it was (a mod that never plays it worked before)
+			Log(LOG_WARNING) << "ExtraSounds '" << _type << "' sound '" << startSound << "' has an empty file name, skipped.";
+			continue;
+		}
 		if (fileName[fileName.length() - 1] == '/')
 		{
 			Log(LOG_VERBOSE) << "Loading sound set from folder: " << fileName << " starting at index: " << startSound;
@@ -146,7 +153,14 @@ void ExtraSounds::loadSound(SoundSet *set, int index, const std::string &fileNam
 		Log(LOG_VERBOSE) << "Adding sound: " << index << ", using index: " << indexWithOffset;
 		sound = set->addSound(indexWithOffset);
 	}
-	sound->load(fileName);
+	if (Options::lazyLoadResources)
+	{
+		sound->loadLater(fileName);
+	}
+	else
+	{
+		sound->load(fileName);
+	}
 }
 
 }

@@ -25,6 +25,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/Screen.h"
+#include "../Engine/HdPaletteShift.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/Text.h"
 #include "../Geoscape/GeoscapeState.h"
@@ -35,6 +36,13 @@
 #include "../Engine/Unicode.h"
 #include "../Mod/RuleInterface.h"
 #include "StatisticsState.h"
+#include "MainMenuState.h"
+#include "../Engine/RNG.h"
+#include <exception>
+#include <list>
+#include "../Engine/Timer.h"
+#include "../Battlescape/BattlescapeGame.h"
+#include "../Battlescape/CollapsePilot.h"
 
 namespace OpenXcom
 {
@@ -138,85 +146,207 @@ void LoadGameState::init()
 }
 
 /**
+ * Builds the screens of a loaded game, which must be the current one: the display takes their size on the way.
+ * @param save The loaded game.
+ * @param screens The screens are added here, bottom first; on a failure those already built stay in it.
+ * @return The battle screen, if the game is in a battle.
+ */
+BattlescapeState *LoadGameState::buildScreens(SavedGame *save, std::list<State*> &screens)
+{
+	if (save->getEnding() != END_NONE)
+	{
+		Options::baseXResolution = Screen::ORIGINAL_WIDTH;
+		Options::baseYResolution = Screen::ORIGINAL_HEIGHT;
+		_game->getScreen()->resetDisplay(false);
+		screens.push_back(new StatisticsState);
+		return 0;
+	}
+	Options::baseXResolution = Options::baseXGeoscape;
+	Options::baseYResolution = Options::baseYGeoscape;
+	_game->getScreen()->resetDisplay(false);
+	screens.push_back(new GeoscapeState);
+	BattlescapeState *bs = 0;
+	if (save->getSavedBattle() != 0)
+	{
+		save->getSavedBattle()->loadMapResources(_game->getMod());
+		Options::baseXResolution = Options::baseXBattlescape;
+		Options::baseYResolution = Options::baseYBattlescape;
+		_game->getScreen()->resetDisplay(false);
+		bs = new BattlescapeState;
+		screens.push_back(bs);
+		save->getSavedBattle()->setBattleState(bs);
+	}
+	return bs;
+}
+
+/**
  * Loads the specified save.
+ *
+ * A load either gives the player the loaded game or leaves them the game they had. The save is read and its
+ * screens are built with the loaded game put in the place of the running one, which is kept whole aside
+ * (Game::parkSavedGame): its screens stay in the stack, its Lua, its terrain and its palettes are kept or put back.
+ * Only when the screens stand does the game before go (Game::commitSavedGame), and nothing after that fails.
+ *
+ * A battle loads at the HD scale of the options. When that is not the scale the game before stands at, all that
+ * was made for that scale (Mod::parkHdScale) is handed to this load: nothing is copied, the loaded battle gets its
+ * own beside it, and the two sets exist together only until the load ends - the parked one is freed when the
+ * screens and the game before are gone, or comes back untouched, with nothing read or allocated, when the load fails.
  */
 void LoadGameState::think()
 {
 	State::think();
-	// Make sure it gets drawn properly
-	if (_firstRun < 10)
+	// Make sure it gets drawn properly: the work starts after a frame with this screen (Game::shownSince)
+	if (_firstRun == 0)
 	{
-		_firstRun++;
+		_firstRun = 1;
+		_shownFrame = _game->getFrameCount();
+		_shownSince = SDL_GetTicks();
 	}
-	else
+	if (!_game->shownSince(_shownFrame, _shownSince))
 	{
-		_game->popState();
-
-		// Remember for later (palette reset)
-		BattlescapeState *origBattleState = 0;
-		if (_game->getSavedGame() != 0 && _game->getSavedGame()->getSavedBattle() != 0)
-		{
-			origBattleState = _game->getSavedGame()->getSavedBattle()->getBattleState();
-		}
-
-		// Reset touch flags
-		_game->resetTouchButtonFlags();
-
-		// Load the game
-		SavedGame *s = new SavedGame();
-		try
-		{
-			s->load(_filename, _game->getMod(), _game->getLanguage());
-			_game->setSavedGame(s);
-			if (_game->getSavedGame()->getEnding() != END_NONE)
-			{
-				Options::baseXResolution = Screen::ORIGINAL_WIDTH;
-				Options::baseYResolution = Screen::ORIGINAL_HEIGHT;
-				_game->getScreen()->resetDisplay(false);
-				_game->setState(new StatisticsState);
-			}
-			else
-			{
-				Options::baseXResolution = Options::baseXGeoscape;
-				Options::baseYResolution = Options::baseYGeoscape;
-				_game->getScreen()->resetDisplay(false);
-				if (origBattleState != 0)
-				{
-					// We need to reset palettes here already, can't wait for the destructor
-					origBattleState->resetPalettes();
-				}
-				_game->setState(new GeoscapeState);
-				if (_game->getSavedGame()->getSavedBattle() != 0)
-				{
-					_game->getSavedGame()->getSavedBattle()->loadMapResources(_game->getMod());
-					Options::baseXResolution = Options::baseXBattlescape;
-					Options::baseYResolution = Options::baseYBattlescape;
-					_game->getScreen()->resetDisplay(false);
-					BattlescapeState *bs = new BattlescapeState;
-					_game->pushState(bs);
-					_game->getSavedGame()->getSavedBattle()->setBattleState(bs);
-					// Try to reactivate the touch buttons
-					bs->toggleTouchButtons(false, true);
-				}
-			}
-
-			// Clear the SDL event queue (i.e. ignore input from impatient users)
-			SDL_Event e;
-			while (SDL_PollEvent(&e))
-			{
-				// do nothing
-			}
-		}
-		catch (Exception &e)
-		{
-			error(e.what(), s);
-		}
-		catch (YAML::Exception &e)
-		{
-			error(e.what(), s);
-		}
-		CrossPlatform::flashWindow();
+		return;
 	}
+	_game->popState();
+
+	// Remember for later (palette reset)
+	SavedGame *before = _game->getSavedGame();
+	BattlescapeState *origBattleState = 0;
+	if (before != 0 && before->getSavedBattle() != 0)
+	{
+		origBattleState = before->getSavedBattle()->getBattleState();
+	}
+
+	// Reset touch flags
+	_game->resetTouchButtonFlags();
+
+	// Load the game
+	Mod *mod = _game->getMod();
+	SavedGame *s = new SavedGame();
+	// SavedGame::load() sets the seed from the file at its very start;
+	// a save that is then rejected must not leave its seed to the game that goes on
+	const uint64_t seedBefore = RNG::getSeed();
+	// what the screens of a loaded game change outside of it, to put back if it is rejected
+	const int baseX = Options::baseXResolution, baseY = Options::baseYResolution;
+	const int frameSkip = Timer::hdFrameSkip;
+	const bool debugPlay = BattlescapeGame::_debugPlay;
+	const std::string music = mod->getPlayingMusic();
+	std::list<State*> screens;
+	Mod::HdScalePark *scalePark = 0;
+	bool failed = false, palettes = false;
+	std::string failure;
+	try
+	{
+		s->load(_filename, mod, _game->getLanguage());
+		_game->parkSavedGame(s);
+		CollapsePilot::park();
+		if (origBattleState != 0 && s->getEnding() == END_NONE)
+		{
+			// The colour shift the battle before gave its HD frames is put aside whole, with the frames it recoloured:
+			// undone, the load puts it back as it was, without building its tables or reading a frame again
+			HdPaletteShift::park();
+			// We need to reset palettes here already, can't wait for the destructor
+			palettes = origBattleState->resetPalettes();
+		}
+		if (s->getSavedBattle() != 0 && s->getEnding() == END_NONE && mod->hdScaleStale())
+		{
+			// The loaded battle takes another HD scale than the game before stands at
+			scalePark = mod->parkHdScale();
+		}
+		_game->getScreen()->parkWorld();
+		BattlescapeState *bs = buildScreens(s, screens);
+		// the destructor of the battle screen before, on its way out, turns the HD frame skip off
+		const int frameSkipNow = Timer::hdFrameSkip;
+		// The loaded game stands. The game before goes here; nothing from here on is undone, and nothing fails
+		_game->commitSavedGame(screens);
+		CollapsePilot::unpark(false);
+		// nothing made at the scale before is left to point at what was parked
+		mod->dropHdScale(scalePark);
+		scalePark = 0;
+		HdPaletteShift::unpark(false);
+		_game->getScreen()->unparkWorld(false);
+		Timer::hdFrameSkip = frameSkipNow;
+		if (bs != 0)
+		{
+			// Try to reactivate the touch buttons
+			bs->toggleTouchButtons(false, true);
+		}
+
+		// Clear the SDL event queue (i.e. ignore input from impatient users)
+		SDL_Event e;
+		while (SDL_PollEvent(&e))
+		{
+			// do nothing
+		}
+	}
+	catch (Exception &e)
+	{
+		failed = true;
+		failure = e.what();
+	}
+	catch (YAML::Exception &e)
+	{
+		failed = true;
+		failure = e.what();
+	}
+	catch (std::exception &e)
+	{
+		// a damaged save can also end in a standard exception (a bad size, a missing key),
+		// and so can a lack of memory: that is a save that did not load, not a crash of the game
+		failed = true;
+		failure = e.what();
+	}
+	if (failed)
+	{
+		// the screens built for the game that failed go while it is still the current one
+		while (!screens.empty())
+		{
+			delete screens.back();
+			screens.pop_back();
+		}
+		if (_game->hasParkedGame())
+		{
+			// Rejected with the game before still whole: it comes back as it was
+			if (s->getSavedBattle() != 0)
+			{
+				// (with the scale before parked the two battles share no terrain: all of this one's goes)
+				s->getSavedBattle()->releaseMapData(scalePark == 0 && before != 0 ? before->getSavedBattle() : 0);
+				BattlescapeState::restorePalettes(mod);
+			}
+			mod->unparkHdScale(scalePark);
+			scalePark = 0;
+			_game->unparkSavedGame();
+			CollapsePilot::unpark(true);
+			BattlescapeGame::_debugPlay = debugPlay;
+			Timer::hdFrameSkip = frameSkip;
+			if (origBattleState != 0 && palettes)
+			{
+				BattlescapeState::restorePalettes(mod);
+				// the colour shift of the battle that goes on is in place again before its palettes are:
+				// reapplyPalettes finds it carried over and builds nothing
+				HdPaletteShift::unpark(true);
+				origBattleState->reapplyPalettes();
+			}
+			HdPaletteShift::unpark(true);
+			Options::baseXResolution = baseX;
+			Options::baseYResolution = baseY;
+			_game->getScreen()->unparkWorld(true);
+			try
+			{
+				_game->getScreen()->resetDisplay(false);
+			}
+			catch (std::exception &e)
+			{
+				Log(LOG_ERROR) << "The display did not come back to the size of the game that goes on: " << e.what();
+			}
+			if (!music.empty() && mod->getPlayingMusic() != music)
+			{
+				mod->playMusic(music);
+			}
+		}
+		error(failure, s);
+		RNG::setSeed(seedBefore);
+	}
+	CrossPlatform::flashWindow();
 }
 
 /**
@@ -231,6 +361,18 @@ void LoadGameState::error(const std::string &msg, SavedGame *save)
 	Log(LOG_ERROR) << msg;
 	std::ostringstream error;
 	error << tr("STR_LOAD_UNSUCCESSFUL") << Unicode::TOK_NL_SMALL << msg;
+	if (_game->getSavedGame() == save)
+	{
+		// The failure came after the game was switched to this save (the map resources, the battle screen):
+		// the game before it is gone and the screens put up for this one must not stay without a save.
+		// Back to the main menu, as after abandoning a game; the message goes on top of it.
+		Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
+		_game->getScreen()->resetDisplay(false);
+		// the screens of the game that failed go before it does (error() runs from a screen that is not in the stack)
+		std::list<State*> menu;
+		menu.push_back(new MainMenuState);
+		_game->replaceStates(menu);
+	}
 	if (_origin != OPT_BATTLESCAPE)
 		_game->pushState(new ErrorMessageState(error.str(), _palette, _game->getMod()->getInterface("errorMessages")->getElement("geoscapeColor")->color, "BACK01.SCR", _game->getMod()->getInterface("errorMessages")->getElement("geoscapePalette")->color));
 	else

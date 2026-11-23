@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "RuleMissionScript.h"
+#include "Mod.h"
 #include "../Engine/Exception.h"
 #include "../Engine/RNG.h"
 #include <climits>
@@ -33,6 +34,7 @@ RuleMissionScript::RuleMissionScript(const std::string &type) :
 	_type(type), _firstMonth(0), _lastMonth(-1), _label(0), _executionOdds(100),
 	_targetBaseOdds(0), _minDifficulty(0), _maxDifficulty(4), _maxRuns(-1), _avoidRepeats(0), _delay(0), _randomDelay(0),
 	_minScore(INT_MIN), _maxScore(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX),
+	_counterMin(0), _counterMax(-1),
 	_useTable(true), _siteType(false)
 {
 }
@@ -109,7 +111,7 @@ void RuleMissionScript::load(const YAML::YamlNodeReader& node)
 		_regionWeights.push_back(std::make_pair(monthWeights.readKey<size_t>(0), nw));
 	}
 
-	reader.tryRead("researchTriggers", _researchTriggers);
+	reader.tryRead("researchTriggers", _researchTriggerNames);
 	reader.tryRead("itemTriggers", _itemTriggers);
 	reader.tryRead("facilityTriggers", _facilityTriggers);
 	reader.tryRead("soldierTypeTriggers", _soldierTypeTriggers);
@@ -123,6 +125,26 @@ void RuleMissionScript::load(const YAML::YamlNodeReader& node)
 		throw Exception("Error in mission script: " + _type +": no varName provided for a script with maxRuns or repeatAvoidance.");
 	}
 
+}
+
+/**
+ * Cross link with other Rules.
+ */
+void RuleMissionScript::afterLoad(const Mod* mod)
+{
+	// Link manually
+	for (auto& entry : _researchTriggerNames)
+	{
+		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
+		auto* research = mod->getResearchOrPlaceholder(entry.first);
+		if (research)
+		{
+			_researchTriggers[research] = entry.second;
+		}
+	}
+
+	//remove not needed data
+	Collections::removeAll(_researchTriggerNames);
 }
 
 /**
@@ -239,14 +261,6 @@ bool RuleMissionScript::hasMissionWeights() const
 bool RuleMissionScript::hasRegionWeights() const
 {
 	return !_regionWeights.empty();
-}
-
-/**
- * @return a list of research topics that govern execution of this script.
- */
-const std::map<std::string, bool> &RuleMissionScript::getResearchTriggers() const
-{
-	return _researchTriggers;
 }
 
 /**

@@ -19,6 +19,8 @@
 #include "StartState.h"
 #include "../version.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Exception.h"
+#include "../Engine/CrashTrace.h"
 #include "../Engine/Game.h"
 #include "../Engine/Screen.h"
 #include "../Engine/Action.h"
@@ -34,15 +36,21 @@
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
 #include "MainMenuState.h"
+#include "AdultChoiceState.h"
+#include "GentleChoiceState.h"
+#include "LanguageChoiceState.h"
 #include "CutsceneState.h"
+#include "../Battlescape/AiProbe.h"
 #include <SDL_mixer.h>
 #include <SDL_thread.h>
 
 namespace OpenXcom
 {
 
-LoadingPhase StartState::loading;
+std::atomic<LoadingPhase> StartState::loading(LOADING_STARTED);
+SDL_Thread *StartState::_thread = 0;
 std::string StartState::error;
+bool StartState::playIntroAfterReload = false;
 
 /**
  * Initializes all the elements in the Loading screen.
@@ -59,8 +67,7 @@ StartState::StartState() : _anim(0)
 	Options::baseYResolution = Options::displayHeight;
 	_game->getScreen()->resetDisplay(false, true);
 
-	// Create objects
-	_thread = 0;
+	// Create objects (_thread: 0 here - the previous loading was waited for when its screen went)
 	loading = LOADING_STARTED;
 	error = "";
 	_oldMaster = Options::getActiveMaster();
@@ -112,14 +119,35 @@ StartState::StartState() : _anim(0)
 }
 
 /**
- * Kill the thread in case the game is quit early.
+ * Waits for the data loading thread if it still runs, also when the game is quit while it loads.
+ * Called by Game::run() before the options are written (the thread changes Options::mods, the language
+ * and the HD screen themes until its end) and again, harmlessly, by ~StartState.
  */
-StartState::~StartState()
+void StartState::waitLoading()
 {
 	if (_thread != 0)
 	{
-		SDL_KillThread(_thread);
+		// Killing the thread (SDL_KillThread = TerminateThread) freed its stack while the HdWorkers threads still ran
+		// a batch it had given them (the batch's function lives on that stack): they crashed reading it, and the exit
+		// waited for them in ~HdWorkers for good (a quit during the loading, AUDIT-05); a lock the thread held - the
+		// heap's, the DLL loader's - stayed taken too (R-150). The thread never waits for the main one, and the mod
+		// and the language it fills are deleted after the states (Game::~Game): it comes to its end, and a quit takes
+		// the rest of the loading (about 2 s at most).
+		if (loading == LOADING_STARTED)
+		{
+			Log(LOG_INFO) << "Waiting for the data loading to finish before quitting...";
+		}
+		SDL_WaitThread(_thread, 0);
+		_thread = 0;
 	}
+}
+
+/**
+ * Join the loading thread, also when the game is quit while it still loads.
+ */
+StartState::~StartState()
+{
+	waitLoading();
 	delete _font;
 	delete _timer;
 	delete _lang;
@@ -141,7 +169,9 @@ void StartState::init()
 		_game->initAudio();
 	}
 
-	// Load the game data in a separate thread
+	// Load the game data in a separate thread. From here until its verdict is seen in think() the mod and the
+	// language belong to that thread: the main loop and the plates must not touch them (Game::isDataReady).
+	_game->setBackgroundLoad(true);
 	_thread = SDL_CreateThread(load, (void*)_game);
 	if (_thread == 0)
 	{
@@ -158,7 +188,14 @@ void StartState::think()
 	State::think();
 	_timer->think(this, 0);
 
-	switch (loading)
+	if (loading == LOADING_STARTED && AiProbe::fast())
+	{
+		// the probe's fast mode draws no frame, so this loop would spin millions of times a second and
+		// starve the loading thread of the heap (the HD interface art took 28 s instead of 1 s)
+		SDL_Delay(1);
+	}
+
+	switch (loading.load())
 	{
 	case LOADING_FAILED:
 		CrossPlatform::flashWindow();
@@ -172,12 +209,34 @@ void StartState::think()
 		loading = LOADING_DONE;
 		break;
 	case LOADING_SUCCESSFUL:
+		_game->setBackgroundLoad(false);
 		CrossPlatform::flashWindow();
 		Log(LOG_INFO) << "OpenXcom started successfully!";
 		_game->setState(new GoToMainMenuState(true));
-		if (_oldMaster != Options::getActiveMaster() && Options::playIntro)
 		{
-			_game->pushState(new CutsceneState("intro"));
+			// The launcher can select the master before StartState is created.
+			bool intro = (!Options::reload || _oldMaster != Options::getActiveMaster() || playIntroAfterReload) && Options::playIntro;
+			playIntroAfterReload = false;
+			if (intro)
+			{
+				_game->pushState(new CutsceneState("intro"));
+			}
+			// Pushed last, so the questions come before the intro is played.
+			// The language screen hands over to the art one itself: that one
+			// builds its texts in its constructor and needs the language first.
+			// The photosensitivity warning goes next, still before the intro: the intro is the first thing that flashes.
+			if (LanguageChoiceState::isNeeded())
+			{
+				_game->pushState(new LanguageChoiceState(intro));
+			}
+			else if (GentleChoiceState::isNeeded())
+			{
+				_game->pushState(new GentleChoiceState(intro));
+			}
+			else if (AdultChoiceState::isNeeded())
+			{
+				_game->pushState(new AdultChoiceState(intro));
+			}
 		}
 		if (Options::reload)
 		{
@@ -219,7 +278,7 @@ void StartState::animate()
 	if (loading == LOADING_STARTED)
 	{
 		std::ostringstream ss;
-		ss << "Loading OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT << "...";
+		ss << "Loading " << OXCE_HD_VERSION_TITLE << "...";
 		if (Options::reload)
 		{
 			if (Options::oxceStartUpTextMode < 2)
@@ -318,6 +377,14 @@ int StartState::load(void *game_ptr)
 	{
 		error = e.what();
 		Log(LOG_ERROR) << error;
+		if (const Exception *own = dynamic_cast<const Exception*>(&e))
+		{
+			const std::string thrownAt = CrashTrace::describe(own->getFrames(), own->getFrameCount());
+			if (!thrownAt.empty())
+			{
+				Log(LOG_ERROR) << "The exception was thrown at:\n" << thrownAt;
+			}
+		}
 		loading = LOADING_FAILED;
 	}
 

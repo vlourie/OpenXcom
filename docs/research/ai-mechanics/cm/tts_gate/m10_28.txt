@@ -1,0 +1,317 @@
+
+#1 turn 1 b_own_cell valA 0 valB 0
+  A 1000027 (34, 7, 1) tu89 hp48  B 1000014 (33, 6, 1) tu69 hp36  T 114 (40, 11, 0) hp109 dBT 7 dAB 1 dAT 6
+  B acted before 1, later 4; A acted before 0, later 5
+  B next: same state True, T in list {'to': (40, 11, 0), 'lof': 0, 'tu': 17, 'p': 44, 'w': 'STR_UAC_CARBINE', 'd': 9, 'mode': 8}, others with line and TU: []
+    B (33, 6, 1) 2->(37, 5, 1) tu69 sp20 dmg0 f0 [firepoint]
+    B (36, 6, 1) 2->(37, 5, 1) tu49 sp14 dmg0 f0 [firepoint]
+    B (37, 5, 1) 8@114->(40, 11, 0) tu35 sp17 dmg0 f0 [shot]
+    B (37, 5, 1) 8@114->(40, 11, 0) tu18 sp17 dmg0 f0 [shot]
+    A (34, 7, 1) 2->(33, 6, 1) tu89 sp6 dmg0 f0 [firepoint]
+    A (33, 6, 1) 8@114->(40, 11, 0) tu83 sp22 dmg0 f0 [shot]
+    A (33, 6, 1) 8@114->(40, 11, 0) tu61 sp22 dmg0 f0 [shot]
+    A (33, 6, 1) 8@114->(40, 11, 0) tu39 sp22 dmg0 f0 [shot]
+  A list on the cell: T {'to': (40, 11, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 8, 'mode': 8}, with line and TU []
+
+#2 turn 1 b_own_cell valA 0 valB 0
+  A 1000043 (37, 6, 1) tu114 hp79  B 1000014 (36, 6, 1) tu49 hp36  T 46 (51, 3, 0) hp111 dBT 15 dAB 1 dAT 14
+  B acted before 2, later 3; A acted before 0, later 4
+  B next: same state True, T in list {'to': (51, 3, 0), 'lof': 0, 'tu': 17, 'p': 44, 'w': 'STR_UAC_CARBINE', 'd': 16, 'mode': 8}, others with line and TU: []
+    B (36, 6, 1) 2->(37, 5, 1) tu49 sp14 dmg0 f0 [firepoint]
+    B (37, 5, 1) 8@114->(40, 11, 0) tu35 sp17 dmg0 f0 [shot]
+    B (37, 5, 1) 8@114->(40, 11, 0) tu18 sp17 dmg0 f0 [shot]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu114 sp31 dmg4 f0 [shot]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu83 sp31 dmg0 f0 [shot]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu52 sp31 dmg0 f0 [shot]
+    A (37, 6, 1) 2->(5, 8, 0) tu21 sp16 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (51, 3, 0), 'lof': 1, 'tu': 31, 'p': 42, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 15, 'mode': 8}, with line and TU [(46, 31, 42, 15), (115, 31, 42, 15)]
+
+#3 turn 1 b_own_cell valA 0 valB 0
+  A 1000043 (37, 6, 1) tu114 hp79  B 1000014 (36, 6, 1) tu49 hp36  T 115 (51, 10, 0) hp107 dBT 15 dAB 1 dAT 14
+  B acted before 2, later 3; A acted before 0, later 4
+  B next: same state True, T in list {'to': (51, 10, 0), 'lof': 0, 'tu': 17, 'p': 44, 'w': 'STR_UAC_CARBINE', 'd': 16, 'mode': 8}, others with line and TU: []
+    B (36, 6, 1) 2->(37, 5, 1) tu49 sp14 dmg0 f0 [firepoint]
+    B (37, 5, 1) 8@114->(40, 11, 0) tu35 sp17 dmg0 f0 [shot]
+    B (37, 5, 1) 8@114->(40, 11, 0) tu18 sp17 dmg0 f0 [shot]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu114 sp31 dmg4 f0 [shot]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu83 sp31 dmg0 f0 [shot]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu52 sp31 dmg0 f0 [shot]
+    A (37, 6, 1) 2->(5, 8, 0) tu21 sp16 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (51, 10, 0), 'lof': 1, 'tu': 31, 'p': 42, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 15, 'mode': 8}, with line and TU [(46, 31, 42, 15), (115, 31, 42, 15)]
+
+#4 turn 1 b_own_cell valA 0 valB 0
+  A 1000043 (37, 6, 1) tu52 hp79  B 1000007 (36, 6, 1) tu53 hp36  T 46 (51, 3, 0) hp111 dBT 15 dAB 1 dAT 14
+  B acted before 2, later 2; A acted before 2, later 2
+  B next: same state True, T in list {'to': (51, 3, 0), 'lof': 0, 'tu': 20, 'p': 30, 'w': 'STR_UAC_RIFLE', 'd': 16, 'mode': 8}, others with line and TU: []
+    B (36, 6, 1) 2->(34, 7, 1) tu53 sp16 dmg0 f0 [firepoint]
+    B (34, 7, 1) 2->(35, 3, 1) tu37 sp18 dmg0 f0 [escape]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu52 sp31 dmg0 f0 [shot]
+    A (37, 6, 1) 2->(5, 8, 0) tu21 sp16 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (51, 3, 0), 'lof': 1, 'tu': 31, 'p': 42, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 15, 'mode': 8}, with line and TU [(46, 31, 42, 15), (115, 31, 42, 15)]
+
+#5 turn 1 b_own_cell valA 0 valB 0
+  A 1000043 (37, 6, 1) tu52 hp79  B 1000007 (36, 6, 1) tu53 hp36  T 115 (51, 10, 0) hp107 dBT 15 dAB 1 dAT 14
+  B acted before 2, later 2; A acted before 2, later 2
+  B next: same state True, T in list {'to': (51, 10, 0), 'lof': 0, 'tu': 20, 'p': 30, 'w': 'STR_UAC_RIFLE', 'd': 16, 'mode': 8}, others with line and TU: []
+    B (36, 6, 1) 2->(34, 7, 1) tu53 sp16 dmg0 f0 [firepoint]
+    B (34, 7, 1) 2->(35, 3, 1) tu37 sp18 dmg0 f0 [escape]
+    A (37, 6, 1) 8@46->(51, 3, 0) tu52 sp31 dmg0 f0 [shot]
+    A (37, 6, 1) 2->(5, 8, 0) tu21 sp16 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (51, 10, 0), 'lof': 1, 'tu': 31, 'p': 42, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 15, 'mode': 8}, with line and TU [(46, 31, 42, 15), (115, 31, 42, 15)]
+
+#6 turn 1 a_worth_more valA 0 valB 0
+  A 1000007 (34, 7, 1) tu37 hp36  B 1000027 (33, 6, 1) tu39 hp48  T 114 (40, 11, 0) hp109 dBT 7 dAB 1 dAT 6
+  B acted before 3, later 2; A acted before 3, later 1
+  B next: same state True, T in list {'to': (40, 11, 0), 'lof': 1, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 9, 'mode': 8}, others with line and TU: [(114, 22, 34, 9)]
+    B (33, 6, 1) 8@114->(40, 11, 0) tu39 sp22 dmg0 f0 [shot]
+    B (33, 6, 1) 2->(28, 43, 0) tu17 sp14 dmg0 f0 [patrol.node]
+    A (34, 7, 1) 2->(35, 3, 1) tu37 sp18 dmg0 f0 [escape]
+  A list on the cell: T {'to': (40, 11, 0), 'lof': 0, 'tu': 20, 'p': 30, 'w': 'STR_UAC_RIFLE', 'd': 8, 'mode': 8}, with line and TU []
+
+#7 turn 2 b_own_cell valA 4.992 valB 0
+  A 1000031 (17, 25, 0) tu74 hp66  B 1000021 (14, 27, 0) tu89 hp48  T 115 (48, 7, 0) hp107 dBT 34 dAB 3 dAT 31
+  B acted before 0, later 4; A acted before 0, later 2
+  B next: same state True, T in list {'to': (48, 7, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 40, 'mode': 8}, others with line and TU: []
+    B (14, 27, 0) 2->(6, 21, 0) tu89 sp4 dmg0 f0 [patrol.node]
+    B (15, 27, 0) 9@115->(48, 7, 0) tu85 sp54 dmg0 f46 [shot]
+    B (15, 27, 0) 8@114->(36, 8, 0) tu31 sp22 dmg0 f59 [shot]
+    B (15, 27, 0) 2->(6, 21, 0) tu9 sp6 dmg0 f0 [patrol.node]
+    A (17, 25, 0) 9@114->(36, 8, 0) tu74 sp51 dmg25 f0 [shot]
+    A (17, 25, 0) 2->(6, 15, 0) tu23 sp22 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (48, 7, 0), 'lof': 1, 'tu': 24, 'p': 27, 'w': 'STR_HEAVY_CANNON', 'd': 36, 'mode': 8}, with line and TU [(114, 24, 27, 26), (115, 24, 27, 36)]
+
+#8 turn 2 b_own_cell valA 0 valB 0
+  A 1000020 (19, 23, 0) tu89 hp48  B 1000031 (17, 25, 0) tu74 hp66  T 114 (36, 8, 0) hp109 dBT 19 dAB 2 dAT 17
+  B acted before 0, later 2; A acted before 0, later 2
+  B next: same state True, T in list {'to': (36, 8, 0), 'lof': 1, 'tu': 24, 'p': 27, 'w': 'STR_HEAVY_CANNON', 'd': 26, 'mode': 8}, others with line and TU: [(114, 24, 27, 26), (115, 24, 27, 36)]
+    B (17, 25, 0) 9@114->(36, 8, 0) tu74 sp51 dmg25 f0 [shot]
+    B (17, 25, 0) 2->(6, 15, 0) tu23 sp22 dmg0 f0 [patrol.node]
+    A (19, 23, 0) 9@114->(36, 8, 0) tu89 sp67 dmg0 f0 [shot]
+    A (19, 23, 0) 2->(5, 19, 1) tu22 sp20 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (36, 8, 0), 'lof': 1, 'tu': 35, 'p': 105, 'w': 'STR_SHOTGUN_PA', 'd': 23, 'mode': 8}, with line and TU [(114, 35, 105, 23), (115, 35, 105, 34)]
+
+#9 turn 2 b_own_cell valA 0 valB 0
+  A 1000031 (17, 25, 0) tu74 hp66  B 1000021 (15, 27, 0) tu85 hp48  T 114 (36, 8, 0) hp108 dBT 21 dAB 2 dAT 19
+  B acted before 1, later 3; A acted before 0, later 2
+  B next: same state True, T in list {'to': (36, 8, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 29, 'mode': 8}, others with line and TU: [(115, 22, 34, 39)]
+    B (15, 27, 0) 9@115->(48, 7, 0) tu85 sp54 dmg0 f46 [shot]
+    B (15, 27, 0) 8@114->(36, 8, 0) tu31 sp22 dmg0 f59 [shot]
+    B (15, 27, 0) 2->(6, 21, 0) tu9 sp6 dmg0 f0 [patrol.node]
+    A (17, 25, 0) 9@114->(36, 8, 0) tu74 sp51 dmg25 f0 [shot]
+    A (17, 25, 0) 2->(6, 15, 0) tu23 sp22 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (36, 8, 0), 'lof': 1, 'tu': 24, 'p': 27, 'w': 'STR_HEAVY_CANNON', 'd': 26, 'mode': 8}, with line and TU [(114, 24, 27, 26), (115, 24, 27, 36)]
+
+#10 turn 3 b_own_cell valA 0 valB 0
+  A 1000042 (46, 29, 0) tu114 hp78  B 1000010 (35, 44, 1) tu81 hp36  T 1 (47, 28, 0) hp117 dBT 16 dAB 15 dAT 1
+  B acted before 0, later 1; A acted before 0, later 4
+  B next: same state True, T in list {'to': (47, 28, 0), 'lof': 0, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 20, 'mode': 8}, others with line and TU: []
+    B (35, 44, 1) 2->(43, 23, 0) tu81 sp78 dmg0 f0 [patrol.node]
+    A (46, 29, 0) 2->(45, 34, 0) tu114 sp22 dmg0 f0 [firepoint.random]
+    A (45, 34, 0) 8@1->(47, 28, 0) tu92 sp31 dmg1 f0 [shot]
+    A (45, 34, 0) 8@1->(47, 28, 0) tu61 sp31 dmg1 f0 [shot]
+    A (45, 34, 0) 2->(20, 35, 0) tu30 sp28 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (47, 28, 0), 'lof': 1, 'tu': 31, 'p': 36, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 2, 'mode': 8}, with line and TU [(1, 31, 36, 2)]
+
+#11 turn 4 b_own_cell valA 0 valB 0
+  A 1000037 (43, 28, 0) tu74 hp66  B 1000016 (19, 23, 0) tu89 hp48  T 1 (44, 28, 0) hp112 dBT 25 dAB 24 dAT 1
+  B acted before 0, later 5; A acted before 0, later 3
+  B next: same state True, T in list {'to': (44, 28, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 26, 'mode': 8}, others with line and TU: [(46, 22, 34, 29), (114, 22, 34, 20)]
+    B (19, 23, 0) 8@114->(32, 8, 0) tu89 sp24 dmg0 f48 [shot]
+    B (19, 23, 0) 8@114->(32, 8, 0) tu65 sp22 dmg0 f0 [shot]
+    B (19, 23, 0) 8@114->(32, 8, 0) tu43 sp22 dmg0 f0 [shot]
+    B (19, 23, 0) 2->(38, 46, 0) tu21 sp6 dmg0 f0 [patrol.node]
+    B (20, 24, 0) 2->(38, 46, 0) tu15 sp12 dmg0 f0 [patrol.node]
+    A (43, 28, 0) 10@1->(44, 28, 0) tu74 sp64 dmg0 f0 [melee]
+    A (43, 28, 0) 2->(37, 6, 1) tu10 sp4 dmg0 f0 [patrol.node]
+    A (43, 27, 0) 2->(37, 6, 1) tu6 sp4 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (44, 28, 0), 'lof': 1, 'tu': 23, 'p': 29, 'w': 'STR_UAC_HEAVY_NAILGUN', 'd': 1, 'mode': 7}, with line and TU [(1, 23, 29, 1)]
+
+#12 turn 4 b_own_cell valA 0 valB 0
+  A 1000014 (30, 12, 0) tu81 hp36  B 1000021 (16, 23, 0) tu89 hp48  T 115 (42, 3, 0) hp102 dBT 26 dAB 14 dAT 12
+  B acted before 0, later 4; A acted before 0, later 4
+  B next: same state True, T in list {'to': (42, 3, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 33, 'mode': 8}, others with line and TU: [(46, 22, 34, 32), (114, 22, 34, 22), (1, 22, 34, 29)]
+    B (16, 23, 0) 8@114->(32, 8, 0) tu89 sp23 dmg0 f0 [shot]
+    B (16, 23, 0) 8@114->(32, 8, 0) tu66 sp22 dmg0 f0 [shot]
+    B (16, 23, 0) 8@114->(32, 8, 0) tu44 sp22 dmg0 f0 [shot]
+    B (16, 23, 0) 8@114->(32, 8, 0) tu22 sp22 dmg0 f0 [shot]
+    A (30, 12, 0) 7@114->(32, 8, 0) tu81 sp23 dmg0 f0 [shot]
+    A (30, 12, 0) 7@114->(32, 8, 0) tu58 sp21 dmg0 f0 [shot]
+    A (30, 12, 0) 7@114->(32, 8, 0) tu37 sp21 dmg0 f0 [shot]
+    A (30, 12, 0) 2->(50, 18, 0) tu16 sp14 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (42, 3, 0), 'lof': 1, 'tu': 17, 'p': 44, 'w': 'STR_UAC_CARBINE', 'd': 15, 'mode': 8}, with line and TU [(46, 17, 44, 18), (114, 17, 44, 5), (1, 17, 44, 22), (115, 17, 44, 15)]
+
+#13 turn 5 b_own_cell valA 0 valB 0
+  A 1000042 (37, 33, 0) tu114 hp38  B 1000010 (36, 34, 0) tu81 hp36  T 1 (44, 28, 0) hp111 dBT 8 dAB 1 dAT 7
+  B acted before 0, later 4; A acted before 0, later 3
+  B next: same state True, T in list {'to': (44, 28, 0), 'lof': 0, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 10, 'mode': 8}, others with line and TU: [(46, 32, 101, 14), (114, 32, 101, 31), (115, 32, 101, 26)]
+    B (36, 34, 0) 8@46->(42, 22, 0) tu81 sp32 dmg0 f0 [shot]
+    B (36, 34, 0) 8@46->(42, 22, 0) tu49 sp32 dmg0 f27 [shot]
+    B (36, 34, 0) 2->(43, 23, 0) tu17 sp4 dmg0 f0 [patrol.node]
+    B (36, 33, 0) 2->(37, 31, 0) tu13 sp10 dmg0 f0 [escape]
+    A (37, 33, 0) 8@1->(44, 28, 0) tu114 sp33 dmg1 f0 [shot]
+    A (37, 33, 0) 8@1->(44, 28, 0) tu81 sp31 dmg1 f9 [shot]
+    A (37, 33, 0) 2->(36, 37, 0) tu50 sp18 dmg0 f0 [escape]
+  A list on the cell: T {'to': (44, 28, 0), 'lof': 1, 'tu': 31, 'p': 32, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 9, 'mode': 8}, with line and TU [(46, 31, 32, 13), (114, 31, 32, 30), (1, 31, 32, 9), (115, 31, 32, 24)]
+
+#14 turn 5 b_own_cell valA 0 valB 0
+  A 1000045 (43, 28, 0) tu114 hp74  B 1000016 (22, 26, 0) tu89 hp48  T 1 (44, 28, 0) hp111 dBT 22 dAB 21 dAT 1
+  B acted before 0, later 4; A acted before 0, later 2
+  B next: same state True, T in list {'to': (44, 28, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 23, 'mode': 8}, others with line and TU: [(46, 22, 34, 21), (114, 22, 34, 25), (115, 22, 34, 23)]
+    B (22, 26, 0) 2->(38, 46, 0) tu89 sp6 dmg0 f0 [patrol.node]
+    B (23, 27, 0) 8@46->(42, 22, 0) tu83 sp23 dmg0 f0 [shot]
+    B (23, 27, 0) 8@46->(42, 22, 0) tu60 sp22 dmg0 f0 [shot]
+    B (23, 27, 0) 8@46->(42, 22, 0) tu38 sp22 dmg0 f0 [shot]
+    A (43, 28, 0) 2->(39, 28, 0) tu114 sp16 dmg0 f0 [firepoint.random]
+    A (39, 28, 0) 2->(37, 23, 0) tu98 sp28 dmg0 f0 [escape]
+  A list on the cell: T {'to': (44, 28, 0), 'lof': 1, 'tu': 31, 'p': 41, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 1, 'mode': 8}, with line and TU [(1, 31, 41, 1)]
+
+#15 turn 5 b_own_cell valA 0 valB 0
+  A 1000016 (23, 27, 0) tu60 hp48  B 1000026 (11, 30, 0) tu63 hp48  T 46 (42, 22, 0) hp109 dBT 31 dAB 12 dAT 19
+  B acted before 2, later 2; A acted before 2, later 2
+  B next: same state True, T in list {'to': (42, 22, 0), 'lof': 0, 'tu': 28, 'p': 25, 'w': 'STR_CHAINGUN', 'd': 33, 'mode': 7}, others with line and TU: [(1, 28, 25, 34), (115, 28, 25, 34)]
+    B (11, 30, 0) 2->(30, 2, 0) tu63 sp4 dmg0 f0 [patrol.node]
+    B (12, 30, 0) 2->(16, 28, 0) tu59 sp20 dmg0 f0 [firepoint.fallback]
+    A (23, 27, 0) 8@46->(42, 22, 0) tu60 sp22 dmg0 f0 [shot]
+    A (23, 27, 0) 8@46->(42, 22, 0) tu38 sp22 dmg0 f0 [shot]
+  A list on the cell: T {'to': (42, 22, 0), 'lof': 1, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 20, 'mode': 8}, with line and TU [(46, 22, 34, 20), (1, 22, 34, 22), (115, 22, 34, 23)]
+
+#16 turn 6 b_own_cell valA 0 valB 0
+  A 1000037 (43, 27, 0) tu74 hp14  B 1000015 (49, 51, 0) tu81 hp14  T 46 (43, 26, 0) hp107 dBT 25 dAB 24 dAT 1
+  B acted before 0, later 5; A acted before 0, later 0
+  B next: same state True, T in list {'to': (43, 26, 0), 'lof': 0, 'tu': 17, 'p': 28, 'w': 'STR_UAC_CARBINE', 'd': 26, 'mode': 8}, others with line and TU: [(114, 17, 28, 51), (1, 17, 28, 24), (115, 17, 28, 45)]
+    B (49, 51, 0) 8@1->(44, 28, 0) tu81 sp18 dmg0 f0 [shot]
+    B (49, 51, 0) 2->(50, 52, 0) tu63 sp6 dmg0 f0 [patrol.node]
+    B (50, 52, 0) 2->(46, 55, 0) tu57 sp22 dmg0 f0 [firepoint.fallback]
+    B (46, 55, 0) 8@1->(44, 28, 0) tu35 sp17 dmg0 f0 [shot]
+    B (46, 55, 0) 8@1->(44, 28, 0) tu18 sp17 dmg0 f0 [shot]
+
+#17 turn 6 b_own_cell valA 0 valB 0
+  A 1000020 (18, 21, 0) tu89 hp13  B 1000021 (16, 23, 0) tu89 hp48  T 115 (33, 9, 0) hp101 dBT 17 dAB 2 dAT 15
+  B acted before 0, later 3; A acted before 0, later 2
+  B next: same state True, T in list {'to': (33, 9, 0), 'lof': 1, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 23, 'mode': 8}, others with line and TU: [(46, 22, 34, 28), (114, 22, 34, 22), (115, 22, 34, 23)]
+    B (16, 23, 0) 8@114->(28, 5, 0) tu89 sp22 dmg0 f0 [shot]
+    B (16, 23, 0) 9@114->(28, 5, 0) tu67 sp53 dmg0 f0 [shot]
+    B (16, 23, 0) 2->(6, 21, 0) tu14 sp12 dmg0 f0 [patrol.node]
+    A (18, 21, 0) 9@115->(33, 9, 0) tu89 sp66 dmg0 f0 [shot]
+    A (18, 21, 0) 2->(40, 52, 0) tu23 sp18 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (33, 9, 0), 'lof': 1, 'tu': 35, 'p': 74, 'w': 'STR_SHOTGUN_PA', 'd': 20, 'mode': 8}, with line and TU [(46, 35, 74, 26), (1, 35, 74, 27), (115, 35, 74, 20)]
+
+#18 turn 6 b_own_cell valA 0 valB 0
+  A 1000037 (43, 27, 0) tu74 hp14  B 1000032 (27, 6, 0) tu74 hp15  T 1 (44, 28, 0) hp106 dBT 22 dAB 21 dAT 1
+  B acted before 0, later 3; A acted before 0, later 0
+  B next: same state True, T in list {'to': (44, 28, 0), 'lof': 0, 'tu': 23, 'p': 23, 'w': 'STR_UAC_HEAVY_NAILGUN', 'd': 28, 'mode': 7}, others with line and TU: [(46, 23, 23, 26), (115, 23, 23, 7)]
+    B (27, 6, 0) 7@115->(33, 9, 0) tu74 sp24 dmg0 f0 [shot]
+    B (27, 6, 0) 7@115->(33, 9, 0) tu50 sp24 dmg0 f0 [shot]
+    B (27, 6, 0) 7@115->(33, 9, 0) tu26 sp24 dmg0 f0 [shot]
+
+#19 turn 6 b_own_cell valA 0 valB 4.992
+  A 1000047 (14, 20, 0) tu114 hp79  B 1000034 (9, 23, 0) tu74 hp66  T 115 (33, 9, 0) hp101 dBT 24 dAB 5 dAT 19
+  B acted before 0, later 1; A acted before 0, later 5
+  B next: same state True, T in list {'to': (33, 9, 0), 'lof': 0, 'tu': 24, 'p': 45, 'w': 'STR_HEAVY_CANNON', 'd': 28, 'mode': 8}, others with line and TU: []
+    B (9, 23, 0) 2->(11, 38, 0) tu74 sp72 dmg0 f0 [patrol.node]
+    A (14, 20, 0) 2->(18, 16, 0) tu114 sp4 dmg0 f0 [firepoint.random]
+    A (15, 20, 0) 8@46->(43, 26, 0) tu110 sp31 dmg0 f0 [shot]
+    A (15, 20, 0) 8@46->(43, 26, 0) tu79 sp31 dmg1 f0 [shot]
+    A (15, 20, 0) 8@46->(43, 26, 0) tu48 sp31 dmg1 f0 [shot]
+  A list on the cell: T {'to': (33, 9, 0), 'lof': 1, 'tu': 31, 'p': 42, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 22, 'mode': 8}, with line and TU [(46, 31, 42, 30), (115, 31, 42, 22)]
+
+#20 turn 7 b_own_cell valA 0 valB 0
+  A 1000003 (18, 16, 0) tu81 hp36  B 1000011 (17, 15, 0) tu81 hp36  T 1 (39, 31, 0) hp105 dBT 22 dAB 1 dAT 21
+  B acted before 0, later 2; A acted before 0, later 3
+  B next: same state True, T in list {'to': (39, 31, 0), 'lof': 1, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 28, 'mode': 8}, others with line and TU: [(46, 32, 101, 27), (1, 32, 101, 28)]
+    B (17, 15, 0) 9@46->(39, 30, 0) tu81 sp61 dmg0 f0 [shot]
+    B (17, 15, 0) 2->(14, 10, 0) tu20 sp20 dmg0 f0 [patrol.node]
+    A (18, 16, 0) 8@114->(26, 9, 0) tu81 sp34 dmg0 f0 [shot]
+    A (18, 16, 0) 8@114->(26, 9, 0) tu47 sp32 dmg0 f0 [shot]
+    A (18, 16, 0) 2->(56, 50, 0) tu15 sp12 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (39, 31, 0), 'lof': 1, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 26, 'mode': 8}, with line and TU [(46, 32, 101, 26), (114, 32, 101, 11), (1, 32, 101, 26), (115, 32, 101, 12)]
+
+#21 turn 7 b_own_cell valA 0 valB 0
+  A 1000003 (18, 16, 0) tu81 hp36  B 1000011 (17, 15, 0) tu81 hp36  T 46 (39, 30, 0) hp70 dBT 22 dAB 1 dAT 21
+  B acted before 0, later 2; A acted before 0, later 3
+  B next: same state True, T in list {'to': (39, 30, 0), 'lof': 1, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 27, 'mode': 8}, others with line and TU: [(46, 32, 101, 27), (1, 32, 101, 28)]
+    B (17, 15, 0) 9@46->(39, 30, 0) tu81 sp61 dmg0 f0 [shot]
+    B (17, 15, 0) 2->(14, 10, 0) tu20 sp20 dmg0 f0 [patrol.node]
+    A (18, 16, 0) 8@114->(26, 9, 0) tu81 sp34 dmg0 f0 [shot]
+    A (18, 16, 0) 8@114->(26, 9, 0) tu47 sp32 dmg0 f0 [shot]
+    A (18, 16, 0) 2->(56, 50, 0) tu15 sp12 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (39, 30, 0), 'lof': 1, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 26, 'mode': 8}, with line and TU [(46, 32, 101, 26), (114, 32, 101, 11), (1, 32, 101, 26), (115, 32, 101, 12)]
+
+#22 turn 7 b_own_cell valA 0 valB 0
+  A 1000019 (18, 14, 0) tu89 hp48  B 1000011 (17, 15, 0) tu81 hp36  T 114 (26, 9, 0) hp62 dBT 9 dAB 1 dAT 8
+  B acted before 0, later 2; A acted before 0, later 2
+  B next: same state True, T in list {'to': (26, 9, 0), 'lof': 0, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 11, 'mode': 8}, others with line and TU: [(46, 32, 101, 27), (1, 32, 101, 28)]
+    B (17, 15, 0) 9@46->(39, 30, 0) tu81 sp61 dmg0 f0 [shot]
+    B (17, 15, 0) 2->(14, 10, 0) tu20 sp20 dmg0 f0 [patrol.node]
+    A (18, 14, 0) 9@114->(26, 9, 0) tu89 sp65 dmg2 f10 [shot]
+    A (18, 14, 0) 2->(38, 56, 0) tu24 sp19 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (26, 9, 0), 'lof': 1, 'tu': 31, 'p': 25, 'w': 'STR_GRENADE_LAUNCHER', 'd': 10, 'mode': 8}, with line and TU [(46, 31, 25, 27), (114, 31, 25, 10), (1, 31, 25, 28), (115, 31, 25, 11)]
+
+#23 turn 7 b_own_cell valA 0 valB 0
+  A 1000019 (18, 14, 0) tu89 hp48  B 1000011 (17, 15, 0) tu81 hp36  T 115 (27, 9, 0) hp95 dBT 10 dAB 1 dAT 9
+  B acted before 0, later 2; A acted before 0, later 2
+  B next: same state True, T in list {'to': (27, 9, 0), 'lof': 0, 'tu': 32, 'p': 101, 'w': 'STR_SHOTGUN_PA', 'd': 12, 'mode': 8}, others with line and TU: [(46, 32, 101, 27), (1, 32, 101, 28)]
+    B (17, 15, 0) 9@46->(39, 30, 0) tu81 sp61 dmg0 f0 [shot]
+    B (17, 15, 0) 2->(14, 10, 0) tu20 sp20 dmg0 f0 [patrol.node]
+    A (18, 14, 0) 9@114->(26, 9, 0) tu89 sp65 dmg2 f10 [shot]
+    A (18, 14, 0) 2->(38, 56, 0) tu24 sp19 dmg0 f0 [patrol.node]
+  A list on the cell: T {'to': (27, 9, 0), 'lof': 1, 'tu': 31, 'p': 25, 'w': 'STR_GRENADE_LAUNCHER', 'd': 11, 'mode': 8}, with line and TU [(46, 31, 25, 27), (114, 31, 25, 10), (1, 31, 25, 28), (115, 31, 25, 11)]
+
+#24 turn 7 b_own_cell valA 0 valB 0
+  A 1000040 (24, 27, 0) tu114 hp79  B 1000016 (23, 27, 0) tu89 hp48  T 1 (39, 31, 0) hp105 dBT 16 dAB 1 dAT 15
+  B acted before 0, later 4; A acted before 0, later 4
+  B next: same state True, T in list {'to': (39, 31, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 17, 'mode': 8}, others with line and TU: [(114, 22, 34, 19), (115, 22, 34, 19)]
+    B (23, 27, 0) 8@114->(26, 9, 0) tu89 sp24 dmg0 f0 [shot]
+    B (23, 27, 0) 8@114->(26, 9, 0) tu65 sp22 dmg0 f0 [shot]
+    B (23, 27, 0) 8@115->(27, 9, 0) tu43 sp22 dmg0 f0 [shot]
+    B (23, 27, 0) 2->(38, 46, 0) tu21 sp6 dmg0 f0 [patrol.node]
+    A (24, 27, 0) 8@46->(39, 30, 0) tu114 sp32 dmg0 f0 [shot]
+    A (24, 27, 0) 8@46->(39, 30, 0) tu82 sp31 dmg1 f13 [shot]
+    A (24, 27, 0) 8@46->(39, 30, 0) tu51 sp31 dmg0 f0 [shot]
+    A (24, 27, 0) 2->(22, 31, 0) tu20 sp20 dmg0 f0 [escape]
+  A list on the cell: T {'to': (39, 31, 0), 'lof': 1, 'tu': 31, 'p': 42, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 16, 'mode': 8}, with line and TU [(46, 31, 42, 16), (114, 31, 42, 19), (1, 31, 42, 16), (115, 31, 42, 19)]
+
+#25 turn 7 b_own_cell valA 0 valB 0
+  A 1000040 (24, 27, 0) tu114 hp79  B 1000016 (23, 27, 0) tu89 hp48  T 46 (39, 30, 0) hp70 dBT 16 dAB 1 dAT 15
+  B acted before 0, later 4; A acted before 0, later 4
+  B next: same state True, T in list {'to': (39, 30, 0), 'lof': 0, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 17, 'mode': 8}, others with line and TU: [(114, 22, 34, 19), (115, 22, 34, 19)]
+    B (23, 27, 0) 8@114->(26, 9, 0) tu89 sp24 dmg0 f0 [shot]
+    B (23, 27, 0) 8@114->(26, 9, 0) tu65 sp22 dmg0 f0 [shot]
+    B (23, 27, 0) 8@115->(27, 9, 0) tu43 sp22 dmg0 f0 [shot]
+    B (23, 27, 0) 2->(38, 46, 0) tu21 sp6 dmg0 f0 [patrol.node]
+    A (24, 27, 0) 8@46->(39, 30, 0) tu114 sp32 dmg0 f0 [shot]
+    A (24, 27, 0) 8@46->(39, 30, 0) tu82 sp31 dmg1 f13 [shot]
+    A (24, 27, 0) 8@46->(39, 30, 0) tu51 sp31 dmg0 f0 [shot]
+    A (24, 27, 0) 2->(22, 31, 0) tu20 sp20 dmg0 f0 [escape]
+  A list on the cell: T {'to': (39, 30, 0), 'lof': 1, 'tu': 31, 'p': 42, 'w': 'AUX_DOOM_IMP_WEAPON', 'd': 16, 'mode': 8}, with line and TU [(46, 31, 42, 16), (114, 31, 42, 19), (1, 31, 42, 16), (115, 31, 42, 19)]
+
+#26 turn 8 b_own_cell valA 0 valB 0
+  A 1000016 (24, 28, 0) tu44 hp48  B 1000022 (21, 39, 0) tu77 hp48  T 114 (28, 12, 0) hp56 dBT 27 dAB 11 dAT 16
+  B acted before 1, later 3; A acted before 2, later 2
+  B next: same state True, T in list {'to': (28, 12, 0), 'lof': 0, 'tu': 28, 'p': 25, 'w': 'STR_CHAINGUN', 'd': 28, 'mode': 7}, others with line and TU: []
+    B (21, 39, 0) 2->(13, 3, 0) tu77 sp12 dmg0 f0 [patrol.node]
+    B (21, 36, 0) 7@114->(28, 12, 0) tu52 sp28 dmg0 f0 [shot]
+    B (21, 36, 0) 2->(13, 3, 0) tu24 sp24 dmg0 f0 [patrol.node]
+    A (24, 28, 0) 8@1->(33, 25, 0) tu44 sp22 dmg0 f0 [shot]
+    A (24, 28, 0) 8@1->(33, 25, 0) tu22 sp22 dmg0 f47 [shot]
+  A list on the cell: T {'to': (28, 12, 0), 'lof': 1, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 17, 'mode': 8}, with line and TU [(46, 22, 34, 11), (114, 22, 34, 17), (1, 22, 34, 10), (115, 22, 34, 17)]
+
+#27 turn 8 b_own_cell valA 0 valB 0
+  A 1000016 (24, 28, 0) tu44 hp48  B 1000022 (21, 39, 0) tu77 hp48  T 115 (29, 12, 0) hp84 dBT 27 dAB 11 dAT 16
+  B acted before 1, later 3; A acted before 2, later 2
+  B next: same state True, T in list {'to': (29, 12, 0), 'lof': 0, 'tu': 28, 'p': 25, 'w': 'STR_CHAINGUN', 'd': 29, 'mode': 7}, others with line and TU: []
+    B (21, 39, 0) 2->(13, 3, 0) tu77 sp12 dmg0 f0 [patrol.node]
+    B (21, 36, 0) 7@114->(28, 12, 0) tu52 sp28 dmg0 f0 [shot]
+    B (21, 36, 0) 2->(13, 3, 0) tu24 sp24 dmg0 f0 [patrol.node]
+    A (24, 28, 0) 8@1->(33, 25, 0) tu44 sp22 dmg0 f0 [shot]
+    A (24, 28, 0) 8@1->(33, 25, 0) tu22 sp22 dmg0 f47 [shot]
+  A list on the cell: T {'to': (29, 12, 0), 'lof': 1, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 17, 'mode': 8}, with line and TU [(46, 22, 34, 11), (114, 22, 34, 17), (1, 22, 34, 10), (115, 22, 34, 17)]
+
+#28 turn 8 a_worth_more valA 0 valB 0
+  A 1000016 (24, 28, 0) tu44 hp48  B 1000034 (11, 31, 0) tu26 hp66  T 46 (34, 25, 0) hp59 dBT 23 dAB 13 dAT 10
+  B acted before 3, later 1; A acted before 2, later 2
+  B next: same state True, T in list {'to': (34, 25, 0), 'lof': 0, 'tu': 24, 'p': 45, 'w': 'STR_HEAVY_CANNON', 'd': 24, 'mode': 8}, others with line and TU: [(114, 24, 45, 26), (1, 24, 45, 23), (115, 24, 45, 27)]
+    B (11, 31, 0) 8@1->(33, 25, 0) tu26 sp26 dmg0 f48 [shot]
+    A (24, 28, 0) 8@1->(33, 25, 0) tu44 sp22 dmg0 f0 [shot]
+    A (24, 28, 0) 8@1->(33, 25, 0) tu22 sp22 dmg0 f47 [shot]
+  A list on the cell: T {'to': (34, 25, 0), 'lof': 1, 'tu': 22, 'p': 34, 'w': 'STR_UAC_RIFLE', 'd': 11, 'mode': 8}, with line and TU [(46, 22, 34, 11), (114, 22, 34, 17), (1, 22, 34, 10), (115, 22, 34, 17)]

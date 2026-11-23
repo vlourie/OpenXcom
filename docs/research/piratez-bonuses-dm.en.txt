@@ -1,0 +1,43 @@
+Hi Dioxine! Same checker again, this time Piratez_Bonuses.rul. It's in very good shape. All 998 entries have unique names, there are no duplicate or unknown keys, and every reference from commendations, manufacture, events and transformations resolves. Every 10-level medal lists its own 10 bonuses in order. I compared all 104 medals level by level against their pedia text, and almost everything matches exactly. I also checked the 42 recruits whose starting trait a transformation also grants: all of them are locked out properly, so nobody can pay for a transformation and get nothing. What's left is below. Line numbers are from the current release.
+
+1) The "UFOs shot down" medal gives no bonus (Piratez_Globals.rul:4005).
+STR_MEDAL_UFOS_SHOT_DOWN_NAME has no soldierBonusTypes. STR_MEDAL_UFOS_SHOT_DOWN_1.._10 already exist (Piratez_Bonuses.rul:4298-4325) with stamina 1, 2, 3, 4, 6, 8, 10, 12, 14, 16, which is exactly what the pedia promises ("+1 Stamina per level, +1 extra on Silver+"). Nothing uses them, so pilots get the medal and zero stamina.
+Fix:
+  - type: STR_MEDAL_UFOS_SHOT_DOWN_NAME
+    ...
+    soldierBonusTypes: [STR_MEDAL_UFOS_SHOT_DOWN_1, STR_MEDAL_UFOS_SHOT_DOWN_2, STR_MEDAL_UFOS_SHOT_DOWN_3, STR_MEDAL_UFOS_SHOT_DOWN_4, STR_MEDAL_UFOS_SHOT_DOWN_5, STR_MEDAL_UFOS_SHOT_DOWN_6, STR_MEDAL_UFOS_SHOT_DOWN_7, STR_MEDAL_UFOS_SHOT_DOWN_8, STR_MEDAL_UFOS_SHOT_DOWN_9, STR_MEDAL_UFOS_SHOT_DOWN_10]
+
+2) ASSAULTER_9 is missing its Silver+ step (Piratez_Bonuses.rul:5307).
+From level 5 on, every level adds +3 Reactions+Firing (one "or" plus Silver+ "+1 & +1"). Level 9 adds only +1:
+            L5  L6  L7  L8  L9  L10
+  reactions  4   5   7   8   9  10
+  firing     3   5   6   8   8  10
+Other medals with a Max tier still apply Silver+ at level 10 (SNIPER, ARCHER), so by the pedia rule L10 should come out at 11/11.
+Now:  _9 reactions 9, firing 8    _10 reactions 10, firing 10
+Fix:  _9 reactions 10, firing 9   _10 reactions 11, firing 11
+(If 10/10 is meant as a cap, then at least _9 needs the fix.)
+
+3) ARCHER_10 stamina (Piratez_Bonuses.rul:5269).
+Stamina goes 0, 0, 0, 0, 2, 4, 6, 10, 14, 16. Gold gives +4 per level at L8 and L9, but only +2 at L10. At L10, Throwing (+6) and TU (+7) include Silver + Gold + Max; only stamina is missing the Gold +2.
+Now:  stamina: 16
+Fix:  stamina: 18
+
+4) CRIMSON_HEART_10 Freshness (Piratez_Bonuses.rul:4216).
+The pedia says "-1 Freshness per level". Levels 1-9 go -1..-9, then level 10 is -6, so reaching max actually gives back +3 Freshness.
+Now:  mana: -6
+Fix:  mana: -10   (or mention it in the pedia if -6 is a deliberate reward)
+
+Questions, maybe intended:
+- FIREKILL: bravery +10 at L8 (as the pedia says), then another +10 at L10 (line 4451, total 20). The pedia doesn't mention the second one.
+- WARPKILL_10 (line 4719): energy regen 4. "+1 every other level" gives 0,1,1,2,2,3,3,4,4,5, so L10 would be 5.
+- Fractional Freshness drain (FIREKILL -0.08/level, SUCCUBUS -0.12/level). The engine rounds each bonus's recovery to the nearest integer every turn, and fractions don't carry over. So FIREKILL drains 0 at levels 1-6 and 1 per turn at 7-10, and SUCCUBUS drains 0 at 1-4 and 1 at 5-10. It's one step, not "increased drain each level". If you want real growth, it needs whole numbers.
+
+Small stuff, no rush:
+- Two unused bonuses with no strings: STR_FIRST_TEST (line 2, looks like a test entry) and STR_NULL_TRAIT (line 191).
+- STR_NEKO_HERO_ANNA_PUMA / _UNI_PUMA (Globals:4098, 4104) can't be earned. Their criteria are totalIronMan 9999, and no event awards them by commendationName (only ACE, OUTLAW and WARRIOR are). Their bonuses (Bonuses:906, 916) have no strings either. Placeholders?
+- HEALER_1..4 are empty entries. That matches the pedia, but "Nurse I-IV" still show up in the soldier's bonus list with no effect.
+- CARREER_MISSIONS2 pedia says the armor goes "side, front, back, bottom". The data goes side, back, front, bottom.
+- FRIENDLYFIRE lists STR_MEDAL_COMMENDATED ten times. One entry is enough, because the engine reuses the last entry for higher levels.
+- SERVICE_TIME stamina at L8 is -10. With the "-1.33 per level" rounding used on the other levels it would be -11. Trivial.
+
+That's all. It's from the ruleset and the engine code only, none of it tested in combat.

@@ -1,0 +1,10 @@
+player's unit types at pstart: [('SOLDIER', 4514)]
+weapon by type: [('SOLDIER -', 790), ('SOLDIER INV_NULL_HAND_R', 708), ('SOLDIER AUX_TANK_LASER', 563), ('SOLDIER STR_CD_PISTOL', 410), ('SOLDIER STR_POLICE_SHIELD', 327), ('SOLDIER STR_SMARTGUN', 206), ('SOLDIER AUX_POWER_TAIL', 184), ('SOLDIER STR_SWORD', 175), ('SOLDIER STR_SUPER_MAGNUM', 141), ('SOLDIER STR_SLUGGA', 134), ('SOLDIER AUX_TANK_MG', 69), ('SOLDIER STR_ASUKA_RIFLE', 62)]
+target over the player's turn: {'person': {'seen': 892, 'moved3': 484, 'dirchg': 557, 'still_seen': 604, 'n': 874, 'down': 18}, 'vehicle': {'seen': 339, 'moved3': 177, 'dirchg': 191, 'still_seen': 247, 'n': 339}}
+AI units put out in the player's turn: how [('dead', 757), ('stun', 204)] by [("player's unit", 935), ("own side's blast or fire, or none named", 26)]
+run 4, aistart: 1000000 (41,55,3) tu 181 tumax 181
+run 4, aistart: 1000005 (40,54,3) tu 181 tumax 181
+run 4, event=ASSIGN op=1 turn=4 unit=1000000 from=(41,55,3) cell=(44,30,3) cost=118 rest=26 blow=15 next_blows=10 tu=181 hp=37
+run 4, event=ASSIGN op=1 turn=4 unit=1000005 from=(40,54,3) cell=(44,31,3) cost=120 rest=30 blow=15 next_blows=10 tu=181 hp=116
+run 4, pstart: 1000000 (44,30,3) tu 59
+run 4, pstart: 1000005 (44,31,3) tu 65

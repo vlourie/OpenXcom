@@ -27,10 +27,13 @@ namespace OpenXcom
 {
 
 class Surface;
+class HdPanelToggle;
+class HdTurnMark;
 class Map;
 class ImageButton;
 class BattlescapeButton;
 class InteractiveSurface;
+class MusicNoteButton;
 class Text;
 class Bar;
 class NumberText;
@@ -39,6 +42,7 @@ class SavedBattleGame;
 class BattleItem;
 class Timer;
 class WarningMessage;
+class Mod;
 class BattlescapeGame;
 
 /**
@@ -49,6 +53,23 @@ class BattlescapeState : public State
 private:
 	Surface *_rank, *_rankTiny;
 	InteractiveSurface *_icons;
+	/// HD interface: the arrow that slides the panel down off the screen and back (oxceHdPanelHide); picture and
+	/// placement only. _panelShift = how far down the panel stands now (base pixels), _panelTarget = where it goes.
+	HdPanelToggle *_btnPanelHide;
+	int _panelShift = 0, _panelTarget = 0;
+	bool _mouseOverPanelArrow = false;
+	Uint32 _panelMovedAt = 0;
+	std::vector<Surface*> _panelSurfaces;
+	/// HD interface, oxceHdEnemyTurn: the frame or the strip of the enemy's and the neutrals' turn, and whether the
+	/// panel stands down because this slid it (it comes back in the player's turn only then)
+	HdTurnMark *_hdTurnMark = nullptr;
+	bool _panelAutoHid = false, _wasOtherTurn = false;
+	/// animate() runs for a menu over the battle: only the picture's animation (Map::animateDrawOnly)
+	bool _menuAnim = false;
+	/// The share of the enemy's or the neutrals' turn done, 0-100, as the stock hidden screen's bar shows it; picture only
+	int _aiProgress = 0;
+	/// Moves the panel and everything on it to `shift` base pixels below its place.
+	void movePanel(int shift);
 	Map *_map;
 	BattlescapeButton *_btnUnitUp, *_btnUnitDown, *_btnMapUp, *_btnMapDown, *_btnShowMap, *_btnKneel;
 	BattlescapeButton *_btnInventory, *_btnCenter, *_btnNextSoldier, *_btnNextStop, *_btnShowLayers, *_btnHelp;
@@ -56,6 +77,7 @@ private:
 	BattlescapeButton *_btnCtrl, *_btnAlt, *_btnShift, *_btnRMB, *_btnMMB;
 	bool _touchButtonsEnabled;
 	InteractiveSurface *_btnStats;
+	MusicNoteButton *_btnMusic;
 	BattlescapeButton *_btnReserveNone, *_btnReserveSnap, *_btnReserveAimed, *_btnReserveAuto, *_btnReserveKneel, *_btnZeroTUs;
 	InteractiveSurface *_btnLeftHandItem, *_btnRightHandItem;
 
@@ -85,6 +107,8 @@ private:
 	std::vector<State*> _popups;
 	BattlescapeGame *_battleGame;
 	bool _firstInit, _paletteResetNeeded, _paletteResetRequested;
+	/// The next stage was refused: this battle is half taken apart and is neither run nor drawn any more.
+	bool _stageRefused = false, _stageToMenu = false;
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
 	Position _mapOffsetBeforeMouseScrolling;
@@ -120,7 +144,12 @@ public:
 	BattlescapeState();
 	/// Cleans up the Battlescape state.
 	~BattlescapeState();
-	void resetPalettes();
+	/// Puts the palettes the battle's environment changed back; says whether there was anything to put back.
+	bool resetPalettes();
+	/// Puts the mod's palettes back whatever battle changed them.
+	static void restorePalettes(Mod *mod);
+	/// Changes the palettes for the battle's environment again (a load that reset them was rejected).
+	void reapplyPalettes();
 	/// Initializes the battlescapestate.
 	void init() override;
 	/// Runs the timers and handles popups.
@@ -208,6 +237,8 @@ public:
 	void btnSelectMusicTrackClick(Action *action);
 	/// Handler for clicking the lighting button.
 	void btnPersonalLightingClick(Action *action);
+	/// Handler for clicking the invidual lighting button.
+	void btnPersonalIndividualLightingClick(Action* action);
 	/// Handler for toggling the "night vision" mode.
 	void btnNightVisionClick(Action *action);
 	/// Determines whether a playable unit is selected.
@@ -216,14 +247,18 @@ public:
 	void updateSoldierInfo(bool checkFOV = true);
 	/// Updates the special/psi/skill button display based on the battle unit
 	void updateUiButton(const BattleUnit* battleUnit);
+	/// Changes the mod's palettes as the battle's environment asks.
+	void applyPaletteTransformations();
 	/// Animates map objects on the map, also smoke,fire, ...
 	void animate();
+	/// A menu is open over the battle (XP-000097): the picture's animation goes on, nothing else of animate() does.
+	void animateInMenu();
 	/// Handles the battle game state.
 	void handleState();
 	/// Sets the state timer interval.
 	void setStateInterval(Uint32 interval);
-	/// Gets game.
-	Game *getGame() const;
+	/// Gets game (static: SavedBattleGame asks it while the battle is generated, before there is a battle screen).
+	static Game *getGame();
 	/// Gets map.
 	Map *getMap() const;
 	/// Show debug message.
@@ -244,6 +279,8 @@ public:
 	void popup(State *state);
 	/// Finishes a battle.
 	void finishBattle(bool abort, int inExitArea);
+	/// The next stage of the battle could not be generated.
+	void stageRefused(const std::string &error);
 	/// Show the launch button.
 	void showLaunchButton(bool show);
 	/// Reset visiblity of special buttons like psi or skill.
@@ -258,10 +295,19 @@ public:
 	void saveVoxelMap();
 	/// Saves a first-person voxel view of the battlescape.
 	void saveVoxelView();
+	/// HD render test: writes a deterministic capture of the current frame (map, full frame, JSON sidecar).
+	void hdTestDump();
+	/// HD render: cycles the sprite drawing mode of the canvas (nearest / HD packs / HD packs + smoothing).
+	void hdModeToggle();
 	/// Handler for the mouse moving over the icons, disables the tile selection cube.
 	void mouseInIcons(Action *action);
 	/// Handler for the mouse going out of the icons, enabling the tile selection cube.
 	void mouseOutIcons(Action *action);
+	/// HD interface: the panel's arrow - slides the panel down off the screen, or back.
+	void btnPanelHideClick(Action *action);
+	/// HD interface: the mouse over the panel's arrow counts as over the icons (a click on it is not one on the map).
+	void mouseInPanelArrow(Action *action);
+	void mouseOutPanelArrow(Action *action);
 	/// Checks if the mouse is over the icons.
 	bool getMouseOverIcons() const;
 	/// Is the player allowed to press buttons?

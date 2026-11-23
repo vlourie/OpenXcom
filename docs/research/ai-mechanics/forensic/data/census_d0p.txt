@@ -1,0 +1,327 @@
+﻿== A. Battles
+battle | mission race month | P H | turns | pdead hdead hout | outcome | hdec | 1st hostile attack turn / 1st player casualty / 1st hostile casualty | hostile down before first AI turn
+L10_s1 | STR_LOC_RITUAL_CAVE STR_RATMEN 60 | 6 15 | 11 | 1 14 1 | win | 375 | 5 2 2 | 0
+L10_s2 | STR_LOC_RITUAL_CAVE STR_RATMEN 60 | 6 13 | 14 | 2 10 3 | win | 338 | 7 8 1 | 0
+L11_s1 | STR_LOC_SMUGGLER_LAIR STR_SMUGGLER 62 | 8 26 | 61 | 1 23 0 | draw | 2079 | 3 4 3 | 0
+L11_s2 | STR_LOC_SMUGGLER_LAIR STR_SMUGGLER 62 | 8 26 | 61 | 1 15 0 | draw | 2811 | 2 2 6 | 0
+L12_s1 | STR_LOC_PIRATE_CRUISE STR_DEEP_ONE 108 | 8 41 | 9 | 0 35 3 | win | 463 | 1 None 1 | 1
+L12_s2 | STR_LOC_PIRATE_CRUISE STR_DEEP_ONE 108 | 8 45 | 16 | 0 42 3 | win | 946 | 1 None 1 | 1
+L1_s1 | STR_VESSEL_GUNSHIP STR_FLOATER_ELITE 60 | 6 25 | 15 | 0 24 0 | win | 351 | 1 None 1 | 2
+L1_s2 | STR_VESSEL_GUNSHIP STR_FLOATER_ELITE 60 | 6 24 | 16 | 1 23 0 | win | 294 | 1 5 1 | 5
+L2_s1 | STR_VESSEL_NIN_LANDCRUISER_BA STR_NINJA 62 | 8 68 | 10 | 7 55 0 | loss | 1335 | 1 1 0 | 2
+L2_s2 | STR_VESSEL_NIN_LANDCRUISER_BA STR_NINJA 62 | 8 71 | 25 | 5 60 1 | loss | 2532 | 1 2 1 | 3
+L3_s1 | STR_SUPPLY_SHIP STR_FLOATER 108 | 8 20 | 2 | 0 15 0 | win | 5 | 1 None 1 | 13
+L3_s2 | STR_SUPPLY_SHIP STR_FLOATER 108 | 8 21 | 2 | 0 18 0 | win | 21 | 1 None 0 | 10
+L4_s1 | STR_BASE_DEFENSE STR_DOOM 60 | 38 37 | 10 | 3 37 0 | win | 175 | 1 1 1 | 8
+L4_s2 | STR_BASE_DEFENSE STR_DOOM 60 | 38 36 | 7 | 0 34 2 | win | 140 | 1 None 1 | 7
+L5_s1 | STR_LOC_GUNS_OF_THE_PATRIOTS_BLACKMARCH STR_NAZIS 62 | 8 57 | 8 | 0 57 0 | win | 993 | 1 None 1 | 2
+L5_s2 | STR_LOC_GUNS_OF_THE_PATRIOTS_BLACKMARCH STR_NAZIS 62 | 8 82 | 20 | 0 80 1 | win | 611 | 1 18 1 | 1
+L6_s1 | STR_VESSEL_HEAVY_GUNSHIP STR_MUTON 108 | 8 31 | 61 | 1 30 0 | draw | 809 | 1 3 0 | 3
+L6_s2 | STR_VESSEL_HEAVY_GUNSHIP STR_MUTON 108 | 8 34 | 24 | 8 27 0 | loss | 874 | 1 1 1 | 4
+L7_s1 | STR_VESSEL_BOMBER STR_FLOATER_ELITE 60 | 6 31 | 22 | 5 21 1 | loss | 1068 | 1 3 1 | 1
+L7_s2 | STR_VESSEL_BOMBER STR_FLOATER_ELITE 60 | 6 35 | 8 | 4 16 2 | loss | 670 | 1 2 1 | 2
+L8_s1 | STR_BATTLESHIP STR_ETHEREAL 62 | 8 34 | 10 | 7 16 0 | loss | 506 | 1 1 1 | 3
+L8_s2 | STR_BATTLESHIP STR_ETHEREAL 62 | 8 37 | 6 | 8 4 0 | loss | 441 | 1 1 2 | 0
+L9_s1 | STR_VESSEL_USO_HEAVY_CRUISER STR_DEEP_ONE 108 | 8 34 | 11 | 0 34 0 | win | 113 | 1 None 1 | 11
+L9_s2 | STR_VESSEL_USO_HEAVY_CRUISER STR_DEEP_ONE 108 | 8 32 | 11 | 1 31 1 | win | 293 | 1 3 1 | 8
+M10_s1 | STR_LOC_DOOMED_FARM2 STR_DOOM 20 | 5 48 | 24 | 3 36 4 | loss | 1766 | 1 1 2 | 0
+M10_s2 | STR_LOC_DOOMED_FARM2 STR_DOOM 20 | 5 56 | 11 | 3 23 2 | loss | 1279 | 1 2 1 | 0
+M11_s1 | STR_LOC_CATACOMBS_UNDERGROUND_PRESS STR_ZOMBIE_VAMPIRES 45 | 8 25 | 61 | 5 21 2 | draw | 815 | 2 1 1 | 0
+M11_s2 | STR_LOC_CATACOMBS_UNDERGROUND_PRESS STR_ZOMBIE_VAMPIRES 45 | 8 23 | 61 | 5 16 4 | draw | 1964 | 2 1 3 | 0
+M12_s1 | STR_VESSEL_NIN_APC STR_NINJA 46 | 8 11 | 2 | 0 10 0 | win | 12 | 1 None 1 | 7
+M12_s2 | STR_VESSEL_NIN_APC STR_NINJA 46 | 8 10 | 4 | 0 10 0 | win | 25 | 1 None 1 | 5
+M1_s1 | STR_BASE_DEFENSE STR_NINJA 20 | 60 38 | 11 | 55 14 4 | loss | 1044 | 1 1 1 | 1
+M1_s2 | STR_BASE_DEFENSE STR_NINJA 20 | 60 37 | 17 | 57 18 3 | loss | 1328 | 1 1 1 | 5
+M2_s1 | STR_GOVT_BASE_DEFENSE STR_NINJA 45 | 8 68 | 15 | 8 46 2 | loss | 1992 | 1 1 1 | 2
+M2_s2 | STR_GOVT_BASE_DEFENSE STR_NINJA 45 | 8 70 | 38 | 8 67 1 | loss | 2389 | 1 1 1 | 3
+M3_s1 | STR_ERIDIAN_TERROR STR_ERIDIAN 46 | 8 64 | 21 | 6 61 3 | win | 902 | 1 1 1 | 4
+M3_s2 | STR_ERIDIAN_TERROR STR_ERIDIAN 46 | 8 79 | 6 | 8 39 4 | loss | 755 | 1 2 1 | 5
+M4_s1 | STR_VESSEL_LABSHIP STR_SECTOID_NONCOM 20 | 5 49 | 3 | 4 5 1 | loss | 393 | 1 1 0 | 0
+M4_s2 | STR_VESSEL_LABSHIP STR_SECTOID_NONCOM 20 | 5 55 | 3 | 5 3 0 | loss | 486 | 1 1 1 | 0
+M5_s1 | STR_NINJA_BASE_OUTPOST_ASSAULT STR_NINJA 45 | 8 58 | 15 | 2 56 1 | win | 1053 | 1 3 1 | 5
+M5_s2 | STR_NINJA_BASE_OUTPOST_ASSAULT STR_NINJA 45 | 8 61 | 10 | 0 59 1 | win | 818 | 1 None 1 | 8
+M6_s1 | STR_VESSEL_FRIGATE STR_MUTON 46 | 8 41 | 26 | 6 38 3 | win | 1046 | 1 1 1 | 3
+M6_s2 | STR_VESSEL_FRIGATE STR_MUTON 46 | 8 37 | 29 | 5 36 1 | win | 1215 | 1 2 0 | 2
+M7_s1 | STR_VESSEL_GUNSHIP STR_SNAKEMAN 20 | 5 28 | 2 | 5 1 1 | loss | 165 | 1 1 1 | 1
+M7_s2 | STR_VESSEL_GUNSHIP STR_SNAKEMAN 20 | 5 26 | 5 | 3 2 0 | loss | 398 | 1 1 3 | 0
+M8_s1 | STR_LOC_HUMANIST_VILLA STR_MIXED_KKK 45 | 8 39 | 12 | 0 38 1 | win | 338 | 1 None 1 | 3
+M8_s2 | STR_LOC_HUMANIST_VILLA STR_MIXED_KKK 45 | 8 39 | 5 | 0 37 0 | win | 132 | 1 None 1 | 6
+M9_s1 | STR_SEA_DEVILS_REEF STR_DEEP_ONE 46 | 8 66 | 2 | 5 0 0 | loss | 435 | 1 1 None | 0
+M9_s2 | STR_SEA_DEVILS_REEF STR_DEEP_ONE 46 | 8 71 | 2 | 7 0 0 | loss | 515 | 1 1 None | 0
+outcomes {'win': 23, 'draw': 5, 'loss': 20}
+
+== B. Decisions by source (n, % of n, TU spent, % of TU, zero-TU decisions)
+patrol.node              24812  62.8% tu=  414032  53.0% zero=12714
+shot                      3250   8.2% tu=  118557  15.2% zero=49
+sniper                    2149   5.4% tu=   90664  11.6% zero=2
+escape.known              1819   4.6% tu=    3480   0.4% zero=1603
+firepoint.random          1437   3.6% tu=   26483   3.4% zero=11
+ambush                    1292   3.3% tu=   20404   2.6% zero=4
+firepoint                 1171   3.0% tu=   14192   1.8% zero=9
+firepoint.fallback        1043   2.6% tu=   15689   2.0% zero=1
+escape                     956   2.4% tu=   16496   2.1% zero=72
+melee                      871   2.2% tu=   35998   4.6% zero=0
+leeroy                     323   0.8% tu=    7689   1.0% zero=62
+patrol.module              231   0.6% tu=    6501   0.8% zero=46
+grenade                    102   0.3% tu=    8297   1.1% zero=0
+psi                         28   0.1% tu=    1204   0.2% zero=0
+rethink                     16   0.0% tu=       0   0.0% zero=16
+grenade.node                 4   0.0% tu=     573   0.1% zero=0
+waypoint                     3   0.0% tu=     241   0.0% zero=0
+none                         1   0.0% tu=       0   0.0% zero=1
+
+== B2. Unit-turn budget {'unit_turns': 11622, 'tu0': 1252875, 'tuLeft': 472304, 'tuAttack': 233845, 'tuWalk': 546562, 'tuOther': 93, 'unit_turns_with_legal_attack': 4676, 'unit_turns_legal_but_no_attack': 1679, 'tuLeft_legal_no_attack': 86632, 'unit_turns_with_attack': 3346, 'unit_turns_legal_at_first_decision': 3132, 'unit_turns_legal_first_no_attack': 1152}
+  TU at first decision: 1252875; attack 233845 (18.7%); walk 546562 (43.6%); other 93; left 472304 (37.7%)
+
+== C. Legal attack on a visible player unit available at decision
+ decisions with legal: 8508 of 39508
+   chose shot                      2316  27.2%  tu=85906
+   chose patrol.node               1769  20.8%  tu=44573
+   chose sniper                    1568  18.4%  tu=68062
+   chose firepoint.fallback         536   6.3%  tu=7276
+   chose firepoint.random           533   6.3%  tu=7881
+   chose firepoint                  505   5.9%  tu=6450
+   chose escape                     492   5.8%  tu=10730
+   chose melee                      340   4.0%  tu=16651
+   chose ambush                     177   2.1%  tu=2634
+   chose escape.known               155   1.8%  tu=1428
+   chose grenade                     99   1.2%  tu=7925
+   chose leeroy                       9   0.1%  tu=390
+   chose grenade.node                 4   0.0%  tu=573
+   chose waypoint                     3   0.0%  tu=241
+   chose psi                          2   0.0%  tu=74
+ unit turns: 11622 with attack 3346 with legal 4676 legal but no attack 1679 legal at first decision 3132 of them no attack 1152 tu left on legal-no-attack 86632
+
+== R. Mode roll when legal attack existed {'n': 5299, 'sum_c': 3454.6949001363387, 'sum_p': 1304.2996783450942, 'sum_a': 130.42148847503432, 'sum_e': 388.58393304353353, 'rolled_3': 356, 'rolled_2': 3514, 'rolled_0': 1292, 'rolled_1': 137}
+   mean weights patrol 0.246 ambush 0.025 combat 0.652 escape 0.073
+
+== D. Attacks by type: n, n with dmg/stun, %hit, dmg, stun, downs, TU, dmg/attack, dmg/100TU, friendly dmg
+snap       3407    437  12.8% dmg=  11458 stun=  2352 down=  142 tu= 103991 d/a=  3.36 d/100tu= 11.02 fdmg=6516
+auto       1093    342  31.3% dmg=  15883 stun=  2923 down=  170 tu=  46664 d/a= 14.53 d/100tu= 34.04 fdmg=4526
+aimed       885    119  13.4% dmg=   3287 stun=  1157 down=   40 tu=  44794 d/a=  3.71 d/100tu=  7.34 fdmg=1608
+throw       345      0   0.0% dmg=      0 stun=     0 down=    0 tu=  28763 d/a=  0.00 d/100tu=  0.00 fdmg=0
+melee       185     52  28.1% dmg=   2010 stun=  1281 down=   32 tu=   8188 d/a= 10.86 d/100tu= 24.55 fdmg=432
+panic        19      0   0.0% dmg=      0 stun=     0 down=    0 tu=    631 d/a=  0.00 d/100tu=  0.00 fdmg=0
+mindctl       8      0   0.0% dmg=      0 stun=     0 down=    0 tu=    548 d/a=  0.00 d/100tu=  0.00 fdmg=0
+launch        3      1  33.3% dmg=    536 stun=   280 down=    1 tu=    241 d/a=178.67 d/100tu=222.41 fdmg=0
+psiuse        1      0   0.0% dmg=      0 stun=     0 down=    0 tu=     25 d/a=  0.00 d/100tu=  0.00 fdmg=0
+
+== D2. Top weapons (mode): n, mean candidate p, %effect, dmg, dmg/attack, downs, TU, dmg/100TU
+STR_CD_PISTOL|snap                           440 p= 46.2 eff= 14.8% dmg=  1165 d/a=  2.65 down=  18 tu= 14650 d/100=  7.95
+STR_CD_RIFLE|auto                            261 p= 45.6 eff= 37.5% dmg=  2226 d/a=  8.53 down=  37 tu= 16001 d/100= 13.91
+STR_GAUSS_RIFLE|snap                         209 p= 51.3 eff=  9.1% dmg=   516 d/a=  2.47 down=   6 tu=  7228 d/100=  7.14
+STR_CD_RIFLE|snap                            174 p= 54.6 eff= 13.8% dmg=   475 d/a=  2.73 down=  10 tu=  5271 d/100=  9.01
+STR_UAC_RIFLE|snap                           169 p= 25.2 eff=  2.4% dmg=    69 d/a=  0.41 down=   2 tu=  3782 d/100=  1.82
+STR_PIR_PLASMA_RIFLE|snap                    148 p= 23.7 eff= 14.9% dmg=   983 d/a=  6.64 down=   8 tu=  4163 d/100= 23.61
+AUX_ADRONE_WEAPON|snap                       146 p= 17.8 eff=  4.1% dmg=    89 d/a=  0.61 down=   2 tu=  7030 d/100=  1.27
+STR_PIR_HEAVY_PLASMA|snap                    144 p=  4.2 eff=  2.1% dmg=   275 d/a=  1.91 down=   2 tu=  4080 d/100=  6.74
+STR_PIR_PLASMA_RIFLE|auto                    143 p= 41.2 eff= 46.9% dmg=  3476 d/a= 24.31 down=  36 tu=  5245 d/100= 66.27
+AUX_DOOM_IMP_WEAPON|snap                     140 p= 28.4 eff= 37.9% dmg=   101 d/a=  0.72 down=   0 tu=  4399 d/100=  2.30
+STR_NINJA_SMG|snap                           130 p= 32.5 eff=  5.4% dmg=   177 d/a=  1.36 down=   4 tu=  5321 d/100=  3.33
+STR_LASER_RIFLE_PIR|auto                     115 p= 39.3 eff= 19.1% dmg=   472 d/a=  4.10 down=   3 tu=  3212 d/100= 14.69
+AUX_TANK_LIGHT_MINIGUN_WEAPON|snap           111 p= 11.7 eff= 17.1% dmg=   247 d/a=  2.23 down=   4 tu=  2488 d/100=  9.93
+STR_SR_RIFLE|snap                            105 p= 58.2 eff=  8.6% dmg=   450 d/a=  4.29 down=   7 tu=  2215 d/100= 20.32
+AUX_XTANK_GAUSS_WEAPON|snap                   95 p= 34.7 eff= 22.1% dmg=   633 d/a=  6.66 down=   6 tu=  6210 d/100= 10.19
+STR_LASER_RIFLE_PIR|snap                      92 p= 46.7 eff=  7.6% dmg=    78 d/a=  0.85 down=   2 tu=  1749 d/100=  4.46
+STR_PIR_HEAVY_PLASMA|auto                     90 p= 52.9 eff= 72.2% dmg=  5606 d/a= 62.29 down=  52 tu=  4527 d/100=123.83
+STR_CANISTER_GUN|snap                         89 p= 35.6 eff= 27.0% dmg=   517 d/a=  5.81 down=   8 tu=  2125 d/100= 24.33
+STR_NINJA_SMG|aimed                           77 p= 41.6 eff=  1.3% dmg=    29 d/a=  0.38 down=   1 tu=  3597 d/100=  0.81
+STR_CD_RIFLE|aimed                            77 p= 81.1 eff= 29.9% dmg=   417 d/a=  5.42 down=   7 tu=  4732 d/100=  8.81
+AUX_ZOMBIE_WEAPON|melee                       74 p= 22.4 eff= 10.8% dmg=   304 d/a=  4.11 down=   2 tu=   825 d/100= 36.85
+STR_INCENDIARY_GRENADE|throw                  71 p= 87.4 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=  6529 d/100=  0.00
+STR_CD_CANNON|auto                            71 p= 40.0 eff= 47.9% dmg=   981 d/a= 13.82 down=  13 tu=  3849 d/100= 25.49
+STR_GAUSS_PISTOL|snap                         71 p= 45.0 eff=  4.2% dmg=    51 d/a=  0.72 down=   0 tu=  1606 d/100=  3.18
+STR_EMP_GRENADE|throw                         63 p= 69.7 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=  6372 d/100=  0.00
+STR_FLECHETTE_GUN|snap                        60 p=103.8 eff=  1.7% dmg=   239 d/a=  3.98 down=   1 tu=  1449 d/100= 16.49
+STR_BAGPIPES|snap                             57 p= 63.6 eff= 14.0% dmg=   552 d/a=  9.68 down=   5 tu=   618 d/100= 89.32
+STR_HEAVY_LASER_PIR|snap                      57 p= 43.5 eff= 10.5% dmg=   239 d/a=  4.19 down=   2 tu=  1317 d/100= 18.15
+STR_STORM_LASER|snap                          57 p= 53.2 eff=  1.8% dmg=     2 d/a=  0.04 down=   0 tu=  1388 d/100=  0.14
+STR_PIR_PLASMA_PISTOL|snap                    54 p= 47.9 eff= 13.0% dmg=   178 d/a=  3.30 down=   1 tu=  1002 d/100= 17.76
+STR_PIR_PLASMA_PISTOL|auto                    54 p= 36.0 eff= 33.3% dmg=   730 d/a= 13.52 down=  10 tu=  1433 d/100= 50.94
+STR_GAS_GRENADE|throw                         53 p= 71.9 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=  4698 d/100=  0.00
+STR_PIR_ALIEN_GRENADE|throw                   53 p= 68.1 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=  4191 d/100=  0.00
+STR_CANISTER_GUN|aimed                        52 p= 68.1 eff= 34.6% dmg=   739 d/a= 14.21 down=   8 tu=  2450 d/100= 30.16
+STR_CHAINGUN|auto                             51 p= 16.8 eff=  2.0% dmg=     1 d/a=  0.02 down=   0 tu=  1416 d/100=  0.07
+AUX_XTURRET_14MMCHAINGUN_WEAPON|snap          46 p= 21.7 eff= 67.4% dmg=   728 d/a= 15.83 down=  20 tu=   876 d/100= 83.11
+STR_CD_PISTOL|aimed                           45 p= 59.1 eff= 11.1% dmg=    66 d/a=  1.47 down=   1 tu=  1583 d/100=  4.17
+STR_UAC_HEAVY_NAILGUN|auto                    43 p= 18.4 eff=  2.3% dmg=     3 d/a=  0.07 down=   0 tu=  1025 d/100=  0.29
+STR_LUGER|aimed                               40 p= 36.8 eff=  0.0% dmg=     0 d/a=  0.00 down=   0 tu=   980 d/100=  0.00
+STR_SHOTGUN_PA|snap                           39 p= 84.7 eff=  5.1% dmg=    57 d/a=  1.46 down=   1 tu=  1388 d/100=  4.11
+
+== E. Participation {'hostiles': 1957, 'never_damaged': 1361, 'never_attacked': 584, 'died_never_attacked': 325, 'dmg_total': 41138, 'dmg_top10pct': 22130, 'never_decided': 184}
+  never attacked 29.8%; never damaged 69.5%; top10% share of dmg 53.8%
+
+== F. Casualties
+  civ_by_f-1                               1
+  civ_by_f0                                13
+  civ_by_f1                                331
+  civ_by_f2                                2
+  civ_dead                                 279
+  civ_stun                                 68
+  hostile_by_f-1                           12
+  hostile_by_f0                            1335
+  hostile_by_f1                            269
+  hostile_by_f2                            42
+  hostile_dead                             1356
+  hostile_dead_side0                       757
+  hostile_dead_side1                       585
+  hostile_dead_side2                       14
+  hostile_down_before_first_ai_turn        147
+  hostile_down_unseen                      407
+  hostile_hit_front                        726
+  hostile_hit_left                         248
+  hostile_hit_rear                         316
+  hostile_hit_right                        241
+  hostile_hit_under                        127
+  hostile_stun                             302
+  hostile_stun_side0                       157
+  hostile_stun_side1                       137
+  hostile_stun_side2                       8
+  player_by_f-1                            8
+  player_by_f0                             9
+  player_by_f1                             369
+  player_by_f2                             1
+  player_dead                              254
+  player_dead_side0                        80
+  player_dead_side1                        173
+  player_dead_side2                        1
+  player_stun                              133
+  player_stun_side0                        35
+  player_stun_side1                        98
+  hostile TU at downing / max: [62509, 172290] 36.3%
+  distance of hostile downing (5-bins): [(0, 533), (5, 252), (10, 228), (15, 241), (20, 168), (25, 112), (30, 67), (35, 35), (40, 10)]
+  player weapons killing hostiles top: [('STR_CD_PISTOL', 221), ('AUX_ACAR_WEAPON_LASCANNON', 203), ('AUX_TANK_LASER_CANNON', 143), ('STR_SWORD', 141), ('STR_SUPER_MAGNUM', 76), ('AUX_TANK_CANNON', 73), ('STR_SLUGGA', 60), ('STR_POLICE_SHIELD', 56), ('STR_SMARTGUN', 39), ('AUX_TANK_LASER', 39), ('STR_ELITE_PLASMA_PISTOL', 39), ('AUX_WOLVERIN_WEAPON_MINIGUN', 37), ('AUX_ACAR_WEAPON_XGAUSS', 31), ('STR_CD_RIFLE', 23), ('STR_NEKO_SWORD', 21)]
+  hostile killers of player top: [('STR_NINJA_WARRIOR|STR_PIR_HEAVY_PLASMA', 33), ('STR_NINJA_GAL|STR_PIR_PLASMA_RIFLE', 23), ('STR_NTURRET_14MM|AUX_XTURRET_14MMCHAINGUN_WEAPON', 17), ('STR_SECTOPOD_TERRORIST|AUX_SECTOPOD_WEAPON', 16), ('STR_NINJA_WARRIOR|STR_PIR_PLASMA_RIFLE', 15), ('STR_NINJA_GAL|STR_PIR_HEAVY_PLASMA', 14), ('STR_CHRYSSALID_TERRORIST|AUX_CHRYSSALID_WEAPON', 9), ('-|STR_WEAPON_UNKNOWN', 8), ('STR_XTANK_HOVER_GAUSS_TERRORIST|AUX_XTANK_GAUSS_WEAPON', 8), ('STR_NINJA_GAL|STR_PIR_PLASMA_PISTOL', 8), ('STR_NINJA_ASSASSIN|STR_KUNG_FU_ALT', 7), ('STR_NINJA_WARRIOR|STR_PLASMA_SCORCHER', 7), ('STR_NINJA_ASSASSIN|STR_PIR_PLASMA_RIFLE', 7), ('STR_NINJA_GAL|STR_PLASMA_SCORCHER', 6), ('STR_NINJA_MEDIC|STR_PIR_HEAVY_PLASMA', 6)]
+
+== G. Walk direction vs nearest player (start-of-side positions): src closer farther same meanDelta
+patrol.node              5823   4600  14389 closer= 23.5% farther= 18.5% mean=-0.25
+firepoint.random          689    465    283 closer= 47.9% farther= 32.4% mean=-0.37
+ambush                    523    540    229 closer= 40.5% farther= 41.8% mean=+0.07
+firepoint                 507    382    282 closer= 43.3% farther= 32.6% mean=-0.17
+firepoint.fallback        499    365    179 closer= 47.8% farther= 35.0% mean=-0.33
+escape                    306    437    150 closer= 34.3% farther= 48.9% mean=+0.37
+melee                     529    127    105 closer= 69.5% farther= 16.7% mean=-2.09
+leeroy                    174     40     34 closer= 70.2% farther= 16.1% mean=-2.00
+escape.known              105     85     21 closer= 49.8% farther= 40.3% mean=-0.19
+grenade                     0      2      3 closer=  0.0% farther= 40.0% mean=+0.53
+sniper                      0      0      1 closer=  0.0% farther=  0.0% mean=+0.00
+
+== H. Source by HP band
+hp<33 {'patrol.node': '52.7%', 'shot': '9.2%', 'escape': '8.3%', 'melee': '7.4%', 'sniper': '6.1%', 'firepoint.random': '5.3%', 'escape.known': '3.5%', 'firepoint.fallback': '2.2%'} n= 457
+hp<66 {'patrol.node': '56.2%', 'shot': '13.7%', 'sniper': '7.8%', 'escape': '5.3%', 'firepoint.random': '4.4%', 'firepoint.fallback': '4.3%', 'escape.known': '3.7%', 'melee': '3.1%'} n= 1568
+hp>=66 {'patrol.node': '63.2%', 'shot': '8.0%', 'sniper': '5.3%', 'escape.known': '4.7%', 'firepoint.random': '3.6%', 'ambush': '3.4%', 'firepoint': '3.1%', 'firepoint.fallback': '2.6%'} n= 37483
+
+== I. Trail stops (first token)
+[('walk.stop.reserve', 11324), ('walk.stop.energy', 2575), ('walk.stop.spotted', 2089), ('walk.stop.tu', 2040), ('walk.stop.turnspot', 1209), ('walk.stop.reaction', 233), ('walk.stop.unit', 20), ('kr.dec', 15), ('walk.first', 15), ('walk.stop.invalid', 10)]
+
+== J. reactions (actingSide|reactorFaction) {'0|1': 935, '1|0': 3030, '1|2': 153}
+  during own decision: died 287 walk 157 attack 130 other 0 hp lost 31927
+
+== L. Focus: side turns with 2+ attacks {'turns': 459, 'attacks': 5865, 'targets': 1630} attacks/turn 12.78, distinct targets/turn 3.55
+
+== M. Psi options {'decisions_with_psi_option': 1129, 'no_attack_chosen': 981, 'other_attack_chosen': 122, 'psi_chosen': 26}
+== N. Grenades {'decisions_with_grenade_lof': 3134, 'throw_chosen': 297}
+== multi-firearm {}
+friendly 13082 143
+
+== P. Unit types: units dec att dmg downs dead | dmg/unit, dmg/att, dead%
+STR_NINJA_WARRIOR                        142   4415   940   7983   95   116 |    56.2   8.49  81.7%
+STR_NINJA_GAL                            141   3232   716   6212   72   121 |    44.1   8.68  85.8%
+STR_DEEP_ONE_NOMAD                       100    755    16    585    6     0 |     5.8  36.56   0.0%
+STR_NAZI_SOLDIER                          89    925   167      2    0    89 |     0.0   0.01 100.0%
+STR_ERIDIAN_SOLDIER                       84    984   231   1706   23    63 |    20.3   7.39  75.0%
+STR_DEEP_ONE_SOLDIER                      73   1171    82    947   14    73 |    13.0  11.55 100.0%
+STR_MUTON_NAVIGATOR                       72   1592   225    882    2    70 |    12.2   3.92  97.2%
+STR_DOOM_SARGE                            62   1169   301    346    1    51 |     5.6   1.15  82.3%
+STR_LOBSTERMAN_TERRORIST                  61    516    40      0    0    40 |     0.0   0.00  65.6%
+STR_NINJA_ASSAULT                         60   1032   193    408    5    58 |     6.8   2.11  96.7%
+STR_DOOM_SOLDIER                          53    934   160    207    3    42 |     3.9   1.29  79.2%
+STR_MARSEC_BODYGUARD                      52   1387   331    820    7    37 |    15.8   2.48  71.2%
+STR_ETHEREAL_SOLDIER                      47    600    82     91    0    14 |     1.9   1.11  29.8%
+STR_TURRET_MINIGUN_TERRORIST              46   1010   111    247    4    35 |     5.4   2.23  76.1%
+STR_NAZI_SS                               41    316    72     46    0    41 |     1.1   0.64 100.0%
+STR_MUTON_SOLDIER                         40   1119   116     60    0    40 |     1.5   0.52 100.0%
+STR_MARSEC_SECURITY                       38    233    92      7    0    35 |     0.2   0.08  92.1%
+STR_SMUGGLER_GOON                         35   2797   102     28    1    29 |     0.8   0.27  82.9%
+STR_NINJA_ASSASSIN                        29    866   214   2720   38    21 |    93.8  12.71  72.4%
+STR_BANDIT_RATMAN                         28    713    32     77    2    28 |     2.8   2.41 100.0%
+STR_BLACKMARCH_JAEGER                     28    285    97      0    0    28 |     0.0   0.00 100.0%
+STR_SECTOID_NAVIGATOR                     28    226    42    454    3     4 |    16.2  10.81  14.3%
+STR_CHRYSSALID_TERRORIST                  27    244     7    329    5    16 |    12.2  47.00  59.3%
+STR_CHURCH_NAVIGATOR                      27    269    36    205    2     3 |     7.6   5.69  11.1%
+STR_NAZI_KKK                              27    110    13      0    0    27 |     0.0   0.00 100.0%
+STR_DOOM_IMP_TERRORIST                    26    595   142    101    0    19 |     3.9   0.71  73.1%
+STR_AQUATOID_MEDIC                        26    191    38     51    1    26 |     2.0   1.34 100.0%
+STR_AQUAMAN_TERRORIST                     26    114    19    192    4    10 |     7.4  10.11  38.5%
+STR_DOOM_GUNNER                           25    613   124    625    7    15 |    25.0   5.04  60.0%
+STR_DOGG_TERRORIST                        21    303     1      0    0    21 |     0.0   0.00 100.0%
+STR_ADRONE_TERRORIST                      19    159    61     89    2     2 |     4.7   1.46  10.5%
+STR_GUILD_GUARD                           18      3     0      0    0    12 |     0.0   0.00  66.7%
+STR_NINJA_MEDIC                           17    741   181   1960   24    11 |   115.3  10.83  64.7%
+STR_ZOMBIE                                17     80     3      0    0    12 |     0.0   0.00  70.6%
+STR_SERF_MALE                             17    296     3      0    0    17 |     0.0   0.00 100.0%
+STR_VAMPIRE_BAT_TERRORIST                 15   1004     3     41    1    13 |     2.7  13.67  86.7%
+STR_ACADEMY_NURSE                         14    102    16      0    0     2 |     0.0   0.00  14.3%
+STR_SECTOID_SOLDIER                       14    156    13      0    0     1 |     0.0   0.00   7.1%
+STR_ZOMBIE_STERILE_TERRORIST              13    293    70    179    1    13 |    13.8   2.56 100.0%
+STR_MARSEC_TROOPER                        12    202    88    208    2    10 |    17.3   2.36  83.3%
+STR_GUILD_ENGINEER                        12    224    23      2    0     9 |     0.2   0.09  75.0%
+STR_NTURRET_14MM                          12    307    46    728   21     8 |    60.7  15.83  66.7%
+STR_MUTON_LEADER                          12    334    47     63    1    11 |     5.2   1.34  91.7%
+STR_SKYFORGE_ENGINEER                     12    347    28    462    7     7 |    38.5  16.50  58.3%
+STR_ERIDIAN_BEASTMASTER                   12    264    82    197    2     8 |    16.4   2.40  66.7%
+STR_MUTON_ENGINEER                        11    410    33    304    4    11 |    27.6   9.21 100.0%
+STR_SERF_FEMALE                           11    207     3      0    0    11 |     0.0   0.00 100.0%
+STR_SECTOPOD_TERRORIST                    10    129    31   1792   14     2 |   179.2  57.81  20.0%
+STR_CYBERDISC_TERRORIST                   10     83     6    152    1     0 |    15.2  25.33   0.0%
+STR_SMUGGLER_CATGIRL                       9   1206    23      0    0     6 |     0.0   0.00  66.7%
+
+== G2. Army geometry per turn (one battle = one line; turn:n/mean distance/<=10/<=20/seenby/known)
+L10_s1 1:15/23/0/3/1/0 2:15/20/2/7/0/0 3:15/17/2/9/0/0 4:15/17/4/10/0/0 5:14/11/6/14/0/0 6:13/9/8/13/0/13 7:11/8/9/11/1/11 8:8/7/8/8/0/8 9:6/5/6/6/2/6 10:3/10/1/3/0/3
+L10_s2 1:13/21/0/6/0/0 2:12/19/1/6/0/0 3:12/16/3/8/0/0 4:11/14/3/8/0/11 5:10/14/3/9/0/10 6:10/14/3/8/0/0 7:10/13/4/8/0/0 8:10/10/6/9/1/10 9:9/12/6/8/0/9 10:9/12/5/8/0/0 11:8/11/5/7/0/8 12:6/5/5/6/1/6 13:5/5/5/5/2/5 14:4/10/3/4/0/4
+L11_s1 1:26/26/5/12/0/0 2:26/21/9/14/0/0 3:25/22/7/13/0/25 4:23/23/4/12/0/23 5:23/21/5/12/1/0 6:23/21/6/15/0/23 7:21/23/5/11/0/21 8:21/23/3/11/0/0 9:20/24/2/10/1/20 10:20/23/5/11/0/0 11:19/27/3/8/0/0 12:19/25/3/10/0/0 13:19/26/2/8/0/0 14:19/24/4/9/0/0
+L11_s2 1:26/23/3/15/0/0 2:26/22/4/14/0/26 3:26/22/3/16/0/0 4:26/25/1/12/0/0 5:26/26/6/11/0/26 6:25/29/3/7/0/25 7:25/30/3/5/0/0 8:24/23/3/9/0/24 9:24/18/4/16/0/24 10:24/18/7/15/2/0 11:23/18/5/13/0/23 12:22/19/6/12/1/22 13:21/20/5/11/0/21 14:21/23/5/11/0/0
+L12_s1 1:40/11/22/33/0/40 2:35/9/23/34/1/35 3:30/11/13/26/1/30 4:22/10/11/18/4/22 5:17/6/15/16/1/17 6:14/4/14/14/1/14 7:12/7/10/12/0/12 8:10/5/10/10/0/10
+L12_s2 1:44/18/21/26/0/44 2:40/10/23/39/1/40 3:38/7/26/37/1/38 4:34/7/25/33/0/34 5:32/9/16/32/0/32 6:30/8/21/30/0/0 7:29/7/26/29/2/29 8:24/6/20/24/0/24 9:19/7/15/19/2/19 10:16/9/9/15/1/16 11:10/8/6/10/2/10 12:7/7/5/7/0/7 13:7/4/7/7/0/7 14:6/5/5/6/0/6
+L1_s1 1:25/19/2/18/7/25 2:22/19/2/14/9/22 3:21/16/5/15/10/21 4:16/12/8/12/6/16 5:14/10/8/12/4/14 6:12/8/9/12/3/12 7:7/7/6/7/1/7 8:5/13/1/5/1/5 9:4/13/1/4/0/4 10:4/4/4/4/0/0 11:4/10/1/4/0/4 12:4/13/1/4/0/4 13:3/5/3/3/0/3 14:3/12/0/3/0/3
+L1_s2 1:20/19/0/12/3/20 2:19/17/3/13/8/19 3:16/12/6/16/4/16 4:16/11/8/16/7/16 5:12/11/6/12/2/12 6:10/10/6/10/2/10 7:7/10/6/6/0/7 8:5/10/2/5/1/5 9:5/8/4/4/1/5 10:4/7/3/4/0/4 11:3/7/2/3/1/3 12:3/8/2/3/1/3 13:3/8/1/3/1/3 14:3/5/2/3/1/3
+L2_s1 1:63/12/36/51/14/63 2:49/11/22/46/13/49 3:45/9/30/43/14/45 4:40/9/26/40/3/40 5:34/8/24/34/3/34 6:29/7/25/28/2/29 7:26/8/17/26/3/26 8:22/9/13/21/2/22 9:17/8/13/16/0/17 10:14/11/5/13/5/14
+L2_s2 1:68/11/34/59/7/68 2:64/9/45/58/11/64 3:56/9/39/52/9/56 4:48/10/31/43/7/48 5:44/9/29/41/5/44 6:36/11/18/30/4/36 7:32/9/24/29/11/32 8:28/6/24/28/9/28 9:26/7/21/25/10/26 10:22/7/17/22/5/22 11:18/6/17/18/7/18 12:18/7/15/18/4/18 13:17/7/14/17/3/17 14:17/8/12/17/3/17
+L3_s1 1:7/19/1/5/2/7
+L3_s2 1:10/33/0/0/2/10
+L4_s1 1:29/16/5/21/5/29 2:18/14/4/17/4/18 3:8/8/5/8/1/8 4:6/9/4/6/0/6 5:2/18/0/2/0/2 6:2/4/2/2/0/0 7:2/9/2/2/0/0 8:1/17/0/1/0/1 9:1/12/0/1/1/1
+L4_s2 1:29/10/14/28/14/29 2:11/13/5/10/2/11 3:6/8/4/6/1/6 4:3/4/3/3/0/3 5:3/6/3/3/0/0 6:3/5/3/3/0/3
+L5_s1 1:55/37/5/8/6/55 2:49/36/1/4/4/49 3:46/29/2/8/14/46 4:39/26/1/6/17/39 5:35/22/3/12/20/35 6:15/12/6/15/12/15 7:7/12/1/7/3/7
+L5_s2 1:52/19/10/32/7/52 2:23/18/4/14/7/23 3:14/20/0/8/2/14 4:12/19/0/9/1/12 5:10/20/1/5/0/10 6:9/24/1/4/1/9 7:5/14/3/3/1/5 8:15/24/3/6/0/15 9:12/20/1/4/2/12 10:18/19/3/10/3/18 11:16/13/7/10/6/16 12:20/19/3/10/2/20 13:16/14/6/12/1/16 14:11/18/1/7/1/11
+L6_s1 1:27/17/1/23/2/27 2:20/16/3/17/4/20 3:16/16/1/13/4/16 4:9/12/2/8/1/9 5:8/7/8/8/2/8 6:7/5/7/7/1/7 7:7/4/7/7/1/7 8:7/4/7/7/1/7 9:6/6/6/6/1/6 10:6/4/6/6/1/6 11:5/4/5/5/1/5 12:5/5/5/5/1/5 13:5/3/5/5/1/5 14:5/3/5/5/1/5
+L6_s2 1:29/17/3/21/9/29 2:23/16/5/16/9/23 3:20/16/3/16/6/20 4:17/11/6/17/6/17 5:16/11/8/16/9/16 6:12/8/9/12/5/12 7:11/12/4/10/4/11 8:10/9/7/10/0/10 9:9/9/5/8/1/9 10:9/9/6/8/3/0 11:9/9/6/8/1/9 12:9/12/4/7/0/0 13:8/13/4/6/0/0 14:8/12/4/5/0/0
+L7_s1 1:30/9/21/28/1/30 2:30/6/27/28/5/30 3:25/5/25/25/1/25 4:24/6/21/23/5/24 5:17/5/15/17/1/17 6:16/4/15/16/4/16 7:16/8/12/16/0/16 8:16/10/10/16/6/16 9:15/29/0/1/4/15 10:13/27/0/1/1/13 11:13/20/0/7/10/13 12:11/19/0/8/8/11 13:11/26/0/4/5/11 14:11/26/0/4/7/11
+L7_s2 1:33/10/23/29/4/33 2:30/7/24/28/5/30 3:26/7/23/25/2/26 4:25/9/15/23/4/25 5:24/12/10/21/8/24 6:22/13/7/19/5/22 7:20/14/6/15/2/20 8:19/14/5/15/3/19
+L8_s1 1:31/10/14/31/4/31 2:29/7/24/29/6/29 3:27/6/21/27/4/27 4:27/8/20/26/4/27 5:27/10/16/26/2/27 6:24/9/17/22/0/24 7:22/10/16/20/2/22 8:21/10/12/20/2/21 9:19/11/13/17/2/19 10:18/12/7/17/2/18
+L8_s2 1:37/24/4/14/12/37 2:35/19/5/21/7/35 3:35/27/2/12/4/35 4:35/39/2/3/0/35 5:34/39/1/2/1/34 6:33/30/1/2/3/33
+L9_s1 1:23/20/4/9/13/23 2:5/13/2/4/0/5 3:4/11/3/3/0/4 4:3/7/3/3/1/3 5:3/9/2/3/0/3 6:3/8/3/3/0/0 7:1/11/0/1/0/1 8:1/4/1/1/0/0 9:1/5/1/1/0/0 10:1/9/1/1/0/0 11:1/7/1/1/0/1
+L9_s2 1:24/8/20/23/4/24 2:16/7/14/15/3/16 3:14/6/13/13/2/14 4:12/8/9/12/3/12 5:10/7/9/10/5/10 6:9/7/8/9/4/9 7:5/3/5/5/3/5 8:3/3/3/3/0/3 9:3/2/3/3/0/3 10:2/2/2/2/1/2
+M10_s1 1:48/25/7/17/8/48 2:48/24/7/16/3/48 3:48/23/6/17/10/48 4:47/22/9/19/15/47 5:39/31/3/6/1/39 6:36/28/2/8/13/36 7:34/22/5/16/6/34 8:30/18/8/16/7/30 9:25/16/9/17/6/25 10:25/23/3/9/2/25 11:24/22/4/12/6/24 12:22/19/5/15/2/22 13:21/17/8/15/8/21 14:19/13/10/16/6/19
+M10_s2 1:56/25/9/21/10/56 2:54/25/8/22/6/54 3:52/24/11/23/6/52 4:48/24/8/18/5/48 5:45/28/2/16/6/45 6:43/28/6/13/4/43 7:42/22/11/17/4/42 8:39/23/9/17/5/39 9:37/21/9/19/1/37 10:35/20/8/20/4/35 11:33/21/4/18/2/33
+M11_s1 1:25/19/3/14/1/25 2:23/12/10/18/2/23 3:22/9/15/18/0/22 4:20/9/13/17/0/20 5:19/10/13/15/0/19 6:16/10/10/12/0/16 7:14/15/6/10/1/14 8:12/16/5/7/1/12 9:10/16/3/7/1/10 10:9/10/6/8/1/9 11:8/8/4/8/1/8 12:8/9/5/8/0/8 13:8/8/5/8/0/8 14:8/13/3/6/0/8
+M11_s2 1:23/13/11/17/0/23 2:23/13/14/18/0/23 3:22/13/12/16/0/22 4:22/15/9/13/1/22 5:22/13/11/16/1/22 6:22/11/12/18/3/22 7:22/11/11/17/2/22 8:22/12/13/17/2/22 9:22/13/11/15/2/22 10:22/15/11/13/2/22 11:22/14/11/16/2/22 12:22/11/12/16/0/22 13:21/16/8/12/0/21 14:20/14/10/16/0/20
+M12_s1 1:4/16/0/3/0/4
+M12_s2 1:5/6/5/5/1/5 2:2/9/2/2/0/2 3:2/9/1/2/0/2
+M1_s1 1:37/10/19/37/2/37 2:34/10/18/31/3/34 3:32/9/17/32/7/32 4:30/7/22/30/13/30 5:26/10/14/23/3/26 6:26/12/10/24/1/26 7:26/12/12/24/2/26 8:25/10/14/22/1/25 9:25/9/14/24/0/0 10:25/8/17/25/3/25 11:24/11/11/20/1/24
+M1_s2 1:32/19/3/18/3/32 2:30/12/11/27/3/30 3:28/8/19/27/10/28 4:24/10/17/22/5/24 5:23/7/19/23/4/23 6:23/7/19/23/3/23 7:22/6/18/22/3/22 8:21/9/12/20/2/0 9:20/13/7/17/0/20 10:20/12/9/16/1/20 11:20/11/10/19/0/0 12:20/9/14/18/0/0 13:20/11/13/17/0/0 14:20/15/7/15/0/0
+M2_s1 1:66/21/2/22/9/66 2:60/30/0/2/6/60 3:55/27/1/3/5/55 4:49/25/2/6/3/49 5:40/19/5/18/2/40 6:39/19/4/19/2/39 7:31/21/0/14/7/31 8:31/16/4/21/9/31 9:30/15/6/25/4/30 10:28/14/7/22/6/28 11:26/14/8/21/5/26 12:26/14/6/22/4/26 13:23/12/8/20/5/23 14:22/35/1/1/1/22
+M2_s2 1:68/22/3/22/2/68 2:64/22/1/17/2/64 3:60/30/0/1/6/60 4:54/26/2/9/7/54 5:48/25/2/12/3/48 6:42/23/1/14/3/42 7:37/19/3/21/3/37 8:34/15/6/26/3/34 9:31/14/6/26/5/31 10:29/14/7/25/1/29 11:27/13/9/22/1/27 12:26/13/9/23/2/26 13:22/21/2/11/0/22 14:21/21/2/11/3/21
+M3_s1 1:54/32/6/16/5/54 2:51/29/5/11/5/51 3:42/28/2/8/3/42 4:34/23/1/12/3/34 5:30/17/4/16/4/30 6:25/19/4/13/3/25 7:22/20/4/11/1/22 8:21/20/1/14/1/21 9:16/20/0/10/0/16 10:13/21/0/7/0/13 11:12/19/3/6/3/12 12:10/21/2/4/0/10 13:7/32/0/0/0/7 14:7/24/1/2/0/7
+M3_s2 1:53/29/6/13/4/53 2:53/24/7/19/8/53 3:43/17/9/26/4/43 4:48/23/6/17/2/48 5:45/20/8/21/7/45 6:40/26/0/14/1/40
+M4_s1 1:48/25/3/16/4/48 2:48/23/5/18/4/48 3:45/24/4/14/3/45
+M4_s2 1:55/24/10/25/11/55 2:54/22/12/23/9/54 3:53/29/3/9/13/53
+M5_s1 1:53/31/0/5/12/53 2:47/30/0/4/9/47 3:42/28/1/4/8/42 4:35/22/1/20/10/35 5:30/12/15/24/5/30 6:25/12/9/23/5/25 7:20/13/7/15/5/20 8:16/10/7/16/4/16 9:10/12/4/10/2/10 10:7/16/0/6/0/7 11:7/20/0/2/0/7 12:5/14/1/4/0/5 13:3/24/0/1/0/3 14:3/20/0/2/0/3
+M5_s2 1:55/31/4/9/9/55 2:46/30/2/4/2/46 3:40/21/3/22/5/40 4:34/20/2/20/5/34 5:27/17/5/17/9/27 6:14/13/7/10/4/14 7:11/10/6/11/4/11 8:7/8/6/7/0/7 9:4/4/4/4/1/4
+M6_s1 1:39/19/5/21/8/39 2:31/17/6/18/5/31 3:28/16/6/16/4/28 4:22/14/6/20/1/22 5:21/12/6/21/2/21 6:17/10/10/17/0/17 7:15/16/3/12/0/15 8:15/9/7/15/2/15 9:14/9/9/13/2/14 10:11/13/6/10/0/11 11:11/17/1/8/0/11 12:10/15/2/8/0/10 13:9/14/3/8/0/9 14:9/16/0/7/0/0
+M6_s2 1:35/11/15/34/1/35 2:32/10/18/30/8/32 3:29/14/15/19/3/29 4:27/14/15/17/1/27 5:23/11/11/21/1/23 6:20/10/12/19/1/20 7:18/16/3/12/2/18 8:16/25/2/4/0/16 9:15/13/9/11/0/15 10:14/13/5/13/0/14 11:14/19/2/9/0/14 12:13/19/0/7/0/13 13:13/13/3/12/2/13 14:11/15/2/10/0/11
+M7_s1 1:26/23/4/5/3/26 2:26/24/2/9/2/26
+M7_s2 1:26/23/4/10/2/26 2:26/18/4/13/9/26 3:26/19/4/13/3/26 4:25/17/4/20/10/25 5:24/13/7/22/9/24
+M8_s1 1:36/31/0/0/2/36 2:28/30/0/0/3/28 3:21/26/0/2/3/21 4:16/10/7/16/3/16 5:12/8/7/12/4/12 6:10/7/8/10/3/10 7:6/8/5/6/2/6 8:4/3/4/4/0/4 9:3/4/3/3/1/3 10:3/4/3/3/2/3 11:3/6/3/3/2/3 12:2/5/2/2/1/2
+M8_s2 1:33/15/4/28/9/33 2:17/8/11/17/2/17 3:5/10/1/5/0/5 4:3/8/3/3/0/3
+M9_s1 1:66/14/24/52/10/66 2:66/16/20/46/2/66
+M9_s2 1:71/18/14/40/6/71 2:71/19/12/40/3/71

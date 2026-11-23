@@ -27,6 +27,7 @@ namespace OpenXcom
 	class Action;
 	class Window;
 	class Text;
+	class TextEdit;
 	class TextButton;
 	class ArrowButton;
 	class Timer;
@@ -45,6 +46,7 @@ namespace OpenXcom
 	protected:
 		Window *_window;
 		Text *_txtTitle;
+		TextEdit *_btnQuickSearch;
 		TextButton *_btnOk;
 		std::vector<TextButton*> _btnSections;
 		ArrowButton *_btnScrollUp, *_btnScrollDown;
@@ -59,6 +61,9 @@ namespace OpenXcom
 		void think() override;
 		void btnSectionClick(Action *action);
 		void btnOkClick(Action *action);
+		/// OXCE-HD: quick search over every section, the one each section has
+		void btnQuickSearchToggle(Action *action);
+		void btnQuickSearchApply(Action *action);
 
 		// scrolling logic
 		void btnScrollUpPress(Action *action);

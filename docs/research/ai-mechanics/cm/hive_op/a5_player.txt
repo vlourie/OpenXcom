@@ -1,0 +1,34 @@
+dead t 4 side 0 1000001 CHRYSSALID_T (12,36,0) by 444 AUX_TANK_CANNON dist 6
+dead t 4 side 0 1000006 SILACOID_TER (18,33,0) by 444 AUX_TANK_CANNON dist 2
+dead t 4 side 0 1000045 ERIDIAN_SOLD (14,35,0) by 444 AUX_TANK_CANNON dist 4
+dead t 4 side 1 1000076 LE_CIVILIAN (52,54,0) by 1000044 STR_GRENADE_BUG dist 13
+reaction t 4 side 1 unit 470 at (44,42,3) [AIEVENT] turn=4 side=1 what=reaction unit=470 pos=(44,42,3)
+reaction t 4 side 1 unit 470 at (44,42,3) [AIEVENT] turn=4 side=1 what=reaction unit=470 pos=(44,42,3)
+dead t 4 side 1 1000024 ERIDIAN_SOLD (44,42,3) by 470 AUX_TANK_LASER_CANNON dist 16
+reaction t 4 side 1 unit 1000081 at (55,17,0) [AIEVENT] turn=4 side=1 what=reaction unit=1000081 pos=(55,17,0)
+reaction t 4 side 1 unit 1000081 at (55,17,0) [AIEVENT] turn=4 side=1 what=reaction unit=1000081 pos=(55,17,0)
+reaction t 4 side 1 unit 470 at (41,35,3) [AIEVENT] turn=4 side=1 what=reaction unit=470 pos=(41,35,3)
+dead t 4 side 2 1000063 LE_CIVILIAN (41,11,0) by 1000042 STR_GRENADE_BUG dist 17
+bot 470 t5: (42,26,0) tu 195 mode 0 act 2 to (48,54,0) aim 1000000 weapon AUX_TANK_LASER_CANNON seen 1000000,1000014,1000028,1000040,1000044,1000050
+bot 470 t5: (45,26,0) tu 165 mode 0 act 2 to (48,54,0) aim 1000023 weapon AUX_TANK_LASER_CANNON seen 1000000,1000014,1000023,1000028,1000040,1000044,1000050,1000081
+dead t 5 side 0 1000021 ERIDIAN_SOLD (22,46,0) by 444 AUX_TANK_CANNON dist 11
+dead t 5 side 0 1000040 ERIDIAN_SOLD (21,44,0) by 444 AUX_TANK_CANNON dist 9
+bot 470 t5: (46,27,0) tu 153 mode 3 act 0 to (-1,-1,-1) aim 1000000 weapon AUX_TANK_LASER_CANNON seen 1000000,1000014,1000018,1000023,1000028,1000044,1000047,1000050,1000081
+dead t 5 side 0 1000014 ERIDIAN_SOLD (19,47,0) by 545 AUX_WOLVERIN_WEAPON_MINIGUN dist 12
+reaction t 5 side 1 unit 470 at (45,26,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+reaction t 5 side 1 unit 470 at (45,26,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+reaction t 5 side 1 unit 470 at (45,26,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+reaction t 5 side 1 unit 470 at (45,26,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+reaction t 5 side 1 unit 470 at (45,26,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+reaction t 5 side 1 unit 470 at (45,26,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+reaction t 5 side 1 unit 470 at (45,26,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(45,26,0)
+dead t 5 side 1 1000000 CHRYSSALID_T (45,26,0) by 470 AUX_TANK_LASER_CANNON dist 1
+dead t 5 side 1 1000081 LIAN_MUT_4 (45,22,0) by 1000023 STR_CANISTER_GUN dist 11
+reaction t 5 side 1 unit 448 at (13,7,0) [AIEVENT] turn=5 side=1 what=reaction unit=448 pos=(13,7,0)
+dead t 5 side 1 1000028 ERIDIAN_SOLD (13,7,0) by 448 AUX_TANK_LASER_CANNON dist 11
+reaction t 5 side 1 unit 470 at (43,36,0) [AIEVENT] turn=5 side=1 what=reaction unit=470 pos=(43,36,0)
+reaction t 5 side 1 unit 448 at (6,5,0) [AIEVENT] turn=5 side=1 what=reaction unit=448 pos=(6,5,0)
+dead t 5 side 1 1000050 ERIDIAN_SOLD (6,5,0) by 448 AUX_TANK_LASER_CANNON dist 16
+dead t 6 side 0 1000047 ERIDIAN_SOLD (48,29,0) by 470 AUX_TANK_LASER_CANNON dist 3
+dead t 6 side 0 1000017 ERIDIAN_SOLD (43,34,0) by 470 AUX_TANK_LASER_CANNON dist 8
+dead t 6 side 1 1000044 ERIDIAN_SOLD (32,21,0) by 448 AUX_TANK_LASER_CANNON dist 3

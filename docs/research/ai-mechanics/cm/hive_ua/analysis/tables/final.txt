@@ -1,0 +1,22 @@
+﻿===== M6 s1
+  commanders 12 kept {'1': 10, '0': 2} why {'dead': 7, 'stunned': 5} task labels {'SEARCH': 10, 'HOLD': 2}
+  no decision, time units gone: 3 status at the side's start {'9': 1, '8': 2}
+  patrol shuttles A-B-A among distinct targets, OFF (150, 242) ON (8, 86)
+  ua4_UO_M6_s1: how=timeout turn=9 player=8 pdead=4 livesoldiers=4 pwounded=8 phplost=712 hostile=41 hdead=26 hout=2 hleft=13 livealiens=12 pmoves=65 pattacks=34 hmoves=391 hattacks=96
+  ua1_UN_M6_s1: how=timeout turn=9 player=8 pdead=6 livesoldiers=2 pwounded=8 phplost=663 hostile=41 hdead=32 hout=3 hleft=6 livealiens=3 pmoves=41 pattacks=48 hmoves=352 hattacks=145
+===== M3 s1
+  commanders 4 kept {'1': 4} why {'dead': 4} task labels {'SEARCH': 3, 'HOLD': 1}
+  no decision, time units gone: 0 status at the side's start {}
+  patrol shuttles A-B-A among distinct targets, OFF (4, 77) ON (6, 180)
+  ua6_UO_M3_s1: how=timeout turn=9 player=8 pdead=5 livesoldiers=3 pwounded=8 phplost=630 hostile=62 hdead=41 hout=4 hleft=17 livealiens=17 pmoves=70 pattacks=30 hmoves=568 hattacks=163
+  ua2_UN_M3_s1: how=timeout turn=9 player=8 pdead=5 livesoldiers=3 pwounded=8 phplost=674 hostile=68 hdead=34 hout=1 hleft=33 livealiens=33 pmoves=69 pattacks=36 hmoves=822 hattacks=168
+===== M8 s1
+  commanders 5 kept {'1': 5} why {'dead': 5} task labels {'SEARCH': 3, 'HOLD': 2}
+  no decision, time units gone: 13 status at the side's start {'9': 5, '8': 8}
+  patrol shuttles A-B-A among distinct targets, OFF (33, 95) ON (20, 102)
+  ua8_UO_M8_s1: how=timeout turn=9 player=8 pdead=0 livesoldiers=8 pwounded=2 phplost=23 hostile=39 hdead=35 hout=2 hleft=2 livealiens=1 pmoves=148 pattacks=39 hmoves=278 hattacks=21
+  ua3_UN_M8_s1: how=over turn=6 player=8 pdead=1 livesoldiers=7 pwounded=3 phplost=201 hostile=39 hdead=35 hout=1 hleft=3 livealiens=0 pmoves=93 pattacks=41 hmoves=247 hattacks=26
+   [HIVEUA] event=CHOICE turn=1 unit=1000000 squad=0 kind=SECURE try=1 at=(52,34,0) center=(33,48,2) radius=8 free=(39,4,0) chosen=(28,38,0) changed=1 fit=9 rung=4 inside=0 closer=1 free_inside=0 free_closer=0 fallback=0 tu=298
+   [HIVEUA] event=RESULT turn=1 unit=1000000 squad=0 kind=SECURE center=(33,48,2) start=(52,34,0) end=(54,18,0) spent=289 tu=9 moved=1 inside=0 closer=0 walked=1 changed=1
+   OFF [('1', '0', '2', '(52,34,0)', '(39,4,0)', '298'), ('2', '0', '2', '(54,22,0)', '(39,4,0)', '234'), ('2', '2', '7', '(54,18,0)', '(27,13,0)', '218'), ('1', '1', '2', '(54,18,0)', '(54,24,0)', '113')]
+   ON  [('1', '0', '2', '(52,34,0)', '(28,38,0)', '298'), ('2', '0', '2', '(54,22,0)', '(28,38,0)', '234'), ('2', '1', '2', '(54,18,0)', '(54,24,0)', '218'), ('2', '2', '7', '(54,18,0)', '(15,21,0)', '217')]

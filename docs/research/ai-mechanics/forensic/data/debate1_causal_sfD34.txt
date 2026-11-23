@@ -1,0 +1,170 @@
+== Rows 259
+ delta groups (|delta|>=3) {'same': 142, 'closer': 73, 'farther': 44}
+
+== Balance before the move (should be about zero)
+ hpf       closer    0.938 farther    0.943 diff  -0.004
+ tu        closer   74.831 farther   68.917 diff   5.914
+ prevseen  closer    0.000 farther    0.056 diff  -0.056
+ sc        closer   26.156 farther   25.869 diff   0.287
+ spent     closer   67.270 farther   60.405 diff   6.865
+
+== Outcomes, closer minus farther: ALL
+ died_walk closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 57/30
+ seen      closer   0.139 farther   0.041 diff   0.098 CI (0.0, 0.104) n 57/30
+ died      closer   0.108 farther   0.126 diff  -0.018 CI (-0.5, 0.011) n 57/30
+ lost      closer  10.324 farther  10.312 diff   0.012 CI (-18.0, 1.113) n 57/30
+ att1      closer   0.313 farther   0.136 diff   0.177 CI (0.157, 0.5) n 57/30
+ lof1      closer   0.530 farther   0.285 diff   0.245 CI (0.229, 0.5) n 57/30
+ dmg1      closer   0.609 farther   0.000 diff   0.609 CI (0.0, 0.646) n 57/30
+ att2      closer   0.234 farther   0.122 diff   0.112 CI (0.0, 0.119) n 57/30
+ dmg2      closer   0.847 farther   1.196 diff  -0.349 CI (-0.37, 0.0) n 57/30
+
+== Outcomes, closer minus farther: proven
+ died_walk closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 40/17
+ seen      closer   0.184 farther   0.069 diff   0.116 CI (0.0, 0.121) n 40/17
+ died      closer   0.051 farther   0.162 diff  -0.110 CI (-1.0, -0.065) n 40/17
+ lost      closer   8.406 farther  14.839 diff  -6.433 CI (-36.0, -4.94) n 40/17
+ att1      closer   0.475 farther   0.228 diff   0.247 CI (0.209, 1.0) n 40/17
+ lof1      closer   0.813 farther   0.476 diff   0.336 CI (0.303, 1.0) n 40/17
+ dmg1      closer   1.016 farther   0.000 diff   1.016 CI (0.0, 1.067) n 40/17
+ att2      closer   0.391 farther   0.204 diff   0.187 CI (0.0, 0.196) n 40/17
+ dmg2      closer   1.414 farther   1.997 diff  -0.583 CI (-0.612, 0.0) n 40/17
+
+== Outcomes, closer minus farther: weak
+ no strata
+
+== Outcomes, closer minus farther: melee
+ died_walk closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 11/9
+ seen      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 11/9
+ died      closer   0.071 farther   0.000 diff   0.071 CI (0.071, 0.071) n 11/9
+ lost      closer   7.496 farther   0.142 diff   7.354 CI (7.354, 7.354) n 11/9
+ att1      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 11/9
+ lof1      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 11/9
+ dmg1      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 11/9
+ att2      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 11/9
+ dmg2      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 11/9
+
+== Outcomes, closer minus farther: unknown
+ died_walk closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ seen      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ died      closer   1.000 farther   1.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ lost      closer  48.000 farther  48.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ att1      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ lof1      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ dmg1      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ att2      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 1/1
+ dmg2      closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 1/1
+
+== Outcomes, closer minus farther: proven start<=25
+ died_walk closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 15/12
+ seen      closer   0.266 farther   0.113 diff   0.153 CI (0.0, 0.167) n 15/12
+ died      closer   0.084 farther   0.266 diff  -0.181 CI (-1.0, -0.111) n 15/12
+ lost      closer  13.815 farther  24.388 diff -10.573 CI (-36.0, -8.392) n 15/12
+ att1      closer   0.449 farther   0.253 diff   0.196 CI (0.127, 1.0) n 15/12
+ lof1      closer   0.747 farther   0.400 diff   0.347 CI (0.291, 1.0) n 15/12
+ dmg1      closer   0.879 farther   0.000 diff   0.879 CI (0.0, 0.954) n 15/12
+ att2      closer   0.312 farther   0.074 diff   0.238 CI (0.0, 0.258) n 15/12
+ dmg2      closer   1.848 farther   0.000 diff   1.848 CI (0.0, 2.007) n 15/12
+
+== Outcomes, closer minus farther: turn<=3
+ died_walk closer   0.000 farther   0.000 diff   0.000 CI (0.0, 0.0) n 19/7
+ seen      closer   0.226 farther   0.156 diff   0.069 CI (0.0, 0.077) n 19/7
+ died      closer   0.104 farther   0.260 diff  -0.156 CI (-0.174, 0.0) n 19/7
+ lost      closer   4.997 farther  18.582 diff -13.585 CI (-15.164, 0.0) n 19/7
+ att1      closer   0.623 farther   0.260 diff   0.363 CI (0.0, 0.405) n 19/7
+ lof1      closer   0.896 farther   0.431 diff   0.465 CI (0.0, 0.519) n 19/7
+ dmg1      closer   1.025 farther   0.000 diff   1.025 CI (0.0, 1.144) n 19/7
+ att2      closer   0.623 farther   0.326 diff   0.297 CI (0.0, 0.331) n 19/7
+ dmg2      closer   2.256 farther   4.216 diff  -1.961 CI (-2.188, 0.0) n 19/7
+
+== Without M1, proven
+ died_walk closer   0.000 farther   0.000 diff   0.000 n 40/17
+ seen      closer   0.184 farther   0.069 diff   0.116 n 40/17
+ died      closer   0.051 farther   0.162 diff  -0.110 n 40/17
+ lost      closer   8.406 farther  14.839 diff  -6.433 n 40/17
+ att1      closer   0.475 farther   0.228 diff   0.247 n 40/17
+ lof1      closer   0.813 farther   0.476 diff   0.336 n 40/17
+ dmg1      closer   1.016 farther   0.000 diff   1.016 n 40/17
+ att2      closer   0.391 farther   0.204 diff   0.187 n 40/17
+ dmg2      closer   1.414 farther   1.997 diff  -0.583 n 40/17
+
+== Exposure at the start of the player phase: risk of death, seen against unseen
+ crude rr 7.75 rd 0.438  seen 74/147 = 50.3% unseen 75/1155 = 6.5%
+ battle                           rr 4.38 CI (3.326, 7.882) rd +0.373  (kept seen 74/147, unseen 75/1155)
+ distance                         rr 3.87 CI (3.348, 4.085) rd +0.368  (kept seen 74/147, unseen 75/1155)
+ type                             rr 4.55 CI (2.992, 9.86) rd +0.370  (kept seen 74/147, unseen 74/1126)
+ battle x distance                rr 3.52 CI (3.345, 3.744) rd +0.340  (kept seen 73/146, unseen 70/987)
+ battle x type                    rr 4.46 CI (3.036, 7.707) rd +0.365  (kept seen 71/144, unseen 73/1117)
+ battle x type x distance         rr 3.78 CI (2.955, 5.03) rd +0.316  (kept seen 61/130, unseen 49/607)
+ battle x type x distance x hp    rr 3.29 CI (2.634, 4.733) rd +0.266  (kept seen 47/110, unseen 36/382)
+ battle x turn x distance         rr 3.05 CI (2.537, 3.604) rd +0.311  (kept seen 64/130, unseen 39/299)
+ by distance bucket (crude within bucket):
+  00-05  seen    30 dead   18 =  60.0%   unseen    69 dead   14 =  20.3%
+  06-10  seen    45 dead   25 =  55.6%   unseen   115 dead   20 =  17.4%
+  11-15  seen    40 dead   18 =  45.0%   unseen   135 dead   12 =   8.9%
+  16-25  seen    31 dead   13 =  41.9%   unseen   369 dead   25 =   6.8%
+  26+    seen     1 dead    0 =   0.0%   unseen   467 dead    4 =   0.9%
+ share of all units and of deaths by distance:
+  00-05  units   7.6% deaths  21.5%
+  06-10  units  12.3% deaths  30.2%
+  11-15  units  13.4% deaths  20.1%
+  16-25  units  30.7% deaths  25.5%
+  26+    units  35.9% deaths   2.7%
+
+== Saturation: per player phase, by number of seen hostiles V
+ V 0    phases    38  mean N  10.8  deaths/phase seen  0.00 unseen  0.42  death rate of a seen unit   0.0%
+ V 1    phases    19  mean N  13.0  deaths/phase seen  0.47 unseen  0.37  death rate of a seen unit  47.4%
+ V 2    phases     8  mean N  16.2  deaths/phase seen  1.00 unseen  1.12  death rate of a seen unit  50.0%
+ V 3-4  phases     9  mean N  21.2  deaths/phase seen  1.78 unseen  1.67  death rate of a seen unit  53.3%
+ V 5-8  phases     8  mean N  29.6  deaths/phase seen  2.38 unseen  2.38  death rate of a seen unit  42.2%
+ V 9+   phases     3  mean N  28.7  deaths/phase seen  7.33 unseen  3.00  death rate of a seen unit  59.5%
+
+== Hostile deaths by phase and killer faction: [('playerphase_seenby+', 176), ('playerphase_seenby0', 16), ('side0_kf-1', 3), ('side0_kf0', 188), ('side0_kf1', 1), ('side1_kf0', 59), ('side1_kf1', 11), ('side2_kf2', 1)]
+
+== Own-side HP lost inside a hostile action window: total 3173 windows 37
+ not_attack_window                windows    5 fdmg   1243 ( 39.2%) fdowned   10 dmg on players    309 own dead   13 (killer own    0, killer player   13)
+ attack_explosion_1_2_centres     windows   20 fdmg    946 ( 29.8%) fdowned    5 dmg on players    534 own dead    6 (killer own    2, killer player    4)
+ attack_direct_no_explosion       windows    8 fdmg    527 ( 16.6%) fdowned    4 dmg on players    155 own dead    2 (killer own    2, killer player    0)
+ attack_chain_3plus_centres       windows    3 fdmg    343 ( 10.8%) fdowned    3 dmg on players     77 own dead    4 (killer own    4, killer player    0)
+ attack_with_reaction_no_expl     windows    1 fdmg    114 (  3.6%) fdowned    1 dmg on players      0 own dead    2 (killer own    1, killer player    1)
+ top single windows:
+  sfF_D_M3_s4            rec   541 turn  4 STR_CANISTER_GUN           t=9 fdmg   459 down   2 dmg  111 centres   2 react 3 own dead   3 terrain   0
+  sfF_D_M3_s4            rec   714 turn  6 AUX_CHRYSSALID_WEAPON      t=2 fdmg   355 down   2 dmg   83 centres   1 react 2 own dead   5 terrain   0
+  sfF_D_M3_s4            rec   687 turn  6 STR_CANISTER_GUN           t=2 fdmg   289 down   3 dmg    0 centres   1 react 1 own dead   1 terrain   0
+  sfF_D_M3_s4            rec   560 turn  4 AUX_CHRYSSALID_WEAPON      t=2 fdmg   253 down   2 dmg   55 centres   1 react 3 own dead   2 terrain   0
+  sfF_D_M3_s3            rec   418 turn  3 AUX_SILACOID_WEAPON        t=2 fdmg   187 down   2 dmg    0 centres   1 react 1 own dead   3 terrain   0
+  sfF_D_L4_s4            rec    92 turn  1 STR_PIR_HEAVY_PLASMA       t=7 fdmg   182 down   1 dmg    0 centres   0 react 0 own dead   1 terrain   0
+  sfF_D_L4_s4            rec   253 turn  2 STR_PLASMA_SCORCHER        t=7 fdmg   174 down   1 dmg    0 centres   6 react 0 own dead   2 terrain   0
+  sfF_D_M3_s4            rec   100 turn  1 STR_CANISTER_GUN           t=2 fdmg   159 down   1 dmg  171 centres   1 react 1 own dead   2 terrain   0
+  sfF_D_L4_s3            rec   207 turn  2 STR_PLASMA_SCORCHER        t=7 fdmg   121 down   1 dmg    0 centres   3 react 0 own dead   1 terrain   0
+  sfF_D_L4_s4            rec   252 turn  2 STR_PLASMA_SCORCHER        t=8 fdmg   118 down   0 dmg    0 centres   1 react 0 own dead   0 terrain   0
+  sfF_D_L4_s3            rec    87 turn  1 STR_PIR_PLASMA_RIFLE       t=9 fdmg   114 down   1 dmg    0 centres   0 react 1 own dead   2 terrain   0
+  sfF_D_L8_s4            rec    66 turn  1 STR_PIR_BLASTER_LAUNCHER   t=12 fdmg   110 down   1 dmg   65 centres   1 react 0 own dead   1 terrain   0
+ attack windows only: total 1930, top1 23.8% top5 54.6% top10 79.9% top20 96.1%; n 32
+ by battle (attack windows):
+  sfF_D_L4_s4            fdmg    672 ( 34.8%) own killed by own   4
+  sfF_D_M3_s4            fdmg    637 ( 33.0%) own killed by own   0
+  sfF_D_L4_s3            fdmg    314 ( 16.3%) own killed by own   3
+  sfF_D_L8_s4            fdmg    110 (  5.7%) own killed by own   1
+  sfF_D_L8_s3            fdmg     76 (  3.9%) own killed by own   0
+  sfF_D_M3_s3            fdmg     66 (  3.4%) own killed by own   0
+  sfF_D_M8_s3            fdmg     55 (  2.8%) own killed by own   1
+  battles with any 7 of 8 , battles with >=100 HP 4
+ by weapon (attack windows): windows, fdmg, dmg on players
+  STR_CANISTER_GUN               12    619    181
+  STR_PLASMA_SCORCHER             4    461     77
+  STR_PIR_HEAVY_PLASMA            2    291      0
+  STR_PIR_PLASMA_RIFLE            4    219      0
+  STR_PIR_BLASTER_LAUNCHER        1    110     65
+  STR_GRENADE_BUG                 1     66    254
+  AUX_SECTOPOD_WEAPON             1     60    155
+  AUX_TANK_TURRETED_AC25MM_WEAPON    1     55     23
+  STR_PIR_PLASMA_PISTOL           1     31      0
+  AUX_SILACOID_WEAPON             5     18     11
+ fdmg and dmg of the same windows: fdmg 1930 dmg 766
+
+== Concentration: per target per AI phase, by number of distinct attackers
+ attackers 1   target-phases    90 attacks   106 dmg   1019 downed   10 dmg/attack  9.61 downed/target-phase 0.111
+ attackers 2   target-phases    53 attacks   135 dmg    806 downed    5 dmg/attack  5.97 downed/target-phase 0.094
+ attackers 3   target-phases    25 attacks    87 dmg    869 downed    5 dmg/attack  9.99 downed/target-phase 0.200
+ attackers 4+  target-phases    19 attacks   134 dmg    507 downed    2 dmg/attack  3.78 downed/target-phase 0.105
