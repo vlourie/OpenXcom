@@ -398,7 +398,11 @@ int reticleColorGroup(const Mod *mod, BattleAction *action, const SDL_Color *pal
 		return 0;
 	}
 	const int color = damageTypeColor(mod, dt);
-	return color ? color / 16 + 1 : nearestColorGroup(pal, blastFallbackRgb(dt));
+	const int group = color ? color / 16 + 1 : nearestColorGroup(pal, blastFallbackRgb(dt));
+	// XP-000603: the group of the red "no target" reticle (CURSOR.PCK frame 6, colours 32-43) would read as no target
+	// (Piratez gives armour piercing colour 34): such a type keeps the stock yellow
+	const int noTargetGroup = 32 / 16 + 1;
+	return group == noTargetGroup ? 0 : group;
 }
 
 /**
