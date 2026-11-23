@@ -8,4 +8,4 @@
 - The engine's third-party licence file is now called OXCE-HD-THIRD-PARTY-NOTICES.txt: release 2026.11.20 left it out of the game folder by mistake.
 - Damage-colour reticle: the crosshair on a visible enemy is never red like the "no target" crosshair any more. A damage type whose colour is that red (armour piercing in X-Piratez) gets the classic yellow crosshair.
 - Dogfights without lazy resource loading: the interception window now prepares the weapon sound in advance, so the first shot is no longer delayed.
-- Radiation maps and swamps: puddle edges no longer flicker as a staircase while the water animates, and puddle shores are straight, with no teeth above the tile.
+- Radiation maps and swamps: puddle edges no longer flicker as a staircase while the water animates, and puddle shores are straight, with no teeth above the tile; forest and wasteland tiles with ears of grass, leaves and bones get a straight edge too, with the ears kept in place.
