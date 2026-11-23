@@ -1,1 +1,11 @@
 - The "Intro: voice" cutscene is high-resolution again: with lazy resource loading on (the default) its pictures stayed pixelated at 320x200; the HD pictures are now picked up.
+- Quitting the game while it is still loading no longer hangs or crashes: the game waits for loading to finish before it writes the settings.
+- HD interface pictures from a mod packed as .zip are no longer lost while loading.
+- Mod scripts: the infinite-loop limit from release 2026.11.20 is removed, because it only stopped part of the script; scripts behave as in OXCE again. The integer arithmetic guards stay.
+- Adlib music: tracks that repeat a passage many times in a row play to the end instead of falling silent; a damaged GM.CAT no longer hangs the game.
+- Damaged mod files (a font without '?', a truncated DAT, an empty sound name, an incomplete map block) are handled predictably and noted in the log. The battle map size check only writes a note to the log and never refuses to load.
+- Saves: an invalid soldier rank is rejected on load with a clear message; a transfer with a damaged delivery time arrives exactly once.
+- The engine's third-party licence file is now called OXCE-HD-THIRD-PARTY-NOTICES.txt: release 2026.11.20 left it out of the game folder by mistake.
+- Damage-colour reticle: the crosshair on a visible enemy is never red like the "no target" crosshair any more. A damage type whose colour is that red (armour piercing in X-Piratez) gets the classic yellow crosshair.
+- Dogfights without lazy resource loading: the interception window now prepares the weapon sound in advance, so the first shot is no longer delayed.
+- Radiation maps and swamps: puddle edges no longer flicker as a staircase while the water animates, and puddle shores are straight, with no teeth above the tile.
