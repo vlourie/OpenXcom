@@ -636,7 +636,8 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
         # лицензии сторонних библиотек, вошедших в exe (MIT и zlib требуют уведомления рядом с бинарником)
         $tpn = Join-Path $repoDir 'THIRD-PARTY-NOTICES.txt'
         if (-not (Test-Path -LiteralPath $tpn)) { throw "нет $tpn - без уведомлений о сторонних библиотеках выпуск с exe не собирать" }
-        Copy-Item -LiteralPath $tpn -Destination (Join-Path $stageDir 'THIRD-PARTY-NOTICES.txt') -Force
+        # своё имя: THIRD-PARTY-NOTICES.txt в корне - файл лаунчера (ReleaseRepo.LauncherFiles), выпуск игры его отбрасывает
+        Copy-Item -LiteralPath $tpn -Destination (Join-Path $stageDir 'OXCE-HD-THIRD-PARTY-NOTICES.txt') -Force
         $src = if ($hash -match '^[0-9a-f]+$') { "https://github.com/vlourie/OpenXcom/commit/$hash" } else { 'https://github.com/vlourie/OpenXcom (branch hd-render)' }
         $notice = @(
             'OXCE-HD - an unofficial fork of OpenXcom Extended 8.7.1 (https://github.com/MeridianOXC/OpenXcom).',
@@ -645,7 +646,7 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
             '',
             "$exeName is free software under the GNU General Public License version 3, see LICENSE.txt.",
             'It comes with NO WARRANTY. The licences of the third-party libraries inside it are in',
-            'THIRD-PARTY-NOTICES.txt.',
+            'OXCE-HD-THIRD-PARTY-NOTICES.txt.',
             '',
             'Source code of this exact build:',
             "  $src",
